@@ -72,7 +72,7 @@ export default async function Dashboard() {
       {/* Hoy */}
       <section>
         <h2 className="text-sm font-semibold text-stone-400 uppercase tracking-widest mb-4">
-          Hoy
+          Hoy — {new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" })}
         </h2>
         {today.length === 0 ? (
           <p className="text-sm text-stone-400">No hay clases programadas hoy.</p>
