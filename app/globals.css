@@ -3,6 +3,7 @@
 @theme {
   --font-sans: 'Inter', sans-serif;
   --font-mono: 'DM Mono', monospace;
+  --font-display: 'Playfair Display', serif;
 
   --color-app-bg: #f9f8f7;
   --color-navy: #11112c;

@@ -13,6 +13,21 @@ export function filterPast(events: MomenceEvent[], days = 30) {
   });
 }
 
+export function filterPrevious(events: MomenceEvent[], days = 30) {
+  const now = new Date();
+  const to = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+  const from = new Date(now.getTime() - days * 2 * 24 * 60 * 60 * 1000);
+  return filterActive(events).filter((e) => {
+    const d = new Date(e.dateTime);
+    return d <= to && d >= from;
+  });
+}
+
+export function trend(current: number, previous: number): number | null {
+  if (previous === 0) return null;
+  return ((current - previous) / previous) * 100;
+}
+
 export function filterUpcoming(events: MomenceEvent[], days = 14) {
   const now = new Date();
   const to = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
