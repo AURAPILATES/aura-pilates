@@ -11,9 +11,9 @@ const links = [
 export default function NavBar() {
   const pathname = usePathname();
   return (
-    <nav className="border-b border-stone-200 bg-white px-6 py-4 sticky top-0 z-10">
+    <nav className="border-b border-navy/10 bg-white px-6 py-4 sticky top-0 z-10">
       <div className="max-w-5xl mx-auto flex items-center gap-8">
-        <span className="font-semibold tracking-wide text-stone-900">
+        <span className="font-semibold tracking-wide text-navy">
           Aura Pilates ✦
         </span>
         <div className="flex gap-6 text-sm">
@@ -23,8 +23,8 @@ export default function NavBar() {
               href={href}
               className={
                 pathname === href
-                  ? "text-stone-900 font-medium"
-                  : "text-stone-400 hover:text-stone-700 transition-colors"
+                  ? "text-primary font-medium"
+                  : "text-navy/40 hover:text-navy/70 transition-colors"
               }
             >
               {label}

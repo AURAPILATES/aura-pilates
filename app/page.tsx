@@ -60,22 +60,22 @@ export default async function Dashboard() {
         {kpis.map((k) => (
           <div
             key={k.label}
-            className="bg-white border border-stone-200 rounded-xl p-5"
+            className="bg-white border border-navy/10 rounded shadow-card p-5"
           >
-            <p className="text-xs text-stone-400 mb-1">{k.label}</p>
-            <p className="text-2xl font-semibold text-stone-900">{k.value}</p>
-            <p className="text-xs text-stone-400 mt-1">{k.sub}</p>
+            <p className="text-xs text-navy/40 mb-1">{k.label}</p>
+            <p className="text-2xl font-semibold text-navy">{k.value}</p>
+            <p className="text-xs text-navy/40 mt-1">{k.sub}</p>
           </div>
         ))}
       </div>
 
       {/* Hoy */}
       <section>
-        <h2 className="text-sm font-semibold text-stone-400 uppercase tracking-widest mb-4">
+        <h2 className="text-xs font-semibold text-navy/40 uppercase tracking-widest mb-4">
           Hoy — {new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" })}
         </h2>
         {today.length === 0 ? (
-          <p className="text-sm text-stone-400">No hay clases programadas hoy.</p>
+          <p className="text-sm text-navy/40">No hay clases programadas hoy.</p>
         ) : (
           <div className="space-y-2">
             {today.map((e) => {
@@ -88,22 +88,22 @@ export default async function Dashboard() {
               return (
                 <div
                   key={e.id}
-                  className="bg-white border border-stone-200 rounded-xl px-5 py-4 flex items-center gap-5"
+                  className="bg-white border border-navy/10 rounded shadow-card px-5 py-4 flex items-center gap-5"
                 >
-                  <span className="text-sm font-mono text-stone-400 w-11 shrink-0">
+                  <span className="text-sm font-mono text-navy/40 w-11 shrink-0">
                     {time}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-stone-900">
+                    <p className="text-sm font-medium text-navy">
                       {e.title}
                     </p>
-                    <p className="text-xs text-stone-400">{e.teacher}</p>
+                    <p className="text-xs text-navy/40">{e.teacher}</p>
                   </div>
                   <OccupancyBar value={occ} />
-                  <span className="text-sm text-stone-600 w-16 text-right">
+                  <span className="text-sm text-navy/60 w-16 text-right font-mono">
                     {e.ticketsSold}/{e.capacity}
                   </span>
-                  <span className="text-sm font-medium text-stone-900 w-16 text-right">
+                  <span className="text-sm font-medium text-navy w-16 text-right">
                     {fmt(e.ticketsSold * e.fixedPrice)}
                   </span>
                 </div>
@@ -115,11 +115,11 @@ export default async function Dashboard() {
 
       {/* Próximos 7 días */}
       <section>
-        <h2 className="text-sm font-semibold text-stone-400 uppercase tracking-widest mb-4">
+        <h2 className="text-xs font-semibold text-navy/40 uppercase tracking-widest mb-4">
           Próximos 7 días
         </h2>
         {upcomingDays.length === 0 ? (
-          <p className="text-sm text-stone-400">No hay clases próximas.</p>
+          <p className="text-sm text-navy/40">No hay clases próximas.</p>
         ) : (
           <div className="space-y-8">
             {upcomingDays.map(({ dateKey, label, events: dayEvents }) => {
@@ -128,10 +128,10 @@ export default async function Dashboard() {
               return (
                 <div key={dateKey}>
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-xs font-semibold text-stone-400 uppercase tracking-widest capitalize">
+                    <h3 className="text-xs font-semibold text-navy/40 uppercase tracking-widest capitalize">
                       {label}
                     </h3>
-                    <span className="text-xs text-stone-400">
+                    <span className="text-xs text-navy/40">
                       {fmt(dayRevenue)} · {pct(dayOcc)} ocupación
                     </span>
                   </div>
@@ -151,26 +151,26 @@ export default async function Dashboard() {
                       return (
                         <div
                           key={e.id}
-                          className="bg-white border border-stone-200 rounded-xl px-5 py-3 flex items-center gap-5"
+                          className="bg-white border border-navy/10 rounded shadow-card px-5 py-3 flex items-center gap-5"
                         >
-                          <span className="text-sm font-mono text-stone-400 w-11 shrink-0">
+                          <span className="text-sm font-mono text-navy/40 w-11 shrink-0">
                             {time}
                           </span>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-stone-900">
+                            <p className="text-sm font-medium text-navy">
                               {e.title}
                             </p>
-                            <p className="text-xs text-stone-400">{e.teacher}</p>
+                            <p className="text-xs text-navy/40">{e.teacher}</p>
                           </div>
                           <OccupancyBar value={occ} />
-                          <span className="text-sm text-stone-600 w-16 text-right">
+                          <span className="text-sm text-navy/60 w-16 text-right font-mono">
                             {e.ticketsSold}/{e.capacity}
                           </span>
                           <span
-                            className={`text-xs px-2 py-1 rounded-full w-20 text-center ${
+                            className={`text-xs px-2 py-1 rounded w-20 text-center ${
                               isFull
-                                ? "bg-emerald-50 text-emerald-700"
-                                : "bg-stone-100 text-stone-500"
+                                ? "bg-income/10 text-income"
+                                : "bg-navy/5 text-navy/50"
                             }`}
                           >
                             {isFull ? "Llena" : `${e.spotsRemaining} libres`}
@@ -193,12 +193,12 @@ function OccupancyBar({ value }: { value: number }) {
   const pctVal = Math.round(value * 100);
   const color =
     pctVal >= 80
-      ? "bg-emerald-500"
+      ? "bg-success"
       : pctVal >= 50
-      ? "bg-amber-400"
-      : "bg-stone-200";
+      ? "bg-warning"
+      : "bg-navy/10";
   return (
-    <div className="w-24 h-1.5 bg-stone-100 rounded-full overflow-hidden">
+    <div className="w-24 h-1.5 bg-navy/5 rounded-full overflow-hidden">
       <div
         className={`h-full rounded-full ${color}`}
         style={{ width: `${pctVal}%` }}
