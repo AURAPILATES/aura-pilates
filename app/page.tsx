@@ -95,7 +95,7 @@ export default async function Dashboard() {
                 <p className="text-xs text-navy/40 uppercase tracking-wider leading-tight">{k.label}</p>
                 {k.trend !== null && <TrendBadge value={k.trend} />}
               </div>
-              <p className={`text-2xl font-semibold font-display ${valueColor}`}>{k.value}</p>
+              <p className={`text-2xl font-semibold ${valueColor}`}>{k.value}</p>
               <p className="text-xs text-navy/40 mt-1">{k.sub}</p>
             </div>
           );
