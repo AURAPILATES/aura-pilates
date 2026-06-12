@@ -106,23 +106,11 @@ export default function HorarioFilters({ events }: { events: MomenceEvent[] }) {
                 <h2 className="text-xs font-semibold text-navy/40 uppercase tracking-widest capitalize">
                   {label}
                 </h2>
-                <div className="flex items-baseline gap-6">
-                  <div className="text-right">
-                    <span className="text-xs text-navy/40 block">clases</span>
-                    <span className="text-sm font-semibold text-navy">{dayEvents.length}</span>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-xs text-navy/40 block">alumnos</span>
-                    <span className="text-sm font-semibold text-navy">{dayStudents}</span>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-xs text-navy/40 block">ocupación</span>
-                    <span className={`text-sm font-semibold ${occColor}`}>{pct(dayOcc)}</span>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-xs text-navy/40 block">ingresos</span>
-                    <span className="text-sm font-semibold text-navy">{fmt(dayRevenue)}</span>
-                  </div>
+                <div className="flex items-center gap-2">
+                  <StatChip label="clases" value={String(dayEvents.length)} />
+                  <StatChip label="alumnos" value={String(dayStudents)} />
+                  <StatChip label="ocupación" value={pct(dayOcc)} valueClass={occColor} />
+                  <StatChip label="ingresos" value={fmt(dayRevenue)} />
                 </div>
               </div>
 
@@ -142,47 +130,29 @@ export default function HorarioFilters({ events }: { events: MomenceEvent[] }) {
                   return (
                     <div
                       key={e.id}
-                      className="bg-white border border-navy/10 rounded shadow-card flex overflow-hidden"
+                      className="bg-white border border-navy/10 rounded shadow-card flex items-center overflow-hidden gap-4 px-4 py-3.5"
                     >
-                      {/* Acento de ocupación */}
-                      <div className={`w-1 shrink-0 ${accentColor}`} />
-
-                      {/* Hora */}
-                      <div className="flex flex-col justify-center px-4 w-16 shrink-0 border-r border-navy/5">
-                        <span className="text-sm font-mono font-medium text-navy">{time}</span>
-                      </div>
-
-                      {/* Clase + instructora */}
-                      <div className="flex-1 min-w-0 px-4 py-3">
+                      <div className={`w-0.5 self-stretch rounded-full shrink-0 ${accentColor}`} />
+                      <span className="text-sm font-mono text-navy/50 w-11 shrink-0">{time}</span>
+                      <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-navy truncate">{e.title}</p>
-                        {e.teacher && (
-                          <p className="text-xs text-navy/40 mt-0.5">{e.teacher}</p>
-                        )}
+                        {e.teacher && <p className="text-xs text-navy/40">{e.teacher}</p>}
                       </div>
-
-                      {/* Plazas */}
-                      <div className="flex flex-col justify-center px-4 w-32 shrink-0 border-l border-navy/5">
-                        <PlazaDots total={e.capacity} sold={e.ticketsSold} isFull={isFull} />
-                        <p className="text-xs text-navy/40 mt-1">
-                          {isFull ? "Llena" : `${e.spotsRemaining} libre${e.spotsRemaining !== 1 ? "s" : ""}`}
-                        </p>
-                      </div>
-
-                      {/* Ocupación */}
-                      <div className={`flex flex-col justify-center items-center px-5 w-20 shrink-0 border-l border-navy/5`}>
-                        <span className={`text-xl font-semibold tabular-nums ${occTextColor}`}>
-                          {pctVal}%
+                      {isFull ? (
+                        <span className="text-xs font-medium bg-success/10 text-success px-2 py-0.5 rounded w-16 text-center shrink-0">
+                          Llena ✦
                         </span>
-                        <div className="w-10 h-1 bg-navy/5 rounded-full overflow-hidden mt-1">
-                          <div className={`h-full rounded-full ${accentColor}`} style={{ width: `${pctVal}%` }} />
-                        </div>
-                      </div>
-
-                      {/* Ingresos */}
-                      <div className="flex flex-col justify-center items-end px-4 w-20 shrink-0 border-l border-navy/5">
-                        <span className="text-sm font-semibold text-navy">{fmt(e.ticketsSold * e.fixedPrice)}</span>
-                        <span className="text-xs text-navy/30">{e.ticketsSold} × {fmt(e.fixedPrice)}</span>
-                      </div>
+                      ) : (
+                        <span className="text-xs text-navy/40 w-16 text-right shrink-0">
+                          {e.spotsRemaining}/{e.capacity} libres
+                        </span>
+                      )}
+                      <span className={`text-sm font-semibold w-12 text-right tabular-nums shrink-0 ${occTextColor}`}>
+                        {pctVal}%
+                      </span>
+                      <span className="text-sm font-medium text-navy w-14 text-right shrink-0">
+                        {fmt(e.ticketsSold * e.fixedPrice)}
+                      </span>
                     </div>
                   );
                 })}
@@ -191,6 +161,15 @@ export default function HorarioFilters({ events }: { events: MomenceEvent[] }) {
           )})}
         </div>
       )}
+    </div>
+  );
+}
+
+function StatChip({ label, value, valueClass = "text-navy" }: { label: string; value: string; valueClass?: string }) {
+  return (
+    <div className="bg-white border border-navy/10 rounded shadow-card px-3 py-1.5 text-center">
+      <p className="text-xs text-navy/40">{label}</p>
+      <p className={`text-sm font-semibold ${valueClass}`}>{value}</p>
     </div>
   );
 }
