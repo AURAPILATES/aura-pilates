@@ -126,72 +126,92 @@ export default function HorarioFilters({ events }: { events: MomenceEvent[] }) {
                 </div>
               </div>
 
-              <div className="bg-white border border-navy/10 rounded shadow-card overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-navy/5 text-xs text-navy/40">
-                      <th className="text-left px-5 py-3 font-medium">Hora</th>
-                      <th className="text-left px-4 py-3 font-medium">Clase</th>
-                      <th className="text-left px-4 py-3 font-medium">Instructora</th>
-                      <th className="text-center px-4 py-3 font-medium">Ocupación</th>
-                      <th className="text-center px-4 py-3 font-medium">Plazas</th>
-                      <th className="text-right px-5 py-3 font-medium">Ingresos</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {dayEvents.map((e, i) => {
-                      const time = new Date(e.dateTime).toLocaleTimeString("es-ES", {
-                        timeZone: "Europe/Madrid",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      });
-                      const occ = e.capacity > 0 ? e.ticketsSold / e.capacity : 0;
-                      const isFull = e.spotsRemaining === 0;
-                      return (
-                        <tr
-                          key={e.id}
-                          className={i < dayEvents.length - 1 ? "border-b border-navy/5" : ""}
-                        >
-                          <td className="px-5 py-3.5 font-mono text-navy/50">{time}</td>
-                          <td className="px-4 py-3.5 font-medium text-navy">{e.title}</td>
-                          <td className="px-4 py-3.5 text-navy/50">{e.teacher}</td>
-                          <td className="px-4 py-3.5">
-                            <div className="flex items-center gap-2 justify-center">
-                              <div className="w-20 h-1.5 bg-navy/5 rounded-full overflow-hidden">
-                                <div
-                                  className={`h-full rounded-full ${
-                                    occ >= 0.8 ? "bg-success" : occ >= 0.5 ? "bg-warning" : "bg-navy/20"
-                                  }`}
-                                  style={{ width: `${Math.round(occ * 100)}%` }}
-                                />
-                              </div>
-                              <span className="text-xs text-navy/40 w-8">{pct(occ)}</span>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3.5 text-center">
-                            <span
-                              className={`text-xs px-2 py-1 rounded ${
-                                isFull
-                                  ? "bg-income/10 text-income"
-                                  : "bg-navy/5 text-navy/50"
-                              }`}
-                            >
-                              {isFull ? "Llena" : `${e.spotsRemaining}/${e.capacity}`}
-                            </span>
-                          </td>
-                          <td className="px-5 py-3.5 text-right font-medium text-navy">
-                            {fmt(e.ticketsSold * e.fixedPrice)}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+              <div className="space-y-2">
+                {dayEvents.map((e) => {
+                  const time = new Date(e.dateTime).toLocaleTimeString("es-ES", {
+                    timeZone: "Europe/Madrid",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  });
+                  const occ = e.capacity > 0 ? e.ticketsSold / e.capacity : 0;
+                  const pctVal = Math.round(occ * 100);
+                  const isFull = e.spotsRemaining === 0;
+                  const accentColor = occ >= 0.8 ? "bg-success" : occ >= 0.5 ? "bg-warning" : "bg-danger";
+                  const occTextColor = occ >= 0.8 ? "text-success" : occ >= 0.5 ? "text-warning" : "text-danger";
+
+                  return (
+                    <div
+                      key={e.id}
+                      className="bg-white border border-navy/10 rounded shadow-card flex overflow-hidden"
+                    >
+                      {/* Acento de ocupación */}
+                      <div className={`w-1 shrink-0 ${accentColor}`} />
+
+                      {/* Hora */}
+                      <div className="flex flex-col justify-center px-4 w-16 shrink-0 border-r border-navy/5">
+                        <span className="text-sm font-mono font-medium text-navy">{time}</span>
+                      </div>
+
+                      {/* Clase + instructora */}
+                      <div className="flex-1 min-w-0 px-4 py-3">
+                        <p className="text-sm font-medium text-navy truncate">{e.title}</p>
+                        {e.teacher && (
+                          <p className="text-xs text-navy/40 mt-0.5">{e.teacher}</p>
+                        )}
+                      </div>
+
+                      {/* Plazas */}
+                      <div className="flex flex-col justify-center px-4 w-32 shrink-0 border-l border-navy/5">
+                        <PlazaDots total={e.capacity} sold={e.ticketsSold} isFull={isFull} />
+                        <p className="text-xs text-navy/40 mt-1">
+                          {isFull ? "Llena" : `${e.spotsRemaining} libre${e.spotsRemaining !== 1 ? "s" : ""}`}
+                        </p>
+                      </div>
+
+                      {/* Ocupación */}
+                      <div className={`flex flex-col justify-center items-center px-5 w-20 shrink-0 border-l border-navy/5`}>
+                        <span className={`text-xl font-semibold tabular-nums ${occTextColor}`}>
+                          {pctVal}%
+                        </span>
+                        <div className="w-10 h-1 bg-navy/5 rounded-full overflow-hidden mt-1">
+                          <div className={`h-full rounded-full ${accentColor}`} style={{ width: `${pctVal}%` }} />
+                        </div>
+                      </div>
+
+                      {/* Ingresos */}
+                      <div className="flex flex-col justify-center items-end px-4 w-20 shrink-0 border-l border-navy/5">
+                        <span className="text-sm font-semibold text-navy">{fmt(e.ticketsSold * e.fixedPrice)}</span>
+                        <span className="text-xs text-navy/30">{e.ticketsSold} × {fmt(e.fixedPrice)}</span>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )})}
         </div>
       )}
+    </div>
+  );
+}
+
+function PlazaDots({ total, sold, isFull }: { total: number; sold: number; isFull: boolean }) {
+  const max = Math.min(total, 10);
+  const filledCount = Math.round((sold / total) * max);
+  return (
+    <div className="flex gap-0.5 flex-wrap">
+      {Array.from({ length: max }).map((_, i) => (
+        <div
+          key={i}
+          className={`w-2 h-2 rounded-full ${
+            i < filledCount
+              ? isFull
+                ? "bg-success"
+                : "bg-navy/40"
+              : "bg-navy/10"
+          }`}
+        />
+      ))}
     </div>
   );
 }
