@@ -160,3 +160,55 @@ export function revenueForMonth(sales: Sale[], month: string): number {
     .filter((s) => s.paymentDate.startsWith(month))
     .reduce((sum, s) => sum + s.amount, 0);
 }
+
+// ── Urban Sport Club ─────────────────────────────────────────────────────────
+
+const WEEKDAY_LABELS_ES = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
+
+function loadUrbanRaw(): { hora: number; weekday: number }[] {
+  try {
+    const fp = path.join(process.cwd(), "data", "sales.csv");
+    const content = readFileSync(fp, "latin1");
+    return content
+      .replace(/\r/g, "")
+      .split("\n")
+      .slice(1)
+      .filter((l) => l.toLowerCase().includes("urban"))
+      .flatMap((line) => {
+        const c = parseCSVLine(line);
+        const raw = c[3] ?? "";
+        try {
+          const [datePart, timePart] = raw.split(",");
+          const [year, month, day] = datePart.trim().split("-").map(Number);
+          const hora = parseInt(timePart?.trim().split(":")[0] ?? "0");
+          const d = new Date(year, month - 1, day);
+          const weekday = (d.getDay() + 6) % 7;
+          return [{ hora, weekday }];
+        } catch {
+          return [];
+        }
+      });
+  } catch {
+    return [];
+  }
+}
+
+export function urbanBookingsByHour() {
+  const map = new Map<number, number>();
+  for (const { hora } of loadUrbanRaw()) {
+    map.set(hora, (map.get(hora) ?? 0) + 1);
+  }
+  return Array.from(map.entries())
+    .map(([hour, count]) => ({ hour, label: `${String(hour).padStart(2, "0")}:00`, count }))
+    .sort((a, b) => a.hour - b.hour);
+}
+
+export function urbanBookingsByWeekday() {
+  const map = new Map<number, number>();
+  for (const { weekday } of loadUrbanRaw()) {
+    map.set(weekday, (map.get(weekday) ?? 0) + 1);
+  }
+  return Array.from(map.entries())
+    .map(([wd, count]) => ({ weekday: wd, label: WEEKDAY_LABELS_ES[wd], count }))
+    .sort((a, b) => a.weekday - b.weekday);
+}

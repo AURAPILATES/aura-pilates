@@ -108,8 +108,12 @@ export default function HorarioFilters({ events }: { events: MomenceEvent[] }) {
                 </h2>
                 <div className="flex items-baseline gap-6">
                   <div className="text-right">
-                    <span className="text-xs text-navy/40 block">clases · alumnos</span>
-                    <span className="text-sm font-semibold text-navy">{dayEvents.length} · {dayStudents}</span>
+                    <span className="text-xs text-navy/40 block">clases</span>
+                    <span className="text-sm font-semibold text-navy">{dayEvents.length}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-xs text-navy/40 block">alumnos</span>
+                    <span className="text-sm font-semibold text-navy">{dayStudents}</span>
                   </div>
                   <div className="text-right">
                     <span className="text-xs text-navy/40 block">ocupación</span>

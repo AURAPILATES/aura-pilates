@@ -10,7 +10,19 @@ import {
   totalRevenue,
   totalStudents,
   trend,
+  revenueByTeacher,
+  occupancyByHour,
+  occupancyByWeekday,
+  occupancyHeatmap,
 } from "@/lib/analytics";
+import { urbanBookingsByHour, urbanBookingsByWeekday } from "@/lib/sales";
+import {
+  ProfessorasBlock,
+  HorarioDelDiaBlock,
+  DiaSemanaBlock,
+  HeatmapBlock,
+  UrbanBlock,
+} from "./components/AnalyticsBlocks";
 
 export default async function Dashboard() {
   const [liveEvents, historicalEvents] = await Promise.all([
@@ -67,8 +79,17 @@ export default async function Dashboard() {
     },
   ];
 
+  // Analytics sobre los últimos 30 días
+  const teacherData = revenueByTeacher(past);
+  const byHour = occupancyByHour(past);
+  const byWeekday = occupancyByWeekday(past);
+  const heatmap = occupancyHeatmap(past);
+  const urbanHour = urbanBookingsByHour();
+  const urbanWeekday = urbanBookingsByWeekday();
+
   return (
-    <main className="max-w-5xl mx-auto px-6 py-10">
+    <main className="max-w-5xl mx-auto px-6 py-10 space-y-10">
+      {/* KPIs */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {kpis.map((k) => {
           const valueColor =
@@ -94,6 +115,22 @@ export default async function Dashboard() {
           );
         })}
       </div>
+
+      {/* Análisis de ocupación */}
+      <section>
+        <h2 className="text-xs font-semibold text-navy/40 uppercase tracking-widest mb-4">
+          Análisis de ocupación · últimos 30 días
+        </h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <ProfessorasBlock data={teacherData} />
+          <DiaSemanaBlock data={byWeekday} />
+          <HorarioDelDiaBlock data={byHour} />
+          <UrbanBlock byHour={urbanHour} byWeekday={urbanWeekday} />
+        </div>
+        <div className="mt-4">
+          <HeatmapBlock data={heatmap} />
+        </div>
+      </section>
     </main>
   );
 }

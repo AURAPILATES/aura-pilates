@@ -158,6 +158,62 @@ export function groupByDay(events: MomenceEvent[]) {
     }));
 }
 
+const WEEKDAY_LABELS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
+
+export function occupancyByHour(events: MomenceEvent[]) {
+  const map = new Map<number, { totalOcc: number; count: number }>();
+  for (const e of filterActive(events)) {
+    const hour = new Date(e.dateTime).getHours();
+    const occ = e.capacity > 0 ? e.ticketsSold / e.capacity : 0;
+    const prev = map.get(hour) ?? { totalOcc: 0, count: 0 };
+    map.set(hour, { totalOcc: prev.totalOcc + occ, count: prev.count + 1 });
+  }
+  return Array.from(map.entries())
+    .map(([hour, { totalOcc, count }]) => ({
+      hour,
+      label: `${String(hour).padStart(2, "0")}:00`,
+      avgOcc: totalOcc / count,
+      count,
+    }))
+    .sort((a, b) => a.hour - b.hour);
+}
+
+export function occupancyByWeekday(events: MomenceEvent[]) {
+  const map = new Map<number, { totalOcc: number; count: number }>();
+  for (const e of filterActive(events)) {
+    const d = new Date(e.dateTime);
+    const wd = (d.getDay() + 6) % 7; // 0=Mon
+    const occ = e.capacity > 0 ? e.ticketsSold / e.capacity : 0;
+    const prev = map.get(wd) ?? { totalOcc: 0, count: 0 };
+    map.set(wd, { totalOcc: prev.totalOcc + occ, count: prev.count + 1 });
+  }
+  return Array.from(map.entries())
+    .map(([wd, { totalOcc, count }]) => ({
+      weekday: wd,
+      label: WEEKDAY_LABELS[wd],
+      avgOcc: totalOcc / count,
+      count,
+    }))
+    .sort((a, b) => a.weekday - b.weekday);
+}
+
+export function occupancyHeatmap(events: MomenceEvent[]) {
+  const map = new Map<string, { totalOcc: number; count: number }>();
+  for (const e of filterActive(events)) {
+    const d = new Date(e.dateTime);
+    const wd = (d.getDay() + 6) % 7;
+    const hour = d.getHours();
+    const key = `${wd}-${hour}`;
+    const occ = e.capacity > 0 ? e.ticketsSold / e.capacity : 0;
+    const prev = map.get(key) ?? { totalOcc: 0, count: 0 };
+    map.set(key, { totalOcc: prev.totalOcc + occ, count: prev.count + 1 });
+  }
+  return Array.from(map.entries()).map(([key, { totalOcc, count }]) => {
+    const [wd, hour] = key.split("-").map(Number);
+    return { weekday: wd, weekdayLabel: WEEKDAY_LABELS[wd], hour, avgOcc: totalOcc / count, count };
+  });
+}
+
 export function fmt(amount: number) {
   return amount.toLocaleString("es-ES", {
     style: "currency",
