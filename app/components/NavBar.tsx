@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 
 const links = [
@@ -11,11 +12,18 @@ const links = [
 export default function NavBar() {
   const pathname = usePathname();
   return (
-    <nav className="border-b border-navy/10 bg-white px-6 py-4 sticky top-0 z-10">
+    <nav className="border-b border-navy/10 bg-white px-6 py-3 sticky top-0 z-10">
       <div className="max-w-5xl mx-auto flex items-center gap-8">
-        <span className="font-semibold tracking-wide text-navy">
-          Aura Pilates ✦
-        </span>
+        <Link href="/">
+          <Image
+            src="/logotipo.png"
+            alt="Aura Pilates Studio"
+            height={32}
+            width={120}
+            className="h-8 w-auto"
+            priority
+          />
+        </Link>
         <div className="flex gap-6 text-sm">
           {links.map(({ href, label }) => (
             <Link
