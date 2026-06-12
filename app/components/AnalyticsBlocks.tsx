@@ -184,7 +184,11 @@ export function UrbanBlock({
   const total = byHour.reduce((s, r) => s + r.count, 0);
 
   return (
-    <BlockCard title={`Urban Sport Club · ${total} reservas`}>
+    <BlockCard title="Urban Sport Club">
+      <div className="flex items-center gap-2 mb-4">
+        <span className="text-sm font-semibold text-navy">{total} reservas</span>
+        <span className="text-xs bg-navy/10 text-navy/50 px-2 py-0.5 rounded">período desconocido</span>
+      </div>
       <div className="grid grid-cols-2 gap-6">
         <div>
           <p className="text-xs text-navy/40 mb-3">Por franja horaria</p>
