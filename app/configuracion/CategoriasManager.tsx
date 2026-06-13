@@ -146,12 +146,9 @@ export default function CategoriasManager({ categories }: { categories: Category
 
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold text-navy">{cat.label}</p>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            <code className="text-[10px] text-navy/30 font-mono">{cat.value}</code>
-                            {cat.auto_keywords && (
-                              <span className="text-[10px] text-navy/25">· {cat.auto_keywords}</span>
-                            )}
-                          </div>
+                          {cat.auto_keywords && (
+                            <p className="text-[10px] text-navy/25 mt-0.5">{cat.auto_keywords}</p>
+                          )}
                         </div>
 
                         <div className="flex items-center gap-1.5 shrink-0">

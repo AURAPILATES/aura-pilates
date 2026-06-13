@@ -17,6 +17,7 @@ import {
 } from "@/lib/transactions";
 import { getDateRange } from "@/lib/dateRange";
 import DateFilter from "@/app/components/DateFilter";
+import HealthCards from "./HealthCards";
 import GastosBreakdown from "./GastosBreakdown";
 import FinanzasBarChart from "./FinanzasBarChart";
 import EvolucionChart from "./EvolucionChart";
@@ -211,59 +212,8 @@ export default async function Finanzas(props: {
     { label: "IVA T4 / Anual", date: "20 ene", deadline: "2027-01-20" },
   ];
 
-  // ── Runway color ──
-  const runwayColor = runwayMonths === null ? "text-navy/20"
-    : runwayMonths < 3 ? "text-danger"
-    : runwayMonths < 6 ? "text-warning"
-    : "text-success";
-
   return (
     <div>
-      {/* ── Sticky health strip ── */}
-      <div className="sticky top-14 z-20 bg-white/95 backdrop-blur-sm border-b border-navy/10">
-        <div className="max-w-6xl mx-auto px-6 py-3 grid grid-cols-2 sm:grid-cols-4 divide-x divide-navy/5">
-          <div className="px-4 first:pl-0">
-            <p className="text-[10px] text-navy/30 uppercase tracking-widest">Saldo en cuenta</p>
-            <p className="text-base font-semibold text-navy tabular-nums">
-              {currentBalance !== null ? fmt(currentBalance) : "—"}
-            </p>
-            {balanceDate && <p className="text-[10px] text-navy/25">{balanceDate.split("-").reverse().join("/")}</p>}
-          </div>
-          <div className="px-4">
-            <p className="text-[10px] text-navy/30 uppercase tracking-widest">Runway</p>
-            <p className={`text-base font-semibold tabular-nums ${runwayColor}`}>
-              {runwayMonths !== null ? `${runwayMonths.toFixed(1)} m` : "—"}
-            </p>
-            <p className="text-[10px] text-navy/25">a ritmo actual</p>
-          </div>
-          <div className="px-4">
-            <p className="text-[10px] text-navy/30 uppercase tracking-widest">Resultado {monthLabel(curMonth)}</p>
-            <p className={`text-base font-semibold tabular-nums ${resultadoMes >= 0 ? "text-success" : "text-danger"}`}>
-              {resultadoMes >= 0 ? "+" : "−"}{fmt(Math.abs(resultadoMes))}
-            </p>
-            <p className="text-[10px] text-navy/25">ingresos − gastos</p>
-          </div>
-          <div className="px-4">
-            <p className="text-[10px] text-navy/30 uppercase tracking-widest">Break-even</p>
-            {avgMonthlyRevenue > 0 ? (
-              breakEvenGap <= 0 ? (
-                <>
-                  <p className="text-base font-semibold text-success">Rentable</p>
-                  <p className="text-[10px] text-navy/25">+{fmt(Math.abs(breakEvenGap))}/mes margen</p>
-                </>
-              ) : (
-                <>
-                  <p className="text-base font-semibold text-danger tabular-nums">−{fmt(breakEvenGap)}</p>
-                  <p className="text-[10px] text-navy/25">para cubrir costes</p>
-                </>
-              )
-            ) : (
-              <p className="text-base font-semibold text-navy/20">Sin ventas</p>
-            )}
-          </div>
-        </div>
-      </div>
-
       {/* ── Main layout ── */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-8 pb-16">
 
@@ -273,6 +223,19 @@ export default async function Finanzas(props: {
             <code className="font-mono bg-warning/10 px-1 rounded text-xs">data/sales.csv</code>.
           </div>
         )}
+
+        <HealthCards
+          currentBalance={currentBalance}
+          balanceDate={balanceDate}
+          runwayMonths={runwayMonths}
+          avgMonthlyBurn={avgMonthlyBurn}
+          completeBurnMonthsCount={completeBurnMonths.length}
+          resultadoMes={resultadoMes}
+          breakEvenGap={breakEvenGap}
+          avgMonthlyRevenue={avgMonthlyRevenue}
+          clientesNecesarios={clientesNecesarios}
+          curMonthLabel={monthLabel(curMonth)}
+        />
 
         <div className="mb-6">
           <Suspense fallback={null}>
