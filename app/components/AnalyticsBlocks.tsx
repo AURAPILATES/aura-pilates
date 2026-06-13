@@ -6,10 +6,10 @@ import { pct } from "@/lib/analytics";
 function BlockCard({ title, legend, children }: { title: string; legend?: string; children: React.ReactNode }) {
   return (
     <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5 flex flex-col">
-      <p className="text-xs font-semibold text-navy/40 uppercase tracking-wider mb-4">{title}</p>
+      <p className="text-xs font-semibold text-navy/55 uppercase tracking-wider mb-4">{title}</p>
       <div className="flex-1">{children}</div>
       {legend && (
-        <p className="text-xs text-navy/30 mt-4 pt-3 border-t border-navy/5 leading-relaxed flex items-start gap-1.5">
+        <p className="text-xs text-navy/45 mt-4 pt-3 border-t border-navy/5 leading-relaxed flex items-start gap-1.5">
           <BookOpen size={12} className="shrink-0 mt-0.5" />
           {legend}
         </p>
@@ -54,7 +54,7 @@ export function ProfessorasBlock({ data }: { data: TeacherRow[] }) {
             <span className={`text-xs font-medium w-9 text-right tabular-nums ${
               r.occupancy >= 0.7 ? "text-success" : r.occupancy >= 0.5 ? "text-warning" : "text-danger"
             }`}>{pct(r.occupancy)}</span>
-            <span className="text-xs text-navy/30 w-16 text-right tabular-nums">{r.classes} clases</span>
+            <span className="text-xs text-navy/45 w-16 text-right tabular-nums">{r.classes} clases</span>
           </div>
         ))}
       </div>
@@ -78,7 +78,7 @@ export function HorarioDelDiaBlock({ data }: { data: HourRow[] }) {
             <span className={`text-xs font-medium w-9 text-right tabular-nums ${
               r.avgOcc >= 0.7 ? "text-success" : r.avgOcc >= 0.5 ? "text-warning" : "text-danger"
             }`}>{pct(r.avgOcc)}</span>
-            <span className="text-xs text-navy/30 w-16 text-right tabular-nums">{r.count} clases</span>
+            <span className="text-xs text-navy/45 w-16 text-right tabular-nums">{r.count} clases</span>
           </div>
         ))}
       </div>
@@ -102,7 +102,7 @@ export function DiaSemanaBlock({ data }: { data: WeekdayRow[] }) {
             <span className={`text-xs font-medium w-9 text-right tabular-nums ${
               r.avgOcc >= 0.7 ? "text-success" : r.avgOcc >= 0.5 ? "text-warning" : "text-danger"
             }`}>{pct(r.avgOcc)}</span>
-            <span className="text-xs text-navy/30 w-16 text-right tabular-nums">{r.count} clases</span>
+            <span className="text-xs text-navy/45 w-16 text-right tabular-nums">{r.count} clases</span>
           </div>
         ))}
       </div>
@@ -127,7 +127,7 @@ export function HeatmapBlock({ data }: { data: HeatmapCell[] }) {
     if (avgOcc >= 0.7) return "bg-success/60 text-navy";
     if (avgOcc >= 0.5) return "bg-warning/70 text-navy";
     if (avgOcc >= 0.3) return "bg-warning/30 text-navy";
-    return "bg-navy/5 text-navy/40";
+    return "bg-navy/5 text-navy/55";
   }
 
   return (
@@ -136,9 +136,9 @@ export function HeatmapBlock({ data }: { data: HeatmapCell[] }) {
         <table className="w-full text-xs">
           <thead>
             <tr>
-              <th className="text-left text-navy/40 font-medium pb-2 pr-3 w-20"></th>
+              <th className="text-left text-navy/55 font-medium pb-2 pr-3 w-20"></th>
               {hours.map((h) => (
-                <th key={h} className="text-center text-navy/40 font-mono font-normal pb-2 px-1">
+                <th key={h} className="text-center text-navy/55 font-mono font-normal pb-2 px-1">
                   {String(h).padStart(2, "0")}h
                 </th>
               ))}
@@ -198,27 +198,27 @@ export function MembershipsBlock({ data }: { data: Membership[] }) {
     >
       <div className="grid grid-cols-2 gap-6">
         <div>
-          <p className="text-xs text-navy/40 mb-3">Suscripciones mensuales</p>
+          <p className="text-xs text-navy/55 mb-3">Suscripciones mensuales</p>
           <div className="space-y-2">
             {subs.map((m) => (
               <div key={m.id} className="flex items-center justify-between gap-2">
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-navy truncate">{m.name}</p>
-                  <p className="text-xs text-navy/40 truncate">{m.description}</p>
+                  <p className="text-xs text-navy/55 truncate">{m.description}</p>
                 </div>
-                <span className="text-sm font-semibold text-navy tabular-nums shrink-0">{m.price}€<span className="text-xs font-normal text-navy/40">/mes</span></span>
+                <span className="text-sm font-semibold text-navy tabular-nums shrink-0">{m.price}€<span className="text-xs font-normal text-navy/55">/mes</span></span>
               </div>
             ))}
           </div>
         </div>
         <div>
-          <p className="text-xs text-navy/40 mb-3">Packs y clases sueltas</p>
+          <p className="text-xs text-navy/55 mb-3">Packs y clases sueltas</p>
           <div className="space-y-2">
             {packs.map((m) => (
               <div key={m.id} className="flex items-center justify-between gap-2">
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-navy truncate">{m.name}</p>
-                  <p className="text-xs text-navy/40 truncate">{m.description}</p>
+                  <p className="text-xs text-navy/55 truncate">{m.description}</p>
                 </div>
                 <span className="text-sm font-semibold text-navy tabular-nums shrink-0">{m.price}€</span>
               </div>
@@ -254,7 +254,7 @@ export function UrbanBlock({
       </div>
       <div className="grid grid-cols-2 gap-6">
         <div>
-          <p className="text-xs text-navy/40 mb-3">Por franja horaria</p>
+          <p className="text-xs text-navy/55 mb-3">Por franja horaria</p>
           <div className="space-y-2.5">
             {byHour.map((r) => (
               <div key={r.label} className="flex items-center gap-2">
@@ -266,7 +266,7 @@ export function UrbanBlock({
           </div>
         </div>
         <div>
-          <p className="text-xs text-navy/40 mb-3">Por día de la semana</p>
+          <p className="text-xs text-navy/55 mb-3">Por día de la semana</p>
           <div className="space-y-2.5">
             {byWeekday.map((r) => (
               <div key={r.label} className="flex items-center gap-2">

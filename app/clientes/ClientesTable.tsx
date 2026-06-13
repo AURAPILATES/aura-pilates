@@ -12,7 +12,7 @@ type Filter  = "all" | "recurring" | "occasional" | "discount" | "churn";
 
 function SortIcon({ active, dir }: { active: boolean; dir: SortDir }) {
   return (
-    <span className={`inline-block ml-1 transition-colors ${active ? "text-primary" : "text-navy/20"}`}>
+    <span className={`inline-block ml-1 transition-colors ${active ? "text-primary" : "text-navy/50"}`}>
       {active && dir === "asc" ? "↑" : "↓"}
     </span>
   );
@@ -89,7 +89,7 @@ export default function ClientesTable({ customers }: { customers: CustomerRow[] 
   function ThSort({ col, label, className = "" }: { col: SortKey; label: string; className?: string }) {
     return (
       <th
-        className={`px-5 py-3 text-[11px] font-semibold text-navy/35 uppercase tracking-wider cursor-pointer select-none hover:text-navy/60 transition-colors ${className}`}
+        className={`px-5 py-3 text-[11px] font-semibold text-navy/50 uppercase tracking-wider cursor-pointer select-none hover:text-navy/60 transition-colors ${className}`}
         onClick={() => toggleSort(col)}
       >
         {label}
@@ -137,7 +137,7 @@ export default function ClientesTable({ customers }: { customers: CustomerRow[] 
         {/* Search */}
         <div className="relative flex-1">
           <svg
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-navy/30"
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-navy/45"
             width="14" height="14" viewBox="0 0 24 24" fill="none"
             stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
           >
@@ -148,12 +148,12 @@ export default function ClientesTable({ customers }: { customers: CustomerRow[] 
             placeholder="Buscar por nombre o email…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-sm border border-navy/15 rounded-lg bg-white text-navy placeholder:text-navy/30 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition"
+            className="w-full pl-9 pr-4 py-2 text-sm border border-navy/15 rounded-lg bg-white text-navy placeholder:text-navy/45 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition"
           />
           {search && (
             <button
               onClick={() => setSearch("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-navy/30 hover:text-navy/60 transition-colors"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-navy/45 hover:text-navy/60 transition-colors"
             >
               ✕
             </button>
@@ -181,7 +181,7 @@ export default function ClientesTable({ customers }: { customers: CustomerRow[] 
               className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap ${
                 filter === key
                   ? "bg-white text-navy shadow-sm"
-                  : "text-navy/40 hover:text-navy/70"
+                  : "text-navy/55 hover:text-navy/70"
               }`}
             >
               {label}
@@ -198,7 +198,7 @@ export default function ClientesTable({ customers }: { customers: CustomerRow[] 
       </div>
 
       {(search || filter !== "all") && (
-        <p className="text-xs text-navy/35 mb-3">
+        <p className="text-xs text-navy/50 mb-3">
           {filtered.length} {filtered.length === 1 ? "cliente" : "clientes"} encontrados
         </p>
       )}
@@ -210,13 +210,13 @@ export default function ClientesTable({ customers }: { customers: CustomerRow[] 
             <thead>
               <tr className="border-b border-navy/[0.06]">
                 <ThSort col="name"            label="Cliente"       className="text-left" />
-                <th className="text-left px-5 py-3 text-[11px] font-semibold text-navy/35 uppercase tracking-wider">
+                <th className="text-left px-5 py-3 text-[11px] font-semibold text-navy/50 uppercase tracking-wider">
                   Frecuencia
                 </th>
                 <ThSort col="totalSpent"      label="Total gastado" className="text-right" />
                 <ThSort col="paymentCount"    label="Pagos"         className="text-right hidden sm:table-cell" />
                 <ThSort col="lastPaymentDate" label="Último pago"   className="text-right hidden sm:table-cell" />
-                <th className="text-center px-5 py-3 text-[11px] font-semibold text-navy/35 uppercase tracking-wider">
+                <th className="text-center px-5 py-3 text-[11px] font-semibold text-navy/50 uppercase tracking-wider">
                   Estado
                 </th>
               </tr>
@@ -224,7 +224,7 @@ export default function ClientesTable({ customers }: { customers: CustomerRow[] 
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-5 py-12 text-center text-navy/30 text-sm">
+                  <td colSpan={6} className="px-5 py-12 text-center text-navy/45 text-sm">
                     No hay clientes que coincidan con tu búsqueda.
                   </td>
                 </tr>
@@ -250,7 +250,7 @@ export default function ClientesTable({ customers }: { customers: CustomerRow[] 
                           )}
                           <div className="min-w-0">
                             <p className="font-medium text-navy truncate max-w-[160px]">{c.name ?? "—"}</p>
-                            {c.email && <p className="text-[11px] text-navy/35 truncate max-w-[160px]">{c.email}</p>}
+                            {c.email && <p className="text-[11px] text-navy/50 truncate max-w-[160px]">{c.email}</p>}
                           </div>
                           {c.discount && <DiscountBadge discount={c.discount} />}
                         </div>
@@ -261,12 +261,12 @@ export default function ClientesTable({ customers }: { customers: CustomerRow[] 
                             Recurrente
                           </span>
                         ) : (
-                          <span className="text-xs text-navy/30">Ocasional</span>
+                          <span className="text-xs text-navy/45">Ocasional</span>
                         )}
                       </td>
                       <td className="px-5 py-3 text-right font-semibold text-navy tabular-nums">{fmt(c.totalSpent)}</td>
                       <td className="px-5 py-3 text-right text-navy/50 hidden sm:table-cell">{c.paymentCount}</td>
-                      <td className="px-5 py-3 text-right text-navy/40 text-xs hidden sm:table-cell">
+                      <td className="px-5 py-3 text-right text-navy/55 text-xs hidden sm:table-cell">
                         {c.lastPaymentDate ? c.lastPaymentDate.split("-").reverse().join("/") : "—"}
                       </td>
                       <td className="px-5 py-3 text-center">

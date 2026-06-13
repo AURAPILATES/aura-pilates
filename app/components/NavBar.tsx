@@ -60,7 +60,7 @@ export default function NavBar() {
                 className={
                   pathname === href
                     ? "text-primary font-medium"
-                    : "text-navy/40 hover:text-navy/70 transition-colors"
+                    : "text-navy/55 hover:text-navy/70 transition-colors"
                 }
               >
                 {label}
@@ -76,7 +76,7 @@ export default function NavBar() {
               className={`hidden sm:flex w-8 h-8 items-center justify-center rounded-lg transition-colors ${
                 pathname === "/configuracion"
                   ? "text-primary bg-primary/[0.06]"
-                  : "text-navy/30 hover:text-navy/60 hover:bg-navy/[0.04]"
+                  : "text-navy/45 hover:text-navy/60 hover:bg-navy/[0.04]"
               }`}
             >
               <IconSettings />
@@ -118,7 +118,7 @@ export default function NavBar() {
               />
               <button
                 onClick={() => setOpen(false)}
-                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-navy/5 text-navy/30 hover:text-navy transition-colors"
+                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-navy/5 text-navy/45 hover:text-navy transition-colors"
               >
                 ✕
               </button>
@@ -153,7 +153,7 @@ export default function NavBar() {
                 className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
                   pathname === "/configuracion"
                     ? "bg-primary/[0.07] text-primary"
-                    : "text-navy/40 hover:bg-navy/[0.04] hover:text-navy/70"
+                    : "text-navy/55 hover:bg-navy/[0.04] hover:text-navy/70"
                 }`}
               >
                 <IconSettings />

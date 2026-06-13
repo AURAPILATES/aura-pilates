@@ -41,7 +41,7 @@ export default async function ClientesPage() {
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-navy font-display">Clientes</h1>
-        <p className="text-sm text-navy/40 mt-1">
+        <p className="text-sm text-navy/55 mt-1">
           {total} clientes · datos en tiempo real de Stripe
         </p>
       </div>
@@ -49,25 +49,25 @@ export default async function ClientesPage() {
       {/* KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
         <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
-          <p className="text-xs text-navy/40 uppercase tracking-wider mb-1">Total clientes</p>
+          <p className="text-xs text-navy/55 uppercase tracking-wider mb-1">Total clientes</p>
           <p className="text-2xl font-semibold text-navy">{total}</p>
         </div>
         <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
-          <p className="text-xs text-navy/40 uppercase tracking-wider mb-1">Recurrentes</p>
+          <p className="text-xs text-navy/55 uppercase tracking-wider mb-1">Recurrentes</p>
           <p className="text-2xl font-semibold text-primary">{recurring}</p>
-          <p className="text-xs text-navy/30 mt-1">2+ meses de 3</p>
+          <p className="text-xs text-navy/45 mt-1">2+ meses de 3</p>
         </div>
         <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
-          <p className="text-xs text-navy/40 uppercase tracking-wider mb-1">MRR estimado</p>
+          <p className="text-xs text-navy/55 uppercase tracking-wider mb-1">MRR estimado</p>
           <p className="text-2xl font-semibold text-success">{fmt(mrr)}</p>
-          <p className="text-xs text-navy/30 mt-1">media 3 meses</p>
+          <p className="text-xs text-navy/45 mt-1">media 3 meses</p>
         </div>
         <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
-          <p className="text-xs text-navy/40 uppercase tracking-wider mb-1">Posibles bajas</p>
-          <p className={`text-2xl font-semibold ${churnCount > 0 ? "text-warning" : "text-navy/20"}`}>
+          <p className="text-xs text-navy/55 uppercase tracking-wider mb-1">Posibles bajas</p>
+          <p className={`text-2xl font-semibold ${churnCount > 0 ? "text-warning" : "text-navy/50"}`}>
             {churnCount}
           </p>
-          <p className="text-xs text-navy/30 mt-1">pagaron en {prevMonth.slice(5)} no en {curMonth.slice(5)}</p>
+          <p className="text-xs text-navy/45 mt-1">pagaron en {prevMonth.slice(5)} no en {curMonth.slice(5)}</p>
         </div>
       </div>
 

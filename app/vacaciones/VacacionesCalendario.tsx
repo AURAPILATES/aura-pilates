@@ -214,9 +214,9 @@ function AusenciasModal({ persona, idx, onClose }: { persona: Persona; idx: numb
         <div className="flex items-center justify-between px-6 py-5 border-b border-navy/10">
           <div>
             <p className="font-semibold text-navy">Resumen de ausencias</p>
-            <p className="text-xs text-navy/40 mt-0.5">{persona.nombre} · 2026</p>
+            <p className="text-xs text-navy/55 mt-0.5">{persona.nombre} · 2026</p>
           </div>
-          <button onClick={onClose} className="text-navy/30 hover:text-navy text-xl leading-none">×</button>
+          <button onClick={onClose} className="text-navy/45 hover:text-navy text-xl leading-none">×</button>
         </div>
 
         {/* Rows */}
@@ -233,15 +233,15 @@ function AusenciasModal({ persona, idx, onClose }: { persona: Persona; idx: numb
               </span>
             </div>
             <div className="ml-4 mt-1.5 space-y-1">
-              <div className="flex justify-between text-xs text-navy/40">
+              <div className="flex justify-between text-xs text-navy/55">
                 <span>Según convenio (proporcional)</span>
                 <span>{persona.diasTotales} días</span>
               </div>
-              <div className="flex justify-between text-xs text-navy/40">
+              <div className="flex justify-between text-xs text-navy/55">
                 <span>Planificados</span>
                 <span>{vacUsadas} días</span>
               </div>
-              <div className="flex justify-between text-xs text-navy/40">
+              <div className="flex justify-between text-xs text-navy/55">
                 <span>Restantes</span>
                 <span>{persona.diasTotales - vacUsadas} días</span>
               </div>
@@ -257,13 +257,13 @@ function AusenciasModal({ persona, idx, onClose }: { persona: Persona; idx: numb
                 <div className={`w-2 h-2 rounded-full ${t.color}`} />
                 <span className="text-sm text-navy/60">{t.label}</span>
               </div>
-              <span className="text-xs bg-navy/5 text-navy/40 px-2 py-0.5 rounded">sin datos</span>
+              <span className="text-xs bg-navy/5 text-navy/55 px-2 py-0.5 rounded">sin datos</span>
             </div>
           ))}
         </div>
 
         <div className="px-6 pb-5">
-          <p className="text-[10px] text-navy/30">
+          <p className="text-[10px] text-navy/45">
             Los tipos de ausencia distintos a vacaciones no están disponibles a través de la API de Momence.
           </p>
         </div>
@@ -335,7 +335,7 @@ function PersonCard({ persona, idx }: { persona: Persona; idx: number }) {
             <Donut used={used} total={persona.diasTotales} stroke={colors.stroke} />
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <p className="text-sm font-semibold text-navy leading-tight">{used}</p>
-              <p className="text-[9px] text-navy/40 leading-tight">de {persona.diasTotales}</p>
+              <p className="text-[9px] text-navy/55 leading-tight">de {persona.diasTotales}</p>
             </div>
           </div>
           <div className="flex gap-4">
@@ -348,8 +348,8 @@ function PersonCard({ persona, idx }: { persona: Persona; idx: number }) {
             </div>
             <div className="w-px bg-navy/10 self-stretch" />
             <div>
-              <p className="text-xs text-navy/40 mb-0.5">Restantes</p>
-              <p className="text-2xl font-semibold text-navy/40">{remaining}</p>
+              <p className="text-xs text-navy/55 mb-0.5">Restantes</p>
+              <p className="text-2xl font-semibold text-navy/55">{remaining}</p>
             </div>
           </div>
         </div>
@@ -363,7 +363,7 @@ function PersonCard({ persona, idx }: { persona: Persona; idx: number }) {
 
         {upcoming.length > 0 && (
           <div>
-            <p className="text-xs font-medium text-navy/40 mb-2">
+            <p className="text-xs font-medium text-navy/55 mb-2">
               Próximas ausencias ({upcoming.length})
             </p>
             <div className="space-y-2">
@@ -377,7 +377,7 @@ function PersonCard({ persona, idx }: { persona: Persona; idx: number }) {
                         <div className={`w-1.5 h-1.5 rounded-full ${colors.dot}`} />
                         <p className="text-sm font-medium text-navy">Vacaciones</p>
                       </div>
-                      <p className="text-xs text-navy/40">{label} ({days})</p>
+                      <p className="text-xs text-navy/55">{label} ({days})</p>
                     </div>
                     <div className="w-6 h-6 rounded-full bg-success/10 flex items-center justify-center shrink-0">
                       <span className="text-success text-xs">✓</span>
@@ -391,7 +391,7 @@ function PersonCard({ persona, idx }: { persona: Persona; idx: number }) {
 
         {past.length > 0 && (
           <div>
-            <p className="text-xs font-medium text-navy/40 mb-2">
+            <p className="text-xs font-medium text-navy/55 mb-2">
               Ausencias anteriores ({past.length})
             </p>
             <div className="space-y-2">
@@ -405,10 +405,10 @@ function PersonCard({ persona, idx }: { persona: Persona; idx: number }) {
                         <div className="w-1.5 h-1.5 rounded-full bg-navy/20" />
                         <p className="text-sm text-navy/50">Vacaciones</p>
                       </div>
-                      <p className="text-xs text-navy/30">{label} ({days})</p>
+                      <p className="text-xs text-navy/45">{label} ({days})</p>
                     </div>
                     <div className="w-6 h-6 rounded-full bg-navy/5 flex items-center justify-center shrink-0">
-                      <span className="text-navy/30 text-xs">✓</span>
+                      <span className="text-navy/45 text-xs">✓</span>
                     </div>
                   </div>
                 );
@@ -527,7 +527,7 @@ function AnnualCalendar({
             </div>
             <div className="grid grid-cols-7 px-3 pb-1">
               {["L","M","X","J","V","S","D"].map((d) => (
-                <div key={d} className="text-center text-[10px] text-navy/30 font-medium py-1">{d}</div>
+                <div key={d} className="text-center text-[10px] text-navy/45 font-medium py-1">{d}</div>
               ))}
             </div>
             <div className="grid grid-cols-7 px-3 pb-3 gap-y-0.5">
@@ -556,7 +556,7 @@ function AnnualCalendar({
                         : isFestivo
                         ? "text-danger font-medium"
                         : isWeekend
-                        ? "text-navy/25"
+                        ? "text-navy/55"
                         : "text-navy/70"
                     }`}>
                       {day}
@@ -636,7 +636,7 @@ function GanttView({
             <div
               key={m.month}
               className={`text-center text-[10px] font-medium pb-2 border-b ${
-                m.isCurrentMonth ? "text-primary border-primary" : "text-navy/40 border-navy/10"
+                m.isCurrentMonth ? "text-primary border-primary" : "text-navy/55 border-navy/10"
               }`}
             >
               {m.name}
@@ -700,7 +700,7 @@ function GanttView({
 
       {/* Festivos row */}
       <div className="flex items-center mt-3 pt-3 border-t border-navy/5">
-        <span className="w-24 shrink-0 text-[10px] text-navy/30 pr-3">Festivos</span>
+        <span className="w-24 shrink-0 text-[10px] text-navy/45 pr-3">Festivos</span>
         <div className="flex-1 grid grid-cols-12 gap-1">
           {months.map((m) => {
             const prefix = `2026-${String(m.month).padStart(2, "0")}-`;
@@ -755,7 +755,7 @@ export default function VacacionesCalendario({
     <div className="space-y-8">
       {/* Filtro */}
       <div className="flex flex-wrap items-center gap-3">
-        <span className="text-xs text-navy/40">Ver:</span>
+        <span className="text-xs text-navy/55">Ver:</span>
         <div className="flex rounded overflow-hidden border border-navy/10 text-sm">
           {[{ key: "todas", label: "Todas" }, ...personas.map((p) => ({ key: p.nombre, label: p.nombre }))].map(
             ({ key, label }) => (
@@ -775,7 +775,7 @@ export default function VacacionesCalendario({
 
       {/* Sugerencias (siempre sobre todos los datos) */}
       <section>
-        <h2 className="text-xs font-semibold text-navy/40 uppercase tracking-widest mb-3">
+        <h2 className="text-xs font-semibold text-navy/55 uppercase tracking-widest mb-3">
           Sugerencias
         </h2>
         <SugerenciasBlock personas={personas} festivos={festivos} />
@@ -796,7 +796,7 @@ export default function VacacionesCalendario({
 
       {/* Vista Gantt */}
       <section>
-        <h2 className="text-xs font-semibold text-navy/40 uppercase tracking-widest mb-4">
+        <h2 className="text-xs font-semibold text-navy/55 uppercase tracking-widest mb-4">
           Vista anual
         </h2>
         <GanttView personas={personasFiltradas} allPersonas={personas} festivos={festivos} />
@@ -804,13 +804,13 @@ export default function VacacionesCalendario({
 
       {/* Calendario mensual */}
       <section>
-        <h2 className="text-xs font-semibold text-navy/40 uppercase tracking-widest mb-4">
+        <h2 className="text-xs font-semibold text-navy/55 uppercase tracking-widest mb-4">
           Calendario 2026
         </h2>
         <AnnualCalendar personas={personasFiltradas} allPersonas={personas} festivos={festivos} />
       </section>
 
-      <p className="text-[10px] text-navy/30">
+      <p className="text-[10px] text-navy/45">
         Convenio: 23 días laborales por año completo a jornada de 5 días/semana. Días proporcionales a jornada y fecha de inicio de contrato.
       </p>
     </div>

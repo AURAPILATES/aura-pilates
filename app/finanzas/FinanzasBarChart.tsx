@@ -197,7 +197,7 @@ export default function FinanzasBarChart({
               onClick={() => setChartType("bar")}
               title="Barras"
               className={`px-2.5 py-1.5 transition-colors ${
-                chartType === "bar" ? "bg-navy text-white" : "bg-white text-navy/40 hover:text-navy/70"
+                chartType === "bar" ? "bg-navy text-white" : "bg-white text-navy/55 hover:text-navy/70"
               }`}
             >
               <IconBar />
@@ -206,13 +206,13 @@ export default function FinanzasBarChart({
               onClick={() => setChartType("line")}
               title="Línea"
               className={`px-2.5 py-1.5 transition-colors border-l border-navy/10 ${
-                chartType === "line" ? "bg-navy text-white" : "bg-white text-navy/40 hover:text-navy/70"
+                chartType === "line" ? "bg-navy text-white" : "bg-white text-navy/55 hover:text-navy/70"
               }`}
             >
               <IconLine />
             </button>
           </div>
-          <p className="text-xs font-semibold text-navy/40 uppercase tracking-widest">
+          <p className="text-xs font-semibold text-navy/55 uppercase tracking-widest">
             Ingresos y gastos
           </p>
         </div>
@@ -249,7 +249,7 @@ export default function FinanzasBarChart({
                 className={`px-3 py-1.5 font-medium transition-colors ${
                   period === key
                     ? "bg-navy text-white"
-                    : "bg-white text-navy/40 hover:text-navy/70 hover:bg-navy/[0.03]"
+                    : "bg-white text-navy/55 hover:text-navy/70 hover:bg-navy/[0.03]"
                 }`}
               >
                 {label}
@@ -260,7 +260,7 @@ export default function FinanzasBarChart({
       </div>
 
       {data.length === 0 ? (
-        <p className="text-sm text-navy/30 text-center py-10">Sin datos para este período</p>
+        <p className="text-sm text-navy/45 text-center py-10">Sin datos para este período</p>
       ) : (
         <svg
           width="100%"
@@ -405,7 +405,7 @@ export default function FinanzasBarChart({
         </svg>
       )}
 
-      <p className="text-xs text-navy/30 mt-2 flex items-center gap-1.5">
+      <p className="text-xs text-navy/45 mt-2 flex items-center gap-1.5">
         <BookOpen size={12} className="shrink-0" />
         Ingresos: Momence sales.csv · Gastos: exportación bancaria Caixabank.
       </p>

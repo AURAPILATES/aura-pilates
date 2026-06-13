@@ -114,11 +114,11 @@ export default function GastosBreakdown({
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-navy truncate">{seg.category}</p>
-                  <p className="text-xs text-navy/40">{seg.count} transacciones</p>
+                  <p className="text-xs text-navy/55">{seg.count} transacciones</p>
                 </div>
                 <div className="text-right shrink-0">
                   <p className="text-sm font-semibold text-navy tabular-nums">−{fmt(seg.total)}</p>
-                  <p className="text-xs text-navy/40 tabular-nums">{pct(seg.share)}</p>
+                  <p className="text-xs text-navy/55 tabular-nums">{pct(seg.share)}</p>
                 </div>
               </button>
             );
@@ -147,7 +147,7 @@ export default function GastosBreakdown({
               </div>
               <div className="flex-1 min-w-0">
                 <h2 className="text-base font-semibold text-navy">{selected}</h2>
-                <p className="text-xs text-navy/40 mt-0.5">
+                <p className="text-xs text-navy/55 mt-0.5">
                   −{fmt(selectedSeg?.total ?? 0)} · {selectedSeg?.count ?? 0} transacciones
                 </p>
               </div>
@@ -155,7 +155,7 @@ export default function GastosBreakdown({
                 <Link
                   href={`/transacciones?categoria=${encodeURIComponent(selected)}`}
                   title="Ver en transacciones"
-                  className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-navy/5 text-navy/30 hover:text-primary transition-colors"
+                  className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-navy/5 text-navy/45 hover:text-primary transition-colors"
                 >
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
@@ -163,7 +163,7 @@ export default function GastosBreakdown({
                 </Link>
                 <button
                   onClick={() => setSelected(null)}
-                  className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-navy/5 text-navy/30 hover:text-navy transition-colors text-base"
+                  className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-navy/5 text-navy/45 hover:text-navy transition-colors text-base"
                 >
                   ✕
                 </button>
@@ -173,7 +173,7 @@ export default function GastosBreakdown({
             {/* Transaction list */}
             <div className="flex-1 overflow-y-auto">
               {selectedTxns.length === 0 ? (
-                <p className="text-sm text-navy/30 px-4 py-8">Sin transacciones registradas.</p>
+                <p className="text-sm text-navy/45 px-4 py-8">Sin transacciones registradas.</p>
               ) : (
                 selectedTxns.map((t, i) => (
                   <div
@@ -184,7 +184,7 @@ export default function GastosBreakdown({
                       <p className="text-sm font-medium text-navy truncate">
                         {t.contact || t.concept}
                       </p>
-                      <p className="text-xs text-navy/40 mt-0.5">{t.date.split("-").reverse().join("/")}</p>
+                      <p className="text-xs text-navy/55 mt-0.5">{t.date.split("-").reverse().join("/")}</p>
                     </div>
                     <p className={`text-sm font-semibold tabular-nums shrink-0 ${t.amount < 0 ? "text-navy" : "text-success"}`}>
                       {t.amount < 0 ? "−" : "+"}{fmt(Math.abs(t.amount))}

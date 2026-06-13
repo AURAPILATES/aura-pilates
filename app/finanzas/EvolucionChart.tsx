@@ -153,7 +153,7 @@ export default function EvolucionChart({ sales }: { sales: Sale[] }) {
               onClick={() => setChartType("line")}
               title="Línea"
               className={`px-2.5 py-1.5 transition-colors ${
-                chartType === "line" ? "bg-navy text-white" : "bg-white text-navy/40 hover:text-navy/70"
+                chartType === "line" ? "bg-navy text-white" : "bg-white text-navy/55 hover:text-navy/70"
               }`}
             >
               <IconLine />
@@ -162,13 +162,13 @@ export default function EvolucionChart({ sales }: { sales: Sale[] }) {
               onClick={() => setChartType("bar")}
               title="Barras"
               className={`px-2.5 py-1.5 transition-colors border-l border-navy/10 ${
-                chartType === "bar" ? "bg-navy text-white" : "bg-white text-navy/40 hover:text-navy/70"
+                chartType === "bar" ? "bg-navy text-white" : "bg-white text-navy/55 hover:text-navy/70"
               }`}
             >
               <IconBar />
             </button>
           </div>
-          <p className="text-xs font-semibold text-navy/40 uppercase tracking-widest truncate">
+          <p className="text-xs font-semibold text-navy/55 uppercase tracking-widest truncate">
             Evolución de ingresos
           </p>
         </div>
@@ -182,7 +182,7 @@ export default function EvolucionChart({ sales }: { sales: Sale[] }) {
               className={`px-2.5 sm:px-3 py-1.5 font-medium transition-colors ${
                 view === v
                   ? "bg-navy text-white"
-                  : "bg-white text-navy/40 hover:text-navy/70 hover:bg-navy/[0.03]"
+                  : "bg-white text-navy/55 hover:text-navy/70 hover:bg-navy/[0.03]"
               }`}
             >
               {v === "canal" ? <span><span className="sm:hidden">Canal</span><span className="hidden sm:inline">Canal de pago</span></span> : "Producto"}
@@ -206,7 +206,7 @@ export default function EvolucionChart({ sales }: { sales: Sale[] }) {
       </div>
 
       {sales.length === 0 ? (
-        <p className="text-sm text-navy/30 text-center py-10">Sin datos de ventas</p>
+        <p className="text-sm text-navy/45 text-center py-10">Sin datos de ventas</p>
       ) : (
         <svg
           width="100%"
@@ -355,7 +355,7 @@ export default function EvolucionChart({ sales }: { sales: Sale[] }) {
         </svg>
       )}
 
-      <p className="text-xs text-navy/30 mt-2 flex items-center gap-1.5">
+      <p className="text-xs text-navy/45 mt-2 flex items-center gap-1.5">
         <BookOpen size={12} className="shrink-0" />
         Momence sales.csv · ingresos brutos por mes.
       </p>

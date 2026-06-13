@@ -82,7 +82,7 @@ export default function HorarioFilters({ events }: { events: MomenceEvent[] }) {
               setInstructoraFilter("all");
               setOccFilter("all");
             }}
-            className="text-xs text-navy/40 hover:text-navy underline self-center"
+            className="text-xs text-navy/55 hover:text-navy underline self-center"
           >
             Limpiar filtros
           </button>
@@ -91,7 +91,7 @@ export default function HorarioFilters({ events }: { events: MomenceEvent[] }) {
 
       {/* Resultados */}
       {days.length === 0 ? (
-        <p className="text-sm text-navy/40">No hay clases con estos filtros.</p>
+        <p className="text-sm text-navy/55">No hay clases con estos filtros.</p>
       ) : (
         <div className="space-y-10">
           {days.map(({ dateKey, label, events: dayEvents }) => {
@@ -103,7 +103,7 @@ export default function HorarioFilters({ events }: { events: MomenceEvent[] }) {
             <div key={dateKey}>
               {/* Cabecera del día */}
               <div className="flex items-end justify-between mb-3">
-                <h2 className="text-xs font-semibold text-navy/40 uppercase tracking-widest capitalize">
+                <h2 className="text-xs font-semibold text-navy/55 uppercase tracking-widest capitalize">
                   {label}
                 </h2>
                 <div className="flex bg-white border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden">
@@ -136,7 +136,7 @@ export default function HorarioFilters({ events }: { events: MomenceEvent[] }) {
                           <td className="pl-4 pr-3 py-3.5 font-mono text-navy/50 w-14 shrink-0">{time}</td>
                           <td className="px-3 py-3.5">
                             <p className="font-medium text-navy">{e.title}</p>
-                            {e.teacher && <p className="text-xs text-navy/40">{e.teacher}</p>}
+                            {e.teacher && <p className="text-xs text-navy/55">{e.teacher}</p>}
                           </td>
                           <td className="px-3 py-3.5 text-right w-28">
                             {isFull ? (
@@ -144,7 +144,7 @@ export default function HorarioFilters({ events }: { events: MomenceEvent[] }) {
                                 Llena ✦
                               </span>
                             ) : (
-                              <span className="text-xs text-navy/40">{e.spotsRemaining}/{e.capacity} libres</span>
+                              <span className="text-xs text-navy/55">{e.spotsRemaining}/{e.capacity} libres</span>
                             )}
                           </td>
                           <td className={`px-3 py-3.5 text-right font-semibold tabular-nums w-16 ${occTextColor}`}>
@@ -170,7 +170,7 @@ export default function HorarioFilters({ events }: { events: MomenceEvent[] }) {
 function StatChip({ label, value, valueClass = "text-navy", last = false }: { label: string; value: string; valueClass?: string; last?: boolean }) {
   return (
     <div className={`px-4 py-2 text-center ${last ? "" : "border-r border-navy/10"}`}>
-      <p className="text-xs text-navy/40">{label}</p>
+      <p className="text-xs text-navy/55">{label}</p>
       <p className={`text-sm font-semibold ${valueClass}`}>{value}</p>
     </div>
   );

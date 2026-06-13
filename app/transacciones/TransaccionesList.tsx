@@ -56,7 +56,7 @@ function ContactTypePill({
           <span>{cfg.label}</span>
         </div>
       ) : (
-        <div className="flex items-center gap-1 pl-1 pr-2.5 py-0.5 rounded-full text-[11px] font-medium pointer-events-none select-none whitespace-nowrap bg-navy/[0.05] text-navy/30">
+        <div className="flex items-center gap-1 pl-1 pr-2.5 py-0.5 rounded-full text-[11px] font-medium pointer-events-none select-none whitespace-nowrap bg-navy/[0.05] text-navy/45">
           <span className="text-xs leading-none">＋</span>
           <span>Tipo</span>
         </div>
@@ -420,7 +420,7 @@ export default function TransaccionesList({
       {/* ── Resumen por contacto (cuando hay filtro de tipo activo) ──────── */}
       {contactSummary.length > 1 && (
         <div className="bg-white border border-navy/10 rounded-xl shadow-sm p-4 mb-4">
-          <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-3">
+          <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider mb-3">
             Desglose por persona · {CONTACT_TYPES.find(c => c.value === typeFilter)?.label}
           </p>
           <div className="space-y-2">
@@ -433,7 +433,7 @@ export default function TransaccionesList({
                     <div className="h-full bg-primary/40 rounded-full" style={{ width: `${(r.total / maxTotal) * 100}%` }} />
                   </div>
                   <span className="text-sm font-semibold text-navy tabular-nums shrink-0">−{fmtAmt(r.total)}</span>
-                  <span className="text-xs text-navy/30 w-16 text-right tabular-nums shrink-0">{r.count} pagos</span>
+                  <span className="text-xs text-navy/45 w-16 text-right tabular-nums shrink-0">{r.count} pagos</span>
                 </div>
               );
             })}
@@ -443,7 +443,7 @@ export default function TransaccionesList({
 
       {/* ── 5. Barra de resumen ──────────────────────────────────────────── */}
       <div className="flex items-center gap-3 mb-4">
-        <span className="text-xs text-navy/40">
+        <span className="text-xs text-navy/55">
           {filtered.length} transacciones
         </span>
         {isPending && <span className="text-xs text-primary/60">Guardando…</span>}
@@ -451,7 +451,7 @@ export default function TransaccionesList({
         <span className="text-sm font-semibold text-emerald-600 tabular-nums">
           +{fmtAmt(totalIn)}
         </span>
-        <span className="text-xs text-navy/20">·</span>
+        <span className="text-xs text-navy/50">·</span>
         <span className="text-sm font-semibold text-navy/50 tabular-nums">
           −{fmtAmt(totalOut)}
         </span>
@@ -460,7 +460,7 @@ export default function TransaccionesList({
       {/* ── 6. Vista móvil (cards) ───────────────────────────────────────── */}
       <div className="sm:hidden bg-white border border-navy/10 rounded-xl shadow-sm overflow-hidden divide-y divide-navy/[0.04]">
         {filtered.length === 0 && (
-          <p className="px-4 py-10 text-center text-sm text-navy/30">Sin resultados</p>
+          <p className="px-4 py-10 text-center text-sm text-navy/45">Sin resultados</p>
         )}
         {filtered.map((t) => {
           const isRecurring = !!t.contact && recurringSet.has(t.contact.toLowerCase().trim());
@@ -487,14 +487,14 @@ export default function TransaccionesList({
                         <span className="shrink-0 text-[10px] text-primary/50 font-medium">↺</span>
                       )}
                     </div>
-                    {secondary && <p className="text-[11px] text-navy/30 truncate mt-0.5">{secondary}</p>}
+                    {secondary && <p className="text-[11px] text-navy/45 truncate mt-0.5">{secondary}</p>}
                   </div>
                 </div>
                 <div className="shrink-0 text-right">
                   <span className={`text-sm font-semibold tabular-nums ${t.amount > 0 ? "text-emerald-600" : "text-navy/75"}`}>
                     {t.amount > 0 ? "+" : "−"}{fmtAmt(t.amount)}
                   </span>
-                  <p className="text-[11px] text-navy/35 tabular-nums mt-0.5">{fmtDate(t.date)}</p>
+                  <p className="text-[11px] text-navy/50 tabular-nums mt-0.5">{fmtDate(t.date)}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2 mt-2 flex-wrap">
@@ -522,12 +522,12 @@ export default function TransaccionesList({
                       placeholder="Nota…"
                     />
                     <button onClick={() => saveNotes(t.id)} className="text-xs text-primary font-bold">✓</button>
-                    <button onClick={() => setEditingNotes(null)} className="text-xs text-navy/25">✕</button>
+                    <button onClick={() => setEditingNotes(null)} className="text-xs text-navy/55">✕</button>
                   </div>
                 ) : t.notes ? (
                   <button
                     onClick={() => openNotes(t)}
-                    className="ml-auto text-xs text-navy/40 hover:text-navy/60 truncate max-w-[120px]"
+                    className="ml-auto text-xs text-navy/55 hover:text-navy/60 truncate max-w-[120px]"
                   >
                     {t.notes}
                   </button>
@@ -561,18 +561,18 @@ export default function TransaccionesList({
                   aria-label="Seleccionar todas"
                 />
               </th>
-              <th className="text-left px-4 py-3 text-[11px] font-semibold text-navy/35 uppercase tracking-wider">Concepto</th>
-              <th className="text-left px-4 py-3 text-[11px] font-semibold text-navy/35 uppercase tracking-wider">Categoría</th>
-              <th className="text-left px-4 py-3 text-[11px] font-semibold text-navy/35 uppercase tracking-wider">Notas</th>
-              <th className="text-right px-4 py-3 text-[11px] font-semibold text-navy/35 uppercase tracking-wider">Fecha</th>
-              <th className="text-right pr-5 py-3 text-[11px] font-semibold text-navy/35 uppercase tracking-wider">Importe</th>
+              <th className="text-left px-4 py-3 text-[11px] font-semibold text-navy/50 uppercase tracking-wider">Concepto</th>
+              <th className="text-left px-4 py-3 text-[11px] font-semibold text-navy/50 uppercase tracking-wider">Categoría</th>
+              <th className="text-left px-4 py-3 text-[11px] font-semibold text-navy/50 uppercase tracking-wider">Notas</th>
+              <th className="text-right px-4 py-3 text-[11px] font-semibold text-navy/50 uppercase tracking-wider">Fecha</th>
+              <th className="text-right pr-5 py-3 text-[11px] font-semibold text-navy/50 uppercase tracking-wider">Importe</th>
             </tr>
           </thead>
 
           <tbody className={isPending ? "opacity-50 pointer-events-none" : ""}>
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-10 text-center text-sm text-navy/30">
+                <td colSpan={6} className="px-4 py-10 text-center text-sm text-navy/45">
                   Sin resultados
                 </td>
               </tr>
@@ -617,7 +617,7 @@ export default function TransaccionesList({
                     </div>
                     <div className="flex items-center gap-2 mt-0.5">
                       {secondary && (
-                        <p className="text-[11px] text-navy/30 truncate leading-none">{secondary}</p>
+                        <p className="text-[11px] text-navy/45 truncate leading-none">{secondary}</p>
                       )}
                       <ContactTypePill
                         contactType={t.contact_type}
@@ -652,7 +652,7 @@ export default function TransaccionesList({
                           placeholder="Añadir nota…"
                         />
                         <button onClick={() => saveNotes(t.id)} className="text-xs text-primary font-bold px-1 hover:text-primary/70 leading-none">✓</button>
-                        <button onClick={() => setEditingNotes(null)} className="text-xs text-navy/25 hover:text-navy/50 leading-none">✕</button>
+                        <button onClick={() => setEditingNotes(null)} className="text-xs text-navy/55 hover:text-navy/50 leading-none">✕</button>
                       </div>
                     ) : (
                       <button
@@ -661,7 +661,7 @@ export default function TransaccionesList({
                       >
                         {t.notes
                           ? <span className="text-navy/45 hover:text-navy/65 transition-colors">{t.notes}</span>
-                          : <span className="text-navy/20 opacity-0 group-hover:opacity-100 transition-opacity">+ nota</span>
+                          : <span className="text-navy/50 opacity-0 group-hover:opacity-100 transition-opacity">+ nota</span>
                         }
                       </button>
                     )}
@@ -669,7 +669,7 @@ export default function TransaccionesList({
 
                   {/* Date */}
                   <td className="px-4 align-middle text-right" style={{ height: "52px" }}>
-                    <span className="text-xs text-navy/35 tabular-nums whitespace-nowrap">
+                    <span className="text-xs text-navy/50 tabular-nums whitespace-nowrap">
                       {fmtDate(t.date)}
                     </span>
                   </td>

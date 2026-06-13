@@ -124,7 +124,7 @@ export default function CategoriasManager({ categories }: { categories: Category
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-navy font-display">Categorías</h1>
-            <p className="text-sm text-navy/40 mt-1">{categories.length} categorías · edita o crea nuevas</p>
+            <p className="text-sm text-navy/55 mt-1">{categories.length} categorías · edita o crea nuevas</p>
           </div>
           <button
             onClick={openNew}
@@ -145,7 +145,7 @@ export default function CategoriasManager({ categories }: { categories: Category
             if (items.length === 0) return null;
             return (
               <div key={g}>
-                <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-2 px-1">
+                <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider mb-2 px-1">
                   {GROUP_LABELS[g]}
                 </p>
                 <div className="bg-white border border-navy/10 rounded-xl shadow-sm overflow-hidden">
@@ -168,13 +168,13 @@ export default function CategoriasManager({ categories }: { categories: Category
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold text-navy">{cat.label}</p>
                           {cat.auto_keywords && (
-                            <p className="text-[10px] text-navy/25 mt-0.5">{cat.auto_keywords}</p>
+                            <p className="text-[10px] text-navy/55 mt-0.5">{cat.auto_keywords}</p>
                           )}
                         </div>
 
                         <button
                           onClick={() => openEdit(cat)}
-                          className="w-8 h-8 flex items-center justify-center rounded-lg text-navy/25 hover:text-primary hover:bg-primary/[0.06] transition-colors shrink-0"
+                          className="w-8 h-8 flex items-center justify-center rounded-lg text-navy/55 hover:text-primary hover:bg-primary/[0.06] transition-colors shrink-0"
                           title="Editar"
                         >
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -209,12 +209,12 @@ export default function CategoriasManager({ categories }: { categories: Category
                   {editor.mode === "new" ? "Nueva categoría" : "Editar categoría"}
                 </h2>
                 {editor.mode === "edit" && (
-                  <p className="text-xs text-navy/40 font-mono mt-0.5">{editor.cat.value}</p>
+                  <p className="text-xs text-navy/55 font-mono mt-0.5">{editor.cat.value}</p>
                 )}
               </div>
               <button
                 onClick={closeEditor}
-                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-navy/5 text-navy/30 hover:text-navy transition-colors"
+                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-navy/5 text-navy/45 hover:text-navy transition-colors"
               >
                 ✕
               </button>
@@ -237,14 +237,14 @@ export default function CategoriasManager({ categories }: { categories: Category
               {/* Identificador */}
               <div>
                 <label className="block text-xs font-semibold text-navy/50 mb-1.5 uppercase tracking-wide">
-                  Identificador <span className="text-navy/30 font-normal normal-case">(clave interna, no cambiar si hay transacciones)</span>
+                  Identificador <span className="text-navy/45 font-normal normal-case">(clave interna, no cambiar si hay transacciones)</span>
                 </label>
                 <input
                   type="text"
                   value={form.value}
                   onChange={(e) => setForm((f) => ({ ...f, value: e.target.value }))}
                   disabled={editor.mode === "edit"}
-                  className="w-full text-sm font-mono border border-navy/10 rounded-lg px-3 py-2 outline-none focus:border-primary/40 focus:ring-1 focus:ring-primary/20 disabled:bg-navy/[0.02] disabled:text-navy/40"
+                  className="w-full text-sm font-mono border border-navy/10 rounded-lg px-3 py-2 outline-none focus:border-primary/40 focus:ring-1 focus:ring-primary/20 disabled:bg-navy/[0.02] disabled:text-navy/55"
                   placeholder="Ej: Alquiler"
                 />
               </div>
@@ -271,7 +271,7 @@ export default function CategoriasManager({ categories }: { categories: Category
                     onChange={(e) => handleAccentChange(e.target.value)}
                     className="w-9 h-9 rounded-lg border border-navy/10 cursor-pointer p-0.5 shrink-0"
                   />
-                  <span className="text-xs font-mono text-navy/40">{accentColor}</span>
+                  <span className="text-xs font-mono text-navy/55">{accentColor}</span>
                   <span
                     className="text-xs font-medium px-3 py-1.5 rounded-full shrink-0"
                     style={{ backgroundColor: form.bg_color, color: form.text_color }}
@@ -304,7 +304,7 @@ export default function CategoriasManager({ categories }: { categories: Category
               {/* Auto-keywords */}
               <div>
                 <label className="block text-xs font-semibold text-navy/50 mb-1.5 uppercase tracking-wide">
-                  Auto-keywords <span className="text-navy/30 font-normal normal-case">(separadas por coma)</span>
+                  Auto-keywords <span className="text-navy/45 font-normal normal-case">(separadas por coma)</span>
                 </label>
                 <textarea
                   value={form.auto_keywords ?? ""}
@@ -313,7 +313,7 @@ export default function CategoriasManager({ categories }: { categories: Category
                   className="w-full text-sm border border-navy/10 rounded-lg px-3 py-2 outline-none focus:border-primary/40 focus:ring-1 focus:ring-primary/20 resize-none font-mono"
                   placeholder="endesa, iberdrola, naturgy"
                 />
-                <p className="text-[11px] text-navy/30 mt-1">
+                <p className="text-[11px] text-navy/45 mt-1">
                   Si el concepto de una transacción contiene alguna de estas palabras, se categorizará automáticamente.
                 </p>
               </div>
@@ -348,7 +348,7 @@ export default function CategoriasManager({ categories }: { categories: Category
               )}
               <button
                 onClick={closeEditor}
-                className="text-sm text-navy/40 hover:text-navy/60 transition-colors px-4 py-2"
+                className="text-sm text-navy/55 hover:text-navy/60 transition-colors px-4 py-2"
               >
                 Cancelar
               </button>
