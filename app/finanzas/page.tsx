@@ -7,9 +7,15 @@ import {
   stripeByMethod,
   totalRevenue as stripeTotalRevenue,
   revenueForMonth as stripeRevenueForMonth,
-  subscriptionRevenue,
   toSales,
 } from "@/lib/stripePayments";
+import {
+  loadStripeSubscriptions,
+  activeSubs,
+  mrrFromSubs,
+  churnedThisMonth,
+  renewingInDays,
+} from "@/lib/stripeSubscriptions";
 import {
   loadTransactions,
   totalOperationalExpenses,
@@ -111,9 +117,10 @@ export default async function Finanzas(props: {
   const prev2MonthDate = new Date(now.getFullYear(), now.getMonth() - 2, 1);
   const prev2Month = `${prev2MonthDate.getFullYear()}-${pad2(prev2MonthDate.getMonth() + 1)}`;
 
-  const [paymentsAll, paymentsFiltered] = await Promise.all([
+  const [paymentsAll, paymentsFiltered, subscriptions] = await Promise.all([
     loadStripePayments(),
     (from || to) ? loadStripePayments(from, to) : Promise.resolve(null),
+    loadStripeSubscriptions(),
   ]);
   const payments  = paymentsFiltered ?? paymentsAll;
   const hasSales  = paymentsAll.length > 0;
@@ -134,7 +141,7 @@ export default async function Finanzas(props: {
   const ticketPrev  = prevCount > 0 ? prev / prevCount : 0;
   const ticketCur   = curCount > 0 ? cur / curCount : 0;
 
-  const recurrente    = subscriptionRevenue(payments);
+  const recurrente    = payments.filter((p) => p.category === "Suscripción").reduce((s, p) => s + p.amount, 0);
   const recurrentePct = totalRev > 0 ? recurrente / totalRev : 0;
   const byMethod      = stripeByMethod(payments);
   const urbanRevenue  = 0; // Urban Sports Club no pasa por Stripe
@@ -144,6 +151,14 @@ export default async function Finanzas(props: {
   const salesAll  = toSales(paymentsAll);
   const sales     = toSales(payments);
   const byProduct = salesByProduct(sales).sort((a, b) => b.revenue - a.revenue);
+
+  // ── Suscripciones ──
+  const activeSubsList  = activeSubs(subscriptions);
+  const activeSubsCount = activeSubsList.length;
+  const realMrr         = mrrFromSubs(subscriptions);
+  const churnList       = churnedThisMonth(subscriptions, curMonth);
+  const renewNext7      = renewingInDays(subscriptions, 7);
+  const renewNext30     = renewingInDays(subscriptions, 30);
 
   // ── Transactions (siempre datos completos — el banco solo exporta hasta fecha fija) ──
   const txnsAll = await loadTransactions();
@@ -268,7 +283,7 @@ export default async function Finanzas(props: {
                     sub="ingresos − gastos"
                     valueColor={resultadoMes >= 0 ? "text-success" : "text-danger"}
                   />
-                  <KpiCard label="MRR estimado" value={fmt(mrr)} sub="Media suscripciones · últ. 3 m" />
+                  <KpiCard label="Subs activas" value={String(activeSubsCount)} sub={`MRR ${fmt(realMrr)}`} />
                 </div>
                 <FinanzasBarChart sales={salesAll} txns={txnsAll} />
               </div>
@@ -323,9 +338,11 @@ export default async function Finanzas(props: {
             <section id="q3">
               <QuestionHeader num={3} question="¿De dónde vienen los ingresos?" />
               <div className="space-y-4">
+                {/* Fuentes de ingresos */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="bg-white border border-navy/10 rounded shadow-card p-5">
-                    <p className="text-xs text-navy/40 uppercase tracking-wider mb-3">Suscripciones</p>
+                    <p className="text-xs text-navy/40 uppercase tracking-wider mb-1">Suscripciones</p>
+                    <p className="text-[10px] text-navy/25 mb-2">{activeSubsCount} activas · MRR {fmt(realMrr)}</p>
                     <p className="text-3xl font-semibold text-primary">{fmt(recurrente)}</p>
                     <p className="text-xs text-navy/40 mt-1">{pct(recurrentePct)} del total</p>
                     <div className="mt-4 h-1.5 bg-navy/5 rounded-full overflow-hidden">
@@ -333,7 +350,7 @@ export default async function Finanzas(props: {
                     </div>
                   </div>
                   <div className="bg-white border border-navy/10 rounded shadow-card p-5">
-                    <p className="text-xs text-navy/40 uppercase tracking-wider mb-3">Packs y clases sueltas</p>
+                    <p className="text-xs text-navy/40 uppercase tracking-wider mb-3">Pagos únicos</p>
                     <p className="text-3xl font-semibold text-income">{fmt(puntual)}</p>
                     <p className="text-xs text-navy/40 mt-1">{pct(totalRev > 0 ? puntual / totalRev : 0)} del total</p>
                     <div className="mt-4 h-1.5 bg-navy/5 rounded-full overflow-hidden">
@@ -342,20 +359,31 @@ export default async function Finanzas(props: {
                     </div>
                   </div>
                   <div className="bg-white border border-navy/10 rounded shadow-card p-5">
-                    <p className="text-xs text-navy/40 uppercase tracking-wider mb-3">Urban Sports Club</p>
-                    <p className="text-3xl font-semibold text-warning">{fmt(urbanRevenue)}</p>
-                    <p className="text-xs text-navy/40 mt-1">{pct(0)} del total</p>
-                    <div className="mt-4 h-1.5 bg-navy/5 rounded-full overflow-hidden">
-                      <div className="h-full bg-warning rounded-full" style={{ width: pct(0) }} />
+                    <p className="text-xs text-navy/40 uppercase tracking-wider mb-3">Retención</p>
+                    <div className="flex items-baseline gap-2">
+                      <p className={`text-3xl font-semibold ${churnList.length > 0 ? "text-danger" : "text-success"}`}>
+                        {churnList.length}
+                      </p>
+                      <p className="text-xs text-navy/40">bajas este mes</p>
+                    </div>
+                    <div className="mt-3 pt-3 border-t border-navy/5 space-y-1">
+                      <div className="flex justify-between text-xs">
+                        <span className="text-navy/40">Renuevan en 7 días</span>
+                        <span className="font-medium text-navy">{renewNext7.length}</span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-navy/40">Renuevan en 30 días</span>
+                        <span className="font-medium text-navy">{renewNext30.length}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
                 <p className="text-xs text-navy/30 flex items-center gap-1.5">
                   <BookOpen size={12} className="shrink-0" />
-                  sales.csv · categoría (Suscripción / Paquete / Clase) y método de pago.
+                  Stripe · pagos en tiempo real.
                 </p>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <Block title="Por producto" legend="sales.csv · ticket medio = ingresos / ventas por producto.">
+                  <Block title="Por producto" legend="Stripe · descripción del pago como nombre de producto.">
                     {productSegments.length > 0 ? (
                       <div className="flex gap-5 items-start">
                         <div className="shrink-0">
@@ -386,7 +414,7 @@ export default async function Finanzas(props: {
                       </div>
                     ) : <p className="text-sm text-navy/30">Sin datos de productos.</p>}
                   </Block>
-                  <Block title="Por canal de pago" legend="sales.csv · método de pago registrado en cada transacción.">
+                  <Block title="Por canal de pago" legend="Stripe · método de pago registrado en cada cobro.">
                     <div className="space-y-4">
                       {byMethod.map((row) => {
                         const share    = totalRev > 0 ? row.revenue / totalRev : 0;
