@@ -20,7 +20,9 @@ export default function RootLayout({
     <html lang="es" className={`${inter.variable} ${dmMono.variable} ${playfair.variable}`}>
       <body className="bg-app-bg text-navy antialiased">
         <NavBar />
-        {children}
+        <div className="pb-16 sm:pb-0">
+          {children}
+        </div>
       </body>
     </html>
   );

@@ -197,6 +197,23 @@ export function occupancyByWeekday(events: MomenceEvent[]) {
     .sort((a, b) => a.weekday - b.weekday);
 }
 
+export function occupancyByTeacher(events: MomenceEvent[]) {
+  const map = new Map<string, { totalOcc: number; count: number }>();
+  for (const e of filterActive(events)) {
+    const teacher = e.teacher || "Sin asignar";
+    const occ = e.capacity > 0 ? e.ticketsSold / e.capacity : 0;
+    const prev = map.get(teacher) ?? { totalOcc: 0, count: 0 };
+    map.set(teacher, { totalOcc: prev.totalOcc + occ, count: prev.count + 1 });
+  }
+  return Array.from(map.entries())
+    .map(([teacher, { totalOcc, count }]) => ({
+      teacher,
+      avgOcc: totalOcc / count,
+      count,
+    }))
+    .sort((a, b) => b.avgOcc - a.avgOcc);
+}
+
 export function occupancyHeatmap(events: MomenceEvent[]) {
   const map = new Map<string, { totalOcc: number; count: number }>();
   for (const e of filterActive(events)) {

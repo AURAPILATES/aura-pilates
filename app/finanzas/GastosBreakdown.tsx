@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import Link from "next/link";
 
 type Category = {
   category: string;
@@ -69,7 +70,7 @@ export default function GastosBreakdown({
 
   return (
     <>
-      <div className="flex gap-8 items-start">
+      <div className="flex flex-col gap-6 sm:flex-row sm:gap-8 sm:items-start">
         {/* Donut */}
         <div className="shrink-0">
           <svg width="140" height="140" viewBox="0 0 100 100" style={{ transform: "rotate(-90deg)" }}>
@@ -134,41 +135,50 @@ export default function GastosBreakdown({
             onClick={() => setSelected(null)}
           />
 
-          {/* Panel */}
-          <div className="fixed right-0 top-0 bottom-0 z-50 w-[420px] max-w-[95vw] bg-white shadow-2xl flex flex-col">
+          {/* Panel — full screen en móvil, panel lateral en desktop */}
+          <div className="fixed inset-0 sm:inset-auto sm:right-0 sm:top-0 sm:bottom-0 z-50 sm:w-[420px] bg-white shadow-2xl flex flex-col">
             {/* Header */}
-            <div className="flex items-start justify-between px-6 py-5 border-b border-navy/10">
-              <div className="flex items-center gap-3">
-                <div
-                  className="w-12 h-12 rounded-full flex items-center justify-center text-2xl flex-shrink-0"
-                  style={{ backgroundColor: EXPENSE_EMOJI[selected]?.bg ?? "#F1F5F9" }}
-                >
-                  {EXPENSE_EMOJI[selected]?.emoji ?? "📦"}
-                </div>
-                <div>
-                  <h2 className="text-base font-semibold text-navy">{selected}</h2>
-                  <p className="text-xs text-navy/40 mt-0.5">
-                    −{fmt(selectedSeg?.total ?? 0)} · {selectedSeg?.count ?? 0} transacciones
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setSelected(null)}
-                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-navy/5 text-navy/30 hover:text-navy transition-colors text-sm mt-0.5"
+            <div className="flex items-center gap-3 px-4 sm:px-6 py-4 sm:py-5 border-b border-navy/10">
+              <div
+                className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-xl sm:text-2xl flex-shrink-0"
+                style={{ backgroundColor: EXPENSE_EMOJI[selected]?.bg ?? "#F1F5F9" }}
               >
-                ✕
-              </button>
+                {EXPENSE_EMOJI[selected]?.emoji ?? "📦"}
+              </div>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-base font-semibold text-navy">{selected}</h2>
+                <p className="text-xs text-navy/40 mt-0.5">
+                  −{fmt(selectedSeg?.total ?? 0)} · {selectedSeg?.count ?? 0} transacciones
+                </p>
+              </div>
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <Link
+                  href={`/transacciones?categoria=${encodeURIComponent(selected)}`}
+                  title="Ver en transacciones"
+                  className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-navy/5 text-navy/30 hover:text-primary transition-colors"
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                  </svg>
+                </Link>
+                <button
+                  onClick={() => setSelected(null)}
+                  className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-navy/5 text-navy/30 hover:text-navy transition-colors text-base"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
 
             {/* Transaction list */}
             <div className="flex-1 overflow-y-auto">
               {selectedTxns.length === 0 ? (
-                <p className="text-sm text-navy/30 px-6 py-8">Sin transacciones registradas.</p>
+                <p className="text-sm text-navy/30 px-4 py-8">Sin transacciones registradas.</p>
               ) : (
                 selectedTxns.map((t, i) => (
                   <div
                     key={i}
-                    className="flex items-center gap-4 px-6 py-4 border-b border-navy/5 last:border-0"
+                    className="flex items-center gap-3 px-4 sm:px-6 py-3.5 border-b border-navy/5 last:border-0"
                   >
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-navy truncate">

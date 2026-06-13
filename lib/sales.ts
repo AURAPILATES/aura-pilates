@@ -156,6 +156,18 @@ export function salesByProduct(sales: Sale[]): ProductRevenue[] {
     .sort((a, b) => b.revenue - a.revenue);
 }
 
+export function filterSalesByDate(
+  sales: Sale[],
+  from?: string | null,
+  to?: string | null,
+): Sale[] {
+  return sales.filter((s) => {
+    if (from && s.paymentDate < from) return false;
+    if (to   && s.paymentDate > to)   return false;
+    return true;
+  });
+}
+
 export function totalSalesRevenue(sales: Sale[]): number {
   return sales.reduce((sum, s) => sum + s.amount, 0);
 }

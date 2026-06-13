@@ -176,27 +176,6 @@ function StatChip({ label, value, valueClass = "text-navy", last = false }: { la
   );
 }
 
-function PlazaDots({ total, sold, isFull }: { total: number; sold: number; isFull: boolean }) {
-  const max = Math.min(total, 10);
-  const filledCount = Math.round((sold / total) * max);
-  return (
-    <div className="flex gap-0.5 flex-wrap">
-      {Array.from({ length: max }).map((_, i) => (
-        <div
-          key={i}
-          className={`w-2 h-2 rounded-full ${
-            i < filledCount
-              ? isFull
-                ? "bg-success"
-                : "bg-navy/40"
-              : "bg-navy/10"
-          }`}
-        />
-      ))}
-    </div>
-  );
-}
-
 function Select({
   value,
   onChange,

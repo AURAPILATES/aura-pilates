@@ -1,3 +1,4 @@
+import { BookOpen } from "react-feather";
 import { pct } from "@/lib/analytics";
 
 // ── Shared ────────────────────────────────────────────────────────────────────
@@ -8,7 +9,10 @@ function BlockCard({ title, legend, children }: { title: string; legend?: string
       <p className="text-xs font-semibold text-navy/40 uppercase tracking-wider mb-4">{title}</p>
       <div className="flex-1">{children}</div>
       {legend && (
-        <p className="text-[10px] text-navy/30 mt-4 pt-3 border-t border-navy/5 leading-relaxed">{legend}</p>
+        <p className="text-xs text-navy/30 mt-4 pt-3 border-t border-navy/5 leading-relaxed flex items-start gap-1.5">
+          <BookOpen size={12} className="shrink-0 mt-0.5" />
+          {legend}
+        </p>
       )}
     </div>
   );
@@ -41,7 +45,7 @@ export function ProfessorasBlock({ data }: { data: TeacherRow[] }) {
   const sorted = [...data].sort((a, b) => b.occupancy - a.occupancy);
   const max = Math.max(...sorted.map((r) => r.occupancy));
   return (
-    <BlockCard title="Ocupación por profesora" legend="Fuente: Momence · clases impartidas en los últimos 30 días. Ocupación = alumnos inscritos / capacidad máxima de la clase.">
+    <BlockCard title="Ocupación por profesora" legend="Momence · clases impartidas en los últimos 30 días. Ocupación = alumnos inscritos / capacidad máxima de la clase.">
       <div className="space-y-3">
         {sorted.map((r) => (
           <div key={r.teacher} className="flex items-center gap-3">
@@ -65,7 +69,7 @@ type HourRow = { label: string; avgOcc: number; count: number };
 export function HorarioDelDiaBlock({ data }: { data: HourRow[] }) {
   const max = Math.max(...data.map((r) => r.avgOcc));
   return (
-    <BlockCard title="Ocupación por franja horaria" legend="Fuente: Momence · clases impartidas en los últimos 30 días. Cada franja muestra la ocupación media de todas las clases que empezaron en esa hora.">
+    <BlockCard title="Ocupación por franja horaria" legend="Momence · clases impartidas en los últimos 30 días. Cada franja muestra la ocupación media de todas las clases que empezaron en esa hora.">
       <div className="space-y-3">
         {data.map((r) => (
           <div key={r.label} className="flex items-center gap-3">
@@ -89,7 +93,7 @@ type WeekdayRow = { label: string; avgOcc: number; count: number };
 export function DiaSemanaBlock({ data }: { data: WeekdayRow[] }) {
   const max = Math.max(...data.map((r) => r.avgOcc));
   return (
-    <BlockCard title="Ocupación por día de la semana" legend="Fuente: Momence · clases impartidas en los últimos 30 días. Cada día muestra la media de ocupación de todas sus clases en el período.">
+    <BlockCard title="Ocupación por día de la semana" legend="Momence · clases impartidas en los últimos 30 días. Cada día muestra la media de ocupación de todas sus clases en el período.">
       <div className="space-y-3">
         {data.map((r) => (
           <div key={r.label} className="flex items-center gap-3">
@@ -127,7 +131,7 @@ export function HeatmapBlock({ data }: { data: HeatmapCell[] }) {
   }
 
   return (
-    <BlockCard title="Mapa de calor: día × hora" legend="Fuente: Momence · clases impartidas en los últimos 30 días. Cada celda muestra la ocupación media de las clases que ocurrieron ese día de la semana y esa hora.">
+    <BlockCard title="Mapa de calor: día × hora" legend="Momence · clases impartidas en los últimos 30 días. Cada celda muestra la ocupación media de las clases que ocurrieron ese día de la semana y esa hora.">
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
@@ -190,7 +194,7 @@ export function MembershipsBlock({ data }: { data: Membership[] }) {
   return (
     <BlockCard
       title="Oferta actual"
-      legend="Fuente: Momence API (Memberships) · catálogo de productos activos. El número de suscripciones activas por plan no está disponible a través de la API."
+      legend="Momence API (Memberships) · catálogo de productos activos. El número de suscripciones activas por plan no está disponible a través de la API."
     >
       <div className="grid grid-cols-2 gap-6">
         <div>
@@ -243,7 +247,7 @@ export function UrbanBlock({
   const total = byHour.reduce((s, r) => s + r.count, 0);
 
   return (
-    <BlockCard title="Urban Sport Club" legend="Fuente: exportación de ventas de Momence (sales.csv) · reservas identificadas por método de pago &quot;urban-sports-club&quot;. El período exacto de las reservas es desconocido.">
+    <BlockCard title="Urban Sport Club" legend="exportación de ventas de Momence (sales.csv) · reservas identificadas por método de pago &quot;urban-sports-club&quot;. El período exacto de las reservas es desconocido.">
       <div className="flex items-center gap-2 mb-4">
         <span className="text-sm font-semibold text-navy">{total} reservas</span>
         <span className="text-xs bg-navy/10 text-navy/50 px-2 py-0.5 rounded">período desconocido</span>

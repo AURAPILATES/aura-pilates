@@ -423,8 +423,7 @@ function PersonCard({ persona, idx }: { persona: Persona; idx: number }) {
 }
 
 // Compact overlap calendar (only months with overlaps)
-function OverlapCalendar({ personas, festivos }: { personas: Persona[]; festivos: string[] }) {
-  const festivosSet = new Set(festivos);
+function OverlapCalendar({ personas }: { personas: Persona[] }) {
   const vacByDate = new Map<string, number[]>();
   personas.forEach((p, i) => {
     p.vacaciones.forEach((d) => {
@@ -651,7 +650,6 @@ function GanttView({
         {personas.map((p) => {
           const i = allPersonas.findIndex((orig) => orig.nombre === p.nombre);
           const colors = PERSON_COLORS[i];
-          const vacSet = new Set(p.vacaciones);
 
           return (
             <div key={p.nombre} className="flex items-center">
@@ -785,7 +783,7 @@ export default function VacacionesCalendario({
 
       {/* Alertas de solapamiento (solo en vista "todas") */}
       {filtro === "todas" && (
-        <OverlapCalendar personas={personas} festivos={festivos} />
+        <OverlapCalendar personas={personas} />
       )}
 
       {/* Tarjetas por persona */}
