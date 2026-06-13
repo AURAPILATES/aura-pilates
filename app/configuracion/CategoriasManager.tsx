@@ -13,12 +13,24 @@ const GROUP_ORDER: GroupType[] = ["income", "operational", "transfer"];
 
 const KNOWN_GROUPS = new Set<string>(["income", "transfer", "operational"]);
 
+const DEFAULT_ACCENT = "#4F6FFF";
+
+function deriveColors(accent: string): { bg_color: string; text_color: string } {
+  const r = parseInt(accent.slice(1, 3), 16);
+  const g = parseInt(accent.slice(3, 5), 16);
+  const b = parseInt(accent.slice(5, 7), 16);
+  const hex2 = (n: number) => Math.round(n).toString(16).padStart(2, "0");
+  return {
+    bg_color:   `#${hex2(r * 0.15 + 255 * 0.85)}${hex2(g * 0.15 + 255 * 0.85)}${hex2(b * 0.15 + 255 * 0.85)}`,
+    text_color: accent,
+  };
+}
+
 const EMPTY: Omit<Category, "id" | "created_at"> = {
   value: "",
   label: "",
   emoji: "📦",
-  bg_color: "#F8FAFC",
-  text_color: "#94A3B8",
+  ...deriveColors(DEFAULT_ACCENT),
   group_type: "operational",
   auto_keywords: null,
   sort_order: 99,
@@ -29,16 +41,25 @@ type EditorState = { mode: "new" } | { mode: "edit"; cat: Category };
 export default function CategoriasManager({ categories }: { categories: Category[] }) {
   const [editor, setEditor] = useState<EditorState | null>(null);
   const [form, setForm] = useState<Omit<Category, "id" | "created_at">>(EMPTY);
+  const [accentColor, setAccentColor] = useState(DEFAULT_ACCENT);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
+  function handleAccentChange(hex: string) {
+    setAccentColor(hex);
+    setForm((f) => ({ ...f, ...deriveColors(hex) }));
+  }
+
   function openNew() {
+    setAccentColor(DEFAULT_ACCENT);
     setForm({ ...EMPTY, sort_order: categories.length + 1 });
     setEditor({ mode: "new" });
     setError(null);
   }
 
   function openEdit(cat: Category) {
+    const accent = cat.text_color ?? DEFAULT_ACCENT;
+    setAccentColor(accent);
     setForm({
       value: cat.value,
       label: cat.label,
@@ -151,11 +172,6 @@ export default function CategoriasManager({ categories }: { categories: Category
                           )}
                         </div>
 
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <div className="w-5 h-5 rounded-full border border-white shadow-sm" style={{ backgroundColor: cat.bg_color }} />
-                          <div className="w-5 h-5 rounded-full border border-white shadow-sm" style={{ backgroundColor: cat.text_color }} />
-                        </div>
-
                         <button
                           onClick={() => openEdit(cat)}
                           className="w-8 h-8 flex items-center justify-center rounded-lg text-navy/25 hover:text-primary hover:bg-primary/[0.06] transition-colors shrink-0"
@@ -245,36 +261,17 @@ export default function CategoriasManager({ categories }: { categories: Category
                 />
               </div>
 
-              {/* Colores */}
+              {/* Color */}
               <div>
-                <label className="block text-xs font-semibold text-navy/50 mb-1.5 uppercase tracking-wide">Colores</label>
+                <label className="block text-xs font-semibold text-navy/50 mb-1.5 uppercase tracking-wide">Color</label>
                 <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2 flex-1">
-                    <input
-                      type="color"
-                      value={form.bg_color}
-                      onChange={(e) => setForm((f) => ({ ...f, bg_color: e.target.value }))}
-                      className="w-9 h-9 rounded-lg border border-navy/10 cursor-pointer p-0.5"
-                      title="Color de fondo"
-                    />
-                    <div>
-                      <p className="text-[10px] text-navy/40">Fondo</p>
-                      <p className="text-xs font-mono text-navy/60">{form.bg_color}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 flex-1">
-                    <input
-                      type="color"
-                      value={form.text_color}
-                      onChange={(e) => setForm((f) => ({ ...f, text_color: e.target.value }))}
-                      className="w-9 h-9 rounded-lg border border-navy/10 cursor-pointer p-0.5"
-                      title="Color de texto"
-                    />
-                    <div>
-                      <p className="text-[10px] text-navy/40">Texto</p>
-                      <p className="text-xs font-mono text-navy/60">{form.text_color}</p>
-                    </div>
-                  </div>
+                  <input
+                    type="color"
+                    value={accentColor}
+                    onChange={(e) => handleAccentChange(e.target.value)}
+                    className="w-9 h-9 rounded-lg border border-navy/10 cursor-pointer p-0.5 shrink-0"
+                  />
+                  <span className="text-xs font-mono text-navy/40">{accentColor}</span>
                   <span
                     className="text-xs font-medium px-3 py-1.5 rounded-full shrink-0"
                     style={{ backgroundColor: form.bg_color, color: form.text_color }}
