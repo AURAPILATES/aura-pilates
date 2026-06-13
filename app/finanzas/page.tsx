@@ -1,14 +1,15 @@
 import { Suspense } from "react";
 import { BookOpen } from "react-feather";
 import { fmt, pct } from "@/lib/analytics";
+import { salesByProduct } from "@/lib/sales";
 import {
-  loadSales,
-  filterSalesByDate,
-  salesByMethod,
-  salesByProduct,
-  totalSalesRevenue,
-  revenueForMonth,
-} from "@/lib/sales";
+  loadStripePayments,
+  stripeByMethod,
+  totalRevenue as stripeTotalRevenue,
+  revenueForMonth as stripeRevenueForMonth,
+  subscriptionRevenue,
+  toSales,
+} from "@/lib/stripePayments";
 import {
   loadTransactions,
   totalOperationalExpenses,
@@ -102,12 +103,7 @@ export default async function Finanzas(props: {
   const sp = await props.searchParams;
   const { from, to } = getDateRange(sp.range);
 
-  // ── Sales ──
-  const salesAll = loadSales();
-  const sales    = filterSalesByDate(salesAll, from, to);
-  const hasSales = salesAll.length > 0;
-  const totalRevenue = totalSalesRevenue(sales);
-
+  // ── Stripe payments ──
   const now = new Date();
   const curMonth  = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}`;
   const prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
@@ -115,27 +111,39 @@ export default async function Finanzas(props: {
   const prev2MonthDate = new Date(now.getFullYear(), now.getMonth() - 2, 1);
   const prev2Month = `${prev2MonthDate.getFullYear()}-${pad2(prev2MonthDate.getMonth() + 1)}`;
 
-  const cur       = revenueForMonth(salesAll, curMonth);
-  const prev      = revenueForMonth(salesAll, prevMonth);
-  const curCount  = salesAll.filter((s) => s.paymentDate.startsWith(curMonth)).length;
-  const prevCount = salesAll.filter((s) => s.paymentDate.startsWith(prevMonth)).length;
+  const [paymentsAll, paymentsFiltered] = await Promise.all([
+    loadStripePayments(),
+    (from || to) ? loadStripePayments(from, to) : Promise.resolve(null),
+  ]);
+  const payments  = paymentsFiltered ?? paymentsAll;
+  const hasSales  = paymentsAll.length > 0;
+  const totalRev  = stripeTotalRevenue(payments);
+
+  const cur       = stripeRevenueForMonth(paymentsAll, curMonth);
+  const prev      = stripeRevenueForMonth(paymentsAll, prevMonth);
+  const curCount  = paymentsAll.filter((p) => p.date.startsWith(curMonth)).length;
+  const prevCount = paymentsAll.filter((p) => p.date.startsWith(prevMonth)).length;
 
   const subMonths = [prev2Month, prevMonth, curMonth];
   const mrr = subMonths.reduce((sum, m) =>
-    sum + salesAll.filter((s) => s.paymentDate.startsWith(m) && s.category === "Suscripción")
-             .reduce((s2, s) => s2 + s.amount, 0), 0) / subMonths.length;
+    sum + paymentsAll
+      .filter((p) => p.date.startsWith(m) && p.category === "Suscripción")
+      .reduce((s, p) => s + p.amount, 0), 0) / subMonths.length;
 
-  const ticketMedio = sales.length > 0 ? totalRevenue / sales.length : 0;
+  const ticketMedio = payments.length > 0 ? totalRev / payments.length : 0;
   const ticketPrev  = prevCount > 0 ? prev / prevCount : 0;
   const ticketCur   = curCount > 0 ? cur / curCount : 0;
 
-  const recurrente    = sales.filter((s) => s.category === "Suscripción").reduce((s, t) => s + t.amount, 0);
-  const recurrentePct = totalRevenue > 0 ? recurrente / totalRevenue : 0;
-  const byMethod      = salesByMethod(sales);
-  const urbanRevenue  = byMethod.find((m) => m.method === "urban-sports-club")?.revenue ?? 0;
-  const urbanPct      = totalRevenue > 0 ? urbanRevenue / totalRevenue : 0;
-  const puntual       = totalRevenue - recurrente - urbanRevenue;
-  const byProduct     = salesByProduct(sales).sort((a, b) => b.revenue - a.revenue);
+  const recurrente    = subscriptionRevenue(payments);
+  const recurrentePct = totalRev > 0 ? recurrente / totalRev : 0;
+  const byMethod      = stripeByMethod(payments);
+  const urbanRevenue  = 0; // Urban Sports Club no pasa por Stripe
+  const puntual       = totalRev - recurrente;
+
+  // Convert to Sale[] for charts that depend on it
+  const salesAll  = toSales(paymentsAll);
+  const sales     = toSales(payments);
+  const byProduct = salesByProduct(sales).sort((a, b) => b.revenue - a.revenue);
 
   // ── Transactions (siempre datos completos — el banco solo exporta hasta fecha fija) ──
   const txnsAll = await loadTransactions();
@@ -175,7 +183,7 @@ export default async function Finanzas(props: {
   const revMonths = [...new Set(salesAll.map((s) => s.paymentDate.slice(0, 7)))]
     .filter((m) => m < today_ym).sort().reverse().slice(0, 3);
   const avgMonthlyRevenue = revMonths.length > 0
-    ? revMonths.reduce((s, m) => s + revenueForMonth(salesAll, m), 0) / revMonths.length : 0;
+    ? revMonths.reduce((s, m) => s + stripeRevenueForMonth(paymentsAll, m), 0) / revMonths.length : 0;
 
   const breakEvenGap = avgMonthlyBurn - avgMonthlyRevenue;
   const clientesNecesarios = breakEvenGap > 0 && ticketMedio > 0
@@ -192,7 +200,7 @@ export default async function Finanzas(props: {
   const CIRC = 2 * Math.PI * R;
   let offP = 0;
   const productSegments = byProduct.map((p, i) => {
-    const share = totalRevenue > 0 ? p.revenue / totalRevenue : 0;
+    const share = totalRev > 0 ? p.revenue / totalRev : 0;
     const dash = share * CIRC;
     const offset = -offP;
     offP += dash;
@@ -327,18 +335,18 @@ export default async function Finanzas(props: {
                   <div className="bg-white border border-navy/10 rounded shadow-card p-5">
                     <p className="text-xs text-navy/40 uppercase tracking-wider mb-3">Packs y clases sueltas</p>
                     <p className="text-3xl font-semibold text-income">{fmt(puntual)}</p>
-                    <p className="text-xs text-navy/40 mt-1">{pct(totalRevenue > 0 ? puntual / totalRevenue : 0)} del total</p>
+                    <p className="text-xs text-navy/40 mt-1">{pct(totalRev > 0 ? puntual / totalRev : 0)} del total</p>
                     <div className="mt-4 h-1.5 bg-navy/5 rounded-full overflow-hidden">
                       <div className="h-full bg-income rounded-full"
-                        style={{ width: pct(totalRevenue > 0 ? puntual / totalRevenue : 0) }} />
+                        style={{ width: pct(totalRev > 0 ? puntual / totalRev : 0) }} />
                     </div>
                   </div>
                   <div className="bg-white border border-navy/10 rounded shadow-card p-5">
                     <p className="text-xs text-navy/40 uppercase tracking-wider mb-3">Urban Sports Club</p>
                     <p className="text-3xl font-semibold text-warning">{fmt(urbanRevenue)}</p>
-                    <p className="text-xs text-navy/40 mt-1">{pct(urbanPct)} del total</p>
+                    <p className="text-xs text-navy/40 mt-1">{pct(0)} del total</p>
                     <div className="mt-4 h-1.5 bg-navy/5 rounded-full overflow-hidden">
-                      <div className="h-full bg-warning rounded-full" style={{ width: pct(urbanPct) }} />
+                      <div className="h-full bg-warning rounded-full" style={{ width: pct(0) }} />
                     </div>
                   </div>
                 </div>
@@ -381,7 +389,7 @@ export default async function Finanzas(props: {
                   <Block title="Por canal de pago" legend="sales.csv · método de pago registrado en cada transacción.">
                     <div className="space-y-4">
                       {byMethod.map((row) => {
-                        const share    = totalRevenue > 0 ? row.revenue / totalRevenue : 0;
+                        const share    = totalRev > 0 ? row.revenue / totalRev : 0;
                         const barColor = row.method === "urban-sports-club" ? "bg-warning" : "bg-primary";
                         return (
                           <div key={row.method}>
@@ -402,7 +410,7 @@ export default async function Finanzas(props: {
                     </div>
                     <div className="mt-4 pt-3 border-t border-navy/5 flex justify-between">
                       <span className="text-xs text-navy/40">Total período</span>
-                      <span className="text-xs font-semibold text-navy">{fmt(totalRevenue)}</span>
+                      <span className="text-xs font-semibold text-navy">{fmt(totalRev)}</span>
                     </div>
                   </Block>
                 </div>
