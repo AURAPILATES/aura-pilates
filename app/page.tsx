@@ -1,4 +1,4 @@
-import { getEvents } from "@/lib/momence";
+import { getEvents, getMemberships } from "@/lib/momence";
 import { saveHistoricalEvents, loadHistoricalEvents } from "@/lib/history";
 import {
   filterPast,
@@ -22,12 +22,14 @@ import {
   DiaSemanaBlock,
   HeatmapBlock,
   UrbanBlock,
+  MembershipsBlock,
 } from "./components/AnalyticsBlocks";
 
 export default async function Dashboard() {
-  const [liveEvents, historicalEvents] = await Promise.all([
+  const [liveEvents, historicalEvents, memberships] = await Promise.all([
     getEvents(),
     loadHistoricalEvents(),
+    getMemberships(),
   ]);
   await saveHistoricalEvents(liveEvents);
 
@@ -115,6 +117,11 @@ export default async function Dashboard() {
           );
         })}
       </div>
+
+      {/* Catálogo */}
+      {memberships.length > 0 && (
+        <MembershipsBlock data={memberships} />
+      )}
 
       {/* Análisis de ocupación */}
       <section>

@@ -170,6 +170,62 @@ export function HeatmapBlock({ data }: { data: HeatmapCell[] }) {
   );
 }
 
+// ── Catálogo de membresías ────────────────────────────────────────────────────
+
+type Membership = {
+  id: number;
+  name: string;
+  description: string;
+  type: "subscription" | "package-events";
+  price: number;
+  isDisabled: boolean;
+  isAutoRenewing: boolean;
+};
+
+export function MembershipsBlock({ data }: { data: Membership[] }) {
+  const active = data.filter((m) => !m.isDisabled);
+  const subs = active.filter((m) => m.type === "subscription").sort((a, b) => a.price - b.price);
+  const packs = active.filter((m) => m.type === "package-events").sort((a, b) => a.price - b.price);
+
+  return (
+    <BlockCard
+      title="Oferta actual"
+      legend="Fuente: Momence API (Memberships) · catálogo de productos activos. El número de suscripciones activas por plan no está disponible a través de la API."
+    >
+      <div className="grid grid-cols-2 gap-6">
+        <div>
+          <p className="text-xs text-navy/40 mb-3">Suscripciones mensuales</p>
+          <div className="space-y-2">
+            {subs.map((m) => (
+              <div key={m.id} className="flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-navy truncate">{m.name}</p>
+                  <p className="text-xs text-navy/40 truncate">{m.description}</p>
+                </div>
+                <span className="text-sm font-semibold text-navy tabular-nums shrink-0">{m.price}€<span className="text-xs font-normal text-navy/40">/mes</span></span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div>
+          <p className="text-xs text-navy/40 mb-3">Packs y clases sueltas</p>
+          <div className="space-y-2">
+            {packs.map((m) => (
+              <div key={m.id} className="flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-navy truncate">{m.name}</p>
+                  <p className="text-xs text-navy/40 truncate">{m.description}</p>
+                </div>
+                <span className="text-sm font-semibold text-navy tabular-nums shrink-0">{m.price}€</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </BlockCard>
+  );
+}
+
 // ── Urban Sport Club ──────────────────────────────────────────────────────────
 
 type UrbanHourRow = { label: string; count: number };
