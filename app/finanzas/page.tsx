@@ -237,12 +237,6 @@ export default async function Finanzas(props: {
           curMonthLabel={monthLabel(curMonth)}
         />
 
-        <div className="mb-6">
-          <Suspense fallback={null}>
-            <DateFilter />
-          </Suspense>
-        </div>
-
         <div className="space-y-14">
 
             {/* Q1 ¿Cómo fue este mes? */}
@@ -275,7 +269,15 @@ export default async function Finanzas(props: {
 
             {/* Q2 ¿En qué se va el dinero? */}
             <section id="q2">
-              <QuestionHeader num={2} question="¿En qué se va el dinero?" />
+              <div className="flex flex-wrap items-start justify-between gap-3 mb-5">
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-bold text-primary/50 tabular-nums w-4 shrink-0">2</span>
+                  <h2 className="text-xs font-semibold text-navy/50 uppercase tracking-widest">¿En qué se va el dinero?</h2>
+                </div>
+                <Suspense fallback={null}>
+                  <DateFilter />
+                </Suspense>
+              </div>
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                   <KpiCard label="Gastos operativos" value={fmt(totalOpEx)} sub="costes recurrentes" />
