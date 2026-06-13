@@ -37,10 +37,13 @@ function normalizeCategory(s: string): string {
   return s;
 }
 
-function normalizeItem(s: string): string {
-  // "BÃƒÆ'Ã‚Â sic" → "Bàsic" (encoding garble from double-UTF8)
-  if (/^B[^a-zA-Z]/.test(s) && s.includes("sic")) return "Bàsic";
-  return s;
+function normalizeItem(item: string, method: string): string {
+  if (method === "urban-sports-club") return "Urban";
+  if (/^B[^a-zA-Z]/.test(item) && item.includes("sic")) return "Subs bàsic";
+  if (item === "Plus") return "Subs plus";
+  if (item === "Pro") return "Subs pro";
+  if (item === "Pack Benvinguda") return "Benvinguda 2x1";
+  return item;
 }
 
 export function loadSales(): Sale[] {
@@ -55,8 +58,10 @@ export function loadSales(): Sale[] {
       .map((line) => {
         const c = parseCSVLine(line);
         return {
-          category: normalizeCategory(c[0] ?? ""),
-          item: normalizeItem(c[1] ?? ""),
+          item: normalizeItem(c[1] ?? "", c[12] ?? ""),
+          category: (c[12] ?? "") === "urban-sports-club"
+            ? "Urban Sports Club"
+            : normalizeCategory(c[0] ?? ""),
           paymentDate: toDate(c[2] ?? ""),
           serviceDate: toDate(c[3] ?? ""),
           method: c[12] ?? "",
