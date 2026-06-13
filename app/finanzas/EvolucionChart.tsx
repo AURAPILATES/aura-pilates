@@ -13,9 +13,9 @@ const MONTH_NAMES: Record<string, string> = {
 };
 
 const CHANNEL_COLORS: Record<string, string> = {
-  "Tarjeta":           "#4F6FFF",
-  "urban-sports-club": "#F59E0B",
-  "Efectivo":          "#10B981",
+  "Tarjeta":           "#5C7A8C",
+  "urban-sports-club": "#B89B72",
+  "Efectivo":          "#8FAF8A",
 };
 
 const CHANNEL_LABELS: Record<string, string> = {
@@ -25,8 +25,8 @@ const CHANNEL_LABELS: Record<string, string> = {
 };
 
 const PRODUCT_COLORS = [
-  "#4F6FFF","#10B981","#F59E0B","#8B5CF6",
-  "#EF4444","#06B6D4","#EC4899","#84CC16",
+  "#5C7A8C","#8FAF8A","#B89B72","#7B8FA6",
+  "#A07060","#6E9E8A","#9E8FA0","#8A8A6E",
 ];
 
 function fmtTick(v: number) {

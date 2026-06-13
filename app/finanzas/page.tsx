@@ -88,8 +88,8 @@ function QuestionHeader({ num, question }: { num: number; question: string }) {
   );
 }
 
-const PRODUCT_COLORS = ["#4F6FFF","#10B981","#F59E0B","#8B5CF6","#EF4444","#06B6D4","#EC4899","#84CC16"];
-const EXPENSE_COLORS = ["#EF4444","#F97316","#F59E0B","#EAB308","#84CC16","#06B6D4","#8B5CF6","#EC4899","#6B7280"];
+const PRODUCT_COLORS = ["#5C7A8C","#8FAF8A","#B89B72","#7B8FA6","#A07060","#6E9E8A","#9E8FA0","#8A8A6E"];
+const EXPENSE_COLORS = ["#5C7A8C","#8FAF8A","#B89B72","#7B8FA6","#A07060","#6E9E8A","#9E8FA0","#8A8A6E","#7A7A6A"];
 const BURN_CATS = new Set([
   "Alquiler","Salarios","Electricidad","Agua","Software","Gestoría y legal",
   "Impuestos y tasas","Teléfono","Seguros","Comisiones bancarias","Merchandising","Local","Otros",
