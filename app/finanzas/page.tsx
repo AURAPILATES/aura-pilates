@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { Suspense } from "react";
 import { BookOpen } from "react-feather";
 import { fmt, pct } from "@/lib/analytics";

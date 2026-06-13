@@ -102,6 +102,30 @@ export default function ClientesTable({ customers }: { customers: StripeCustomer
 
   const discountCount = customers.filter((c) => c.discount).length;
 
+  function downloadCsv() {
+    const rows = [
+      ["Nombre", "Email", "Plan", "Total gastado (€)", "Pagos", "Último pago", "Estado", "Descuento"],
+      ...filtered.map((c) => [
+        c.name ?? "",
+        c.email ?? "",
+        c.subscription?.plan ?? "Sin suscripción",
+        c.totalSpent.toFixed(2),
+        c.paymentCount,
+        c.lastPaymentDate ?? "",
+        c.subscription ? "Activo" : "Inactivo",
+        c.discount ? (c.discount.percentOff != null ? `-${c.discount.percentOff}%` : c.discount.name) : "",
+      ]),
+    ];
+    const csv  = rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href     = url;
+    a.download = `clientes-aura-${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div>
       {/* Controls */}
@@ -131,6 +155,18 @@ export default function ClientesTable({ customers }: { customers: StripeCustomer
             </button>
           )}
         </div>
+
+        {/* Export */}
+        <button
+          onClick={downloadCsv}
+          title="Exportar tabla actual a CSV"
+          className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-navy/50 hover:text-navy border border-navy/15 rounded-lg bg-white hover:bg-navy/[0.02] transition-colors whitespace-nowrap"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          CSV
+        </button>
 
         {/* Filter tabs */}
         <div className="flex gap-1 bg-navy/[0.04] rounded-lg p-1">
