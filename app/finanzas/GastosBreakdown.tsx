@@ -39,7 +39,7 @@ function fmt(n: number) {
   return n.toLocaleString("es-ES", { style: "currency", currency: "EUR", maximumFractionDigits: 0 });
 }
 function pct(n: number) {
-  return `${(n * 100).toFixed(1)}%`;
+  return `${Math.round(n * 100)}%`;
 }
 
 export default function GastosBreakdown({
@@ -53,6 +53,7 @@ export default function GastosBreakdown({
 }) {
   const [selected, setSelected] = useState<string | null>(null);
 
+  // Compute donut segments client-side
   let acc = 0;
   const segments = categories.map((c) => {
     const share = totalExpCat > 0 ? c.total / totalExpCat : 0;
@@ -71,15 +72,15 @@ export default function GastosBreakdown({
     <>
       <div className="flex flex-col gap-6 sm:flex-row sm:gap-8 sm:items-start">
         {/* Donut */}
-        <div className="shrink-0 flex items-center justify-center sm:block">
-          <svg width="160" height="160" viewBox="0 0 100 100" style={{ transform: "rotate(-90deg)" }}>
+        <div className="shrink-0">
+          <svg width="140" height="140" viewBox="0 0 100 100" style={{ transform: "rotate(-90deg)" }}>
             {segments.map((seg, i) => (
               <circle
                 key={i}
                 cx={CX} cy={CY} r={R}
                 fill="none"
                 stroke={seg.color}
-                strokeWidth={18}
+                strokeWidth={20}
                 strokeDasharray={`${seg.dash} ${CIRC - seg.dash}`}
                 strokeDashoffset={seg.offset}
                 className="cursor-pointer hover:opacity-80 transition-opacity"
@@ -89,40 +90,35 @@ export default function GastosBreakdown({
           </svg>
         </div>
 
-        {/* List */}
-        <div className="flex-1 min-w-0">
+        {/* Emoji list */}
+        <div className="flex-1 divide-y divide-navy/5">
           {segments.map((seg, i) => {
             const cfg = EXPENSE_EMOJI[seg.category] ?? { emoji: "📦", bg: "#F1F5F9" };
             return (
               <button
                 key={i}
                 onClick={() => setSelected(seg.category)}
-                className="w-full flex items-center gap-4 py-4 border-b border-navy/[0.05] last:border-0 text-left hover:bg-navy/[0.015] -mx-2 px-2 rounded-xl transition-colors group"
+                className="w-full flex items-center gap-3 py-3 first:pt-0 last:pb-0 text-left hover:bg-navy/[0.02] -mx-1 px-1 rounded transition-colors group"
               >
-                {/* Icon */}
                 <div className="relative shrink-0">
                   <div
-                    className="w-13 h-13 rounded-full flex items-center justify-center text-2xl group-hover:scale-105 transition-transform"
-                    style={{ backgroundColor: cfg.bg, width: 52, height: 52 }}
+                    className="w-11 h-11 rounded-full flex items-center justify-center text-xl group-hover:scale-105 transition-transform"
+                    style={{ backgroundColor: cfg.bg }}
                   >
                     {cfg.emoji}
                   </div>
                   <span
-                    className="absolute -top-0.5 -left-0.5 w-3 h-3 rounded-full ring-2 ring-white"
+                    className="absolute -top-0.5 -left-0.5 w-2.5 h-2.5 rounded-full ring-2 ring-white"
                     style={{ backgroundColor: seg.color }}
                   />
                 </div>
-
-                {/* Name + count */}
                 <div className="flex-1 min-w-0">
-                  <p className="text-[15px] font-bold text-navy truncate">{seg.category}</p>
-                  <p className="text-xs text-navy/50 mt-0.5">{seg.count} transacciones</p>
+                  <p className="text-sm font-semibold text-navy truncate">{seg.category}</p>
+                  <p className="text-xs text-navy/55">{seg.count} transacciones</p>
                 </div>
-
-                {/* Amount + pct */}
                 <div className="text-right shrink-0">
-                  <p className="text-[15px] font-bold text-navy tabular-nums">−{fmt(seg.total)}</p>
-                  <p className="text-xs text-navy/45 tabular-nums mt-0.5">{pct(seg.share)}</p>
+                  <p className="text-sm font-semibold text-navy tabular-nums">−{fmt(seg.total)}</p>
+                  <p className="text-xs text-navy/55 tabular-nums">{pct(seg.share)}</p>
                 </div>
               </button>
             );
@@ -133,21 +129,25 @@ export default function GastosBreakdown({
       {/* Drawer */}
       {selected && (
         <>
+          {/* Backdrop */}
           <div
             className="fixed inset-0 z-40 bg-navy/20 backdrop-blur-[1px]"
             onClick={() => setSelected(null)}
           />
+
+          {/* Panel — full screen en móvil, panel lateral en desktop */}
           <div className="fixed inset-0 sm:inset-auto sm:right-0 sm:top-0 sm:bottom-0 z-50 sm:w-[420px] bg-white shadow-2xl flex flex-col">
+            {/* Header */}
             <div className="flex items-center gap-3 px-4 sm:px-6 py-4 sm:py-5 border-b border-navy/10">
               <div
-                className="w-12 h-12 rounded-full flex items-center justify-center text-2xl flex-shrink-0"
+                className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-xl sm:text-2xl flex-shrink-0"
                 style={{ backgroundColor: EXPENSE_EMOJI[selected]?.bg ?? "#F1F5F9" }}
               >
                 {EXPENSE_EMOJI[selected]?.emoji ?? "📦"}
               </div>
               <div className="flex-1 min-w-0">
-                <h2 className="text-base font-bold text-navy">{selected}</h2>
-                <p className="text-xs text-navy/50 mt-0.5">
+                <h2 className="text-base font-semibold text-navy">{selected}</h2>
+                <p className="text-xs text-navy/55 mt-0.5">
                   −{fmt(selectedSeg?.total ?? 0)} · {selectedSeg?.count ?? 0} transacciones
                 </p>
               </div>
@@ -169,6 +169,8 @@ export default function GastosBreakdown({
                 </button>
               </div>
             </div>
+
+            {/* Transaction list */}
             <div className="flex-1 overflow-y-auto">
               {selectedTxns.length === 0 ? (
                 <p className="text-sm text-navy/45 px-4 py-8">Sin transacciones registradas.</p>
@@ -182,7 +184,7 @@ export default function GastosBreakdown({
                       <p className="text-sm font-medium text-navy truncate">
                         {t.contact || t.concept}
                       </p>
-                      <p className="text-xs text-navy/50 mt-0.5">{t.date.split("-").reverse().join("/")}</p>
+                      <p className="text-xs text-navy/55 mt-0.5">{t.date.split("-").reverse().join("/")}</p>
                     </div>
                     <p className={`text-sm font-semibold tabular-nums shrink-0 ${t.amount < 0 ? "text-navy" : "text-success"}`}>
                       {t.amount < 0 ? "−" : "+"}{fmt(Math.abs(t.amount))}
