@@ -53,33 +53,33 @@ export default function HealthCards(props: Props) {
           transition-all duration-200 ease-out
           ${showStrip ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-1 pointer-events-none"}`}
       >
-        <div className="max-w-6xl mx-auto px-6 py-2.5 grid grid-cols-2 sm:grid-cols-4 divide-x divide-navy/5">
-          <div className="px-4 first:pl-0">
-            <p className="text-[10px] text-navy/30 uppercase tracking-widest">Saldo</p>
-            <p className="text-sm font-semibold text-navy tabular-nums">
+        <div className="max-w-6xl mx-auto px-3 sm:px-6 py-2.5 grid grid-cols-4 divide-x divide-navy/5">
+          <div className="px-2 sm:px-4">
+            <p className="text-[9px] sm:text-[10px] text-navy/30 uppercase tracking-widest truncate">Saldo</p>
+            <p className="text-xs sm:text-sm font-semibold text-navy tabular-nums">
               {currentBalance !== null ? fmt(currentBalance) : "—"}
             </p>
           </div>
-          <div className="px-4">
-            <p className="text-[10px] text-navy/30 uppercase tracking-widest">Runway</p>
-            <p className={`text-sm font-semibold tabular-nums ${rColor}`}>
+          <div className="px-2 sm:px-4">
+            <p className="text-[9px] sm:text-[10px] text-navy/30 uppercase tracking-widest">Runway</p>
+            <p className={`text-xs sm:text-sm font-semibold tabular-nums ${rColor}`}>
               {runwayMonths !== null ? `${runwayMonths.toFixed(1)} m` : "—"}
             </p>
           </div>
-          <div className="px-4">
-            <p className="text-[10px] text-navy/30 uppercase tracking-widest">Resultado {curMonthLabel}</p>
-            <p className={`text-sm font-semibold tabular-nums ${resultadoMes >= 0 ? "text-success" : "text-danger"}`}>
+          <div className="px-2 sm:px-4">
+            <p className="text-[9px] sm:text-[10px] text-navy/30 uppercase tracking-widest truncate">Resultado</p>
+            <p className={`text-xs sm:text-sm font-semibold tabular-nums ${resultadoMes >= 0 ? "text-success" : "text-danger"}`}>
               {resultadoMes >= 0 ? "+" : "−"}{fmt(Math.abs(resultadoMes))}
             </p>
           </div>
-          <div className="px-4">
-            <p className="text-[10px] text-navy/30 uppercase tracking-widest">Break-even</p>
+          <div className="px-2 sm:px-4">
+            <p className="text-[9px] sm:text-[10px] text-navy/30 uppercase tracking-widest truncate">Break-even</p>
             {avgMonthlyRevenue > 0 ? (
               breakEvenGap <= 0
-                ? <p className="text-sm font-semibold text-success">Rentable</p>
-                : <p className="text-sm font-semibold text-danger tabular-nums">−{fmt(breakEvenGap)}</p>
+                ? <p className="text-xs sm:text-sm font-semibold text-success">Rentable</p>
+                : <p className="text-xs sm:text-sm font-semibold text-danger tabular-nums">−{fmt(breakEvenGap)}</p>
             ) : (
-              <p className="text-sm font-semibold text-navy/20">Sin ventas</p>
+              <p className="text-xs sm:text-sm font-semibold text-navy/20">—</p>
             )}
           </div>
         </div>
