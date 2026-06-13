@@ -242,7 +242,7 @@ export default async function Dashboard() {
     <main className="max-w-5xl mx-auto px-6 py-10 space-y-10">
 
       {/* ── Sync status ── */}
-      <div className="flex flex-wrap gap-x-5 gap-y-1 sm:-mb-4">
+      <div className="flex flex-wrap gap-x-5 gap-y-1">
         <span className="text-[11px] text-navy/30 flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 rounded-full bg-success inline-block" />
           <span className="font-medium text-navy/45">Momence</span>
