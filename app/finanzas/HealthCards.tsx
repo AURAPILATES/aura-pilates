@@ -86,83 +86,141 @@ export default function HealthCards(props: Props) {
       </div>
 
       {/* ── Cards (normal flow) ── */}
-      <div ref={sentinelRef} className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+      <div ref={sentinelRef} className="mb-8">
 
-        {/* Saldo */}
-        <div className="bg-white border border-navy/10 rounded shadow-card p-5">
-          <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-3">Saldo en cuenta</p>
-          {currentBalance !== null ? (
-            <>
-              <p className="text-2xl font-semibold text-navy tabular-nums">{fmt(currentBalance)}</p>
+        {/* Mobile: tarjeta unificada 2×2 */}
+        <div className="sm:hidden bg-white border border-navy/10 rounded-xl shadow-card overflow-hidden">
+          <div className="grid grid-cols-2 divide-x divide-navy/[0.07]">
+
+            {/* Saldo */}
+            <div className="p-5 border-b border-navy/[0.07]">
+              <p className="text-[10px] font-semibold text-navy/35 uppercase tracking-wider mb-2">Saldo</p>
+              <p className="text-xl font-semibold text-navy tabular-nums leading-tight">
+                {currentBalance !== null ? fmt(currentBalance) : "—"}
+              </p>
               {balanceDate && (
-                <p className="text-[10px] text-navy/30 mt-1.5">
-                  Último mov. {balanceDate.split("-").reverse().join("/")}
-                </p>
+                <p className="text-[10px] text-navy/25 mt-1">{balanceDate.split("-").reverse().join("/")}</p>
               )}
-            </>
-          ) : (
-            <p className="text-2xl font-semibold text-navy/20">—</p>
-          )}
-        </div>
+            </div>
 
-        {/* Runway */}
-        <div className="bg-white border border-navy/10 rounded shadow-card p-5">
-          <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-3">Runway</p>
-          {runwayMonths !== null ? (
-            <>
-              <p className={`text-2xl font-semibold tabular-nums ${rColor}`}>
-                {runwayMonths.toFixed(1)} meses
+            {/* Runway */}
+            <div className="p-5 border-b border-navy/[0.07]">
+              <p className="text-[10px] font-semibold text-navy/35 uppercase tracking-wider mb-2">Runway</p>
+              <p className={`text-xl font-semibold tabular-nums leading-tight ${rColor}`}>
+                {runwayMonths !== null ? `${runwayMonths.toFixed(1)} m` : "—"}
               </p>
-              <div className="flex gap-0.5 mt-3">
-                {Array.from({ length: 12 }).map((_, i) => {
-                  const filled = i < Math.round(runwayMonths);
-                  const bar = runwayMonths < 3 ? "bg-danger" : runwayMonths < 6 ? "bg-warning" : "bg-success";
-                  return <div key={i} className={`h-1.5 flex-1 rounded-sm ${filled ? bar : "bg-navy/5"}`} />;
-                })}
-              </div>
-              <p className="text-[10px] text-navy/25 mt-1.5">
-                Coste fijo {fmt(avgMonthlyBurn)}/mes · media {completeBurnMonthsCount} m
+              {runwayMonths !== null && (
+                <div className="flex gap-0.5 mt-2">
+                  {Array.from({ length: 12 }).map((_, i) => {
+                    const filled = i < Math.round(runwayMonths);
+                    const bar = runwayMonths < 3 ? "bg-danger" : runwayMonths < 6 ? "bg-warning" : "bg-success";
+                    return <div key={i} className={`h-1 flex-1 rounded-sm ${filled ? bar : "bg-navy/5"}`} />;
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Resultado */}
+            <div className="p-5">
+              <p className="text-[10px] font-semibold text-navy/35 uppercase tracking-wider mb-0.5">Resultado</p>
+              <p className="text-[10px] text-navy/25 mb-2">{curMonthLabel}</p>
+              <p className={`text-xl font-semibold tabular-nums leading-tight ${resultadoMes >= 0 ? "text-success" : "text-danger"}`}>
+                {resultadoMes >= 0 ? "+" : "−"}{fmt(Math.abs(resultadoMes))}
               </p>
-            </>
-          ) : (
-            <p className="text-2xl font-semibold text-navy/20">—</p>
-          )}
+            </div>
+
+            {/* Break-even */}
+            <div className="p-5">
+              <p className="text-[10px] font-semibold text-navy/35 uppercase tracking-wider mb-2">Break-even</p>
+              {avgMonthlyRevenue > 0 ? (
+                breakEvenGap <= 0 ? (
+                  <>
+                    <p className="text-xl font-semibold text-success leading-tight">Rentable</p>
+                    <p className="text-[10px] text-success/60 mt-1">+{fmt(Math.abs(breakEvenGap))}/mes</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-xl font-semibold text-danger tabular-nums leading-tight">−{fmt(breakEvenGap)}</p>
+                    {clientesNecesarios && (
+                      <p className="text-[10px] text-warning font-medium mt-1">≈ {clientesNecesarios} más</p>
+                    )}
+                  </>
+                )
+              ) : (
+                <p className="text-xl font-semibold text-navy/20">—</p>
+              )}
+            </div>
+
+          </div>
         </div>
 
-        {/* Resultado mes */}
-        <div className="bg-white border border-navy/10 rounded shadow-card p-5">
-          <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-3">
-            Resultado {curMonthLabel}
-          </p>
-          <p className={`text-2xl font-semibold tabular-nums ${resultadoMes >= 0 ? "text-success" : "text-danger"}`}>
-            {resultadoMes >= 0 ? "+" : "−"}{fmt(Math.abs(resultadoMes))}
-          </p>
-          <p className="text-[10px] text-navy/30 mt-1.5">ingresos − gastos</p>
-        </div>
+        {/* Desktop: 4 cajas separadas */}
+        <div className="hidden sm:grid sm:grid-cols-4 gap-4">
 
-        {/* Break-even */}
-        <div className="bg-white border border-navy/10 rounded shadow-card p-5">
-          <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-3">Break-even</p>
-          {avgMonthlyRevenue > 0 ? (
-            breakEvenGap <= 0 ? (
+          <div className="bg-white border border-navy/10 rounded shadow-card p-5">
+            <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-3">Saldo en cuenta</p>
+            {currentBalance !== null ? (
               <>
-                <p className="text-2xl font-semibold text-success">Rentable</p>
-                <p className="text-[10px] text-success/60 mt-1.5">+{fmt(Math.abs(breakEvenGap))}/mes margen</p>
-              </>
-            ) : (
-              <>
-                <p className="text-2xl font-semibold text-danger tabular-nums">−{fmt(breakEvenGap)}</p>
-                <p className="text-[10px] text-navy/30 mt-1.5">al mes para cubrir costes</p>
-                {clientesNecesarios && (
-                  <p className="text-[10px] text-warning font-medium mt-0.5">≈ {clientesNecesarios} clientes más</p>
+                <p className="text-2xl font-semibold text-navy tabular-nums">{fmt(currentBalance)}</p>
+                {balanceDate && (
+                  <p className="text-[10px] text-navy/30 mt-1.5">
+                    Último mov. {balanceDate.split("-").reverse().join("/")}
+                  </p>
                 )}
               </>
-            )
-          ) : (
-            <p className="text-2xl font-semibold text-navy/20">Sin ventas</p>
-          )}
-        </div>
+            ) : <p className="text-2xl font-semibold text-navy/20">—</p>}
+          </div>
 
+          <div className="bg-white border border-navy/10 rounded shadow-card p-5">
+            <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-3">Runway</p>
+            {runwayMonths !== null ? (
+              <>
+                <p className={`text-2xl font-semibold tabular-nums ${rColor}`}>{runwayMonths.toFixed(1)} meses</p>
+                <div className="flex gap-0.5 mt-3">
+                  {Array.from({ length: 12 }).map((_, i) => {
+                    const filled = i < Math.round(runwayMonths);
+                    const bar = runwayMonths < 3 ? "bg-danger" : runwayMonths < 6 ? "bg-warning" : "bg-success";
+                    return <div key={i} className={`h-1.5 flex-1 rounded-sm ${filled ? bar : "bg-navy/5"}`} />;
+                  })}
+                </div>
+                <p className="text-[10px] text-navy/25 mt-1.5">
+                  Coste fijo {fmt(avgMonthlyBurn)}/mes · media {completeBurnMonthsCount} m
+                </p>
+              </>
+            ) : <p className="text-2xl font-semibold text-navy/20">—</p>}
+          </div>
+
+          <div className="bg-white border border-navy/10 rounded shadow-card p-5">
+            <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-3">
+              Resultado {curMonthLabel}
+            </p>
+            <p className={`text-2xl font-semibold tabular-nums ${resultadoMes >= 0 ? "text-success" : "text-danger"}`}>
+              {resultadoMes >= 0 ? "+" : "−"}{fmt(Math.abs(resultadoMes))}
+            </p>
+            <p className="text-[10px] text-navy/30 mt-1.5">ingresos − gastos</p>
+          </div>
+
+          <div className="bg-white border border-navy/10 rounded shadow-card p-5">
+            <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-3">Break-even</p>
+            {avgMonthlyRevenue > 0 ? (
+              breakEvenGap <= 0 ? (
+                <>
+                  <p className="text-2xl font-semibold text-success">Rentable</p>
+                  <p className="text-[10px] text-success/60 mt-1.5">+{fmt(Math.abs(breakEvenGap))}/mes margen</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-2xl font-semibold text-danger tabular-nums">−{fmt(breakEvenGap)}</p>
+                  <p className="text-[10px] text-navy/30 mt-1.5">al mes para cubrir costes</p>
+                  {clientesNecesarios && (
+                    <p className="text-[10px] text-warning font-medium mt-0.5">≈ {clientesNecesarios} clientes más</p>
+                  )}
+                </>
+              )
+            ) : <p className="text-2xl font-semibold text-navy/20">Sin ventas</p>}
+          </div>
+
+        </div>
       </div>
     </>
   );
