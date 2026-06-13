@@ -5,7 +5,7 @@ import { pct } from "@/lib/analytics";
 
 function BlockCard({ title, legend, children }: { title: string; legend?: string; children: React.ReactNode }) {
   return (
-    <div className="bg-white border border-navy/10 rounded shadow-card p-5 flex flex-col">
+    <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5 flex flex-col">
       <p className="text-xs font-semibold text-navy/40 uppercase tracking-wider mb-4">{title}</p>
       <div className="flex-1">{children}</div>
       {legend && (

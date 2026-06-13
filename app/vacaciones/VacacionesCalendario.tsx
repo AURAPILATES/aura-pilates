@@ -521,7 +521,7 @@ function AnnualCalendar({
         }).filter((p) => p.days.length > 0);
 
         return (
-          <div key={month} className="bg-white border border-navy/10 rounded shadow-card overflow-hidden">
+          <div key={month} className="bg-white border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden">
             <div className="px-4 pt-4 pb-2">
               <p className="text-xs font-semibold text-navy/50 uppercase tracking-wider">{monthName}</p>
             </div>
@@ -627,7 +627,7 @@ function GanttView({
   });
 
   return (
-    <div className="bg-white border border-navy/10 rounded shadow-card p-5">
+    <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
       {/* Month header row */}
       <div className="flex mb-3">
         <div className="w-24 shrink-0" />

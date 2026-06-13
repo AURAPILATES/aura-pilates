@@ -187,7 +187,7 @@ export default function FinanzasBarChart({
     : "inline-block w-8 h-0.5 rounded-full";
 
   return (
-    <div className="bg-white border border-navy/10 rounded shadow-card p-5">
+    <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
       {/* Header */}
       <div className="flex flex-col gap-2 mb-5">
         {/* Row 1: tipo + título */}

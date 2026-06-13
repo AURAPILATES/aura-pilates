@@ -38,7 +38,7 @@ export default function NavBar() {
   return (
     <>
       {/* ── Top bar ── */}
-      <nav className="border-b border-navy/10 bg-white px-4 py-3 sticky top-0 z-30">
+      <nav className="border-b border-navy/[0.07] bg-app-bg/90 backdrop-blur-sm px-4 py-3 sticky top-0 z-30">
         <div className="max-w-5xl mx-auto flex items-center gap-8">
           <Link href="/">
             <Image

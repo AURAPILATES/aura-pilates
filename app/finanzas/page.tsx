@@ -51,7 +51,7 @@ function KpiCard({ label, value, sub, trend, valueColor = "text-navy" }: {
   label: string; value: string; sub?: string; trend?: number | null; valueColor?: string;
 }) {
   return (
-    <div className="bg-white border border-navy/10 rounded shadow-card p-5">
+    <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
       <div className="flex items-start justify-between gap-2 mb-1">
         <p className="text-xs text-navy/40 uppercase tracking-wider leading-tight">{label}</p>
         {trend !== undefined && <TrendBadge value={trend ?? null} />}
@@ -66,7 +66,7 @@ function Block({ title, legend, children }: {
   title: string; legend?: string; children: React.ReactNode;
 }) {
   return (
-    <div className="bg-white border border-navy/10 rounded shadow-card p-5">
+    <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
       <p className="text-xs font-semibold text-navy/40 uppercase tracking-wider mb-4">{title}</p>
       {children}
       {legend && (
@@ -315,7 +315,7 @@ export default async function Finanzas(props: {
                     trend={trendPct(ticketCur, ticketPrev)}
                   />
                 </div>
-                <div className="bg-white border border-navy/10 rounded shadow-card p-5">
+                <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
                   <div className="flex items-start justify-between mb-5">
                     <p className="text-xs font-semibold text-navy/40 uppercase tracking-wider">Desglose gastos operativos</p>
                     <p className="text-xs text-navy/30">dic 2025 – abr 2026</p>
@@ -342,7 +342,7 @@ export default async function Finanzas(props: {
               <div className="space-y-4">
                 {/* Fuentes de ingresos */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="bg-white border border-navy/10 rounded shadow-card p-5">
+                  <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
                     <p className="text-xs text-navy/40 uppercase tracking-wider mb-1">Recurrentes</p>
                     <p className="text-[10px] text-navy/25 mb-2">{activeSubsCount} clientes · 2+ meses de 3</p>
                     <p className="text-3xl font-semibold text-primary">{fmt(recurrente)}</p>
@@ -351,7 +351,7 @@ export default async function Finanzas(props: {
                       <div className="h-full bg-primary rounded-full" style={{ width: pct(recurrentePct) }} />
                     </div>
                   </div>
-                  <div className="bg-white border border-navy/10 rounded shadow-card p-5">
+                  <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
                     <p className="text-xs text-navy/40 uppercase tracking-wider mb-3">Pagos únicos</p>
                     <p className="text-3xl font-semibold text-income">{fmt(puntual)}</p>
                     <p className="text-xs text-navy/40 mt-1">{pct(totalRev > 0 ? puntual / totalRev : 0)} del total</p>
@@ -360,7 +360,7 @@ export default async function Finanzas(props: {
                         style={{ width: pct(totalRev > 0 ? puntual / totalRev : 0) }} />
                     </div>
                   </div>
-                  <div className="bg-white border border-navy/10 rounded shadow-card p-5">
+                  <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
                     <p className="text-xs text-navy/40 uppercase tracking-wider mb-3">Retención</p>
                     <div className="flex items-baseline gap-2">
                       <p className={`text-3xl font-semibold ${churnIds.size > 0 ? "text-warning" : "text-success"}`}>
@@ -452,7 +452,7 @@ export default async function Finanzas(props: {
             <section id="q4">
               <QuestionHeader num={4} question="¿Qué debo a Hacienda y cuándo?" />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="bg-white border border-navy/10 rounded shadow-card p-5">
+                <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
                   <p className="text-xs font-semibold text-navy/40 uppercase tracking-wider mb-4">IVA estimado · próximo trimestre</p>
                   <p className="text-3xl font-semibold text-navy/20">—</p>
                   <p className="text-xs text-navy/30 mt-2 leading-relaxed">
@@ -460,7 +460,7 @@ export default async function Finanzas(props: {
                   </p>
                   <p className="text-xs font-medium text-warning mt-4">Plazo: 20 julio</p>
                 </div>
-                <div className="bg-white border border-navy/10 rounded shadow-card p-5">
+                <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
                   <p className="text-xs font-semibold text-navy/40 uppercase tracking-wider mb-4">Próximas obligaciones</p>
                   <div className="space-y-3">
                     {obligations.map(({ label, date, deadline }) => {

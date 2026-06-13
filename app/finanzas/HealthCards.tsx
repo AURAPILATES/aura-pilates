@@ -157,7 +157,7 @@ export default function HealthCards(props: Props) {
         {/* Desktop: 4 cajas separadas */}
         <div className="hidden sm:grid sm:grid-cols-4 gap-4">
 
-          <div className="bg-white border border-navy/10 rounded shadow-card p-5">
+          <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
             <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-3">Saldo en cuenta</p>
             {currentBalance !== null ? (
               <>
@@ -171,7 +171,7 @@ export default function HealthCards(props: Props) {
             ) : <p className="text-2xl font-semibold text-navy/20">—</p>}
           </div>
 
-          <div className="bg-white border border-navy/10 rounded shadow-card p-5">
+          <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
             <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-3">Runway</p>
             {runwayMonths !== null ? (
               <>
@@ -190,7 +190,7 @@ export default function HealthCards(props: Props) {
             ) : <p className="text-2xl font-semibold text-navy/20">—</p>}
           </div>
 
-          <div className="bg-white border border-navy/10 rounded shadow-card p-5">
+          <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
             <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-3">
               Resultado {curMonthLabel}
             </p>
@@ -200,7 +200,7 @@ export default function HealthCards(props: Props) {
             <p className="text-[10px] text-navy/30 mt-1.5">ingresos − gastos</p>
           </div>
 
-          <div className="bg-white border border-navy/10 rounded shadow-card p-5">
+          <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
             <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-3">Break-even</p>
             {avgMonthlyRevenue > 0 ? (
               breakEvenGap <= 0 ? (

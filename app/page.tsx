@@ -53,7 +53,7 @@ function SectionHeader({
 
 function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={`bg-white border border-navy/10 rounded shadow-card p-5 ${className}`}>
+    <div className={`bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5 ${className}`}>
       {children}
     </div>
   );

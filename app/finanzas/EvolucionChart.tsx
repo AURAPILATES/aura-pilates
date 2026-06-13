@@ -143,7 +143,7 @@ export default function EvolucionChart({ sales }: { sales: Sale[] }) {
     : null;
 
   return (
-    <div className="bg-white border border-navy/10 rounded shadow-card p-5">
+    <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
       {/* Header */}
       <div className="flex items-center justify-between gap-3 mb-4">
         <div className="flex items-center gap-2 min-w-0">

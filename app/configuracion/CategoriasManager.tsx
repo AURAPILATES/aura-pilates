@@ -123,7 +123,7 @@ export default function CategoriasManager({ categories }: { categories: Category
       <div>
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-navy">Categorías</h1>
+            <h1 className="text-2xl font-bold text-navy font-display">Categorías</h1>
             <p className="text-sm text-navy/40 mt-1">{categories.length} categorías · edita o crea nuevas</p>
           </div>
           <button

@@ -204,7 +204,7 @@ export default function ClientesTable({ customers }: { customers: CustomerRow[] 
       )}
 
       {/* Table */}
-      <div className="bg-white border border-navy/10 rounded shadow-card overflow-hidden">
+      <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>

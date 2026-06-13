@@ -110,7 +110,7 @@ export default async function TransaccionesPage(props: {
   return (
     <main className="p-6 max-w-7xl mx-auto">
       <div className="mb-4">
-        <h1 className="text-2xl font-bold text-navy">Transacciones</h1>
+        <h1 className="text-2xl font-bold text-navy font-display">Transacciones</h1>
         <p className="text-sm text-navy/40 mt-1">
           {transactions.length} movimientos · {rangeLabel}
         </p>
