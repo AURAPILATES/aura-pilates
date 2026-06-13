@@ -24,7 +24,7 @@ export async function loadStripeSubscriptions(): Promise<StripeSubscription[]> {
   for await (const sub of stripe.subscriptions.list({
     limit: 100,
     status: "all",
-    expand: ["data.customer", "data.items.data.price.product"],
+    expand: ["data.customer", "data.items.data.price"],
   })) {
     const cust = sub.customer;
     const customer = typeof cust === "object" && cust !== null && !("deleted" in cust)
@@ -32,10 +32,7 @@ export async function loadStripeSubscriptions(): Promise<StripeSubscription[]> {
 
     const item  = sub.items.data[0];
     const price = item?.price;
-    const prod  = price?.product;
-    const productName = typeof prod === "object" && prod !== null && !("deleted" in prod)
-      ? (prod as Stripe.Product).name
-      : (price?.nickname ?? "Plan");
+    const productName = price?.nickname ?? price?.id ?? "Plan";
 
     subs.push({
       id: sub.id,

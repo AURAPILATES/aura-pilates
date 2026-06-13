@@ -131,11 +131,6 @@ export default async function Finanzas(props: {
   const curCount  = paymentsAll.filter((p) => p.date.startsWith(curMonth)).length;
   const prevCount = paymentsAll.filter((p) => p.date.startsWith(prevMonth)).length;
 
-  const subMonths = [prev2Month, prevMonth, curMonth];
-  const mrr = subMonths.reduce((sum, m) =>
-    sum + paymentsAll
-      .filter((p) => p.date.startsWith(m) && p.category === "Suscripción")
-      .reduce((s, p) => s + p.amount, 0), 0) / subMonths.length;
 
   const ticketMedio = payments.length > 0 ? totalRev / payments.length : 0;
   const ticketPrev  = prevCount > 0 ? prev / prevCount : 0;
@@ -144,7 +139,6 @@ export default async function Finanzas(props: {
   const recurrente    = payments.filter((p) => p.category === "Suscripción").reduce((s, p) => s + p.amount, 0);
   const recurrentePct = totalRev > 0 ? recurrente / totalRev : 0;
   const byMethod      = stripeByMethod(payments);
-  const urbanRevenue  = 0; // Urban Sports Club no pasa por Stripe
   const puntual       = totalRev - recurrente;
 
   // Convert to Sale[] for charts that depend on it
