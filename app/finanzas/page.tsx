@@ -137,16 +137,15 @@ export default async function Finanzas(props: {
   const puntual       = totalRevenue - recurrente - urbanRevenue;
   const byProduct     = salesByProduct(sales).sort((a, b) => b.revenue - a.revenue);
 
-  // ── Transactions ──
+  // ── Transactions (siempre datos completos — el banco solo exporta hasta fecha fija) ──
   const txnsAll = await loadTransactions();
-  const txns    = (from || to) ? await loadTransactions(from, to) : txnsAll;
-  const totalOpEx     = totalOperationalExpenses(txns);
-  const totalStartup  = totalStartupCosts(txns);
-  const expByCategory = operationalExpensesByCategory(txns);
+  const totalOpEx     = totalOperationalExpenses(txnsAll);
+  const totalStartup  = totalStartupCosts(txnsAll);
+  const expByCategory = operationalExpensesByCategory(txnsAll);
   const totalExpCat   = expByCategory.reduce((s, r) => s + r.total, 0);
 
   const transactionsByCategory: Record<string, { date: string; amount: number; concept: string; contact: string }[]> = {};
-  for (const t of txns) {
+  for (const t of txnsAll) {
     if (!transactionsByCategory[t.category]) transactionsByCategory[t.category] = [];
     transactionsByCategory[t.category].push({ date: t.date, amount: t.amount, concept: t.concept ?? "", contact: t.contact ?? "" });
   }
