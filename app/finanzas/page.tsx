@@ -17,7 +17,6 @@ import {
 } from "@/lib/transactions";
 import { getDateRange } from "@/lib/dateRange";
 import DateFilter from "@/app/components/DateFilter";
-import FinanzasSidebar from "./FinanzasSidebar";
 import GastosBreakdown from "./GastosBreakdown";
 import FinanzasBarChart from "./FinanzasBarChart";
 import EvolucionChart from "./EvolucionChart";
@@ -275,92 +274,17 @@ export default async function Finanzas(props: {
           </div>
         )}
 
-        {/* Mobile period filter */}
-        <div className="lg:hidden mb-6">
+        <div className="mb-6">
           <Suspense fallback={null}>
             <DateFilter />
           </Suspense>
         </div>
 
-        <div className="lg:grid lg:grid-cols-[200px_1fr] lg:gap-10">
+        <div className="space-y-14">
 
-          {/* ── Sidebar (desktop) ── */}
-          <aside className="hidden lg:block">
-            <div className="sticky top-[8.5rem] space-y-6">
-              <Suspense fallback={null}>
-                <FinanzasSidebar />
-              </Suspense>
-            </div>
-          </aside>
-
-          {/* ── Content ── */}
-          <div className="space-y-14">
-
-            {/* Q1 ¿Cuánto aguanta el negocio? */}
+            {/* Q1 ¿Cómo fue este mes? */}
             <section id="q1">
-              <QuestionHeader num={1} question="¿Cuánto aguanta el negocio?" />
-              <div className="bg-white border border-navy/10 rounded shadow-card p-5">
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-0 lg:divide-x lg:divide-navy/5">
-                  <div className="lg:pr-6 pb-5 lg:pb-0 border-b lg:border-b-0 border-navy/5">
-                    <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-3">Saldo en cuenta</p>
-                    {currentBalance !== null ? (
-                      <>
-                        <p className="text-3xl font-semibold text-navy tabular-nums">{fmt(currentBalance)}</p>
-                        <p className="text-xs text-navy/30 mt-1.5">
-                          Último mov. {balanceDate ? balanceDate.split("-").reverse().join("/") : "—"}
-                        </p>
-                      </>
-                    ) : <p className="text-2xl font-semibold text-navy/20">Sin datos</p>}
-                  </div>
-                  <div className="lg:px-6 pb-5 lg:pb-0 border-b lg:border-b-0 border-navy/5">
-                    <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-3">Coste fijo / mes</p>
-                    <p className="text-3xl font-semibold text-navy tabular-nums">{fmt(avgMonthlyBurn)}</p>
-                    <p className="text-xs text-navy/30 mt-1.5">Media {completeBurnMonths.length} mes{completeBurnMonths.length !== 1 ? "es" : ""}</p>
-                  </div>
-                  <div className="lg:px-6">
-                    <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-3">Runway</p>
-                    {runwayMonths !== null ? (
-                      <>
-                        <p className={`text-3xl font-semibold tabular-nums ${runwayColor}`}>
-                          {runwayMonths.toFixed(1)} meses
-                        </p>
-                        <div className="flex gap-0.5 mt-3">
-                          {Array.from({ length: 12 }).map((_, i) => {
-                            const filled = i < Math.round(runwayMonths);
-                            const color  = runwayMonths < 3 ? "bg-danger" : runwayMonths < 6 ? "bg-warning" : "bg-success";
-                            return <div key={i} className={`h-2 flex-1 rounded-sm ${filled ? color : "bg-navy/5"}`} />;
-                          })}
-                        </div>
-                        <p className="text-[11px] text-navy/25 mt-1">de 12 meses</p>
-                      </>
-                    ) : <p className="text-2xl font-semibold text-navy/20">—</p>}
-                  </div>
-                  <div className="lg:pl-6">
-                    <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-3">Break-even</p>
-                    {avgMonthlyRevenue > 0 ? (
-                      breakEvenGap <= 0 ? (
-                        <>
-                          <p className="text-3xl font-semibold text-success">Rentable</p>
-                          <p className="text-xs text-success/70 mt-1.5">+{fmt(Math.abs(breakEvenGap))}/mes de margen</p>
-                        </>
-                      ) : (
-                        <>
-                          <p className="text-3xl font-semibold text-danger tabular-nums">−{fmt(breakEvenGap)}</p>
-                          <p className="text-xs text-navy/30 mt-1.5">al mes para cubrir costes</p>
-                          {clientesNecesarios && (
-                            <p className="text-xs text-warning font-medium mt-0.5">≈ {clientesNecesarios} clientes más</p>
-                          )}
-                        </>
-                      )
-                    ) : <p className="text-2xl font-semibold text-navy/20">Sin ventas</p>}
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            {/* Q2 ¿Cómo fue este mes? */}
-            <section id="q2">
-              <QuestionHeader num={2} question={`¿Cómo fue ${monthLabel(curMonth)}?`} />
+              <QuestionHeader num={1} question={`¿Cómo fue ${monthLabel(curMonth)}?`} />
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                   <KpiCard
@@ -386,9 +310,9 @@ export default async function Finanzas(props: {
               </div>
             </section>
 
-            {/* Q3 ¿En qué se va el dinero? */}
-            <section id="q3">
-              <QuestionHeader num={3} question="¿En qué se va el dinero?" />
+            {/* Q2 ¿En qué se va el dinero? */}
+            <section id="q2">
+              <QuestionHeader num={2} question="¿En qué se va el dinero?" />
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                   <KpiCard label="Gastos operativos" value={fmt(totalOpEx)} sub="costes recurrentes" />
@@ -423,9 +347,9 @@ export default async function Finanzas(props: {
               </div>
             </section>
 
-            {/* Q4 ¿De dónde vienen los ingresos? */}
-            <section id="q4">
-              <QuestionHeader num={4} question="¿De dónde vienen los ingresos?" />
+            {/* Q3 ¿De dónde vienen los ingresos? */}
+            <section id="q3">
+              <QuestionHeader num={3} question="¿De dónde vienen los ingresos?" />
               <div className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="bg-white border border-navy/10 rounded shadow-card p-5">
@@ -522,9 +446,9 @@ export default async function Finanzas(props: {
               </div>
             </section>
 
-            {/* Q5 ¿Qué debo a Hacienda? */}
-            <section id="q5">
-              <QuestionHeader num={5} question="¿Qué debo a Hacienda y cuándo?" />
+            {/* Q4 ¿Qué debo a Hacienda? */}
+            <section id="q4">
+              <QuestionHeader num={4} question="¿Qué debo a Hacienda y cuándo?" />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="bg-white border border-navy/10 rounded shadow-card p-5">
                   <p className="text-xs font-semibold text-navy/40 uppercase tracking-wider mb-4">IVA estimado · próximo trimestre</p>
@@ -556,7 +480,6 @@ export default async function Finanzas(props: {
               </div>
             </section>
 
-          </div>
         </div>
       </div>
     </div>
