@@ -315,23 +315,27 @@ export default async function Finanzas(props: {
                     trend={trendPct(ticketCur, ticketPrev)}
                   />
                 </div>
-                <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
-                  <div className="flex items-start justify-between mb-5">
-                    <p className="text-xs font-semibold text-navy/55 uppercase tracking-wider">Desglose gastos operativos</p>
-                    <p className="text-xs text-navy/45">dic 2025 – abr 2026</p>
+                <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden">
+                  <div className="flex items-baseline justify-between px-6 pt-6 pb-5 border-b border-navy/[0.06]">
+                    <div>
+                      <h2 className="text-lg font-bold text-navy font-display">Gastos operativos</h2>
+                      <p className="text-sm text-navy/45 mt-0.5">dic 2025 – abr 2026</p>
+                    </div>
+                    <p className="text-xs text-navy/45 flex items-center gap-1.5">
+                      <BookOpen size={12} className="shrink-0" />
+                      Caixabank
+                    </p>
                   </div>
-                  <GastosBreakdown
-                    categories={expByCategory.map((e, i) => ({
-                      ...e,
-                      color: EXPENSE_COLORS[i % EXPENSE_COLORS.length],
-                    }))}
-                    transactionsByCategory={transactionsByCategory}
-                    totalExpCat={totalExpCat}
-                  />
-                  <p className="text-xs text-navy/45 mt-4 pt-3 border-t border-navy/5 leading-relaxed flex items-start gap-1.5">
-                    <BookOpen size={12} className="shrink-0 mt-0.5" />
-                    exportación bancaria Caixabank · excluye aportaciones de socios, préstamo e inversión inicial.
-                  </p>
+                  <div className="px-6 py-5">
+                    <GastosBreakdown
+                      categories={expByCategory.map((e, i) => ({
+                        ...e,
+                        color: EXPENSE_COLORS[i % EXPENSE_COLORS.length],
+                      }))}
+                      transactionsByCategory={transactionsByCategory}
+                      totalExpCat={totalExpCat}
+                    />
+                  </div>
                 </div>
               </div>
             </section>
