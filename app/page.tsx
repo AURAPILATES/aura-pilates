@@ -258,7 +258,7 @@ export default async function Dashboard() {
       </div>
 
       {/* ── 1. RENDIMIENTO ── */}
-      <section>
+      <section className="space-y-4">
         <SectionHeader title="Rendimiento" subtitle="Últimos 30 días vs. período anterior" accent="primary" />
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {kpis.map((k) => {
@@ -277,6 +277,23 @@ export default async function Dashboard() {
               </Card>
             );
           })}
+        </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <Card>
+            <p className="text-xs text-navy/40 uppercase tracking-wider leading-tight mb-1">Ocupación media</p>
+            <p className={`text-2xl font-semibold ${occ >= 0.7 ? "text-success" : occ >= 0.4 ? "text-warning" : "text-danger"}`}>{pct(occ)}</p>
+            <p className="text-xs text-navy/40 mt-1">{past.length} clases impartidas</p>
+          </Card>
+          <Card>
+            <p className="text-xs text-navy/40 uppercase tracking-wider leading-tight mb-1">Alumnos (30 días)</p>
+            <p className="text-2xl font-semibold text-navy">{totalStudents(past)}</p>
+            <p className="text-xs text-navy/40 mt-1">Media {past.length > 0 ? (totalStudents(past) / past.length).toFixed(1) : 0} por clase</p>
+          </Card>
+          <Card>
+            <p className="text-xs text-navy/40 uppercase tracking-wider leading-tight mb-1">Próximos 7 días</p>
+            <p className="text-2xl font-semibold text-navy">{totalStudents(upcoming)} reservas</p>
+            <p className="text-xs text-navy/40 mt-1">{upcoming.length} clases programadas</p>
+          </Card>
         </div>
       </section>
 

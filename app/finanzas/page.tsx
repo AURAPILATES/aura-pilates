@@ -1,8 +1,6 @@
 import { Suspense } from "react";
 import { BookOpen } from "react-feather";
-import { getEvents } from "@/lib/momence";
-import { loadHistoricalEvents } from "@/lib/history";
-import { filterPast, filterUpcoming, fmt, occupancyRate, pct } from "@/lib/analytics";
+import { fmt, pct } from "@/lib/analytics";
 import {
   loadSales,
   filterSalesByDate,
@@ -265,15 +263,6 @@ export default async function Finanzas(props: {
     offP += dash;
     return { ...p, share, dash, offset, color: PRODUCT_COLORS[i % PRODUCT_COLORS.length] };
   });
-
-  // ── Momence ──
-  const [liveEvents, historicalEvents] = await Promise.all([getEvents(), loadHistoricalEvents()]);
-  const allById = new Map(historicalEvents.map((e) => [e.id, e]));
-  liveEvents.forEach((e) => allById.set(e.id, e));
-  const events = Array.from(allById.values());
-  const past30 = filterPast(events, 30);
-  const upcoming7 = filterUpcoming(events, 7);
-  const past30Students = past30.reduce((s, e) => s + e.ticketsSold, 0);
 
   // ── Tax obligations ──
   const today = new Date();
@@ -570,19 +559,6 @@ export default async function Finanzas(props: {
         {/* Evolución */}
         <EvolucionChart sales={sales} />
 
-        {/* Ocupación */}
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-          <KpiCard label="Ocupación media" value={pct(occupancyRate(past30))} sub={`${past30.length} clases impartidas`} />
-          <KpiCard label="Alumnos (30 días)" value={past30Students.toString()}
-            sub={`Media ${past30.length > 0 ? (past30Students / past30.length).toFixed(1) : 0} por clase`} />
-          <KpiCard label="Próximos 7 días"
-            value={`${upcoming7.reduce((s, e) => s + e.ticketsSold, 0)} reservas`}
-            sub={`${upcoming7.length} clases programadas`} />
-        </div>
-        <p className="text-xs text-navy/30 -mt-3 flex items-center gap-1.5">
-          <BookOpen size={12} className="shrink-0" />
-          Momence API · eventos activos de los últimos 30 días y próximos 7 días.
-        </p>
       </section>
 
       {/* ════════════════════════════════════════════════════════
