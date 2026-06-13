@@ -174,7 +174,7 @@ export default function GastosBreakdown({
                       <p className="text-sm font-medium text-navy truncate">
                         {t.contact || t.concept}
                       </p>
-                      <p className="text-xs text-navy/40 mt-0.5">{t.date}</p>
+                      <p className="text-xs text-navy/40 mt-0.5">{t.date.split("-").reverse().join("/")}</p>
                     </div>
                     <p className={`text-sm font-semibold tabular-nums shrink-0 ${t.amount < 0 ? "text-navy" : "text-success"}`}>
                       {t.amount < 0 ? "−" : "+"}{fmt(Math.abs(t.amount))}
