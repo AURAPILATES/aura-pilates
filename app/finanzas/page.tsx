@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import { Suspense } from "react";
 import { BookOpen } from "react-feather";
 import { fmt, pct } from "@/lib/analytics";
-import { salesByProduct } from "@/lib/sales";
+import { loadSales, salesByProduct } from "@/lib/sales";
 import {
   loadStripePayments,
   stripeByMethod,
@@ -148,10 +148,19 @@ export default async function Finanzas(props: {
   const byMethod      = stripeByMethod(payments);
   const puntual       = totalRev - recurrente;
 
-  // Convert to Sale[] for charts that depend on it
+  // Convert to Sale[] for Momence-compatible charts
   const salesAll  = toSales(paymentsAll);
-  const sales     = toSales(payments);
-  const byProduct = salesByProduct(sales).sort((a, b) => b.revenue - a.revenue);
+
+  // Momence CSV: fuente de verdad para desglose por producto
+  const momenceSalesAll = loadSales();
+  const momenceSales    = (from || to)
+    ? momenceSalesAll.filter((s) => {
+        if (from && s.paymentDate < from) return false;
+        if (to   && s.paymentDate > to)   return false;
+        return true;
+      })
+    : momenceSalesAll;
+  const byProduct = salesByProduct(momenceSales).sort((a, b) => b.revenue - a.revenue);
 
   // ── Transactions (siempre datos completos — el banco solo exporta hasta fecha fija) ──
   const txnsAll = await loadTransactions();
@@ -302,7 +311,7 @@ export default async function Finanzas(props: {
                   <KpiCard
                     label="Ticket medio"
                     value={fmt(ticketMedio)}
-                    sub={`${sales.length} ventas totales`}
+                    sub={`${momenceSales.length} ventas totales`}
                     trend={trendPct(ticketCur, ticketPrev)}
                   />
                 </div>
@@ -376,7 +385,7 @@ export default async function Finanzas(props: {
                   Stripe · pagos en tiempo real.
                 </p>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <Block title="Por producto" legend="Stripe · descripción del pago como nombre de producto.">
+                  <Block title="Por producto" legend="Momence · exportación CSV de ventas por producto.">
                     {productSegments.length > 0 ? (
                       <div className="flex gap-5 items-start">
                         <div className="shrink-0">
@@ -435,7 +444,7 @@ export default async function Finanzas(props: {
                     </div>
                   </Block>
                 </div>
-                <EvolucionChart sales={sales} />
+                <EvolucionChart sales={toSales(payments)} />
               </div>
             </section>
 
