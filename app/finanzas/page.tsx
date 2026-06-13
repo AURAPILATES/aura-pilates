@@ -136,7 +136,7 @@ export default async function Finanzas(props: {
   const ticketPrev  = prevCount > 0 ? prev / prevCount : 0;
   const ticketCur   = curCount > 0 ? cur / curCount : 0;
 
-  const recurrente    = payments.filter((p) => p.category === "Suscripción").reduce((s, p) => s + p.amount, 0);
+  const recurrente    = payments.filter((p) => p.customerId && recurringIds.has(p.customerId)).reduce((s, p) => s + p.amount, 0);
   const recurrentePct = totalRev > 0 ? recurrente / totalRev : 0;
   const byMethod      = stripeByMethod(payments);
   const puntual       = totalRev - recurrente;
