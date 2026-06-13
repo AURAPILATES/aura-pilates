@@ -3,6 +3,12 @@ import { stripe } from "./stripe";
 import type { StripeSubscription } from "./stripeSubscriptions";
 import type { StripePayment } from "./stripePayments";
 
+export type StripeDiscount = {
+  name: string;
+  percentOff: number | null;
+  amountOff: number | null;
+};
+
 export type StripeCustomer = {
   id: string;
   name: string | null;
@@ -12,6 +18,7 @@ export type StripeCustomer = {
   paymentCount: number;
   lastPaymentDate: string | null;
   subscription: StripeSubscription | null;
+  discount: StripeDiscount | null;
 };
 
 export async function loadStripeCustomers(
@@ -40,11 +47,21 @@ export async function loadStripeCustomers(
 
   const customers: StripeCustomer[] = [];
 
-  for await (const raw of stripe.customers.list({ limit: 100 })) {
+  for await (const raw of stripe.customers.list({ limit: 100, expand: ["data.discount.coupon"] })) {
     if ((raw as unknown as { deleted?: boolean }).deleted) continue;
     const c = raw as Stripe.Customer;
     const stats = byCustomer.get(c.id);
-    if (!stats) continue; // sin pagos, no es cliente real
+    if (!stats) continue;
+
+    const rawDiscount = c.discount as unknown as { coupon?: { id: string; name?: string | null; percent_off?: number | null; amount_off?: number | null } } | null;
+    const disc = rawDiscount?.coupon ?? null;
+    const discount: StripeDiscount | null = disc
+      ? {
+          name:       disc.name ?? disc.id ?? "Descuento",
+          percentOff: disc.percent_off ?? null,
+          amountOff:  disc.amount_off ? disc.amount_off / 100 : null,
+        }
+      : null;
 
     customers.push({
       id:    c.id,
@@ -55,6 +72,7 @@ export async function loadStripeCustomers(
       paymentCount:    stats.count,
       lastPaymentDate: stats.last || null,
       subscription:    activeSub.get(c.id) ?? null,
+      discount,
     });
   }
 

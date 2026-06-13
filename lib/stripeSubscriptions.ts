@@ -56,7 +56,7 @@ export async function loadStripeSubscriptions(): Promise<StripeSubscription[]> {
 // ── Analytics ─────────────────────────────────────────────────────────────────
 
 export function activeSubs(subs: StripeSubscription[]): StripeSubscription[] {
-  return subs.filter((s) => s.status === "active" || s.status === "trialing");
+  return subs.filter((s) => s.status === "active" || s.status === "trialing" || s.status === "past_due");
 }
 
 export function mrrFromSubs(subs: StripeSubscription[]): number {
