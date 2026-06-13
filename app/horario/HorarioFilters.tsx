@@ -106,56 +106,58 @@ export default function HorarioFilters({ events }: { events: MomenceEvent[] }) {
                 <h2 className="text-xs font-semibold text-navy/40 uppercase tracking-widest capitalize">
                   {label}
                 </h2>
-                <div className="flex items-center gap-2">
+                <div className="flex bg-white border border-navy/10 rounded shadow-card overflow-hidden">
                   <StatChip label="clases" value={String(dayEvents.length)} />
                   <StatChip label="alumnos" value={String(dayStudents)} />
                   <StatChip label="ocupación" value={pct(dayOcc)} valueClass={occColor} />
-                  <StatChip label="ingresos" value={fmt(dayRevenue)} />
+                  <StatChip label="ingresos" value={fmt(dayRevenue)} last />
                 </div>
               </div>
 
-              <div className="space-y-2">
-                {dayEvents.map((e) => {
-                  const time = new Date(e.dateTime).toLocaleTimeString("es-ES", {
-                    timeZone: "Europe/Madrid",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  });
-                  const occ = e.capacity > 0 ? e.ticketsSold / e.capacity : 0;
-                  const pctVal = Math.round(occ * 100);
-                  const isFull = e.spotsRemaining === 0;
-                  const accentColor = occ >= 0.8 ? "bg-success" : occ >= 0.5 ? "bg-warning" : "bg-danger";
-                  const occTextColor = occ >= 0.8 ? "text-success" : occ >= 0.5 ? "text-warning" : "text-danger";
-
-                  return (
-                    <div
-                      key={e.id}
-                      className="bg-white border border-navy/10 rounded shadow-card flex items-center overflow-hidden gap-4 px-4 py-3.5"
-                    >
-                      <div className={`w-0.5 self-stretch rounded-full shrink-0 ${accentColor}`} />
-                      <span className="text-sm font-mono text-navy/50 w-11 shrink-0">{time}</span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-navy truncate">{e.title}</p>
-                        {e.teacher && <p className="text-xs text-navy/40">{e.teacher}</p>}
-                      </div>
-                      {isFull ? (
-                        <span className="text-xs font-medium bg-success/10 text-success px-2 py-0.5 rounded w-16 text-center shrink-0">
-                          Llena ✦
-                        </span>
-                      ) : (
-                        <span className="text-xs text-navy/40 w-16 text-right shrink-0">
-                          {e.spotsRemaining}/{e.capacity} libres
-                        </span>
-                      )}
-                      <span className={`text-sm font-semibold w-12 text-right tabular-nums shrink-0 ${occTextColor}`}>
-                        {pctVal}%
-                      </span>
-                      <span className="text-sm font-medium text-navy w-14 text-right shrink-0">
-                        {fmt(e.ticketsSold * e.fixedPrice)}
-                      </span>
-                    </div>
-                  );
-                })}
+              <div className="bg-white border border-navy/10 rounded shadow-card overflow-hidden">
+                <table className="w-full text-sm">
+                  <tbody>
+                    {dayEvents.map((e, i) => {
+                      const time = new Date(e.dateTime).toLocaleTimeString("es-ES", {
+                        timeZone: "Europe/Madrid",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      });
+                      const occ = e.capacity > 0 ? e.ticketsSold / e.capacity : 0;
+                      const pctVal = Math.round(occ * 100);
+                      const isFull = e.spotsRemaining === 0;
+                      const accentColor = occ >= 0.8 ? "bg-success" : occ >= 0.5 ? "bg-warning" : "bg-danger";
+                      const occTextColor = occ >= 0.8 ? "text-success" : occ >= 0.5 ? "text-warning" : "text-danger";
+                      return (
+                        <tr key={e.id} className={i < dayEvents.length - 1 ? "border-b border-navy/5" : ""}>
+                          <td className="w-1 p-0">
+                            <div className={`w-1 h-full min-h-[52px] ${accentColor}`} />
+                          </td>
+                          <td className="pl-4 pr-3 py-3.5 font-mono text-navy/50 w-14 shrink-0">{time}</td>
+                          <td className="px-3 py-3.5">
+                            <p className="font-medium text-navy">{e.title}</p>
+                            {e.teacher && <p className="text-xs text-navy/40">{e.teacher}</p>}
+                          </td>
+                          <td className="px-3 py-3.5 text-right w-28">
+                            {isFull ? (
+                              <span className="text-xs font-medium bg-success/10 text-success px-2 py-0.5 rounded">
+                                Llena ✦
+                              </span>
+                            ) : (
+                              <span className="text-xs text-navy/40">{e.spotsRemaining}/{e.capacity} libres</span>
+                            )}
+                          </td>
+                          <td className={`px-3 py-3.5 text-right font-semibold tabular-nums w-16 ${occTextColor}`}>
+                            {pctVal}%
+                          </td>
+                          <td className="pl-3 pr-5 py-3.5 text-right font-medium text-navy w-16">
+                            {fmt(e.ticketsSold * e.fixedPrice)}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             </div>
           )})}
@@ -165,9 +167,9 @@ export default function HorarioFilters({ events }: { events: MomenceEvent[] }) {
   );
 }
 
-function StatChip({ label, value, valueClass = "text-navy" }: { label: string; value: string; valueClass?: string }) {
+function StatChip({ label, value, valueClass = "text-navy", last = false }: { label: string; value: string; valueClass?: string; last?: boolean }) {
   return (
-    <div className="bg-white border border-navy/10 rounded shadow-card px-3 py-1.5 text-center">
+    <div className={`px-4 py-2 text-center ${last ? "" : "border-r border-navy/10"}`}>
       <p className="text-xs text-navy/40">{label}</p>
       <p className={`text-sm font-semibold ${valueClass}`}>{value}</p>
     </div>

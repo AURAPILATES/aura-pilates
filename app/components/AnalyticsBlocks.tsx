@@ -2,11 +2,14 @@ import { pct } from "@/lib/analytics";
 
 // ── Shared ────────────────────────────────────────────────────────────────────
 
-function BlockCard({ title, children }: { title: string; children: React.ReactNode }) {
+function BlockCard({ title, legend, children }: { title: string; legend?: string; children: React.ReactNode }) {
   return (
-    <div className="bg-white border border-navy/10 rounded shadow-card p-5">
+    <div className="bg-white border border-navy/10 rounded shadow-card p-5 flex flex-col">
       <p className="text-xs font-semibold text-navy/40 uppercase tracking-wider mb-4">{title}</p>
-      {children}
+      <div className="flex-1">{children}</div>
+      {legend && (
+        <p className="text-[10px] text-navy/30 mt-4 pt-3 border-t border-navy/5 leading-relaxed">{legend}</p>
+      )}
     </div>
   );
 }
@@ -38,7 +41,7 @@ export function ProfessorasBlock({ data }: { data: TeacherRow[] }) {
   const sorted = [...data].sort((a, b) => b.occupancy - a.occupancy);
   const max = Math.max(...sorted.map((r) => r.occupancy));
   return (
-    <BlockCard title="Ocupación por profesora">
+    <BlockCard title="Ocupación por profesora" legend="Fuente: Momence · clases impartidas en los últimos 30 días. Ocupación = alumnos inscritos / capacidad máxima de la clase.">
       <div className="space-y-3">
         {sorted.map((r) => (
           <div key={r.teacher} className="flex items-center gap-3">
@@ -62,7 +65,7 @@ type HourRow = { label: string; avgOcc: number; count: number };
 export function HorarioDelDiaBlock({ data }: { data: HourRow[] }) {
   const max = Math.max(...data.map((r) => r.avgOcc));
   return (
-    <BlockCard title="Ocupación por franja horaria">
+    <BlockCard title="Ocupación por franja horaria" legend="Fuente: Momence · clases impartidas en los últimos 30 días. Cada franja muestra la ocupación media de todas las clases que empezaron en esa hora.">
       <div className="space-y-3">
         {data.map((r) => (
           <div key={r.label} className="flex items-center gap-3">
@@ -86,7 +89,7 @@ type WeekdayRow = { label: string; avgOcc: number; count: number };
 export function DiaSemanaBlock({ data }: { data: WeekdayRow[] }) {
   const max = Math.max(...data.map((r) => r.avgOcc));
   return (
-    <BlockCard title="Ocupación por día de la semana">
+    <BlockCard title="Ocupación por día de la semana" legend="Fuente: Momence · clases impartidas en los últimos 30 días. Cada día muestra la media de ocupación de todas sus clases en el período.">
       <div className="space-y-3">
         {data.map((r) => (
           <div key={r.label} className="flex items-center gap-3">
@@ -124,7 +127,7 @@ export function HeatmapBlock({ data }: { data: HeatmapCell[] }) {
   }
 
   return (
-    <BlockCard title="Mapa de calor: día × hora">
+    <BlockCard title="Mapa de calor: día × hora" legend="Fuente: Momence · clases impartidas en los últimos 30 días. Cada celda muestra la ocupación media de las clases que ocurrieron ese día de la semana y esa hora.">
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
@@ -184,7 +187,7 @@ export function UrbanBlock({
   const total = byHour.reduce((s, r) => s + r.count, 0);
 
   return (
-    <BlockCard title="Urban Sport Club">
+    <BlockCard title="Urban Sport Club" legend="Fuente: exportación de ventas de Momence (sales.csv) · reservas identificadas por método de pago &quot;urban-sports-club&quot;. El período exacto de las reservas es desconocido.">
       <div className="flex items-center gap-2 mb-4">
         <span className="text-sm font-semibold text-navy">{total} reservas</span>
         <span className="text-xs bg-navy/10 text-navy/50 px-2 py-0.5 rounded">período desconocido</span>
