@@ -12,12 +12,11 @@ import {
   toSales,
 } from "@/lib/stripePayments";
 import {
-  loadStripeSubscriptions,
-  activeSubs,
-  mrrFromSubs,
-  churnedThisMonth,
-  renewingInDays,
-} from "@/lib/stripeSubscriptions";
+  estimatedMRR,
+  activeCustomersInMonth,
+  recurringCustomerIds,
+  possibleChurnIds,
+} from "@/lib/stripeRecurrence";
 import {
   loadTransactions,
   totalOperationalExpenses,
@@ -119,10 +118,9 @@ export default async function Finanzas(props: {
   const prev2MonthDate = new Date(now.getFullYear(), now.getMonth() - 2, 1);
   const prev2Month = `${prev2MonthDate.getFullYear()}-${pad2(prev2MonthDate.getMonth() + 1)}`;
 
-  const [paymentsAll, paymentsFiltered, subscriptions] = await Promise.all([
+  const [paymentsAll, paymentsFiltered] = await Promise.all([
     loadStripePayments(),
     (from || to) ? loadStripePayments(from, to) : Promise.resolve(null),
-    loadStripeSubscriptions(),
   ]);
   const payments  = paymentsFiltered ?? paymentsAll;
   const hasSales  = paymentsAll.length > 0;
@@ -148,13 +146,12 @@ export default async function Finanzas(props: {
   const sales     = toSales(payments);
   const byProduct = salesByProduct(sales).sort((a, b) => b.revenue - a.revenue);
 
-  // ── Suscripciones ──
-  const activeSubsList  = activeSubs(subscriptions);
-  const activeSubsCount = activeSubsList.length;
-  const realMrr         = mrrFromSubs(subscriptions);
-  const churnList       = churnedThisMonth(subscriptions, curMonth);
-  const renewNext7      = renewingInDays(subscriptions, 7);
-  const renewNext30     = renewingInDays(subscriptions, 30);
+  // ── Recurrencia (derivada de pagos, no de suscripciones Stripe) ──
+  const recurringIds    = recurringCustomerIds(paymentsAll, curMonth);
+  const activeSubsCount = recurringIds.size;
+  const realMrr         = estimatedMRR(paymentsAll, curMonth);
+  const churnIds        = possibleChurnIds(paymentsAll, curMonth);
+  const renewNext7      = activeCustomersInMonth(paymentsAll, curMonth);
 
   // ── Transactions (siempre datos completos — el banco solo exporta hasta fecha fija) ──
   const txnsAll = await loadTransactions();
@@ -279,7 +276,7 @@ export default async function Finanzas(props: {
                     sub="ingresos − gastos"
                     valueColor={resultadoMes >= 0 ? "text-success" : "text-danger"}
                   />
-                  <KpiCard label="Subs activas" value={String(activeSubsCount)} sub={`MRR ${fmt(realMrr)}`} />
+                  <KpiCard label="Clientes recurrentes" value={String(activeSubsCount)} sub={`MRR estimado ${fmt(realMrr)}`} />
                 </div>
                 <FinanzasBarChart sales={salesAll} txns={txnsAll} />
               </div>
@@ -337,8 +334,8 @@ export default async function Finanzas(props: {
                 {/* Fuentes de ingresos */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="bg-white border border-navy/10 rounded shadow-card p-5">
-                    <p className="text-xs text-navy/40 uppercase tracking-wider mb-1">Suscripciones</p>
-                    <p className="text-[10px] text-navy/25 mb-2">{activeSubsCount} activas · MRR {fmt(realMrr)}</p>
+                    <p className="text-xs text-navy/40 uppercase tracking-wider mb-1">Recurrentes</p>
+                    <p className="text-[10px] text-navy/25 mb-2">{activeSubsCount} clientes · 2+ meses de 3</p>
                     <p className="text-3xl font-semibold text-primary">{fmt(recurrente)}</p>
                     <p className="text-xs text-navy/40 mt-1">{pct(recurrentePct)} del total</p>
                     <div className="mt-4 h-1.5 bg-navy/5 rounded-full overflow-hidden">
@@ -357,19 +354,19 @@ export default async function Finanzas(props: {
                   <div className="bg-white border border-navy/10 rounded shadow-card p-5">
                     <p className="text-xs text-navy/40 uppercase tracking-wider mb-3">Retención</p>
                     <div className="flex items-baseline gap-2">
-                      <p className={`text-3xl font-semibold ${churnList.length > 0 ? "text-danger" : "text-success"}`}>
-                        {churnList.length}
+                      <p className={`text-3xl font-semibold ${churnIds.size > 0 ? "text-warning" : "text-success"}`}>
+                        {churnIds.size}
                       </p>
-                      <p className="text-xs text-navy/40">bajas este mes</p>
+                      <p className="text-xs text-navy/40">sin pagar este mes</p>
                     </div>
                     <div className="mt-3 pt-3 border-t border-navy/5 space-y-1">
                       <div className="flex justify-between text-xs">
-                        <span className="text-navy/40">Renuevan en 7 días</span>
-                        <span className="font-medium text-navy">{renewNext7.length}</span>
+                        <span className="text-navy/40">Activos este mes</span>
+                        <span className="font-medium text-navy">{renewNext7}</span>
                       </div>
                       <div className="flex justify-between text-xs">
-                        <span className="text-navy/40">Renuevan en 30 días</span>
-                        <span className="font-medium text-navy">{renewNext30.length}</span>
+                        <span className="text-navy/40">MRR estimado</span>
+                        <span className="font-medium text-navy">{fmt(realMrr)}</span>
                       </div>
                     </div>
                   </div>

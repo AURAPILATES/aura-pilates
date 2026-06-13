@@ -1,7 +1,7 @@
 import Stripe from "stripe";
 import { stripe } from "./stripe";
-import type { StripeSubscription } from "./stripeSubscriptions";
 import type { StripePayment } from "./stripePayments";
+import { recurringCustomerIds } from "./stripeRecurrence";
 
 export type StripeDiscount = {
   name: string;
@@ -17,33 +17,29 @@ export type StripeCustomer = {
   totalSpent: number;
   paymentCount: number;
   lastPaymentDate: string | null;
-  subscription: StripeSubscription | null;
+  firstPaymentDate: string | null;
+  isRecurring: boolean;
   discount: StripeDiscount | null;
 };
 
 export async function loadStripeCustomers(
   payments: StripePayment[],
-  subscriptions: StripeSubscription[],
+  curMonth: string,
 ): Promise<StripeCustomer[]> {
   // Payment stats by customer
-  const byCustomer = new Map<string, { total: number; count: number; last: string }>();
+  const byCustomer = new Map<string, { total: number; count: number; last: string; first: string }>();
   for (const p of payments) {
     if (!p.customerId) continue;
-    const prev = byCustomer.get(p.customerId) ?? { total: 0, count: 0, last: "" };
+    const prev = byCustomer.get(p.customerId) ?? { total: 0, count: 0, last: "", first: "9999-99-99" };
     byCustomer.set(p.customerId, {
       total: prev.total + p.amount,
       count: prev.count + 1,
-      last:  p.date > prev.last ? p.date : prev.last,
+      last:  p.date > prev.last  ? p.date : prev.last,
+      first: p.date < prev.first ? p.date : prev.first,
     });
   }
 
-  // Active subscription by customer
-  const activeSub = new Map<string, StripeSubscription>();
-  for (const sub of subscriptions) {
-    if (sub.status === "active" || sub.status === "trialing") {
-      activeSub.set(sub.customerId, sub);
-    }
-  }
+  const recurring = recurringCustomerIds(payments, curMonth);
 
   const customers: StripeCustomer[] = [];
 
@@ -64,14 +60,15 @@ export async function loadStripeCustomers(
       : null;
 
     customers.push({
-      id:    c.id,
-      name:  c.name  ?? null,
-      email: c.email ?? null,
-      createdAt:       new Date(c.created * 1000).toISOString().split("T")[0],
-      totalSpent:      stats.total,
-      paymentCount:    stats.count,
-      lastPaymentDate: stats.last || null,
-      subscription:    activeSub.get(c.id) ?? null,
+      id:               c.id,
+      name:             c.name  ?? null,
+      email:            c.email ?? null,
+      createdAt:        new Date(c.created * 1000).toISOString().split("T")[0],
+      totalSpent:       stats.total,
+      paymentCount:     stats.count,
+      lastPaymentDate:  stats.last  || null,
+      firstPaymentDate: stats.first !== "9999-99-99" ? stats.first : null,
+      isRecurring:      recurring.has(c.id),
       discount,
     });
   }

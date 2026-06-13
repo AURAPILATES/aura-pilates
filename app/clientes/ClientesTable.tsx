@@ -4,9 +4,11 @@ import { useState, useMemo } from "react";
 import { fmt } from "@/lib/analytics";
 import type { StripeCustomer } from "@/lib/stripeCustomers";
 
+type CustomerRow = StripeCustomer & { possibleChurn?: boolean };
+
 type SortKey = "totalSpent" | "paymentCount" | "lastPaymentDate" | "name";
 type SortDir = "asc" | "desc";
-type Filter  = "all" | "active" | "inactive" | "discount";
+type Filter  = "all" | "recurring" | "occasional" | "discount" | "churn";
 
 function SortIcon({ active, dir }: { active: boolean; dir: SortDir }) {
   return (
@@ -32,7 +34,7 @@ function DiscountBadge({ discount }: { discount: NonNullable<StripeCustomer["dis
   );
 }
 
-export default function ClientesTable({ customers }: { customers: StripeCustomer[] }) {
+export default function ClientesTable({ customers }: { customers: CustomerRow[] }) {
   const [search,  setSearch]  = useState("");
   const [filter,  setFilter]  = useState<Filter>("all");
   const [sortKey, setSortKey] = useState<SortKey>("totalSpent");
@@ -47,7 +49,6 @@ export default function ClientesTable({ customers }: { customers: StripeCustomer
     }
   }
 
-  // Top 3 by total spent get a crown badge
   const topIds = useMemo(() => {
     return [...customers]
       .sort((a, b) => b.totalSpent - a.totalSpent)
@@ -55,13 +56,17 @@ export default function ClientesTable({ customers }: { customers: StripeCustomer
       .map((c) => c.id);
   }, [customers]);
 
+  const discountCount = customers.filter((c) => c.discount).length;
+  const churnCount    = customers.filter((c) => c.possibleChurn).length;
+
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
     return customers
       .filter((c) => {
-        if (filter === "active"   && !c.subscription)  return false;
-        if (filter === "inactive" &&  c.subscription)  return false;
-        if (filter === "discount" && !c.discount)       return false;
+        if (filter === "recurring"   && !c.isRecurring)   return false;
+        if (filter === "occasional"  &&  c.isRecurring)   return false;
+        if (filter === "discount"    && !c.discount)       return false;
+        if (filter === "churn"       && !c.possibleChurn) return false;
         if (!q) return true;
         return (
           c.name?.toLowerCase().includes(q) ||
@@ -70,8 +75,8 @@ export default function ClientesTable({ customers }: { customers: StripeCustomer
       })
       .sort((a, b) => {
         let diff = 0;
-        if (sortKey === "totalSpent")        diff = a.totalSpent - b.totalSpent;
-        else if (sortKey === "paymentCount") diff = a.paymentCount - b.paymentCount;
+        if (sortKey === "totalSpent")          diff = a.totalSpent - b.totalSpent;
+        else if (sortKey === "paymentCount")   diff = a.paymentCount - b.paymentCount;
         else if (sortKey === "lastPaymentDate") {
           diff = (a.lastPaymentDate ?? "").localeCompare(b.lastPaymentDate ?? "");
         } else {
@@ -93,26 +98,17 @@ export default function ClientesTable({ customers }: { customers: StripeCustomer
     );
   }
 
-  const filterLabels: { key: Filter; label: string }[] = [
-    { key: "all",      label: "Todos" },
-    { key: "active",   label: "Con suscripción" },
-    { key: "inactive", label: "Sin suscripción" },
-    { key: "discount", label: "Con descuento" },
-  ];
-
-  const discountCount = customers.filter((c) => c.discount).length;
-
   function downloadCsv() {
     const rows = [
-      ["Nombre", "Email", "Plan", "Total gastado (€)", "Pagos", "Último pago", "Estado", "Descuento"],
+      ["Nombre", "Email", "Frecuencia", "Total gastado (€)", "Pagos", "Primer pago", "Último pago", "Descuento"],
       ...filtered.map((c) => [
         c.name ?? "",
         c.email ?? "",
-        c.subscription?.plan ?? "Sin suscripción",
+        c.isRecurring ? "Recurrente" : "Ocasional",
         c.totalSpent.toFixed(2),
         c.paymentCount,
+        c.firstPaymentDate ?? "",
         c.lastPaymentDate ?? "",
-        c.subscription ? "Activo" : "Inactivo",
         c.discount ? (c.discount.percentOff != null ? `-${c.discount.percentOff}%` : c.discount.name) : "",
       ]),
     ];
@@ -125,6 +121,14 @@ export default function ClientesTable({ customers }: { customers: StripeCustomer
     a.click();
     URL.revokeObjectURL(url);
   }
+
+  const filterLabels: { key: Filter; label: string; count?: number }[] = [
+    { key: "all",        label: "Todos" },
+    { key: "recurring",  label: "Recurrentes" },
+    { key: "occasional", label: "Ocasionales" },
+    { key: "discount",   label: "Descuento", count: discountCount },
+    { key: "churn",      label: "Sin pagar este mes", count: churnCount },
+  ];
 
   return (
     <div>
@@ -169,8 +173,8 @@ export default function ClientesTable({ customers }: { customers: StripeCustomer
         </button>
 
         {/* Filter tabs */}
-        <div className="flex gap-1 bg-navy/[0.04] rounded-lg p-1">
-          {filterLabels.map(({ key, label }) => (
+        <div className="flex gap-1 bg-navy/[0.04] rounded-lg p-1 flex-wrap">
+          {filterLabels.map(({ key, label, count }) => (
             <button
               key={key}
               onClick={() => setFilter(key)}
@@ -181,9 +185,11 @@ export default function ClientesTable({ customers }: { customers: StripeCustomer
               }`}
             >
               {label}
-              {key === "discount" && discountCount > 0 && (
-                <span className="ml-1 text-[10px] bg-warning/20 text-warning px-1 rounded-full">
-                  {discountCount}
+              {count != null && count > 0 && (
+                <span className={`ml-1 text-[10px] px-1 rounded-full ${
+                  key === "churn" ? "bg-warning/20 text-warning" : "bg-warning/20 text-warning"
+                }`}>
+                  {count}
                 </span>
               )}
             </button>
@@ -191,7 +197,6 @@ export default function ClientesTable({ customers }: { customers: StripeCustomer
         </div>
       </div>
 
-      {/* Result count */}
       {(search || filter !== "all") && (
         <p className="text-xs text-navy/35 mb-3">
           {filtered.length} {filtered.length === 1 ? "cliente" : "clientes"} encontrados
@@ -206,7 +211,7 @@ export default function ClientesTable({ customers }: { customers: StripeCustomer
               <tr className="border-b border-navy/[0.06]">
                 <ThSort col="name"            label="Cliente"       className="text-left" />
                 <th className="text-left px-5 py-3 text-[11px] font-semibold text-navy/35 uppercase tracking-wider">
-                  Plan
+                  Frecuencia
                 </th>
                 <ThSort col="totalSpent"      label="Total gastado" className="text-right" />
                 <ThSort col="paymentCount"    label="Pagos"         className="text-right hidden sm:table-cell" />
@@ -232,11 +237,9 @@ export default function ClientesTable({ customers }: { customers: StripeCustomer
                   return (
                     <tr
                       key={c.id}
-                      className={`border-b border-navy/[0.04] last:border-0 transition-colors ${
-                        isTop && topRank === 0
-                          ? "hover:bg-warning/[0.03]"
-                          : "hover:bg-navy/[0.015]"
-                      } ${i % 2 === 0 ? "" : "bg-navy/[0.008]"}`}
+                      className={`border-b border-navy/[0.04] last:border-0 transition-colors hover:bg-navy/[0.015] ${
+                        c.possibleChurn ? "bg-warning/[0.04]" : i % 2 === 0 ? "" : "bg-navy/[0.008]"
+                      }`}
                     >
                       <td className="px-5 py-3">
                         <div className="flex items-center gap-1.5">
@@ -252,13 +255,13 @@ export default function ClientesTable({ customers }: { customers: StripeCustomer
                           {c.discount && <DiscountBadge discount={c.discount} />}
                         </div>
                       </td>
-                      <td className="px-5 py-3 text-navy/60">
-                        {c.subscription ? (
+                      <td className="px-5 py-3">
+                        {c.isRecurring ? (
                           <span className="text-xs bg-primary/[0.08] text-primary px-2 py-0.5 rounded-full font-medium">
-                            {c.subscription.plan}
+                            Recurrente
                           </span>
                         ) : (
-                          <span className="text-xs text-navy/30">Sin suscripción</span>
+                          <span className="text-xs text-navy/30">Ocasional</span>
                         )}
                       </td>
                       <td className="px-5 py-3 text-right font-semibold text-navy tabular-nums">{fmt(c.totalSpent)}</td>
@@ -267,15 +270,15 @@ export default function ClientesTable({ customers }: { customers: StripeCustomer
                         {c.lastPaymentDate ? c.lastPaymentDate.split("-").reverse().join("/") : "—"}
                       </td>
                       <td className="px-5 py-3 text-center">
-                        {c.subscription ? (
-                          <span className="inline-flex items-center gap-1.5 text-xs text-success font-medium">
-                            <span className="w-1.5 h-1.5 rounded-full bg-success inline-block" />
-                            Activa
+                        {c.possibleChurn ? (
+                          <span className="inline-flex items-center gap-1.5 text-xs text-warning font-medium">
+                            <span className="w-1.5 h-1.5 rounded-full bg-warning inline-block" />
+                            Sin pagar
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1.5 text-xs text-navy/30">
-                            <span className="w-1.5 h-1.5 rounded-full bg-navy/20 inline-block" />
-                            Inactivo
+                          <span className="inline-flex items-center gap-1.5 text-xs text-success font-medium">
+                            <span className="w-1.5 h-1.5 rounded-full bg-success inline-block" />
+                            Al día
                           </span>
                         )}
                       </td>
