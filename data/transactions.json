@@ -1,0 +1,1181 @@
+[
+  {
+    "date": "2025-10-27",
+    "amount": 750.0,
+    "balance": 2250.0,
+    "concept": "TRANSFER INMEDIATA, DOMENECH BEJAR CARLES, DOMENECH BEJAR CARLES, 000001020251027",
+    "contact": "Carles Domenech Bejar",
+    "labels": "Socios, Carles",
+    "category": "capital"
+  },
+  {
+    "date": "2025-10-27",
+    "amount": 750.0,
+    "balance": 1500.0,
+    "concept": "TRASPASO",
+    "contact": "Cèlia Gimènez",
+    "labels": "Socios, Celia",
+    "category": "capital"
+  },
+  {
+    "date": "2025-10-27",
+    "amount": 750.0,
+    "balance": 750.0,
+    "concept": "TRASPASO",
+    "contact": "Victor Muliterno Descalzo",
+    "labels": "Socios, Victor",
+    "category": "capital"
+  },
+  {
+    "date": "2025-10-28",
+    "amount": 750.0,
+    "balance": 3000.0,
+    "concept": "TRASPASO",
+    "contact": "Olga Soteras Giberga",
+    "labels": "Socios, Olga",
+    "category": "capital"
+  },
+  {
+    "date": "2025-11-28",
+    "amount": 10000.0,
+    "balance": 40000.0,
+    "concept": "CONSTIT. PRESTAMO",
+    "contact": "",
+    "labels": "Préstamo Caixabank",
+    "category": "financing"
+  },
+  {
+    "date": "2025-11-28",
+    "amount": 10000.0,
+    "balance": 30000.0,
+    "concept": "CONSTIT. PRESTAMO",
+    "contact": "",
+    "labels": "Préstamo Caixabank",
+    "category": "financing"
+  },
+  {
+    "date": "2025-11-28",
+    "amount": 20000.0,
+    "balance": 20000.0,
+    "concept": "CONSTIT. PRESTAMO",
+    "contact": "",
+    "labels": "Préstamo Caixabank",
+    "category": "financing"
+  },
+  {
+    "date": "2025-12-01",
+    "amount": -9.04,
+    "balance": 39981.92,
+    "concept": "PRES.32611770686",
+    "contact": "Caixabank",
+    "labels": "Préstamo Caixabank",
+    "category": "financing"
+  },
+  {
+    "date": "2025-12-01",
+    "amount": -4.52,
+    "balance": 39990.96,
+    "concept": "PRES.32611770812",
+    "contact": "Caixabank",
+    "labels": "Préstamo Caixabank",
+    "category": "financing"
+  },
+  {
+    "date": "2025-12-01",
+    "amount": -4.52,
+    "balance": 39995.48,
+    "concept": "PRES.80246254440",
+    "contact": "Caixabank",
+    "labels": "Préstamo Caixabank",
+    "category": "financing"
+  },
+  {
+    "date": "2025-12-12",
+    "amount": -23.67,
+    "balance": 39958.25,
+    "concept": "IBERDROLA CLIENTES,SA",
+    "contact": "IBERDROLA CLIENTE,SA",
+    "labels": "Local, Electricidad",
+    "category": "Electricidad"
+  },
+  {
+    "date": "2025-12-25",
+    "amount": -1.08,
+    "balance": 2998.92,
+    "concept": "CORRESP. 11/2025",
+    "contact": "Caixabank",
+    "labels": "Comisiones bancarias",
+    "category": "Comisiones bancarias"
+  },
+  {
+    "date": "2025-12-29",
+    "amount": 1.08,
+    "balance": 3000.0,
+    "concept": "CORREO",
+    "contact": "Caixabank",
+    "labels": "Comisiones bancarias",
+    "category": "Comisiones bancarias"
+  },
+  {
+    "date": "2025-12-31",
+    "amount": -205.7,
+    "balance": 2794.3,
+    "concept": "BOLDU PLA I ASSOC, B59023077000, B59023077000, 023821601288665",
+    "contact": "Boldu Pla i Associats, S.L",
+    "labels": "Gestoría y legal",
+    "category": "Gestoría y legal"
+  },
+  {
+    "date": "2026-01-01",
+    "amount": -25.8,
+    "balance": 2768.5,
+    "concept": "MANTENIMIENTO",
+    "contact": "",
+    "labels": "Comisiones bancarias",
+    "category": "Comisiones bancarias"
+  },
+  {
+    "date": "2026-01-01",
+    "amount": -326.76,
+    "balance": 39304.73,
+    "concept": "PRES.32611770686",
+    "contact": "Caixabank",
+    "labels": "Préstamo Caixabank",
+    "category": "financing"
+  },
+  {
+    "date": "2026-01-01",
+    "amount": -163.38,
+    "balance": 39631.49,
+    "concept": "PRES.32611770812",
+    "contact": "Caixabank",
+    "labels": "Préstamo Caixabank",
+    "category": "financing"
+  },
+  {
+    "date": "2026-01-01",
+    "amount": -163.38,
+    "balance": 39794.87,
+    "concept": "PRES.80246254440",
+    "contact": "Caixabank",
+    "labels": "Préstamo Caixabank",
+    "category": "financing"
+  },
+  {
+    "date": "2026-01-04",
+    "amount": 38000.0,
+    "balance": 40768.5,
+    "concept": "TRASPASO",
+    "contact": "",
+    "labels": "Traspaso entre cuentas",
+    "category": "skip"
+  },
+  {
+    "date": "2026-01-04",
+    "amount": -38000.0,
+    "balance": 1304.73,
+    "concept": "Aura Pilates Studio SL",
+    "contact": "",
+    "labels": "Traspaso entre cuentas",
+    "category": "skip"
+  },
+  {
+    "date": "2026-01-05",
+    "amount": -6.77,
+    "balance": 40761.73,
+    "concept": "O2 MOVIL, A78923125032, A78923125032, 023985346533097",
+    "contact": "Telefónica Móviles España, S.A",
+    "labels": "Local, Teléfono",
+    "category": "Teléfono"
+  },
+  {
+    "date": "2026-01-08",
+    "amount": -563.0,
+    "balance": 40198.73,
+    "concept": "AJUNT BCN SERV RE",
+    "contact": "Ajuntament de Barcelona",
+    "labels": "Impuestos, Tasas",
+    "category": "Impuestos y tasas"
+  },
+  {
+    "date": "2026-01-09",
+    "amount": 25.8,
+    "balance": 40224.53,
+    "concept": "MANTENIMIENTO",
+    "contact": "",
+    "labels": "Comisiones bancarias",
+    "category": "Comisiones bancarias"
+  },
+  {
+    "date": "2026-01-09",
+    "amount": 879.8,
+    "balance": 40198.73,
+    "concept": "PAGO DEVOLUCION",
+    "contact": "Luis Ravanal González",
+    "labels": "Inversión, Reforma",
+    "category": "Inversión"
+  },
+  {
+    "date": "2026-01-09",
+    "amount": -879.8,
+    "balance": 39318.93,
+    "concept": "PAGO TRANSFERENCIAS, 3235-56-0012425-24 000001 000001, 3235-56-0012425-24 000001 000001",
+    "contact": "Luis Ravanal González",
+    "labels": "Inversión, Reforma",
+    "category": "Inversión"
+  },
+  {
+    "date": "2026-01-10",
+    "amount": 33.0,
+    "balance": 39341.73,
+    "concept": "COND.CUOTA TARJETA",
+    "contact": "Caixabank",
+    "labels": "Comisiones bancarias",
+    "category": "Comisiones bancarias"
+  },
+  {
+    "date": "2026-01-10",
+    "amount": -33.0,
+    "balance": 39308.73,
+    "concept": "CUOTA T. Masterca",
+    "contact": "Caixabank",
+    "labels": "Comisiones bancarias",
+    "category": "Comisiones bancarias"
+  },
+  {
+    "date": "2026-01-10",
+    "amount": -3.0,
+    "balance": 39341.73,
+    "concept": "PRECIO SERVIC.PAGOS",
+    "contact": "Caixabank",
+    "labels": "Comisiones bancarias",
+    "category": "Comisiones bancarias"
+  },
+  {
+    "date": "2026-01-10",
+    "amount": -879.8,
+    "balance": 39344.73,
+    "concept": "PAGO TRANSFERENCIAS, 3235-56-0012427-50 000001 000001, 3235-56-0012427-50 000001 000001",
+    "contact": "Luis Ravanal González",
+    "labels": "Inversión, Reforma",
+    "category": "Inversión"
+  },
+  {
+    "date": "2026-01-12",
+    "amount": 3.0,
+    "balance": 39344.73,
+    "concept": "P.SERV. ORDEN TRF/S",
+    "contact": "",
+    "labels": "",
+    "category": "Otros"
+  },
+  {
+    "date": "2026-01-14",
+    "amount": -1796.68,
+    "balance": null,
+    "concept": "Bonpilates victor 26/238",
+    "contact": "Bonpilates, S.L.",
+    "labels": "Material de clases",
+    "category": "Material y maquinaria"
+  },
+  {
+    "date": "2026-01-14",
+    "amount": -9680.0,
+    "balance": 29664.73,
+    "concept": "Factura Aura Pila, OK SERVICE S.C.P. NIF J66121658, OK SERVICE S.C.P. NIF J66121658",
+    "contact": "OK Service S.C.P",
+    "labels": "Inversión, Reforma",
+    "category": "Inversión"
+  },
+  {
+    "date": "2026-01-16",
+    "amount": -31.67,
+    "balance": 29633.06,
+    "concept": "IBERDROLA CLIENT., A95758389001, A95758389001, 025230211297743",
+    "contact": "IBERDROLA CLIENTE,SA",
+    "labels": "Local, Electricidad",
+    "category": "Electricidad"
+  },
+  {
+    "date": "2026-01-20",
+    "amount": -439.23,
+    "balance": 28952.68,
+    "concept": "I.R.P.F. MOD.111, Q2826000H111, Q2826000H111, 025419015297283",
+    "contact": "",
+    "labels": "Impuestos, IRPF 111",
+    "category": "Impuestos y tasas"
+  },
+  {
+    "date": "2026-01-20",
+    "amount": -140.72,
+    "balance": 29391.91,
+    "concept": "BOLDU PLA I ASSOC, B59023077000, B59023077000, 025434601485941",
+    "contact": "Boldu Pla i Associats, S.L",
+    "labels": "Gestoría y legal",
+    "category": "Gestoría y legal"
+  },
+  {
+    "date": "2026-01-20",
+    "amount": -100.43,
+    "balance": 29532.63,
+    "concept": "BOLDU PLA I ASSOC, B59023077000, B59023077000, 025434601484704",
+    "contact": "Boldu Pla i Associats, S.L",
+    "labels": "Gestoría y legal",
+    "category": "Gestoría y legal"
+  },
+  {
+    "date": "2026-01-23",
+    "amount": -205.7,
+    "balance": 28746.98,
+    "concept": "BOLDU PLA I ASSOC, B59023077000, B59023077000, 025625405648869",
+    "contact": "Boldu Pla i Associats, S.L",
+    "labels": "Gestoría y legal",
+    "category": "Gestoría y legal"
+  },
+  {
+    "date": "2026-01-30",
+    "amount": -205.7,
+    "balance": 28541.28,
+    "concept": "BOLDU PLA I ASSOC, B59023077000, B59023077000, 025926403336097",
+    "contact": "Boldu Pla i Associats, S.L",
+    "labels": "Gestoría y legal",
+    "category": "Gestoría y legal"
+  },
+  {
+    "date": "2026-02-01",
+    "amount": -109.46,
+    "balance": 28431.82,
+    "concept": "MOMENCE",
+    "contact": "Momence",
+    "labels": "Software",
+    "category": "Software"
+  },
+  {
+    "date": "2026-02-01",
+    "amount": -326.76,
+    "balance": 651.21,
+    "concept": "PRES.32611770686",
+    "contact": "Caixabank",
+    "labels": "Préstamo Caixabank",
+    "category": "financing"
+  },
+  {
+    "date": "2026-02-01",
+    "amount": -163.38,
+    "balance": 977.97,
+    "concept": "PRES.32611770812",
+    "contact": "Caixabank",
+    "labels": "Préstamo Caixabank",
+    "category": "financing"
+  },
+  {
+    "date": "2026-02-01",
+    "amount": -163.38,
+    "balance": 1141.35,
+    "concept": "PRES.80246254440",
+    "contact": "Caixabank",
+    "labels": "Préstamo Caixabank",
+    "category": "financing"
+  },
+  {
+    "date": "2026-02-02",
+    "amount": -79.64,
+    "balance": 28352.18,
+    "concept": "AIGUES DE BARCEL., A66098435000, A66098435000, 026104420010985",
+    "contact": "Aigües de Barcelona",
+    "labels": "Local, Agua",
+    "category": "Agua"
+  },
+  {
+    "date": "2026-02-04",
+    "amount": -16.78,
+    "balance": 28328.4,
+    "concept": "MOMENCE",
+    "contact": "Momence",
+    "labels": "Software",
+    "category": "Software"
+  },
+  {
+    "date": "2026-02-04",
+    "amount": -7.0,
+    "balance": 28345.18,
+    "concept": "O2 MOVIL, A78923125032, A78923125032, 026304522173160",
+    "contact": "Telefónica Móviles España, S.A",
+    "labels": "Local, Teléfono",
+    "category": "Teléfono"
+  },
+  {
+    "date": "2026-02-06",
+    "amount": -408.0,
+    "balance": 27920.4,
+    "concept": "GEST.I SOLUCIONS, B62185749000, B62185749000, 026454503730435",
+    "contact": "Carmen Capdevila Baró",
+    "labels": "Local, Alquiler",
+    "category": "Alquiler"
+  },
+  {
+    "date": "2026-02-09",
+    "amount": -21.42,
+    "balance": 27898.98,
+    "concept": "HIDROMETERING SL., B44712297100, B44712297100, 026495942581122",
+    "contact": "Hidrometering, S.L.",
+    "labels": "Local, Agua",
+    "category": "Agua"
+  },
+  {
+    "date": "2026-02-12",
+    "amount": -6050.0,
+    "balance": 5678.85,
+    "concept": "FACTURA N**28 - AU, OK SERVICE S.C.P, OK SERVICE S.C.P",
+    "contact": "OK Service S.C.P",
+    "labels": "Inversión, Reforma",
+    "category": "Inversión"
+  },
+  {
+    "date": "2026-02-12",
+    "amount": -16170.13,
+    "balance": 11728.85,
+    "concept": "BONPILATES 90* RE, BONPILATES S.L., BONPILATES S.L.",
+    "contact": "Bonpilates, S.L.",
+    "labels": "Material de clases",
+    "category": "Material y maquinaria"
+  },
+  {
+    "date": "2026-02-13",
+    "amount": -33.65,
+    "balance": 5642.2,
+    "concept": "IBERDROLA CLIENT., A95758389001, A95758389001, 026718614875269",
+    "contact": "IBERDROLA CLIENTE,SA",
+    "labels": "Local, Electricidad",
+    "category": "Electricidad"
+  },
+  {
+    "date": "2026-02-13",
+    "amount": -3.0,
+    "balance": 5675.85,
+    "concept": "PRECIO ED. EXTRACTO",
+    "contact": "",
+    "labels": "Impuestos, Tasas",
+    "category": "Impuestos y tasas"
+  },
+  {
+    "date": "2026-02-14",
+    "amount": -9.68,
+    "balance": 5632.52,
+    "concept": "SQSP* WORKSP**2222",
+    "contact": "Squarespace Ireland Limited",
+    "labels": "Software",
+    "category": "Software"
+  },
+  {
+    "date": "2026-02-16",
+    "amount": 169.68,
+    "balance": 820.89,
+    "concept": "Stripe Technology Europe Ltd",
+    "contact": "Stripe Payments Europe, Limited",
+    "labels": "Stripe",
+    "category": "income"
+  },
+  {
+    "date": "2026-02-19",
+    "amount": -491.87,
+    "balance": 3839.9,
+    "concept": "Factura Aura Pila, Aidas Publicidad S.L., Aidas Publicidad S.L.",
+    "contact": "Aidas Publicidad S.L.",
+    "labels": "Merchandising",
+    "category": "Merchandising"
+  },
+  {
+    "date": "2026-02-19",
+    "amount": -1300.75,
+    "balance": 4331.77,
+    "concept": "RÓTULO Factura Aura Pila, SB Graphics, SB Graphics",
+    "contact": "SERVEIS IMP.RET.SBG S.L",
+    "labels": "Inversión, Mobiliario",
+    "category": "Inversión"
+  },
+  {
+    "date": "2026-02-19",
+    "amount": 72.72,
+    "balance": 893.61,
+    "concept": "Stripe Technology Europe Ltd",
+    "contact": "Stripe Payments Europe, Limited",
+    "labels": "Stripe",
+    "category": "income"
+  },
+  {
+    "date": "2026-02-20",
+    "amount": 89.92,
+    "balance": 983.53,
+    "concept": "Stripe Technology Europe Ltd",
+    "contact": "Stripe Payments Europe, Limited",
+    "labels": "Stripe",
+    "category": "income"
+  },
+  {
+    "date": "2026-02-21",
+    "amount": -949.11,
+    "balance": null,
+    "concept": "ORD_280_2026/0004926",
+    "contact": "IKEA IBERICA, S.A.",
+    "labels": "Inversión, Mobiliario",
+    "category": "Inversión"
+  },
+  {
+    "date": "2026-02-23",
+    "amount": -89.9,
+    "balance": null,
+    "concept": "Altavoz FS26/56-56788509/00002830",
+    "contact": "FNAC La Maquinista",
+    "labels": "Inversión, Mobiliario",
+    "category": "Inversión"
+  },
+  {
+    "date": "2026-02-24",
+    "amount": -323.87,
+    "balance": 3516.03,
+    "concept": "WWW.AMAZON",
+    "contact": "Amazon EU S.à r.l., Sucursal en España",
+    "labels": "Inversión, Mobiliario",
+    "category": "Inversión"
+  },
+  {
+    "date": "2026-02-24",
+    "amount": 121.2,
+    "balance": 1104.73,
+    "concept": "Stripe Technology Europe Ltd",
+    "contact": "Stripe Payments Europe, Limited",
+    "labels": "Stripe",
+    "category": "income"
+  },
+  {
+    "date": "2026-02-25",
+    "amount": -37.75,
+    "balance": 3199.94,
+    "concept": "WWW.AMAZON",
+    "contact": "Amazon EU S.à r.l., Sucursal en España",
+    "labels": "Inversión, Mobiliario",
+    "category": "Inversión"
+  },
+  {
+    "date": "2026-02-25",
+    "amount": -278.34,
+    "balance": 3237.69,
+    "concept": "OCCIDENT GCO S.A., A28119220010, 027139400156478",
+    "contact": "OCCIDENT GCO S.A.U SEGU Y REAS",
+    "labels": "Local, Seguros",
+    "category": "Seguros"
+  },
+  {
+    "date": "2026-02-25",
+    "amount": 24.24,
+    "balance": 1128.97,
+    "concept": "Stripe Technology Europe Ltd",
+    "contact": "Stripe Payments Europe, Limited",
+    "labels": "Stripe",
+    "category": "income"
+  },
+  {
+    "date": "2026-02-26",
+    "amount": 169.68,
+    "balance": 1298.65,
+    "concept": "Stripe Technology Europe Ltd",
+    "contact": "Stripe Payments Europe, Limited",
+    "labels": "Stripe",
+    "category": "income"
+  },
+  {
+    "date": "2026-02-27",
+    "amount": -44.92,
+    "balance": 3155.02,
+    "concept": "WWW.AMAZON",
+    "contact": "Amazon EU S.à r.l., Sucursal en España",
+    "labels": "Inversión, Mobiliario",
+    "category": "Inversión"
+  },
+  {
+    "date": "2026-02-27",
+    "amount": 24.24,
+    "balance": 1322.89,
+    "concept": "Stripe Technology Europe Ltd",
+    "contact": "Stripe Payments Europe, Limited",
+    "labels": "Stripe",
+    "category": "income"
+  },
+  {
+    "date": "2026-02-28",
+    "amount": 29.29,
+    "balance": null,
+    "concept": "Ventas comisionadas febrero Stripe CDQFTUAX-2026-02",
+    "contact": "Stripe Payments Europe, Limited",
+    "labels": "Stripe",
+    "category": "income"
+  },
+  {
+    "date": "2026-02-28",
+    "amount": -29.29,
+    "balance": null,
+    "concept": "Comisiones febrero Stripe CDQFTUAX-2026-02",
+    "contact": "Stripe Payments Europe, Limited",
+    "labels": "Stripe",
+    "category": "income"
+  },
+  {
+    "date": "2026-03-01",
+    "amount": -110.37,
+    "balance": 3044.65,
+    "concept": "MOMENCE",
+    "contact": "Momence",
+    "labels": "Software",
+    "category": "Software"
+  },
+  {
+    "date": "2026-03-01",
+    "amount": -326.76,
+    "balance": 669.37,
+    "concept": "PRES.32611770686",
+    "contact": "Caixabank",
+    "labels": "Préstamo Caixabank",
+    "category": "financing"
+  },
+  {
+    "date": "2026-03-01",
+    "amount": -163.38,
+    "balance": 996.13,
+    "concept": "PRES.32611770812",
+    "contact": "Caixabank",
+    "labels": "Préstamo Caixabank",
+    "category": "financing"
+  },
+  {
+    "date": "2026-03-01",
+    "amount": -163.38,
+    "balance": 1159.51,
+    "concept": "PRES.80246254440",
+    "contact": "Caixabank",
+    "labels": "Préstamo Caixabank",
+    "category": "financing"
+  },
+  {
+    "date": "2026-03-02",
+    "amount": -10.95,
+    "balance": 2985.3,
+    "concept": "WWW.AMAZON",
+    "contact": "Amazon EU S.à r.l., Sucursal en España",
+    "labels": "Inversión, Mobiliario",
+    "category": "Inversión"
+  },
+  {
+    "date": "2026-03-02",
+    "amount": -27.41,
+    "balance": 2996.25,
+    "concept": "AMAYA SPORT S.L.",
+    "contact": "Amaya Sport, S.L.",
+    "labels": "Inversión, Mobiliario",
+    "category": "Inversión"
+  },
+  {
+    "date": "2026-03-02",
+    "amount": -20.99,
+    "balance": 3023.66,
+    "concept": "Spotify P3FEC9DF0",
+    "contact": "Spotify",
+    "labels": "Software",
+    "category": "Software"
+  },
+  {
+    "date": "2026-03-02",
+    "amount": 133.46,
+    "balance": 802.83,
+    "concept": "Stripe Technology Europe Ltd",
+    "contact": "Stripe Payments Europe, Limited",
+    "labels": "Stripe",
+    "category": "income"
+  },
+  {
+    "date": "2026-03-03",
+    "amount": -205.7,
+    "balance": 2779.6,
+    "concept": "BOLDU PLA I ASSOC, B59023077000, 027309507901148",
+    "contact": "Boldu Pla i Associats, S.L",
+    "labels": "Gestoría y legal",
+    "category": "Gestoría y legal"
+  },
+  {
+    "date": "2026-03-03",
+    "amount": 24.24,
+    "balance": 827.07,
+    "concept": "Stripe Technology Europe Ltd",
+    "contact": "Stripe Payments Europe, Limited",
+    "labels": "Stripe",
+    "category": "income"
+  },
+  {
+    "date": "2026-03-04",
+    "amount": -344.89,
+    "balance": 2427.71,
+    "concept": "IKEA IBERICA WEB",
+    "contact": "IKEA IBERICA, S.A.",
+    "labels": "Inversión, Mobiliario",
+    "category": "Inversión"
+  },
+  {
+    "date": "2026-03-04",
+    "amount": -7.0,
+    "balance": 2772.6,
+    "concept": "O2 MOVIL, A78923125032, 027408022841787",
+    "contact": "Telefónica Móviles España, S.A",
+    "labels": "Local, Teléfono",
+    "category": "Teléfono"
+  },
+  {
+    "date": "2026-03-04",
+    "amount": 60.74,
+    "balance": 887.81,
+    "concept": "Stripe Technology Europe Ltd",
+    "contact": "Stripe Payments Europe, Limited",
+    "labels": "Stripe",
+    "category": "income"
+  },
+  {
+    "date": "2026-03-05",
+    "amount": -408.0,
+    "balance": 2019.71,
+    "concept": "GEST.I SOLUCIONS, B62185749000, 027384314358682",
+    "contact": "Carmen Capdevila Baró",
+    "labels": "Local, Alquiler",
+    "category": "Alquiler"
+  },
+  {
+    "date": "2026-03-05",
+    "amount": 315.83,
+    "balance": 1203.64,
+    "concept": "Stripe Technology Europe Ltd",
+    "contact": "Stripe Payments Europe, Limited",
+    "labels": "Stripe",
+    "category": "income"
+  },
+  {
+    "date": "2026-03-06",
+    "amount": 257.11,
+    "balance": 1460.75,
+    "concept": "Stripe Technology Europe Ltd",
+    "contact": "Stripe Payments Europe, Limited",
+    "labels": "Stripe",
+    "category": "income"
+  },
+  {
+    "date": "2026-03-07",
+    "amount": -26.54,
+    "balance": 1993.17,
+    "concept": "WWW.AMAZON",
+    "contact": "Amazon EU S.à r.l., Sucursal en España",
+    "labels": "Inversión, Mobiliario",
+    "category": "Inversión"
+  },
+  {
+    "date": "2026-03-09",
+    "amount": -1300.75,
+    "balance": 692.42,
+    "concept": "2026137 - AURA PI, SB GRAPHICS IMPRESSIO I RETOLACIO",
+    "contact": "SERVEIS IMP.RET.SBG S.L",
+    "labels": "Inversión, Mobiliario",
+    "category": "Inversión"
+  },
+  {
+    "date": "2026-03-10",
+    "amount": 23.59,
+    "balance": 1484.34,
+    "concept": "Stripe Technology Europe Ltd",
+    "contact": "Stripe Payments Europe, Limited",
+    "labels": "Stripe",
+    "category": "income"
+  },
+  {
+    "date": "2026-03-11",
+    "amount": 1399.0,
+    "balance": 2091.42,
+    "concept": "TRASPASO, , Aura",
+    "contact": "",
+    "labels": "Socios, Olga",
+    "category": "capital"
+  },
+  {
+    "date": "2026-03-11",
+    "amount": 96.96,
+    "balance": 1581.3,
+    "concept": "Stripe Technology Europe Ltd",
+    "contact": "Stripe Payments Europe, Limited",
+    "labels": "Stripe",
+    "category": "income"
+  },
+  {
+    "date": "2026-03-12",
+    "amount": 96.96,
+    "balance": 9787.45,
+    "concept": "TRANSFER. EN DIV., SXPYDKKK -Stripe Technology Eu, 020260312999956, SXPYDKKK -Stripe Technology Eu ORIGEN: SXPYDKKK, STRIPE L9X7W7",
+    "contact": "Stripe Payments Europe, Limited",
+    "labels": "Stripe",
+    "category": "income"
+  },
+  {
+    "date": "2026-03-12",
+    "amount": -512.0,
+    "balance": 9690.49,
+    "concept": "AJUNT BCN SERV RE",
+    "contact": "Ajuntament de Barcelona",
+    "labels": "Impuestos, Tasas",
+    "category": "Impuestos y tasas"
+  },
+  {
+    "date": "2026-03-12",
+    "amount": -879.8,
+    "balance": 10202.49,
+    "concept": "Factura 2026-11/2, Luis Ravanal Gonzalez",
+    "contact": "Luis Ravanal González",
+    "labels": "Inversión, Reforma",
+    "category": "Inversión"
+  },
+  {
+    "date": "2026-03-12",
+    "amount": -1032.13,
+    "balance": 11082.29,
+    "concept": "26/720 BONPILATES, BONPILATES SL",
+    "contact": "Bonpilates, S.L.",
+    "labels": "Material de clases",
+    "category": "Material y maquinaria"
+  },
+  {
+    "date": "2026-03-12",
+    "amount": 10023.0,
+    "balance": 12114.42,
+    "concept": "TRASPASO, , VICTOR * CELIA",
+    "contact": "",
+    "labels": "Socios",
+    "category": "capital"
+  },
+  {
+    "date": "2026-03-13",
+    "amount": -37.0,
+    "balance": 9750.45,
+    "concept": "IBERDROLA CLIENT., A95758389001, 027761912556061",
+    "contact": "IBERDROLA CLIENTE,SA",
+    "labels": "Local, Electricidad",
+    "category": "Electricidad"
+  },
+  {
+    "date": "2026-03-14",
+    "amount": -9.68,
+    "balance": 9740.77,
+    "concept": "SQSP* WORKSP**2263",
+    "contact": "Squarespace Ireland Limited",
+    "labels": "Software",
+    "category": "Software"
+  },
+  {
+    "date": "2026-03-16",
+    "amount": 454.15,
+    "balance": 10194.92,
+    "concept": "TRANSFER. EN DIV., SXPYDKKK -Stripe Technology Eu, 020260316999991, SXPYDKKK -Stripe Technology Eu ORIGEN: SXPYDKKK, STRIPE T8Z0R9",
+    "contact": "Stripe Payments Europe, Limited",
+    "labels": "Stripe",
+    "category": "income"
+  },
+  {
+    "date": "2026-03-17",
+    "amount": 233.91,
+    "balance": 10363.73,
+    "concept": "TRANSFER. EN DIV., SXPYDKKK -Stripe Technology Eu, 020260317999904, SXPYDKKK -Stripe Technology Eu ORIGEN: SXPYDKKK, STRIPE L7N8S9",
+    "contact": "Stripe Payments Europe, Limited",
+    "labels": "Stripe",
+    "category": "income"
+  },
+  {
+    "date": "2026-03-17",
+    "amount": -65.1,
+    "balance": 10129.82,
+    "concept": "makro.es O26-7373",
+    "contact": "",
+    "labels": "",
+    "category": "Otros"
+  },
+  {
+    "date": "2026-03-18",
+    "amount": 96.96,
+    "balance": 10460.69,
+    "concept": "TRANSFER. EN DIV., SXPYDKKK -Stripe Technology Eu, SXPYDKKK -Stripe Technology Eu, 020260318999916, SXPYDKKK -Stripe Technology Eu ORIGEN: SXPYDKKK, STRIPE R0L6I1",
+    "contact": "Stripe Payments Europe, Limited",
+    "labels": "Stripe",
+    "category": "income"
+  },
+  {
+    "date": "2026-03-19",
+    "amount": 189.55,
+    "balance": 10571.08,
+    "concept": "TRANSFER. EN DIV., SXPYDKKK -Stripe Technology Eu, 020260319999926, SXPYDKKK -Stripe Technology Eu ORIGEN: SXPYDKKK, STRIPE J9W8N6",
+    "contact": "Stripe Payments Europe, Limited",
+    "labels": "Stripe",
+    "category": "income"
+  },
+  {
+    "date": "2026-03-19",
+    "amount": -79.16,
+    "balance": 10381.53,
+    "concept": "AIGUES DE BARCEL., A66098435000, 027957106603133",
+    "contact": "Aigües de Barcelona",
+    "labels": "Local, Agua",
+    "category": "Agua"
+  },
+  {
+    "date": "2026-03-20",
+    "amount": 307.11,
+    "balance": 10878.19,
+    "concept": "TRANSFER. EN DIV., SXPYDKKK -Stripe Technology Eu, 020260320999938, SXPYDKKK -Stripe Technology Eu ORIGEN: SXPYDKKK, STRIPE D1Q7T3",
+    "contact": "Stripe Payments Europe, Limited",
+    "labels": "Stripe",
+    "category": "income"
+  },
+  {
+    "date": "2026-03-23",
+    "amount": 24.24,
+    "balance": 10902.43,
+    "concept": "TRANSFER. EN DIV., SXPYDKKK -Stripe Technology Eu, 020260323999960, SXPYDKKK -Stripe Technology Eu ORIGEN: SXPYDKKK, STRIPE A7H3T9",
+    "contact": "Stripe Payments Europe, Limited",
+    "labels": "Stripe",
+    "category": "income"
+  },
+  {
+    "date": "2026-03-24",
+    "amount": 67.83,
+    "balance": 10970.26,
+    "concept": "TRANSFER. EN DIV., SXPYDKKK -Stripe Technology Eu, 020260324999975, SXPYDKKK -Stripe Technology Eu ORIGEN: SXPYDKKK, STRIPE F3N6R2",
+    "contact": "Stripe Payments Europe, Limited",
+    "labels": "Stripe",
+    "category": "income"
+  },
+  {
+    "date": "2026-03-25",
+    "amount": -5852.74,
+    "balance": 5190.24,
+    "concept": "FACTURA N60 AURA, OK SERVICE SCP",
+    "contact": "OK Service S.C.P",
+    "labels": "Inversión, Reforma",
+    "category": "Inversión"
+  },
+  {
+    "date": "2026-03-25",
+    "amount": 72.72,
+    "balance": 11042.98,
+    "concept": "TRANSFER. EN DIV., SXPYDKKK -Stripe Technology Eu, 020260325999990, SXPYDKKK -Stripe Technology Eu ORIGEN: SXPYDKKK, STRIPE A0W8H4",
+    "contact": "Stripe Payments Europe, Limited",
+    "labels": "Stripe",
+    "category": "income"
+  },
+  {
+    "date": "2026-03-26",
+    "amount": 316.68,
+    "balance": 5506.92,
+    "concept": "TRANSFER. EN DIV., SXPYDKKK -Stripe Technology Eu, 020260326999905, SXPYDKKK -Stripe Technology Eu ORIGEN: SXPYDKKK, STRIPE V9R1L3",
+    "contact": "Stripe Payments Europe, Limited",
+    "labels": "Stripe",
+    "category": "income"
+  },
+  {
+    "date": "2026-03-27",
+    "amount": 48.48,
+    "balance": 5555.4,
+    "concept": "TRANSFER. EN DIV., SXPYDKKK -Stripe Technology Eu, 020260327999924, SXPYDKKK -Stripe Technology Eu ORIGEN: SXPYDKKK, STRIPE N5F3I7",
+    "contact": "Stripe Payments Europe, Limited",
+    "labels": "Stripe",
+    "category": "income"
+  },
+  {
+    "date": "2026-03-30",
+    "amount": 6000.0,
+    "balance": null,
+    "concept": "Aportación socio Celia",
+    "contact": "",
+    "labels": "Socios, Celia",
+    "category": "capital"
+  },
+  {
+    "date": "2026-03-30",
+    "amount": 6000.0,
+    "balance": null,
+    "concept": "Aportación socio Olga",
+    "contact": "",
+    "labels": "Socios, Olga",
+    "category": "capital"
+  },
+  {
+    "date": "2026-03-30",
+    "amount": 6000.0,
+    "balance": null,
+    "concept": "Aportación socio Carles",
+    "contact": "",
+    "labels": "Socios, Carles",
+    "category": "capital"
+  },
+  {
+    "date": "2026-03-30",
+    "amount": 6000.0,
+    "balance": null,
+    "concept": "Aportación socio Victor",
+    "contact": "",
+    "labels": "Socios, Victor",
+    "category": "capital"
+  },
+  {
+    "date": "2026-03-30",
+    "amount": 283.43,
+    "balance": 5633.13,
+    "concept": "TRANSFER. EN DIV., SXPYDKKK -Stripe Technology Eu, 020260330999959, SXPYDKKK -Stripe Technology Eu ORIGEN: SXPYDKKK, STRIPE Z2G1B2",
+    "contact": "Stripe Payments Europe, Limited",
+    "labels": "Stripe",
+    "category": "income"
+  },
+  {
+    "date": "2026-03-30",
+    "amount": -205.7,
+    "balance": 5349.7,
+    "concept": "BOLDU PLA I ASSOC, B59023077000, 028219403022031",
+    "contact": "Boldu Pla i Associats, S.L",
+    "labels": "Gestoría y legal",
+    "category": "Gestoría y legal"
+  },
+  {
+    "date": "2026-03-31",
+    "amount": -363.61,
+    "balance": 5247.84,
+    "concept": "Nomina Zuzana Rak, Zuzana Rakaiova",
+    "contact": "Zuzana Rak",
+    "labels": "Personal, Salarios",
+    "category": "Salarios"
+  },
+  {
+    "date": "2026-03-31",
+    "amount": -350.62,
+    "balance": 5611.45,
+    "concept": "Nomina Ursula Mar, Ursula Maria Sassi",
+    "contact": "Ursula Mar",
+    "labels": "Personal, Salarios",
+    "category": "Salarios"
+  },
+  {
+    "date": "2026-03-31",
+    "amount": 328.94,
+    "balance": 5962.07,
+    "concept": "TRANSFER. EN DIV., SXPYDKKK -Stripe Technology Eu, 020260331999986, SXPYDKKK -Stripe Technology Eu ORIGEN: SXPYDKKK, STRIPE C6F4T3",
+    "contact": "Stripe Payments Europe, Limited",
+    "labels": "Stripe",
+    "category": "income"
+  },
+  {
+    "date": "2026-04-01",
+    "amount": 194.96,
+    "balance": 5329.28,
+    "concept": "TRANSFER. EN DIV., SXPYDKKK -Stripe Technology Eu, 020260401999915, SXPYDKKK -Stripe Technology Eu ORIGEN: SXPYDKKK, STRIPE R3N5H8",
+    "contact": "Stripe Payments Europe, Limited",
+    "labels": "Stripe",
+    "category": "income"
+  },
+  {
+    "date": "2026-04-01",
+    "amount": -113.52,
+    "balance": 5134.32,
+    "concept": "MOMENCE",
+    "contact": "Momence",
+    "labels": "Software",
+    "category": "Software"
+  },
+  {
+    "date": "2026-04-02",
+    "amount": 170.72,
+    "balance": 4933.95,
+    "concept": "TRANSFER. EN DIV., SXPYDKKK -Stripe Technology Eu, 020260402999942, SXPYDKKK -Stripe Technology Eu ORIGEN: SXPYDKKK, STRIPE P9X8B7",
+    "contact": "Stripe Payments Europe, Limited",
+    "labels": "Stripe",
+    "category": "income"
+  },
+  {
+    "date": "2026-04-02",
+    "amount": -20.99,
+    "balance": 4763.23,
+    "concept": "Spotify P4106A003",
+    "contact": "Spotify",
+    "labels": "Software",
+    "category": "Software"
+  },
+  {
+    "date": "2026-04-02",
+    "amount": -1482.0,
+    "balance": 4784.22,
+    "concept": "Aura Pilates Stud, Yuruani YeKuana Sanchez",
+    "contact": "",
+    "labels": "",
+    "category": "Otros"
+  },
+  {
+    "date": "2026-04-02",
+    "amount": 936.94,
+    "balance": 6266.22,
+    "concept": "TRANSF. A SU FAVOR, 90000001-DEVOLUCIONES TRIBUTARIA, 020260402900037, 90000001-DEVOLUCIONES TRIBUTARIA ORIGEN: 90000001, GENCIA TRIBUTARIA EXP:2025DEV30360990041S AEAT",
+    "contact": "",
+    "labels": "",
+    "category": "Otros"
+  },
+  {
+    "date": "2026-04-07",
+    "amount": 283.43,
+    "balance": 5210.38,
+    "concept": "TRANSFER. EN DIV., SXPYDKKK -Stripe Technology Eu, 020260407999986, SXPYDKKK -Stripe Technology Eu ORIGEN: SXPYDKKK, STRIPE K9R4B2",
+    "contact": "Stripe Payments Europe, Limited",
+    "labels": "Stripe",
+    "category": "income"
+  },
+  {
+    "date": "2026-04-07",
+    "amount": -7.0,
+    "balance": 4926.95,
+    "concept": "O2 MOVIL, A78923125032, 028450228521297",
+    "contact": "Telefónica Móviles España, S.A",
+    "labels": "Local, Teléfono",
+    "category": "Teléfono"
+  },
+  {
+    "date": "2026-04-08",
+    "amount": 131.11,
+    "balance": 4933.49,
+    "concept": "TRANSFER. EN DIV., SXPYDKKK -Stripe Technology Eu, 020260408999909, SXPYDKKK -Stripe Technology Eu ORIGEN: SXPYDKKK, STRIPE J9Q6Q5",
+    "contact": "Stripe Payments Europe, Limited",
+    "labels": "Stripe",
+    "category": "income"
+  },
+  {
+    "date": "2026-04-08",
+    "amount": -408.0,
+    "balance": 4802.38,
+    "concept": "GEST.I SOLUCIONS, B62185749000, 028559411525485",
+    "contact": "Carmen Capdevila Baró",
+    "labels": "Local, Alquiler",
+    "category": "Alquiler"
+  },
+  {
+    "date": "2026-04-09",
+    "amount": 289.44,
+    "balance": 5222.93,
+    "concept": "TRANSFER. EN DIV., SXPYDKKK -Stripe Technology Eu, 020260409999925, SXPYDKKK -Stripe Technology Eu ORIGEN: SXPYDKKK, STRIPE Y8G7B7",
+    "contact": "Stripe Payments Europe, Limited",
+    "labels": "Stripe",
+    "category": "income"
+  },
+  {
+    "date": "2026-04-10",
+    "amount": 1522.58,
+    "balance": 6745.51,
+    "concept": "TRANSFER. EN DIV., SXPYDKKK -Stripe Technology Eu, 020260410999940, SXPYDKKK -Stripe Technology Eu ORIGEN: SXPYDKKK, STRIPE L3A3B5",
+    "contact": "Stripe Payments Europe, Limited",
+    "labels": "Stripe",
+    "category": "income"
+  }
+]
