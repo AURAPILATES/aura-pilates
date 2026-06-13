@@ -73,7 +73,7 @@ export default function GastosBreakdown({
       <div className="flex flex-col gap-6 sm:flex-row sm:gap-8 sm:items-start">
         {/* Donut */}
         <div className="shrink-0">
-          <svg width="140" height="140" viewBox="0 0 100 100" style={{ transform: "rotate(-90deg)" }}>
+          <svg width="220" height="220" viewBox="0 0 100 100" style={{ transform: "rotate(-90deg)" }}>
             {segments.map((seg, i) => (
               <circle
                 key={i}
