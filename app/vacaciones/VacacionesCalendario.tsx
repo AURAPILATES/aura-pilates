@@ -59,6 +59,130 @@ function formatPeriod(start: string, end: string, count: number) {
   };
 }
 
+// ── Sugerencias ───────────────────────────────────────────────────────────────
+
+type Suggestion = {
+  type: "success" | "warning" | "info";
+  text: string;
+};
+
+function generateSuggestions(personas: Persona[], festivos: string[]): Suggestion[] {
+  const suggestions: Suggestion[] = [];
+  const festivosSet = new Set(festivos);
+
+  const vacByDate = new Map<string, number[]>();
+  personas.forEach((p, i) => {
+    p.vacaciones.forEach((d) => {
+      if (!vacByDate.has(d)) vacByDate.set(d, []);
+      vacByDate.get(d)!.push(i);
+    });
+  });
+
+  const todayDate = new Date(TODAY + "T12:00:00");
+
+  // 1. Días sin planificar
+  personas.forEach((p) => {
+    const remaining = p.diasTotales - p.vacaciones.length;
+    if (p.vacaciones.length === 0) {
+      suggestions.push({
+        type: "warning",
+        text: `${p.nombre} tiene ${p.diasTotales} días de vacaciones sin planificar aún.`,
+      });
+    } else if (remaining > 0) {
+      suggestions.push({
+        type: "info",
+        text: `${p.nombre} tiene ${remaining} ${remaining === 1 ? "día pendiente" : "días pendientes"} de planificar.`,
+      });
+    }
+  });
+
+  // 2. Solapamientos: agrupar días consecutivos con 2+ personas
+  const overlapDates = Array.from(vacByDate.entries())
+    .filter(([, idxs]) => idxs.length >= 2)
+    .map(([d]) => d)
+    .sort();
+
+  if (overlapDates.length > 0) {
+    const ranges = groupRanges(overlapDates);
+    ranges.forEach((r) => {
+      const s = new Date(r.start + "T12:00:00");
+      const e = new Date(r.end + "T12:00:00");
+      const names = (vacByDate.get(r.start) ?? []).map((i) => personas[i].nombre);
+      const period =
+        r.start === r.end
+          ? `el ${s.getDate()} de ${MONTH_NAMES[s.getMonth()].toLowerCase()}`
+          : `entre el ${s.getDate()} y el ${e.getDate()} de ${MONTH_NAMES[s.getMonth()].toLowerCase()}`;
+      suggestions.push({
+        type: "warning",
+        text: `Evita aprobar más ausencias ${period}: ${names.join(" y ")} ya ${names.length === 1 ? "está" : "están"} de vacaciones.`,
+      });
+    });
+  }
+
+  // 3. Ventanas libres próximas — por mes completo o quincena (máx 4)
+  let freeWindows = 0;
+  for (let mi = todayDate.getMonth(); mi < 12 && freeWindows < 4; mi++) {
+    const month = mi + 1;
+    const daysInMonth = new Date(2026, month, 0).getDate();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const prefix = `2026-${pad(month)}-`;
+
+    const isHalfFree = (startDay: number, endDay: number) => {
+      const halfStart = new Date(2026, mi, startDay);
+      if (halfStart <= todayDate) return false;
+      const workDays = Array.from({ length: endDay - startDay + 1 }, (_, i) => {
+        const ds = `${prefix}${pad(startDay + i)}`;
+        const jsDay = new Date(ds + "T12:00:00").getDay();
+        return { ds, isWeekend: jsDay === 0 || jsDay === 6 };
+      }).filter(({ isWeekend, ds }) => !isWeekend && !festivosSet.has(ds));
+      return workDays.length >= 3 && workDays.every(({ ds }) => !vacByDate.has(ds));
+    };
+
+    const firstFree = isHalfFree(1, 15);
+    const secondFree = isHalfFree(16, daysInMonth);
+    const monthName = MONTH_NAMES[mi].toLowerCase();
+
+    if (firstFree && secondFree) {
+      suggestions.push({ type: "success", text: `${MONTH_NAMES[mi]} tiene disponibilidad completa.` });
+      freeWindows++;
+    } else if (firstFree) {
+      suggestions.push({ type: "success", text: `Primera quincena de ${monthName} libre.` });
+      freeWindows++;
+    } else if (secondFree) {
+      suggestions.push({ type: "success", text: `Segunda quincena de ${monthName} libre.` });
+      freeWindows++;
+    }
+  }
+
+  return suggestions;
+}
+
+function SugerenciasBlock({ personas, festivos }: { personas: Persona[]; festivos: string[] }) {
+  const suggestions = generateSuggestions(personas, festivos);
+  if (suggestions.length === 0) return null;
+
+  const icon = { success: "✅", warning: "⚠️", info: "ℹ️" };
+  const styles = {
+    success: "bg-success/8 text-success border border-success/20",
+    warning: "bg-warning/8 text-warning border border-warning/20",
+    info: "bg-navy/5 text-navy/60 border border-navy/10",
+  };
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {suggestions.map((s, i) => (
+        <span
+          key={i}
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs leading-snug ${styles[s.type]}`}
+        >
+          <span className="shrink-0">{icon[s.type]}</span>
+          {s.text}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 const ABSENCE_TYPES = [
   { key: "vacaciones", label: "Vacaciones", color: "bg-warning" },
   { key: "enfermedad", label: "Bajas por enfermedad", color: "bg-navy/30" },
@@ -650,6 +774,14 @@ export default function VacacionesCalendario({
           )}
         </div>
       </div>
+
+      {/* Sugerencias (siempre sobre todos los datos) */}
+      <section>
+        <h2 className="text-xs font-semibold text-navy/40 uppercase tracking-widest mb-3">
+          Sugerencias
+        </h2>
+        <SugerenciasBlock personas={personas} festivos={festivos} />
+      </section>
 
       {/* Alertas de solapamiento (solo en vista "todas") */}
       {filtro === "todas" && (
