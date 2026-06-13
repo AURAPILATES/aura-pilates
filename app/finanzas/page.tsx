@@ -136,6 +136,13 @@ export default async function Finanzas(props: {
   const ticketPrev  = prevCount > 0 ? prev / prevCount : 0;
   const ticketCur   = curCount > 0 ? cur / curCount : 0;
 
+  // ── Recurrencia (derivada de pagos, no de suscripciones Stripe) ──
+  const recurringIds    = recurringCustomerIds(paymentsAll, curMonth);
+  const activeSubsCount = recurringIds.size;
+  const realMrr         = estimatedMRR(paymentsAll, curMonth);
+  const churnIds        = possibleChurnIds(paymentsAll, curMonth);
+  const renewNext7      = activeCustomersInMonth(paymentsAll, curMonth);
+
   const recurrente    = payments.filter((p) => p.customerId && recurringIds.has(p.customerId)).reduce((s, p) => s + p.amount, 0);
   const recurrentePct = totalRev > 0 ? recurrente / totalRev : 0;
   const byMethod      = stripeByMethod(payments);
@@ -145,13 +152,6 @@ export default async function Finanzas(props: {
   const salesAll  = toSales(paymentsAll);
   const sales     = toSales(payments);
   const byProduct = salesByProduct(sales).sort((a, b) => b.revenue - a.revenue);
-
-  // ── Recurrencia (derivada de pagos, no de suscripciones Stripe) ──
-  const recurringIds    = recurringCustomerIds(paymentsAll, curMonth);
-  const activeSubsCount = recurringIds.size;
-  const realMrr         = estimatedMRR(paymentsAll, curMonth);
-  const churnIds        = possibleChurnIds(paymentsAll, curMonth);
-  const renewNext7      = activeCustomersInMonth(paymentsAll, curMonth);
 
   // ── Transactions (siempre datos completos — el banco solo exporta hasta fecha fija) ──
   const txnsAll = await loadTransactions();
