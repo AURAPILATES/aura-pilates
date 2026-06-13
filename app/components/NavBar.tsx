@@ -7,6 +7,7 @@ const links = [
   { href: "/", label: "Dashboard" },
   { href: "/horario", label: "Horario" },
   { href: "/finanzas", label: "Finanzas" },
+  { href: "/vacaciones", label: "Vacaciones" },
 ];
 
 export default function NavBar() {
