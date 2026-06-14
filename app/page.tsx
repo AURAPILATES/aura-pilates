@@ -248,6 +248,11 @@ export default async function Dashboard() {
           <span className="font-medium text-navy/45">Momence</span>
           {" · "}actualizado {momenceSync}
         </span>
+        <span className="text-[11px] text-navy/45 flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-success inline-block" />
+          <span className="font-medium text-navy/45">Stripe</span>
+          {" · "}actualizado {fmtSync(new Date())}
+        </span>
         {bankSync && (
           <span className="text-[11px] text-navy/45 flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-navy/20 inline-block" />
