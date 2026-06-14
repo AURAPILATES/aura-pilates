@@ -29,6 +29,8 @@ function weekLabel(mondayStr: string): string {
     : `${dStart} ${mStart} – ${dEnd} ${mEnd}`;
 }
 
+const MIN_WEEK = "2026-06-15";
+
 export default function HorarioShell({
   events,
   weekMonday,
@@ -94,10 +96,11 @@ export default function HorarioShell({
 
         <div className="flex items-center gap-3 flex-wrap">
           {/* Week navigation */}
-          <div className="flex items-center gap-0.5 bg-white border border-navy/[0.08] rounded-xl overflow-hidden">
+          <div className="flex items-center gap-0.5 bg-white border border-navy/[0.08] rounded-lg overflow-hidden">
             <button
               onClick={() => router.push(`?week=${prevWeek}`)}
-              className="w-8 h-8 flex items-center justify-center text-navy/50 hover:text-navy hover:bg-navy/5 transition-colors"
+              disabled={weekMonday <= MIN_WEEK}
+              className="w-8 h-8 flex items-center justify-center transition-colors disabled:opacity-20 disabled:cursor-not-allowed text-navy/50 hover:text-navy hover:bg-navy/5 disabled:hover:bg-transparent disabled:hover:text-navy/50"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <polyline points="15 18 9 12 15 6" />
@@ -118,7 +121,7 @@ export default function HorarioShell({
           </div>
 
           {/* View toggle */}
-          <div className="flex border border-navy/[0.08] rounded-xl overflow-hidden bg-white text-sm">
+          <div className="flex border border-navy/[0.08] rounded-lg overflow-hidden bg-white text-sm">
             <button
               onClick={() => setView("lista")}
               className={`flex items-center gap-1.5 px-4 py-1.5 transition-colors ${
@@ -187,7 +190,7 @@ export default function HorarioShell({
             options={instructoras}
             placeholder="Todas las instructoras"
           />
-          <div className="flex items-center border border-navy/[0.12] rounded-full bg-white p-1 gap-0.5">
+          <div className="flex items-center border border-navy/[0.12] rounded-lg bg-white p-1 gap-0.5">
             {(
               [
                 { value: "all", label: "Todas" },
@@ -199,7 +202,7 @@ export default function HorarioShell({
               <button
                 key={value}
                 onClick={() => setOccFilter(value)}
-                className={`px-4 py-1.5 text-sm rounded-full transition-colors ${
+                className={`px-4 py-1.5 text-sm rounded-md transition-colors ${
                   occFilter === value
                     ? "bg-navy text-white font-medium"
                     : "text-navy/50 hover:text-navy"
@@ -291,7 +294,7 @@ function Select({
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="appearance-none text-sm border border-navy/[0.12] rounded-full bg-white text-navy pl-4 pr-8 py-2 focus:outline-none focus:ring-1 focus:ring-primary/20 cursor-pointer"
+        className="appearance-none text-sm border border-navy/[0.12] rounded-lg bg-white text-navy pl-4 pr-8 py-2 focus:outline-none focus:ring-1 focus:ring-primary/20 cursor-pointer"
       >
         <option value="all">{placeholder}</option>
         {options.slice(1).map((o) => (

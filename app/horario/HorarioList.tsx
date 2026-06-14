@@ -51,7 +51,7 @@ export default function HorarioList({
             {/* Day header */}
             <div className="flex items-baseline justify-between gap-4 pb-3 mb-0 border-b border-navy/[0.09]">
               <h2 className="text-2xl font-bold text-navy font-display capitalize leading-none">
-                {dayName} <span className="text-navy/35 font-light text-xl">{dayNum}</span>
+                {dayName} <span className="text-navy font-light text-xl">{dayNum}</span>
               </h2>
               <div className="flex items-start gap-8 shrink-0">
                 <DayStat label="CLASES"     value={String(dayEvents.length)} />
