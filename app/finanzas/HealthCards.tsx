@@ -49,7 +49,7 @@ export default function HealthCards(props: Props) {
     <>
       {/* ── Compact sticky strip (appears when cards scroll off) ── */}
       <div
-        className={`fixed top-0 left-0 sm:left-[220px] right-0 z-20 bg-white/95 backdrop-blur-sm border-b border-navy/10
+        className={`fixed top-0 sm:top-[45px] left-0 sm:left-[220px] right-0 z-10 bg-white/95 backdrop-blur-sm border-b border-navy/10
           transition-all duration-200 ease-out
           ${showStrip ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-1 pointer-events-none"}`}
       >
