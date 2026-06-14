@@ -4,8 +4,7 @@ import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import type { Transaction } from "@/lib/transactions";
 import type { Category } from "@/lib/categories";
 import type { Anomaly } from "./page";
-import { updateTransactionCategory, updateTransactionNotes, updateTransactionContactType } from "./actions";
-import type { ContactType } from "@/lib/transactions";
+import { updateTransactionCategory, updateTransactionNotes } from "./actions";
 import { RANGE_OPTIONS, type RangeKey } from "@/lib/dateRange";
 import ImportButton from "./ImportButton";
 
@@ -71,46 +70,6 @@ function CatIcon({ iconKey, name, color }: { iconKey: string; name: string; colo
   );
 }
 
-const CONTACT_TYPES: { value: ContactType; label: string; emoji: string; bg: string; color: string }[] = [
-  { value: "empleado",       label: "Empleado/a",     emoji: "👤", bg: "#E0E7FF", color: "#3730A3" },
-  { value: "socio",          label: "Socio/a",        emoji: "🤝", bg: "#EDE9FE", color: "#5B21B6" },
-  { value: "proveedor",      label: "Proveedor",      emoji: "🏭", bg: "#FFF7ED", color: "#C2410C" },
-  { value: "administracion", label: "Administración", emoji: "🏛️", bg: "#FEE2E2", color: "#991B1B" },
-  { value: "banco",          label: "Banco",          emoji: "🏦", bg: "#EFF6FF", color: "#1D4ED8" },
-];
-
-function ContactTypePill({ contactType, onChange }: { contactType: ContactType; onChange: (ct: ContactType) => void }) {
-  const cfg = CONTACT_TYPES.find((c) => c.value === contactType);
-  return (
-    <div className="relative inline-flex">
-      {cfg ? (
-        <div
-          className="flex items-center gap-1 pl-1 pr-2.5 py-0.5 rounded-full text-[11px] font-medium pointer-events-none select-none whitespace-nowrap"
-          style={{ backgroundColor: cfg.bg, color: cfg.color }}
-        >
-          <span className="text-xs leading-none">{cfg.emoji}</span>
-          <span>{cfg.label}</span>
-        </div>
-      ) : (
-        <div className="flex items-center gap-1 pl-1 pr-2.5 py-0.5 rounded-full text-[11px] font-medium pointer-events-none select-none whitespace-nowrap bg-navy/[0.05] text-navy/45">
-          <span className="text-xs leading-none">＋</span>
-          <span>Tipo</span>
-        </div>
-      )}
-      <select
-        value={contactType ?? ""}
-        onChange={(e) => onChange((e.target.value as ContactType) || null)}
-        className="absolute inset-0 opacity-0 cursor-pointer w-full"
-        aria-label="Tipo de contacto"
-      >
-        <option value="">Sin clasificar</option>
-        {CONTACT_TYPES.map((c) => (
-          <option key={c.value} value={c.value ?? ""}>{c.emoji} {c.label}</option>
-        ))}
-      </select>
-    </div>
-  );
-}
 
 function CategoryPill({ category, categories, onChange }: { category: string; categories: Category[]; onChange: (cat: string) => void }) {
   const [open, setOpen] = useState(false);
@@ -196,7 +155,6 @@ export default function TransaccionesList({
 
   const [search,      setSearch]      = useState("");
   const [catFilter,   setCatFilter]   = useState(() => searchParams.get("categoria") ?? "all");
-  const [typeFilter,  setTypeFilter]  = useState<ContactType | "all">("all");
   const [showMobileFilters,  setShowMobileFilters]  = useState(false);
   const [mobileSelectMode,   setMobileSelectMode]   = useState(false);
   const [editingNotes, setEditingNotes] = useState<string | null>(null);
@@ -209,7 +167,7 @@ export default function TransaccionesList({
 
   // ── Month strip — solo meses con datos ──────────────────────────────────────
   const monthStrip = useMemo(() => {
-    const keys = [...new Set(transactions.map((t) => t.date.slice(0, 7)))].sort();
+    const keys = [...new Set(transactions.map((t) => t.date.slice(0, 7)))].sort().reverse();
     return keys.map((key) => {
       const m = parseInt(key.slice(5)) - 1;
       return { key, label: MONTHS_ES[m], year: parseInt(key.slice(0, 4)) };
@@ -263,7 +221,6 @@ export default function TransaccionesList({
     const q = search.toLowerCase();
     if (q && !t.contact?.toLowerCase().includes(q) && !t.concept?.toLowerCase().includes(q)) return false;
     if (catFilter !== "all" && t.category !== catFilter) return false;
-    if (typeFilter !== "all" && t.contact_type !== typeFilter) return false;
     return true;
   });
 
@@ -304,9 +261,6 @@ export default function TransaccionesList({
   }
   function handleCategoryChange(id: string, category: string) {
     startTransition(() => updateTransactionCategory(id, category));
-  }
-  function handleContactTypeChange(id: string, ct: ContactType) {
-    startTransition(() => updateTransactionContactType(id, ct));
   }
   function openNotes(t: Transaction) { setEditingNotes(t.id); setNotesValue(t.notes ?? ""); }
   function saveNotes(id: string) {
@@ -383,12 +337,6 @@ export default function TransaccionesList({
               <select value={catFilter} onChange={(e) => setCatFilter(e.target.value)} className={SELECT_CLS}>
                 <option value="all">Categoría</option>
                 {categories.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
-              </select>
-            </SelectWrapper>
-            <SelectWrapper className="col-span-2">
-              <select value={typeFilter ?? "all"} onChange={(e) => setTypeFilter(e.target.value === "all" ? "all" : e.target.value as ContactType)} className={SELECT_CLS}>
-                <option value="all">Todos los tipos</option>
-                {CONTACT_TYPES.map((c) => <option key={c.value} value={c.value ?? ""}>{c.emoji} {c.label}</option>)}
               </select>
             </SelectWrapper>
           </div>
@@ -477,13 +425,7 @@ export default function TransaccionesList({
       </div>
 
       {/* ── Desktop: fila 2 — Filtros + Importar + Exportar ───────────────── */}
-      <div className="hidden sm:flex items-center gap-2 mb-3">
-        <SelectWrapper>
-          <select value={typeFilter ?? "all"} onChange={(e) => setTypeFilter(e.target.value === "all" ? "all" : e.target.value as ContactType)} className={SELECT_CLS}>
-            <option value="all">Tipos</option>
-            {CONTACT_TYPES.map((c) => <option key={c.value} value={c.value ?? ""}>{c.emoji} {c.label}</option>)}
-          </select>
-        </SelectWrapper>
+      <div className="hidden sm:flex items-center gap-2 mb-6">
         <SelectWrapper>
           <select value={catFilter} onChange={(e) => setCatFilter(e.target.value)} className={SELECT_CLS}>
             <option value="all">Categoría</option>
@@ -782,10 +724,11 @@ export default function TransaccionesList({
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      {secondary && <p className="text-[11px] text-navy/40 truncate">{secondary}</p>}
-                      <ContactTypePill contactType={t.contact_type} onChange={(ct) => handleContactTypeChange(t.id, ct)} />
-                    </div>
+                    {secondary && (
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <p className="text-[11px] text-navy/40 truncate">{secondary}</p>
+                      </div>
+                    )}
                   </td>
 
                   <td className="px-4 align-middle" style={{ height: "60px" }}>
