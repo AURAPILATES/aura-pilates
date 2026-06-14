@@ -166,6 +166,13 @@ export default async function Finanzas(props: {
     : momenceSalesAll;
   const byProduct = salesByProduct(momenceSales).sort((a, b) => b.revenue - a.revenue);
 
+  // ── Urban Sports Club: ingresos desde Momence CSV (USC paga por transferencia, no Stripe) ──
+  const uscSales   = momenceSales.filter((s) => s.method === "urban-sports-club");
+  const uscRevenue = uscSales.reduce((sum, s) => sum + s.amount, 0);
+  const uscCount   = uscSales.length;
+  const uscCur  = momenceSalesAll.filter((s) => s.method === "urban-sports-club" && s.paymentDate.startsWith(curMonth)).reduce((sum, s) => sum + s.amount, 0);
+  const uscPrev = momenceSalesAll.filter((s) => s.method === "urban-sports-club" && s.paymentDate.startsWith(prevMonth)).reduce((sum, s) => sum + s.amount, 0);
+
   // ── Transactions (siempre datos completos — el banco solo exporta hasta fecha fija) ──
   const txnsAll = await loadTransactions();
   const totalOpEx     = totalOperationalExpenses(txnsAll);
@@ -214,10 +221,17 @@ export default async function Finanzas(props: {
   const runwayMonths = currentBalance !== null && avgMonthlyBurn > 0
     ? currentBalance / avgMonthlyBurn : null;
 
-  const revMonths = [...new Set(salesAll.map((s) => s.paymentDate.slice(0, 7)))]
-    .filter((m) => m < today_ym).sort().reverse().slice(0, 3);
+  const revMonths = [...new Set([
+    ...salesAll.map((s) => s.paymentDate.slice(0, 7)),
+    ...momenceSalesAll.filter((s) => s.method === "urban-sports-club").map((s) => s.paymentDate.slice(0, 7)),
+  ])].filter((m) => m < today_ym).sort().reverse().slice(0, 3);
   const avgMonthlyRevenue = revMonths.length > 0
-    ? revMonths.reduce((s, m) => s + stripeRevenueForMonth(paymentsAll, m), 0) / revMonths.length : 0;
+    ? revMonths.reduce((s, m) => {
+        const stripeRev = stripeRevenueForMonth(paymentsAll, m);
+        const uscRev = momenceSalesAll.filter((sa) => sa.method === "urban-sports-club" && sa.paymentDate.startsWith(m)).reduce((sum, sa) => sum + sa.amount, 0);
+        return s + stripeRev + uscRev;
+      }, 0) / revMonths.length
+    : 0;
 
   const breakEvenGap = avgMonthlyBurn - avgMonthlyRevenue;
   const clientesNecesarios = breakEvenGap > 0 && ticketMedio > 0
@@ -227,7 +241,7 @@ export default async function Finanzas(props: {
   const curMonthBurnFromData = burnByMonth.get(curMonth) ?? 0;
   const estGastosMes  = curMonthBurnFromData > 0 ? curMonthBurnFromData : avgMonthlyBurn;
   const isGastosEst   = curMonthBurnFromData === 0;
-  const resultadoMes  = cur - estGastosMes;
+  const resultadoMes  = (cur + uscCur) - estGastosMes;
 
   // ── Donut ──
   const R = 40; const CX = 50; const CY = 50;
@@ -300,9 +314,9 @@ export default async function Finanzas(props: {
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                   <KpiCard
                     label={`Ingresos · ${monthLabel(curMonth)}`}
-                    value={fmt(cur)}
-                    sub={`${curCount} transacciones`}
-                    trend={trendPct(cur, prev)}
+                    value={fmt(cur + uscCur)}
+                    sub={uscCur > 0 ? `Stripe ${fmt(cur)} + USC ${fmt(uscCur)}` : `${curCount} transacciones`}
+                    trend={trendPct(cur + uscCur, prev + uscPrev)}
                   />
                   <KpiCard
                     label={`Gastos · ${monthLabel(curMonth)}`}
@@ -438,32 +452,42 @@ export default async function Finanzas(props: {
                       </div>
                     ) : <p className="text-sm text-navy/45">Sin datos de productos.</p>}
                   </Block>
-                  <Block title="Por canal de pago" legend="Stripe · método de pago registrado en cada cobro.">
-                    <div className="space-y-4">
-                      {byMethod.map((row) => {
-                        const share    = totalRev > 0 ? row.revenue / totalRev : 0;
-                        const barColor = row.method === "urban-sports-club" ? "bg-warning" : "bg-primary";
-                        return (
-                          <div key={row.method}>
-                            <div className="flex items-center justify-between mb-1.5">
-                              <span className="text-xs text-navy">{row.label}</span>
-                              <div className="flex items-center gap-3">
-                                <span className="text-xs text-navy/55 tabular-nums">{row.count} ventas</span>
-                                <span className="text-xs font-medium text-navy tabular-nums w-16 text-right">{fmt(row.revenue)}</span>
-                                <span className="text-xs text-navy/55 w-8 text-right tabular-nums">{pct(share)}</span>
-                              </div>
-                            </div>
-                            <div className="h-1.5 bg-navy/5 rounded-full overflow-hidden">
-                              <div className={`h-full rounded-full ${barColor}`} style={{ width: pct(share) }} />
-                            </div>
+                  <Block title="Por canal de pago" legend="Stripe (cobros directos) + Urban Sports Club (Momence CSV · 11 €/clase).">
+                    {(() => {
+                      const combinedTotal = totalRev + uscRevenue;
+                      const allRows = [
+                        ...byMethod.map((r) => ({ key: r.method, label: r.label, revenue: r.revenue, count: r.count, bar: "bg-primary" })),
+                        ...(uscRevenue > 0 ? [{ key: "usc", label: "Urban Sports Club", revenue: uscRevenue, count: uscCount, bar: "bg-warning" }] : []),
+                      ];
+                      return (
+                        <>
+                          <div className="space-y-4">
+                            {allRows.map((row) => {
+                              const share = combinedTotal > 0 ? row.revenue / combinedTotal : 0;
+                              return (
+                                <div key={row.key}>
+                                  <div className="flex items-center justify-between mb-1.5">
+                                    <span className="text-xs text-navy">{row.label}</span>
+                                    <div className="flex items-center gap-3">
+                                      <span className="text-xs text-navy/55 tabular-nums">{row.count} cobros</span>
+                                      <span className="text-xs font-medium text-navy tabular-nums w-16 text-right">{fmt(row.revenue)}</span>
+                                      <span className="text-xs text-navy/55 w-8 text-right tabular-nums">{pct(share)}</span>
+                                    </div>
+                                  </div>
+                                  <div className="h-1.5 bg-navy/5 rounded-full overflow-hidden">
+                                    <div className={`h-full rounded-full ${row.bar}`} style={{ width: pct(share) }} />
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
-                        );
-                      })}
-                    </div>
-                    <div className="mt-4 pt-3 border-t border-navy/5 flex justify-between">
-                      <span className="text-xs text-navy/55">Total período</span>
-                      <span className="text-xs font-semibold text-navy">{fmt(totalRev)}</span>
-                    </div>
+                          <div className="mt-4 pt-3 border-t border-navy/5 flex justify-between">
+                            <span className="text-xs text-navy/55">Total período</span>
+                            <span className="text-xs font-semibold text-navy">{fmt(combinedTotal)}</span>
+                          </div>
+                        </>
+                      );
+                    })()}
                   </Block>
                 </div>
                 <EvolucionChart sales={toSales(payments)} />
