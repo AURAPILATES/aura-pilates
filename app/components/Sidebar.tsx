@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import SyncStatusPanel from "./SyncStatusPanel";
 
 const links = [
   {
@@ -100,6 +101,11 @@ export default function Sidebar() {
           );
         })}
       </nav>
+
+      {/* Sync status */}
+      <div className="border-t border-navy/[0.06]">
+        <SyncStatusPanel />
+      </div>
 
       {/* Settings */}
       <div className="px-3 py-4 border-t border-navy/[0.06]">
