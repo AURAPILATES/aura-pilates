@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { loadStripePayments } from "@/lib/stripePayments";
 import { loadStripeCustomers } from "@/lib/stripeCustomers";
-import { estimatedMRR, possibleChurnIds } from "@/lib/stripeRecurrence";
+import { estimatedMRR, possibleChurnIds, activeCustomersLast30Days, newCustomersLast30Days } from "@/lib/stripeRecurrence";
 import ClientesTable from "./ClientesTable";
 import ClientesKPIs from "./ClientesKPIs";
 
@@ -20,14 +20,17 @@ export default async function ClientesPage() {
   const customers = await loadStripeCustomers(payments, curMonth);
 
   const total      = customers.length;
-  const mrr      = estimatedMRR(payments, curMonth);
-  const churnIds = possibleChurnIds(payments, curMonth);
+  const mrr        = estimatedMRR(payments, curMonth);
+  const churnIds   = possibleChurnIds(payments, curMonth);
+  const activeIds  = activeCustomersLast30Days(payments);
+  const newIds     = newCustomersLast30Days(payments);
   const churnCount = churnIds.size;
 
-  // Flag churn on customer objects for the table
   const customersWithChurn = customers.map((c) => ({
     ...c,
     possibleChurn: churnIds.has(c.id),
+    isActive: activeIds.has(c.id),
+    isNew: newIds.has(c.id),
   }));
 
   return (
@@ -47,6 +50,7 @@ export default async function ClientesPage() {
         prevMonthLabel={prevMonth.slice(5)}
         curMonthLabel={curMonth.slice(5)}
       />
+
 
       {/* Alerta posibles bajas */}
       {churnCount > 0 && (

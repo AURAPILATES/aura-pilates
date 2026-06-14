@@ -60,6 +60,38 @@ export function activeCustomersInMonth(payments: StripePayment[], month: string)
   ).size;
 }
 
+// Customers who paid at least once in the last 30 days
+export function activeCustomersLast30Days(payments: StripePayment[]): Set<string> {
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - 30);
+  const cutoffStr = cutoff.toISOString().split("T")[0];
+  return new Set(
+    payments
+      .filter((p) => p.customerId && p.date >= cutoffStr)
+      .map((p) => p.customerId!),
+  );
+}
+
+// Customers whose FIRST ever payment was in the last 30 days
+export function newCustomersLast30Days(payments: StripePayment[]): Set<string> {
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - 30);
+  const cutoffStr = cutoff.toISOString().split("T")[0];
+
+  const firstPayment = new Map<string, string>();
+  for (const p of payments) {
+    if (!p.customerId) continue;
+    const prev = firstPayment.get(p.customerId);
+    if (!prev || p.date < prev) firstPayment.set(p.customerId, p.date);
+  }
+
+  const result = new Set<string>();
+  for (const [id, date] of firstPayment) {
+    if (date >= cutoffStr) result.add(id);
+  }
+  return result;
+}
+
 // Customers who paid last month but NOT current month (possible churn)
 export function possibleChurnIds(
   payments: StripePayment[],

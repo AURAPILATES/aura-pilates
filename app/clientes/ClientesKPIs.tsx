@@ -4,8 +4,8 @@ import { useState, useEffect } from "react";
 import { fmt } from "@/lib/analytics";
 import type { StripeCustomer } from "@/lib/stripeCustomers";
 
-type CustomerRow = StripeCustomer & { possibleChurn?: boolean };
-type DrawerKey = "recurring" | "churn" | "all" | null;
+type CustomerRow = StripeCustomer & { possibleChurn?: boolean; isActive?: boolean; isNew?: boolean };
+type DrawerKey = "all" | "active" | "recurring" | "new" | "churn" | null;
 
 function fmtDate(d: string | null) {
   if (!d) return "—";
@@ -31,15 +31,12 @@ function CustomerDrawer({
 
   return (
     <>
-      {/* Overlay */}
       <div
         className="fixed inset-0 z-40 bg-navy/30 backdrop-blur-[2px]"
         onClick={onClose}
         aria-hidden
       />
-      {/* Panel */}
       <div className="fixed inset-y-0 right-0 z-50 w-full sm:w-[420px] bg-white shadow-2xl flex flex-col">
-        {/* Header */}
         <div className="flex items-start justify-between px-6 py-5 border-b border-navy/[0.07]">
           <div>
             <h2 className="text-lg font-bold text-navy font-display">{title}</h2>
@@ -56,7 +53,6 @@ function CustomerDrawer({
           </button>
         </div>
 
-        {/* List */}
         <div className="flex-1 overflow-y-auto divide-y divide-navy/[0.05]">
           {customers.length === 0 && (
             <p className="px-6 py-12 text-center text-sm text-navy/40">Sin clientes en este grupo.</p>
@@ -64,15 +60,18 @@ function CustomerDrawer({
           {customers.map((c) => (
             <div key={c.id} className="px-6 py-4 flex items-center justify-between gap-4 hover:bg-navy/[0.015] transition-colors">
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-navy truncate">{c.name ?? "Sin nombre"}</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-semibold text-navy truncate">{c.name ?? "Sin nombre"}</p>
+                  {c.isNew && (
+                    <span className="shrink-0 text-[10px] font-semibold bg-success/10 text-success px-1.5 py-0.5 rounded-full">Nuevo</span>
+                  )}
+                </div>
                 {c.email && <p className="text-xs text-navy/50 truncate">{c.email}</p>}
                 <div className="flex items-center gap-3 mt-1">
                   <span className="text-xs text-navy/45">
                     Último pago: <span className="text-navy/65">{fmtDate(c.lastPaymentDate)}</span>
                   </span>
-                  <span className="text-xs font-semibold text-navy">
-                    {fmt(c.totalSpent)}
-                  </span>
+                  <span className="text-xs font-semibold text-navy">{fmt(c.totalSpent)}</span>
                 </div>
               </div>
               <a
@@ -92,7 +91,6 @@ function CustomerDrawer({
           ))}
         </div>
 
-        {/* Footer */}
         <div className="px-6 py-4 border-t border-navy/[0.07] flex items-center justify-between">
           <p className="text-xs text-navy/45">{customers.length} clientes</p>
           <a
@@ -109,6 +107,48 @@ function CustomerDrawer({
   );
 }
 
+type KPICardProps = {
+  label: string;
+  value: number | string;
+  sub: string;
+  valueClass?: string;
+  onClick?: () => void;
+  accent?: "primary" | "success" | "warning" | "neutral";
+};
+
+function KPICard({ label, value, sub, valueClass = "text-navy", onClick, accent }: KPICardProps) {
+  const hoverBorder = {
+    primary: "hover:border-primary/30",
+    success:  "hover:border-success/30",
+    warning:  "hover:border-warning/40",
+    neutral:  "hover:border-navy/20",
+  }[accent ?? "neutral"];
+
+  if (!onClick) {
+    return (
+      <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-4 sm:p-5">
+        <p className="text-[11px] text-navy/55 uppercase tracking-wider mb-1">{label}</p>
+        <p className={`text-2xl font-semibold ${valueClass}`}>{value}</p>
+        <p className="text-[10px] text-navy/35 mt-1.5">{sub}</p>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={onClick}
+      className={`bg-white border border-navy/[0.07] rounded-2xl shadow-card p-4 sm:p-5 text-left transition-all group ${hoverBorder} hover:shadow-md`}
+    >
+      <p className="text-[11px] text-navy/55 uppercase tracking-wider mb-1">{label}</p>
+      <p className={`text-2xl font-semibold ${valueClass} group-hover:opacity-80 transition-opacity`}>{value}</p>
+      <p className="text-[10px] text-navy/35 mt-1.5 flex items-center gap-1">
+        <span>{sub}</span>
+        <span className="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+      </p>
+    </button>
+  );
+}
+
 type Props = {
   customers: CustomerRow[];
   mrr: number;
@@ -119,22 +159,31 @@ type Props = {
 export default function ClientesKPIs({ customers, mrr, prevMonthLabel, curMonthLabel }: Props) {
   const [drawer, setDrawer] = useState<DrawerKey>(null);
 
-  const total        = customers.length;
-  const recurring    = customers.filter((c) => c.isRecurring);
-  const churnList    = customers.filter((c) => c.possibleChurn);
-  const churnCount   = churnList.length;
-  const recurringCnt = recurring.length;
+  const activeList    = customers.filter((c) => c.isActive);
+  const recurringList = customers.filter((c) => c.isRecurring);
+  const newList       = customers.filter((c) => c.isNew);
+  const churnList     = customers.filter((c) => c.possibleChurn);
 
   const drawerConfig: Record<NonNullable<DrawerKey>, { title: string; subtitle: string; customers: CustomerRow[] }> = {
     all: {
       title: "Todos los clientes",
-      subtitle: `${total} clientes en Stripe`,
+      subtitle: `${customers.length} clientes en Stripe`,
       customers,
+    },
+    active: {
+      title: "Suscritos",
+      subtitle: "Han pagado al menos una vez en los últimos 30 días",
+      customers: activeList,
     },
     recurring: {
       title: "Clientes recurrentes",
-      subtitle: `Pagaron en 2 o más de los últimos 3 meses`,
-      customers: recurring,
+      subtitle: "Pagaron en 2 o más de los últimos 3 meses",
+      customers: recurringList,
+    },
+    new: {
+      title: "Nuevos este mes",
+      subtitle: "Su primer pago fue en los últimos 30 días",
+      customers: newList,
     },
     churn: {
       title: "Posibles bajas",
@@ -145,59 +194,46 @@ export default function ClientesKPIs({ customers, mrr, prevMonthLabel, curMonthL
 
   return (
     <>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-        {/* Total clientes */}
-        <button
-          onClick={() => setDrawer("all")}
-          className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5 text-left hover:border-navy/20 hover:shadow-md transition-all group"
-        >
-          <p className="text-xs text-navy/55 uppercase tracking-wider mb-1">Total clientes</p>
-          <p className="text-2xl font-semibold text-navy group-hover:text-primary transition-colors">{total}</p>
-          <p className="text-[10px] text-navy/35 mt-1.5 flex items-center gap-1">
-            <span>Ver listado</span>
-            <span className="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
-          </p>
-        </button>
-
-        {/* Recurrentes */}
-        <button
+      {/* 5 KPIs: 2 cols móvil, 3+2 en sm, 5 en lg */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-6">
+        <KPICard
+          label="Suscritos"
+          value={activeList.length}
+          sub="últimos 30 días"
+          valueClass="text-navy"
+          accent="neutral"
+          onClick={() => setDrawer("active")}
+        />
+        <KPICard
+          label="Recurrentes"
+          value={recurringList.length}
+          sub="2+ meses de 3"
+          valueClass="text-primary"
+          accent="primary"
           onClick={() => setDrawer("recurring")}
-          className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5 text-left hover:border-primary/30 hover:shadow-md transition-all group"
-        >
-          <p className="text-xs text-navy/55 uppercase tracking-wider mb-1">Recurrentes</p>
-          <p className="text-2xl font-semibold text-primary">{recurringCnt}</p>
-          <p className="text-[10px] text-navy/35 mt-1.5 flex items-center gap-1">
-            <span>2+ meses de 3</span>
-            <span className="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
-          </p>
-        </button>
-
-        {/* MRR — no drawer, solo número */}
-        <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
-          <p className="text-xs text-navy/55 uppercase tracking-wider mb-1">MRR estimado</p>
-          <p className="text-2xl font-semibold text-success">{fmt(mrr)}</p>
-          <p className="text-[10px] text-navy/35 mt-1.5">media 3 meses</p>
-        </div>
-
-        {/* Posibles bajas */}
-        <button
-          onClick={() => churnCount > 0 ? setDrawer("churn") : undefined}
-          disabled={churnCount === 0}
-          className={`bg-white border rounded-2xl shadow-card p-5 text-left transition-all group ${
-            churnCount > 0
-              ? "border-navy/[0.07] hover:border-warning/40 hover:shadow-md cursor-pointer"
-              : "border-navy/[0.07] cursor-default"
-          }`}
-        >
-          <p className="text-xs text-navy/55 uppercase tracking-wider mb-1">Posibles bajas</p>
-          <p className={`text-2xl font-semibold ${churnCount > 0 ? "text-warning" : "text-navy/50"}`}>
-            {churnCount}
-          </p>
-          <p className="text-[10px] text-navy/35 mt-1.5 flex items-center gap-1">
-            <span>sin pagar en {curMonthLabel}</span>
-            {churnCount > 0 && <span className="opacity-0 group-hover:opacity-100 transition-opacity">→</span>}
-          </p>
-        </button>
+        />
+        <KPICard
+          label="Nuevos"
+          value={newList.length}
+          sub="primer pago 30 días"
+          valueClass="text-success"
+          accent="success"
+          onClick={newList.length > 0 ? () => setDrawer("new") : undefined}
+        />
+        <KPICard
+          label="MRR estimado"
+          value={fmt(mrr)}
+          sub="media 3 meses"
+          valueClass="text-success"
+        />
+        <KPICard
+          label="Posibles bajas"
+          value={churnList.length}
+          sub={`sin pagar en ${curMonthLabel}`}
+          valueClass={churnList.length > 0 ? "text-warning" : "text-navy/50"}
+          accent="warning"
+          onClick={churnList.length > 0 ? () => setDrawer("churn") : undefined}
+        />
       </div>
 
       {drawer && (
