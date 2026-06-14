@@ -614,7 +614,7 @@ export default function TransaccionesList({
           return (
             <div key={date}>
               {/* Day header — total siempre gris */}
-              <div className="flex items-baseline justify-between mb-2">
+              <div className="flex items-baseline justify-between mb-2 px-1">
                 <span className="text-sm font-semibold text-navy">{fmtDayLabel(date)}</span>
                 <span className="text-xs tabular-nums text-navy/40">
                   {dayNet >= 0 ? "+" : "−"}{fmtAmt(Math.abs(dayNet))}
