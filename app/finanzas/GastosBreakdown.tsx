@@ -41,6 +41,7 @@ const ICON_BY_KEY: Record<string, React.ReactNode> = {
   "package": <><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></>,
   "coffee": <><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></>,
   "star": <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>,
+  "repeat": <><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></>,
 };
 
 // Fallback: map legacy category names to icon keys
@@ -53,7 +54,8 @@ const NAME_TO_KEY: Record<string, string> = {
   "Gestoría y legal": "file-text",
   "Impuestos y tasas": "percent",
   "Teléfono": "phone",
-  "Seguros": "shield",
+  "Seguros": "briefcase",
+  "Traspasos internos": "repeat",
   "Comisiones bancarias": "credit-card",
   "Merchandising": "shopping-bag",
   "Material y maquinaria": "settings",

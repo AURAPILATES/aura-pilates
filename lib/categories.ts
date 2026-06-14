@@ -1,6 +1,6 @@
 import { createServerClient } from "@/lib/supabase";
 
-export type GroupType = "operational" | "income" | "transfer";
+export type GroupType = "operational" | "income" | "transfer" | "internal";
 
 export type Category = {
   id: string;

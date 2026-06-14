@@ -7,9 +7,10 @@ const GROUP_LABELS: Record<GroupType, string> = {
   operational: "Operacional",
   income: "Ingresos",
   transfer: "Financiación",
+  internal: "Traspasos internos",
 };
-const GROUP_ORDER: GroupType[] = ["income", "operational", "transfer"];
-const KNOWN_GROUPS = new Set<string>(["income", "transfer", "operational"]);
+const GROUP_ORDER: GroupType[] = ["income", "operational", "transfer", "internal"];
+const KNOWN_GROUPS = new Set<string>(["income", "transfer", "operational", "internal"]);
 
 // ── Color palette ─────────────────────────────────────────────────────────────
 
@@ -44,12 +45,34 @@ const ICONS: { key: IconKey; path: React.ReactNode }[] = [
   { key: "package", path: <><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></> },
   { key: "coffee", path: <><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></> },
   { key: "star", path: <><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></> },
+  { key: "repeat", path: <><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></> },
 ];
 
 const ICON_MAP = new Map(ICONS.map((i) => [i.key, i.path]));
 
-function CategoryIcon({ iconKey, color, size = 40 }: { iconKey: string; color: string; size?: number }) {
-  const path = ICON_MAP.get(iconKey) ?? ICON_MAP.get("package")!;
+// Mapeo por nombre de categoría → clave de icono (fallback para datos existentes en DB)
+const NAME_TO_KEY: Record<string, string> = {
+  "Ingresos Stripe": "trending-up", "Ingresos USC": "trending-up",
+  "Alquiler": "home", "Local": "home",
+  "Salarios": "users",
+  "Seguridad social": "shield",
+  "Gestoría y legal": "file-text",
+  "Impuestos y tasas": "percent",
+  "Software": "monitor",
+  "Electricidad": "zap",
+  "Agua": "droplet",
+  "Teléfono": "phone",
+  "Seguros": "briefcase",
+  "Comisiones bancarias": "credit-card",
+  "Merchandising": "shopping-bag",
+  "Material y maquinaria": "settings",
+  "Inversión": "bar-chart",
+  "Traspasos internos": "repeat",
+};
+
+function CategoryIcon({ iconKey, name, color, size = 40 }: { iconKey: string; name?: string; color: string; size?: number }) {
+  const key = ICON_MAP.has(iconKey) ? iconKey : (name ? (NAME_TO_KEY[name] ?? "package") : "package");
+  const path = ICON_MAP.get(key) ?? ICON_MAP.get("package")!;
   return (
     <div
       className="rounded-full flex items-center justify-center shrink-0"
@@ -223,7 +246,7 @@ export default function CategoriasManager({ categories }: { categories: Category
                           i < items.length - 1 ? "border-b border-navy/[0.05]" : ""
                         } ${isActive ? "bg-primary/[0.04]" : "hover:bg-navy/[0.015]"}`}
                       >
-                        <CategoryIcon iconKey={cat.emoji} color={cat.text_color} size={40} />
+                        <CategoryIcon iconKey={cat.emoji} name={cat.label} color={cat.text_color} size={40} />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold text-navy">{cat.label}</p>
                           {cat.auto_keywords && (
@@ -308,36 +331,31 @@ export default function CategoriasManager({ categories }: { categories: Category
               {/* Icono */}
               <div>
                 <label className="block text-xs font-semibold text-navy/45 uppercase tracking-wider mb-3">Icono</label>
-                <div className="grid grid-cols-5 gap-2.5">
+                <div className="grid grid-cols-7 gap-2">
                   {ICONS.map(({ key }) => {
                     const isSelected = form.emoji === key;
                     return (
                       <button
                         key={key}
                         onClick={() => handleIconSelect(key)}
-                        className={`relative flex items-center justify-center rounded-full aspect-square transition-all ${
-                          isSelected ? "ring-2 ring-offset-2 scale-105" : "hover:scale-105"
+                        className={`relative flex items-center justify-center rounded-full w-10 h-10 transition-all ${
+                          isSelected ? "scale-110" : "hover:scale-105"
                         }`}
-                        style={{
-                          backgroundColor: selectedColor,
-                          ...(isSelected ? { ringColor: selectedColor } as React.CSSProperties : {}),
-                        }}
+                        style={{ backgroundColor: selectedColor }}
                         title={key}
                       >
                         {isSelected && (
-                          <span className="absolute inset-0 rounded-full ring-2 ring-offset-2" style={{ boxShadow: `0 0 0 2px white, 0 0 0 4px ${selectedColor}` }} />
+                          <span className="absolute inset-0 rounded-full" style={{ boxShadow: `0 0 0 2px white, 0 0 0 3.5px ${selectedColor}` }} />
                         )}
                         <svg
-                          width="20"
-                          height="20"
+                          width="16"
+                          height="16"
                           viewBox="0 0 24 24"
                           fill="none"
                           stroke="white"
                           strokeWidth="2"
                           strokeLinecap="round"
                           strokeLinejoin="round"
-                          className="p-1"
-                          style={{ width: "56%", height: "56%" }}
                         >
                           {ICON_MAP.get(key)}
                         </svg>
