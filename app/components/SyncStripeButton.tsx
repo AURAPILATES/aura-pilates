@@ -20,7 +20,7 @@ export default function SyncStripeButton() {
         <path d="M1 4v6h6M23 20v-6h-6"/>
         <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15"/>
       </svg>
-      {pending ? "Sincronizando…" : "Sincronizar Stripe"}
+      <span className="hidden sm:inline">{pending ? "Sincronizando…" : "Sincronizar Stripe"}</span>
     </button>
   );
 }
