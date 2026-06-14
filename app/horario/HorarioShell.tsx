@@ -7,9 +7,11 @@ import { groupByDay, occupancyRate, totalRevenue, fmt, pct } from "@/lib/analyti
 import HorarioList from "./HorarioList";
 import HorarioCalendar from "./HorarioCalendar";
 import HorarioDrawer from "./HorarioDrawer";
+import HorarioReporting, { type ReportingData } from "./HorarioReporting";
 
 type OccFilter = "all" | "low" | "mid" | "high";
 type View = "lista" | "calendario";
+type Tab = "horario" | "analisis";
 
 function addDays(dateStr: string, n: number): string {
   const d = new Date(dateStr + "T00:00:00");
@@ -35,12 +37,17 @@ export default function HorarioShell({
   events,
   weekMonday,
   initialView,
+  initialTab,
+  reportingData,
 }: {
   events: MomenceEvent[];
   weekMonday: string;
   initialView: View;
+  initialTab: Tab;
+  reportingData: ReportingData;
 }) {
   const router = useRouter();
+  const [tab, setTab] = useState<Tab>(initialTab);
   const [view, setView] = useState<View>(initialView);
   const [selected, setSelected] = useState<MomenceEvent | null>(null);
   const [claseFilter, setClaseFilter] = useState("all");
@@ -94,9 +101,36 @@ export default function HorarioShell({
 
   return (
     <div>
+      {/* ── Top-level tabs ── */}
+      <div className="flex items-center justify-between gap-4 mb-6">
+        <div className="flex items-center border border-navy/[0.12] rounded-lg bg-white p-1 gap-0.5">
+          {(
+            [
+              { value: "horario", label: "Horario" },
+              { value: "analisis", label: "Análisis" },
+            ] as { value: Tab; label: string }[]
+          ).map(({ value, label }) => (
+            <button
+              key={value}
+              onClick={() => setTab(value)}
+              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                tab === value ? "bg-navy text-white" : "text-navy/50 hover:text-navy"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Análisis tab ── */}
+      {tab === "analisis" && <HorarioReporting data={reportingData} />}
+
+      {/* ── Horario tab ── */}
+      {tab === "horario" && <div>
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <h1 className="text-sm font-bold text-navy uppercase tracking-widest">Horario</h1>
+        <span />
 
         <div className="flex items-center gap-3 flex-wrap">
           {/* Week navigation */}
@@ -280,6 +314,8 @@ export default function HorarioShell({
 
       {/* Drawer */}
       {selected && <HorarioDrawer event={selected} onClose={() => setSelected(null)} />}
+      </div>}
+
     </div>
   );
 }

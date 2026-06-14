@@ -5,15 +5,6 @@ import { usePathname } from "next/navigation";
 
 const links = [
   {
-    href: "/",
-    label: "Inicio",
-    icon: (
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
-      </svg>
-    ),
-  },
-  {
     href: "/horario",
     label: "Horario",
     icon: (
@@ -65,7 +56,7 @@ export default function BottomNav() {
 
   return (
     <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-navy/[0.08]" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
-      <div className="grid grid-cols-6 h-16">
+      <div className="grid grid-cols-5 h-16">
         {links.map(({ href, label, icon }) => {
           const active = pathname === href;
           return (
