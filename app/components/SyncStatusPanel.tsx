@@ -17,37 +17,46 @@ function relativeTime(isoDate: string, now: number): string {
   return `${Math.floor(diff / 86400)} d`;
 }
 
+type DotColor = "green" | "red" | "grey";
+
+function Dot({ color, tooltip }: { color: DotColor; tooltip: string }) {
+  const bg =
+    color === "green" ? "bg-green-500"
+    : color === "red"  ? "bg-red-500"
+    : "bg-navy/25";
+
+  return (
+    <span className="relative group/dot flex items-center shrink-0">
+      <span className={`w-1.5 h-1.5 rounded-full ${bg}`} />
+      <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 z-50 whitespace-nowrap rounded-lg bg-navy px-2.5 py-1.5 text-[10px] text-white opacity-0 group-hover/dot:opacity-100 transition-opacity shadow-xl">
+        {tooltip}
+      </span>
+    </span>
+  );
+}
+
 function Row({
   label,
   time,
-  ok,
+  dot,
+  tooltip,
   error,
-  showDot,
 }: {
   label: string;
   time: string;
-  ok?: boolean;
+  dot: DotColor;
+  tooltip: string;
   error?: string | null;
-  showDot?: boolean;
 }) {
   return (
     <div className="flex flex-col gap-0.5">
       <div className="flex items-center gap-1.5">
-        {showDot && (
-          <span
-            className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-              ok ? "bg-green-500" : "bg-red-500"
-            }`}
-          />
-        )}
-        {!showDot && <span className="w-1.5 shrink-0" />}
-        <span className="text-[11px] text-navy/50 leading-none">
-          {label}
-        </span>
+        <Dot color={dot} tooltip={tooltip} />
+        <span className="text-[11px] text-navy/50 leading-none">{label}</span>
         <span className="text-[11px] text-navy/30 leading-none">·</span>
         <span className="text-[11px] text-navy/35 leading-none">{time}</span>
       </div>
-      {showDot && !ok && error && (
+      {dot === "red" && error && (
         <p className="text-[10px] text-red-400 leading-tight pl-3">{error}</p>
       )}
     </div>
@@ -91,25 +100,30 @@ export default function SyncStatusPanel() {
       <Row
         label="Momence"
         time={relativeTime(data.momence.checkedAt, now)}
-        ok={data.momence.ok}
+        dot={data.momence.ok ? "green" : "red"}
+        tooltip={
+          data.momence.ok
+            ? "Todo correcto"
+            : `Error al conectar con Momence${data.momence.error ? `: ${data.momence.error}` : ""}`
+        }
         error={data.momence.error}
-        showDot
       />
       <Row
         label="Stripe"
         time={relativeTime(data.stripe.checkedAt, now)}
-        ok={data.stripe.ok}
+        dot={data.stripe.ok ? "green" : "red"}
+        tooltip={
+          data.stripe.ok
+            ? "Todo correcto"
+            : `Error al conectar con Stripe${data.stripe.error ? `: ${data.stripe.error}` : ""}`
+        }
         error={data.stripe.error}
-        showDot
       />
       <Row
         label="Banco"
-        time={
-          data.banco.lastImport
-            ? relativeTime(data.banco.lastImport, now)
-            : "sin datos"
-        }
-        showDot={false}
+        time={data.banco.lastImport ? relativeTime(data.banco.lastImport, now) : "sin datos"}
+        dot="grey"
+        tooltip="Importación manual — subí el CSV desde Transacciones"
       />
     </div>
   );
