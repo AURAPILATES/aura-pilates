@@ -7,6 +7,7 @@ import ClientesTable from "./ClientesTable";
 import ClientesKPIs from "./ClientesKPIs";
 import ClientesEvolucionChart from "./ClientesEvolucionChart";
 import SyncBadge from "@/app/components/SyncBadge";
+import ChurnAlert from "./ChurnAlert";
 
 function pad2(n: number) { return String(n).padStart(2, "0"); }
 
@@ -58,27 +59,11 @@ export default async function ClientesPage() {
 
       <ClientesEvolucionChart payments={payments} />
 
-      {/* Alerta posibles bajas */}
       {churnCount > 0 && (
-        <div className="mb-6 border border-warning/30 bg-warning/[0.06] rounded-lg p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-warning flex-shrink-0">
-              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-            </svg>
-            <p className="text-sm font-semibold text-warning">
-              {churnCount} cliente{churnCount > 1 ? "s" : ""} que pagaron el mes pasado no han pagado este mes
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {customersWithChurn
-              .filter((c) => c.possibleChurn)
-              .map((c) => (
-                <span key={c.id} className="bg-white border border-warning/20 rounded-md px-3 py-1 text-sm font-medium text-navy">
-                  {c.name ?? c.email ?? c.id}
-                </span>
-              ))}
-          </div>
-        </div>
+        <ChurnAlert
+          count={churnCount}
+          names={customersWithChurn.filter((c) => c.possibleChurn).map((c) => c.name ?? c.email ?? c.id)}
+        />
       )}
 
       <ClientesTable customers={customersWithChurn} payments={payments} />
