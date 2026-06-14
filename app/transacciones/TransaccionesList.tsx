@@ -457,9 +457,9 @@ export default function TransaccionesList({
         </div>
       </div>
 
-      {/* ── Filter bar (desktop only) ───────────────────────────────────────── */}
-      <div className="hidden sm:flex flex-row gap-2 mb-6">
-        <div className="relative flex-1">
+      {/* ── Desktop: fila 1 — Buscador ────────────────────────────────────── */}
+      <div className="hidden sm:block mb-3">
+        <div className="relative">
           <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-navy/30" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
           </svg>
@@ -474,30 +474,44 @@ export default function TransaccionesList({
             <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-navy/30 hover:text-navy/60">✕</button>
           )}
         </div>
-        <div className="flex gap-2">
-          <SelectWrapper>
-            <select value={typeFilter ?? "all"} onChange={(e) => setTypeFilter(e.target.value === "all" ? "all" : e.target.value as ContactType)} className={SELECT_CLS}>
-              <option value="all">Tipos</option>
-              {CONTACT_TYPES.map((c) => <option key={c.value} value={c.value ?? ""}>{c.emoji} {c.label}</option>)}
-            </select>
-          </SelectWrapper>
-          <SelectWrapper>
-            <select value={catFilter} onChange={(e) => setCatFilter(e.target.value)} className={SELECT_CLS}>
-              <option value="all">Categoría</option>
-              {categories.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
-            </select>
-          </SelectWrapper>
-          <SelectWrapper>
-            <select value={currentRange} onChange={(e) => setRange(e.target.value)} className={SELECT_CLS}>
-              {RANGE_OPTIONS.map(({ key, label }) => <option key={key} value={key}>{label}</option>)}
-            </select>
-          </SelectWrapper>
-        </div>
+      </div>
+
+      {/* ── Desktop: fila 2 — Filtros + Importar + Exportar ───────────────── */}
+      <div className="hidden sm:flex items-center gap-2 mb-3">
+        <SelectWrapper>
+          <select value={typeFilter ?? "all"} onChange={(e) => setTypeFilter(e.target.value === "all" ? "all" : e.target.value as ContactType)} className={SELECT_CLS}>
+            <option value="all">Tipos</option>
+            {CONTACT_TYPES.map((c) => <option key={c.value} value={c.value ?? ""}>{c.emoji} {c.label}</option>)}
+          </select>
+        </SelectWrapper>
+        <SelectWrapper>
+          <select value={catFilter} onChange={(e) => setCatFilter(e.target.value)} className={SELECT_CLS}>
+            <option value="all">Categoría</option>
+            {categories.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+          </select>
+        </SelectWrapper>
+        <SelectWrapper>
+          <select value={currentRange} onChange={(e) => setRange(e.target.value)} className={SELECT_CLS}>
+            {RANGE_OPTIONS.map(({ key, label }) => <option key={key} value={key}>{label}</option>)}
+          </select>
+        </SelectWrapper>
+        <div className="flex-1" />
+        <ImportButton />
+        <button
+          onClick={exportCSV}
+          title="Exportar vista actual a CSV"
+          className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-navy/55 border border-navy/[0.12] rounded-xl bg-white hover:bg-navy/[0.02] hover:text-navy transition-colors whitespace-nowrap"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          Exportar CSV
+        </button>
       </div>
 
       {/* ── Custom date range (desktop only) ──────────────────────────────── */}
       {currentRange === "custom" && (
-        <div className="hidden sm:flex flex-wrap items-center gap-2 mb-6 p-3 bg-white border border-navy/[0.07] rounded-xl shadow-card">
+        <div className="hidden sm:flex flex-wrap items-center gap-2 mb-3 p-3 bg-white border border-navy/[0.07] rounded-xl shadow-card">
           <span className="text-xs text-navy/50 font-medium">Desde</span>
           <input
             type="date"
@@ -531,50 +545,16 @@ export default function TransaccionesList({
         </div>
       )}
 
-      {/* ── Toolbar ────────────────────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-5">
+      {/* ── Desktop: fila 3 — Recuento + sumatorios ───────────────────────── */}
+      <div className="hidden sm:flex items-center gap-4 mb-5">
         <span className="text-sm text-navy/55">
           {filtered.length} movimientos
           {isPending && <span className="ml-2 text-xs text-primary/60">Guardando…</span>}
         </span>
-        <button
-          onClick={() => { setMobileSelectMode((v) => { if (v) clearSelection(); return !v; }); }}
-          className={`sm:hidden text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors ${
-            mobileSelectMode
-              ? "bg-navy text-white border-navy"
-              : "bg-white text-navy/55 border-navy/[0.12] hover:text-navy"
-          }`}
-        >
-          {mobileSelectMode ? "Cancelar" : "Seleccionar"}
-        </button>
-        <div className="hidden sm:flex items-center gap-2">
-          <ImportButton />
-          <button
-            onClick={exportCSV}
-            title="Exportar vista actual a CSV"
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-navy/55 border border-navy/[0.12] rounded-lg bg-white hover:bg-navy/[0.02] hover:text-navy transition-colors"
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
-            Exportar CSV
-          </button>
-        </div>
-        <button
-          onClick={exportCSV}
-          title="Exportar vista actual a CSV"
-          className="sm:hidden flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-navy/55 border border-navy/[0.12] rounded-lg bg-white hover:bg-navy/[0.02] hover:text-navy transition-colors"
-        >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-          </svg>
-          Exportar CSV
-        </button>
-
         {uncategorizedCount > 0 && (
           <button
             onClick={() => setCatFilter(catFilter === "Otros" ? "all" : "Otros")}
-            className={`hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-colors ${
               catFilter === "Otros"
                 ? "bg-warning/20 text-warning"
                 : "bg-warning/10 text-warning hover:bg-warning/15"
@@ -584,11 +564,8 @@ export default function TransaccionesList({
             <span>{uncategorizedCount} sin etiquetar</span>
           </button>
         )}
-
         <div className="flex-1" />
-
-        {/* Financial summary (desktop only — mobile shows summary card above) */}
-        <div className="hidden sm:flex items-center gap-5">
+        <div className="flex items-center gap-6">
           <div className="text-right">
             <p className="text-[10px] text-navy/40 uppercase tracking-wider">Ingresos</p>
             <p className="text-sm font-semibold text-success tabular-nums">+{fmtAmt(totalIn)}</p>
@@ -604,6 +581,31 @@ export default function TransaccionesList({
             </p>
           </div>
         </div>
+      </div>
+
+      {/* ── Mobile: toolbar ────────────────────────────────────────────────── */}
+      <div className="sm:hidden flex flex-wrap items-center gap-x-4 gap-y-2 mb-5">
+        <span className="text-sm text-navy/55">{filtered.length} movimientos</span>
+        <button
+          onClick={() => { setMobileSelectMode((v) => { if (v) clearSelection(); return !v; }); }}
+          className={`text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors ${
+            mobileSelectMode
+              ? "bg-navy text-white border-navy"
+              : "bg-white text-navy/55 border-navy/[0.12] hover:text-navy"
+          }`}
+        >
+          {mobileSelectMode ? "Cancelar" : "Seleccionar"}
+        </button>
+        <button
+          onClick={exportCSV}
+          title="Exportar vista actual a CSV"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-navy/55 border border-navy/[0.12] rounded-lg bg-white hover:bg-navy/[0.02] hover:text-navy transition-colors"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          Exportar CSV
+        </button>
       </div>
 
       {/* ── Bulk selection bar ─────────────────────────────────────────────── */}
