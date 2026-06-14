@@ -103,6 +103,7 @@ export default function HorarioShell({
     <div>
       {/* ── Top-level tabs ── */}
       <div className="flex items-center justify-between gap-4 mb-6">
+        <h1 className="text-sm font-bold text-navy uppercase tracking-widest">Horario</h1>
         <div className="flex items-center border border-navy/[0.12] rounded-lg bg-white p-1 gap-0.5">
           {(
             [

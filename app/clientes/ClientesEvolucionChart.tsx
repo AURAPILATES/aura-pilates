@@ -96,17 +96,14 @@ export default function ClientesEvolucionChart({ payments }: { payments: StripeP
             const h = barH(d.count);
             const y = barY(d.count);
             const isCurrent = d.key === currentMonth;
-            const isEmpty = d.count === 0;
             return (
               <g key={d.key}>
                 {/* Bar */}
-                {!isEmpty && (
+                {d.count > 0 && (
                   <rect
                     x={x} y={y} width={barW} height={h}
                     rx={4} ry={4}
-                    fill={isCurrent ? "#6B7ED6" : "#6B7ED630"}
-                    stroke={isCurrent ? "#6B7ED6" : "none"}
-                    strokeWidth="1.5"
+                    fill={isCurrent ? "#6B7ED6" : "#C0C6E8"}
                   />
                 )}
                 {/* Value label on top */}
@@ -115,8 +112,7 @@ export default function ClientesEvolucionChart({ payments }: { payments: StripeP
                     x={x + barW / 2}
                     y={y - 5}
                     textAnchor="middle"
-                    className={isCurrent ? "fill-primary font-semibold" : "fill-navy/50"}
-                    style={{ fontSize: 11, fontWeight: isCurrent ? 600 : 400 }}
+                    style={{ fontSize: 11, fontWeight: isCurrent ? 600 : 400, fill: isCurrent ? "#6B7ED6" : "#7B84A8" }}
                   >
                     {d.count}
                   </text>
@@ -126,8 +122,7 @@ export default function ClientesEvolucionChart({ payments }: { payments: StripeP
                   x={x + barW / 2}
                   y={SVG_H - 6}
                   textAnchor="middle"
-                  style={{ fontSize: 11, fontWeight: isCurrent ? 600 : 400 }}
-                  className={isCurrent ? "fill-navy" : "fill-navy/45"}
+                  style={{ fontSize: 11, fontWeight: isCurrent ? 600 : 400, fill: isCurrent ? "#1C1917" : "#94A3B8" }}
                 >
                   {d.label}
                 </text>

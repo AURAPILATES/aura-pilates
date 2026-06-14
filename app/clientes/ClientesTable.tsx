@@ -64,9 +64,9 @@ function CustomerDrawer({
 
   const customerPayments = useMemo(
     () => payments
-      .filter((p) => p.customerId === customer.id)
+      .filter((p) => customer.stripeIds.includes(p.customerId ?? ""))
       .sort((a, b) => b.date.localeCompare(a.date)),
-    [payments, customer.id],
+    [payments, customer.stripeIds],
   );
 
   const ini = initials(customer.name, customer.email);
