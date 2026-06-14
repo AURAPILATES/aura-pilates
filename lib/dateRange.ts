@@ -1,4 +1,4 @@
-export type RangeKey = "all" | "month" | "prev-month" | "3months" | "year";
+export type RangeKey = "all" | "month" | "prev-month" | "3months" | "year" | "custom";
 
 export type DateRange = {
   from: string | null;
@@ -12,6 +12,7 @@ export const RANGE_OPTIONS: { key: RangeKey; label: string }[] = [
   { key: "prev-month", label: "Mes anterior" },
   { key: "3months",    label: "Últimos 3 meses" },
   { key: "year",       label: "Este año" },
+  { key: "custom",     label: "Personalizado…" },
 ];
 
 function pad(n: number) {

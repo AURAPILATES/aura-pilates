@@ -122,14 +122,18 @@ type Props = {
   recurringContacts: string[];
   anomalies: Anomaly[];
   currentRange: string;
+  customFrom?: string;
+  customTo?: string;
 };
 
 export default function TransaccionesList({
-  transactions, categories, uncategorizedCount, recurringContacts, anomalies, currentRange,
+  transactions, categories, uncategorizedCount, recurringContacts, anomalies, currentRange, customFrom, customTo,
 }: Props) {
   const router     = useRouter();
   const pathname   = usePathname();
   const searchParams = useSearchParams();
+  const [tempFrom, setTempFrom] = useState(customFrom ?? "");
+  const [tempTo,   setTempTo]   = useState(customTo   ?? "");
 
   const [search,      setSearch]      = useState("");
   const [catFilter,   setCatFilter]   = useState(() => searchParams.get("categoria") ?? "all");
@@ -148,10 +152,20 @@ export default function TransaccionesList({
   }, [searchParams]);
 
   function setRange(key: string) {
-    const params = new URLSearchParams(searchParams.toString());
-    if (key === "all") params.delete("range"); else params.set("range", key);
+    if (key === "custom") return; // wait for user to pick dates
+    const params = new URLSearchParams();
+    if (key !== "all") params.set("range", key);
     const qs = params.toString();
     router.push(qs ? `${pathname}?${qs}` : pathname);
+  }
+
+  function applyCustomRange() {
+    if (!tempFrom && !tempTo) return;
+    const params = new URLSearchParams();
+    params.set("range", "custom");
+    if (tempFrom) params.set("from", tempFrom);
+    if (tempTo)   params.set("to",   tempTo);
+    router.push(`${pathname}?${params.toString()}`);
   }
 
   const filtered = transactions.filter((t) => {
@@ -257,6 +271,42 @@ export default function TransaccionesList({
           </select>
         </div>
       </div>
+
+      {/* ── Custom date range ──────────────────────────────────────────────── */}
+      {currentRange === "custom" && (
+        <div className="flex flex-wrap items-center gap-2 mb-4 p-3 bg-white border border-navy/[0.07] rounded-xl shadow-card">
+          <span className="text-xs text-navy/50 font-medium">Desde</span>
+          <input
+            type="date"
+            value={tempFrom}
+            onChange={(e) => setTempFrom(e.target.value)}
+            className="text-sm border border-navy/[0.12] rounded-lg px-3 py-1.5 bg-white text-navy outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition cursor-pointer"
+          />
+          <span className="text-xs text-navy/50 font-medium">Hasta</span>
+          <input
+            type="date"
+            value={tempTo}
+            min={tempFrom || undefined}
+            onChange={(e) => setTempTo(e.target.value)}
+            className="text-sm border border-navy/[0.12] rounded-lg px-3 py-1.5 bg-white text-navy outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition cursor-pointer"
+          />
+          <button
+            onClick={applyCustomRange}
+            disabled={!tempFrom && !tempTo}
+            className="px-4 py-1.5 text-sm font-semibold bg-navy text-white rounded-lg hover:bg-navy/85 disabled:opacity-40 transition-colors"
+          >
+            Aplicar
+          </button>
+          {(customFrom || customTo) && (
+            <button
+              onClick={() => { setTempFrom(""); setTempTo(""); router.push(pathname); }}
+              className="text-xs text-navy/45 hover:text-navy/70 transition-colors"
+            >
+              Limpiar
+            </button>
+          )}
+        </div>
+      )}
 
       {/* ── Toolbar ────────────────────────────────────────────────────────── */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-4">

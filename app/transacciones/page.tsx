@@ -88,7 +88,14 @@ export default async function TransaccionesPage(props: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const sp = await props.searchParams;
-  const { from, to, label: rangeLabel } = getDateRange(sp.range);
+  const isCustom = sp.range === "custom" && (sp.from || sp.to);
+  const { from, to, label: rangeLabel } = isCustom
+    ? {
+        from: sp.from ?? null,
+        to:   sp.to   ?? null,
+        label: [sp.from, sp.to].filter(Boolean).join(" → ") || "Personalizado",
+      }
+    : getDateRange(sp.range);
 
   const [transactions, categories] = await Promise.all([
     loadTransactions(from, to),
@@ -136,6 +143,8 @@ export default async function TransaccionesPage(props: {
           recurringContacts={recurringContacts}
           anomalies={anomalies}
           currentRange={sp.range ?? "all"}
+          customFrom={sp.from}
+          customTo={sp.to}
         />
       </Suspense>
     </main>
