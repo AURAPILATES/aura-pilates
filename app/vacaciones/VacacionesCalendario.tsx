@@ -14,13 +14,29 @@ const MONTH_SHORT = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct"
 const MONTH_NAMES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 const TODAY = new Date().toISOString().split("T")[0];
 
+type AbsenceKey = "vacaciones" | "enfermedad" | "familiar" | "otros";
+
 type Persona = {
   nombre: string;
   inicioContrato: string;
   jornadaDias: number;
   diasTotales: number;
   vacaciones: string[];
+  enfermedad?: string[];
+  familiar?: string[];
+  otros?: string[];
 };
+
+const ABSENCE_TYPES: { key: AbsenceKey; label: string; dotHex: string }[] = [
+  { key: "vacaciones",  label: "Vacaciones",              dotHex: "#4021c8" },
+  { key: "enfermedad",  label: "Bajas por enfermedad",    dotHex: "#94a3b8" },
+  { key: "familiar",    label: "Enfermedad de familiar",  dotHex: "#f59e0b" },
+  { key: "otros",       label: "Otros permisos",          dotHex: "#8b5cf6" },
+];
+
+function getAbsenceDates(p: Persona, key: AbsenceKey): string[] {
+  return p[key] ?? [];
+}
 
 // Group sorted date strings into consecutive ranges
 function groupRanges(dates: string[]): { start: string; end: string; count: number }[] {
@@ -199,9 +215,10 @@ function AñadirAusenciaModal({
   persona: Persona;
   idx: number;
   onClose: () => void;
-  onAdd: (dates: string[]) => Promise<void>;
+  onAdd: (typeKey: AbsenceKey, dates: string[]) => Promise<void>;
 }) {
   const colors = PERSON_COLORS[idx];
+  const [absenceType, setAbsenceType] = useState<AbsenceKey>("vacaciones");
   const [duration, setDuration] = useState<DurationType>("day");
   const [dateFrom, setDateFrom] = useState(TODAY);
   const [dateTo, setDateTo] = useState(TODAY);
@@ -213,18 +230,20 @@ function AñadirAusenciaModal({
     return () => window.removeEventListener("keydown", handler);
   }, [onClose]);
 
-  const newDates = duration === "day"
-    ? [dateFrom].filter((d) => !persona.vacaciones.includes(d))
-    : getDatesInRange(dateFrom, dateTo).filter((d) => !persona.vacaciones.includes(d));
+  const existingDates = getAbsenceDates(persona, absenceType);
 
-  const alreadyExists = duration === "day"
-    ? persona.vacaciones.includes(dateFrom)
-    : false;
+  const newDates = duration === "day"
+    ? [dateFrom].filter((d) => !existingDates.includes(d))
+    : getDatesInRange(dateFrom, dateTo).filter((d) => !existingDates.includes(d));
+
+  const alreadyExists = duration === "day" && existingDates.includes(dateFrom);
+
+  const selectedType = ABSENCE_TYPES.find((t) => t.key === absenceType)!;
 
   async function handleSolicitar() {
     if (newDates.length === 0) return;
     setSaving(true);
-    await onAdd(newDates);
+    await onAdd(absenceType, newDates);
     setSaving(false);
     onClose();
   }
@@ -234,6 +253,9 @@ function AñadirAusenciaModal({
     : newDates.length > 0
     ? `${fmtPreviewDate(dateFrom)} → ${fmtPreviewDate(dateTo)}`
     : "—";
+
+  const vacUsadas = persona.vacaciones.length;
+  const isVacaciones = absenceType === "vacaciones";
 
   return (
     <div
@@ -257,28 +279,39 @@ function AñadirAusenciaModal({
         <div className="flex flex-col sm:flex-row">
           {/* Left: form */}
           <div className="flex-1 px-6 py-5 space-y-5">
-            {/* Type */}
+            {/* Type selector */}
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 flex items-center justify-center">
+              <div className="w-8 h-8 flex items-center justify-center shrink-0">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-navy/45">
-                  <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
-                  <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
                 </svg>
               </div>
-              <div className="flex-1 flex items-center justify-between border border-navy/[0.12] rounded-lg px-4 py-2.5 bg-white">
-                <div className="flex items-center gap-2">
-                  <div className={`w-2.5 h-2.5 rounded-full ${colors.dot}`} />
-                  <span className="text-sm font-medium text-navy">{persona.nombre} · Vacaciones</span>
+              <div className="flex-1 relative">
+                <div className="flex items-center gap-2 border border-navy/[0.12] rounded-lg px-3 py-2.5 bg-white pointer-events-none absolute inset-0 z-10">
+                  <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${colors.dot}`} />
+                  <span className="text-sm font-medium text-navy">{persona.nombre}</span>
+                  <span className="text-navy/35 mx-0.5">·</span>
+                  <span className="text-sm text-navy flex-1 truncate">{selectedType.label}</span>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-navy/35 shrink-0">
+                    <polyline points="6 9 12 15 18 9"/>
+                  </svg>
                 </div>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-navy/35">
-                  <polyline points="6 9 12 15 18 9"/>
-                </svg>
+                <select
+                  value={absenceType}
+                  onChange={(e) => setAbsenceType(e.target.value as AbsenceKey)}
+                  className="relative z-20 w-full opacity-0 py-2.5 cursor-pointer text-sm"
+                >
+                  {ABSENCE_TYPES.map((t) => (
+                    <option key={t.key} value={t.key}>{t.label}</option>
+                  ))}
+                </select>
               </div>
             </div>
 
             {/* Duration toggle */}
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 flex items-center justify-center">
+              <div className="w-8 h-8 flex items-center justify-center shrink-0">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-navy/45">
                   <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
                   <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
@@ -306,7 +339,7 @@ function AñadirAusenciaModal({
 
             {/* Date input(s) */}
             <div className="flex items-start gap-3">
-              <div className="w-8 h-8 flex items-center justify-center mt-2">
+              <div className="w-8 h-8 flex items-center justify-center mt-2 shrink-0">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-navy/45">
                   <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
                   <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
@@ -351,8 +384,8 @@ function AñadirAusenciaModal({
           <div className="sm:w-52 bg-navy/[0.02] border-t sm:border-t-0 sm:border-l border-navy/[0.07] px-5 py-5 flex flex-col gap-3">
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <div className={`w-2.5 h-2.5 rounded-full ${colors.dot}`} />
-                <p className="text-sm font-semibold text-navy">Vacaciones</p>
+                <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: selectedType.dotHex }} />
+                <p className="text-sm font-semibold text-navy">{selectedType.label}</p>
               </div>
               <p className="text-sm text-navy/70">{previewLabel}</p>
               <p className="text-xs text-navy/50 mt-1">
@@ -366,16 +399,20 @@ function AñadirAusenciaModal({
                   <span>Duración ausencia</span>
                   <span className="font-medium text-navy">{newDates.length}</span>
                 </div>
-                <div className="flex justify-between text-xs text-navy/55">
-                  <span>Días usados</span>
-                  <span className="font-medium text-navy">{persona.vacaciones.length}</span>
-                </div>
-                <div className="flex justify-between text-xs text-navy/55">
-                  <span>Restantes</span>
-                  <span className={`font-medium ${persona.diasTotales - persona.vacaciones.length - newDates.length < 0 ? "text-danger" : "text-navy"}`}>
-                    {persona.diasTotales - persona.vacaciones.length - newDates.length}
-                  </span>
-                </div>
+                {isVacaciones && (
+                  <>
+                    <div className="flex justify-between text-xs text-navy/55">
+                      <span>Días usados</span>
+                      <span className="font-medium text-navy">{vacUsadas}</span>
+                    </div>
+                    <div className="flex justify-between text-xs text-navy/55">
+                      <span>Restantes</span>
+                      <span className={`font-medium ${persona.diasTotales - vacUsadas - newDates.length < 0 ? "text-danger" : "text-navy"}`}>
+                        {persona.diasTotales - vacUsadas - newDates.length}
+                      </span>
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -397,13 +434,6 @@ function AñadirAusenciaModal({
 }
 
 // ── Resumen ausencias modal ───────────────────────────────────────────────────
-
-const ABSENCE_TYPES = [
-  { key: "vacaciones", label: "Vacaciones", color: "bg-warning" },
-  { key: "enfermedad", label: "Bajas por enfermedad", color: "bg-navy/30" },
-  { key: "familiar", label: "Enfermedad de familiar", color: "bg-warning/60" },
-  { key: "otros", label: "Otros permisos", color: "bg-primary/40" },
-];
 
 function AusenciasModal({ persona, idx, onClose }: { persona: Persona; idx: number; onClose: () => void }) {
   const colors = PERSON_COLORS[idx];
@@ -427,6 +457,7 @@ function AusenciasModal({ persona, idx, onClose }: { persona: Persona; idx: numb
         </div>
 
         <div className="px-6 py-4 space-y-4">
+          {/* Vacaciones con detalle */}
           <div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -453,21 +484,23 @@ function AusenciasModal({ persona, idx, onClose }: { persona: Persona; idx: numb
 
           <div className="border-t border-navy/5" />
 
-          {ABSENCE_TYPES.slice(1).map((t) => (
-            <div key={t.key} className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className={`w-2 h-2 rounded-full ${t.color}`} />
-                <span className="text-sm text-navy/60">{t.label}</span>
+          {/* Otros tipos con datos reales */}
+          {ABSENCE_TYPES.slice(1).map((t) => {
+            const days = getAbsenceDates(persona, t.key).length;
+            return (
+              <div key={t.key} className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: t.dotHex }} />
+                  <span className="text-sm text-navy/70">{t.label}</span>
+                </div>
+                {days > 0 ? (
+                  <span className="text-sm font-medium text-navy tabular-nums">{days} {days === 1 ? "día" : "días"}</span>
+                ) : (
+                  <span className="text-xs bg-navy/5 text-navy/45 px-2 py-0.5 rounded">sin registros</span>
+                )}
               </div>
-              <span className="text-xs bg-navy/5 text-navy/55 px-2 py-0.5 rounded">sin datos</span>
-            </div>
-          ))}
-        </div>
-
-        <div className="px-6 pb-5">
-          <p className="text-[10px] text-navy/45">
-            Los tipos de ausencia distintos a vacaciones no están disponibles a través de la API de Momence.
-          </p>
+            );
+          })}
         </div>
       </div>
     </div>
@@ -512,18 +545,23 @@ function PersonCard({
 }: {
   persona: Persona;
   idx: number;
-  onAdd: (dates: string[]) => Promise<void>;
-  onDeleteRange: (start: string, end: string) => Promise<void>;
+  onAdd: (typeKey: AbsenceKey, dates: string[]) => Promise<void>;
+  onDeleteRange: (typeKey: AbsenceKey, start: string, end: string) => Promise<void>;
 }) {
   const [showModal, setShowModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editMode, setEditMode] = useState(false);
   const colors = PERSON_COLORS[idx];
   const used = persona.vacaciones.length;
   const remaining = persona.diasTotales - used;
 
-  const ranges = groupRanges(persona.vacaciones);
-  const upcoming = ranges.filter((r) => r.end >= TODAY);
-  const past = ranges.filter((r) => r.end < TODAY);
+  // All absence types with their ranges
+  const allRanges = ABSENCE_TYPES.flatMap((t) =>
+    groupRanges(getAbsenceDates(persona, t.key)).map((r) => ({ ...r, typeKey: t.key, typeLabel: t.label, dotHex: t.dotHex }))
+  ).sort((a, b) => b.start.localeCompare(a.start));
+
+  const upcoming = allRanges.filter((r) => r.end >= TODAY);
+  const past = allRanges.filter((r) => r.end < TODAY);
 
   return (
     <>
@@ -541,12 +579,16 @@ function PersonCard({
         <div className="px-5 pt-5 pb-4 border-b border-navy/5">
           <div className="flex items-center justify-between mb-4">
             <p className="font-semibold text-navy">{persona.nombre}</p>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <button
-                onClick={() => setShowModal(true)}
-                className="text-xs text-primary/60 hover:text-primary transition-colors"
+                onClick={() => setEditMode((v) => !v)}
+                className={`flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg border transition-colors ${
+                  editMode
+                    ? "bg-navy/5 border-navy/20 text-navy"
+                    : "border-navy/15 text-navy/55 hover:text-navy hover:border-navy/30"
+                }`}
               >
-                Ver ausencias
+                {editMode ? "Listo" : "Editar"}
               </button>
               <button
                 onClick={() => setShowAddModal(true)}
@@ -599,31 +641,34 @@ function PersonCard({
                 {upcoming.map((r) => {
                   const { label, days } = formatPeriod(r.start, r.end, r.count);
                   return (
-                    <div key={r.start} className="flex items-center gap-3 group">
+                    <div key={`${r.typeKey}-${r.start}`} className="flex items-center gap-3">
                       <DateBadge dateStr={r.start} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 mb-0.5">
-                          <div className={`w-1.5 h-1.5 rounded-full ${colors.dot}`} />
-                          <p className="text-sm font-medium text-navy">Vacaciones</p>
+                          <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: r.dotHex }} />
+                          <p className="text-sm font-medium text-navy">{r.typeLabel}</p>
                         </div>
                         <p className="text-xs text-navy/55">{label} ({days})</p>
                       </div>
-                      <div className="flex items-center gap-1 shrink-0">
-                        <div className="w-6 h-6 rounded-full bg-success/10 flex items-center justify-center">
-                          <span className="text-success text-xs">✓</span>
-                        </div>
-                        <button
-                          onClick={() => onDeleteRange(r.start, r.end)}
-                          className="w-6 h-6 rounded-full flex items-center justify-center text-navy/20 hover:text-danger hover:bg-danger/10 transition-colors opacity-0 group-hover:opacity-100"
-                          title="Eliminar"
-                        >
-                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="3 6 5 6 21 6"/>
-                            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-                            <path d="M10 11v6"/><path d="M14 11v6"/>
-                            <path d="M9 6V4h6v2"/>
-                          </svg>
-                        </button>
+                      <div className="shrink-0">
+                        {editMode ? (
+                          <button
+                            onClick={() => onDeleteRange(r.typeKey, r.start, r.end)}
+                            className="flex items-center gap-1 text-xs text-danger border border-danger/30 bg-danger/5 hover:bg-danger/10 px-2 py-1 rounded-lg transition-colors"
+                          >
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="3 6 5 6 21 6"/>
+                              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                              <path d="M10 11v6"/><path d="M14 11v6"/>
+                              <path d="M9 6V4h6v2"/>
+                            </svg>
+                            Eliminar
+                          </button>
+                        ) : (
+                          <div className="w-6 h-6 rounded-full bg-success/10 flex items-center justify-center">
+                            <span className="text-success text-xs">✓</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
@@ -639,31 +684,34 @@ function PersonCard({
                 {past.map((r) => {
                   const { label, days } = formatPeriod(r.start, r.end, r.count);
                   return (
-                    <div key={r.start} className="flex items-center gap-3 group">
+                    <div key={`${r.typeKey}-${r.start}`} className="flex items-center gap-3">
                       <DateBadge dateStr={r.start} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 mb-0.5">
-                          <div className="w-1.5 h-1.5 rounded-full bg-navy/20" />
-                          <p className="text-sm text-navy/50">Vacaciones</p>
+                          <div className="w-1.5 h-1.5 rounded-full bg-navy/20 shrink-0" />
+                          <p className="text-sm text-navy/50">{r.typeLabel}</p>
                         </div>
                         <p className="text-xs text-navy/45">{label} ({days})</p>
                       </div>
-                      <div className="flex items-center gap-1 shrink-0">
-                        <div className="w-6 h-6 rounded-full bg-navy/5 flex items-center justify-center">
-                          <span className="text-navy/45 text-xs">✓</span>
-                        </div>
-                        <button
-                          onClick={() => onDeleteRange(r.start, r.end)}
-                          className="w-6 h-6 rounded-full flex items-center justify-center text-navy/20 hover:text-danger hover:bg-danger/10 transition-colors opacity-0 group-hover:opacity-100"
-                          title="Eliminar"
-                        >
-                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="3 6 5 6 21 6"/>
-                            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-                            <path d="M10 11v6"/><path d="M14 11v6"/>
-                            <path d="M9 6V4h6v2"/>
-                          </svg>
-                        </button>
+                      <div className="shrink-0">
+                        {editMode ? (
+                          <button
+                            onClick={() => onDeleteRange(r.typeKey, r.start, r.end)}
+                            className="flex items-center gap-1 text-xs text-danger border border-danger/30 bg-danger/5 hover:bg-danger/10 px-2 py-1 rounded-lg transition-colors"
+                          >
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="3 6 5 6 21 6"/>
+                              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                              <path d="M10 11v6"/><path d="M14 11v6"/>
+                              <path d="M9 6V4h6v2"/>
+                            </svg>
+                            Eliminar
+                          </button>
+                        ) : (
+                          <div className="w-6 h-6 rounded-full bg-navy/5 flex items-center justify-center">
+                            <span className="text-navy/45 text-xs">✓</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
@@ -671,6 +719,16 @@ function PersonCard({
               </div>
             </div>
           )}
+        </div>
+
+        {/* Ver ausencias — fijo al pie de la tarjeta */}
+        <div className="border-t border-navy/[0.05] px-5 py-3">
+          <button
+            onClick={() => setShowModal(true)}
+            className="w-full text-xs text-navy/45 hover:text-primary transition-colors text-center py-0.5"
+          >
+            Ver resumen de ausencias
+          </button>
         </div>
       </div>
     </>
@@ -1003,21 +1061,21 @@ export default function VacacionesCalendario({
     router.refresh();
   }, [router]);
 
-  const handleAdd = useCallback(async (nombre: string, dates: string[]) => {
-    const updated = personas.map((p) =>
-      p.nombre === nombre
-        ? { ...p, vacaciones: [...new Set([...p.vacaciones, ...dates])].sort() }
-        : p
-    );
+  const handleAdd = useCallback(async (nombre: string, typeKey: AbsenceKey, dates: string[]) => {
+    const updated = personas.map((p) => {
+      if (p.nombre !== nombre) return p;
+      const existing = getAbsenceDates(p, typeKey);
+      return { ...p, [typeKey]: [...new Set([...existing, ...dates])].sort() };
+    });
     await saveAndUpdate(updated);
   }, [personas, saveAndUpdate]);
 
-  const handleDeleteRange = useCallback(async (nombre: string, start: string, end: string) => {
-    const updated = personas.map((p) =>
-      p.nombre === nombre
-        ? { ...p, vacaciones: p.vacaciones.filter((d) => d < start || d > end) }
-        : p
-    );
+  const handleDeleteRange = useCallback(async (nombre: string, typeKey: AbsenceKey, start: string, end: string) => {
+    const updated = personas.map((p) => {
+      if (p.nombre !== nombre) return p;
+      const existing = getAbsenceDates(p, typeKey);
+      return { ...p, [typeKey]: existing.filter((d) => d < start || d > end) };
+    });
     await saveAndUpdate(updated);
   }, [personas, saveAndUpdate]);
 
@@ -1059,8 +1117,8 @@ export default function VacacionesCalendario({
               key={p.nombre}
               persona={p}
               idx={i}
-              onAdd={(dates) => handleAdd(p.nombre, dates)}
-              onDeleteRange={(start, end) => handleDeleteRange(p.nombre, start, end)}
+              onAdd={(typeKey, dates) => handleAdd(p.nombre, typeKey, dates)}
+              onDeleteRange={(typeKey, start, end) => handleDeleteRange(p.nombre, typeKey, start, end)}
             />
           );
         })}

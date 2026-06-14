@@ -8,6 +8,9 @@ type Persona = {
   jornadaDias: number;
   diasTotales: number;
   vacaciones: string[];
+  enfermedad?: string[];
+  familiar?: string[];
+  otros?: string[];
 };
 
 export async function saveVacacionesAction(personas: Persona[]) {
