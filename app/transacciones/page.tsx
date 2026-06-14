@@ -114,7 +114,7 @@ export default async function TransaccionesPage(props: {
 
       {/* ── Mobile header ── */}
       <div className="sm:hidden mb-5">
-        <h1 className="text-sm font-bold text-navy uppercase tracking-widest">Transacciones</h1>
+        <h1 className="text-sm font-bold text-navy uppercase tracking-widest mb-4">Transacciones</h1>
         {latestBal?.balance != null && (
           <div className="bg-navy rounded-2xl px-5 py-4 mb-3">
             <p className="text-[11px] text-white/45 uppercase tracking-wider mb-1">
