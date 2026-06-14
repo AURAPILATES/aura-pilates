@@ -234,13 +234,14 @@ export default function TransaccionesList({
     return [...map.entries()].sort((a, b) => b[0].localeCompare(a[0]));
   }, [filtered]);
 
-  const totalIn  = filtered.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0);
-  const totalOut = filtered.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
-  const neto     = totalIn - totalOut;
-
   const allFilteredIds = filtered.map((t) => t.id);
   const allSelected    = allFilteredIds.length > 0 && allFilteredIds.every((id) => selected.has(id));
   const someSelected   = selected.size > 0;
+
+  const activeTxns = someSelected ? filtered.filter((t) => selected.has(t.id)) : filtered;
+  const totalIn  = activeTxns.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0);
+  const totalOut = activeTxns.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
+  const neto     = totalIn - totalOut;
 
   function toggleAll() {
     setSelected(allSelected ? new Set() : new Set(allFilteredIds));
@@ -508,6 +509,11 @@ export default function TransaccionesList({
         )}
         <div className="flex-1" />
         <div className="flex items-center gap-6">
+          {someSelected && (
+            <span className="text-[10px] text-primary/60 font-medium uppercase tracking-wider">
+              {selected.size} seleccionada{selected.size !== 1 ? "s" : ""}
+            </span>
+          )}
           <div className="text-right">
             <p className="text-[10px] text-navy/40 uppercase tracking-wider">Ingresos</p>
             <p className="text-sm font-semibold text-success tabular-nums">+{fmtAmt(totalIn)}</p>
