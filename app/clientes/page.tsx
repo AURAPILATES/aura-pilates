@@ -1,14 +1,10 @@
 export const dynamic = "force-dynamic";
 
-import { fmt } from "@/lib/analytics";
 import { loadStripePayments } from "@/lib/stripePayments";
 import { loadStripeCustomers } from "@/lib/stripeCustomers";
-import {
-  estimatedMRR,
-  activeCustomersInMonth,
-  possibleChurnIds,
-} from "@/lib/stripeRecurrence";
+import { estimatedMRR, possibleChurnIds } from "@/lib/stripeRecurrence";
 import ClientesTable from "./ClientesTable";
+import ClientesKPIs from "./ClientesKPIs";
 
 function pad2(n: number) { return String(n).padStart(2, "0"); }
 
@@ -24,10 +20,8 @@ export default async function ClientesPage() {
   const customers = await loadStripeCustomers(payments, curMonth);
 
   const total      = customers.length;
-  const recurring  = customers.filter((c) => c.isRecurring).length;
-  const mrr        = estimatedMRR(payments, curMonth);
-  const activeNow  = activeCustomersInMonth(payments, curMonth);
-  const churnIds   = possibleChurnIds(payments, curMonth);
+  const mrr      = estimatedMRR(payments, curMonth);
+  const churnIds = possibleChurnIds(payments, curMonth);
   const churnCount = churnIds.size;
 
   // Flag churn on customer objects for the table
@@ -46,30 +40,13 @@ export default async function ClientesPage() {
         </p>
       </div>
 
-      {/* KPIs */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
-          <p className="text-xs text-navy/55 uppercase tracking-wider mb-1">Total clientes</p>
-          <p className="text-2xl font-semibold text-navy">{total}</p>
-        </div>
-        <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
-          <p className="text-xs text-navy/55 uppercase tracking-wider mb-1">Recurrentes</p>
-          <p className="text-2xl font-semibold text-primary">{recurring}</p>
-          <p className="text-xs text-navy/45 mt-1">2+ meses de 3</p>
-        </div>
-        <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
-          <p className="text-xs text-navy/55 uppercase tracking-wider mb-1">MRR estimado</p>
-          <p className="text-2xl font-semibold text-success">{fmt(mrr)}</p>
-          <p className="text-xs text-navy/45 mt-1">media 3 meses</p>
-        </div>
-        <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
-          <p className="text-xs text-navy/55 uppercase tracking-wider mb-1">Posibles bajas</p>
-          <p className={`text-2xl font-semibold ${churnCount > 0 ? "text-warning" : "text-navy/50"}`}>
-            {churnCount}
-          </p>
-          <p className="text-xs text-navy/45 mt-1">pagaron en {prevMonth.slice(5)} no en {curMonth.slice(5)}</p>
-        </div>
-      </div>
+      {/* KPIs interactivos */}
+      <ClientesKPIs
+        customers={customersWithChurn}
+        mrr={mrr}
+        prevMonthLabel={prevMonth.slice(5)}
+        curMonthLabel={curMonth.slice(5)}
+      />
 
       {/* Alerta posibles bajas */}
       {churnCount > 0 && (

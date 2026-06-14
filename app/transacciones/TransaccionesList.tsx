@@ -7,6 +7,7 @@ import type { Anomaly } from "./page";
 import { updateTransactionCategory, updateTransactionNotes, updateTransactionContactType } from "./actions";
 import type { ContactType } from "@/lib/transactions";
 import { RANGE_OPTIONS, type RangeKey } from "@/lib/dateRange";
+import ImportButton from "./ImportButton";
 
 const MONTH_NAMES: Record<string, string> = {
   "01": "Ene", "02": "Feb", "03": "Mar", "04": "Abr",
@@ -138,6 +139,8 @@ export default function TransaccionesList({
   const [search,      setSearch]      = useState("");
   const [catFilter,   setCatFilter]   = useState(() => searchParams.get("categoria") ?? "all");
   const [typeFilter,  setTypeFilter]  = useState<ContactType | "all">("all");
+  const [showMobileFilters,  setShowMobileFilters]  = useState(false);
+  const [mobileSelectMode,   setMobileSelectMode]   = useState(false);
   const [editingNotes, setEditingNotes] = useState<string | null>(null);
   const [notesValue,   setNotesValue]   = useState("");
   const [selected,     setSelected]     = useState<Set<string>>(new Set());
@@ -240,8 +243,119 @@ export default function TransaccionesList({
 
   return (
     <div>
-      {/* ── Filter bar ─────────────────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row gap-2 mb-4">
+      {/* ── Mobile: Import + Filtros buttons ────────────────────────────────── */}
+      <div className="sm:hidden flex gap-2 mb-3">
+        <ImportButton className="flex-1" />
+        <button
+          onClick={() => setShowMobileFilters((v) => !v)}
+          className="flex items-center gap-1.5 px-4 py-2.5 bg-white border border-navy/[0.12] rounded-xl text-sm font-semibold text-navy"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/>
+          </svg>
+          Filtros
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform ${showMobileFilters ? "rotate-180" : ""}`}>
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </button>
+      </div>
+
+      {/* ── Mobile: Filter drawer ────────────────────────────────────────────── */}
+      {showMobileFilters && (
+        <div className="sm:hidden bg-white border border-navy/[0.1] rounded-2xl p-4 mb-3 flex flex-col gap-3 shadow-card">
+          <div className="relative">
+            <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-navy/30" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input
+              type="text"
+              placeholder="Buscar concepto o contacto…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 text-sm border border-navy/[0.12] rounded-lg bg-white text-navy placeholder:text-navy/35 outline-none focus:ring-2 focus:ring-primary/20 transition"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <select value={currentRange} onChange={(e) => setRange(e.target.value)} className={SELECT_CLS + " w-full"}>
+              {RANGE_OPTIONS.map(({ key, label }) => <option key={key} value={key}>{label}</option>)}
+            </select>
+            <select value={catFilter} onChange={(e) => setCatFilter(e.target.value)} className={SELECT_CLS + " w-full"}>
+              <option value="all">Categoría</option>
+              {categories.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+            </select>
+            <select value={typeFilter ?? "all"} onChange={(e) => setTypeFilter(e.target.value === "all" ? "all" : e.target.value as ContactType)} className={SELECT_CLS + " w-full col-span-2"}>
+              <option value="all">Todos los tipos</option>
+              {CONTACT_TYPES.map((c) => <option key={c.value} value={c.value ?? ""}>{c.emoji} {c.label}</option>)}
+            </select>
+          </div>
+          {currentRange === "custom" && (
+            <div className="flex flex-col gap-2">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <p className="text-[10px] text-navy/45 uppercase tracking-wide mb-1 font-medium">Desde</p>
+                  <input type="date" value={tempFrom} onChange={(e) => setTempFrom(e.target.value)}
+                    className="w-full text-sm border border-navy/[0.12] rounded-lg px-3 py-2 bg-white text-navy outline-none" />
+                </div>
+                <div>
+                  <p className="text-[10px] text-navy/45 uppercase tracking-wide mb-1 font-medium">Hasta</p>
+                  <input type="date" value={tempTo} min={tempFrom || undefined} onChange={(e) => setTempTo(e.target.value)}
+                    className="w-full text-sm border border-navy/[0.12] rounded-lg px-3 py-2 bg-white text-navy outline-none" />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={applyCustomRange} disabled={!tempFrom && !tempTo}
+                  className="flex-1 py-2 text-sm font-semibold bg-navy text-white rounded-lg hover:bg-navy/85 disabled:opacity-40 transition-colors">
+                  Aplicar
+                </button>
+                {(customFrom || customTo) && (
+                  <button onClick={() => { setTempFrom(""); setTempTo(""); router.push(pathname); }}
+                    className="px-4 py-2 text-sm text-navy/45 border border-navy/[0.12] rounded-lg hover:text-navy/70 transition-colors">
+                    Limpiar
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Mobile: Alert banner ─────────────────────────────────────────────── */}
+      {uncategorizedCount > 0 && (
+        <button
+          onClick={() => setCatFilter(catFilter === "Otros" ? "all" : "Otros")}
+          className="sm:hidden w-full flex items-center gap-2 px-4 py-3 mb-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-sm font-medium text-left"
+        >
+          <span className="text-base">⚠</span>
+          <span className="flex-1">{uncategorizedCount} movimientos sin categorizar</span>
+          <span className="text-amber-600 font-semibold text-xs">Revisar →</span>
+        </button>
+      )}
+
+      {/* ── Mobile: Summary card ──────────────────────────────────────────────── */}
+      <div className="sm:hidden bg-white border border-navy/[0.07] rounded-2xl shadow-card px-4 py-4 mb-4">
+        <p className="text-[10px] text-navy/40 uppercase tracking-wider font-semibold mb-3">
+          Resumen · {RANGE_OPTIONS.find(o => o.key === currentRange)?.label ?? "Todo"}
+        </p>
+        <div className="grid grid-cols-3 gap-2 divide-x divide-navy/[0.06]">
+          <div className="text-center">
+            <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1">Ingresos</p>
+            <p className="text-sm font-bold text-success tabular-nums">+{fmtAmt(totalIn)}</p>
+          </div>
+          <div className="text-center">
+            <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1">Gastos</p>
+            <p className="text-sm font-bold text-navy/65 tabular-nums">−{fmtAmt(totalOut)}</p>
+          </div>
+          <div className="text-center">
+            <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1">Neto</p>
+            <p className={`text-sm font-bold tabular-nums ${neto >= 0 ? "text-primary" : "text-danger"}`}>
+              {neto >= 0 ? "+" : "−"}{fmtAmt(Math.abs(neto))}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Filter bar (desktop only) ───────────────────────────────────────── */}
+      <div className="hidden sm:flex flex-row gap-2 mb-4">
         <div className="relative flex-1">
           <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-navy/30" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
@@ -272,9 +386,9 @@ export default function TransaccionesList({
         </div>
       </div>
 
-      {/* ── Custom date range ──────────────────────────────────────────────── */}
+      {/* ── Custom date range (desktop only) ──────────────────────────────── */}
       {currentRange === "custom" && (
-        <div className="flex flex-wrap items-center gap-2 mb-4 p-3 bg-white border border-navy/[0.07] rounded-xl shadow-card">
+        <div className="hidden sm:flex flex-wrap items-center gap-2 mb-4 p-3 bg-white border border-navy/[0.07] rounded-xl shadow-card">
           <span className="text-xs text-navy/50 font-medium">Desde</span>
           <input
             type="date"
@@ -316,6 +430,16 @@ export default function TransaccionesList({
           {isPending && <span className="ml-2 text-xs text-primary/60">Guardando…</span>}
         </span>
         <button
+          onClick={() => { setMobileSelectMode((v) => { if (v) clearSelection(); return !v; }); }}
+          className={`sm:hidden text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors ${
+            mobileSelectMode
+              ? "bg-navy text-white border-navy"
+              : "bg-white text-navy/55 border-navy/[0.12] hover:text-navy"
+          }`}
+        >
+          {mobileSelectMode ? "Cancelar" : "Seleccionar"}
+        </button>
+        <button
           onClick={exportCSV}
           title="Exportar vista actual a CSV"
           className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-navy/55 border border-navy/[0.12] rounded-lg bg-white hover:bg-navy/[0.02] hover:text-navy transition-colors"
@@ -326,11 +450,11 @@ export default function TransaccionesList({
           Exportar CSV
         </button>
 
-        {/* Uncategorized pill */}
+        {/* Uncategorized pill (desktop only — mobile shows banner above) */}
         {uncategorizedCount > 0 && (
           <button
             onClick={() => setCatFilter(catFilter === "Otros" ? "all" : "Otros")}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+            className={`hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-colors ${
               catFilter === "Otros"
                 ? "bg-warning/20 text-warning"
                 : "bg-warning/10 text-warning hover:bg-warning/15"
@@ -358,8 +482,8 @@ export default function TransaccionesList({
 
         <div className="flex-1" />
 
-        {/* Financial summary */}
-        <div className="flex items-center gap-5">
+        {/* Financial summary (desktop only — mobile shows summary card above) */}
+        <div className="hidden sm:flex items-center gap-5">
           <div className="text-right">
             <p className="text-[10px] text-navy/40 uppercase tracking-wider">Ingresos</p>
             <p className="text-sm font-semibold text-success tabular-nums">+{fmtAmt(totalIn)}</p>
@@ -419,8 +543,10 @@ export default function TransaccionesList({
             <div key={t.id} className={`px-4 py-3 transition-colors ${isSelected ? "bg-primary/[0.035]" : ""}`}>
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <input type="checkbox" checked={isSelected} onChange={() => toggleOne(t.id)}
-                    className="shrink-0 rounded border-navy/20 accent-primary cursor-pointer" />
+                  {mobileSelectMode && (
+                    <input type="checkbox" checked={isSelected} onChange={() => toggleOne(t.id)}
+                      className="shrink-0 rounded border-navy/20 accent-primary cursor-pointer" />
+                  )}
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
                       <span className="text-sm font-medium text-navy truncate">{primary}</span>
@@ -457,10 +583,11 @@ export default function TransaccionesList({
             <col style={{ width: "128px" }} />
           </colgroup>
           <thead>
-            <tr className="border-b border-navy/[0.06] bg-navy/[0.012]">
+            <tr className="border-b border-navy/[0.06] bg-navy/[0.012] group/head">
               <th className="pl-4 py-3 align-middle">
                 <input type="checkbox" checked={allSelected} onChange={toggleAll}
-                  className="block rounded border-navy/20 accent-primary cursor-pointer" aria-label="Seleccionar todas" />
+                  className={`block rounded border-navy/20 accent-primary cursor-pointer transition-opacity ${someSelected ? "opacity-100" : "opacity-0 group-hover/head:opacity-100"}`}
+                  aria-label="Seleccionar todas" />
               </th>
               <th className="text-left px-4 py-3 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Concepto</th>
               <th className="text-left px-4 py-3 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Categoría</th>
@@ -490,7 +617,7 @@ export default function TransaccionesList({
                 >
                   <td className="pl-4 align-middle" style={{ height: "60px" }}>
                     <input type="checkbox" checked={isSelected} onChange={() => toggleOne(t.id)}
-                      className="block rounded border-navy/20 accent-primary cursor-pointer" />
+                      className={`block rounded border-navy/20 accent-primary cursor-pointer transition-opacity ${isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`} />
                   </td>
 
                   <td className="px-4 align-middle overflow-hidden" style={{ height: "60px" }}>

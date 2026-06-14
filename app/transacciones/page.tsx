@@ -111,9 +111,28 @@ export default async function TransaccionesPage(props: {
     .find((t) => t.balance !== null);
 
   return (
-    <main className="px-6 pt-8 pb-16 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4 mb-8">
+    <main className="px-4 sm:px-6 pt-6 sm:pt-8 pb-16 max-w-7xl mx-auto">
+
+      {/* ── Mobile header ── */}
+      <div className="sm:hidden mb-5">
+        <h1 className="text-3xl font-bold text-navy font-display">Transacciones</h1>
+        <p className="text-sm text-navy/55 mt-1 mb-4">
+          {transactions.length} movimientos · {rangeLabel}
+        </p>
+        {latestBal?.balance != null && (
+          <div className="bg-navy rounded-2xl px-5 py-4 mb-3">
+            <p className="text-[11px] text-white/45 uppercase tracking-wider mb-1">
+              Saldo a {fmtBalanceDate(latestBal.date)}
+            </p>
+            <p className="text-3xl font-bold text-white tabular-nums">
+              {latestBal.balance.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* ── Desktop header ── */}
+      <div className="hidden sm:flex items-start justify-between gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold text-navy font-display">Transacciones</h1>
           <p className="text-sm text-navy/55 mt-1.5">
