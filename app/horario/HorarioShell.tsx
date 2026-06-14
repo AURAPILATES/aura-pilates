@@ -221,53 +221,41 @@ export default function HorarioShell({
           options={clases}
           placeholder="Todas las clases"
         />
-        {view === "lista" && (
-          <>
-          <Select
-            value={instructoraFilter}
-            onChange={setInstructoraFilter}
-            options={instructoras}
-            placeholder="Todas las instructoras"
-          />
-          <div className="flex items-center border border-navy/[0.12] rounded-lg bg-white p-1 gap-0.5">
-            {(
-              [
-                { value: "all", label: "Todas" },
-                { value: "low", label: "Por llenar" },
-                { value: "mid", label: "A medias" },
-                { value: "high", label: "Llenas" },
-              ] as { value: OccFilter; label: string }[]
-            ).map(({ value, label }) => (
-              <button
-                key={value}
-                onClick={() => setOccFilter(value)}
-                className={`px-4 py-1.5 text-sm rounded-md transition-colors ${
-                  occFilter === value
-                    ? "bg-navy text-white font-medium"
-                    : "text-navy/50 hover:text-navy"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-          {hasFilters && (
+        <Select
+          value={instructoraFilter}
+          onChange={setInstructoraFilter}
+          options={instructoras}
+          placeholder="Todas las instructoras"
+        />
+        <div className="flex items-center border border-navy/[0.12] rounded-lg bg-white p-1 gap-0.5">
+          {(
+            [
+              { value: "all", label: "Todas" },
+              { value: "low", label: "Por llenar" },
+              { value: "mid", label: "A medias" },
+              { value: "high", label: "Llenas" },
+            ] as { value: OccFilter; label: string }[]
+          ).map(({ value, label }) => (
             <button
-              onClick={() => {
-                setClaseFilter("all");
-                setInstructoraFilter("all");
-                setOccFilter("all");
-              }}
-              className="text-xs text-navy/50 hover:text-navy underline"
+              key={value}
+              onClick={() => setOccFilter(value)}
+              className={`px-4 py-1.5 text-sm rounded-md transition-colors ${
+                occFilter === value
+                  ? "bg-navy text-white font-medium"
+                  : "text-navy/50 hover:text-navy"
+              }`}
             >
-              Limpiar
+              {label}
             </button>
-          )}
-          </>
-        )}
-        {view === "calendario" && claseFilter !== "all" && (
+          ))}
+        </div>
+        {hasFilters && (
           <button
-            onClick={() => setClaseFilter("all")}
+            onClick={() => {
+              setClaseFilter("all");
+              setInstructoraFilter("all");
+              setOccFilter("all");
+            }}
             className="text-xs text-navy/50 hover:text-navy underline"
           >
             Limpiar
