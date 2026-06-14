@@ -100,8 +100,9 @@ export default function HorarioShell({
                 <polyline points="15 18 9 12 15 6" />
               </svg>
             </button>
-            <span className="text-sm font-medium text-navy px-2 min-w-[120px] text-center">
-              {weekLabel(weekMonday)}
+            <span className="text-sm text-navy px-2 min-w-[140px] text-center">
+              <span className="text-navy/45 font-normal">Semana </span>
+              <span className="font-semibold">{weekLabel(weekMonday)}</span>
             </span>
             <button
               onClick={() => router.push(`?week=${nextWeek}`)}
@@ -183,7 +184,7 @@ export default function HorarioShell({
             options={instructoras}
             placeholder="Todas las instructoras"
           />
-          <div className="flex border border-navy/[0.08] rounded-xl overflow-hidden bg-white text-sm">
+          <div className="flex items-center gap-1">
             {(
               [
                 { value: "all", label: "Todas" },
@@ -195,9 +196,9 @@ export default function HorarioShell({
               <button
                 key={value}
                 onClick={() => setOccFilter(value)}
-                className={`px-3 py-1.5 transition-colors ${
+                className={`px-4 py-1.5 text-sm rounded-full transition-colors ${
                   occFilter === value
-                    ? "bg-navy text-white"
+                    ? "bg-navy text-white font-medium"
                     : "text-navy/50 hover:text-navy"
                 }`}
               >
@@ -283,17 +284,25 @@ function Select({
   placeholder: string;
 }) {
   return (
-    <select
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className="text-sm border border-navy/[0.08] rounded-xl bg-white text-navy px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary/20"
-    >
-      <option value="all">{placeholder}</option>
-      {options.slice(1).map((o) => (
-        <option key={o} value={o}>
-          {o}
-        </option>
-      ))}
-    </select>
+    <div className="relative">
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="appearance-none text-sm border border-navy/[0.12] rounded-full bg-white text-navy pl-4 pr-8 py-2 focus:outline-none focus:ring-1 focus:ring-primary/20 cursor-pointer"
+      >
+        <option value="all">{placeholder}</option>
+        {options.slice(1).map((o) => (
+          <option key={o} value={o}>
+            {o}
+          </option>
+        ))}
+      </select>
+      <svg
+        className="absolute right-3 top-1/2 -translate-y-1/2 text-navy/40 pointer-events-none"
+        width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+      >
+        <polyline points="6 9 12 15 18 9" />
+      </svg>
+    </div>
   );
 }
