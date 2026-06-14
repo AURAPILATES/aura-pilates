@@ -41,7 +41,7 @@ export default async function ClientesPage() {
     <main className="p-6 max-w-6xl mx-auto">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-navy font-display">Clientes</h1>
+        <h1 className="text-sm font-bold text-navy uppercase tracking-widest">Clientes</h1>
         <div className="flex items-center gap-3 mt-1 flex-wrap">
           <p className="text-sm text-navy/55">{total} clientes</p>
           <SyncBadge source="Stripe" syncedAt={syncedAt} />

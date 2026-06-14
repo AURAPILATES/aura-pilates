@@ -663,7 +663,7 @@ export default function TransaccionesList({
       <div className="hidden sm:block bg-white border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden">
         <table className="w-full" style={{ tableLayout: "fixed" }}>
           <colgroup>
-            <col style={{ width: "44px" }} />
+            <col style={{ width: "32px" }} />
             <col />
             <col style={{ width: "172px" }} />
             <col style={{ width: "184px" }} />
@@ -672,12 +672,12 @@ export default function TransaccionesList({
           </colgroup>
           <thead>
             <tr className="border-b border-navy/[0.06] bg-navy/[0.012] group/head">
-              <th className="pl-4 py-3 align-middle">
+              <th className="pl-3 py-3 align-middle">
                 <input type="checkbox" checked={allSelected} onChange={toggleAll}
-                  className={`block rounded border-navy/20 accent-primary cursor-pointer transition-opacity ${someSelected ? "opacity-100" : "opacity-0 group-hover/head:opacity-100"}`}
+                  className="block rounded border-navy/20 accent-primary cursor-pointer"
                   aria-label="Seleccionar todas" />
               </th>
-              <th className="text-left px-4 py-3 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Concepto</th>
+              <th className="text-left pl-2 pr-4 py-3 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Concepto</th>
               <th className="text-left px-4 py-3 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Categoría</th>
               <th className="text-left px-4 py-3 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Notas</th>
               <th className="text-right px-4 py-3 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Fecha</th>
@@ -703,12 +703,12 @@ export default function TransaccionesList({
                     isSelected ? "bg-primary/[0.03]" : "hover:bg-navy/[0.01]"
                   }`}
                 >
-                  <td className="pl-4 align-middle" style={{ height: "60px" }}>
+                  <td className="pl-3 align-middle" style={{ height: "60px" }}>
                     <input type="checkbox" checked={isSelected} onChange={() => toggleOne(t.id)}
-                      className={`block rounded border-navy/20 accent-primary cursor-pointer transition-opacity ${isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`} />
+                      className="block rounded border-navy/20 accent-primary cursor-pointer" />
                   </td>
 
-                  <td className="px-4 align-middle overflow-hidden" style={{ height: "60px" }}>
+                  <td className="pl-2 pr-4 align-middle overflow-hidden" style={{ height: "60px" }}>
                     <div className="flex items-center gap-1.5 min-w-0">
                       <span className="text-sm font-semibold text-navy truncate">{primary}</span>
                       {isRecurring && (

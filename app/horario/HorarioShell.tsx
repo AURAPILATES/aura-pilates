@@ -92,7 +92,7 @@ export default function HorarioShell({
     <div>
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <h1 className="text-xl font-semibold text-navy font-display">Horario</h1>
+        <h1 className="text-sm font-bold text-navy uppercase tracking-widest">Horario</h1>
 
         <div className="flex items-center gap-3 flex-wrap">
           {/* Week navigation */}
