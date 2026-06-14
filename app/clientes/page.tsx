@@ -6,6 +6,7 @@ import { estimatedMRR, possibleChurnIds, activeCustomersLast30Days, newCustomers
 import ClientesTable from "./ClientesTable";
 import ClientesKPIs from "./ClientesKPIs";
 import ClientesEvolucionChart from "./ClientesEvolucionChart";
+import SyncBadge from "@/app/components/SyncBadge";
 
 function pad2(n: number) { return String(n).padStart(2, "0"); }
 
@@ -27,6 +28,7 @@ export default async function ClientesPage() {
   const newIds     = newCustomersLast30Days(payments);
   const churnCount = churnIds.size;
 
+  const syncedAt = new Date().toISOString();
   const customersWithChurn = customers.map((c) => ({
     ...c,
     possibleChurn: churnIds.has(c.id),
@@ -39,9 +41,10 @@ export default async function ClientesPage() {
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-navy font-display">Clientes</h1>
-        <p className="text-sm text-navy/55 mt-1">
-          {total} clientes · datos en tiempo real de Stripe
-        </p>
+        <div className="flex items-center gap-3 mt-1 flex-wrap">
+          <p className="text-sm text-navy/55">{total} clientes</p>
+          <SyncBadge source="Stripe" syncedAt={syncedAt} />
+        </div>
       </div>
 
       {/* KPIs interactivos */}
