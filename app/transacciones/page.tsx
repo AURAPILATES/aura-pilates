@@ -3,6 +3,7 @@ import { loadTransactions, type Transaction } from "@/lib/transactions";
 import { loadCategories } from "@/lib/categories";
 import { getDateRange } from "@/lib/dateRange";
 import TransaccionesList from "./TransaccionesList";
+import DateFilter from "@/app/components/DateFilter";
 
 // ── Analysis helpers ───────────────────────────────────────────────────────────
 
@@ -110,52 +111,39 @@ export default async function TransaccionesPage(props: {
     .find((t) => t.balance !== null);
 
   return (
-    <main className="px-2 sm:px-6 pt-6 sm:pt-8 pb-16 max-w-6xl mx-auto">
-
-      {/* ── Mobile header ── */}
-      <div className="sm:hidden mb-5">
-        <h1 className="text-sm font-bold text-navy uppercase tracking-widest mb-4">Transacciones</h1>
-        {latestBal?.balance != null && (
-          <div className="bg-navy rounded-2xl px-5 py-4 mb-3">
-            <p className="text-[11px] text-white/45 uppercase tracking-wider mb-1">
-              Saldo a {fmtBalanceDate(latestBal.date)}
-            </p>
-            <p className="text-3xl font-bold text-white tabular-nums">
-              {latestBal.balance.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
-            </p>
+    <div>
+      {/* ── Sticky header ── */}
+      <div className="sticky top-0 z-20 bg-app-bg/95 backdrop-blur-sm border-b border-navy/[0.06]">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-4">
+            <h1 className="text-sm font-bold text-navy uppercase tracking-widest">Transacciones</h1>
+            <Suspense fallback={null}><DateFilter /></Suspense>
           </div>
-        )}
-      </div>
-
-      {/* ── Desktop header ── */}
-      <div className="hidden sm:flex items-start justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-sm font-bold text-navy uppercase tracking-widest">Transacciones</h1>
+          {latestBal?.balance != null && (
+            <div className="text-right">
+              <p className="text-[10px] text-navy/45 uppercase tracking-wider leading-none mb-0.5">
+                Saldo · {fmtBalanceDate(latestBal.date)}
+              </p>
+              <p className="text-sm font-bold text-navy tabular-nums">
+                {latestBal.balance.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+              </p>
+            </div>
+          )}
         </div>
-        {latestBal?.balance != null && (
-          <div className="text-right shrink-0">
-            <p className="text-[11px] text-navy/45 uppercase tracking-wider mb-1">
-              Saldo a {fmtBalanceDate(latestBal.date)}
-            </p>
-            <p className="text-2xl font-bold text-navy tabular-nums">
-              {latestBal.balance.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
-            </p>
-          </div>
-        )}
       </div>
 
-      <Suspense fallback={null}>
-        <TransaccionesList
-          transactions={transactions}
-          categories={categories}
-          uncategorizedCount={uncategorizedCount}
-          recurringContacts={recurringContacts}
-          anomalies={anomalies}
-          currentRange={sp.range ?? "all"}
-          customFrom={sp.from}
-          customTo={sp.to}
-        />
-      </Suspense>
-    </main>
+      {/* ── Content ── */}
+      <div className="px-2 sm:px-6 pt-6 sm:pt-8 pb-16 max-w-6xl mx-auto">
+        <Suspense fallback={null}>
+          <TransaccionesList
+            transactions={transactions}
+            categories={categories}
+            uncategorizedCount={uncategorizedCount}
+            recurringContacts={recurringContacts}
+            anomalies={anomalies}
+          />
+        </Suspense>
+      </div>
+    </div>
   );
 }

@@ -177,7 +177,7 @@ export default async function Finanzas(props: {
   const uscPrev = momenceSalesAll.filter((s) => s.method === "urban-sports-club" && s.paymentDate.startsWith(prevMonth)).reduce((sum, s) => sum + s.amount, 0);
 
   // ── Transactions (siempre datos completos — el banco solo exporta hasta fecha fija) ──
-  const [txnsAll, dbCategories] = await Promise.all([loadTransactions(), loadCategories()]);
+  const [txnsAll, dbCategories, budgets] = await Promise.all([loadTransactions(), loadCategories(), loadBudgets()]);
   const dbCatByLabel = new Map(dbCategories.map((c) => [c.label, c]));
   const totalOpEx     = totalOperationalExpenses(txnsAll);
   const totalStartup  = totalStartupCosts(txnsAll);
@@ -185,7 +185,6 @@ export default async function Finanzas(props: {
   const totalExpCat   = expByCategory.reduce((s, r) => s + r.total, 0);
 
   // ── Budgets / Financiación ────────────────────────────────────────────────
-  const budgets     = loadBudgets();
   const budgetSpent = computeSpent(budgets, txnsAll);
 
   // Rango real de transacciones para mostrarlo en el desglose

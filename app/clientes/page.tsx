@@ -38,35 +38,37 @@ export default async function ClientesPage() {
   }));
 
   return (
-    <main className="p-6 max-w-6xl mx-auto">
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-sm font-bold text-navy uppercase tracking-widest">Clientes</h1>
-        <div className="flex items-center gap-3 mt-1 flex-wrap">
-          <p className="text-sm text-navy/55">{total} clientes</p>
-          <SyncBadge source="Stripe" syncedAt={syncedAt} />
+    <div>
+      {/* ── Sticky header ── */}
+      <div className="sticky top-0 z-20 bg-app-bg/95 backdrop-blur-sm border-b border-navy/[0.06]">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
+          <h1 className="text-sm font-bold text-navy uppercase tracking-widest">Clientes</h1>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-navy/45">{total} clientes</span>
+            <SyncBadge source="Stripe" syncedAt={syncedAt} />
+          </div>
         </div>
       </div>
 
-      {/* KPIs interactivos */}
-      <ClientesKPIs
-        customers={customersWithChurn}
-        mrr={mrr}
-        prevMonthLabel={prevMonth.slice(5)}
-        curMonthLabel={curMonth.slice(5)}
-      />
-
-
-      <ClientesEvolucionChart payments={payments} />
-
-      {churnCount > 0 && (
-        <ChurnAlert
-          count={churnCount}
-          names={customersWithChurn.filter((c) => c.possibleChurn).map((c) => c.name ?? c.email ?? c.id)}
+      <div className="p-6 max-w-6xl mx-auto">
+        <ClientesKPIs
+          customers={customersWithChurn}
+          mrr={mrr}
+          prevMonthLabel={prevMonth.slice(5)}
+          curMonthLabel={curMonth.slice(5)}
         />
-      )}
 
-      <ClientesTable customers={customersWithChurn} payments={payments} />
-    </main>
+        <ClientesEvolucionChart payments={payments} />
+
+        {churnCount > 0 && (
+          <ChurnAlert
+            count={churnCount}
+            names={customersWithChurn.filter((c) => c.possibleChurn).map((c) => c.name ?? c.email ?? c.id)}
+          />
+        )}
+
+        <ClientesTable customers={customersWithChurn} payments={payments} />
+      </div>
+    </div>
   );
 }

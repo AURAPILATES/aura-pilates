@@ -5,7 +5,7 @@ import type { Transaction } from "@/lib/transactions";
 import type { Category } from "@/lib/categories";
 import type { Anomaly } from "./page";
 import { updateTransactionCategory, updateTransactionNotes } from "./actions";
-import { RANGE_OPTIONS, type RangeKey } from "@/lib/dateRange";
+import { RANGE_OPTIONS } from "@/lib/dateRange";
 import ImportButton from "./ImportButton";
 
 const MONTHS_ES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
@@ -139,19 +139,16 @@ type Props = {
   uncategorizedCount: number;
   recurringContacts: string[];
   anomalies: Anomaly[];
-  currentRange: string;
-  customFrom?: string;
-  customTo?: string;
 };
 
 export default function TransaccionesList({
-  transactions, categories, uncategorizedCount, recurringContacts, anomalies, currentRange, customFrom, customTo,
+  transactions, categories, uncategorizedCount, recurringContacts, anomalies,
 }: Props) {
-  const router     = useRouter();
-  const pathname   = usePathname();
+  const router       = useRouter();
+  const pathname     = usePathname();
   const searchParams = useSearchParams();
-  const [tempFrom, setTempFrom] = useState(customFrom ?? "");
-  const [tempTo,   setTempTo]   = useState(customTo   ?? "");
+  const currentRange = searchParams.get("range") ?? "all";
+  const customFrom   = searchParams.get("from") ?? "";
 
   const [search,      setSearch]      = useState("");
   const [catFilter,   setCatFilter]   = useState(() => searchParams.get("categoria") ?? "all");
@@ -199,23 +196,6 @@ export default function TransaccionesList({
     const cat = searchParams.get("categoria");
     if (cat) setCatFilter(cat);
   }, [searchParams]);
-
-  function setRange(key: string) {
-    if (key === "custom") return; // wait for user to pick dates
-    const params = new URLSearchParams();
-    if (key !== "all") params.set("range", key);
-    const qs = params.toString();
-    router.push(qs ? `${pathname}?${qs}` : pathname);
-  }
-
-  function applyCustomRange() {
-    if (!tempFrom && !tempTo) return;
-    const params = new URLSearchParams();
-    params.set("range", "custom");
-    if (tempFrom) params.set("from", tempFrom);
-    if (tempTo)   params.set("to",   tempTo);
-    router.push(`${pathname}?${params.toString()}`);
-  }
 
   const filtered = transactions.filter((t) => {
     const q = search.toLowerCase();
@@ -328,47 +308,12 @@ export default function TransaccionesList({
               className="w-full pl-9 pr-4 py-2 text-sm border border-navy/[0.12] rounded-lg bg-white text-navy placeholder:text-navy/35 outline-none focus:ring-2 focus:ring-primary/20 transition"
             />
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <SelectWrapper>
-              <select value={currentRange} onChange={(e) => setRange(e.target.value)} className={SELECT_CLS}>
-                {RANGE_OPTIONS.map(({ key, label }) => <option key={key} value={key}>{label}</option>)}
-              </select>
-            </SelectWrapper>
-            <SelectWrapper>
-              <select value={catFilter} onChange={(e) => setCatFilter(e.target.value)} className={SELECT_CLS}>
-                <option value="all">Categoría</option>
-                {categories.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
-              </select>
-            </SelectWrapper>
-          </div>
-          {currentRange === "custom" && (
-            <div className="flex flex-col gap-2">
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <p className="text-[10px] text-navy/45 uppercase tracking-wide mb-1 font-medium">Desde</p>
-                  <input type="date" value={tempFrom} onChange={(e) => setTempFrom(e.target.value)}
-                    className="w-full text-sm border border-navy/[0.12] rounded-lg px-3 py-2 bg-white text-navy outline-none" />
-                </div>
-                <div>
-                  <p className="text-[10px] text-navy/45 uppercase tracking-wide mb-1 font-medium">Hasta</p>
-                  <input type="date" value={tempTo} min={tempFrom || undefined} onChange={(e) => setTempTo(e.target.value)}
-                    className="w-full text-sm border border-navy/[0.12] rounded-lg px-3 py-2 bg-white text-navy outline-none" />
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <button onClick={applyCustomRange} disabled={!tempFrom && !tempTo}
-                  className="flex-1 py-2 text-sm font-semibold bg-navy text-white rounded-lg hover:bg-navy/85 disabled:opacity-40 transition-colors">
-                  Aplicar
-                </button>
-                {(customFrom || customTo) && (
-                  <button onClick={() => { setTempFrom(""); setTempTo(""); router.push(pathname); }}
-                    className="px-4 py-2 text-sm text-navy/45 border border-navy/[0.12] rounded-lg hover:text-navy/70 transition-colors">
-                    Limpiar
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
+          <SelectWrapper>
+            <select value={catFilter} onChange={(e) => setCatFilter(e.target.value)} className={SELECT_CLS}>
+              <option value="all">Categoría</option>
+              {categories.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+            </select>
+          </SelectWrapper>
         </div>
       )}
 
@@ -433,11 +378,6 @@ export default function TransaccionesList({
             {categories.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
           </select>
         </SelectWrapper>
-        <SelectWrapper>
-          <select value={currentRange} onChange={(e) => setRange(e.target.value)} className={SELECT_CLS}>
-            {RANGE_OPTIONS.map(({ key, label }) => <option key={key} value={key}>{label}</option>)}
-          </select>
-        </SelectWrapper>
         <div className="flex-1" />
         <ImportButton />
         <button
@@ -452,46 +392,14 @@ export default function TransaccionesList({
         </button>
       </div>
 
-      {/* ── Custom date range (desktop only) ──────────────────────────────── */}
-      {currentRange === "custom" && (
-        <div className="hidden sm:flex flex-wrap items-center gap-2 mb-3 p-3 bg-white border border-navy/[0.07] rounded-xl shadow-card">
-          <span className="text-xs text-navy/50 font-medium">Desde</span>
-          <input
-            type="date"
-            value={tempFrom}
-            onChange={(e) => setTempFrom(e.target.value)}
-            className="text-sm border border-navy/[0.12] rounded-lg px-3 py-1.5 bg-white text-navy outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition cursor-pointer"
-          />
-          <span className="text-xs text-navy/50 font-medium">Hasta</span>
-          <input
-            type="date"
-            value={tempTo}
-            min={tempFrom || undefined}
-            onChange={(e) => setTempTo(e.target.value)}
-            className="text-sm border border-navy/[0.12] rounded-lg px-3 py-1.5 bg-white text-navy outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition cursor-pointer"
-          />
-          <button
-            onClick={applyCustomRange}
-            disabled={!tempFrom && !tempTo}
-            className="px-4 py-1.5 text-sm font-semibold bg-navy text-white rounded-lg hover:bg-navy/85 disabled:opacity-40 transition-colors"
-          >
-            Aplicar
-          </button>
-          {(customFrom || customTo) && (
-            <button
-              onClick={() => { setTempFrom(""); setTempTo(""); router.push(pathname); }}
-              className="text-xs text-navy/45 hover:text-navy/70 transition-colors"
-            >
-              Limpiar
-            </button>
-          )}
-        </div>
-      )}
 
       {/* ── Desktop: fila 3 — Recuento + sumatorios ───────────────────────── */}
       <div className="hidden sm:flex items-center gap-4 mb-5">
         <span className="text-sm text-navy/55">
-          {filtered.length} movimientos
+          {someSelected
+            ? <>{selected.size} seleccionada{selected.size !== 1 ? "s" : ""} <span className="text-navy/35">de {filtered.length}</span></>
+            : <>{filtered.length} movimientos</>
+          }
           {isPending && <span className="ml-2 text-xs text-primary/60">Guardando…</span>}
         </span>
         {uncategorizedCount > 0 && (
@@ -509,11 +417,6 @@ export default function TransaccionesList({
         )}
         <div className="flex-1" />
         <div className="flex items-center gap-6">
-          {someSelected && (
-            <span className="text-[10px] text-primary/60 font-medium uppercase tracking-wider">
-              {selected.size} seleccionada{selected.size !== 1 ? "s" : ""}
-            </span>
-          )}
           <div className="text-right">
             <p className="text-[10px] text-navy/40 uppercase tracking-wider">Ingresos</p>
             <p className="text-sm font-semibold text-success tabular-nums">+{fmtAmt(totalIn)}</p>

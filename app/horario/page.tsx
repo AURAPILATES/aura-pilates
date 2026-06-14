@@ -65,14 +65,12 @@ export default async function Horario({
   const initialTab  = params.tab === "analisis" ? "analisis" : "horario";
 
   return (
-    <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
-      <HorarioShell
-        events={weekEvents}
-        weekMonday={weekMonday}
-        initialView={initialView as "lista" | "calendario"}
-        initialTab={initialTab as "horario" | "analisis"}
-        reportingData={{ past30, prev30, upcoming7, topProducts, uscByHour, uscByWeekday }}
-      />
-    </main>
+    <HorarioShell
+      events={weekEvents}
+      weekMonday={weekMonday}
+      initialView={initialView as "lista" | "calendario"}
+      initialTab={initialTab as "horario" | "analisis"}
+      reportingData={{ past30, prev30, upcoming7, topProducts, uscByHour, uscByWeekday }}
+    />
   );
 }

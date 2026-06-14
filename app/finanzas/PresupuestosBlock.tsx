@@ -158,7 +158,7 @@ export default function PresupuestosBlock({
                 type="text"
                 value={b.name}
                 onChange={(e) => updateBudget(b.id, "name", e.target.value)}
-                placeholder="Nombre (ej: Papas <> Julia)"
+                placeholder="ej: Préstamo Caixabank 40k"
                 className="w-full text-sm border border-navy/[0.12] rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary/30 text-navy"
               />
               <input
