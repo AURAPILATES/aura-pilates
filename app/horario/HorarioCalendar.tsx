@@ -1,50 +1,64 @@
 "use client";
 
+import { useMemo } from "react";
 import { MomenceEvent } from "@/lib/momence";
 import { fmt } from "@/lib/analytics";
 
-const START_HOUR = 7;
-const END_HOUR = 22;
-const SLOT_PX = 110; // px per hour
+const SLOT_PX = 110;     // px per hour slot
+const SEP_PX = 28;       // px for the gap-separator row
 const DAY_LABELS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
-const HOURS = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => START_HOUR + i);
 
-type OccStyle = {
-  card: string;
-  pct: string;
-  bar: string;
-};
-
+type OccStyle = { card: string; pct: string; bar: string };
 function occStyle(occ: number): OccStyle {
-  if (occ >= 0.8) return {
-    card: "bg-[#e8efe5] border-[#c8dcc3]",
-    pct: "text-[#3d7048]",
-    bar: "bg-[#4e8a5d]",
-  };
-  if (occ >= 0.6) return {
-    card: "bg-[#f2ede0] border-[#ddd0b0]",
-    pct: "text-[#8b7230]",
-    bar: "bg-[#a38540]",
-  };
-  if (occ >= 0.4) return {
-    card: "bg-[#f5ece0] border-[#e0ceae]",
-    pct: "text-[#b06020]",
-    bar: "bg-[#c07030]",
-  };
-  return {
-    card: "bg-[#f5e2de] border-[#e0c0b8]",
-    pct: "text-[#b03020]",
-    bar: "bg-[#c03828]",
-  };
+  if (occ >= 0.8) return { card: "bg-[#e8efe5] border-[#c8dcc3]", pct: "text-[#3d7048]", bar: "bg-[#4e8a5d]" };
+  if (occ >= 0.6) return { card: "bg-[#f2ede0] border-[#ddd0b0]", pct: "text-[#8b7230]", bar: "bg-[#a38540]" };
+  if (occ >= 0.4) return { card: "bg-[#f5ece0] border-[#e0ceae]", pct: "text-[#b06020]", bar: "bg-[#c07030]" };
+  return { card: "bg-[#f5e2de] border-[#e0c0b8]", pct: "text-[#b03020]", bar: "bg-[#c03828]" };
+}
+
+function pctColor(occ: number) {
+  if (occ >= 0.8) return "text-[#3d7048]";
+  if (occ >= 0.6) return "text-[#8b7230]";
+  if (occ >= 0.4) return "text-[#b06020]";
+  return "text-[#b03020]";
 }
 
 function dayStats(events: MomenceEvent[]) {
-  if (events.length === 0) return null;
+  if (!events.length) return null;
   const totalCap = events.reduce((s, e) => s + e.capacity, 0);
   const totalSold = events.reduce((s, e) => s + e.ticketsSold, 0);
-  const occ = totalCap > 0 ? totalSold / totalCap : 0;
-  const revenue = events.reduce((s, e) => s + e.ticketsSold * e.fixedPrice, 0);
-  return { occ, revenue };
+  return {
+    occ: totalCap > 0 ? totalSold / totalCap : 0,
+    revenue: events.reduce((s, e) => s + e.ticketsSold * e.fixedPrice, 0),
+  };
+}
+
+/** Groups consecutive integers into runs: [7,8,9,17,18] → [[7,8,9],[17,18]] */
+function clusterHours(hours: number[]): number[][] {
+  const clusters: number[][] = [];
+  for (const h of hours) {
+    const last = clusters[clusters.length - 1];
+    if (last && h === last[last.length - 1] + 1) {
+      last.push(h);
+    } else {
+      clusters.push([h]);
+    }
+  }
+  return clusters;
+}
+
+/** Returns a map: hour → Y offset in the rendered grid */
+function buildHourMap(clusters: number[][]): { hourMap: Map<number, number>; totalH: number } {
+  const hourMap = new Map<number, number>();
+  let y = 0;
+  for (let ci = 0; ci < clusters.length; ci++) {
+    if (ci > 0) y += SEP_PX; // separator between clusters
+    for (const h of clusters[ci]) {
+      hourMap.set(h, y);
+      y += SLOT_PX;
+    }
+  }
+  return { hourMap, totalH: y };
 }
 
 export default function HorarioCalendar({
@@ -59,48 +73,65 @@ export default function HorarioCalendar({
   const monday = new Date(weekMonday + "T00:00:00");
   const todayKey = new Date().toLocaleDateString("sv-SE");
 
-  const byDay = Array.from({ length: 7 }, () => [] as MomenceEvent[]);
-  for (const e of events) {
+  const byDay = useMemo(() => {
+    const arr = Array.from({ length: 7 }, () => [] as MomenceEvent[]);
+    for (const e of events) {
+      const dow = (new Date(e.dateTime).getDay() + 6) % 7;
+      if (dow >= 0 && dow < 7) arr[dow].push(e);
+    }
+    return arr;
+  }, [events]);
+
+  // Compute active hours: every hour touched by at least one event
+  const { clusters, hourMap, totalH } = useMemo(() => {
+    const active = new Set<number>();
+    for (const e of events) {
+      const d = new Date(e.dateTime);
+      const startH = d.getHours();
+      const spanH = Math.ceil((d.getMinutes() + e.duration) / 60);
+      for (let i = 0; i < spanH; i++) active.add(startH + i);
+    }
+    const sorted = Array.from(active).sort((a, b) => a - b);
+    const cls = clusterHours(sorted);
+    const { hourMap, totalH } = buildHourMap(cls);
+    return { clusters: cls, hourMap, totalH };
+  }, [events]);
+
+  function eventTopPx(e: MomenceEvent): number {
     const d = new Date(e.dateTime);
-    const dow = (d.getDay() + 6) % 7;
-    if (dow >= 0 && dow < 7) byDay[dow].push(e);
+    const h = d.getHours();
+    const base = hourMap.get(h) ?? 0;
+    return base + (d.getMinutes() / 60) * SLOT_PX;
+  }
+
+  if (events.length === 0) {
+    return (
+      <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-16 text-center text-navy/35 text-sm">
+        No hay clases esta semana.
+      </div>
+    );
   }
 
   return (
     <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden">
       {/* Day headers */}
-      <div
-        className="grid border-b border-navy/[0.08]"
-        style={{ gridTemplateColumns: "52px repeat(7, 1fr)" }}
-      >
+      <div className="grid border-b border-navy/[0.08]" style={{ gridTemplateColumns: "52px repeat(7, 1fr)" }}>
         <div className="border-r border-navy/[0.07]" />
         {DAY_LABELS.map((label, i) => {
           const day = new Date(monday.getTime() + i * 86400000);
           const isToday = day.toLocaleDateString("sv-SE") === todayKey;
           const stats = dayStats(byDay[i]);
-          const pctColor = stats
-            ? stats.occ >= 0.8
-              ? "text-[#3d7048]"
-              : stats.occ >= 0.6
-              ? "text-[#8b7230]"
-              : stats.occ >= 0.4
-              ? "text-[#b06020]"
-              : "text-[#b03020]"
-            : "text-navy/30";
-
           return (
             <div
               key={i}
-              className={`py-3 px-3 border-r border-navy/[0.07] last:border-r-0 ${
-                isToday ? "bg-navy/[0.025]" : ""
-              }`}
+              className={`py-3 px-3 border-r border-navy/[0.07] last:border-r-0 ${isToday ? "bg-navy/[0.025]" : ""}`}
             >
               <p className={`text-sm font-semibold ${isToday ? "text-primary" : "text-navy"}`}>
                 {label}{" "}
                 <span className="font-normal text-navy/40 text-xs">{day.getDate()}</span>
               </p>
               {stats ? (
-                <p className={`text-xs mt-0.5 font-medium ${pctColor}`}>
+                <p className={`text-xs mt-0.5 font-medium ${pctColor(stats.occ)}`}>
                   {Math.round(stats.occ * 100)}%
                   <span className="text-navy/35 font-normal"> · {fmt(stats.revenue)}</span>
                 </p>
@@ -114,56 +145,86 @@ export default function HorarioCalendar({
 
       {/* Scrollable time grid */}
       <div className="overflow-y-auto" style={{ maxHeight: "680px" }}>
-        <div
-          className="grid"
-          style={{ gridTemplateColumns: "52px repeat(7, 1fr)" }}
-        >
-          {/* Hour labels */}
-          <div>
-            {HOURS.map((h) => (
-              <div
-                key={h}
-                className="border-r border-b border-navy/[0.06] flex items-start justify-end pr-2 pt-1.5"
-                style={{ height: `${SLOT_PX}px` }}
-              >
-                <span className="text-[10px] text-navy/30 font-mono">
-                  {String(h).padStart(2, "0")}:00
-                </span>
-              </div>
-            ))}
+        <div className="grid" style={{ gridTemplateColumns: "52px repeat(7, 1fr)" }}>
+
+          {/* Hour labels + separators column */}
+          <div className="relative border-r border-navy/[0.07]" style={{ height: `${totalH}px` }}>
+            {clusters.map((cluster, ci) => {
+              const clusterStartY = hourMap.get(cluster[0]) ?? 0;
+
+              return (
+                <div key={ci}>
+                  {/* Separator above this cluster (except first) */}
+                  {ci > 0 && (
+                    <div
+                      className="absolute left-0 right-0 flex items-center justify-end pr-2"
+                      style={{ top: `${clusterStartY - SEP_PX}px`, height: `${SEP_PX}px` }}
+                    >
+                      <span className="text-[9px] text-navy/20 font-mono">
+                        {String(cluster[0]).padStart(2, "0")}:00
+                      </span>
+                    </div>
+                  )}
+                  {/* Hour slots */}
+                  {cluster.map((h) => (
+                    <div
+                      key={h}
+                      className="absolute left-0 right-0 border-b border-navy/[0.06] flex items-start justify-end pr-2 pt-1.5"
+                      style={{ top: `${hourMap.get(h)}px`, height: `${SLOT_PX}px` }}
+                    >
+                      <span className="text-[10px] text-navy/30 font-mono">
+                        {String(h).padStart(2, "0")}:00
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
           </div>
 
           {/* Day columns */}
           {byDay.map((dayEvents, dayIndex) => {
             const day = new Date(monday.getTime() + dayIndex * 86400000);
             const isToday = day.toLocaleDateString("sv-SE") === todayKey;
+
             return (
               <div
                 key={dayIndex}
-                className={`relative border-r border-navy/[0.07] last:border-r-0 ${
-                  isToday ? "bg-navy/[0.012]" : ""
-                }`}
-                style={{ height: `${HOURS.length * SLOT_PX}px` }}
+                className={`relative border-r border-navy/[0.07] last:border-r-0 ${isToday ? "bg-navy/[0.012]" : ""}`}
+                style={{ height: `${totalH}px` }}
               >
-                {/* Hour grid lines */}
-                {HOURS.map((h) => (
-                  <div
-                    key={h}
-                    className="absolute w-full border-b border-navy/[0.05]"
-                    style={{ top: `${(h - START_HOUR) * SLOT_PX}px` }}
-                  />
-                ))}
+                {/* Grid lines per cluster */}
+                {clusters.map((cluster, ci) => {
+                  const clusterStartY = hourMap.get(cluster[0]) ?? 0;
+                  return (
+                    <div key={ci}>
+                      {/* Separator row */}
+                      {ci > 0 && (
+                        <div
+                          className="absolute left-0 right-0 bg-navy/[0.025] border-y border-navy/[0.05]"
+                          style={{ top: `${clusterStartY - SEP_PX}px`, height: `${SEP_PX}px` }}
+                        />
+                      )}
+                      {/* Hour borders */}
+                      {cluster.map((h) => (
+                        <div
+                          key={h}
+                          className="absolute left-0 right-0 border-b border-navy/[0.05]"
+                          style={{ top: `${hourMap.get(h)}px`, height: `${SLOT_PX}px` }}
+                        />
+                      ))}
+                    </div>
+                  );
+                })}
 
                 {/* Events */}
                 {dayEvents.map((e) => {
-                  const d = new Date(e.dateTime);
-                  const h = d.getHours();
-                  const m = d.getMinutes();
-                  const topPx = (h - START_HOUR + m / 60) * SLOT_PX;
+                  const topPx = eventTopPx(e);
                   const heightPx = Math.max((e.duration / 60) * SLOT_PX - 4, 36);
                   const occ = e.capacity > 0 ? e.ticketsSold / e.capacity : 0;
                   const pctVal = Math.round(occ * 100);
                   const style = occStyle(occ);
+                  const d = new Date(e.dateTime);
                   const timeStr = d.toLocaleTimeString("es-ES", {
                     hour: "2-digit",
                     minute: "2-digit",
@@ -178,40 +239,22 @@ export default function HorarioCalendar({
                       style={{ top: `${topPx + 2}px`, height: `${heightPx}px` }}
                     >
                       <div className="px-2.5 pt-2 flex-1 min-h-0 overflow-hidden">
-                        {/* Time + occ% */}
                         <div className="flex items-center justify-between mb-0.5">
-                          <span className="text-[10px] font-semibold text-navy/55 font-mono">
-                            {timeStr}
-                          </span>
-                          <span className={`text-[10px] font-bold ${style.pct}`}>
-                            {pctVal}%
-                          </span>
+                          <span className="text-[10px] font-semibold text-navy/55 font-mono">{timeStr}</span>
+                          <span className={`text-[10px] font-bold ${style.pct}`}>{pctVal}%</span>
                         </div>
-                        {/* Class name */}
-                        <p className="text-xs font-bold text-navy leading-tight truncate">
-                          {e.title}
-                        </p>
-                        {/* Teacher */}
+                        <p className="text-xs font-bold text-navy leading-tight truncate">{e.title}</p>
                         {heightPx > 55 && e.teacher && (
-                          <p className="text-[10px] text-navy/50 truncate mt-0.5">
-                            {e.teacher}
-                          </p>
+                          <p className="text-[10px] text-navy/50 truncate mt-0.5">{e.teacher}</p>
                         )}
-                        {/* Spots */}
                         {heightPx > 70 && (
-                          <p className="text-[10px] text-navy/50 mt-0.5">
-                            {e.ticketsSold}/{e.capacity}
-                          </p>
+                          <p className="text-[10px] text-navy/50 mt-0.5">{e.ticketsSold}/{e.capacity}</p>
                         )}
                       </div>
-                      {/* Progress bar */}
                       {heightPx > 50 && (
                         <div className="px-2.5 pb-2 mt-1">
                           <div className="h-[3px] rounded-full bg-black/10 overflow-hidden">
-                            <div
-                              className={`h-full rounded-full ${style.bar}`}
-                              style={{ width: `${pctVal}%` }}
-                            />
+                            <div className={`h-full rounded-full ${style.bar}`} style={{ width: `${pctVal}%` }} />
                           </div>
                         </div>
                       )}
