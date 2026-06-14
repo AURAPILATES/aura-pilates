@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { saveVacacionesAction } from "@/app/actions/saveVacaciones";
 
 const PERSON_COLORS = [
   { dot: "bg-primary", cellBg: "bg-primary/[0.12]", stroke: "#4021c8", border: "border-primary/20", text: "text-primary", badge: "bg-primary/10 text-primary" },
@@ -10,7 +12,7 @@ const PERSON_COLORS = [
 
 const MONTH_SHORT = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 const MONTH_NAMES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
-const TODAY = "2026-06-13";
+const TODAY = new Date().toISOString().split("T")[0];
 
 type Persona = {
   nombre: string;
@@ -80,23 +82,15 @@ function generateSuggestions(personas: Persona[], festivos: string[]): Suggestio
 
   const todayDate = new Date(TODAY + "T12:00:00");
 
-  // 1. Días sin planificar
   personas.forEach((p) => {
     const remaining = p.diasTotales - p.vacaciones.length;
     if (p.vacaciones.length === 0) {
-      suggestions.push({
-        type: "warning",
-        text: `${p.nombre} tiene ${p.diasTotales} días de vacaciones sin planificar aún.`,
-      });
+      suggestions.push({ type: "warning", text: `${p.nombre} tiene ${p.diasTotales} días de vacaciones sin planificar aún.` });
     } else if (remaining > 0) {
-      suggestions.push({
-        type: "info",
-        text: `${p.nombre} tiene ${remaining} ${remaining === 1 ? "día pendiente" : "días pendientes"} de planificar.`,
-      });
+      suggestions.push({ type: "info", text: `${p.nombre} tiene ${remaining} ${remaining === 1 ? "día pendiente" : "días pendientes"} de planificar.` });
     }
   });
 
-  // 2. Solapamientos: agrupar días consecutivos con 2+ personas
   const overlapDates = Array.from(vacByDate.entries())
     .filter(([, idxs]) => idxs.length >= 2)
     .map(([d]) => d)
@@ -112,14 +106,10 @@ function generateSuggestions(personas: Persona[], festivos: string[]): Suggestio
         r.start === r.end
           ? `el ${s.getDate()} de ${MONTH_NAMES[s.getMonth()].toLowerCase()}`
           : `entre el ${s.getDate()} y el ${e.getDate()} de ${MONTH_NAMES[s.getMonth()].toLowerCase()}`;
-      suggestions.push({
-        type: "warning",
-        text: `Evita aprobar más ausencias ${period}: ${names.join(" y ")} ya ${names.length === 1 ? "está" : "están"} de vacaciones.`,
-      });
+      suggestions.push({ type: "warning", text: `Evita aprobar más ausencias ${period}: ${names.join(" y ")} ya ${names.length === 1 ? "está" : "están"} de vacaciones.` });
     });
   }
 
-  // 3. Ventanas libres próximas — por mes completo o quincena (máx 4)
   let freeWindows = 0;
   for (let mi = todayDate.getMonth(); mi < 12 && freeWindows < 4; mi++) {
     const month = mi + 1;
@@ -171,10 +161,7 @@ function SugerenciasBlock({ personas, festivos }: { personas: Persona[]; festivo
   return (
     <div className="flex flex-wrap gap-2">
       {suggestions.map((s, i) => (
-        <span
-          key={i}
-          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs leading-snug ${styles[s.type]}`}
-        >
+        <span key={i} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs leading-snug ${styles[s.type]}`}>
           <span className="shrink-0">{icon[s.type]}</span>
           {s.text}
         </span>
@@ -182,6 +169,234 @@ function SugerenciasBlock({ personas, festivos }: { personas: Persona[]; festivo
     </div>
   );
 }
+
+// ── Añadir ausencia modal ─────────────────────────────────────────────────────
+
+type DurationType = "day" | "range";
+
+function getDatesInRange(from: string, to: string): string[] {
+  const dates: string[] = [];
+  const start = new Date(from + "T12:00:00");
+  const end = new Date(to + "T12:00:00");
+  if (end < start) return [];
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    dates.push(d.toISOString().split("T")[0]);
+  }
+  return dates;
+}
+
+function fmtPreviewDate(dateStr: string) {
+  const d = new Date(dateStr + "T12:00:00");
+  return `${d.getDate()} de ${MONTH_NAMES[d.getMonth()].toLowerCase()}`;
+}
+
+function AñadirAusenciaModal({
+  persona,
+  idx,
+  onClose,
+  onAdd,
+}: {
+  persona: Persona;
+  idx: number;
+  onClose: () => void;
+  onAdd: (dates: string[]) => Promise<void>;
+}) {
+  const colors = PERSON_COLORS[idx];
+  const [duration, setDuration] = useState<DurationType>("day");
+  const [dateFrom, setDateFrom] = useState(TODAY);
+  const [dateTo, setDateTo] = useState(TODAY);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose]);
+
+  const newDates = duration === "day"
+    ? [dateFrom].filter((d) => !persona.vacaciones.includes(d))
+    : getDatesInRange(dateFrom, dateTo).filter((d) => !persona.vacaciones.includes(d));
+
+  const alreadyExists = duration === "day"
+    ? persona.vacaciones.includes(dateFrom)
+    : false;
+
+  async function handleSolicitar() {
+    if (newDates.length === 0) return;
+    setSaving(true);
+    await onAdd(newDates);
+    setSaving(false);
+    onClose();
+  }
+
+  const previewLabel = duration === "day"
+    ? fmtPreviewDate(dateFrom)
+    : newDates.length > 0
+    ? `${fmtPreviewDate(dateFrom)} → ${fmtPreviewDate(dateTo)}`
+    : "—";
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-navy/30 backdrop-blur-sm p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-5 border-b border-navy/10">
+          <p className="font-semibold text-navy">Solicitar ausencia</p>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-navy/5 text-navy/45 hover:text-navy transition-colors">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+
+        <div className="flex flex-col sm:flex-row">
+          {/* Left: form */}
+          <div className="flex-1 px-6 py-5 space-y-5">
+            {/* Type */}
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 flex items-center justify-center">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-navy/45">
+                  <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+                  <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+                </svg>
+              </div>
+              <div className="flex-1 flex items-center justify-between border border-navy/[0.12] rounded-lg px-4 py-2.5 bg-white">
+                <div className="flex items-center gap-2">
+                  <div className={`w-2.5 h-2.5 rounded-full ${colors.dot}`} />
+                  <span className="text-sm font-medium text-navy">{persona.nombre} · Vacaciones</span>
+                </div>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-navy/35">
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </div>
+            </div>
+
+            {/* Duration toggle */}
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 flex items-center justify-center">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-navy/45">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                  <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+              </div>
+              <div className="flex border border-navy/[0.12] rounded-lg overflow-hidden bg-white text-sm flex-1">
+                {([
+                  { value: "day", label: "Un día" },
+                  { value: "range", label: "Varios días" },
+                ] as { value: DurationType; label: string }[]).map(({ value, label }) => (
+                  <button
+                    key={value}
+                    onClick={() => setDuration(value)}
+                    className={`flex-1 py-2 transition-colors ${
+                      duration === value
+                        ? "bg-primary text-white font-medium"
+                        : "text-navy/55 hover:text-navy hover:bg-navy/5"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Date input(s) */}
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 flex items-center justify-center mt-2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-navy/45">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                  <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+              </div>
+              <div className="flex-1 space-y-2">
+                <div>
+                  {duration === "range" && (
+                    <p className="text-[11px] text-navy/45 uppercase tracking-wide mb-1">Desde</p>
+                  )}
+                  <input
+                    type="date"
+                    value={dateFrom}
+                    onChange={(e) => {
+                      setDateFrom(e.target.value);
+                      if (duration === "range" && e.target.value > dateTo) setDateTo(e.target.value);
+                    }}
+                    className="w-full text-sm border border-navy/[0.12] rounded-lg px-4 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary/30 text-navy"
+                  />
+                </div>
+                {duration === "range" && (
+                  <div>
+                    <p className="text-[11px] text-navy/45 uppercase tracking-wide mb-1">Hasta</p>
+                    <input
+                      type="date"
+                      value={dateTo}
+                      min={dateFrom}
+                      onChange={(e) => setDateTo(e.target.value)}
+                      className="w-full text-sm border border-navy/[0.12] rounded-lg px-4 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary/30 text-navy"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {alreadyExists && (
+              <p className="text-xs text-warning ml-11">Este día ya está registrado.</p>
+            )}
+          </div>
+
+          {/* Right: preview */}
+          <div className="sm:w-52 bg-navy/[0.02] border-t sm:border-t-0 sm:border-l border-navy/[0.07] px-5 py-5 flex flex-col gap-3">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <div className={`w-2.5 h-2.5 rounded-full ${colors.dot}`} />
+                <p className="text-sm font-semibold text-navy">Vacaciones</p>
+              </div>
+              <p className="text-sm text-navy/70">{previewLabel}</p>
+              <p className="text-xs text-navy/50 mt-1">
+                {newDates.length} {newDates.length === 1 ? "día" : "días"}{duration === "day" ? " · Día completo" : ""}
+              </p>
+            </div>
+
+            {newDates.length > 0 && (
+              <div className="border-t border-navy/[0.07] pt-3 space-y-1.5">
+                <div className="flex justify-between text-xs text-navy/55">
+                  <span>Duración ausencia</span>
+                  <span className="font-medium text-navy">{newDates.length}</span>
+                </div>
+                <div className="flex justify-between text-xs text-navy/55">
+                  <span>Días usados</span>
+                  <span className="font-medium text-navy">{persona.vacaciones.length}</span>
+                </div>
+                <div className="flex justify-between text-xs text-navy/55">
+                  <span>Restantes</span>
+                  <span className={`font-medium ${persona.diasTotales - persona.vacaciones.length - newDates.length < 0 ? "text-danger" : "text-navy"}`}>
+                    {persona.diasTotales - persona.vacaciones.length - newDates.length}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex justify-end px-6 py-4 border-t border-navy/[0.07]">
+          <button
+            onClick={handleSolicitar}
+            disabled={newDates.length === 0 || saving}
+            className="px-6 py-2.5 bg-primary text-white text-sm font-semibold rounded-xl hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            {saving ? "Guardando…" : "Añadir"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Resumen ausencias modal ───────────────────────────────────────────────────
 
 const ABSENCE_TYPES = [
   { key: "vacaciones", label: "Vacaciones", color: "bg-warning" },
@@ -194,7 +409,6 @@ function AusenciasModal({ persona, idx, onClose }: { persona: Persona; idx: numb
   const colors = PERSON_COLORS[idx];
   const vacUsadas = persona.vacaciones.length;
 
-  // Close on Escape
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", handler);
@@ -202,15 +416,8 @@ function AusenciasModal({ persona, idx, onClose }: { persona: Persona; idx: numb
   }, [onClose]);
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-navy/30 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <div
-        className="bg-white rounded-xl shadow-xl w-full max-w-sm mx-4 overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/30 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-sm mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 py-5 border-b border-navy/10">
           <div>
             <p className="font-semibold text-navy">Resumen de ausencias</p>
@@ -219,18 +426,14 @@ function AusenciasModal({ persona, idx, onClose }: { persona: Persona; idx: numb
           <button onClick={onClose} className="text-navy/45 hover:text-navy text-xl leading-none">×</button>
         </div>
 
-        {/* Rows */}
         <div className="px-6 py-4 space-y-4">
-          {/* Vacaciones — tenemos datos reales */}
           <div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className={`w-2 h-2 rounded-full ${colors.dot}`} />
                 <span className="text-sm font-medium text-navy">Vacaciones</span>
               </div>
-              <span className="text-sm font-medium text-navy tabular-nums">
-                {vacUsadas} / {persona.diasTotales} días
-              </span>
+              <span className="text-sm font-medium text-navy tabular-nums">{vacUsadas} / {persona.diasTotales} días</span>
             </div>
             <div className="ml-4 mt-1.5 space-y-1">
               <div className="flex justify-between text-xs text-navy/55">
@@ -250,7 +453,6 @@ function AusenciasModal({ persona, idx, onClose }: { persona: Persona; idx: numb
 
           <div className="border-t border-navy/5" />
 
-          {/* Otros tipos — sin datos */}
           {ABSENCE_TYPES.slice(1).map((t) => (
             <div key={t.key} className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -292,7 +494,6 @@ function Donut({ used, total, stroke }: { used: number; total: number; stroke: s
   );
 }
 
-// Date badge (like "15 / JUN")
 function DateBadge({ dateStr }: { dateStr: string }) {
   const d = new Date(dateStr + "T12:00:00");
   return (
@@ -303,8 +504,19 @@ function DateBadge({ dateStr }: { dateStr: string }) {
   );
 }
 
-function PersonCard({ persona, idx }: { persona: Persona; idx: number }) {
+function PersonCard({
+  persona,
+  idx,
+  onAdd,
+  onDeleteRange,
+}: {
+  persona: Persona;
+  idx: number;
+  onAdd: (dates: string[]) => Promise<void>;
+  onDeleteRange: (start: string, end: string) => Promise<void>;
+}) {
   const [showModal, setShowModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
   const colors = PERSON_COLORS[idx];
   const used = persona.vacaciones.length;
   const remaining = persona.diasTotales - used;
@@ -315,114 +527,158 @@ function PersonCard({ persona, idx }: { persona: Persona; idx: number }) {
 
   return (
     <>
-    {showModal && <AusenciasModal persona={persona} idx={idx} onClose={() => setShowModal(false)} />}
-    <div className={`bg-white border ${colors.border} rounded shadow-card overflow-hidden`}>
-      {/* Header */}
-      <div className="px-5 pt-5 pb-4 border-b border-navy/5">
-        <div className="flex items-center justify-between mb-4">
-          <p className="font-semibold text-navy">{persona.nombre}</p>
-          <button
-            onClick={() => setShowModal(true)}
-            className="text-xs text-primary/60 hover:text-primary transition-colors"
-          >
-            Ver ausencias
-          </button>
-        </div>
-
-        {/* Donut + stats */}
-        <div className="flex items-center gap-5">
-          <div className="relative shrink-0">
-            <Donut used={used} total={persona.diasTotales} stroke={colors.stroke} />
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <p className="text-sm font-semibold text-navy leading-tight">{used}</p>
-              <p className="text-[9px] text-navy/55 leading-tight">de {persona.diasTotales}</p>
+      {showModal && <AusenciasModal persona={persona} idx={idx} onClose={() => setShowModal(false)} />}
+      {showAddModal && (
+        <AñadirAusenciaModal
+          persona={persona}
+          idx={idx}
+          onClose={() => setShowAddModal(false)}
+          onAdd={onAdd}
+        />
+      )}
+      <div className={`bg-white border ${colors.border} rounded shadow-card overflow-hidden`}>
+        {/* Header */}
+        <div className="px-5 pt-5 pb-4 border-b border-navy/5">
+          <div className="flex items-center justify-between mb-4">
+            <p className="font-semibold text-navy">{persona.nombre}</p>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowModal(true)}
+                className="text-xs text-primary/60 hover:text-primary transition-colors"
+              >
+                Ver ausencias
+              </button>
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="flex items-center gap-1 text-xs text-white bg-primary px-2.5 py-1 rounded-lg hover:bg-primary/90 transition-colors"
+              >
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+                Añadir
+              </button>
             </div>
           </div>
-          <div className="flex gap-4">
-            <div>
-              <div className="flex items-center gap-1.5 mb-0.5">
-                <div className={`w-2 h-2 rounded-full ${colors.dot}`} />
-                <p className="text-xs text-navy/50">Planificados</p>
+
+          {/* Donut + stats */}
+          <div className="flex items-center gap-5">
+            <div className="relative shrink-0">
+              <Donut used={used} total={persona.diasTotales} stroke={colors.stroke} />
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <p className="text-sm font-semibold text-navy leading-tight">{used}</p>
+                <p className="text-[9px] text-navy/55 leading-tight">de {persona.diasTotales}</p>
               </div>
-              <p className="text-2xl font-semibold text-navy">{used}</p>
             </div>
-            <div className="w-px bg-navy/10 self-stretch" />
-            <div>
-              <p className="text-xs text-navy/55 mb-0.5">Restantes</p>
-              <p className="text-2xl font-semibold text-navy/55">{remaining}</p>
+            <div className="flex gap-4">
+              <div>
+                <div className="flex items-center gap-1.5 mb-0.5">
+                  <div className={`w-2 h-2 rounded-full ${colors.dot}`} />
+                  <p className="text-xs text-navy/50">Planificados</p>
+                </div>
+                <p className="text-2xl font-semibold text-navy">{used}</p>
+              </div>
+              <div className="w-px bg-navy/10 self-stretch" />
+              <div>
+                <p className="text-xs text-navy/55 mb-0.5">Restantes</p>
+                <p className={`text-2xl font-semibold ${remaining < 0 ? "text-danger" : "text-navy/55"}`}>{remaining}</p>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Absence list */}
-      <div className="px-5 py-4 space-y-4">
-        {used === 0 && (
-          <p className="text-xs text-warning">Sin días planificados aún</p>
-        )}
+        {/* Absence list */}
+        <div className="px-5 py-4 space-y-4">
+          {used === 0 && (
+            <p className="text-xs text-warning">Sin días planificados aún</p>
+          )}
 
-        {upcoming.length > 0 && (
-          <div>
-            <p className="text-xs font-medium text-navy/55 mb-2">
-              Próximas ausencias ({upcoming.length})
-            </p>
-            <div className="space-y-2">
-              {upcoming.map((r) => {
-                const { label, days } = formatPeriod(r.start, r.end, r.count);
-                return (
-                  <div key={r.start} className="flex items-center gap-3">
-                    <DateBadge dateStr={r.start} />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5 mb-0.5">
-                        <div className={`w-1.5 h-1.5 rounded-full ${colors.dot}`} />
-                        <p className="text-sm font-medium text-navy">Vacaciones</p>
+          {upcoming.length > 0 && (
+            <div>
+              <p className="text-xs font-medium text-navy/55 mb-2">Próximas ausencias ({upcoming.length})</p>
+              <div className="space-y-2">
+                {upcoming.map((r) => {
+                  const { label, days } = formatPeriod(r.start, r.end, r.count);
+                  return (
+                    <div key={r.start} className="flex items-center gap-3 group">
+                      <DateBadge dateStr={r.start} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 mb-0.5">
+                          <div className={`w-1.5 h-1.5 rounded-full ${colors.dot}`} />
+                          <p className="text-sm font-medium text-navy">Vacaciones</p>
+                        </div>
+                        <p className="text-xs text-navy/55">{label} ({days})</p>
                       </div>
-                      <p className="text-xs text-navy/55">{label} ({days})</p>
-                    </div>
-                    <div className="w-6 h-6 rounded-full bg-success/10 flex items-center justify-center shrink-0">
-                      <span className="text-success text-xs">✓</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {past.length > 0 && (
-          <div>
-            <p className="text-xs font-medium text-navy/55 mb-2">
-              Ausencias anteriores ({past.length})
-            </p>
-            <div className="space-y-2">
-              {past.map((r) => {
-                const { label, days } = formatPeriod(r.start, r.end, r.count);
-                return (
-                  <div key={r.start} className="flex items-center gap-3">
-                    <DateBadge dateStr={r.start} />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5 mb-0.5">
-                        <div className="w-1.5 h-1.5 rounded-full bg-navy/20" />
-                        <p className="text-sm text-navy/50">Vacaciones</p>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <div className="w-6 h-6 rounded-full bg-success/10 flex items-center justify-center">
+                          <span className="text-success text-xs">✓</span>
+                        </div>
+                        <button
+                          onClick={() => onDeleteRange(r.start, r.end)}
+                          className="w-6 h-6 rounded-full flex items-center justify-center text-navy/20 hover:text-danger hover:bg-danger/10 transition-colors opacity-0 group-hover:opacity-100"
+                          title="Eliminar"
+                        >
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="3 6 5 6 21 6"/>
+                            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                            <path d="M10 11v6"/><path d="M14 11v6"/>
+                            <path d="M9 6V4h6v2"/>
+                          </svg>
+                        </button>
                       </div>
-                      <p className="text-xs text-navy/45">{label} ({days})</p>
                     </div>
-                    <div className="w-6 h-6 rounded-full bg-navy/5 flex items-center justify-center shrink-0">
-                      <span className="text-navy/45 text-xs">✓</span>
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+
+          {past.length > 0 && (
+            <div>
+              <p className="text-xs font-medium text-navy/55 mb-2">Ausencias anteriores ({past.length})</p>
+              <div className="space-y-2">
+                {past.map((r) => {
+                  const { label, days } = formatPeriod(r.start, r.end, r.count);
+                  return (
+                    <div key={r.start} className="flex items-center gap-3 group">
+                      <DateBadge dateStr={r.start} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 mb-0.5">
+                          <div className="w-1.5 h-1.5 rounded-full bg-navy/20" />
+                          <p className="text-sm text-navy/50">Vacaciones</p>
+                        </div>
+                        <p className="text-xs text-navy/45">{label} ({days})</p>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <div className="w-6 h-6 rounded-full bg-navy/5 flex items-center justify-center">
+                          <span className="text-navy/45 text-xs">✓</span>
+                        </div>
+                        <button
+                          onClick={() => onDeleteRange(r.start, r.end)}
+                          className="w-6 h-6 rounded-full flex items-center justify-center text-navy/20 hover:text-danger hover:bg-danger/10 transition-colors opacity-0 group-hover:opacity-100"
+                          title="Eliminar"
+                        >
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="3 6 5 6 21 6"/>
+                            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                            <path d="M10 11v6"/><path d="M14 11v6"/>
+                            <path d="M9 6V4h6v2"/>
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
     </>
   );
 }
 
-// Compact overlap calendar (only months with overlaps)
+// ── Overlap calendar ──────────────────────────────────────────────────────────
+
 function OverlapCalendar({ personas }: { personas: Persona[] }) {
   const vacByDate = new Map<string, number[]>();
   personas.forEach((p, i) => {
@@ -466,6 +722,8 @@ function OverlapCalendar({ personas }: { personas: Persona[] }) {
     </div>
   );
 }
+
+// ── Annual calendar ───────────────────────────────────────────────────────────
 
 function buildCalendar(year: number, month: number) {
   const firstDay = new Date(year, month - 1, 1);
@@ -593,6 +851,8 @@ function AnnualCalendar({
   );
 }
 
+// ── Gantt ─────────────────────────────────────────────────────────────────────
+
 function GanttView({
   personas,
   allPersonas,
@@ -604,7 +864,6 @@ function GanttView({
 }) {
   const festivosSet = new Set(festivos);
 
-  // Build overlap map across all persons
   const vacByDate = new Map<string, number[]>();
   allPersonas.forEach((p, i) => {
     p.vacaciones.forEach((d) => {
@@ -616,21 +875,18 @@ function GanttView({
   const months = Array.from({ length: 12 }, (_, mi) => {
     const month = mi + 1;
     const daysInMonth = new Date(2026, month, 0).getDate();
-    // count working days (Mon-Fri, non-festivo) for denominator
     let workingDays = 0;
     for (let d = 1; d <= daysInMonth; d++) {
       const ds = `2026-${String(month).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
       const jsDay = new Date(ds + "T12:00:00").getDay();
       if (jsDay !== 0 && jsDay !== 6 && !festivosSet.has(ds)) workingDays++;
     }
-    // today position within this month (0-1), or null
     const isCurrentMonth = TODAY.startsWith(`2026-${String(month).padStart(2, "0")}-`);
     return { month, name: MONTH_SHORT[mi], daysInMonth, workingDays, isCurrentMonth };
   });
 
   return (
     <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
-      {/* Month header row */}
       <div className="flex mb-3">
         <div className="w-24 shrink-0" />
         <div className="flex-1 grid grid-cols-12 gap-1">
@@ -647,7 +903,6 @@ function GanttView({
         </div>
       </div>
 
-      {/* Person rows */}
       <div className="space-y-2">
         {personas.map((p) => {
           const i = allPersonas.findIndex((orig) => orig.nombre === p.nombre);
@@ -658,12 +913,9 @@ function GanttView({
               <span className="w-24 shrink-0 text-xs text-navy/60 pr-3 truncate">{p.nombre}</span>
               <div className="flex-1 grid grid-cols-12 gap-1">
                 {months.map((m) => {
-                  // Count vac days and overlap days in this month
                   const prefix = `2026-${String(m.month).padStart(2, "0")}-`;
                   const vacDays = p.vacaciones.filter((d) => d.startsWith(prefix));
-                  const overlapDays = vacDays.filter(
-                    (d) => (vacByDate.get(d)?.length ?? 0) >= 2
-                  );
+                  const overlapDays = vacDays.filter((d) => (vacByDate.get(d)?.length ?? 0) >= 2);
                   const fillPct = m.workingDays > 0 ? (vacDays.length / m.workingDays) * 100 : 0;
                   const hasOverlap = overlapDays.length > 0;
                   const tooltip = vacDays.length > 0
@@ -671,12 +923,7 @@ function GanttView({
                     : "";
 
                   return (
-                    <div
-                      key={m.month}
-                      className="relative h-9 bg-navy/[0.04] rounded overflow-hidden"
-                      title={tooltip}
-                    >
-                      {/* Fill bar */}
+                    <div key={m.month} className="relative h-9 bg-navy/[0.04] rounded overflow-hidden" title={tooltip}>
                       {fillPct > 0 && (
                         <div
                           className={`absolute inset-y-1 left-1 rounded ${
@@ -685,7 +932,6 @@ function GanttView({
                           style={{ width: `calc(${fillPct}% - 4px)`, minWidth: "6px" }}
                         />
                       )}
-                      {/* Day count badge */}
                       {vacDays.length > 0 && (
                         <span className="absolute inset-0 flex items-center justify-center text-[10px] font-semibold text-white mix-blend-multiply opacity-0 hover:opacity-100 transition-opacity">
                           {vacDays.length}d
@@ -700,7 +946,6 @@ function GanttView({
         })}
       </div>
 
-      {/* Festivos row */}
       <div className="flex items-center mt-3 pt-3 border-t border-navy/5">
         <span className="w-24 shrink-0 text-[10px] text-navy/45 pr-3">Festivos</span>
         <div className="flex-1 grid grid-cols-12 gap-1">
@@ -720,7 +965,6 @@ function GanttView({
         </div>
       </div>
 
-      {/* Legend */}
       <div className="flex flex-wrap items-center gap-4 mt-4 pt-3 border-t border-navy/5">
         {personas.map((p) => {
           const i = allPersonas.findIndex((orig) => orig.nombre === p.nombre);
@@ -740,14 +984,42 @@ function GanttView({
   );
 }
 
+// ── Main export ───────────────────────────────────────────────────────────────
+
 export default function VacacionesCalendario({
-  personas,
+  personas: initialPersonas,
   festivos,
 }: {
   personas: Persona[];
   festivos: string[];
 }) {
+  const router = useRouter();
+  const [personas, setPersonas] = useState<Persona[]>(initialPersonas);
   const [filtro, setFiltro] = useState<string>("todas");
+
+  const saveAndUpdate = useCallback(async (updated: Persona[]) => {
+    setPersonas(updated);
+    await saveVacacionesAction(updated);
+    router.refresh();
+  }, [router]);
+
+  const handleAdd = useCallback(async (nombre: string, dates: string[]) => {
+    const updated = personas.map((p) =>
+      p.nombre === nombre
+        ? { ...p, vacaciones: [...new Set([...p.vacaciones, ...dates])].sort() }
+        : p
+    );
+    await saveAndUpdate(updated);
+  }, [personas, saveAndUpdate]);
+
+  const handleDeleteRange = useCallback(async (nombre: string, start: string, end: string) => {
+    const updated = personas.map((p) =>
+      p.nombre === nombre
+        ? { ...p, vacaciones: p.vacaciones.filter((d) => d < start || d > end) }
+        : p
+    );
+    await saveAndUpdate(updated);
+  }, [personas, saveAndUpdate]);
 
   const personasFiltradas = filtro === "todas"
     ? personas
@@ -775,40 +1047,40 @@ export default function VacacionesCalendario({
         </div>
       </div>
 
-      {/* Alertas de solapamiento (solo en vista "todas") */}
-      {filtro === "todas" && (
-        <OverlapCalendar personas={personas} />
-      )}
+      {/* Alertas de solapamiento */}
+      {filtro === "todas" && <OverlapCalendar personas={personas} />}
 
       {/* Tarjetas por persona */}
       <div className={`grid gap-5 ${personasFiltradas.length === 1 ? "max-w-sm" : "sm:grid-cols-2 lg:grid-cols-3"}`}>
         {personasFiltradas.map((p) => {
           const i = personas.findIndex((orig) => orig.nombre === p.nombre);
-          return <PersonCard key={p.nombre} persona={p} idx={i} />;
+          return (
+            <PersonCard
+              key={p.nombre}
+              persona={p}
+              idx={i}
+              onAdd={(dates) => handleAdd(p.nombre, dates)}
+              onDeleteRange={(start, end) => handleDeleteRange(p.nombre, start, end)}
+            />
+          );
         })}
       </div>
 
       {/* Vista Gantt */}
       <section>
-        <h2 className="text-xs font-semibold text-navy/55 uppercase tracking-widest mb-4">
-          Vista anual
-        </h2>
+        <h2 className="text-xs font-semibold text-navy/55 uppercase tracking-widest mb-4">Vista anual</h2>
         <GanttView personas={personasFiltradas} allPersonas={personas} festivos={festivos} />
       </section>
 
       {/* Calendario mensual */}
       <section>
-        <h2 className="text-xs font-semibold text-navy/55 uppercase tracking-widest mb-4">
-          Calendario 2026
-        </h2>
+        <h2 className="text-xs font-semibold text-navy/55 uppercase tracking-widest mb-4">Calendario 2026</h2>
         <AnnualCalendar personas={personasFiltradas} allPersonas={personas} festivos={festivos} />
       </section>
 
       {/* Sugerencias */}
       <section>
-        <h2 className="text-xs font-semibold text-navy/55 uppercase tracking-widest mb-3">
-          Sugerencias
-        </h2>
+        <h2 className="text-xs font-semibold text-navy/55 uppercase tracking-widest mb-3">Sugerencias</h2>
         <SugerenciasBlock personas={personas} festivos={festivos} />
       </section>
 
