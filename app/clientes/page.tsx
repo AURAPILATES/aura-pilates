@@ -1,6 +1,6 @@
 export const dynamic = "force-dynamic";
 
-import { loadStripePayments } from "@/lib/stripePayments";
+import { loadStripePaymentsCached } from "@/lib/stripePayments";
 import { loadStripeCustomers } from "@/lib/stripeCustomers";
 import { estimatedMRR, possibleChurnIds, activeCustomersLast30Days, newCustomersLast30Days } from "@/lib/stripeRecurrence";
 import ClientesTable from "./ClientesTable";
@@ -19,7 +19,7 @@ export default async function ClientesPage() {
     return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`;
   })();
 
-  const payments  = await loadStripePayments();
+  const payments  = await loadStripePaymentsCached();
   const customers = await loadStripeCustomers(payments, curMonth);
 
   const total      = customers.length;

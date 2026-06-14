@@ -5,12 +5,13 @@ import { BookOpen } from "react-feather";
 import { fmt, pct } from "@/lib/analytics";
 import { loadSales, salesByProduct } from "@/lib/sales";
 import {
-  loadStripePayments,
+  loadStripePaymentsCached,
   stripeByMethod,
   totalRevenue as stripeTotalRevenue,
   revenueForMonth as stripeRevenueForMonth,
   toSales,
 } from "@/lib/stripePayments";
+import SyncStripeButton from "@/app/components/SyncStripeButton";
 import {
   estimatedMRR,
   activeCustomersInMonth,
@@ -118,11 +119,14 @@ export default async function Finanzas(props: {
   const prev2MonthDate = new Date(now.getFullYear(), now.getMonth() - 2, 1);
   const prev2Month = `${prev2MonthDate.getFullYear()}-${pad2(prev2MonthDate.getMonth() + 1)}`;
 
-  const [paymentsAll, paymentsFiltered] = await Promise.all([
-    loadStripePayments(),
-    (from || to) ? loadStripePayments(from, to) : Promise.resolve(null),
-  ]);
-  const payments  = paymentsFiltered ?? paymentsAll;
+  const paymentsAll = await loadStripePaymentsCached();
+  const payments = (from || to)
+    ? paymentsAll.filter((p) => {
+        if (from && p.date < from) return false;
+        if (to   && p.date > to)   return false;
+        return true;
+      })
+    : paymentsAll;
   const hasSales  = paymentsAll.length > 0;
   const totalRev  = stripeTotalRevenue(payments);
 
@@ -298,9 +302,12 @@ export default async function Finanzas(props: {
                   <span className="text-xs font-bold text-primary/50 tabular-nums w-4 shrink-0">2</span>
                   <h2 className="text-xs font-semibold text-navy/50 uppercase tracking-widest">¿En qué se va el dinero?</h2>
                 </div>
-                <Suspense fallback={null}>
-                  <DateFilter />
-                </Suspense>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <SyncStripeButton />
+                  <Suspense fallback={null}>
+                    <DateFilter />
+                  </Suspense>
+                </div>
               </div>
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">

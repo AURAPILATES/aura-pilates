@@ -1,4 +1,5 @@
 import Stripe from "stripe";
+import { unstable_cache } from "next/cache";
 import { stripe } from "./stripe";
 
 export type StripePayment = {
@@ -135,6 +136,14 @@ export function revenueForMonth(payments: StripePayment[], month: string): numbe
 export function subscriptionRevenue(payments: StripePayment[]): number {
   return payments.filter((p) => p.category === "Suscripción").reduce((s, p) => s + p.amount, 0);
 }
+
+// ── Cached loader (10 min, invalidable with revalidateTag('stripe')) ─────────────
+
+export const loadStripePaymentsCached = unstable_cache(
+  () => loadStripePayments(),
+  ["stripe-payments"],
+  { revalidate: 600, tags: ["stripe"] },
+);
 
 // ── Compatibility shim: convert to Sale shape for existing charts ──────────────
 

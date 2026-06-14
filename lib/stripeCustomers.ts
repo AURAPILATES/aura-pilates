@@ -1,4 +1,5 @@
 import Stripe from "stripe";
+import { unstable_cache } from "next/cache";
 import { stripe } from "./stripe";
 import type { StripePayment } from "./stripePayments";
 import { recurringCustomerIds } from "./stripeRecurrence";
@@ -23,6 +24,25 @@ export type StripeCustomer = {
   discount: StripeDiscount | null;
 };
 
+// ── Cached raw customer list from Stripe ──────────────────────────────────────
+
+type RawCustomer = Pick<Stripe.Customer, "id" | "name" | "email" | "created" | "discount">;
+
+const fetchStripeCustomerList = unstable_cache(
+  async (): Promise<RawCustomer[]> => {
+    const result: RawCustomer[] = [];
+    for await (const raw of stripe.customers.list({ limit: 100, expand: ["data.discount.coupon"] })) {
+      if ((raw as unknown as { deleted?: boolean }).deleted) continue;
+      result.push(raw as Stripe.Customer);
+    }
+    return result;
+  },
+  ["stripe-customer-list"],
+  { revalidate: 600, tags: ["stripe"] },
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export async function loadStripeCustomers(
   payments: StripePayment[],
   curMonth: string,
@@ -42,18 +62,17 @@ export async function loadStripeCustomers(
 
   const recurring = recurringCustomerIds(payments, curMonth);
 
-  // Collect all raw customers first
   type RawEntry = {
     id: string; name: string | null; email: string | null;
     createdAt: string; discount: StripeDiscount | null;
     stats: { total: number; count: number; last: string; first: string };
     isRecurring: boolean;
   };
+
+  const stripeCustomers = await fetchStripeCustomerList();
   const raw_customers: RawEntry[] = [];
 
-  for await (const raw of stripe.customers.list({ limit: 100, expand: ["data.discount.coupon"] })) {
-    if ((raw as unknown as { deleted?: boolean }).deleted) continue;
-    const c = raw as Stripe.Customer;
+  for (const c of stripeCustomers) {
     const stats = byCustomer.get(c.id);
     if (!stats) continue;
 
