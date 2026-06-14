@@ -119,7 +119,20 @@ function CategoryPill({ category, categories, onChange }: { category: string; ca
   );
 }
 
-const SELECT_CLS = "text-sm border border-navy/[0.12] rounded-lg px-3 py-2 bg-white outline-none focus:border-primary/40 text-navy cursor-pointer hover:border-navy/20 transition-colors";
+const SELECT_CLS = "appearance-none text-sm border border-navy/[0.12] rounded-xl px-3 pr-8 py-2 bg-white outline-none focus:border-primary/40 text-navy cursor-pointer hover:border-navy/20 transition-colors w-full";
+
+function SelectWrapper({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return (
+    <div className={`relative ${className}`}>
+      {children}
+      <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-navy/35">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </div>
+    </div>
+  );
+}
 
 type Props = {
   transactions: Transaction[];
@@ -321,17 +334,23 @@ export default function TransaccionesList({
             />
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <select value={currentRange} onChange={(e) => setRange(e.target.value)} className={SELECT_CLS + " w-full"}>
-              {RANGE_OPTIONS.map(({ key, label }) => <option key={key} value={key}>{label}</option>)}
-            </select>
-            <select value={catFilter} onChange={(e) => setCatFilter(e.target.value)} className={SELECT_CLS + " w-full"}>
-              <option value="all">Categoría</option>
-              {categories.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
-            </select>
-            <select value={typeFilter ?? "all"} onChange={(e) => setTypeFilter(e.target.value === "all" ? "all" : e.target.value as ContactType)} className={SELECT_CLS + " w-full col-span-2"}>
-              <option value="all">Todos los tipos</option>
-              {CONTACT_TYPES.map((c) => <option key={c.value} value={c.value ?? ""}>{c.emoji} {c.label}</option>)}
-            </select>
+            <SelectWrapper>
+              <select value={currentRange} onChange={(e) => setRange(e.target.value)} className={SELECT_CLS}>
+                {RANGE_OPTIONS.map(({ key, label }) => <option key={key} value={key}>{label}</option>)}
+              </select>
+            </SelectWrapper>
+            <SelectWrapper>
+              <select value={catFilter} onChange={(e) => setCatFilter(e.target.value)} className={SELECT_CLS}>
+                <option value="all">Categoría</option>
+                {categories.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+              </select>
+            </SelectWrapper>
+            <SelectWrapper className="col-span-2">
+              <select value={typeFilter ?? "all"} onChange={(e) => setTypeFilter(e.target.value === "all" ? "all" : e.target.value as ContactType)} className={SELECT_CLS}>
+                <option value="all">Todos los tipos</option>
+                {CONTACT_TYPES.map((c) => <option key={c.value} value={c.value ?? ""}>{c.emoji} {c.label}</option>)}
+              </select>
+            </SelectWrapper>
           </div>
           {currentRange === "custom" && (
             <div className="flex flex-col gap-2">
@@ -371,8 +390,7 @@ export default function TransaccionesList({
           className="sm:hidden w-full flex items-center gap-2 px-4 py-3 mb-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-sm font-medium text-left"
         >
           <span className="text-base">⚠</span>
-          <span className="flex-1">{uncategorizedCount} movimientos sin categorizar</span>
-          <span className="text-amber-600 font-semibold text-xs">Revisar →</span>
+          <span className="flex-1">{uncategorizedCount} sin etiquetar</span>
         </button>
       )}
 
@@ -400,7 +418,7 @@ export default function TransaccionesList({
       </div>
 
       {/* ── Filter bar (desktop only) ───────────────────────────────────────── */}
-      <div className="hidden sm:flex flex-row gap-2 mb-4">
+      <div className="hidden sm:flex flex-row gap-2 mb-6">
         <div className="relative flex-1">
           <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-navy/30" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
@@ -410,30 +428,36 @@ export default function TransaccionesList({
             placeholder="Buscar concepto o contacto…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-sm border border-navy/[0.12] rounded-lg bg-white text-navy placeholder:text-navy/35 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition"
+            className="w-full pl-9 pr-4 py-2 text-sm border border-navy/[0.12] rounded-xl bg-white text-navy placeholder:text-navy/35 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 transition"
           />
           {search && (
             <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-navy/30 hover:text-navy/60">✕</button>
           )}
         </div>
         <div className="flex gap-2">
-          <select value={typeFilter ?? "all"} onChange={(e) => setTypeFilter(e.target.value === "all" ? "all" : e.target.value as ContactType)} className={SELECT_CLS}>
-            <option value="all">Tipos</option>
-            {CONTACT_TYPES.map((c) => <option key={c.value} value={c.value ?? ""}>{c.emoji} {c.label}</option>)}
-          </select>
-          <select value={catFilter} onChange={(e) => setCatFilter(e.target.value)} className={SELECT_CLS}>
-            <option value="all">Categoría</option>
-            {categories.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
-          </select>
-          <select value={currentRange} onChange={(e) => setRange(e.target.value)} className={SELECT_CLS}>
-            {RANGE_OPTIONS.map(({ key, label }) => <option key={key} value={key}>{label}</option>)}
-          </select>
+          <SelectWrapper>
+            <select value={typeFilter ?? "all"} onChange={(e) => setTypeFilter(e.target.value === "all" ? "all" : e.target.value as ContactType)} className={SELECT_CLS}>
+              <option value="all">Tipos</option>
+              {CONTACT_TYPES.map((c) => <option key={c.value} value={c.value ?? ""}>{c.emoji} {c.label}</option>)}
+            </select>
+          </SelectWrapper>
+          <SelectWrapper>
+            <select value={catFilter} onChange={(e) => setCatFilter(e.target.value)} className={SELECT_CLS}>
+              <option value="all">Categoría</option>
+              {categories.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+            </select>
+          </SelectWrapper>
+          <SelectWrapper>
+            <select value={currentRange} onChange={(e) => setRange(e.target.value)} className={SELECT_CLS}>
+              {RANGE_OPTIONS.map(({ key, label }) => <option key={key} value={key}>{label}</option>)}
+            </select>
+          </SelectWrapper>
         </div>
       </div>
 
       {/* ── Custom date range (desktop only) ──────────────────────────────── */}
       {currentRange === "custom" && (
-        <div className="hidden sm:flex flex-wrap items-center gap-2 mb-4 p-3 bg-white border border-navy/[0.07] rounded-xl shadow-card">
+        <div className="hidden sm:flex flex-wrap items-center gap-2 mb-6 p-3 bg-white border border-navy/[0.07] rounded-xl shadow-card">
           <span className="text-xs text-navy/50 font-medium">Desde</span>
           <input
             type="date"
@@ -468,8 +492,7 @@ export default function TransaccionesList({
       )}
 
       {/* ── Toolbar ────────────────────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-4">
-        {/* Count + export */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-5">
         <span className="text-sm text-navy/55">
           {filtered.length} movimientos
           {isPending && <span className="ml-2 text-xs text-primary/60">Guardando…</span>}
@@ -495,7 +518,6 @@ export default function TransaccionesList({
           Exportar CSV
         </button>
 
-        {/* Uncategorized pill (desktop only — mobile shows banner above) */}
         {uncategorizedCount > 0 && (
           <button
             onClick={() => setCatFilter(catFilter === "Otros" ? "all" : "Otros")}
@@ -506,24 +528,9 @@ export default function TransaccionesList({
             }`}
           >
             <span>⚠</span>
-            <span>{uncategorizedCount} sin categorizar · Revisar →</span>
+            <span>{uncategorizedCount} sin etiquetar</span>
           </button>
         )}
-
-        {/* Anomaly pills */}
-        {anomalies.slice(0, 2).map((a) => (
-          <button
-            key={a.category}
-            onClick={() => setCatFilter(catFilter === a.category ? "all" : a.category)}
-            className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors ${
-              a.deviationPct > 0
-                ? "bg-danger/10 text-danger hover:bg-danger/15"
-                : "bg-success/10 text-success hover:bg-success/15"
-            }`}
-          >
-            {a.deviationPct > 0 ? "↑" : "↓"} {a.category} {Math.round(Math.abs(a.deviationPct))}%
-          </button>
-        ))}
 
         <div className="flex-1" />
 
@@ -674,7 +681,7 @@ export default function TransaccionesList({
             <tr className="border-b border-navy/[0.06] bg-navy/[0.012] group/head">
               <th className="pl-3 py-3 align-middle">
                 <input type="checkbox" checked={allSelected} onChange={toggleAll}
-                  className="block rounded border-navy/20 accent-primary cursor-pointer"
+                  className="block rounded border-navy/[0.12] accent-primary cursor-pointer"
                   aria-label="Seleccionar todas" />
               </th>
               <th className="text-left pl-2 pr-4 py-3 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Concepto</th>
@@ -705,7 +712,7 @@ export default function TransaccionesList({
                 >
                   <td className="pl-3 align-middle" style={{ height: "60px" }}>
                     <input type="checkbox" checked={isSelected} onChange={() => toggleOne(t.id)}
-                      className="block rounded border-navy/20 accent-primary cursor-pointer" />
+                      className="block rounded border-navy/[0.12] accent-primary cursor-pointer" />
                   </td>
 
                   <td className="pl-2 pr-4 align-middle overflow-hidden" style={{ height: "60px" }}>

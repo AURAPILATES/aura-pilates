@@ -116,9 +116,6 @@ export default async function TransaccionesPage(props: {
       {/* ── Mobile header ── */}
       <div className="sm:hidden mb-5">
         <h1 className="text-sm font-bold text-navy uppercase tracking-widest">Transacciones</h1>
-        <p className="text-sm text-navy/55 mt-1 mb-4">
-          {transactions.length} movimientos · {rangeLabel}
-        </p>
         {latestBal?.balance != null && (
           <div className="bg-navy rounded-2xl px-5 py-4 mb-3">
             <p className="text-[11px] text-white/45 uppercase tracking-wider mb-1">
@@ -135,9 +132,6 @@ export default async function TransaccionesPage(props: {
       <div className="hidden sm:flex items-start justify-between gap-4 mb-8">
         <div>
           <h1 className="text-sm font-bold text-navy uppercase tracking-widest">Transacciones</h1>
-          <p className="text-sm text-navy/55 mt-1.5">
-            {transactions.length} movimientos · {rangeLabel}
-          </p>
         </div>
         <div className="flex items-center gap-4 shrink-0">
           {latestBal?.balance != null && (

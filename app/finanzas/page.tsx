@@ -370,6 +370,7 @@ export default async function Finanzas(props: {
                       return {
                         ...e,
                         color: dbCat?.text_color ?? EXPENSE_COLORS[i % EXPENSE_COLORS.length],
+                        iconKey: dbCat?.emoji,
                       };
                     })}
                     transactionsByCategory={transactionsByCategory}
