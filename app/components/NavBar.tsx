@@ -26,10 +26,8 @@ export default function NavBar() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
-  // Cierra el menú al navegar
   useEffect(() => { setOpen(false); }, [pathname]);
 
-  // Bloquea el scroll del body cuando el menú está abierto
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
@@ -82,16 +80,6 @@ export default function NavBar() {
               <IconSettings />
             </Link>
 
-            {/* Hamburger — solo móvil */}
-            <button
-              onClick={() => setOpen(true)}
-              className="sm:hidden w-8 h-8 flex flex-col items-center justify-center gap-1.5 rounded-lg text-navy/50 hover:bg-navy/[0.04] transition-colors"
-              aria-label="Abrir menú"
-            >
-              <span className="w-4.5 h-px bg-current rounded-full block w-[18px]" />
-              <span className="w-4.5 h-px bg-current rounded-full block w-[18px]" />
-              <span className="w-4.5 h-px bg-current rounded-full block w-[14px] self-start ml-[2px]" />
-            </button>
           </div>
         </div>
       </nav>
