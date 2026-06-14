@@ -187,7 +187,7 @@ export default function HorarioShell({
             options={instructoras}
             placeholder="Todas las instructoras"
           />
-          <div className="flex items-center gap-1">
+          <div className="flex items-center border border-navy/[0.12] rounded-full bg-white p-1 gap-0.5">
             {(
               [
                 { value: "all", label: "Todas" },
