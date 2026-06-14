@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { MomenceEvent } from "@/lib/momence";
-import { groupByDay, occupancyRate, totalRevenue, fmt, pct } from "@/lib/analytics";
+import { groupByDay, occupancyRate, pct } from "@/lib/analytics";
 import HorarioList from "./HorarioList";
 import HorarioCalendar from "./HorarioCalendar";
 import HorarioDrawer from "./HorarioDrawer";
@@ -139,13 +139,10 @@ export default function HorarioShell({
   const days = useMemo(() => groupByDay(filtered), [filtered]);
 
   // ── Week stats ───────────────────────────────────────────────────────────────
-  const weekOcc       = occupancyRate(events);
-  const weekRevenue   = totalRevenue(events);
-  const weekPotential = events.reduce((s, e) => s + e.capacity * e.fixedPrice, 0);
-  const weekFreeSpots = events.reduce((s, e) => s + e.spotsRemaining, 0);
+  const weekOcc        = occupancyRate(events);
+  const weekFreeSpots  = events.reduce((s, e) => s + e.spotsRemaining, 0);
   const weekTotalSpots = events.reduce((s, e) => s + e.capacity, 0);
   const weekSoldSpots  = events.reduce((s, e) => s + e.ticketsSold, 0);
-  const weekUnsold     = weekPotential - weekRevenue;
   const lowCount       = events.filter((e) => e.capacity > 0 && e.ticketsSold / e.capacity < 0.5).length;
 
   // ── Mobile: selected day data ────────────────────────────────────────────────
@@ -156,8 +153,9 @@ export default function HorarioShell({
   const selectedDayName = new Date(selectedDay + "T12:00:00").toLocaleDateString("es-ES", {
     weekday: "long", timeZone: "Europe/Madrid",
   });
-  const selectedDayOcc     = occupancyRate(selectedDayEvents);
-  const selectedDayRevenue = totalRevenue(selectedDayEvents);
+  const selectedDayOcc   = occupancyRate(selectedDayEvents);
+  const selectedDaySold  = selectedDayEvents.reduce((s, e) => s + e.ticketsSold, 0);
+  const selectedDayTotal = selectedDayEvents.reduce((s, e) => s + e.capacity, 0);
 
   const prevWeek = addDays(weekMonday, -7);
   const nextWeek = addDays(weekMonday, 7);
@@ -212,8 +210,8 @@ export default function HorarioShell({
             </div>
             <div className="border-t border-navy/[0.06] grid grid-cols-3 divide-x divide-navy/[0.06]">
               <div className="px-4 py-3">
-                <p className="text-[9px] text-navy/40 uppercase tracking-widest font-semibold">Ingresos</p>
-                <p className="text-base font-bold text-navy mt-0.5 tabular-nums">{fmt(weekRevenue)}</p>
+                <p className="text-[9px] text-navy/40 uppercase tracking-widest font-semibold">Vendidas</p>
+                <p className="text-base font-bold text-navy mt-0.5 tabular-nums">{weekSoldSpots}/{weekTotalSpots}</p>
               </div>
               <div className="px-4 py-3">
                 <p className="text-[9px] text-navy/40 uppercase tracking-widest font-semibold">Libres</p>
@@ -258,7 +256,7 @@ export default function HorarioShell({
               <h2 className="text-2xl font-bold text-navy font-display capitalize">{selectedDayName}</h2>
               <span className="text-sm text-navy/50">
                 <span className={`font-semibold ${occText(selectedDayOcc)}`}>{pct(selectedDayOcc)}</span>
-                {" · "}{fmt(selectedDayRevenue)}
+                {" · "}{selectedDaySold}/{selectedDayTotal} plazas
               </span>
             </div>
 
@@ -370,11 +368,7 @@ export default function HorarioShell({
                   accent={weekOcc >= 0.8 ? "text-success" : weekOcc >= 0.5 ? "text-warning" : "text-danger"}
                 />
                 <div className="h-7 w-px bg-navy/[0.08]" />
-                <StatItem label="Ingresos" value={fmt(weekRevenue)} />
-                <div className="h-7 w-px bg-navy/[0.08]" />
-                <StatItem label="Sin vender" value={`-${fmt(weekUnsold)}`} accent="text-danger" />
-                <div className="h-7 w-px bg-navy/[0.08]" />
-                <StatItem label="Potencial" value={fmt(weekPotential)} accent="text-navy/40" />
+                <StatItem label="Plazas libres" value={`${weekFreeSpots}`} />
                 {lowCount > 0 && (
                   <>
                     <div className="h-7 w-px bg-navy/[0.08]" />
@@ -510,9 +504,9 @@ function MobileClassCard({
             {e.spotsRemaining === 0 ? "completa" : `${e.spotsRemaining} libre${e.spotsRemaining !== 1 ? "s" : ""}`}
           </span>
         </div>
-        <div className="flex items-baseline gap-2">
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-navy/40 tabular-nums">{e.ticketsSold}/{e.capacity}</span>
           <span className={`text-sm font-semibold tabular-nums ${status.text}`}>{Math.round(occ * 100)}%</span>
-          <span className="text-sm font-bold text-navy tabular-nums">{fmt(e.ticketsSold * e.fixedPrice)}</span>
         </div>
       </div>
     </button>
