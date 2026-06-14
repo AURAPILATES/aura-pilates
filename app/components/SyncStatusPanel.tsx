@@ -11,19 +11,46 @@ type SyncData = {
 
 function relativeTime(isoDate: string, now: number): string {
   const diff = Math.floor((now - new Date(isoDate).getTime()) / 1000);
-  if (diff < 60) return "hace un momento";
-  if (diff < 3600) return `hace ${Math.floor(diff / 60)} min`;
-  if (diff < 86400) return `hace ${Math.floor(diff / 3600)} h`;
-  return `hace ${Math.floor(diff / 86400)} d`;
+  if (diff < 60) return "ahora";
+  if (diff < 3600) return `${Math.floor(diff / 60)} min`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)} h`;
+  return `${Math.floor(diff / 86400)} d`;
 }
 
-function Dot({ ok }: { ok: boolean }) {
+function Row({
+  label,
+  time,
+  ok,
+  error,
+  showDot,
+}: {
+  label: string;
+  time: string;
+  ok?: boolean;
+  error?: string | null;
+  showDot?: boolean;
+}) {
   return (
-    <span
-      className={`mt-0.5 w-1.5 h-1.5 rounded-full shrink-0 inline-block ${
-        ok ? "bg-green-500" : "bg-red-500"
-      }`}
-    />
+    <div className="flex flex-col gap-0.5">
+      <div className="flex items-center gap-1.5">
+        {showDot && (
+          <span
+            className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+              ok ? "bg-green-500" : "bg-red-500"
+            }`}
+          />
+        )}
+        {!showDot && <span className="w-1.5 shrink-0" />}
+        <span className="text-[11px] text-navy/50 leading-none">
+          {label}
+        </span>
+        <span className="text-[11px] text-navy/30 leading-none">·</span>
+        <span className="text-[11px] text-navy/35 leading-none">{time}</span>
+      </div>
+      {showDot && !ok && error && (
+        <p className="text-[10px] text-red-400 leading-tight pl-3">{error}</p>
+      )}
+    </div>
   );
 }
 
@@ -57,50 +84,33 @@ export default function SyncStatusPanel() {
   if (!data) return null;
 
   return (
-    <div className="px-4 pt-3 pb-1 space-y-1.5">
-      <p className="text-[10px] font-medium uppercase tracking-wide text-navy/30 mb-2">
+    <div className="px-5 py-3 space-y-1.5">
+      <p className="text-[9px] font-semibold uppercase tracking-widest text-navy/25 mb-2">
         Última sync
       </p>
-
-      {/* Momence */}
-      <div className="flex items-start gap-2">
-        <Dot ok={data.momence.ok} />
-        <div className="min-w-0">
-          <span className="text-xs text-navy/55">
-            Momence · {relativeTime(data.momence.checkedAt, now)}
-          </span>
-          {!data.momence.ok && (
-            <p className="text-[11px] text-red-500 leading-tight mt-0.5">
-              {data.momence.error}
-            </p>
-          )}
-        </div>
-      </div>
-
-      {/* Stripe */}
-      <div className="flex items-start gap-2">
-        <Dot ok={data.stripe.ok} />
-        <div className="min-w-0">
-          <span className="text-xs text-navy/55">
-            Stripe · {relativeTime(data.stripe.checkedAt, now)}
-          </span>
-          {!data.stripe.ok && (
-            <p className="text-[11px] text-red-500 leading-tight mt-0.5">
-              {data.stripe.error}
-            </p>
-          )}
-        </div>
-      </div>
-
-      {/* Banco */}
-      <div className="flex items-center gap-2 pl-3.5">
-        <span className="text-xs text-navy/40">
-          Banco ·{" "}
-          {data.banco.lastImport
+      <Row
+        label="Momence"
+        time={relativeTime(data.momence.checkedAt, now)}
+        ok={data.momence.ok}
+        error={data.momence.error}
+        showDot
+      />
+      <Row
+        label="Stripe"
+        time={relativeTime(data.stripe.checkedAt, now)}
+        ok={data.stripe.ok}
+        error={data.stripe.error}
+        showDot
+      />
+      <Row
+        label="Banco"
+        time={
+          data.banco.lastImport
             ? relativeTime(data.banco.lastImport, now)
-            : "sin importaciones"}
-        </span>
-      </div>
+            : "sin datos"
+        }
+        showDot={false}
+      />
     </div>
   );
 }
