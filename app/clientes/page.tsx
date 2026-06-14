@@ -75,7 +75,7 @@ export default async function ClientesPage() {
         </div>
       )}
 
-      <ClientesTable customers={customersWithChurn} />
+      <ClientesTable customers={customersWithChurn} payments={payments} />
     </main>
   );
 }
