@@ -114,19 +114,17 @@ export default async function TransaccionesPage(props: {
     <div>
       {/* ── Sticky header ── */}
       <div className="sticky top-0 z-20 bg-app-bg/95 backdrop-blur-sm border-b border-navy/[0.06]">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-[45px] flex items-center justify-between gap-3">
           <div className="flex items-center gap-4">
             <h1 className="text-sm font-bold text-navy uppercase tracking-widest">Transacciones</h1>
             <Suspense fallback={null}><DateFilter /></Suspense>
           </div>
           {latestBal?.balance != null && (
-            <div className="text-right">
-              <p className="text-[10px] text-navy/45 uppercase tracking-wider leading-none mb-0.5">
-                Saldo · {fmtBalanceDate(latestBal.date)}
-              </p>
-              <p className="text-sm font-bold text-navy tabular-nums">
+            <div className="flex items-baseline gap-2">
+              <span className="text-xs text-navy/45 hidden sm:inline">Saldo · {fmtBalanceDate(latestBal.date)}</span>
+              <span className="text-sm font-bold text-navy tabular-nums">
                 {latestBal.balance.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
-              </p>
+              </span>
             </div>
           )}
         </div>

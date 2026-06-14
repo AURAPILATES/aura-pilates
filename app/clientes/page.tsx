@@ -41,7 +41,7 @@ export default async function ClientesPage() {
     <div>
       {/* ── Sticky header ── */}
       <div className="sticky top-0 z-20 bg-app-bg/95 backdrop-blur-sm border-b border-navy/[0.06]">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-[45px] flex items-center justify-between gap-3">
           <h1 className="text-sm font-bold text-navy uppercase tracking-widest">Clientes</h1>
           <div className="flex items-center gap-3">
             <span className="text-xs text-navy/45">{total} clientes</span>
