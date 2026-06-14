@@ -277,14 +277,10 @@ export default async function Finanzas(props: {
 
   return (
     <div>
-      {/* ── Main layout ── */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-8 pb-16">
-
-        {/* ── Header: filtro + sync ── */}
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-          <div>
-            <h1 className="text-sm font-bold text-navy uppercase tracking-widest">Finanzas</h1>
-          </div>
+      {/* ── Sticky header ── */}
+      <div className="sticky top-0 z-20 bg-app-bg/95 backdrop-blur-sm border-b border-navy/[0.06]">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+          <h1 className="text-sm font-bold text-navy uppercase tracking-widest">Finanzas</h1>
           <div className="flex items-center gap-3 flex-wrap">
             <SyncStripeButton />
             <Suspense fallback={null}>
@@ -292,6 +288,10 @@ export default async function Finanzas(props: {
             </Suspense>
           </div>
         </div>
+      </div>
+
+      {/* ── Main layout ── */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-8 pb-16">
 
         {!hasSales && (
           <div className="bg-warning/10 border border-warning/30 rounded p-4 text-sm text-warning mb-6">
