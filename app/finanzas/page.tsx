@@ -24,6 +24,7 @@ import {
   totalStartupCosts,
   operationalExpensesByCategory,
 } from "@/lib/transactions";
+import { loadCategories } from "@/lib/categories";
 import { getDateRange } from "@/lib/dateRange";
 import DateFilter from "@/app/components/DateFilter";
 import HealthCards from "./HealthCards";
@@ -176,7 +177,8 @@ export default async function Finanzas(props: {
   const uscPrev = momenceSalesAll.filter((s) => s.method === "urban-sports-club" && s.paymentDate.startsWith(prevMonth)).reduce((sum, s) => sum + s.amount, 0);
 
   // ── Transactions (siempre datos completos — el banco solo exporta hasta fecha fija) ──
-  const txnsAll = await loadTransactions();
+  const [txnsAll, dbCategories] = await Promise.all([loadTransactions(), loadCategories()]);
+  const dbCatByLabel = new Map(dbCategories.map((c) => [c.label, c]));
   const totalOpEx     = totalOperationalExpenses(txnsAll);
   const totalStartup  = totalStartupCosts(txnsAll);
   const expByCategory = operationalExpensesByCategory(txnsAll);
@@ -363,10 +365,15 @@ export default async function Finanzas(props: {
                     {txnRangeLabel && <p className="text-xs text-navy/45">{txnRangeLabel}</p>}
                   </div>
                   <GastosBreakdown
-                    categories={expByCategory.map((e, i) => ({
-                      ...e,
-                      color: EXPENSE_COLORS[i % EXPENSE_COLORS.length],
-                    }))}
+                    categories={expByCategory.map((e, i) => {
+                      const dbCat = dbCatByLabel.get(e.category);
+                      return {
+                        ...e,
+                        color: dbCat?.text_color ?? EXPENSE_COLORS[i % EXPENSE_COLORS.length],
+                        emoji: dbCat?.emoji,
+                        bg_color: dbCat?.bg_color,
+                      };
+                    })}
                     transactionsByCategory={transactionsByCategory}
                     totalExpCat={totalExpCat}
                     rangeLabel={txnRangeLabel}
