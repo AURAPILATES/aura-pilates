@@ -268,7 +268,10 @@ function AñadirAusenciaModal({
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-navy/10">
-          <p className="font-semibold text-navy">Solicitar ausencia</p>
+          <div>
+            <p className="font-semibold text-navy">Solicitar ausencia</p>
+            <p className="text-xs text-navy/55 mt-0.5">{persona.nombre}</p>
+          </div>
           <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-navy/5 text-navy/45 hover:text-navy transition-colors">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -289,9 +292,7 @@ function AñadirAusenciaModal({
               </div>
               <div className="flex-1 relative">
                 <div className="flex items-center gap-2 border border-navy/[0.12] rounded-lg px-3 py-2.5 bg-white pointer-events-none absolute inset-0 z-10">
-                  <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${colors.dot}`} />
-                  <span className="text-sm font-medium text-navy">{persona.nombre}</span>
-                  <span className="text-navy/35 mx-0.5">·</span>
+                  <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: selectedType.dotHex }} />
                   <span className="text-sm text-navy flex-1 truncate">{selectedType.label}</span>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-navy/35 shrink-0">
                     <polyline points="6 9 12 15 18 9"/>
@@ -574,7 +575,7 @@ function PersonCard({
           onAdd={onAdd}
         />
       )}
-      <div className={`bg-white border ${colors.border} rounded shadow-card overflow-hidden`}>
+      <div className={`bg-white border ${colors.border} rounded shadow-card overflow-hidden flex flex-col`}>
         {/* Header */}
         <div className="px-5 pt-5 pb-4 border-b border-navy/5">
           <div className="flex items-center justify-between mb-4">
@@ -629,7 +630,7 @@ function PersonCard({
         </div>
 
         {/* Absence list */}
-        <div className="px-5 py-4 space-y-4">
+        <div className="px-5 py-4 space-y-4 flex-1">
           {used === 0 && (
             <p className="text-xs text-warning">Sin días planificados aún</p>
           )}
