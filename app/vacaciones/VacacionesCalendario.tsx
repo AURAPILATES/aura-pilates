@@ -773,14 +773,6 @@ export default function VacacionesCalendario({
         </div>
       </div>
 
-      {/* Sugerencias (siempre sobre todos los datos) */}
-      <section>
-        <h2 className="text-xs font-semibold text-navy/55 uppercase tracking-widest mb-3">
-          Sugerencias
-        </h2>
-        <SugerenciasBlock personas={personas} festivos={festivos} />
-      </section>
-
       {/* Alertas de solapamiento (solo en vista "todas") */}
       {filtro === "todas" && (
         <OverlapCalendar personas={personas} />
@@ -808,6 +800,14 @@ export default function VacacionesCalendario({
           Calendario 2026
         </h2>
         <AnnualCalendar personas={personasFiltradas} allPersonas={personas} festivos={festivos} />
+      </section>
+
+      {/* Sugerencias */}
+      <section>
+        <h2 className="text-xs font-semibold text-navy/55 uppercase tracking-widest mb-3">
+          Sugerencias
+        </h2>
+        <SugerenciasBlock personas={personas} festivos={festivos} />
       </section>
 
       <p className="text-[10px] text-navy/45">
