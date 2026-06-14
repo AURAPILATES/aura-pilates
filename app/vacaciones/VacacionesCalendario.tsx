@@ -756,14 +756,14 @@ export default function VacacionesCalendario({
       {/* Filtro */}
       <div className="flex flex-wrap items-center gap-3">
         <span className="text-xs text-navy/55">Ver:</span>
-        <div className="flex rounded overflow-hidden border border-navy/10 text-sm">
+        <div className="flex items-center border border-navy/[0.12] rounded-lg bg-white p-1 gap-0.5 text-sm">
           {[{ key: "todas", label: "Todas" }, ...personas.map((p) => ({ key: p.nombre, label: p.nombre }))].map(
             ({ key, label }) => (
               <button
                 key={key}
                 onClick={() => setFiltro(key)}
-                className={`px-3 py-1.5 transition-colors ${
-                  filtro === key ? "bg-navy text-white" : "bg-white text-navy/50 hover:text-navy"
+                className={`px-3 py-1.5 rounded-md transition-colors ${
+                  filtro === key ? "bg-navy text-white font-medium" : "text-navy/50 hover:text-navy"
                 }`}
               >
                 {label}

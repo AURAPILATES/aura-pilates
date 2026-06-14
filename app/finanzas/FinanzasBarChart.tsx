@@ -192,12 +192,12 @@ export default function FinanzasBarChart({
       <div className="flex flex-col gap-2 mb-5">
         {/* Row 1: tipo + título */}
         <div className="flex items-center gap-2">
-          <div className="flex border border-navy/10 rounded-lg overflow-hidden text-xs">
+          <div className="flex items-center border border-navy/[0.12] rounded-lg bg-white p-1 gap-0.5 text-xs">
             <button
               onClick={() => setChartType("bar")}
               title="Barras"
-              className={`px-2.5 py-1.5 transition-colors ${
-                chartType === "bar" ? "bg-navy text-white" : "bg-white text-navy/55 hover:text-navy/70"
+              className={`px-2.5 py-1.5 rounded-md transition-colors ${
+                chartType === "bar" ? "bg-navy text-white" : "text-navy/55 hover:text-navy"
               }`}
             >
               <IconBar />
@@ -205,8 +205,8 @@ export default function FinanzasBarChart({
             <button
               onClick={() => setChartType("line")}
               title="Línea"
-              className={`px-2.5 py-1.5 transition-colors border-l border-navy/10 ${
-                chartType === "line" ? "bg-navy text-white" : "bg-white text-navy/55 hover:text-navy/70"
+              className={`px-2.5 py-1.5 rounded-md transition-colors ${
+                chartType === "line" ? "bg-navy text-white" : "text-navy/55 hover:text-navy"
               }`}
             >
               <IconLine />

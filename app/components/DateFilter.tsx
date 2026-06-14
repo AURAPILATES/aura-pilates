@@ -20,15 +20,15 @@ export default function DateFilter() {
   }
 
   return (
-    <div className="flex flex-wrap gap-1.5">
+    <div className="flex items-center border border-navy/[0.12] rounded-lg bg-white p-1 gap-0.5 flex-wrap text-xs">
       {RANGE_OPTIONS.map(({ key, label }) => (
         <button
           key={key}
           onClick={() => setRange(key)}
-          className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+          className={`px-3 py-1.5 font-medium rounded-md transition-colors ${
             current === key
               ? "bg-navy text-white"
-              : "bg-navy/[0.05] text-navy/50 hover:bg-navy/[0.09] hover:text-navy/70"
+              : "text-navy/50 hover:text-navy"
           }`}
         >
           {label}
