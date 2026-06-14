@@ -7,9 +7,15 @@ export default async function VacacionesPage() {
   const { personas, festivos } = await loadPersonas();
 
   return (
-    <main className="max-w-6xl mx-auto px-6 py-10 space-y-6">
-      <h1 className="text-sm font-bold text-navy uppercase tracking-widest">Vacaciones</h1>
-      <VacacionesCalendario personas={personas} festivos={festivos} />
-    </main>
+    <div>
+      <div className="sticky top-0 z-20 bg-app-bg/95 backdrop-blur-sm border-b border-navy/[0.06]">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3">
+          <h1 className="text-sm font-bold text-navy uppercase tracking-widest">Vacaciones</h1>
+        </div>
+      </div>
+      <main className="max-w-6xl mx-auto px-6 pt-8 pb-16 space-y-6">
+        <VacacionesCalendario personas={personas} festivos={festivos} />
+      </main>
+    </div>
   );
 }
