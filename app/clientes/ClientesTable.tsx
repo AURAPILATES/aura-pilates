@@ -363,15 +363,15 @@ export default function ClientesTable({ customers, payments }: { customers: Cust
         </button>
 
         {/* Filter tabs */}
-        <div className="flex gap-1 bg-navy/[0.04] rounded-lg p-1 flex-wrap">
+        <div className="flex items-center border border-navy/[0.12] rounded-lg bg-white p-1 gap-0.5 flex-wrap">
           {filterLabels.map(({ key, label, count }) => (
             <button
               key={key}
               onClick={() => setFilter(key)}
               className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap ${
                 filter === key
-                  ? "bg-white text-navy shadow-sm"
-                  : "text-navy/55 hover:text-navy/70"
+                  ? "bg-navy text-white"
+                  : "text-navy/55 hover:text-navy"
               }`}
             >
               {label}

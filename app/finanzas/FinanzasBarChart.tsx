@@ -241,15 +241,15 @@ export default function FinanzasBarChart({
               <option key={key} value={key}>{label}</option>
             ))}
           </select>
-          <div className="hidden sm:flex border border-navy/10 rounded-lg overflow-hidden text-xs">
+          <div className="hidden sm:flex items-center border border-navy/[0.12] rounded-lg bg-white p-1 gap-0.5 text-xs">
             {PERIODS.map(({ key, label }) => (
               <button
                 key={key}
                 onClick={() => setPeriod(key)}
-                className={`px-3 py-1.5 font-medium transition-colors ${
+                className={`px-3 py-1.5 font-medium rounded-md transition-colors ${
                   period === key
                     ? "bg-navy text-white"
-                    : "bg-white text-navy/55 hover:text-navy/70 hover:bg-navy/[0.03]"
+                    : "text-navy/55 hover:text-navy"
                 }`}
               >
                 {label}
