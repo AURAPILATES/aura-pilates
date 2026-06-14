@@ -179,20 +179,44 @@ function CustomerDrawer({
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="px-6 py-4 border-t border-navy/[0.07]">
-          <a
-            href={`https://dashboard.stripe.com/customers/${customer.id}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-[#635bff] rounded-xl hover:bg-[#4f46e5] transition-colors"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-              <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
-            </svg>
-            Ver en Stripe
-          </a>
+        {/* Footer — un botón por Stripe ID */}
+        <div className="px-6 py-4 border-t border-navy/[0.07] flex flex-col gap-2">
+          {customer.stripeIds.length === 1 ? (
+            <a
+              href={`https://dashboard.stripe.com/customers/${customer.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-[#635bff] rounded-xl hover:bg-[#4f46e5] transition-colors"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+              </svg>
+              Ver en Stripe
+            </a>
+          ) : (
+            <>
+              <p className="text-[11px] text-navy/40 font-medium uppercase tracking-wider">
+                {customer.stripeIds.length} perfiles en Stripe (mismo email)
+              </p>
+              {customer.stripeIds.map((sid, i) => (
+                <a
+                  key={sid}
+                  href={`https://dashboard.stripe.com/customers/${sid}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between gap-2 px-4 py-2 text-sm font-medium text-[#635bff] bg-[#635bff]/[0.06] border border-[#635bff]/20 rounded-xl hover:bg-[#635bff]/10 transition-colors"
+                >
+                  <span className="text-navy/50 text-xs">Perfil {i + 1}</span>
+                  <span className="font-mono text-xs truncate">{sid}</span>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                    <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+                  </svg>
+                </a>
+              ))}
+            </>
+          )}
         </div>
       </div>
     </>
