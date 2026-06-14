@@ -30,6 +30,8 @@ import HealthCards from "./HealthCards";
 import GastosBreakdown from "./GastosBreakdown";
 import FinanzasBarChart from "./FinanzasBarChart";
 import EvolucionChart from "./EvolucionChart";
+import PresupuestosBlock from "./PresupuestosBlock";
+import { loadBudgets, computeSpent } from "@/lib/budgets";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -179,6 +181,10 @@ export default async function Finanzas(props: {
   const totalStartup  = totalStartupCosts(txnsAll);
   const expByCategory = operationalExpensesByCategory(txnsAll);
   const totalExpCat   = expByCategory.reduce((s, r) => s + r.total, 0);
+
+  // ── Budgets / Financiación ────────────────────────────────────────────────
+  const budgets     = loadBudgets();
+  const budgetSpent = computeSpent(budgets, txnsAll);
 
   // Rango real de transacciones para mostrarlo en el desglose
   const txnDates = txnsAll.map((t) => t.date).sort();
@@ -363,6 +369,7 @@ export default async function Finanzas(props: {
                     }))}
                     transactionsByCategory={transactionsByCategory}
                     totalExpCat={totalExpCat}
+                    rangeLabel={txnRangeLabel}
                   />
                   <p className="text-xs text-navy/45 mt-4 pt-3 border-t border-navy/5 leading-relaxed flex items-start gap-1.5">
                     <BookOpen size={12} className="shrink-0 mt-0.5" />
@@ -521,6 +528,12 @@ export default async function Finanzas(props: {
                   })}
                 </div>
               </div>
+            </section>
+
+            {/* Q5 Financiación */}
+            <section id="q5">
+              <QuestionHeader num={5} question="¿Cómo va la financiación?" />
+              <PresupuestosBlock initialBudgets={budgets} spent={budgetSpent} />
             </section>
 
         </div>
