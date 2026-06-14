@@ -5,10 +5,8 @@ import {
   filterPrevious,
   filterUpcoming,
   filterToday,
-  fmt,
   occupancyRate,
   pct,
-  totalRevenue,
   totalStudents,
   trend,
   occupancyByHour,
@@ -106,13 +104,13 @@ export default async function Dashboard() {
 
   const occ = occupancyRate(past);
 
-  // ── KPIs ──
+  // ── KPIs (solo métricas operativas — el dinero está en Finanzas) ──
   const kpis = [
     {
-      label: "Ingresos (30 días)",
-      value: fmt(totalRevenue(past)),
-      sub: `${past.length} clases impartidas`,
-      trend: trend(totalRevenue(past), totalRevenue(prev)),
+      label: "Clases (30 días)",
+      value: past.length.toString(),
+      sub: `${totalStudents(past)} alumnos en total`,
+      trend: trend(past.length, prev.length),
       colorMode: "trend" as const,
     },
     {
@@ -131,10 +129,10 @@ export default async function Dashboard() {
       occupancy: occ,
     },
     {
-      label: "Proyección (7 días)",
-      value: fmt(totalRevenue(upcoming)),
-      sub: `${totalStudents(upcoming)} plazas reservadas`,
-      trend: trend(totalRevenue(upcoming), totalRevenue(pastWeek)),
+      label: "Próximos 7 días",
+      value: `${totalStudents(upcoming)} reservas`,
+      sub: `${upcoming.length} clases programadas`,
+      trend: trend(totalStudents(upcoming), totalStudents(pastWeek)),
       colorMode: "trend" as const,
     },
   ];
@@ -460,9 +458,9 @@ export default async function Dashboard() {
             )}
           </Card>
 
-          {/* Mejores productos */}
+          {/* Productos más vendidos */}
           <Card>
-            <CardTitle>Mejores productos</CardTitle>
+            <CardTitle>Productos más vendidos</CardTitle>
             {topProducts.length === 0 ? (
               <p className="text-sm text-navy/45">Sin datos de ventas</p>
             ) : (
@@ -472,13 +470,13 @@ export default async function Dashboard() {
                   return (
                     <div key={p.item}>
                       <div className="flex items-center justify-between mb-1">
-                        <p className="text-xs font-medium text-navy truncate max-w-[140px]">{p.item}</p>
-                        <span className="text-xs font-semibold text-navy tabular-nums">{fmt(p.revenue)}</span>
+                        <p className="text-xs font-medium text-navy truncate max-w-[160px]">{p.item}</p>
+                        <span className="text-xs font-semibold text-navy/60 tabular-nums">{p.count} ventas</span>
                       </div>
                       <div className="h-1.5 bg-navy/5 rounded-full overflow-hidden">
                         <div className="h-full bg-primary/60 rounded-full" style={{ width: `${Math.round(share * 100)}%` }} />
                       </div>
-                      <p className="text-[11px] text-navy/50 mt-0.5">{p.count} ventas · {pct(share)}</p>
+                      <p className="text-[11px] text-navy/50 mt-0.5">{pct(share)} del total</p>
                     </div>
                   );
                 })}
