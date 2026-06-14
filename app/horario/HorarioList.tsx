@@ -41,24 +41,27 @@ export default function HorarioList({
         const dayRevenue = totalRevenue(dayEvents);
         const dayStudents = dayEvents.reduce((s, e) => s + e.ticketsSold, 0);
 
+        const d = new Date(dateKey + "T12:00:00");
+        const dayName = d.toLocaleDateString("es-ES", { weekday: "long", timeZone: "Europe/Madrid" });
+        const dayNum  = d.getDate();
+
         return (
           <div key={dateKey}>
             {/* Day header */}
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-xs font-semibold text-navy/45 uppercase tracking-widest capitalize">
-                {label}
+            <div className="flex items-baseline justify-between gap-4 pb-3 mb-0 border-b border-navy/[0.09]">
+              <h2 className="text-2xl font-bold text-navy font-display capitalize leading-none">
+                {dayName} <span className="text-navy/35 font-light text-xl">{dayNum}</span>
               </h2>
-              {/* Day stats chips */}
-              <div className="flex bg-white border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden">
-                <Chip label="clases" value={String(dayEvents.length)} />
-                <Chip label="alumnos" value={String(dayStudents)} />
-                <Chip label="ocupación" value={pct(dayOcc)} valueClass={occText(dayOcc)} />
-                <Chip label="ingresos" value={fmt(dayRevenue)} last />
+              <div className="flex items-start gap-8 shrink-0">
+                <DayStat label="CLASES"    value={String(dayEvents.length)} />
+                <DayStat label="ALUMNOS"   value={String(dayStudents)} />
+                <DayStat label="OCUPACIÓN" value={pct(dayOcc)} valueClass={occText(dayOcc)} />
+                <DayStat label="INGRESOS"  value={fmt(dayRevenue)} />
               </div>
             </div>
 
             {/* Events table */}
-            <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden">
+            <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden mt-3">
               {dayEvents.map((e, i) => {
                 const occ = e.capacity > 0 ? e.ticketsSold / e.capacity : 0;
                 const pctVal = Math.round(occ * 100);
@@ -136,21 +139,19 @@ export default function HorarioList({
   );
 }
 
-function Chip({
+function DayStat({
   label,
   value,
   valueClass = "text-navy",
-  last = false,
 }: {
   label: string;
   value: string;
   valueClass?: string;
-  last?: boolean;
 }) {
   return (
-    <div className={`px-3 py-2 text-center ${last ? "" : "border-r border-navy/10"}`}>
-      <p className="text-[10px] text-navy/45 uppercase tracking-wide">{label}</p>
-      <p className={`text-xs font-semibold mt-0.5 ${valueClass}`}>{value}</p>
+    <div className="text-right">
+      <p className="text-[10px] text-navy/40 uppercase tracking-wider font-medium">{label}</p>
+      <p className={`text-sm font-bold mt-0.5 tabular-nums ${valueClass}`}>{value}</p>
     </div>
   );
 }

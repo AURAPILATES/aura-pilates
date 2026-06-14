@@ -115,17 +115,30 @@ export default function HorarioShell({
 
           {/* View toggle */}
           <div className="flex border border-navy/[0.08] rounded-xl overflow-hidden bg-white text-sm">
-            {(["lista", "calendario"] as View[]).map((v) => (
-              <button
-                key={v}
-                onClick={() => setView(v)}
-                className={`px-4 py-1.5 capitalize transition-colors ${
-                  view === v ? "bg-navy text-white" : "text-navy/50 hover:text-navy"
-                }`}
-              >
-                {v.charAt(0).toUpperCase() + v.slice(1)}
-              </button>
-            ))}
+            <button
+              onClick={() => setView("lista")}
+              className={`flex items-center gap-1.5 px-4 py-1.5 transition-colors ${
+                view === "lista" ? "bg-navy text-white" : "text-navy/50 hover:text-navy"
+              }`}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
+                <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+              </svg>
+              Lista
+            </button>
+            <button
+              onClick={() => setView("calendario")}
+              className={`flex items-center gap-1.5 px-4 py-1.5 transition-colors ${
+                view === "calendario" ? "bg-navy text-white" : "text-navy/50 hover:text-navy"
+              }`}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+                <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+              </svg>
+              Calendario
+            </button>
           </div>
         </div>
       </div>
@@ -204,6 +217,23 @@ export default function HorarioShell({
               Limpiar
             </button>
           )}
+        </div>
+      )}
+
+      {/* Color legend */}
+      {events.length > 0 && (
+        <div className="flex items-center gap-5 mb-4 flex-wrap">
+          {[
+            { color: "bg-[#c03828]", label: "Por llenar" },
+            { color: "bg-[#a38540]", label: "A medias" },
+            { color: "bg-[#c07030]", label: "Casi llena" },
+            { color: "bg-[#4e8a5d]", label: "Llena" },
+          ].map(({ color, label }) => (
+            <div key={label} className="flex items-center gap-1.5">
+              <span className={`w-2 h-2 rounded-full shrink-0 ${color}`} />
+              <span className="text-xs text-navy/55">{label}</span>
+            </div>
+          ))}
         </div>
       )}
 
