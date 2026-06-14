@@ -7,8 +7,6 @@ type Category = {
   count: number;
   total: number;
   color: string;
-  emoji?: string;
-  bg_color?: string;
 };
 
 type Txn = {
@@ -18,15 +16,114 @@ type Txn = {
   contact: string;
 };
 
-// ── Category icon — uses emoji + bg_color from DB when available ──────────────
+// ── Category SVG icons (white on colored circle, Revolut style) ───────────────
 
-function CategoryIcon({ name, color, emoji, bg_color }: { name: string; color: string; emoji?: string; bg_color?: string }) {
+function CategoryIcon({ name, color }: { name: string; color: string }) {
+  const icons: Record<string, React.ReactNode> = {
+    "Alquiler": (
+      <>
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+        <polyline points="9 22 9 12 15 12 15 22"/>
+      </>
+    ),
+    "Salarios": (
+      <>
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+        <circle cx="9" cy="7" r="4"/>
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+      </>
+    ),
+    "Seguridad social": (
+      <>
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+        <circle cx="9" cy="7" r="4"/>
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+      </>
+    ),
+    "Electricidad": (
+      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+    ),
+    "Agua": (
+      <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/>
+    ),
+    "Software": (
+      <>
+        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+        <line x1="8" y1="21" x2="16" y2="21"/>
+        <line x1="12" y1="17" x2="12" y2="21"/>
+      </>
+    ),
+    "Gestoría y legal": (
+      <>
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="16" y1="13" x2="8" y2="13"/>
+        <line x1="16" y1="17" x2="8" y2="17"/>
+      </>
+    ),
+    "Impuestos y tasas": (
+      <>
+        <line x1="19" y1="5" x2="5" y2="19"/>
+        <circle cx="6.5" cy="6.5" r="2.5"/>
+        <circle cx="17.5" cy="17.5" r="2.5"/>
+      </>
+    ),
+    "Teléfono": (
+      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.56 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+    ),
+    "Seguros": (
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+    ),
+    "Comisiones bancarias": (
+      <>
+        <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+        <line x1="1" y1="10" x2="23" y2="10"/>
+      </>
+    ),
+    "Merchandising": (
+      <>
+        <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+        <line x1="3" y1="6" x2="21" y2="6"/>
+        <path d="M16 10a4 4 0 0 1-8 0"/>
+      </>
+    ),
+    "Local": (
+      <>
+        <line x1="3" y1="22" x2="21" y2="22"/>
+        <rect x="3" y="6" width="18" height="16" rx="1"/>
+        <line x1="3" y1="10" x2="21" y2="10"/>
+        <rect x="9" y="15" width="6" height="7"/>
+      </>
+    ),
+    "Material y maquinaria": (
+      <>
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.07 4.93l-1.41 1.41M16.24 16.24l-1.41 1.41M4.93 4.93l1.41 1.41M7.76 16.24l1.41 1.41M12 2v2M12 20v2M2 12h2M20 12h2"/>
+      </>
+    ),
+    "Inversión": (
+      <>
+        <line x1="12" y1="20" x2="12" y2="10"/>
+        <line x1="18" y1="20" x2="18" y2="4"/>
+        <line x1="6" y1="20" x2="6" y2="16"/>
+      </>
+    ),
+  };
+
+  const fallback = (
+    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+  );
+
   return (
     <div
-      className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 text-xl"
-      style={{ backgroundColor: bg_color ?? color }}
+      className="w-12 h-12 rounded-full flex items-center justify-center shrink-0"
+      style={{ backgroundColor: color }}
     >
-      {emoji ?? "📦"}
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        {icons[name] ?? fallback}
+      </svg>
     </div>
   );
 }
@@ -133,7 +230,7 @@ export default function GastosBreakdown({
               selected === seg.category ? "bg-navy/[0.03]" : "hover:bg-navy/[0.02]"
             }`}
           >
-            <CategoryIcon name={seg.category} color={seg.color} emoji={seg.emoji} bg_color={seg.bg_color} />
+            <CategoryIcon name={seg.category} color={seg.color} />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-navy truncate">{seg.category}</p>
               <p className="text-xs text-navy/50">{seg.count} transacciones</p>
@@ -157,7 +254,7 @@ export default function GastosBreakdown({
           />
           <div className="fixed inset-0 sm:inset-auto sm:right-0 sm:top-0 sm:bottom-0 z-50 sm:w-[420px] bg-white shadow-2xl flex flex-col">
             <div className="flex items-center gap-3 px-4 sm:px-6 py-4 sm:py-5 border-b border-navy/10">
-              <CategoryIcon name={selected} color={selectedSeg?.color ?? "#6B7ED6"} emoji={selectedSeg?.emoji} bg_color={selectedSeg?.bg_color} />
+              <CategoryIcon name={selected} color={selectedSeg?.color ?? "#6B7ED6"} />
               <div className="flex-1 min-w-0">
                 <h2 className="text-base font-semibold text-navy">{selected}</h2>
                 <p className="text-xs text-navy/55 mt-0.5">
