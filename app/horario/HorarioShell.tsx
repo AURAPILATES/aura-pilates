@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { MomenceEvent } from "@/lib/momence";
 import { groupByDay, occupancyRate, totalRevenue, fmt, pct } from "@/lib/analytics";
@@ -46,6 +46,10 @@ export default function HorarioShell({
   const [claseFilter, setClaseFilter] = useState("all");
   const [instructoraFilter, setInstructoraFilter] = useState("all");
   const [occFilter, setOccFilter] = useState<OccFilter>("all");
+  // Lazy mount: render each view only once it's been visited, then keep it alive
+  const [mounted, setMounted] = useState<Record<View, boolean>>({ [initialView]: true } as Record<View, boolean>);
+  useEffect(() => { setMounted((m) => ({ ...m, [view]: true })); }, [view]);
+  const handleSelect = useCallback((e: MomenceEvent) => setSelected(e), []);
 
   const clases = useMemo(
     () => ["all", ...Array.from(new Set(events.map((e) => e.title))).sort()],
@@ -261,12 +265,16 @@ export default function HorarioShell({
         </div>
       ) : (
         <>
-          <div className={view === "lista" ? "" : "hidden"}>
-            <HorarioList days={days} onSelect={setSelected} />
-          </div>
-          <div className={view === "calendario" ? "" : "hidden"}>
-            <HorarioCalendar events={filtered} weekMonday={weekMonday} onSelect={setSelected} />
-          </div>
+          {mounted.lista && (
+            <div className={view === "lista" ? "" : "hidden"}>
+              <HorarioList days={days} onSelect={handleSelect} />
+            </div>
+          )}
+          {mounted.calendario && (
+            <div className={view === "calendario" ? "" : "hidden"}>
+              <HorarioCalendar events={filtered} weekMonday={weekMonday} onSelect={handleSelect} />
+            </div>
+          )}
         </>
       )}
 

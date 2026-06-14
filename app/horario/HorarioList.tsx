@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { MomenceEvent } from "@/lib/momence";
 import { fmt, pct, occupancyRate, totalRevenue } from "@/lib/analytics";
 
@@ -19,7 +20,7 @@ function occText(occ: number) {
   return "text-danger";
 }
 
-export default function HorarioList({
+export default memo(function HorarioList({
   days,
   onSelect,
 }: {
@@ -144,7 +145,7 @@ export default function HorarioList({
       })}
     </div>
   );
-}
+});
 
 function DayStat({
   label,

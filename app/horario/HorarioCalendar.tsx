@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, memo } from "react";
 import { MomenceEvent } from "@/lib/momence";
 import { fmt } from "@/lib/analytics";
 
@@ -61,7 +61,7 @@ function buildHourMap(clusters: number[][]): { hourMap: Map<number, number>; tot
   return { hourMap, totalH: y };
 }
 
-export default function HorarioCalendar({
+export default memo(function HorarioCalendar({
   events,
   weekMonday,
   onSelect,
@@ -268,4 +268,4 @@ export default function HorarioCalendar({
       </div>
     </div>
   );
-}
+});
