@@ -40,6 +40,7 @@ export default function HorarioList({
         const dayOcc = occupancyRate(dayEvents);
         const dayRevenue = totalRevenue(dayEvents);
         const dayStudents = dayEvents.reduce((s, e) => s + e.ticketsSold, 0);
+        const dayUnsold = dayEvents.reduce((s, e) => s + e.spotsRemaining * e.fixedPrice, 0);
 
         const d = new Date(dateKey + "T12:00:00");
         const dayName = d.toLocaleDateString("es-ES", { weekday: "long", timeZone: "Europe/Madrid" });
@@ -53,10 +54,11 @@ export default function HorarioList({
                 {dayName} <span className="text-navy/35 font-light text-xl">{dayNum}</span>
               </h2>
               <div className="flex items-start gap-8 shrink-0">
-                <DayStat label="CLASES"    value={String(dayEvents.length)} />
-                <DayStat label="ALUMNOS"   value={String(dayStudents)} />
-                <DayStat label="OCUPACIÓN" value={pct(dayOcc)} valueClass={occText(dayOcc)} />
-                <DayStat label="INGRESOS"  value={fmt(dayRevenue)} />
+                <DayStat label="CLASES"     value={String(dayEvents.length)} />
+                <DayStat label="ALUMNOS"    value={String(dayStudents)} />
+                <DayStat label="OCUPACIÓN"  value={pct(dayOcc)} valueClass={occText(dayOcc)} />
+                <DayStat label="INGRESOS"   value={fmt(dayRevenue)} />
+                <DayStat label="SIN VENDER" value={dayUnsold > 0 ? `-${fmt(dayUnsold)}` : "—"} valueClass={dayUnsold > 0 ? "text-danger/70" : "text-navy/25"} />
               </div>
             </div>
 
@@ -114,6 +116,11 @@ export default function HorarioList({
                     {/* Revenue */}
                     <span className="text-sm text-navy/60 font-medium w-16 text-right shrink-0">
                       {fmt(e.ticketsSold * e.fixedPrice)}
+                    </span>
+
+                    {/* Sin vender */}
+                    <span className={`text-sm font-medium w-16 text-right shrink-0 ${e.spotsRemaining > 0 ? "text-danger/70" : "text-navy/20"}`}>
+                      {e.spotsRemaining > 0 ? `-${fmt(e.spotsRemaining * e.fixedPrice)}` : "—"}
                     </span>
 
                     {/* Chevron */}

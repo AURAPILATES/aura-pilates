@@ -75,6 +75,9 @@ export default function HorarioShell({
   const weekRevenue = totalRevenue(events);
   const weekPotential = events.reduce((s, e) => s + e.capacity * e.fixedPrice, 0);
   const weekFreeSpots = events.reduce((s, e) => s + e.spotsRemaining, 0);
+  const weekTotalSpots = events.reduce((s, e) => s + e.capacity, 0);
+  const weekSoldSpots = events.reduce((s, e) => s + e.ticketsSold, 0);
+  const weekUnsold = weekPotential - weekRevenue;
   const lowCount = events.filter(
     (e) => e.capacity > 0 && e.ticketsSold / e.capacity < 0.5
   ).length;
@@ -148,16 +151,16 @@ export default function HorarioShell({
       {events.length > 0 && (
         <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card px-5 py-4 mb-6 flex flex-wrap items-center gap-x-5 gap-y-3">
           <StatItem
-            label="Ocupación media"
-            value={pct(weekOcc)}
+            label="Ocupación"
+            value={`${weekSoldSpots}/${weekTotalSpots} · ${pct(weekOcc)}`}
             accent={weekOcc >= 0.8 ? "text-success" : weekOcc >= 0.5 ? "text-warning" : "text-danger"}
           />
           <div className="h-7 w-px bg-navy/[0.08]" />
-          <StatItem label="Ingresos sem." value={fmt(weekRevenue)} />
+          <StatItem label="Ingresos" value={fmt(weekRevenue)} />
+          <div className="h-7 w-px bg-navy/[0.08]" />
+          <StatItem label="Sin vender" value={`-${fmt(weekUnsold)}`} accent="text-danger" />
           <div className="h-7 w-px bg-navy/[0.08]" />
           <StatItem label="Potencial" value={fmt(weekPotential)} accent="text-navy/40" />
-          <div className="h-7 w-px bg-navy/[0.08]" />
-          <StatItem label="Plazas libres" value={String(weekFreeSpots)} />
           {lowCount > 0 && (
             <>
               <div className="h-7 w-px bg-navy/[0.08]" />
