@@ -3,7 +3,6 @@ import { loadTransactions, type Transaction } from "@/lib/transactions";
 import { loadCategories } from "@/lib/categories";
 import { getDateRange } from "@/lib/dateRange";
 import TransaccionesList from "./TransaccionesList";
-import ImportButton from "./ImportButton";
 
 // ── Analysis helpers ───────────────────────────────────────────────────────────
 
@@ -133,19 +132,16 @@ export default async function TransaccionesPage(props: {
         <div>
           <h1 className="text-sm font-bold text-navy uppercase tracking-widest">Transacciones</h1>
         </div>
-        <div className="flex items-center gap-4 shrink-0">
-          {latestBal?.balance != null && (
-            <div className="text-right">
-              <p className="text-[11px] text-navy/45 uppercase tracking-wider mb-1">
-                Saldo a {fmtBalanceDate(latestBal.date)}
-              </p>
-              <p className="text-2xl font-bold text-navy tabular-nums">
-                {latestBal.balance.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
-              </p>
-            </div>
-          )}
-          <ImportButton />
-        </div>
+        {latestBal?.balance != null && (
+          <div className="text-right shrink-0">
+            <p className="text-[11px] text-navy/45 uppercase tracking-wider mb-1">
+              Saldo a {fmtBalanceDate(latestBal.date)}
+            </p>
+            <p className="text-2xl font-bold text-navy tabular-nums">
+              {latestBal.balance.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+            </p>
+          </div>
+        )}
       </div>
 
       <Suspense fallback={null}>
