@@ -2,12 +2,19 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { saveVacacionesAction } from "@/app/actions/saveVacaciones";
+import {
+  addAusenciasAction,
+  removeAusenciasAction,
+  createPersonaAction,
+  archivePersonaAction,
+} from "@/app/actions/vacaciones";
 
 const PERSON_COLORS = [
   { dot: "bg-primary", cellBg: "bg-primary/[0.12]", stroke: "#4021c8", border: "border-primary/20", text: "text-primary", badge: "bg-primary/10 text-primary" },
   { dot: "bg-income",  cellBg: "bg-income/[0.12]",  stroke: "#298a83", border: "border-income/20",  text: "text-income",  badge: "bg-income/10 text-income" },
   { dot: "bg-warning", cellBg: "bg-warning/[0.12]", stroke: "#ff8a00", border: "border-warning/20", text: "text-warning", badge: "bg-warning/10 text-warning" },
+  { dot: "bg-purple-500", cellBg: "bg-purple-500/[0.12]", stroke: "#8b5cf6", border: "border-purple-200", text: "text-purple-600", badge: "bg-purple-50 text-purple-600" },
+  { dot: "bg-pink-500", cellBg: "bg-pink-500/[0.12]", stroke: "#ec4899", border: "border-pink-200", text: "text-pink-600", badge: "bg-pink-50 text-pink-600" },
 ];
 
 const MONTH_SHORT = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
@@ -17,14 +24,15 @@ const TODAY = new Date().toISOString().split("T")[0];
 type AbsenceKey = "vacaciones" | "enfermedad" | "familiar" | "otros";
 
 type Persona = {
+  id: string;
   nombre: string;
   inicioContrato: string;
   jornadaDias: number;
   diasTotales: number;
   vacaciones: string[];
-  enfermedad?: string[];
-  familiar?: string[];
-  otros?: string[];
+  enfermedad: string[];
+  familiar: string[];
+  otros: string[];
 };
 
 const ABSENCE_TYPES: { key: AbsenceKey; label: string; dotHex: string }[] = [
@@ -38,7 +46,6 @@ function getAbsenceDates(p: Persona, key: AbsenceKey): string[] {
   return p[key] ?? [];
 }
 
-// Group sorted date strings into consecutive ranges
 function groupRanges(dates: string[]): { start: string; end: string; count: number }[] {
   if (dates.length === 0) return [];
   const sorted = [...dates].sort();
@@ -49,9 +56,9 @@ function groupRanges(dates: string[]): { start: string; end: string; count: numb
 
   for (let i = 1; i < sorted.length; i++) {
     const cur = sorted[i];
-    const prevDate = new Date(prev + "T12:00:00");
-    const curDate = new Date(cur + "T12:00:00");
-    const diffDays = Math.round((curDate.getTime() - prevDate.getTime()) / 86400000);
+    const diffDays = Math.round(
+      (new Date(cur + "T12:00:00").getTime() - new Date(prev + "T12:00:00").getTime()) / 86400000
+    );
     if (diffDays === 1) {
       count++;
     } else {
@@ -79,10 +86,7 @@ function formatPeriod(start: string, end: string, count: number) {
 
 // ── Sugerencias ───────────────────────────────────────────────────────────────
 
-type Suggestion = {
-  type: "success" | "warning" | "info";
-  text: string;
-};
+type Suggestion = { type: "success" | "warning" | "info"; text: string };
 
 function generateSuggestions(personas: Persona[], festivos: string[]): Suggestion[] {
   const suggestions: Suggestion[] = [];
@@ -186,6 +190,113 @@ function SugerenciasBlock({ personas, festivos }: { personas: Persona[]; festivo
   );
 }
 
+// ── Nuevo instructor modal ────────────────────────────────────────────────────
+
+function NuevoInstructorModal({
+  onClose,
+  onCreate,
+}: {
+  onClose: () => void;
+  onCreate: (data: { nombre: string; inicio_contrato: string; jornada_dias: number; dias_totales: number }) => Promise<void>;
+}) {
+  const [nombre, setNombre] = useState("");
+  const [inicioContrato, setInicioContrato] = useState(TODAY);
+  const [jornadaDias, setJornadaDias] = useState(5);
+  const [diasTotales, setDiasTotales] = useState(23);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose]);
+
+  async function handleSubmit() {
+    if (!nombre.trim()) return;
+    setSaving(true);
+    await onCreate({ nombre: nombre.trim(), inicio_contrato: inicioContrato, jornada_dias: jornadaDias, dias_totales: diasTotales });
+    setSaving(false);
+    onClose();
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/30 backdrop-blur-sm p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-6 py-5 border-b border-navy/10">
+          <p className="font-semibold text-navy">Nuevo instructor</p>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-navy/5 text-navy/45 hover:text-navy transition-colors">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+
+        <div className="px-6 py-5 space-y-4">
+          <div>
+            <label className="block text-xs text-navy/55 mb-1.5">Nombre</label>
+            <input
+              type="text"
+              value={nombre}
+              onChange={(e) => setNombre(e.target.value)}
+              placeholder="Nombre del instructor"
+              autoFocus
+              className="w-full text-sm border border-navy/[0.12] rounded-lg px-4 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary/30 text-navy"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs text-navy/55 mb-1.5">Inicio de contrato</label>
+            <input
+              type="date"
+              value={inicioContrato}
+              onChange={(e) => setInicioContrato(e.target.value)}
+              className="w-full text-sm border border-navy/[0.12] rounded-lg px-4 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary/30 text-navy"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs text-navy/55 mb-1.5">Días de jornada/semana</label>
+              <input
+                type="number"
+                min={1}
+                max={7}
+                value={jornadaDias}
+                onChange={(e) => setJornadaDias(Number(e.target.value))}
+                className="w-full text-sm border border-navy/[0.12] rounded-lg px-4 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary/30 text-navy"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-navy/55 mb-1.5">Días de vacaciones</label>
+              <input
+                type="number"
+                min={0}
+                max={30}
+                value={diasTotales}
+                onChange={(e) => setDiasTotales(Number(e.target.value))}
+                className="w-full text-sm border border-navy/[0.12] rounded-lg px-4 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary/30 text-navy"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-3 px-6 py-4 border-t border-navy/[0.07]">
+          <button onClick={onClose} className="px-4 py-2.5 text-sm text-navy/55 hover:text-navy transition-colors">
+            Cancelar
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={!nombre.trim() || saving}
+            className="px-6 py-2.5 bg-primary text-white text-sm font-semibold rounded-xl hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            {saving ? "Creando…" : "Crear instructor"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Añadir ausencia modal ─────────────────────────────────────────────────────
 
 type DurationType = "day" | "range";
@@ -217,7 +328,6 @@ function AñadirAusenciaModal({
   onClose: () => void;
   onAdd: (typeKey: AbsenceKey, dates: string[]) => Promise<void>;
 }) {
-  const colors = PERSON_COLORS[idx];
   const [absenceType, setAbsenceType] = useState<AbsenceKey>("vacaciones");
   const [duration, setDuration] = useState<DurationType>("day");
   const [dateFrom, setDateFrom] = useState(TODAY);
@@ -237,15 +347,20 @@ function AñadirAusenciaModal({
     : getDatesInRange(dateFrom, dateTo).filter((d) => !existingDates.includes(d));
 
   const alreadyExists = duration === "day" && existingDates.includes(dateFrom);
-
   const selectedType = ABSENCE_TYPES.find((t) => t.key === absenceType)!;
 
   async function handleSolicitar() {
     if (newDates.length === 0) return;
     setSaving(true);
-    await onAdd(absenceType, newDates);
-    setSaving(false);
-    onClose();
+    try {
+      await onAdd(absenceType, newDates);
+      onClose();
+    } catch (err) {
+      console.error("Error al guardar ausencia:", err);
+      alert("Error al guardar. Comprueba la consola.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   const previewLabel = duration === "day"
@@ -258,15 +373,8 @@ function AñadirAusenciaModal({
   const isVacaciones = absenceType === "vacaciones";
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-navy/30 backdrop-blur-sm p-4"
-      onClick={onClose}
-    >
-      <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/30 backdrop-blur-sm p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 py-5 border-b border-navy/10">
           <div>
             <p className="font-semibold text-navy">Solicitar ausencia</p>
@@ -280,7 +388,6 @@ function AñadirAusenciaModal({
         </div>
 
         <div className="flex flex-col sm:flex-row">
-          {/* Left: form */}
           <div className="flex-1 px-6 py-5 space-y-5">
             {/* Type selector */}
             <div className="flex items-center gap-3">
@@ -419,7 +526,6 @@ function AñadirAusenciaModal({
           </div>
         </div>
 
-        {/* Footer */}
         <div className="flex justify-end px-6 py-4 border-t border-navy/[0.07]">
           <button
             onClick={handleSolicitar}
@@ -458,7 +564,6 @@ function AusenciasModal({ persona, idx, onClose }: { persona: Persona; idx: numb
         </div>
 
         <div className="px-6 py-4 space-y-4">
-          {/* Vacaciones con detalle */}
           <div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -485,7 +590,6 @@ function AusenciasModal({ persona, idx, onClose }: { persona: Persona; idx: numb
 
           <div className="border-t border-navy/5" />
 
-          {/* Otros tipos con datos reales */}
           {ABSENCE_TYPES.slice(1).map((t) => {
             const days = getAbsenceDates(persona, t.key).length;
             return (
@@ -508,7 +612,8 @@ function AusenciasModal({ persona, idx, onClose }: { persona: Persona; idx: numb
   );
 }
 
-// SVG donut
+// ── SVG donut ─────────────────────────────────────────────────────────────────
+
 function Donut({ used, total, stroke }: { used: number; total: number; stroke: string }) {
   const r = 28;
   const circ = 2 * Math.PI * r;
@@ -543,26 +648,42 @@ function PersonCard({
   idx,
   onAdd,
   onDeleteRange,
+  onArchive,
 }: {
   persona: Persona;
   idx: number;
   onAdd: (typeKey: AbsenceKey, dates: string[]) => Promise<void>;
   onDeleteRange: (typeKey: AbsenceKey, start: string, end: string) => Promise<void>;
+  onArchive: () => Promise<void>;
 }) {
   const [showModal, setShowModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editMode, setEditMode] = useState(false);
-  const colors = PERSON_COLORS[idx];
+  const [archiving, setArchiving] = useState(false);
+  const colors = PERSON_COLORS[idx % PERSON_COLORS.length];
   const used = persona.vacaciones.length;
   const remaining = persona.diasTotales - used;
 
-  // All absence types with their ranges
   const allRanges = ABSENCE_TYPES.flatMap((t) =>
     groupRanges(getAbsenceDates(persona, t.key)).map((r) => ({ ...r, typeKey: t.key, typeLabel: t.label, dotHex: t.dotHex }))
   ).sort((a, b) => b.start.localeCompare(a.start));
 
   const upcoming = allRanges.filter((r) => r.end >= TODAY);
   const past = allRanges.filter((r) => r.end < TODAY);
+
+  async function handleArchive() {
+    if (!confirm(`¿Archivar a ${persona.nombre}? No aparecerá en la lista de instructores activos.`)) return;
+    setArchiving(true);
+    await onArchive();
+  }
+
+  const TrashIcon = () => (
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="3 6 5 6 21 6"/>
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+      <path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+    </svg>
+  );
 
   return (
     <>
@@ -631,9 +752,7 @@ function PersonCard({
 
         {/* Absence list */}
         <div className="px-5 py-4 space-y-4 flex-1">
-          {used === 0 && (
-            <p className="text-xs text-warning">Sin días planificados aún</p>
-          )}
+          {used === 0 && <p className="text-xs text-warning">Sin días planificados aún</p>}
 
           {upcoming.length > 0 && (
             <div>
@@ -657,12 +776,7 @@ function PersonCard({
                             onClick={() => onDeleteRange(r.typeKey, r.start, r.end)}
                             className="flex items-center gap-1 text-xs text-danger border border-danger/30 bg-danger/5 hover:bg-danger/10 px-2 py-1 rounded-lg transition-colors"
                           >
-                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                              <polyline points="3 6 5 6 21 6"/>
-                              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-                              <path d="M10 11v6"/><path d="M14 11v6"/>
-                              <path d="M9 6V4h6v2"/>
-                            </svg>
+                            <TrashIcon />
                             Eliminar
                           </button>
                         ) : (
@@ -700,12 +814,7 @@ function PersonCard({
                             onClick={() => onDeleteRange(r.typeKey, r.start, r.end)}
                             className="flex items-center gap-1 text-xs text-danger border border-danger/30 bg-danger/5 hover:bg-danger/10 px-2 py-1 rounded-lg transition-colors"
                           >
-                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                              <polyline points="3 6 5 6 21 6"/>
-                              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-                              <path d="M10 11v6"/><path d="M14 11v6"/>
-                              <path d="M9 6V4h6v2"/>
-                            </svg>
+                            <TrashIcon />
                             Eliminar
                           </button>
                         ) : (
@@ -720,9 +829,20 @@ function PersonCard({
               </div>
             </div>
           )}
+
+          {/* Archivar button — visible only in edit mode */}
+          {editMode && (
+            <button
+              onClick={handleArchive}
+              disabled={archiving}
+              className="mt-2 w-full text-xs text-navy/45 hover:text-danger border border-navy/10 hover:border-danger/30 rounded-lg py-2 transition-colors disabled:opacity-40"
+            >
+              {archiving ? "Archivando…" : "Archivar instructor"}
+            </button>
+          )}
         </div>
 
-        {/* Ver ausencias — fijo al pie de la tarjeta */}
+        {/* Ver ausencias — fijo al pie */}
         <div className="border-t border-navy/[0.05] px-5 py-3">
           <button
             onClick={() => setShowModal(true)}
@@ -770,7 +890,7 @@ function OverlapCalendar({ personas }: { personas: Persona[] }) {
             <span className="text-xs text-navy/60 w-56 shrink-0">{fmtDate(dateStr)}</span>
             <div className="flex gap-1.5">
               {idxs.map((i) => (
-                <span key={i} className={`text-xs px-2 py-0.5 rounded ${PERSON_COLORS[i].badge}`}>
+                <span key={i} className={`text-xs px-2 py-0.5 rounded ${PERSON_COLORS[i % PERSON_COLORS.length].badge}`}>
                   {personas[i].nombre}
                 </span>
               ))}
@@ -803,7 +923,7 @@ function AnnualCalendar({
   const festivosSet = new Set(festivos);
   const vacByDate = new Map<string, number[]>();
   personas.forEach((p) => {
-    const i = allPersonas.findIndex((orig) => orig.nombre === p.nombre);
+    const i = allPersonas.findIndex((orig) => orig.id === p.id);
     p.vacaciones.forEach((d) => {
       if (!vacByDate.has(d)) vacByDate.set(d, []);
       vacByDate.get(d)!.push(i);
@@ -827,13 +947,13 @@ function AnnualCalendar({
         });
 
         const monthVac = personas.map((p) => {
-          const i = allPersonas.findIndex((orig) => orig.nombre === p.nombre);
+          const i = allPersonas.findIndex((orig) => orig.id === p.id);
           return {
             name: p.nombre,
             days: p.vacaciones
               .filter((d) => d.startsWith(`2026-${String(month).padStart(2, "0")}-`))
               .map((d) => parseInt(d.split("-")[2])),
-            colors: PERSON_COLORS[i],
+            colors: PERSON_COLORS[i % PERSON_COLORS.length],
           };
         }).filter((p) => p.days.length > 0);
 
@@ -863,7 +983,7 @@ function AnnualCalendar({
                         : isToday
                         ? "bg-primary/10"
                         : personasVac.length === 1
-                        ? (PERSON_COLORS[personasVac[0]]?.cellBg ?? "")
+                        ? (PERSON_COLORS[personasVac[0] % PERSON_COLORS.length]?.cellBg ?? "")
                         : ""
                     }`}
                   >
@@ -883,7 +1003,7 @@ function AnnualCalendar({
                     {personasVac.length > 0 && (
                       <div className="flex gap-0.5 mt-0.5 flex-wrap justify-center">
                         {personasVac.map((pi) => (
-                          <div key={pi} className={`w-1.5 h-1.5 rounded-full ${PERSON_COLORS[pi].dot}`} />
+                          <div key={pi} className={`w-1.5 h-1.5 rounded-full ${PERSON_COLORS[pi % PERSON_COLORS.length].dot}`} />
                         ))}
                       </div>
                     )}
@@ -964,11 +1084,11 @@ function GanttView({
 
       <div className="space-y-2">
         {personas.map((p) => {
-          const i = allPersonas.findIndex((orig) => orig.nombre === p.nombre);
-          const colors = PERSON_COLORS[i];
+          const i = allPersonas.findIndex((orig) => orig.id === p.id);
+          const colors = PERSON_COLORS[i % PERSON_COLORS.length];
 
           return (
-            <div key={p.nombre} className="flex items-center">
+            <div key={p.id} className="flex items-center">
               <span className="w-24 shrink-0 text-xs text-navy/60 pr-3 truncate">{p.nombre}</span>
               <div className="flex-1 grid grid-cols-12 gap-1">
                 {months.map((m) => {
@@ -1026,10 +1146,10 @@ function GanttView({
 
       <div className="flex flex-wrap items-center gap-4 mt-4 pt-3 border-t border-navy/5">
         {personas.map((p) => {
-          const i = allPersonas.findIndex((orig) => orig.nombre === p.nombre);
+          const i = allPersonas.findIndex((orig) => orig.id === p.id);
           return (
-            <div key={p.nombre} className="flex items-center gap-1.5">
-              <div className={`w-3 h-3 rounded-sm ${PERSON_COLORS[i].dot} opacity-75`} />
+            <div key={p.id} className="flex items-center gap-1.5">
+              <div className={`w-3 h-3 rounded-sm ${PERSON_COLORS[i % PERSON_COLORS.length].dot} opacity-75`} />
               <span className="text-[10px] text-navy/50">{p.nombre}</span>
             </div>
           );
@@ -1055,42 +1175,86 @@ export default function VacacionesCalendario({
   const router = useRouter();
   const [personas, setPersonas] = useState<Persona[]>(initialPersonas);
   const [filtro, setFiltro] = useState<string>("todas");
+  const [showNuevoModal, setShowNuevoModal] = useState(false);
 
-  const saveAndUpdate = useCallback(async (updated: Persona[]) => {
-    setPersonas(updated);
-    await saveVacacionesAction(updated);
+  const handleAdd = useCallback(async (personaId: string, typeKey: AbsenceKey, dates: string[]) => {
+    setPersonas((prev) =>
+      prev.map((p) => {
+        if (p.id !== personaId) return p;
+        const existing = getAbsenceDates(p, typeKey);
+        return { ...p, [typeKey]: [...new Set([...existing, ...dates])].sort() };
+      })
+    );
+    try {
+      await addAusenciasAction(personaId, typeKey, dates);
+      router.refresh();
+    } catch (err) {
+      // Rollback on error
+      setPersonas((prev) =>
+        prev.map((p) => {
+          if (p.id !== personaId) return p;
+          return { ...p, [typeKey]: getAbsenceDates(p, typeKey).filter((d) => !dates.includes(d)) };
+        })
+      );
+      throw err;
+    }
+  }, [router]);
+
+  const handleDeleteRange = useCallback(async (personaId: string, typeKey: AbsenceKey, start: string, end: string) => {
+    const snapshot = personas;
+    setPersonas((prev) =>
+      prev.map((p) => {
+        if (p.id !== personaId) return p;
+        const existing = getAbsenceDates(p, typeKey);
+        return { ...p, [typeKey]: existing.filter((d) => d < start || d > end) };
+      })
+    );
+    try {
+      await removeAusenciasAction(personaId, typeKey, start, end);
+      router.refresh();
+    } catch (err) {
+      setPersonas(snapshot);
+      alert("Error al eliminar. Comprueba la consola.");
+      console.error(err);
+    }
+  }, [router, personas]);
+
+  const handleArchive = useCallback(async (personaId: string) => {
+    const snapshot = personas;
+    setPersonas((prev) => prev.filter((p) => p.id !== personaId));
+    try {
+      await archivePersonaAction(personaId);
+      router.refresh();
+    } catch (err) {
+      setPersonas(snapshot);
+      alert("Error al archivar. Comprueba la consola.");
+      console.error(err);
+    }
+  }, [router, personas]);
+
+  const handleCreate = useCallback(async (data: { nombre: string; inicio_contrato: string; jornada_dias: number; dias_totales: number }) => {
+    await createPersonaAction(data);
     router.refresh();
   }, [router]);
 
-  const handleAdd = useCallback(async (nombre: string, typeKey: AbsenceKey, dates: string[]) => {
-    const updated = personas.map((p) => {
-      if (p.nombre !== nombre) return p;
-      const existing = getAbsenceDates(p, typeKey);
-      return { ...p, [typeKey]: [...new Set([...existing, ...dates])].sort() };
-    });
-    await saveAndUpdate(updated);
-  }, [personas, saveAndUpdate]);
-
-  const handleDeleteRange = useCallback(async (nombre: string, typeKey: AbsenceKey, start: string, end: string) => {
-    const updated = personas.map((p) => {
-      if (p.nombre !== nombre) return p;
-      const existing = getAbsenceDates(p, typeKey);
-      return { ...p, [typeKey]: existing.filter((d) => d < start || d > end) };
-    });
-    await saveAndUpdate(updated);
-  }, [personas, saveAndUpdate]);
-
   const personasFiltradas = filtro === "todas"
     ? personas
-    : personas.filter((p) => p.nombre === filtro);
+    : personas.filter((p) => p.id === filtro);
 
   return (
     <div className="space-y-8">
-      {/* Filtro */}
+      {showNuevoModal && (
+        <NuevoInstructorModal
+          onClose={() => setShowNuevoModal(false)}
+          onCreate={handleCreate}
+        />
+      )}
+
+      {/* Filtro + Nuevo instructor */}
       <div className="flex flex-wrap items-center gap-3">
         <span className="text-xs text-navy/55">Ver:</span>
         <div className="flex items-center border border-navy/[0.12] rounded-lg bg-white p-1 gap-0.5 text-sm">
-          {[{ key: "todas", label: "Todas" }, ...personas.map((p) => ({ key: p.nombre, label: p.nombre }))].map(
+          {[{ key: "todas", label: "Todas" }, ...personas.map((p) => ({ key: p.id, label: p.nombre }))].map(
             ({ key, label }) => (
               <button
                 key={key}
@@ -1104,6 +1268,15 @@ export default function VacacionesCalendario({
             )
           )}
         </div>
+        <button
+          onClick={() => setShowNuevoModal(true)}
+          className="flex items-center gap-1.5 text-xs text-primary border border-primary/30 hover:bg-primary/5 px-3 py-1.5 rounded-lg transition-colors"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Nuevo instructor
+        </button>
       </div>
 
       {/* Alertas de solapamiento */}
@@ -1112,14 +1285,15 @@ export default function VacacionesCalendario({
       {/* Tarjetas por persona */}
       <div className={`grid gap-5 ${personasFiltradas.length === 1 ? "max-w-sm" : "sm:grid-cols-2 lg:grid-cols-3"}`}>
         {personasFiltradas.map((p) => {
-          const i = personas.findIndex((orig) => orig.nombre === p.nombre);
+          const i = personas.findIndex((orig) => orig.id === p.id);
           return (
             <PersonCard
-              key={p.nombre}
+              key={p.id}
               persona={p}
               idx={i}
-              onAdd={(typeKey, dates) => handleAdd(p.nombre, typeKey, dates)}
-              onDeleteRange={(typeKey, start, end) => handleDeleteRange(p.nombre, typeKey, start, end)}
+              onAdd={(typeKey, dates) => handleAdd(p.id, typeKey, dates)}
+              onDeleteRange={(typeKey, start, end) => handleDeleteRange(p.id, typeKey, start, end)}
+              onArchive={() => handleArchive(p.id)}
             />
           );
         })}
