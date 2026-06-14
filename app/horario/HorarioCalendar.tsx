@@ -115,7 +115,7 @@ export default function HorarioCalendar({
   return (
     <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden">
       {/* Day headers */}
-      <div className="grid border-b border-navy/[0.08]" style={{ gridTemplateColumns: "52px repeat(7, 1fr)" }}>
+      <div className="grid border-b border-navy/[0.08] bg-navy/[0.03]" style={{ gridTemplateColumns: "52px repeat(7, 1fr)" }}>
         <div className="border-r border-navy/[0.07]" />
         {DAY_LABELS.map((label, i) => {
           const day = new Date(monday.getTime() + i * 86400000);
@@ -124,7 +124,7 @@ export default function HorarioCalendar({
           return (
             <div
               key={i}
-              className={`py-3 px-3 border-r border-navy/[0.07] last:border-r-0 ${isToday ? "bg-navy/[0.025]" : ""}`}
+              className={`py-3 px-3 border-r border-navy/[0.07] last:border-r-0 ${isToday ? "bg-primary/[0.06]" : ""}`}
             >
               <p className={`text-sm font-semibold ${isToday ? "text-primary" : "text-navy"}`}>
                 {label}{" "}
@@ -172,7 +172,7 @@ export default function HorarioCalendar({
                       className="absolute left-0 right-0 border-b border-navy/[0.06] flex items-start justify-end pr-2 pt-1.5"
                       style={{ top: `${hourMap.get(h)}px`, height: `${SLOT_PX}px` }}
                     >
-                      <span className="text-[10px] text-navy/30 font-mono">
+                      <span className="text-[11px] text-navy/30 font-mono">
                         {String(h).padStart(2, "0")}:00
                       </span>
                     </div>

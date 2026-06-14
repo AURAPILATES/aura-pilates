@@ -175,15 +175,16 @@ export default function HorarioShell({
         </div>
       )}
 
-      {/* Filters (list view only) */}
-      {view === "lista" && (
-        <div className="flex flex-wrap items-center gap-3 mb-6">
-          <Select
-            value={claseFilter}
-            onChange={setClaseFilter}
-            options={clases}
-            placeholder="Todas las clases"
-          />
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-3 mb-6">
+        <Select
+          value={claseFilter}
+          onChange={setClaseFilter}
+          options={clases}
+          placeholder="Todas las clases"
+        />
+        {view === "lista" && (
+          <>
           <Select
             value={instructoraFilter}
             onChange={setInstructoraFilter}
@@ -224,8 +225,17 @@ export default function HorarioShell({
               Limpiar
             </button>
           )}
-        </div>
-      )}
+          </>
+        )}
+        {view === "calendario" && claseFilter !== "all" && (
+          <button
+            onClick={() => setClaseFilter("all")}
+            className="text-xs text-navy/50 hover:text-navy underline"
+          >
+            Limpiar
+          </button>
+        )}
+      </div>
 
       {/* Color legend */}
       {events.length > 0 && (
@@ -249,10 +259,15 @@ export default function HorarioShell({
         <div className="text-center py-20">
           <p className="text-navy/35 text-sm">No hay clases esta semana.</p>
         </div>
-      ) : view === "lista" ? (
-        <HorarioList days={days} onSelect={setSelected} />
       ) : (
-        <HorarioCalendar events={filtered} weekMonday={weekMonday} onSelect={setSelected} />
+        <>
+          <div className={view === "lista" ? "" : "hidden"}>
+            <HorarioList days={days} onSelect={setSelected} />
+          </div>
+          <div className={view === "calendario" ? "" : "hidden"}>
+            <HorarioCalendar events={filtered} weekMonday={weekMonday} onSelect={setSelected} />
+          </div>
+        </>
       )}
 
       {/* Drawer */}
