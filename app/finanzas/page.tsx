@@ -173,6 +173,19 @@ export default async function Finanzas(props: {
   const expByCategory = operationalExpensesByCategory(txnsAll);
   const totalExpCat   = expByCategory.reduce((s, r) => s + r.total, 0);
 
+  // Rango real de transacciones para mostrarlo en el desglose
+  const txnDates = txnsAll.map((t) => t.date).sort();
+  const txnRangeLabel = (() => {
+    if (txnDates.length === 0) return null;
+    const fmt3 = (d: string) => {
+      const [y, m] = d.split("-");
+      return `${MES[parseInt(m, 10) - 1].toLowerCase()} ${y}`;
+    };
+    const from3 = fmt3(txnDates[0]);
+    const to3   = fmt3(txnDates[txnDates.length - 1]);
+    return from3 === to3 ? from3 : `${from3} – ${to3}`;
+  })();
+
   const transactionsByCategory: Record<string, { date: string; amount: number; concept: string; contact: string }[]> = {};
   for (const t of txnsAll) {
     if (!transactionsByCategory[t.category]) transactionsByCategory[t.category] = [];
@@ -245,6 +258,19 @@ export default async function Finanzas(props: {
       {/* ── Main layout ── */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-8 pb-16">
 
+        {/* ── Header: filtro + sync ── */}
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+          <div>
+            <h1 className="text-sm font-bold text-navy uppercase tracking-widest">Finanzas</h1>
+          </div>
+          <div className="flex items-center gap-3 flex-wrap">
+            <SyncStripeButton />
+            <Suspense fallback={null}>
+              <DateFilter />
+            </Suspense>
+          </div>
+        </div>
+
         {!hasSales && (
           <div className="bg-warning/10 border border-warning/30 rounded p-4 text-sm text-warning mb-6">
             Sin datos de ventas. Copia el CSV de Momence a{" "}
@@ -297,18 +323,7 @@ export default async function Finanzas(props: {
 
             {/* Q2 ¿En qué se va el dinero? */}
             <section id="q2">
-              <div className="flex flex-wrap items-start justify-between gap-3 mb-5">
-                <div className="flex items-center gap-3">
-                  <span className="text-xs font-bold text-primary/50 tabular-nums w-4 shrink-0">2</span>
-                  <h2 className="text-xs font-semibold text-navy/50 uppercase tracking-widest">¿En qué se va el dinero?</h2>
-                </div>
-                <div className="flex items-center gap-3 flex-wrap">
-                  <SyncStripeButton />
-                  <Suspense fallback={null}>
-                    <DateFilter />
-                  </Suspense>
-                </div>
-              </div>
+              <QuestionHeader num={2} question="¿En qué se va el dinero?" />
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                   <KpiCard label="Gastos operativos" value={fmt(totalOpEx)} sub="costes recurrentes" />
@@ -325,7 +340,7 @@ export default async function Finanzas(props: {
                 <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
                   <div className="flex items-start justify-between mb-5">
                     <p className="text-xs font-semibold text-navy/55 uppercase tracking-wider">Desglose gastos operativos</p>
-                    <p className="text-xs text-navy/45">dic 2025 – abr 2026</p>
+                    {txnRangeLabel && <p className="text-xs text-navy/45">{txnRangeLabel}</p>}
                   </div>
                   <GastosBreakdown
                     categories={expByCategory.map((e, i) => ({
@@ -458,33 +473,28 @@ export default async function Finanzas(props: {
             {/* Q4 ¿Qué debo a Hacienda? */}
             <section id="q4">
               <QuestionHeader num={4} question="¿Qué debo a Hacienda y cuándo?" />
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
-                  <p className="text-xs font-semibold text-navy/55 uppercase tracking-wider mb-4">IVA estimado · próximo trimestre</p>
-                  <p className="text-3xl font-semibold text-navy/50">—</p>
-                  <p className="text-xs text-navy/45 mt-2 leading-relaxed">
-                    Disponible cuando añadas facturas con IVA desglosado (repercutido – soportado).
-                  </p>
-                  <p className="text-xs font-medium text-warning mt-4">Plazo: 20 julio</p>
-                </div>
-                <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
-                  <p className="text-xs font-semibold text-navy/55 uppercase tracking-wider mb-4">Próximas obligaciones</p>
-                  <div className="space-y-3">
-                    {obligations.map(({ label, date, deadline }) => {
-                      const days = daysUntil(deadline);
-                      const badgeClass = days <= 30
-                        ? "bg-danger/10 text-danger"
-                        : days <= 60
-                        ? "bg-warning/10 text-warning"
-                        : "bg-navy/5 text-navy/55";
-                      return (
-                        <div key={label} className="flex items-center justify-between">
-                          <span className="text-sm text-navy">{label}</span>
+              <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
+                <p className="text-xs font-semibold text-navy/55 uppercase tracking-wider mb-4">Próximas obligaciones</p>
+                <div className="space-y-3">
+                  {obligations.map(({ label, date, deadline }) => {
+                    const days = daysUntil(deadline);
+                    const badgeClass = days <= 30
+                      ? "bg-danger/10 text-danger"
+                      : days <= 60
+                      ? "bg-warning/10 text-warning"
+                      : "bg-navy/5 text-navy/55";
+                    return (
+                      <div key={label} className="flex items-center justify-between">
+                        <span className="text-sm text-navy">{label}</span>
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs text-navy/45 tabular-nums">
+                            {daysUntil(deadline) <= 0 ? "vence hoy" : `${daysUntil(deadline)} días`}
+                          </span>
                           <span className={`text-xs font-medium px-2 py-0.5 rounded ${badgeClass}`}>{date}</span>
                         </div>
-                      );
-                    })}
-                  </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </section>

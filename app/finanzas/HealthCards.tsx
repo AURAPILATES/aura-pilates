@@ -61,7 +61,7 @@ export default function HealthCards(props: Props) {
             </p>
           </div>
           <div className="px-2 sm:px-4">
-            <p className="text-[9px] sm:text-[10px] text-navy/45 uppercase tracking-widest">Runway</p>
+            <p className="text-[9px] sm:text-[10px] text-navy/45 uppercase tracking-widest">Meses de caja</p>
             <p className={`text-xs sm:text-sm font-semibold tabular-nums ${rColor}`}>
               {runwayMonths !== null ? `${runwayMonths.toFixed(1)} m` : "—"}
             </p>
@@ -73,10 +73,10 @@ export default function HealthCards(props: Props) {
             </p>
           </div>
           <div className="px-2 sm:px-4">
-            <p className="text-[9px] sm:text-[10px] text-navy/45 uppercase tracking-widest truncate">Break-even</p>
+            <p className="text-[9px] sm:text-[10px] text-navy/45 uppercase tracking-widest truncate">Gastos cubiertos</p>
             {avgMonthlyRevenue > 0 ? (
               breakEvenGap <= 0
-                ? <p className="text-xs sm:text-sm font-semibold text-success">Rentable</p>
+                ? <p className="text-xs sm:text-sm font-semibold text-success">Sí</p>
                 : <p className="text-xs sm:text-sm font-semibold text-danger tabular-nums">−{fmt(breakEvenGap)}</p>
             ) : (
               <p className="text-xs sm:text-sm font-semibold text-navy/50">—</p>
@@ -103,9 +103,9 @@ export default function HealthCards(props: Props) {
               )}
             </div>
 
-            {/* Runway */}
+            {/* Meses de caja */}
             <div className="p-5 border-b border-navy/[0.07]">
-              <p className="text-[10px] font-semibold text-navy/50 uppercase tracking-wider mb-2">Runway</p>
+              <p className="text-[10px] font-semibold text-navy/50 uppercase tracking-wider mb-2">Meses de caja</p>
               <p className={`text-xl font-semibold tabular-nums leading-tight ${rColor}`}>
                 {runwayMonths !== null ? `${runwayMonths.toFixed(1)} m` : "—"}
               </p>
@@ -129,20 +129,20 @@ export default function HealthCards(props: Props) {
               </p>
             </div>
 
-            {/* Break-even */}
+            {/* Gastos cubiertos */}
             <div className="p-5">
-              <p className="text-[10px] font-semibold text-navy/50 uppercase tracking-wider mb-2">Break-even</p>
+              <p className="text-[10px] font-semibold text-navy/50 uppercase tracking-wider mb-2">¿Cubrimos gastos?</p>
               {avgMonthlyRevenue > 0 ? (
                 breakEvenGap <= 0 ? (
                   <>
-                    <p className="text-xl font-semibold text-success leading-tight">Rentable</p>
-                    <p className="text-[10px] text-success/60 mt-1">+{fmt(Math.abs(breakEvenGap))}/mes</p>
+                    <p className="text-xl font-semibold text-success leading-tight">Sí</p>
+                    <p className="text-[10px] text-success/60 mt-1">+{fmt(Math.abs(breakEvenGap))}/mes margen</p>
                   </>
                 ) : (
                   <>
-                    <p className="text-xl font-semibold text-danger tabular-nums leading-tight">−{fmt(breakEvenGap)}</p>
+                    <p className="text-xl font-semibold text-danger tabular-nums leading-tight">−{fmt(breakEvenGap)}/mes</p>
                     {clientesNecesarios && (
-                      <p className="text-[10px] text-warning font-medium mt-1">≈ {clientesNecesarios} más</p>
+                      <p className="text-[10px] text-warning font-medium mt-1">≈ {clientesNecesarios} clientes más</p>
                     )}
                   </>
                 )
@@ -172,7 +172,7 @@ export default function HealthCards(props: Props) {
           </div>
 
           <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
-            <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider mb-3">Runway</p>
+            <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider mb-3">Meses de caja</p>
             {runwayMonths !== null ? (
               <>
                 <p className={`text-2xl font-semibold tabular-nums ${rColor}`}>{runwayMonths.toFixed(1)} meses</p>
@@ -201,17 +201,17 @@ export default function HealthCards(props: Props) {
           </div>
 
           <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
-            <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider mb-3">Break-even</p>
+            <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider mb-3">¿Cubrimos gastos?</p>
             {avgMonthlyRevenue > 0 ? (
               breakEvenGap <= 0 ? (
                 <>
-                  <p className="text-2xl font-semibold text-success">Rentable</p>
+                  <p className="text-2xl font-semibold text-success">Sí</p>
                   <p className="text-[10px] text-success/60 mt-1.5">+{fmt(Math.abs(breakEvenGap))}/mes margen</p>
                 </>
               ) : (
                 <>
-                  <p className="text-2xl font-semibold text-danger tabular-nums">−{fmt(breakEvenGap)}</p>
-                  <p className="text-[10px] text-navy/45 mt-1.5">al mes para cubrir costes</p>
+                  <p className="text-2xl font-semibold text-danger tabular-nums">−{fmt(breakEvenGap)}/mes</p>
+                  <p className="text-[10px] text-navy/45 mt-1.5">para cubrir los costes fijos</p>
                   {clientesNecesarios && (
                     <p className="text-[10px] text-warning font-medium mt-0.5">≈ {clientesNecesarios} clientes más</p>
                   )}

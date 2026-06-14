@@ -4,6 +4,7 @@ import {
   filterPast,
   filterPrevious,
   filterUpcoming,
+  filterToday,
   fmt,
   occupancyRate,
   pct,
@@ -95,10 +96,13 @@ export default async function Dashboard() {
   liveEvents.forEach((e) => allById.set(e.id, e));
   const events = Array.from(allById.values());
 
-  const past     = filterPast(events, 30);
-  const prev     = filterPrevious(events, 30);
-  const upcoming = filterUpcoming(events, 7);
-  const pastWeek = filterPast(events, 7);
+  const past        = filterPast(events, 30);
+  const prev        = filterPrevious(events, 30);
+  const upcoming    = filterUpcoming(events, 7);
+  const pastWeek    = filterPast(events, 7);
+  const todayEvents = filterToday(events).sort(
+    (a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime(),
+  );
 
   const occ = occupancyRate(past);
 
@@ -248,11 +252,6 @@ export default async function Dashboard() {
           <span className="font-medium text-navy/45">Momence</span>
           {" · "}actualizado {momenceSync}
         </span>
-        <span className="text-[11px] text-navy/45 flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-success inline-block" />
-          <span className="font-medium text-navy/45">Stripe</span>
-          {" · "}actualizado {fmtSync(new Date())}
-        </span>
         {bankSync && (
           <span className="text-[11px] text-navy/45 flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-navy/20 inline-block" />
@@ -261,6 +260,43 @@ export default async function Dashboard() {
           </span>
         )}
       </div>
+
+      {/* ── Hoy ── */}
+      {todayEvents.length > 0 && (() => {
+        const todayLabel = new Date().toLocaleDateString("es-ES", {
+          timeZone: "Europe/Madrid", weekday: "long", day: "numeric", month: "long",
+        });
+        return (
+          <section>
+            <SectionHeader
+              title={todayLabel.charAt(0).toUpperCase() + todayLabel.slice(1)}
+              subtitle={`${todayEvents.length} ${todayEvents.length === 1 ? "clase programada" : "clases programadas"}`}
+              accent="primary"
+            />
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {todayEvents.map((e) => {
+                const fillRate = e.capacity > 0 ? e.ticketsSold / e.capacity : 0;
+                const fillColor = fillRate >= 0.7 ? "text-success" : fillRate >= 0.4 ? "text-warning" : "text-danger";
+                const time = new Date(e.dateTime).toLocaleTimeString("es-ES", {
+                  timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit",
+                });
+                return (
+                  <Card key={e.id} className="flex items-center gap-4 py-3.5">
+                    <span className="text-base font-semibold text-navy/35 tabular-nums w-12 shrink-0 text-center">{time}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-navy truncate">{e.title}</p>
+                      <p className="text-xs text-navy/50 mt-0.5">{e.teacher}</p>
+                    </div>
+                    <span className={`text-sm font-semibold tabular-nums shrink-0 ${fillColor}`}>
+                      {e.ticketsSold}/{e.capacity}
+                    </span>
+                  </Card>
+                );
+              })}
+            </div>
+          </section>
+        );
+      })()}
 
       {/* ── 1. RENDIMIENTO ── */}
       <section className="space-y-4">
@@ -283,29 +319,12 @@ export default async function Dashboard() {
             );
           })}
         </div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <Card>
-            <p className="text-xs text-navy/55 uppercase tracking-wider leading-tight mb-1">Ocupación media</p>
-            <p className={`text-2xl font-semibold ${occ >= 0.7 ? "text-success" : occ >= 0.4 ? "text-warning" : "text-danger"}`}>{pct(occ)}</p>
-            <p className="text-xs text-navy/55 mt-1">{past.length} clases impartidas</p>
-          </Card>
-          <Card>
-            <p className="text-xs text-navy/55 uppercase tracking-wider leading-tight mb-1">Alumnos (30 días)</p>
-            <p className="text-2xl font-semibold text-navy">{totalStudents(past)}</p>
-            <p className="text-xs text-navy/55 mt-1">Media {past.length > 0 ? (totalStudents(past) / past.length).toFixed(1) : 0} por clase</p>
-          </Card>
-          <Card>
-            <p className="text-xs text-navy/55 uppercase tracking-wider leading-tight mb-1">Próximos 7 días</p>
-            <p className="text-2xl font-semibold text-navy">{totalStudents(upcoming)} reservas</p>
-            <p className="text-xs text-navy/55 mt-1">{upcoming.length} clases programadas</p>
-          </Card>
-        </div>
       </section>
 
       {/* ── 2. ALERTAS ── */}
       <section>
         <SectionHeader title="Alertas" subtitle="Puntos que requieren atención" accent="warning" />
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
 
           {/* Clases con baja asistencia */}
           <Card>
@@ -329,25 +348,6 @@ export default async function Dashboard() {
                     </div>
                   );
                 })}
-              </div>
-            )}
-          </Card>
-
-          {/* Vacaciones pendientes */}
-          <Card>
-            <CardTitle>Vacaciones pendientes</CardTitle>
-            {pendingVac.length === 0 ? (
-              <EmptyState label="Todas las vacaciones están planificadas" />
-            ) : (
-              <div className="space-y-2.5">
-                {pendingVac.map((p) => (
-                  <div key={p.nombre} className="flex items-center justify-between">
-                    <p className="text-sm text-navy">{p.nombre}</p>
-                    <span className="text-xs font-semibold text-warning bg-warning/10 px-2 py-0.5 rounded-full">
-                      {p.pendientes} día{p.pendientes !== 1 ? "s" : ""}
-                    </span>
-                  </div>
-                ))}
               </div>
             )}
           </Card>
@@ -393,7 +393,24 @@ export default async function Dashboard() {
         </div>
       </section>
 
-      {/* ── 3. OPORTUNIDADES ── */}
+      {/* ── 3. PLANIFICACIÓN ── */}
+      {pendingVac.length > 0 && (
+        <section>
+          <SectionHeader title="Planificación" subtitle="Vacaciones por asignar este año" accent="primary" />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {pendingVac.map((p) => (
+              <Card key={p.nombre} className="flex items-center justify-between">
+                <p className="text-sm font-medium text-navy">{p.nombre}</p>
+                <span className="text-xs font-semibold text-primary bg-primary/10 px-2.5 py-1 rounded-full">
+                  {p.pendientes} día{p.pendientes !== 1 ? "s" : ""} pendiente{p.pendientes !== 1 ? "s" : ""}
+                </span>
+              </Card>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ── 5. OPORTUNIDADES ── */}
       <section>
         <SectionHeader title="Oportunidades" subtitle="Lo que mejor está funcionando" accent="success" />
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -471,7 +488,7 @@ export default async function Dashboard() {
         </div>
       </section>
 
-      {/* ── 4. OCUPACIÓN ── */}
+      {/* ── 6. OCUPACIÓN ── */}
       <section>
         <SectionHeader title="Análisis de ocupación" subtitle="Últimos 30 días" accent="primary" />
         <div className="space-y-4">
