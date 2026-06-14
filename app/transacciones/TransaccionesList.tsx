@@ -1,5 +1,5 @@
 "use client";
-import { useState, useTransition, useEffect, useRef } from "react";
+import { useState, useTransition, useEffect, useRef, useMemo } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import type { Transaction } from "@/lib/transactions";
 import type { Category } from "@/lib/categories";
@@ -9,11 +9,16 @@ import type { ContactType } from "@/lib/transactions";
 import { RANGE_OPTIONS, type RangeKey } from "@/lib/dateRange";
 import ImportButton from "./ImportButton";
 
-const MONTH_NAMES: Record<string, string> = {
-  "01": "Ene", "02": "Feb", "03": "Mar", "04": "Abr",
-  "05": "May", "06": "Jun", "07": "Jul", "08": "Ago",
-  "09": "Sep", "10": "Oct", "11": "Nov", "12": "Dic",
-};
+const MONTHS_ES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+
+function fmtDayLabel(dateStr: string): string {
+  const today = new Date().toISOString().split("T")[0];
+  const yest  = new Date(Date.now() - 86_400_000).toISOString().split("T")[0];
+  if (dateStr === today) return "Hoy";
+  if (dateStr === yest)  return "Ayer";
+  const [, m, d] = dateStr.split("-");
+  return `${parseInt(d)} de ${MONTHS_ES[parseInt(m) - 1]}`;
+}
 
 function fmtDate(d: string) {
   const [y, m, day] = d.split("-");
@@ -149,6 +154,39 @@ export default function TransaccionesList({
 
   const recurringSet = new Set(recurringContacts);
 
+  // ── Month strip ──────────────────────────────────────────────────────────────
+  const monthStrip = useMemo(() => {
+    const months = [];
+    const now = new Date();
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      months.push({ key, label: MONTHS_ES[d.getMonth()], year: d.getFullYear() });
+    }
+    return months;
+  }, []);
+
+  const activeMonth = useMemo(() => {
+    if (currentRange === "custom" && customFrom) return customFrom.slice(0, 7);
+    if (currentRange === "month") {
+      const now = new Date();
+      return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    }
+    return null;
+  }, [currentRange, customFrom]);
+
+  const activeMonthRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    activeMonthRef.current?.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
+  }, [activeMonth]);
+
+  function goToMonth(key: string) {
+    const [y, m] = key.split("-");
+    const lastDay = new Date(parseInt(y), parseInt(m), 0).getDate();
+    router.push(`${pathname}?range=custom&from=${key}-01&to=${key}-${String(lastDay).padStart(2, "0")}`);
+  }
+
+
   useEffect(() => {
     const cat = searchParams.get("categoria");
     if (cat) setCatFilter(cat);
@@ -178,6 +216,16 @@ export default function TransaccionesList({
     if (typeFilter !== "all" && t.contact_type !== typeFilter) return false;
     return true;
   });
+
+  // ── Day grouping for mobile ──────────────────────────────────────────────────
+  const byDay = useMemo(() => {
+    const map = new Map<string, Transaction[]>();
+    for (const t of filtered) {
+      if (!map.has(t.date)) map.set(t.date, []);
+      map.get(t.date)!.push(t);
+    }
+    return [...map.entries()].sort((a, b) => b[0].localeCompare(a[0]));
+  }, [filtered]);
 
   const totalIn  = filtered.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0);
   const totalOut = filtered.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
@@ -529,42 +577,85 @@ export default function TransaccionesList({
         </div>
       )}
 
-      {/* ── Mobile cards ───────────────────────────────────────────────────── */}
-      <div className="sm:hidden bg-white border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden divide-y divide-navy/[0.04]">
+      {/* ── Mobile: month strip (sticky) ────────────────────────────────────── */}
+      <div className="sm:hidden sticky top-14 z-20 -mx-4 px-4 pt-2 pb-3 bg-app-bg border-b border-navy/[0.06]">
+        <div className="flex gap-1 overflow-x-auto scrollbar-none">
+          <button
+            onClick={() => router.push(pathname)}
+            className={`shrink-0 px-3 py-1.5 rounded-full text-sm transition-colors ${
+              !activeMonth ? "bg-navy text-white font-medium" : "text-navy/50"
+            }`}
+          >
+            Todo
+          </button>
+          {monthStrip.map(({ key, label, year }) => {
+            const isActive = key === activeMonth;
+            const showYear = year !== new Date().getFullYear();
+            return (
+              <button
+                key={key}
+                ref={isActive ? activeMonthRef : undefined}
+                onClick={() => goToMonth(key)}
+                className={`shrink-0 px-3 py-1.5 rounded-full text-sm transition-colors capitalize ${
+                  isActive ? "bg-navy text-white font-medium" : "text-navy/50 hover:text-navy"
+                }`}
+              >
+                {label}{showYear && <span className="text-[10px] ml-0.5 opacity-60">{year}</span>}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── Mobile: day-grouped cards ───────────────────────────────────────── */}
+      <div className="sm:hidden space-y-4 mt-3">
         {filtered.length === 0 && (
-          <p className="px-4 py-10 text-center text-sm text-navy/45">Sin resultados</p>
+          <p className="py-10 text-center text-sm text-navy/45">Sin resultados</p>
         )}
-        {filtered.map((t) => {
-          const isRecurring = !!t.contact && recurringSet.has(t.contact.toLowerCase().trim());
-          const isSelected  = selected.has(t.id);
-          const primary     = t.contact || t.concept || "—";
-          const secondary   = t.contact && t.concept && t.concept !== t.contact ? t.concept : null;
+        {byDay.map(([date, dayTxns]) => {
+          const dayNet = dayTxns.reduce((s, t) => s + t.amount, 0);
           return (
-            <div key={t.id} className={`px-4 py-3 transition-colors ${isSelected ? "bg-primary/[0.035]" : ""}`}>
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  {mobileSelectMode && (
-                    <input type="checkbox" checked={isSelected} onChange={() => toggleOne(t.id)}
-                      className="shrink-0 rounded border-navy/20 accent-primary cursor-pointer" />
-                  )}
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-sm font-medium text-navy truncate">{primary}</span>
-                      {isRecurring && <span className="shrink-0 text-[10px] text-primary/50 font-medium">↺</span>}
-                    </div>
-                    {secondary && <p className="text-[11px] text-navy/45 truncate mt-0.5">{secondary}</p>}
-                  </div>
-                </div>
-                <div className="shrink-0 text-right">
-                  <span className={`text-sm font-semibold tabular-nums ${t.amount > 0 ? "text-success" : "text-navy/75"}`}>
-                    {t.amount > 0 ? "+" : "−"}{fmtAmt(t.amount)}
-                  </span>
-                  <p className="text-[11px] text-navy/50 mt-0.5">{fmtDate(t.date)}</p>
-                </div>
+            <div key={date}>
+              {/* Day header */}
+              <div className="flex items-baseline justify-between mb-2 px-1">
+                <span className="text-sm font-semibold text-navy">{fmtDayLabel(date)}</span>
+                <span className={`text-xs tabular-nums ${dayNet >= 0 ? "text-success" : "text-navy/45"}`}>
+                  {dayNet >= 0 ? "+" : "−"}{fmtAmt(Math.abs(dayNet))}
+                </span>
               </div>
-              <div className="flex items-center gap-2 mt-2 flex-wrap">
-                <CategoryPill category={t.category} categories={categories} onChange={(cat) => handleCategoryChange(t.id, cat)} />
-                <ContactTypePill contactType={t.contact_type} onChange={(ct) => handleContactTypeChange(t.id, ct)} />
+              {/* Day card */}
+              <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden divide-y divide-navy/[0.04]">
+                {dayTxns.map((t) => {
+                  const isRecurring = !!t.contact && recurringSet.has(t.contact.toLowerCase().trim());
+                  const isSelected  = selected.has(t.id);
+                  const primary     = t.contact || t.concept || "—";
+                  const secondary   = t.contact && t.concept && t.concept !== t.contact ? t.concept : null;
+                  return (
+                    <div key={t.id} className={`px-4 py-3 transition-colors ${isSelected ? "bg-primary/[0.035]" : ""}`}>
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          {mobileSelectMode && (
+                            <input type="checkbox" checked={isSelected} onChange={() => toggleOne(t.id)}
+                              className="shrink-0 rounded border-navy/20 accent-primary cursor-pointer" />
+                          )}
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-sm font-medium text-navy truncate">{primary}</span>
+                              {isRecurring && <span className="shrink-0 text-[10px] text-primary/50">↺</span>}
+                            </div>
+                            {secondary && <p className="text-[11px] text-navy/40 truncate mt-0.5">{secondary}</p>}
+                          </div>
+                        </div>
+                        <span className={`shrink-0 text-sm font-semibold tabular-nums ${t.amount > 0 ? "text-success" : "text-navy/75"}`}>
+                          {t.amount > 0 ? "+" : "−"}{fmtAmt(t.amount)}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 mt-2 flex-wrap">
+                        <CategoryPill category={t.category} categories={categories} onChange={(cat) => handleCategoryChange(t.id, cat)} />
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           );
