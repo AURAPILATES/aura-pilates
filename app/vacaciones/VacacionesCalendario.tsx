@@ -3,9 +3,9 @@
 import { useState, useEffect } from "react";
 
 const PERSON_COLORS = [
-  { dot: "bg-primary", stroke: "#4021c8", border: "border-primary/20", text: "text-primary", badge: "bg-primary/10 text-primary" },
-  { dot: "bg-income",  stroke: "#298a83", border: "border-income/20",  text: "text-income",  badge: "bg-income/10 text-income" },
-  { dot: "bg-warning", stroke: "#ff8a00", border: "border-warning/20", text: "text-warning", badge: "bg-warning/10 text-warning" },
+  { dot: "bg-primary", cellBg: "bg-primary/[0.12]", stroke: "#4021c8", border: "border-primary/20", text: "text-primary", badge: "bg-primary/10 text-primary" },
+  { dot: "bg-income",  cellBg: "bg-income/[0.12]",  stroke: "#298a83", border: "border-income/20",  text: "text-income",  badge: "bg-income/10 text-income" },
+  { dot: "bg-warning", cellBg: "bg-warning/[0.12]", stroke: "#ff8a00", border: "border-warning/20", text: "text-warning", badge: "bg-warning/10 text-warning" },
 ];
 
 const MONTH_SHORT = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
@@ -545,6 +545,8 @@ function AnnualCalendar({
                         ? "bg-danger/10"
                         : isToday
                         ? "bg-primary/10"
+                        : personasVac.length === 1
+                        ? (PERSON_COLORS[personasVac[0]]?.cellBg ?? "")
                         : ""
                     }`}
                   >
