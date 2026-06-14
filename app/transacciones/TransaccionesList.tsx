@@ -201,6 +201,29 @@ export default function TransaccionesList({
 
   const rangeLabel = RANGE_OPTIONS.find(o => o.key === currentRange)?.label ?? "Todo";
 
+  function exportCSV() {
+    const cols = ["fecha", "concepto", "contacto", "categoría", "importe", "saldo", "notas"];
+    const rows = filtered.map((t) => [
+      t.date,
+      t.concept ?? "",
+      t.contact ?? "",
+      t.category,
+      t.amount.toFixed(2),
+      t.balance?.toFixed(2) ?? "",
+      t.notes ?? "",
+    ]);
+    const csv = [cols, ...rows]
+      .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `transacciones-aura-${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div>
       {/* ── Filter bar ─────────────────────────────────────────────────────── */}
@@ -237,11 +260,21 @@ export default function TransaccionesList({
 
       {/* ── Toolbar ────────────────────────────────────────────────────────── */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-4">
-        {/* Count */}
+        {/* Count + export */}
         <span className="text-sm text-navy/55">
           {filtered.length} movimientos
           {isPending && <span className="ml-2 text-xs text-primary/60">Guardando…</span>}
         </span>
+        <button
+          onClick={exportCSV}
+          title="Exportar vista actual a CSV"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-navy/55 border border-navy/[0.12] rounded-lg bg-white hover:bg-navy/[0.02] hover:text-navy transition-colors"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          Exportar CSV
+        </button>
 
         {/* Uncategorized pill */}
         {uncategorizedCount > 0 && (
