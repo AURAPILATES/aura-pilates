@@ -5,6 +5,7 @@ import { loadStripeCustomers } from "@/lib/stripeCustomers";
 import { estimatedMRR, possibleChurnIds, activeCustomersLast30Days, newCustomersLast30Days } from "@/lib/stripeRecurrence";
 import ClientesTable from "./ClientesTable";
 import ClientesKPIs from "./ClientesKPIs";
+import ClientesEvolucionChart from "./ClientesEvolucionChart";
 
 function pad2(n: number) { return String(n).padStart(2, "0"); }
 
@@ -51,6 +52,8 @@ export default async function ClientesPage() {
         curMonthLabel={curMonth.slice(5)}
       />
 
+
+      <ClientesEvolucionChart payments={payments} />
 
       {/* Alerta posibles bajas */}
       {churnCount > 0 && (
