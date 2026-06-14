@@ -154,17 +154,14 @@ export default function TransaccionesList({
 
   const recurringSet = new Set(recurringContacts);
 
-  // ── Month strip ──────────────────────────────────────────────────────────────
+  // ── Month strip — solo meses con datos ──────────────────────────────────────
   const monthStrip = useMemo(() => {
-    const months = [];
-    const now = new Date();
-    for (let i = 11; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-      months.push({ key, label: MONTHS_ES[d.getMonth()], year: d.getFullYear() });
-    }
-    return months;
-  }, []);
+    const keys = [...new Set(transactions.map((t) => t.date.slice(0, 7)))].sort();
+    return keys.map((key) => {
+      const m = parseInt(key.slice(5)) - 1;
+      return { key, label: MONTHS_ES[m], year: parseInt(key.slice(0, 4)) };
+    });
+  }, [transactions]);
 
   const activeMonth = useMemo(() => {
     if (currentRange === "custom" && customFrom) return customFrom.slice(0, 7);
@@ -578,7 +575,7 @@ export default function TransaccionesList({
       )}
 
       {/* ── Mobile: month strip (sticky) ────────────────────────────────────── */}
-      <div className="sm:hidden sticky top-14 z-20 -mx-4 px-4 pt-2 pb-3 bg-app-bg border-b border-navy/[0.06]">
+      <div className="sm:hidden sticky top-14 z-20 -mx-2 px-2 pt-2 pb-3 bg-app-bg border-b border-navy/[0.06]">
         <div className="flex gap-1 overflow-x-auto scrollbar-none">
           <button
             onClick={() => router.push(pathname)}
@@ -608,7 +605,7 @@ export default function TransaccionesList({
       </div>
 
       {/* ── Mobile: day-grouped cards ───────────────────────────────────────── */}
-      <div className="sm:hidden space-y-4 mt-3">
+      <div className="sm:hidden space-y-6 mt-3">
         {filtered.length === 0 && (
           <p className="py-10 text-center text-sm text-navy/45">Sin resultados</p>
         )}
@@ -616,22 +613,22 @@ export default function TransaccionesList({
           const dayNet = dayTxns.reduce((s, t) => s + t.amount, 0);
           return (
             <div key={date}>
-              {/* Day header */}
-              <div className="flex items-baseline justify-between mb-2 px-1">
+              {/* Day header — total siempre gris */}
+              <div className="flex items-baseline justify-between mb-2">
                 <span className="text-sm font-semibold text-navy">{fmtDayLabel(date)}</span>
-                <span className={`text-xs tabular-nums ${dayNet >= 0 ? "text-success" : "text-navy/45"}`}>
+                <span className="text-xs tabular-nums text-navy/40">
                   {dayNet >= 0 ? "+" : "−"}{fmtAmt(Math.abs(dayNet))}
                 </span>
               </div>
               {/* Day card */}
-              <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden divide-y divide-navy/[0.04]">
+              <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden divide-y divide-navy/[0.05]">
                 {dayTxns.map((t) => {
                   const isRecurring = !!t.contact && recurringSet.has(t.contact.toLowerCase().trim());
                   const isSelected  = selected.has(t.id);
                   const primary     = t.contact || t.concept || "—";
                   const secondary   = t.contact && t.concept && t.concept !== t.contact ? t.concept : null;
                   return (
-                    <div key={t.id} className={`px-4 py-3 transition-colors ${isSelected ? "bg-primary/[0.035]" : ""}`}>
+                    <div key={t.id} className={`px-3 py-4 transition-colors ${isSelected ? "bg-primary/[0.035]" : ""}`}>
                       <div className="flex items-center justify-between gap-3">
                         <div className="flex items-center gap-2.5 min-w-0">
                           {mobileSelectMode && (
@@ -650,7 +647,7 @@ export default function TransaccionesList({
                           {t.amount > 0 ? "+" : "−"}{fmtAmt(t.amount)}
                         </span>
                       </div>
-                      <div className="flex items-center gap-2 mt-2 flex-wrap">
+                      <div className="flex items-center gap-2 mt-2.5 flex-wrap">
                         <CategoryPill category={t.category} categories={categories} onChange={(cat) => handleCategoryChange(t.id, cat)} />
                       </div>
                     </div>

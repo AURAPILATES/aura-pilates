@@ -111,7 +111,7 @@ export default async function TransaccionesPage(props: {
     .find((t) => t.balance !== null);
 
   return (
-    <main className="px-4 sm:px-6 pt-6 sm:pt-8 pb-16 max-w-7xl mx-auto">
+    <main className="px-2 sm:px-6 pt-6 sm:pt-8 pb-16 max-w-7xl mx-auto">
 
       {/* ── Mobile header ── */}
       <div className="sm:hidden mb-5">
