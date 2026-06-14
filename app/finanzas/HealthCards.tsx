@@ -47,44 +47,6 @@ export default function HealthCards(props: Props) {
 
   return (
     <>
-      {/* ── Compact sticky strip (appears when cards scroll off) ── */}
-      <div
-        className={`fixed top-0 sm:top-[45px] left-0 sm:left-[220px] right-0 z-10 bg-white/95 backdrop-blur-sm border-b border-navy/10
-          transition-all duration-200 ease-out
-          ${showStrip ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-1 pointer-events-none"}`}
-      >
-        <div className="max-w-6xl mx-auto px-3 sm:px-6 py-2.5 grid grid-cols-4 divide-x divide-navy/5">
-          <div className="px-2 sm:px-4">
-            <p className="text-[9px] sm:text-[10px] text-navy/45 uppercase tracking-widest truncate">Saldo</p>
-            <p className="text-xs sm:text-sm font-semibold text-navy tabular-nums">
-              {currentBalance !== null ? fmt(currentBalance) : "—"}
-            </p>
-          </div>
-          <div className="px-2 sm:px-4">
-            <p className="text-[9px] sm:text-[10px] text-navy/45 uppercase tracking-widest">Meses de caja</p>
-            <p className={`text-xs sm:text-sm font-semibold tabular-nums ${rColor}`}>
-              {runwayMonths !== null ? `${runwayMonths.toFixed(1)} m` : "—"}
-            </p>
-          </div>
-          <div className="px-2 sm:px-4">
-            <p className="text-[9px] sm:text-[10px] text-navy/45 uppercase tracking-widest truncate">Resultado</p>
-            <p className={`text-xs sm:text-sm font-semibold tabular-nums ${resultadoMes >= 0 ? "text-success" : "text-danger"}`}>
-              {resultadoMes >= 0 ? "+" : "−"}{fmt(Math.abs(resultadoMes))}
-            </p>
-          </div>
-          <div className="px-2 sm:px-4">
-            <p className="text-[9px] sm:text-[10px] text-navy/45 uppercase tracking-widest truncate">Gastos cubiertos</p>
-            {avgMonthlyRevenue > 0 ? (
-              breakEvenGap <= 0
-                ? <p className="text-xs sm:text-sm font-semibold text-success">Sí</p>
-                : <p className="text-xs sm:text-sm font-semibold text-danger tabular-nums">−{fmt(breakEvenGap)}</p>
-            ) : (
-              <p className="text-xs sm:text-sm font-semibold text-navy/50">—</p>
-            )}
-          </div>
-        </div>
-      </div>
-
       {/* ── Cards (normal flow) ── */}
       <div ref={sentinelRef} className="mb-8">
 
