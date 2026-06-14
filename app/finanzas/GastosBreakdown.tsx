@@ -163,15 +163,6 @@ export default function GastosBreakdown({
                 <p className="text-xs text-navy/55 mt-0.5">
                   −{fmtAmount(selectedSeg?.total ?? 0)} · {selectedSeg?.count ?? 0} transacciones
                 </p>
-                <Link
-                  href={`/transacciones?categoria=${encodeURIComponent(selected)}`}
-                  className="inline-flex items-center gap-1.5 mt-2 px-3 py-1.5 rounded-lg border border-navy/20 bg-white text-xs font-medium text-navy hover:border-navy/40 transition-colors"
-                >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-                  </svg>
-                  Ver transacciones
-                </Link>
               </div>
               <button
                 onClick={() => setSelected(null)}
@@ -199,6 +190,18 @@ export default function GastosBreakdown({
                   </div>
                 ))
               )}
+            </div>
+
+            <div className="px-4 sm:px-6 py-4 border-t border-navy/10">
+              <Link
+                href={`/transacciones?categoria=${encodeURIComponent(selected)}`}
+                className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-navy/20 bg-white text-sm font-medium text-navy hover:border-navy/40 transition-colors"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                </svg>
+                Ver transacciones
+              </Link>
             </div>
           </div>
         </>
