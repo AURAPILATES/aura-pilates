@@ -33,6 +33,8 @@ import FinanzasBarChart from "./FinanzasBarChart";
 import EvolucionChart from "./EvolucionChart";
 import PresupuestosBlock from "./PresupuestosBlock";
 import { loadBudgets, computeSpent } from "@/lib/budgets";
+import BreakevenChart from "./BreakevenChart";
+import { computeBreakeven } from "@/lib/breakeven";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -186,6 +188,9 @@ export default async function Finanzas(props: {
 
   // ── Budgets / Financiación ────────────────────────────────────────────────
   const budgetSpent = computeSpent(budgets, txnsAll);
+
+  // ── Breakeven desde el inicio ────────────────────────────────────────────
+  const breakevenPoints = computeBreakeven(paymentsAll, momenceSalesAll, txnsAll);
 
   // Rango real de transacciones para mostrarlo en el desglose
   const txnDates = txnsAll.map((t) => t.date).sort();
@@ -539,6 +544,12 @@ export default async function Finanzas(props: {
             <section id="q5">
               <QuestionHeader num={5} question="¿Cómo va la financiación?" />
               <PresupuestosBlock initialBudgets={budgets} spent={budgetSpent} />
+            </section>
+
+            {/* Q6 ¿Cuándo llegamos al breakeven? */}
+            <section id="q6">
+              <QuestionHeader num={6} question="¿Cuándo llegamos al breakeven?" />
+              <BreakevenChart points={breakevenPoints} />
             </section>
 
         </div>
