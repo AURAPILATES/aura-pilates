@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import { Suspense } from "react";
 import { BookOpen } from "react-feather";
 import { fmt, pct } from "@/lib/analytics";
-import { loadSales, salesByProduct, benvingudaConversion } from "@/lib/sales";
+import { loadSales, benvingudaConversion } from "@/lib/sales";
 import {
   loadStripePaymentsCached,
   stripeByMethod,
@@ -38,7 +38,8 @@ import { computeBreakeven } from "@/lib/breakeven";
 import ConversionChart from "./ConversionChart";
 import MrrCard from "./MrrCard";
 import { subscriptionTiersFromMemberships, computeMrrByTier } from "@/lib/mrr";
-import { getMemberships, getCustomers } from "@/lib/momence";
+import { getMemberships, getProducts, getCustomers } from "@/lib/momence";
+import { catalogFromMomence, revenueByProductFromStripe } from "@/lib/productRevenue";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -128,9 +129,10 @@ export default async function Finanzas(props: {
   const prev2MonthDate = new Date(now.getFullYear(), now.getMonth() - 2, 1);
   const prev2Month = `${prev2MonthDate.getFullYear()}-${pad2(prev2MonthDate.getMonth() + 1)}`;
 
-  const [paymentsAll, membershipsAll, customersAll] = await Promise.all([
+  const [paymentsAll, membershipsAll, productsAll, customersAll] = await Promise.all([
     loadStripePaymentsCached(),
     getMemberships(),
+    getProducts(),
     getCustomers(),
   ]);
   const payments = (from || to)
@@ -162,13 +164,13 @@ export default async function Finanzas(props: {
 
   const recurrente    = payments.filter((p) => p.customerId && recurringIds.has(p.customerId)).reduce((s, p) => s + p.amount, 0);
   const recurrentePct = totalRev > 0 ? recurrente / totalRev : 0;
-  const byMethod      = stripeByMethod(payments);
   const puntual       = totalRev - recurrente;
 
   // Convert to Sale[] for Momence-compatible charts
   const salesAll  = toSales(paymentsAll);
 
-  // Momence CSV: fuente de verdad para desglose por producto
+  // Momence CSV: solo se usa para lo histórico (breakeven, conversión del pack) y para
+  // Urban Sports Club, que paga por transferencia bancaria y no tiene fuente en vivo.
   const momenceSalesAll = loadSales();
   const momenceSales    = (from || to)
     ? momenceSalesAll.filter((s) => {
@@ -177,7 +179,6 @@ export default async function Finanzas(props: {
         return true;
       })
     : momenceSalesAll;
-  const byProduct = salesByProduct(momenceSales).sort((a, b) => b.revenue - a.revenue);
 
   // ── Urban Sports Club: ingresos desde Momence CSV (USC paga por transferencia, no Stripe) ──
   const uscSales   = momenceSales.filter((s) => s.method === "urban-sports-club");
@@ -185,6 +186,23 @@ export default async function Finanzas(props: {
   const uscCount   = uscSales.length;
   const uscCur  = momenceSalesAll.filter((s) => s.method === "urban-sports-club" && s.paymentDate.startsWith(curMonth)).reduce((sum, s) => sum + s.amount, 0);
   const uscPrev = momenceSalesAll.filter((s) => s.method === "urban-sports-club" && s.paymentDate.startsWith(prevMonth)).reduce((sum, s) => sum + s.amount, 0);
+
+  // Última fecha con datos reales de Urban (el CSV no se actualiza solo) — se usa para
+  // acotar "Por producto" / "Por canal de pago" y que Stripe y Urban cubran el mismo periodo.
+  const uscDates = momenceSalesAll.filter((s) => s.method === "urban-sports-club").map((s) => s.paymentDate);
+  const uscLastDate = uscDates.length > 0 ? uscDates.sort().reverse()[0] : null;
+  const uscLastDateLabel = uscLastDate ? uscLastDate.split("-").reverse().join("/") : null;
+
+  const paymentsBounded = uscLastDate ? payments.filter((p) => p.date <= uscLastDate) : payments;
+  const productCatalog = catalogFromMomence(membershipsAll, productsAll);
+  const liveProductRevenue = revenueByProductFromStripe(paymentsBounded, productCatalog);
+  const byProduct = [
+    ...liveProductRevenue,
+    ...(uscRevenue > 0 ? [{ item: "Urban", category: "Urban Sports Club", revenue: uscRevenue, count: uscCount }] : []),
+  ].sort((a, b) => b.revenue - a.revenue);
+  const byProductTotal = byProduct.reduce((s, p) => s + p.revenue, 0);
+
+  const byMethodBounded = stripeByMethod(paymentsBounded);
 
   // ── Transactions (siempre datos completos — el banco solo exporta hasta fecha fija) ──
   const [txnsAll, dbCategories, budgets] = await Promise.all([loadTransactions(), loadCategories(), loadBudgets()]);
@@ -275,7 +293,7 @@ export default async function Finanzas(props: {
   const CIRC = 2 * Math.PI * R;
   let offP = 0;
   const productSegments = byProduct.map((p, i) => {
-    const share = totalRev > 0 ? p.revenue / totalRev : 0;
+    const share = byProductTotal > 0 ? p.revenue / byProductTotal : 0;
     const dash = share * CIRC;
     const offset = -offP;
     offP += dash;
@@ -453,7 +471,7 @@ export default async function Finanzas(props: {
                   Stripe · pagos en tiempo real.
                 </p>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <Block title="Por producto" legend="Momence · exportación CSV de ventas por producto.">
+                  <Block title="Por producto" legend={`Stripe + catálogo Momence en vivo${uscLastDateLabel ? ` · datos hasta ${uscLastDateLabel} (última fecha con datos de Urban Sports Club)` : ""}.`}>
                     {productSegments.length > 0 ? (
                       <div className="flex gap-5 items-start">
                         <div className="shrink-0">
@@ -484,11 +502,12 @@ export default async function Finanzas(props: {
                       </div>
                     ) : <p className="text-sm text-navy/45">Sin datos de productos.</p>}
                   </Block>
-                  <Block title="Por canal de pago" legend="Stripe (cobros directos) + Urban Sports Club (Momence CSV · 11 €/clase).">
+                  <Block title="Por canal de pago" legend={`Stripe en vivo + Urban Sports Club (Momence CSV)${uscLastDateLabel ? ` · datos hasta ${uscLastDateLabel}` : ""}.`}>
                     {(() => {
-                      const combinedTotal = totalRev + uscRevenue;
+                      const cardRevenueBounded = stripeTotalRevenue(paymentsBounded);
+                      const combinedTotal = cardRevenueBounded + uscRevenue;
                       const allRows = [
-                        ...byMethod.map((r) => ({ key: r.method, label: r.label, revenue: r.revenue, count: r.count, bar: "bg-primary" })),
+                        ...byMethodBounded.map((r) => ({ key: r.method, label: r.label, revenue: r.revenue, count: r.count, bar: "bg-primary" })),
                         ...(uscRevenue > 0 ? [{ key: "usc", label: "Urban Sports Club", revenue: uscRevenue, count: uscCount, bar: "bg-warning" }] : []),
                       ];
                       return (
