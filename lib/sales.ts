@@ -353,3 +353,44 @@ export function benvingudaConversion(sales: Sale[]): ConversionSummary {
     cohorts,
   };
 }
+
+// ── ¿De dónde vienen los suscriptores? (primera compra) ─────────────────────
+
+export type FirstPurchaseRow = {
+  item: string;
+  count: number;
+  rate: number; // 0..1, sobre el total de suscriptores
+};
+
+export type FirstPurchaseSummary = {
+  totalSubscribers: number;
+  rows: FirstPurchaseRow[];
+};
+
+// De todos los clientes que alguna vez se suscribieron, ¿cuál fue su primera compra
+// (cualquier producto, ordenado por fecha)? Responde directamente "¿vienen del pack
+// 2x1, de una clase suelta, o se suscriben directamente sin probar nada antes?".
+export function subscriberFirstPurchase(sales: Sale[]): FirstPurchaseSummary {
+  const byEmail = new Map<string, Sale[]>();
+  for (const s of sales) {
+    if (!s.email) continue;
+    const arr = byEmail.get(s.email) ?? [];
+    arr.push(s);
+    byEmail.set(s.email, arr);
+  }
+
+  const counts = new Map<string, number>();
+  let totalSubscribers = 0;
+  for (const purchases of byEmail.values()) {
+    if (!purchases.some((p) => p.category === "Suscripción")) continue;
+    totalSubscribers++;
+    const firstItem = [...purchases].sort((a, b) => a.paymentDate.localeCompare(b.paymentDate))[0].item;
+    counts.set(firstItem, (counts.get(firstItem) ?? 0) + 1);
+  }
+
+  const rows = Array.from(counts.entries())
+    .map(([item, count]) => ({ item, count, rate: totalSubscribers > 0 ? count / totalSubscribers : 0 }))
+    .sort((a, b) => b.count - a.count);
+
+  return { totalSubscribers, rows };
+}

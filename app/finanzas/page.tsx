@@ -3,7 +3,8 @@ export const dynamic = "force-dynamic";
 import { Suspense } from "react";
 import { BookOpen } from "react-feather";
 import { fmt, pct } from "@/lib/analytics";
-import { loadSales, benvingudaConversion } from "@/lib/sales";
+import { loadSales, benvingudaConversion, subscriberFirstPurchase } from "@/lib/sales";
+import FirstPurchaseCard from "./FirstPurchaseCard";
 import {
   loadStripePaymentsCached,
   stripeByMethod,
@@ -219,6 +220,9 @@ export default async function Finanzas(props: {
 
   // ── Conversión Pack Benvinguda 2x1 → Suscripción ──────────────────────────
   const conversionSummary = benvingudaConversion(momenceSalesAll);
+
+  // ── ¿De dónde vienen los suscriptores? (primera compra) ───────────────────
+  const firstPurchaseSummary = subscriberFirstPurchase(momenceSalesAll);
 
   // ── MRR/ARR por suscripción (suscriptores activos reales en Momence) ──────
   const subscriptionTiers = subscriptionTiersFromMemberships(membershipsAll);
@@ -612,6 +616,12 @@ export default async function Finanzas(props: {
             <section id="q9">
               <QuestionHeader num={9} question="¿Cómo evolucionan los ingresos y las altas/bajas?" />
               <SubscriptionEvolutionChart monthly={monthlyRevenue} cohorts={subscriptionCohorts} />
+            </section>
+
+            {/* Q10 ¿Cómo llegan los suscriptores? */}
+            <section id="q10">
+              <QuestionHeader num={10} question="¿Cómo llegan los suscriptores?" />
+              <FirstPurchaseCard summary={firstPurchaseSummary} />
             </section>
 
         </div>
