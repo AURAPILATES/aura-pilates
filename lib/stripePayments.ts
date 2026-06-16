@@ -165,5 +165,6 @@ export function toSales(payments: StripePayment[]): Sale[] {
     method: STRIPE_METHOD_LABEL[p.method] ?? p.method,
     amount: p.amount,
     tax: 0,
+    email: p.customerEmail,
   }));
 }

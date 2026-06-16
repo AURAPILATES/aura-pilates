@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import { Suspense } from "react";
 import { BookOpen } from "react-feather";
 import { fmt, pct } from "@/lib/analytics";
-import { loadSales, salesByProduct } from "@/lib/sales";
+import { loadSales, salesByProduct, benvingudaConversion } from "@/lib/sales";
 import {
   loadStripePaymentsCached,
   stripeByMethod,
@@ -35,6 +35,7 @@ import PresupuestosBlock from "./PresupuestosBlock";
 import { loadBudgets, computeSpent } from "@/lib/budgets";
 import BreakevenChart from "./BreakevenChart";
 import { computeBreakeven } from "@/lib/breakeven";
+import ConversionChart from "./ConversionChart";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -191,6 +192,9 @@ export default async function Finanzas(props: {
 
   // ── Breakeven desde el inicio ────────────────────────────────────────────
   const breakevenPoints = computeBreakeven(paymentsAll, momenceSalesAll, txnsAll);
+
+  // ── Conversión Pack Benvinguda 2x1 → Suscripción ──────────────────────────
+  const conversionSummary = benvingudaConversion(momenceSalesAll);
 
   // Rango real de transacciones para mostrarlo en el desglose
   const txnDates = txnsAll.map((t) => t.date).sort();
@@ -550,6 +554,12 @@ export default async function Finanzas(props: {
             <section id="q6">
               <QuestionHeader num={6} question="¿Cuándo llegamos al breakeven?" />
               <BreakevenChart points={breakevenPoints} />
+            </section>
+
+            {/* Q7 ¿Convierte el pack de bienvenida? */}
+            <section id="q7">
+              <QuestionHeader num={7} question="¿Convierte el Pack Benvinguda 2x1?" />
+              <ConversionChart summary={conversionSummary} />
             </section>
 
         </div>
