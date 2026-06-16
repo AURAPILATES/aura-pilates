@@ -1,6 +1,7 @@
 import { createServerClient } from "@/lib/supabase";
 
 export type ContactType = "empleado" | "socio" | "proveedor" | "administracion" | "banco" | null;
+export type PaymentMethod = "banco" | "efectivo";
 
 export type Transaction = {
   id: string;
@@ -14,6 +15,7 @@ export type Transaction = {
   contact_type: ContactType;
   notes: string | null;
   source: string;
+  payment_method: PaymentMethod;
   created_at: string;
 };
 

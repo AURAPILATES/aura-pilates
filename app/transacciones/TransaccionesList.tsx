@@ -6,6 +6,7 @@ import type { Category } from "@/lib/categories";
 import { updateTransactionCategory, updateTransactionNotes } from "./actions";
 import { RANGE_OPTIONS } from "@/lib/dateRange";
 import ImportButton from "./ImportButton";
+import AddCashModal from "./AddCashModal";
 
 const MONTHS_ES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
 
@@ -193,6 +194,7 @@ export default function TransaccionesList({
   const [isPending,    startTransition] = useTransition();
   const [sortKey, setSortKey] = useState<"date" | "amount" | "concept" | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [showAddCash, setShowAddCash] = useState(false);
 
   function toggleSort(key: "date" | "amount" | "concept") {
     if (sortKey === key) {
@@ -333,6 +335,15 @@ export default function TransaccionesList({
       <div className="sm:hidden flex gap-2 mb-3">
         <ImportButton className="flex-1" />
         <button
+          onClick={() => setShowAddCash(true)}
+          className="flex items-center justify-center px-3 py-2.5 bg-white border border-navy/[0.12] rounded-lg text-navy/55"
+          title="Añadir movimiento en efectivo"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+        </button>
+        <button
           onClick={() => setShowMobileFilters((v) => !v)}
           className="flex items-center gap-1.5 px-4 py-2.5 bg-white border border-navy/[0.12] rounded-lg text-sm font-semibold text-navy"
         >
@@ -432,6 +443,15 @@ export default function TransaccionesList({
           </select>
         </SelectWrapper>
         <div className="flex-1" />
+        <button
+          onClick={() => setShowAddCash(true)}
+          className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-navy/55 border border-navy/[0.12] rounded-xl bg-white hover:bg-navy/[0.02] hover:text-navy transition-colors whitespace-nowrap"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Efectivo
+        </button>
         <ImportButton />
         <button
           onClick={exportCSV}
@@ -615,6 +635,14 @@ export default function TransaccionesList({
                       </div>
                       <div className="flex items-center gap-2 mt-2.5 flex-wrap">
                         <CategoryPill category={t.category} categories={categories} onChange={(cat) => handleCategoryChange(t.id, cat)} />
+                        {t.payment_method === "efectivo" && (
+                          <span className="text-[10px] font-semibold uppercase tracking-wide text-warning bg-warning/10 px-1.5 py-0.5 rounded">
+                            Efectivo
+                          </span>
+                        )}
+                        {t.balance != null && (
+                          <span className="text-[10px] text-navy/40 tabular-nums">Saldo: {fmtAmt(t.balance)} €</span>
+                        )}
                       </div>
                     </div>
                   );
@@ -632,9 +660,10 @@ export default function TransaccionesList({
             <col style={{ width: "32px" }} />
             <col />
             <col style={{ width: "172px" }} />
-            <col style={{ width: "184px" }} />
+            <col style={{ width: "150px" }} />
             <col style={{ width: "110px" }} />
-            <col style={{ width: "128px" }} />
+            <col style={{ width: "118px" }} />
+            <col style={{ width: "108px" }} />
           </colgroup>
           <thead>
             <tr className="border-b border-navy/[0.06] bg-navy/[0.012] group/head">
@@ -647,13 +676,14 @@ export default function TransaccionesList({
               <th className="text-left px-4 py-3 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Categoría</th>
               <th className="text-left px-4 py-3 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Notas</th>
               <SortableHeader label="Fecha" sortKey="date" align="right" className="px-4" currentKey={sortKey} dir={sortDir} onClick={toggleSort} />
-              <SortableHeader label="Importe" sortKey="amount" align="right" className="pr-6" currentKey={sortKey} dir={sortDir} onClick={toggleSort} />
+              <SortableHeader label="Importe" sortKey="amount" align="right" className="px-4" currentKey={sortKey} dir={sortDir} onClick={toggleSort} />
+              <th className="text-right pr-6 py-3 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Saldo</th>
             </tr>
           </thead>
           <tbody className={isPending ? "opacity-50 pointer-events-none" : ""}>
             {sortedFiltered.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-12 text-center text-sm text-navy/40">Sin resultados</td>
+                <td colSpan={7} className="px-4 py-12 text-center text-sm text-navy/40">Sin resultados</td>
               </tr>
             )}
             {sortedFiltered.map((t) => {
@@ -724,9 +754,22 @@ export default function TransaccionesList({
                     <span className="text-xs text-navy/45 tabular-nums whitespace-nowrap">{fmtDate(t.date)}</span>
                   </td>
 
+                  <td className="px-4 align-middle text-right" style={{ height: "60px" }}>
+                    <div className="flex items-center justify-end gap-1.5">
+                      {t.payment_method === "efectivo" && (
+                        <span className="shrink-0 text-[9px] font-semibold uppercase tracking-wide text-warning bg-warning/10 px-1.5 py-0.5 rounded">
+                          Efectivo
+                        </span>
+                      )}
+                      <span className={`text-sm font-semibold tabular-nums ${t.amount > 0 ? "text-success" : "text-navy/75"}`}>
+                        {t.amount > 0 ? "+" : "−"}{fmtAmt(t.amount)}
+                      </span>
+                    </div>
+                  </td>
+
                   <td className="pr-6 pl-2 align-middle text-right" style={{ height: "60px" }}>
-                    <span className={`text-sm font-semibold tabular-nums ${t.amount > 0 ? "text-success" : "text-navy/75"}`}>
-                      {t.amount > 0 ? "+" : "−"}{fmtAmt(t.amount)}
+                    <span className="text-xs text-navy/45 tabular-nums whitespace-nowrap">
+                      {t.balance != null ? `${fmtAmt(t.balance)} €` : "—"}
                     </span>
                   </td>
                 </tr>
@@ -735,6 +778,10 @@ export default function TransaccionesList({
           </tbody>
         </table>
       </div>
+
+      {showAddCash && (
+        <AddCashModal categories={categories} onClose={() => setShowAddCash(false)} />
+      )}
     </div>
   );
 }

@@ -174,6 +174,7 @@ function fmtAmt(n: number) {
 
 export default function ImportModal({ onClose }: { onClose: () => void }) {
   const [state, setState] = useState<State>({ kind: "idle" });
+  const [isCash, setIsCash] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   function handleFile(file: File) {
@@ -202,7 +203,7 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
   async function doImport(rows: ImportRow[]) {
     setState({ kind: "importing" });
     try {
-      const res = await importTransactions(rows);
+      const res = await importTransactions(rows, isCash ? "efectivo" : "banco");
       setState({ kind: "done", ...res });
     } catch (err) {
       setState({ kind: "error", message: err instanceof Error ? err.message : "Error al importar." });
@@ -284,6 +285,15 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
               <p className="text-xs text-navy/45 mb-4">
                 Las categorías se asignarán automáticamente según las palabras clave configuradas. Puedes cambiarlas después.
               </p>
+              <label className="flex items-center gap-2 mb-4 text-sm text-navy/70 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isCash}
+                  onChange={(e) => setIsCash(e.target.checked)}
+                  className="rounded border-navy/[0.2] accent-primary cursor-pointer"
+                />
+                Estos movimientos son en efectivo (no del banco)
+              </label>
               <div className="flex gap-2">
                 <button
                   onClick={() => setState({ kind: "idle" })}

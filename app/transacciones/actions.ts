@@ -1,6 +1,7 @@
 "use server";
 import { createServerClient } from "@/lib/supabase";
 import { revalidatePath } from "next/cache";
+import type { PaymentMethod } from "@/lib/transactions";
 
 export type ImportRow = {
   date: string;
@@ -12,6 +13,7 @@ export type ImportRow = {
 
 export async function importTransactions(
   rows: ImportRow[],
+  paymentMethod: PaymentMethod = "banco",
 ): Promise<{ imported: number; skipped: number }> {
   if (rows.length === 0) return { imported: 0, skipped: 0 };
   const supabase = createServerClient();
@@ -34,19 +36,19 @@ export async function importTransactions(
   const dates = rows.map((r) => r.date).sort();
   const { data: existing } = await supabase
     .from("transactions")
-    .select("date, amount, concept")
+    .select("date, amount, concept, payment_method")
     .gte("date", dates[0])
     .lte("date", dates[dates.length - 1]);
 
   const seen = new Set(
     (existing ?? []).map(
-      (t: { date: string; amount: number; concept: string | null }) =>
-        `${t.date}|${t.amount}|${(t.concept ?? "").toLowerCase().slice(0, 50)}`,
+      (t: { date: string; amount: number; concept: string | null; payment_method: string }) =>
+        `${t.date}|${t.amount}|${(t.concept ?? "").toLowerCase().slice(0, 50)}|${t.payment_method}`,
     ),
   );
 
   const toInsert = rows
-    .filter((r) => !seen.has(`${r.date}|${r.amount}|${(r.concept ?? "").toLowerCase().slice(0, 50)}`))
+    .filter((r) => !seen.has(`${r.date}|${r.amount}|${(r.concept ?? "").toLowerCase().slice(0, 50)}|${paymentMethod}`))
     .map((r) => ({
       date: r.date,
       amount: r.amount,
@@ -55,6 +57,7 @@ export async function importTransactions(
       contact: r.contact,
       category: autoCategory(r),
       source: "csv-import",
+      payment_method: paymentMethod,
     }));
 
   const skipped = rows.length - toInsert.length;
@@ -67,6 +70,28 @@ export async function importTransactions(
   revalidatePath("/transacciones");
   revalidatePath("/finanzas");
   return { imported: toInsert.length, skipped };
+}
+
+export async function addCashTransaction(input: {
+  date: string;
+  amount: number;
+  concept: string;
+  category: string;
+}): Promise<void> {
+  const supabase = createServerClient();
+  const { error } = await supabase.from("transactions").insert({
+    date: input.date,
+    amount: input.amount,
+    balance: null,
+    concept: input.concept.trim() || null,
+    contact: null,
+    category: input.category,
+    source: "manual",
+    payment_method: "efectivo",
+  });
+  if (error) throw new Error(error.message);
+  revalidatePath("/transacciones");
+  revalidatePath("/finanzas");
 }
 
 export async function updateTransactionCategory(id: string, category: string) {
