@@ -25,7 +25,7 @@ import {
   operationalExpensesByCategory,
 } from "@/lib/transactions";
 import { loadCategories } from "@/lib/categories";
-import { getDateRange } from "@/lib/dateRange";
+import { getDateRange, getComparisonRangeKey } from "@/lib/dateRange";
 import DateFilter from "@/app/components/DateFilter";
 import HealthCards from "./HealthCards";
 import GastosBreakdown from "./GastosBreakdown";
@@ -113,7 +113,9 @@ export default async function Finanzas(props: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const sp = await props.searchParams;
-  const { from, to } = getDateRange(sp.range);
+  const { from, to, label: rangeLabel } = getDateRange(sp.range);
+  const compRangeKey = getComparisonRangeKey(sp.range);
+  const compRange    = compRangeKey ? getDateRange(compRangeKey) : null;
 
   // ── Stripe payments ──
   const now = new Date();
@@ -178,6 +180,27 @@ export default async function Finanzas(props: {
   const uscCount   = uscSales.length;
   const uscCur  = momenceSalesAll.filter((s) => s.method === "urban-sports-club" && s.paymentDate.startsWith(curMonth)).reduce((sum, s) => sum + s.amount, 0);
   const uscPrev = momenceSalesAll.filter((s) => s.method === "urban-sports-club" && s.paymentDate.startsWith(prevMonth)).reduce((sum, s) => sum + s.amount, 0);
+
+  // ── Comparativa por periodo ──
+  const usePeriodFilter = !!compRangeKey;
+  const paymentsComp = compRange?.from || compRange?.to
+    ? paymentsAll.filter((p) => {
+        if (compRange.from && p.date < compRange.from) return false;
+        if (compRange.to   && p.date > compRange.to)   return false;
+        return true;
+      })
+    : [];
+  const revComp    = usePeriodFilter ? stripeTotalRevenue(paymentsComp) : prev;
+  const uscRevComp = usePeriodFilter
+    ? momenceSalesAll.filter((s) =>
+        s.method === "urban-sports-club" &&
+        (!compRange?.from || s.paymentDate >= compRange.from) &&
+        (!compRange?.to   || s.paymentDate <= compRange.to)
+      ).reduce((sum, s) => sum + s.amount, 0)
+    : uscPrev;
+  const q1Revenue = usePeriodFilter ? (totalRev + uscRevenue) : (cur + uscCur);
+  const q1RevComp = usePeriodFilter ? (revComp + uscRevComp) : (prev + uscPrev);
+  const q1Label   = usePeriodFilter ? rangeLabel : monthLabel(curMonth);
 
   // Última fecha con datos reales de Urban (el CSV no se actualiza solo) — se usa para
   // acotar "Por producto" / "Por canal de pago" y que Stripe y Urban cubran el mismo periodo.
@@ -360,14 +383,16 @@ export default async function Finanzas(props: {
 
             {/* Q1 ¿Cómo fue este mes? */}
             <section id="q1">
-              <QuestionHeader num={1} question={`¿Cómo fue ${monthLabel(curMonth)}?`} />
+              <QuestionHeader num={1} question={`¿Cómo fue ${q1Label.toLowerCase()}?`} />
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                   <KpiCard
-                    label={`Ingresos · ${monthLabel(curMonth)}`}
-                    value={fmt(cur + uscCur)}
-                    sub={uscCur > 0 ? `Stripe ${fmt(cur)} + USC ${fmt(uscCur)}` : `${curCount} transacciones`}
-                    trend={trendPct(cur + uscCur, prev + uscPrev)}
+                    label={`Ingresos · ${q1Label}`}
+                    value={fmt(q1Revenue)}
+                    sub={usePeriodFilter && compRange
+                      ? `vs ${fmt(q1RevComp)} ${compRange.label.toLowerCase()}`
+                      : (uscCur > 0 ? `Stripe ${fmt(cur)} + USC ${fmt(uscCur)}` : `${curCount} transacciones`)}
+                    trend={trendPct(q1Revenue, q1RevComp)}
                   />
                   <KpiCard
                     label={`Gastos · ${monthLabel(curMonth)}`}

@@ -6,6 +6,7 @@ import { estimatedMRR, possibleChurnIds, activeCustomersLast30Days, newCustomers
 import ClientesTable from "./ClientesTable";
 import ClientesKPIs from "./ClientesKPIs";
 import ClientesEvolucionChart from "./ClientesEvolucionChart";
+import ClientesRetentionCohort from "./ClientesRetentionCohort";
 import ChurnAlert from "./ChurnAlert";
 
 function pad2(n: number) { return String(n).padStart(2, "0"); }
@@ -56,6 +57,8 @@ export default async function ClientesPage() {
         />
 
         <ClientesEvolucionChart payments={payments} />
+
+        <ClientesRetentionCohort payments={payments} />
 
         {churnCount > 0 && (
           <ChurnAlert

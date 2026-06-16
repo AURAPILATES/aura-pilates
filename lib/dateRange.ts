@@ -109,3 +109,14 @@ export function getDateRange(range: string | null | undefined): DateRange {
       return { from: null, to: null, label: "Desde el inicio" };
   }
 }
+
+export function getComparisonRangeKey(range: string | null | undefined): string | null {
+  const map: Record<string, string> = {
+    "today":        "yesterday",
+    "this-week":    "prev-week",
+    "month":        "prev-month",
+    "this-quarter": "prev-quarter",
+    "year":         "prev-year",
+  };
+  return range ? (map[range] ?? null) : null;
+}
