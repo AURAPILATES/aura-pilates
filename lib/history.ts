@@ -1,17 +1,10 @@
-import { promises as fs } from "fs";
-import path from "path";
+import { createServerClient } from "./supabase";
 import { MomenceEvent } from "./momence";
 
-const DATA_DIR = path.join(process.cwd(), "data", "history");
-
-async function ensureDataDir() {
-  await fs.mkdir(DATA_DIR, { recursive: true });
-}
-
-// Saves past events from an API response to daily JSON files.
+// Saves past events from an API response to Supabase, one row per day.
 // Skips days already saved — call this on every page load.
 export async function saveHistoricalEvents(events: MomenceEvent[]) {
-  await ensureDataDir();
+  const db = createServerClient();
   const now = new Date();
 
   const past = events.filter(
@@ -27,38 +20,39 @@ export async function saveHistoricalEvents(events: MomenceEvent[]) {
     byDay.get(key)!.push(e);
   }
 
-  for (const [date, dayEvents] of byDay.entries()) {
-    const file = path.join(DATA_DIR, `${date}.json`);
-    try {
-      await fs.access(file);
-      // already saved, skip
-    } catch {
-      await fs.writeFile(file, JSON.stringify(dayEvents, null, 2), "utf-8");
-    }
+  const { data: existing } = await db
+    .from("momence_history")
+    .select("date")
+    .in("date", Array.from(byDay.keys()));
+  const savedDates = new Set((existing ?? []).map((r) => r.date));
+
+  const toInsert = Array.from(byDay.entries())
+    .filter(([date]) => !savedDates.has(date))
+    .map(([date, dayEvents]) => ({ date, events: dayEvents }));
+
+  if (toInsert.length > 0) {
+    await db.from("momence_history").insert(toInsert);
   }
 }
 
-// Loads all saved historical events from local JSON files.
+// Loads all saved historical events from Supabase.
 export async function loadHistoricalEvents(): Promise<MomenceEvent[]> {
-  await ensureDataDir();
-  const files = await fs.readdir(DATA_DIR);
-  const events: MomenceEvent[] = [];
-
-  for (const file of files.filter((f) => f.endsWith(".json"))) {
-    const content = await fs.readFile(path.join(DATA_DIR, file), "utf-8");
-    const parsed: MomenceEvent[] = JSON.parse(content);
-    events.push(...parsed);
+  const db = createServerClient();
+  const { data, error } = await db.from("momence_history").select("events");
+  if (error) {
+    console.error("loadHistoricalEvents error:", error.message);
+    return [];
   }
-
-  return events;
+  return (data ?? []).flatMap((row) => row.events as MomenceEvent[]);
 }
 
 // Returns the list of saved dates (YYYY-MM-DD) for display.
 export async function savedDates(): Promise<string[]> {
-  await ensureDataDir();
-  const files = await fs.readdir(DATA_DIR);
-  return files
-    .filter((f) => f.endsWith(".json"))
-    .map((f) => f.replace(".json", ""))
-    .sort();
+  const db = createServerClient();
+  const { data, error } = await db.from("momence_history").select("date").order("date", { ascending: true });
+  if (error) {
+    console.error("savedDates error:", error.message);
+    return [];
+  }
+  return (data ?? []).map((r) => r.date);
 }
