@@ -34,7 +34,7 @@ export default function Drawer({
           <div className="min-w-0 flex-1">
             {header ?? (
               <>
-                {title && <h2 className="text-base font-bold text-navy font-display truncate">{title}</h2>}
+                {title && <h2 className="text-base font-bold text-navy truncate">{title}</h2>}
                 {subtitle && <p className="text-xs text-navy/45 mt-0.5">{subtitle}</p>}
               </>
             )}

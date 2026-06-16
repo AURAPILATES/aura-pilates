@@ -327,7 +327,7 @@ export default function ClientesTable({ customers, payments }: { customers: Cust
                   <span className="text-base font-bold text-primary">{initials(selected.name, selected.email)}</span>
                 </div>
                 <div className="min-w-0">
-                  <h2 className="text-base font-bold text-navy font-display leading-tight truncate">
+                  <h2 className="text-base font-bold text-navy leading-tight truncate">
                     {selected.name ?? "Sin nombre"}
                   </h2>
                   {selected.email && (
