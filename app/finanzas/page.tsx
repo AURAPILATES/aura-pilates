@@ -11,7 +11,6 @@ import {
   revenueForMonth as stripeRevenueForMonth,
   toSales,
 } from "@/lib/stripePayments";
-import SyncStripeButton from "@/app/components/SyncStripeButton";
 import {
   estimatedMRR,
   activeCustomersInMonth,
@@ -319,7 +318,6 @@ export default async function Finanzas(props: {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-[45px] flex items-center justify-between gap-3">
           <h1 className="text-sm font-bold text-navy uppercase tracking-widest">Finanzas</h1>
           <div className="flex items-center gap-3">
-            <SyncStripeButton />
             <Suspense fallback={null}>
               <DateFilter />
             </Suspense>

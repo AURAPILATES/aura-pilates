@@ -6,7 +6,6 @@ import { estimatedMRR, possibleChurnIds, activeCustomersLast30Days, newCustomers
 import ClientesTable from "./ClientesTable";
 import ClientesKPIs from "./ClientesKPIs";
 import ClientesEvolucionChart from "./ClientesEvolucionChart";
-import SyncBadge from "@/app/components/SyncBadge";
 import ChurnAlert from "./ChurnAlert";
 
 function pad2(n: number) { return String(n).padStart(2, "0"); }
@@ -29,7 +28,6 @@ export default async function ClientesPage() {
   const newIds     = newCustomersLast30Days(payments);
   const churnCount = churnIds.size;
 
-  const syncedAt = new Date().toISOString();
   const customersWithChurn = customers.map((c) => ({
     ...c,
     possibleChurn: churnIds.has(c.id),
@@ -45,7 +43,6 @@ export default async function ClientesPage() {
           <h1 className="text-sm font-bold text-navy uppercase tracking-widest">Clientes</h1>
           <div className="flex items-center gap-3">
             <span className="text-xs text-navy/45">{total} clientes</span>
-            <SyncBadge source="Stripe" syncedAt={syncedAt} />
           </div>
         </div>
       </div>
