@@ -9,6 +9,7 @@ import {
   trend,
   pct,
 } from "@/lib/analytics";
+import QuestionHeader from "@/app/components/QuestionHeader";
 
 export type ReportingData = {
   past30: MomenceEvent[];
@@ -46,18 +47,6 @@ function OccBar({ value }: { value: number }) {
   return (
     <div className="flex-1 h-1.5 bg-navy/5 rounded-full overflow-hidden">
       <div className={`h-full rounded-full ${color}`} style={{ width: `${Math.round(value * 100)}%` }} />
-    </div>
-  );
-}
-
-function SectionTitle({ title, subtitle }: { title: string; subtitle?: string }) {
-  return (
-    <div className="flex items-center gap-3 mb-4">
-      <div className="w-1 h-5 rounded-full bg-primary" />
-      <div>
-        <h2 className="text-xs font-semibold text-navy/60 uppercase tracking-widest">{title}</h2>
-        {subtitle && <p className="text-[11px] text-navy/45 mt-0.5">{subtitle}</p>}
-      </div>
     </div>
   );
 }
@@ -118,8 +107,8 @@ export default function HorarioReporting({ data }: { data: ReportingData }) {
     <div className="space-y-10">
 
       {/* ── KPIs ── */}
-      <section className="space-y-4">
-        <SectionTitle title="Rendimiento" subtitle="Últimos 30 días vs. período anterior" />
+      <section id="q1" className="space-y-4">
+        <QuestionHeader num={1} question="¿Cómo fue el rendimiento de los últimos 30 días?" />
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {[
             {
@@ -161,8 +150,8 @@ export default function HorarioReporting({ data }: { data: ReportingData }) {
       </section>
 
       {/* ── Alertas + Oportunidades ── */}
-      <section>
-        <SectionTitle title="Clases a rellenar" subtitle="Próximos 7 días con menos del 40% de ocupación" />
+      <section id="q2">
+        <QuestionHeader num={2} question="¿Qué clases hay que rellenar esta semana?" />
         {lowOcc.length === 0 ? (
           <Card>
             <div className="flex items-center gap-2 text-success text-sm">
@@ -190,8 +179,8 @@ export default function HorarioReporting({ data }: { data: ReportingData }) {
       </section>
 
       {/* ── Oportunidades ── */}
-      <section>
-        <SectionTitle title="Oportunidades" subtitle="Lo que mejor está funcionando" />
+      <section id="q3">
+        <QuestionHeader num={3} question="¿Qué está funcionando mejor?" />
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <Card>
             <CardTitle>Clases más demandadas</CardTitle>
@@ -260,8 +249,8 @@ export default function HorarioReporting({ data }: { data: ReportingData }) {
       </section>
 
       {/* ── Análisis de ocupación ── */}
-      <section>
-        <SectionTitle title="Análisis de ocupación" subtitle="Últimos 30 días" />
+      <section id="q4">
+        <QuestionHeader num={4} question="¿Cómo se reparte la ocupación?" />
         <div className="space-y-4">
 
           {/* Mapa de calor */}
