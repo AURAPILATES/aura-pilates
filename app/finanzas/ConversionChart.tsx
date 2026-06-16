@@ -36,7 +36,11 @@ function CohortModal({ cohort, onClose }: { cohort: ConversionCohort; onClose: (
                 </div>
                 {b.converted ? (
                   <span className="shrink-0 text-xs font-semibold text-success bg-success/10 px-2 py-1 rounded-full">
-                    Convertido {b.convertedDate ? fmtDate(b.convertedDate) : ""}
+                    Convertido {b.convertedDate ? fmtDate(b.convertedDate) : ""} ({b.daysToConvert}d)
+                  </span>
+                ) : b.boughtOtherPack ? (
+                  <span className="shrink-0 text-xs font-semibold text-warning bg-warning/10 px-2 py-1 rounded-full">
+                    Otro pack {b.otherPackDate ? fmtDate(b.otherPackDate) : ""}
                   </span>
                 ) : (
                   <span className="shrink-0 text-xs text-navy/40 bg-navy/[0.04] px-2 py-1 rounded-full">Sin convertir</span>
@@ -59,7 +63,7 @@ const ML = 42;
 export default function ConversionChart({ summary }: { summary: ConversionSummary }) {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   const [selectedCohort, setSelectedCohort] = useState<ConversionCohort | null>(null);
-  const { cohorts, totalBuyers, totalConverted, rate } = summary;
+  const { cohorts, totalBuyers, totalConverted, rate, avgDaysToConvert, medianDaysToConvert } = summary;
 
   if (cohorts.length === 0) {
     return (
@@ -102,9 +106,17 @@ export default function ConversionChart({ summary }: { summary: ConversionSummar
         </p>
       </div>
 
-      <div className="flex items-baseline gap-2 mb-4">
-        <span className="text-3xl font-semibold text-navy">{fmtPct(rate)}</span>
-        <span className="text-sm text-navy/45">{totalConverted} de {totalBuyers} compradores se suscribieron después</span>
+      <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1 mb-4">
+        <div className="flex items-baseline gap-2">
+          <span className="text-3xl font-semibold text-navy">{fmtPct(rate)}</span>
+          <span className="text-sm text-navy/45">{totalConverted} de {totalBuyers} compradores se suscribieron después</span>
+        </div>
+        {avgDaysToConvert !== null && (
+          <div className="flex items-baseline gap-2">
+            <span className="text-xl font-semibold text-navy">{Math.round(avgDaysToConvert)} días</span>
+            <span className="text-sm text-navy/45">de media hasta suscribirse (mediana: {medianDaysToConvert}d)</span>
+          </div>
+        )}
       </div>
 
       <svg

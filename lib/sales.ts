@@ -240,8 +240,11 @@ export type ConversionBuyer = {
   email: string;
   name: string | null;
   packDate: string;
-  converted: boolean;
+  converted: boolean;            // compró una Suscripción después
   convertedDate: string | null;
+  daysToConvert: number | null;   // convertedDate - packDate, en días
+  boughtOtherPack: boolean;       // compró otro pack de clases (no suscripción) después, sin suscribirse
+  otherPackDate: string | null;
 };
 
 export type ConversionCohort = {
@@ -250,6 +253,7 @@ export type ConversionCohort = {
   buyers: number;
   converted: number;
   rate: number;     // 0..1
+  avgDaysToConvert: number | null;
   buyersDetail: ConversionBuyer[];
 };
 
@@ -257,8 +261,14 @@ export type ConversionSummary = {
   totalBuyers: number;
   totalConverted: number;
   rate: number;
+  avgDaysToConvert: number | null;   // media global, solo de quienes convirtieron a suscripción
+  medianDaysToConvert: number | null;
   cohorts: ConversionCohort[];
 };
+
+function daysBetween(from: string, to: string): number {
+  return Math.round((new Date(to + "T00:00:00").getTime() - new Date(from + "T00:00:00").getTime()) / 86_400_000);
+}
 
 export function benvingudaConversion(sales: Sale[]): ConversionSummary {
   const packSales = sales.filter((s) => s.item === "Benvinguda 2x1" && s.email);
@@ -273,22 +283,41 @@ export function benvingudaConversion(sales: Sale[]): ConversionSummary {
     }
   }
 
-  const otherSalesByEmail = new Map<string, string[]>();
+  // Separamos suscripciones (lo único que cuenta como "conversión") de otros packs de
+  // clases (Pack 4/8, Clase suelta) — comprar otro pack sin suscribirse NO es conversión,
+  // pero lo marcamos aparte para no confundirlo con quien no vuelve a comprar nada.
+  const subDatesByEmail = new Map<string, string[]>();
+  const otherPackDatesByEmail = new Map<string, string[]>();
   for (const s of sales) {
     if (s.item === "Benvinguda 2x1" || !s.email) continue;
-    if (s.category !== "Suscripción") continue;
-    const arr = otherSalesByEmail.get(s.email) ?? [];
-    arr.push(s.paymentDate);
-    otherSalesByEmail.set(s.email, arr);
+    if (s.category === "Suscripción") {
+      const arr = subDatesByEmail.get(s.email) ?? [];
+      arr.push(s.paymentDate);
+      subDatesByEmail.set(s.email, arr);
+    } else if (s.category === "Paquete") {
+      const arr = otherPackDatesByEmail.get(s.email) ?? [];
+      arr.push(s.paymentDate);
+      otherPackDatesByEmail.set(s.email, arr);
+    }
   }
 
   const byMonth = new Map<string, ConversionBuyer[]>();
   for (const [email, packDate] of firstPackDate) {
     const month = packDate.slice(0, 7);
     const list = byMonth.get(month) ?? [];
-    const subDates = (otherSalesByEmail.get(email) ?? []).filter((d) => d > packDate).sort();
+    const subDates = (subDatesByEmail.get(email) ?? []).filter((d) => d > packDate).sort();
+    const otherPackDates = (otherPackDatesByEmail.get(email) ?? []).filter((d) => d > packDate).sort();
     const convertedDate = subDates[0] ?? null;
-    list.push({ email, name: nameByEmail.get(email) ?? null, packDate, converted: convertedDate !== null, convertedDate });
+    list.push({
+      email,
+      name: nameByEmail.get(email) ?? null,
+      packDate,
+      converted: convertedDate !== null,
+      convertedDate,
+      daysToConvert: convertedDate ? daysBetween(packDate, convertedDate) : null,
+      boughtOtherPack: convertedDate === null && otherPackDates.length > 0,
+      otherPackDate: convertedDate === null ? (otherPackDates[0] ?? null) : null,
+    });
     byMonth.set(month, list);
   }
 
@@ -297,23 +326,30 @@ export function benvingudaConversion(sales: Sale[]): ConversionSummary {
     .map(([month, buyersDetail]) => {
       const [y, mm] = month.split("-");
       const converted = buyersDetail.filter((b) => b.converted).length;
+      const days = buyersDetail.filter((b) => b.daysToConvert !== null).map((b) => b.daysToConvert!);
       return {
         month,
         label: `${MONTH_LABELS[mm] ?? mm} ${y}`,
         buyers: buyersDetail.length,
         converted,
         rate: buyersDetail.length > 0 ? converted / buyersDetail.length : 0,
+        avgDaysToConvert: days.length > 0 ? days.reduce((a, b) => a + b, 0) / days.length : null,
         buyersDetail,
       };
     });
 
   const totalBuyers = firstPackDate.size;
   const totalConverted = cohorts.reduce((s, c) => s + c.converted, 0);
+  const allDays = cohorts.flatMap((c) => c.buyersDetail.filter((b) => b.daysToConvert !== null).map((b) => b.daysToConvert!)).sort((a, b) => a - b);
+  const avgDaysToConvert = allDays.length > 0 ? allDays.reduce((a, b) => a + b, 0) / allDays.length : null;
+  const medianDaysToConvert = allDays.length > 0 ? allDays[Math.floor(allDays.length / 2)] : null;
 
   return {
     totalBuyers,
     totalConverted,
     rate: totalBuyers > 0 ? totalConverted / totalBuyers : 0,
+    avgDaysToConvert,
+    medianDaysToConvert,
     cohorts,
   };
 }
