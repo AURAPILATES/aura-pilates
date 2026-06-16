@@ -60,7 +60,7 @@ export default function MrrCard({ tiers }: { tiers: TierMrr[] }) {
 
       <p className="text-xs text-navy/45 mt-3 flex items-center gap-1.5">
         <BookOpen size={12} className="shrink-0" />
-        MRR = media de los últimos 3 meses completos, identificando el tier por el importe del cobro en Stripe.
+        MRR = suscriptores activos (no congelados) × precio del tier, según Momence en vivo.
       </p>
     </div>
   );

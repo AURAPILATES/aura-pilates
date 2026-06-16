@@ -87,3 +87,57 @@ export const getTeachers = () => fetchMomence<MomenceTeacher[]>("Teachers");
 export const getMemberships = () => fetchMomence<MomenceMembership[]>("Memberships");
 export const getProducts = () => fetchMomence<MomenceProduct[]>("Products");
 export const getVideos = () => fetchMomence<MomenceVideo[]>("Videos");
+
+export type MomenceActiveSubscription = {
+  id: number;
+  type: "subscription" | "package-events";
+  endDate: string | null;
+  createdAt: string;
+  moneyLeft: number | null;
+  totalMoney: number | null;
+  classesLeft: number | null;
+  totalClasses: number | null;
+  isFreezed: boolean;
+  membership: { id: number; name: string };
+};
+
+export type MomenceCustomer = {
+  email: string;
+  firstName: string;
+  lastName: string;
+  firstSeen: string;
+  lastSeen: string;
+  memberId: number;
+  phoneNumber: string | null;
+  activeSubscriptions: MomenceActiveSubscription[];
+};
+
+type CustomersPage = {
+  payload: MomenceCustomer[];
+  pagination: { page: number; pageSize: number; totalCount: number };
+};
+
+async function fetchCustomersPage(page: number, pageSize: number): Promise<CustomersPage> {
+  const params = new URLSearchParams({
+    hostId: process.env.MOMENCE_HOST_ID ?? "",
+    token: process.env.MOMENCE_TOKEN ?? "",
+    page: String(page),
+    pageSize: String(pageSize),
+  });
+  const res = await fetch(`${BASE_URL}/Customers?${params}`, { next: { revalidate: 300, tags: ["momence"] } });
+  if (!res.ok) return { payload: [], pagination: { page, pageSize, totalCount: 0 } };
+  return res.json();
+}
+
+// Trae todos los clientes paginando (≈368 a fecha de hoy).
+export async function getCustomers(): Promise<MomenceCustomer[]> {
+  const pageSize = 100;
+  const first = await fetchCustomersPage(1, pageSize);
+  const all = [...first.payload];
+  const totalPages = Math.ceil(first.pagination.totalCount / pageSize);
+  for (let page = 2; page <= totalPages; page++) {
+    const next = await fetchCustomersPage(page, pageSize);
+    all.push(...next.payload);
+  }
+  return all;
+}

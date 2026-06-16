@@ -38,7 +38,7 @@ import { computeBreakeven } from "@/lib/breakeven";
 import ConversionChart from "./ConversionChart";
 import MrrCard from "./MrrCard";
 import { subscriptionTiersFromMemberships, computeMrrByTier } from "@/lib/mrr";
-import { getMemberships } from "@/lib/momence";
+import { getMemberships, getCustomers } from "@/lib/momence";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -128,7 +128,11 @@ export default async function Finanzas(props: {
   const prev2MonthDate = new Date(now.getFullYear(), now.getMonth() - 2, 1);
   const prev2Month = `${prev2MonthDate.getFullYear()}-${pad2(prev2MonthDate.getMonth() + 1)}`;
 
-  const [paymentsAll, membershipsAll] = await Promise.all([loadStripePaymentsCached(), getMemberships()]);
+  const [paymentsAll, membershipsAll, customersAll] = await Promise.all([
+    loadStripePaymentsCached(),
+    getMemberships(),
+    getCustomers(),
+  ]);
   const payments = (from || to)
     ? paymentsAll.filter((p) => {
         if (from && p.date < from) return false;
@@ -199,9 +203,9 @@ export default async function Finanzas(props: {
   // ── Conversión Pack Benvinguda 2x1 → Suscripción ──────────────────────────
   const conversionSummary = benvingudaConversion(momenceSalesAll);
 
-  // ── MRR/ARR por suscripción (identificado por importe de cobro en Stripe) ──
+  // ── MRR/ARR por suscripción (suscriptores activos reales en Momence) ──────
   const subscriptionTiers = subscriptionTiersFromMemberships(membershipsAll);
-  const mrrByTier = computeMrrByTier(paymentsAll, subscriptionTiers, curMonth);
+  const mrrByTier = computeMrrByTier(customersAll, subscriptionTiers);
 
   // Rango real de transacciones para mostrarlo en el desglose
   const txnDates = txnsAll.map((t) => t.date).sort();
