@@ -629,9 +629,14 @@ export default function TransaccionesList({
                             {secondary && <p className="text-[11px] text-navy/40 truncate mt-0.5">{secondary}</p>}
                           </div>
                         </div>
-                        <span className={`shrink-0 text-sm font-semibold tabular-nums ${t.amount > 0 ? "text-success" : "text-navy/75"}`}>
-                          {t.amount > 0 ? "+" : "−"}{fmtAmt(t.amount)}
-                        </span>
+                        <div className="shrink-0 text-right">
+                          <span className={`text-sm font-semibold tabular-nums ${t.amount > 0 ? "text-success" : "text-navy/75"}`}>
+                            {t.amount > 0 ? "+" : "−"}{fmtAmt(t.amount)}
+                          </span>
+                          {t.balance != null && (
+                            <p className="text-[10px] text-navy/40 tabular-nums mt-0.5">{fmtAmt(t.balance)} €</p>
+                          )}
+                        </div>
                       </div>
                       <div className="flex items-center gap-2 mt-2.5 flex-wrap">
                         <CategoryPill category={t.category} categories={categories} onChange={(cat) => handleCategoryChange(t.id, cat)} />
@@ -639,9 +644,6 @@ export default function TransaccionesList({
                           <span className="text-[10px] font-semibold uppercase tracking-wide text-warning bg-warning/10 px-1.5 py-0.5 rounded">
                             Efectivo
                           </span>
-                        )}
-                        {t.balance != null && (
-                          <span className="text-[10px] text-navy/40 tabular-nums">Saldo: {fmtAmt(t.balance)} €</span>
                         )}
                       </div>
                     </div>
@@ -660,10 +662,9 @@ export default function TransaccionesList({
             <col style={{ width: "32px" }} />
             <col />
             <col style={{ width: "172px" }} />
-            <col style={{ width: "150px" }} />
+            <col style={{ width: "184px" }} />
             <col style={{ width: "110px" }} />
-            <col style={{ width: "118px" }} />
-            <col style={{ width: "108px" }} />
+            <col style={{ width: "128px" }} />
           </colgroup>
           <thead>
             <tr className="border-b border-navy/[0.06] bg-navy/[0.012] group/head">
@@ -676,14 +677,13 @@ export default function TransaccionesList({
               <th className="text-left px-4 py-3 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Categoría</th>
               <th className="text-left px-4 py-3 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Notas</th>
               <SortableHeader label="Fecha" sortKey="date" align="right" className="px-4" currentKey={sortKey} dir={sortDir} onClick={toggleSort} />
-              <SortableHeader label="Importe" sortKey="amount" align="right" className="px-4" currentKey={sortKey} dir={sortDir} onClick={toggleSort} />
-              <th className="text-right pr-6 py-3 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Saldo</th>
+              <SortableHeader label="Importe" sortKey="amount" align="right" className="pr-6" currentKey={sortKey} dir={sortDir} onClick={toggleSort} />
             </tr>
           </thead>
           <tbody className={isPending ? "opacity-50 pointer-events-none" : ""}>
             {sortedFiltered.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-12 text-center text-sm text-navy/40">Sin resultados</td>
+                <td colSpan={6} className="px-4 py-12 text-center text-sm text-navy/40">Sin resultados</td>
               </tr>
             )}
             {sortedFiltered.map((t) => {
@@ -754,7 +754,7 @@ export default function TransaccionesList({
                     <span className="text-xs text-navy/45 tabular-nums whitespace-nowrap">{fmtDate(t.date)}</span>
                   </td>
 
-                  <td className="px-4 align-middle text-right" style={{ height: "60px" }}>
+                  <td className="pr-6 pl-4 align-middle text-right" style={{ height: "60px" }}>
                     <div className="flex items-center justify-end gap-1.5">
                       {t.payment_method === "efectivo" && (
                         <span className="shrink-0 text-[9px] font-semibold uppercase tracking-wide text-warning bg-warning/10 px-1.5 py-0.5 rounded">
@@ -765,12 +765,9 @@ export default function TransaccionesList({
                         {t.amount > 0 ? "+" : "−"}{fmtAmt(t.amount)}
                       </span>
                     </div>
-                  </td>
-
-                  <td className="pr-6 pl-2 align-middle text-right" style={{ height: "60px" }}>
-                    <span className="text-xs text-navy/45 tabular-nums whitespace-nowrap">
-                      {t.balance != null ? `${fmtAmt(t.balance)} €` : "—"}
-                    </span>
+                    {t.balance != null && (
+                      <p className="text-[10px] text-navy/40 tabular-nums mt-0.5">{fmtAmt(t.balance)} €</p>
+                    )}
                   </td>
                 </tr>
               );
