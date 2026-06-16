@@ -1,5 +1,6 @@
 "use client";
 import { useState, useRef } from "react";
+import * as XLSX from "xlsx";
 import { importTransactions, type ImportRow } from "./actions";
 
 // ── CSV parser ────────────────────────────────────────────────────────────────
@@ -88,6 +89,76 @@ function parseCSV(text: string): ImportRow[] {
   return rows;
 }
 
+// ── Excel parser (.xls / .xlsx) ──────────────────────────────────────────────
+
+function normalizeHeader(h: string): string {
+  return h.toLowerCase().replace(/[áàä]/g, "a").replace(/[éèë]/g, "e")
+    .replace(/[íìï]/g, "i").replace(/[óòö]/g, "o").replace(/[úùü]/g, "u")
+    .replace(/[^a-z0-9\/\.\-]/g, " ").trim();
+}
+
+function excelSerialToISO(serial: number): string {
+  const utcDays = Math.floor(serial - 25569);
+  return new Date(utcDays * 86400 * 1000).toISOString().slice(0, 10);
+}
+
+function parseExcel(buffer: ArrayBuffer): ImportRow[] {
+  const wb = XLSX.read(buffer, { type: "array" });
+  const sheet = wb.Sheets[wb.SheetNames[0]];
+  const rawRows: unknown[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true });
+
+  let headerIdx = -1;
+  let headers: string[] = [];
+  for (let i = 0; i < rawRows.length; i++) {
+    const candidate = (rawRows[i] ?? []).map((c) => normalizeHeader(String(c ?? "")));
+    if (candidate.some((c) => c.includes("fecha")) && candidate.some((c) => c.includes("importe"))) {
+      headerIdx = i;
+      headers = candidate;
+      break;
+    }
+  }
+  if (headerIdx === -1) throw new Error("No se encontró la fila de cabeceras (Fecha / Importe) en el Excel.");
+
+  const dateIdx    = findCol(headers, ["fecha"]);
+  const amountIdx  = findCol(headers, ["importe"]);
+  const balanceIdx = findCol(headers, ["saldo"]);
+  const conceptIdx = findCol(headers, ["movimiento", "concepto"]);
+  const contactIdx = findCol(headers, ["mas datos", "beneficiario", "ordenante", "comercio"]);
+
+  if (dateIdx === -1) throw new Error("Columna de fecha no encontrada en el Excel.");
+  if (amountIdx === -1) throw new Error("Columna de importe no encontrada en el Excel.");
+
+  const rows: ImportRow[] = [];
+  for (let i = headerIdx + 1; i < rawRows.length; i++) {
+    const cols = rawRows[i] ?? [];
+    if (cols.length === 0) continue;
+
+    const rawDate = cols[dateIdx];
+    const date = typeof rawDate === "number" ? excelSerialToISO(rawDate) : parseDate(String(rawDate ?? ""));
+    if (!date) continue;
+
+    const rawAmount = cols[amountIdx];
+    const amount = typeof rawAmount === "number" ? rawAmount : parseSpanishNum(String(rawAmount ?? ""));
+    if (amount === null) continue;
+
+    const rawBalance = balanceIdx >= 0 ? cols[balanceIdx] : null;
+    const balance =
+      typeof rawBalance === "number" ? rawBalance
+      : rawBalance != null && rawBalance !== "" ? parseSpanishNum(String(rawBalance))
+      : null;
+
+    rows.push({
+      date,
+      amount,
+      balance,
+      concept: conceptIdx >= 0 && cols[conceptIdx] != null ? String(cols[conceptIdx]).trim() || null : null,
+      contact: contactIdx >= 0 && cols[contactIdx] != null ? String(cols[contactIdx]).trim() || null : null,
+    });
+  }
+  if (rows.length === 0) throw new Error("No se encontraron filas válidas. Revisa el formato del Excel.");
+  return rows;
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 type State =
@@ -106,20 +177,26 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
   const fileRef = useRef<HTMLInputElement>(null);
 
   function handleFile(file: File) {
-    if (!file.name.toLowerCase().endsWith(".csv")) {
-      setState({ kind: "error", message: "Solo se admiten archivos .csv — exporta tu extracto bancario como CSV desde CaixaBank." });
+    const name = file.name.toLowerCase();
+    const isExcel = name.endsWith(".xls") || name.endsWith(".xlsx");
+    const isCSV = name.endsWith(".csv");
+    if (!isExcel && !isCSV) {
+      setState({ kind: "error", message: "Solo se admiten archivos .csv, .xls o .xlsx exportados desde CaixaBank." });
       return;
     }
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const rows = parseCSV(e.target?.result as string);
+        const rows = isExcel
+          ? parseExcel(e.target?.result as ArrayBuffer)
+          : parseCSV(e.target?.result as string);
         setState({ kind: "preview", rows, filename: file.name });
       } catch (err) {
         setState({ kind: "error", message: err instanceof Error ? err.message : "Error al leer el archivo." });
       }
     };
-    reader.readAsText(file, "utf-8");
+    if (isExcel) reader.readAsArrayBuffer(file);
+    else reader.readAsText(file, "utf-8");
   }
 
   async function doImport(rows: ImportRow[]) {
@@ -150,7 +227,7 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
           {state.kind === "idle" && (
             <div>
               <p className="text-sm text-navy/55 mb-4">
-                Sube un extracto CSV de CaixaBank (Posición Global → Movimientos → Exportar).
+                Sube un extracto de CaixaBank en CSV, XLS o XLSX (Posición Global → Movimientos → Exportar).
               </p>
               <label
                 className="flex flex-col items-center gap-3 p-8 border-2 border-dashed border-navy/15 rounded-xl cursor-pointer hover:border-primary/30 hover:bg-primary/[0.02] transition-colors"
@@ -161,10 +238,10 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
                 </svg>
                 <div className="text-center">
-                  <p className="text-sm font-medium text-navy/70">Arrastra un CSV aquí</p>
-                  <p className="text-xs text-navy/40 mt-0.5">o haz clic para seleccionar</p>
+                  <p className="text-sm font-medium text-navy/70">Arrastra un archivo aquí</p>
+                  <p className="text-xs text-navy/40 mt-0.5">CSV, XLS o XLSX — o haz clic para seleccionar</p>
                 </div>
-                <input ref={fileRef} type="file" accept=".csv,text/csv" className="hidden"
+                <input ref={fileRef} type="file" accept=".csv,.xls,.xlsx,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" className="hidden"
                   onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
               </label>
             </div>

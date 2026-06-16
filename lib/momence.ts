@@ -7,7 +7,7 @@ async function fetchMomence<T>(endpoint: string): Promise<T> {
   });
   try {
     const res = await fetch(`${BASE_URL}/${endpoint}?${params}`, {
-      next: { revalidate: 300 },
+      next: { revalidate: 300, tags: ["momence"] },
     });
     if (!res.ok) return [] as unknown as T;
     return res.json();

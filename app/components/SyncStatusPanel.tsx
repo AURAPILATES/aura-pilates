@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useTransition, useCallback } from "react";
+import { syncStripe } from "@/app/actions/syncStripe";
+import { syncMomence } from "@/app/actions/syncMomence";
 
 type SourceStatus = { ok: boolean; checkedAt: string; error: string | null };
 type SyncData = {
@@ -66,37 +68,59 @@ function Row({
 export default function SyncStatusPanel() {
   const [data, setData] = useState<SyncData | null>(null);
   const [now, setNow] = useState(() => Date.now());
+  const [pending, startTransition] = useTransition();
+
+  const load = useCallback(async () => {
+    try {
+      const res = await fetch("/api/sync-status", { cache: "no-store" });
+      if (res.ok) setData(await res.json());
+    } catch {
+      // silent
+    }
+  }, []);
 
   useEffect(() => {
-    let cancelled = false;
-    async function load() {
-      try {
-        const res = await fetch("/api/sync-status");
-        if (!cancelled && res.ok) setData(await res.json());
-      } catch {
-        // silent
-      }
-    }
     load();
     const pollId = setInterval(load, 5 * 60 * 1000);
-    return () => {
-      cancelled = true;
-      clearInterval(pollId);
-    };
-  }, []);
+    return () => clearInterval(pollId);
+  }, [load]);
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 30_000);
     return () => clearInterval(id);
   }, []);
 
+  function handleSync() {
+    startTransition(async () => {
+      await Promise.all([syncStripe(), syncMomence()]);
+      await load();
+    });
+  }
+
   if (!data) return null;
 
   return (
     <div className="px-5 py-3 space-y-1.5">
-      <p className="text-[9px] font-semibold uppercase tracking-widest text-navy/25 mb-2">
-        Última sync
-      </p>
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-[9px] font-semibold uppercase tracking-widest text-navy/25">
+          Última sync
+        </p>
+        <button
+          onClick={handleSync}
+          disabled={pending}
+          title="Sincronizar Stripe y Momence"
+          className="flex items-center justify-center w-5 h-5 rounded text-navy/35 hover:text-navy hover:bg-navy/[0.06] transition-colors disabled:opacity-40"
+        >
+          <svg
+            width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+            className={pending ? "animate-spin" : ""}
+          >
+            <path d="M1 4v6h6M23 20v-6h-6"/>
+            <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15"/>
+          </svg>
+        </button>
+      </div>
       <Row
         label="Momence"
         time={relativeTime(data.momence.checkedAt, now)}
