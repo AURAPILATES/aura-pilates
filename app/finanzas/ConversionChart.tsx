@@ -1,10 +1,52 @@
 "use client";
 import { useState } from "react";
 import { BookOpen } from "react-feather";
-import type { ConversionSummary } from "@/lib/sales";
+import type { ConversionCohort, ConversionSummary } from "@/lib/sales";
 
 function fmtPct(v: number) {
   return `${(v * 100).toFixed(1)}%`;
+}
+
+function fmtDate(d: string) {
+  const [y, m, dd] = d.split("-");
+  return `${dd}/${m}/${y}`;
+}
+
+function CohortModal({ cohort, onClose }: { cohort: ConversionCohort; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-navy/25 backdrop-blur-[2px]" onClick={onClose} />
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden max-h-[80vh] flex flex-col">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-navy/[0.07]">
+          <div>
+            <h2 className="text-base font-bold text-navy font-display">{cohort.label}</h2>
+            <p className="text-xs text-navy/45 mt-0.5">{cohort.converted} de {cohort.buyers} convertidos ({fmtPct(cohort.rate)})</p>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full text-navy/40 hover:text-navy hover:bg-navy/5 transition-colors">✕</button>
+        </div>
+        <div className="overflow-y-auto px-6 py-4 space-y-2">
+          {cohort.buyersDetail
+            .slice()
+            .sort((a, b) => Number(b.converted) - Number(a.converted))
+            .map((b) => (
+              <div key={b.email} className="flex items-center justify-between gap-3 py-2 border-b border-navy/[0.04] last:border-0">
+                <div className="min-w-0">
+                  <p className="text-sm text-navy font-medium truncate">{b.name ?? b.email}</p>
+                  <p className="text-xs text-navy/45 truncate">{b.email} · pack {fmtDate(b.packDate)}</p>
+                </div>
+                {b.converted ? (
+                  <span className="shrink-0 text-xs font-semibold text-success bg-success/10 px-2 py-1 rounded-full">
+                    Convertido {b.convertedDate ? fmtDate(b.convertedDate) : ""}
+                  </span>
+                ) : (
+                  <span className="shrink-0 text-xs text-navy/40 bg-navy/[0.04] px-2 py-1 rounded-full">Sin convertir</span>
+                )}
+              </div>
+            ))}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 const SVG_W = 900;
@@ -16,6 +58,7 @@ const ML = 42;
 
 export default function ConversionChart({ summary }: { summary: ConversionSummary }) {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+  const [selectedCohort, setSelectedCohort] = useState<ConversionCohort | null>(null);
   const { cohorts, totalBuyers, totalConverted, rate } = summary;
 
   if (cohorts.length === 0) {
@@ -70,7 +113,8 @@ export default function ConversionChart({ summary }: { summary: ConversionSummar
         overflow="visible"
         onMouseMove={handleMouseMove}
         onMouseLeave={() => setHoveredIdx(null)}
-        style={{ cursor: "crosshair" }}
+        onClick={() => { if (hoveredIdx !== null) setSelectedCohort(cohorts[hoveredIdx]); }}
+        style={{ cursor: "pointer" }}
       >
         <defs>
           <filter id="conv-shadow" x="-10%" y="-20%" width="120%" height="140%">
@@ -138,7 +182,11 @@ export default function ConversionChart({ summary }: { summary: ConversionSummar
           </thead>
           <tbody>
             {cohorts.map((c) => (
-              <tr key={c.month} className="border-b border-navy/[0.04] last:border-0">
+              <tr
+                key={c.month}
+                onClick={() => setSelectedCohort(c)}
+                className="border-b border-navy/[0.04] last:border-0 cursor-pointer hover:bg-navy/[0.02] transition-colors"
+              >
                 <td className="py-2 pr-3 text-navy/70">{c.label}</td>
                 <td className="py-2 pr-3 text-right text-navy tabular-nums">{c.buyers}</td>
                 <td className="py-2 pr-3 text-right text-navy tabular-nums">{c.converted}</td>
@@ -151,8 +199,12 @@ export default function ConversionChart({ summary }: { summary: ConversionSummar
 
       <p className="text-xs text-navy/45 mt-3 flex items-center gap-1.5">
         <BookOpen size={12} className="shrink-0" />
-        Cohorte = mes de compra del pack. Convertido = compró una suscripción en una fecha posterior.
+        Cohorte = mes de compra del pack. Convertido = compró una suscripción en una fecha posterior. Haz clic en un punto o una fila para ver el detalle.
       </p>
+
+      {selectedCohort && (
+        <CohortModal cohort={selectedCohort} onClose={() => setSelectedCohort(null)} />
+      )}
     </div>
   );
 }

@@ -166,5 +166,6 @@ export function toSales(payments: StripePayment[]): Sale[] {
     amount: p.amount,
     tax: 0,
     email: p.customerEmail,
+    name: p.customerName,
   }));
 }

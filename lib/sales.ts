@@ -10,6 +10,7 @@ export type Sale = {
   amount: number;      // gross (IVA included)
   tax: number;
   email: string | null;
+  name: string | null;
 };
 
 function parseCSVLine(line: string): string[] {
@@ -69,6 +70,7 @@ export function loadSales(): Sale[] {
           amount: parseFloat(c[13]) || 0,
           tax: parseFloat(c[14]) || 0,
           email: (c[7] || c[9] || "").trim().toLowerCase() || null,
+          name: (c[8] || c[10] || "").trim() || null,
         };
       })
       .filter((s) => s.amount > 0 && s.paymentDate.length === 10);
@@ -234,12 +236,21 @@ export function urbanBookingsByWeekday() {
 
 // ── Conversión Pack Benvinguda 2x1 → Suscripción ────────────────────────────
 
+export type ConversionBuyer = {
+  email: string;
+  name: string | null;
+  packDate: string;
+  converted: boolean;
+  convertedDate: string | null;
+};
+
 export type ConversionCohort = {
   month: string;   // "YYYY-MM" del mes de compra del pack
   label: string;   // "Feb 2026"
   buyers: number;
   converted: number;
   rate: number;     // 0..1
+  buyersDetail: ConversionBuyer[];
 };
 
 export type ConversionSummary = {
@@ -253,9 +264,13 @@ export function benvingudaConversion(sales: Sale[]): ConversionSummary {
   const packSales = sales.filter((s) => s.item === "Benvinguda 2x1" && s.email);
 
   const firstPackDate = new Map<string, string>();
+  const nameByEmail = new Map<string, string | null>();
   for (const s of packSales) {
     const prev = firstPackDate.get(s.email!);
-    if (!prev || s.paymentDate < prev) firstPackDate.set(s.email!, s.paymentDate);
+    if (!prev || s.paymentDate < prev) {
+      firstPackDate.set(s.email!, s.paymentDate);
+      nameByEmail.set(s.email!, s.name);
+    }
   }
 
   const otherSalesByEmail = new Map<string, string[]>();
@@ -267,26 +282,28 @@ export function benvingudaConversion(sales: Sale[]): ConversionSummary {
     otherSalesByEmail.set(s.email, arr);
   }
 
-  const byMonth = new Map<string, { buyers: number; converted: number }>();
+  const byMonth = new Map<string, ConversionBuyer[]>();
   for (const [email, packDate] of firstPackDate) {
     const month = packDate.slice(0, 7);
-    const entry = byMonth.get(month) ?? { buyers: 0, converted: 0 };
-    entry.buyers++;
-    const subDates = otherSalesByEmail.get(email) ?? [];
-    if (subDates.some((d) => d > packDate)) entry.converted++;
-    byMonth.set(month, entry);
+    const list = byMonth.get(month) ?? [];
+    const subDates = (otherSalesByEmail.get(email) ?? []).filter((d) => d > packDate).sort();
+    const convertedDate = subDates[0] ?? null;
+    list.push({ email, name: nameByEmail.get(email) ?? null, packDate, converted: convertedDate !== null, convertedDate });
+    byMonth.set(month, list);
   }
 
   const cohorts = Array.from(byMonth.entries())
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([month, { buyers, converted }]) => {
+    .map(([month, buyersDetail]) => {
       const [y, mm] = month.split("-");
+      const converted = buyersDetail.filter((b) => b.converted).length;
       return {
         month,
         label: `${MONTH_LABELS[mm] ?? mm} ${y}`,
-        buyers,
+        buyers: buyersDetail.length,
         converted,
-        rate: buyers > 0 ? converted / buyers : 0,
+        rate: buyersDetail.length > 0 ? converted / buyersDetail.length : 0,
+        buyersDetail,
       };
     });
 
