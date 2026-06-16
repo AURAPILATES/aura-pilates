@@ -6,20 +6,16 @@ const KEY = "c4a9e21f6b8d3057a1e4f9c2b7d6038f";
 const BASE_URL = "https://momence.com/_api/primary/api/v1";
 
 const CANDIDATES = [
-  "Customers",
-  "Members",
-  "CustomerMemberships",
-  "Memberships/Active",
-  "ActiveMemberships",
-  "Subscriptions",
-  "CustomerSubscriptions",
-  "Sales",
-  "Transactions",
-  "Payments",
-  "Bookings",
-  "Orders",
-  "CustomerPayments",
-  "MembershipSubscriptions",
+  "Customers?page=1&pageSize=5",
+  "Customers/1",
+  "CustomerMemberships?page=1&pageSize=5",
+  "CustomerSubscriptions?page=1&pageSize=5",
+  "Sales?page=1&pageSize=5",
+  "Transactions?page=1&pageSize=5",
+  "Payments?page=1&pageSize=5",
+  "Bookings?page=1&pageSize=5",
+  "Orders?page=1&pageSize=5",
+  "CustomerPayments?page=1&pageSize=5",
 ];
 
 export async function GET(req: Request) {
@@ -34,7 +30,8 @@ export async function GET(req: Request) {
   const results: Record<string, unknown> = {};
   for (const endpoint of CANDIDATES) {
     try {
-      const res = await fetch(`${BASE_URL}/${endpoint}?${params}`, { cache: "no-store" });
+      const sep = endpoint.includes("?") ? "&" : "?";
+      const res = await fetch(`${BASE_URL}/${endpoint}${sep}${params}`, { cache: "no-store" });
       const text = await res.text();
       let preview: unknown = text.slice(0, 400);
       try {
