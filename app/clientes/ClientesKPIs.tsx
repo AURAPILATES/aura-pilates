@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { fmt } from "@/lib/analytics";
 import type { StripeCustomer } from "@/lib/stripeCustomers";
+import Drawer from "@/app/components/Drawer";
 
 type CustomerRow = StripeCustomer & { possibleChurn?: boolean; isActive?: boolean; isNew?: boolean };
 type DrawerKey = "all" | "active" | "recurring" | "new" | "churn" | null;
@@ -12,100 +13,6 @@ function fmtDate(d: string | null) {
   return d.split("-").reverse().join("/");
 }
 
-function CustomerDrawer({
-  title,
-  subtitle,
-  customers,
-  onClose,
-}: {
-  title: string;
-  subtitle: string;
-  customers: CustomerRow[];
-  onClose: () => void;
-}) {
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) { if (e.key === "Escape") onClose(); }
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [onClose]);
-
-  return (
-    <>
-      <div
-        className="fixed inset-0 z-40 bg-navy/30 backdrop-blur-[2px]"
-        onClick={onClose}
-        aria-hidden
-      />
-      <div className="fixed inset-y-0 right-0 z-50 w-full sm:w-[420px] bg-white shadow-2xl flex flex-col">
-        <div className="flex items-start justify-between px-6 py-5 border-b border-navy/[0.07]">
-          <div>
-            <h2 className="text-lg font-bold text-navy font-display">{title}</h2>
-            <p className="text-xs text-navy/50 mt-0.5">{subtitle}</p>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-navy/40 hover:text-navy/70 hover:bg-navy/[0.05] transition-colors mt-0.5"
-            aria-label="Cerrar"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto divide-y divide-navy/[0.05]">
-          {customers.length === 0 && (
-            <p className="px-6 py-12 text-center text-sm text-navy/40">Sin clientes en este grupo.</p>
-          )}
-          {customers.map((c) => (
-            <div key={c.id} className="px-6 py-4 flex items-center justify-between gap-4 hover:bg-navy/[0.015] transition-colors">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-semibold text-navy truncate">{c.name ?? "Sin nombre"}</p>
-                  {c.isNew && (
-                    <span className="shrink-0 text-[10px] font-semibold bg-success/10 text-success px-1.5 py-0.5 rounded-full">Nuevo</span>
-                  )}
-                </div>
-                {c.email && <p className="text-xs text-navy/50 truncate">{c.email}</p>}
-                <div className="flex items-center gap-3 mt-1">
-                  <span className="text-xs text-navy/45">
-                    Último pago: <span className="text-navy/65">{fmtDate(c.lastPaymentDate)}</span>
-                  </span>
-                  <span className="text-xs font-semibold text-navy">{fmt(c.totalSpent)}</span>
-                </div>
-              </div>
-              <a
-                href={`https://dashboard.stripe.com/customers/${c.id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-[#635bff] rounded-lg hover:bg-[#4f46e5] transition-colors"
-                title="Ver en Stripe"
-              >
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-                  <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
-                </svg>
-                Stripe
-              </a>
-            </div>
-          ))}
-        </div>
-
-        <div className="px-6 py-4 border-t border-navy/[0.07] flex items-center justify-between">
-          <p className="text-xs text-navy/45">{customers.length} clientes</p>
-          <a
-            href="https://dashboard.stripe.com/customers"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-navy/50 hover:text-navy/70 underline underline-offset-2 transition-colors"
-          >
-            Ver todos en Stripe →
-          </a>
-        </div>
-      </div>
-    </>
-  );
-}
 
 type KPICardProps = {
   label: string;
@@ -237,10 +144,63 @@ export default function ClientesKPIs({ customers, mrr, prevMonthLabel, curMonthL
       </div>
 
       {drawer && (
-        <CustomerDrawer
-          {...drawerConfig[drawer]}
+        <Drawer
+          title={drawerConfig[drawer].title}
+          subtitle={drawerConfig[drawer].subtitle}
+          maxWidth="max-w-[420px]"
+          footer={
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-navy/45">{drawerConfig[drawer].customers.length} clientes</p>
+              <a
+                href="https://dashboard.stripe.com/customers"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-navy/50 hover:text-navy/70 underline underline-offset-2 transition-colors"
+              >
+                Ver todos en Stripe →
+              </a>
+            </div>
+          }
           onClose={() => setDrawer(null)}
-        />
+        >
+          <div className="divide-y divide-navy/[0.05]">
+            {drawerConfig[drawer].customers.length === 0 && (
+              <p className="px-6 py-12 text-center text-sm text-navy/40">Sin clientes en este grupo.</p>
+            )}
+            {drawerConfig[drawer].customers.map((c) => (
+              <div key={c.id} className="px-6 py-4 flex items-center justify-between gap-4 hover:bg-navy/[0.015] transition-colors">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-semibold text-navy truncate">{c.name ?? "Sin nombre"}</p>
+                    {c.isNew && (
+                      <span className="shrink-0 text-[10px] font-semibold bg-success/10 text-success px-1.5 py-0.5 rounded-full">Nuevo</span>
+                    )}
+                  </div>
+                  {c.email && <p className="text-xs text-navy/50 truncate">{c.email}</p>}
+                  <div className="flex items-center gap-3 mt-1">
+                    <span className="text-xs text-navy/45">
+                      Último pago: <span className="text-navy/65">{fmtDate(c.lastPaymentDate)}</span>
+                    </span>
+                    <span className="text-xs font-semibold text-navy">{fmt(c.totalSpent)}</span>
+                  </div>
+                </div>
+                <a
+                  href={`https://dashboard.stripe.com/customers/${c.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-[#635bff] rounded-lg hover:bg-[#4f46e5] transition-colors"
+                  title="Ver en Stripe"
+                >
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                    <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+                  </svg>
+                  Stripe
+                </a>
+              </div>
+            ))}
+          </div>
+        </Drawer>
       )}
     </>
   );

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
+import Drawer from "@/app/components/Drawer";
 import { fmt } from "@/lib/analytics";
 import type { StripeCustomer } from "@/lib/stripeCustomers";
 import type { StripePayment } from "@/lib/stripePayments";
@@ -47,181 +48,6 @@ function initials(name: string | null, email: string | null): string {
   return (email?.[0] ?? "?").toUpperCase();
 }
 
-function CustomerDrawer({
-  customer,
-  payments,
-  onClose,
-}: {
-  customer: CustomerRow;
-  payments: StripePayment[];
-  onClose: () => void;
-}) {
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, [onClose]);
-
-  const customerPayments = useMemo(
-    () => payments
-      .filter((p) => customer.stripeIds.includes(p.customerId ?? ""))
-      .sort((a, b) => b.date.localeCompare(a.date)),
-    [payments, customer.stripeIds],
-  );
-
-  const ini = initials(customer.name, customer.email);
-
-  return (
-    <>
-      <div className="fixed inset-0 z-40 bg-navy/30 backdrop-blur-[2px]" onClick={onClose} aria-hidden />
-      <div className="fixed inset-y-0 right-0 z-50 w-full sm:w-[460px] bg-white shadow-2xl flex flex-col">
-
-        {/* Header */}
-        <div className="px-6 pt-6 pb-5 border-b border-navy/[0.07]">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                <span className="text-base font-bold text-primary">{ini}</span>
-              </div>
-              <div className="min-w-0">
-                <h2 className="text-lg font-bold text-navy font-display leading-tight">
-                  {customer.name ?? "Sin nombre"}
-                </h2>
-                {customer.email && (
-                  <p className="text-sm text-navy/50 truncate">{customer.email}</p>
-                )}
-              </div>
-            </div>
-            <button
-              onClick={onClose}
-              className="p-1.5 rounded-lg text-navy/40 hover:text-navy/70 hover:bg-navy/[0.05] transition-colors shrink-0 mt-0.5"
-              aria-label="Cerrar"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-              </svg>
-            </button>
-          </div>
-
-          {/* Badges */}
-          <div className="flex items-center gap-2 mt-4 flex-wrap">
-            {customer.isRecurring ? (
-              <span className="text-xs bg-primary/[0.08] text-primary px-2.5 py-1 rounded-full font-medium">Recurrente</span>
-            ) : (
-              <span className="text-xs bg-navy/[0.06] text-navy/55 px-2.5 py-1 rounded-full font-medium">Ocasional</span>
-            )}
-            {customer.possibleChurn ? (
-              <span className="text-xs bg-warning/10 text-warning px-2.5 py-1 rounded-full font-medium flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-warning inline-block" />
-                Posible baja
-              </span>
-            ) : (
-              <span className="text-xs bg-success/10 text-success px-2.5 py-1 rounded-full font-medium flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-success inline-block" />
-                Al día
-              </span>
-            )}
-            {customer.discount && (
-              <span className="text-xs bg-warning/10 text-warning px-2.5 py-1 rounded-full font-medium">
-                {customer.discount.percentOff != null
-                  ? `-${customer.discount.percentOff}%`
-                  : customer.discount.name}
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-3 divide-x divide-navy/[0.06] border-b border-navy/[0.07]">
-          <div className="px-5 py-4 text-center">
-            <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1">Total gastado</p>
-            <p className="text-lg font-bold text-navy tabular-nums">{fmt(customer.totalSpent)}</p>
-          </div>
-          <div className="px-5 py-4 text-center">
-            <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1">Pagos</p>
-            <p className="text-lg font-bold text-navy">{customer.paymentCount}</p>
-          </div>
-          <div className="px-5 py-4 text-center">
-            <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1">Primer pago</p>
-            <p className="text-sm font-semibold text-navy/70">
-              {customer.firstPaymentDate ? fmtDate(customer.firstPaymentDate) : "—"}
-            </p>
-          </div>
-        </div>
-
-        {/* Payment list */}
-        <div className="flex-1 overflow-y-auto">
-          <p className="px-6 pt-4 pb-2 text-[11px] font-semibold text-navy/40 uppercase tracking-wider">
-            Historial de pagos
-          </p>
-          <div className="divide-y divide-navy/[0.05]">
-            {customerPayments.length === 0 && (
-              <p className="px-6 py-8 text-sm text-center text-navy/40">Sin pagos registrados</p>
-            )}
-            {customerPayments.map((p) => (
-              <div key={p.id} className="px-6 py-3 flex items-center justify-between gap-4">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-navy truncate">
-                    {p.description ?? p.category}
-                  </p>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-xs text-navy/45">{fmtDate(p.date)}</span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-navy/[0.05] text-navy/45 font-medium">
-                      {p.category}
-                    </span>
-                  </div>
-                </div>
-                <span className="shrink-0 text-sm font-semibold text-navy tabular-nums">
-                  {fmt(p.amount)}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Footer — un botón por Stripe ID */}
-        <div className="px-6 py-4 border-t border-navy/[0.07] flex flex-col gap-2">
-          {customer.stripeIds.length === 1 ? (
-            <a
-              href={`https://dashboard.stripe.com/customers/${customer.id}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-[#635bff] rounded-xl hover:bg-[#4f46e5] transition-colors"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-                <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
-              </svg>
-              Ver en Stripe
-            </a>
-          ) : (
-            <>
-              <p className="text-[11px] text-navy/40 font-medium uppercase tracking-wider">
-                {customer.stripeIds.length} perfiles en Stripe (mismo email)
-              </p>
-              {customer.stripeIds.map((sid, i) => (
-                <a
-                  key={sid}
-                  href={`https://dashboard.stripe.com/customers/${sid}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-between gap-2 px-4 py-2 text-sm font-medium text-[#635bff] bg-[#635bff]/[0.06] border border-[#635bff]/20 rounded-xl hover:bg-[#635bff]/10 transition-colors"
-                >
-                  <span className="text-navy/50 text-xs">Perfil {i + 1}</span>
-                  <span className="font-mono text-xs truncate">{sid}</span>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-                    <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
-                  </svg>
-                </a>
-              ))}
-            </>
-          )}
-        </div>
-      </div>
-    </>
-  );
-}
 
 export default function ClientesTable({ customers, payments }: { customers: CustomerRow[]; payments: StripePayment[] }) {
   const [search,   setSearch]   = useState("");
@@ -238,6 +64,15 @@ export default function ClientesTable({ customers, payments }: { customers: Cust
       setSortDir("desc");
     }
   }
+
+  const selectedPayments = useMemo(
+    () => selected
+      ? payments
+          .filter((p) => selected.stripeIds.includes(p.customerId ?? ""))
+          .sort((a, b) => b.date.localeCompare(a.date))
+      : [],
+    [payments, selected],
+  );
 
   const topIds = useMemo(() => {
     return [...customers]
@@ -483,11 +318,138 @@ export default function ClientesTable({ customers, payments }: { customers: Cust
       </div>
 
       {selected && (
-        <CustomerDrawer
-          customer={selected}
-          payments={payments}
+        <Drawer
+          maxWidth="max-w-[460px]"
+          header={
+            <div>
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                  <span className="text-base font-bold text-primary">{initials(selected.name, selected.email)}</span>
+                </div>
+                <div className="min-w-0">
+                  <h2 className="text-base font-bold text-navy font-display leading-tight truncate">
+                    {selected.name ?? "Sin nombre"}
+                  </h2>
+                  {selected.email && (
+                    <p className="text-xs text-navy/50 truncate">{selected.email}</p>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-2 mt-3 flex-wrap">
+                {selected.isRecurring ? (
+                  <span className="text-xs bg-primary/[0.08] text-primary px-2.5 py-1 rounded-full font-medium">Recurrente</span>
+                ) : (
+                  <span className="text-xs bg-navy/[0.06] text-navy/55 px-2.5 py-1 rounded-full font-medium">Ocasional</span>
+                )}
+                {selected.possibleChurn ? (
+                  <span className="text-xs bg-warning/10 text-warning px-2.5 py-1 rounded-full font-medium flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-warning inline-block" />
+                    Posible baja
+                  </span>
+                ) : (
+                  <span className="text-xs bg-success/10 text-success px-2.5 py-1 rounded-full font-medium flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-success inline-block" />
+                    Al día
+                  </span>
+                )}
+                {selected.discount && (
+                  <span className="text-xs bg-warning/10 text-warning px-2.5 py-1 rounded-full font-medium">
+                    {selected.discount.percentOff != null
+                      ? `-${selected.discount.percentOff}%`
+                      : selected.discount.name}
+                  </span>
+                )}
+              </div>
+            </div>
+          }
+          footer={
+            <div className="flex flex-col gap-2">
+              {selected.stripeIds.length === 1 ? (
+                <a
+                  href={`https://dashboard.stripe.com/customers/${selected.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-[#635bff] rounded-xl hover:bg-[#4f46e5] transition-colors"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                    <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+                  </svg>
+                  Ver en Stripe
+                </a>
+              ) : (
+                <>
+                  <p className="text-[11px] text-navy/40 font-medium uppercase tracking-wider">
+                    {selected.stripeIds.length} perfiles en Stripe (mismo email)
+                  </p>
+                  {selected.stripeIds.map((sid, i) => (
+                    <a
+                      key={sid}
+                      href={`https://dashboard.stripe.com/customers/${sid}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-between gap-2 px-4 py-2 text-sm font-medium text-[#635bff] bg-[#635bff]/[0.06] border border-[#635bff]/20 rounded-xl hover:bg-[#635bff]/10 transition-colors"
+                    >
+                      <span className="text-navy/50 text-xs">Perfil {i + 1}</span>
+                      <span className="font-mono text-xs truncate">{sid}</span>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                        <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+                      </svg>
+                    </a>
+                  ))}
+                </>
+              )}
+            </div>
+          }
           onClose={() => setSelected(null)}
-        />
+        >
+          {/* Stats */}
+          <div className="grid grid-cols-3 divide-x divide-navy/[0.06] border-b border-navy/[0.07]">
+            <div className="px-5 py-4 text-center">
+              <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1">Total gastado</p>
+              <p className="text-lg font-bold text-navy tabular-nums">{fmt(selected.totalSpent)}</p>
+            </div>
+            <div className="px-5 py-4 text-center">
+              <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1">Pagos</p>
+              <p className="text-lg font-bold text-navy">{selected.paymentCount}</p>
+            </div>
+            <div className="px-5 py-4 text-center">
+              <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1">Primer pago</p>
+              <p className="text-sm font-semibold text-navy/70">
+                {selected.firstPaymentDate ? fmtDate(selected.firstPaymentDate) : "—"}
+              </p>
+            </div>
+          </div>
+
+          {/* Payment list */}
+          <p className="px-6 pt-4 pb-2 text-[11px] font-semibold text-navy/40 uppercase tracking-wider">
+            Historial de pagos
+          </p>
+          <div className="divide-y divide-navy/[0.05]">
+            {selectedPayments.length === 0 && (
+              <p className="px-6 py-8 text-sm text-center text-navy/40">Sin pagos registrados</p>
+            )}
+            {selectedPayments.map((p) => (
+              <div key={p.id} className="px-6 py-3 flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-navy truncate">
+                    {p.description ?? p.category}
+                  </p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-xs text-navy/45">{fmtDate(p.date)}</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-navy/[0.05] text-navy/45 font-medium">
+                      {p.category}
+                    </span>
+                  </div>
+                </div>
+                <span className="shrink-0 text-sm font-semibold text-navy tabular-nums">
+                  {fmt(p.amount)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </Drawer>
       )}
     </div>
   );

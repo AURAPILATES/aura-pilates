@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { BookOpen } from "react-feather";
 import type { ConversionCohort, ConversionSummary } from "@/lib/sales";
+import Drawer from "@/app/components/Drawer";
 
 function fmtPct(v: number) {
   return `${(v * 100).toFixed(1)}%`;
@@ -14,17 +15,12 @@ function fmtDate(d: string) {
 
 function CohortModal({ cohort, onClose }: { cohort: ConversionCohort; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-navy/25 backdrop-blur-[2px]" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden max-h-[80vh] flex flex-col">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-navy/[0.07]">
-          <div>
-            <h2 className="text-base font-bold text-navy font-display">{cohort.label}</h2>
-            <p className="text-xs text-navy/45 mt-0.5">{cohort.converted} de {cohort.buyers} convertidos ({fmtPct(cohort.rate)})</p>
-          </div>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full text-navy/40 hover:text-navy hover:bg-navy/5 transition-colors">✕</button>
-        </div>
-        <div className="overflow-y-auto px-6 py-4 space-y-2">
+    <Drawer
+      title={cohort.label}
+      subtitle={`${cohort.converted} de ${cohort.buyers} convertidos (${fmtPct(cohort.rate)})`}
+      onClose={onClose}
+    >
+        <div className="px-6 py-4 space-y-2">
           {cohort.buyersDetail
             .slice()
             .sort((a, b) => Number(b.converted) - Number(a.converted))
@@ -48,8 +44,7 @@ function CohortModal({ cohort, onClose }: { cohort: ConversionCohort; onClose: (
               </div>
             ))}
         </div>
-      </div>
-    </div>
+    </Drawer>
   );
 }
 

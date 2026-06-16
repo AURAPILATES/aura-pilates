@@ -2,6 +2,7 @@
 import { useState } from "react";
 import type { Category } from "@/lib/categories";
 import { addCashTransaction } from "./actions";
+import Drawer from "@/app/components/Drawer";
 
 function todayISO() {
   return new Date().toISOString().slice(0, 10);
@@ -38,14 +39,19 @@ export default function AddCashModal({ categories, onClose }: { categories: Cate
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-navy/25 backdrop-blur-[2px]" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-navy/[0.07]">
-          <h2 className="text-base font-bold text-navy font-display">Añadir movimiento en efectivo</h2>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full text-navy/40 hover:text-navy hover:bg-navy/5 transition-colors">✕</button>
-        </div>
-
+    <Drawer
+      title="Añadir movimiento en efectivo"
+      onClose={onClose}
+      footer={
+        <button
+          onClick={handleSave}
+          disabled={!canSave || saving}
+          className="w-full py-2.5 text-sm font-semibold bg-navy text-white rounded-lg hover:bg-navy/85 transition-colors disabled:opacity-40"
+        >
+          {saving ? "Guardando…" : "Guardar movimiento"}
+        </button>
+      }
+    >
         <div className="px-6 py-5 space-y-4">
           <div className="flex border border-navy/[0.12] rounded-lg bg-white p-0.5 text-sm">
             <button
@@ -109,16 +115,7 @@ export default function AddCashModal({ categories, onClose }: { categories: Cate
           </div>
 
           {error && <p className="text-sm text-danger">{error}</p>}
-
-          <button
-            onClick={handleSave}
-            disabled={!canSave || saving}
-            className="w-full py-2.5 text-sm font-semibold bg-navy text-white rounded-lg hover:bg-navy/85 transition-colors disabled:opacity-40"
-          >
-            {saving ? "Guardando…" : "Guardar movimiento"}
-          </button>
         </div>
-      </div>
-    </div>
+    </Drawer>
   );
 }

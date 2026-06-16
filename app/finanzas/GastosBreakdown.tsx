@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import Drawer from "@/app/components/Drawer";
 
 type Category = {
   category: string;
@@ -194,63 +195,49 @@ export default function GastosBreakdown({
         ))}
       </div>
 
-      {/* ── Transaction drawer ────────────────────────────────────────────── */}
       {selected && (
-        <>
-          <div
-            className="fixed inset-0 z-40 bg-navy/20 backdrop-blur-[1px]"
-            onClick={() => setSelected(null)}
-          />
-          <div className="fixed inset-0 sm:inset-auto sm:right-0 sm:top-0 sm:bottom-0 z-50 sm:w-[420px] bg-white shadow-2xl flex flex-col">
-            <div className="flex items-center gap-3 px-4 sm:px-6 py-4 sm:py-5 border-b border-navy/10">
+        <Drawer
+          maxWidth="max-w-[420px]"
+          header={
+            <div className="flex items-center gap-3">
               <CategoryIcon name={selected} color={selectedSeg?.color ?? "#6B7ED6"} iconKey={selectedSeg?.iconKey} />
-              <div className="flex-1 min-w-0">
+              <div className="min-w-0">
                 <h2 className="text-base font-semibold text-navy">{selected}</h2>
                 <p className="text-xs text-navy/55 mt-0.5">
                   −{fmtAmount(selectedSeg?.total ?? 0)} · {selectedSeg?.count ?? 0} transacciones
                 </p>
               </div>
-              <button
-                onClick={() => setSelected(null)}
-                className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-navy/5 text-navy/45 hover:text-navy transition-colors shrink-0"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                </svg>
-              </button>
             </div>
-
-            <div className="flex-1 overflow-y-auto">
-              {selectedTxns.length === 0 ? (
-                <p className="text-sm text-navy/45 px-6 py-8">Sin transacciones registradas.</p>
-              ) : (
-                selectedTxns.map((t, i) => (
-                  <div key={i} className="flex items-center gap-3 px-4 sm:px-6 py-3.5 border-b border-navy/5 last:border-0">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-navy truncate">{t.contact || t.concept}</p>
-                      <p className="text-xs text-navy/55 mt-0.5">{fmtDate(t.date)}</p>
-                    </div>
-                    <p className={`text-sm font-semibold tabular-nums shrink-0 ${t.amount < 0 ? "text-navy" : "text-success"}`}>
-                      {t.amount < 0 ? "−" : "+"}{fmtAmount(Math.abs(t.amount))}
-                    </p>
-                  </div>
-                ))
-              )}
-            </div>
-
-            <div className="px-4 sm:px-6 py-4 border-t border-navy/10">
-              <Link
-                href={`/transacciones?categoria=${encodeURIComponent(selected)}`}
-                className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-navy/20 bg-white text-sm font-medium text-navy hover:border-navy/40 transition-colors"
-              >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-                </svg>
-                Ver transacciones
-              </Link>
-            </div>
-          </div>
-        </>
+          }
+          footer={
+            <Link
+              href={`/transacciones?categoria=${encodeURIComponent(selected)}`}
+              className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-navy/20 bg-white text-sm font-medium text-navy hover:border-navy/40 transition-colors"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+              </svg>
+              Ver transacciones
+            </Link>
+          }
+          onClose={() => setSelected(null)}
+        >
+          {selectedTxns.length === 0 ? (
+            <p className="text-sm text-navy/45 px-6 py-8">Sin transacciones registradas.</p>
+          ) : (
+            selectedTxns.map((t, i) => (
+              <div key={i} className="flex items-center gap-3 px-6 py-3.5 border-b border-navy/5 last:border-0">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-navy truncate">{t.contact || t.concept}</p>
+                  <p className="text-xs text-navy/55 mt-0.5">{fmtDate(t.date)}</p>
+                </div>
+                <p className={`text-sm font-semibold tabular-nums shrink-0 ${t.amount < 0 ? "text-navy" : "text-success"}`}>
+                  {t.amount < 0 ? "−" : "+"}{fmtAmount(Math.abs(t.amount))}
+                </p>
+              </div>
+            ))
+          )}
+        </Drawer>
       )}
     </>
   );

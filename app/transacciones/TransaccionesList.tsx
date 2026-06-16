@@ -662,7 +662,6 @@ export default function TransaccionesList({
             <col style={{ width: "32px" }} />
             <col />
             <col style={{ width: "172px" }} />
-            <col style={{ width: "184px" }} />
             <col style={{ width: "110px" }} />
             <col style={{ width: "128px" }} />
           </colgroup>
@@ -675,7 +674,6 @@ export default function TransaccionesList({
               </th>
               <SortableHeader label="Concepto" sortKey="concept" align="left" className="pl-2 pr-4" currentKey={sortKey} dir={sortDir} onClick={toggleSort} />
               <th className="text-left px-4 py-3 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Categoría</th>
-              <th className="text-left px-4 py-3 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Notas</th>
               <SortableHeader label="Fecha" sortKey="date" align="right" className="px-4" currentKey={sortKey} dir={sortDir} onClick={toggleSort} />
               <SortableHeader label="Importe" sortKey="amount" align="right" className="pr-6" currentKey={sortKey} dir={sortDir} onClick={toggleSort} />
             </tr>
@@ -683,7 +681,7 @@ export default function TransaccionesList({
           <tbody className={isPending ? "opacity-50 pointer-events-none" : ""}>
             {sortedFiltered.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-12 text-center text-sm text-navy/40">Sin resultados</td>
+                <td colSpan={5} className="px-4 py-12 text-center text-sm text-navy/40">Sin resultados</td>
               </tr>
             )}
             {sortedFiltered.map((t) => {
@@ -699,12 +697,12 @@ export default function TransaccionesList({
                     isSelected ? "bg-primary/[0.03]" : "hover:bg-navy/[0.01]"
                   }`}
                 >
-                  <td className="pl-3 align-middle" style={{ height: "60px" }}>
+                  <td className="pl-3 py-3 align-middle">
                     <input type="checkbox" checked={isSelected} onChange={() => toggleOne(t.id)}
                       className="block rounded border-navy/[0.12] accent-primary cursor-pointer" />
                   </td>
 
-                  <td className="pl-2 pr-4 align-middle overflow-hidden" style={{ height: "60px" }}>
+                  <td className="pl-2 pr-4 py-2.5 align-middle overflow-hidden">
                     <div className="flex items-center gap-1.5 min-w-0">
                       <span className="text-sm font-semibold text-navy truncate">{primary}</span>
                       {isRecurring && (
@@ -717,44 +715,40 @@ export default function TransaccionesList({
                       )}
                     </div>
                     {secondary && (
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <p className="text-[11px] text-navy/40 truncate">{secondary}</p>
-                      </div>
+                      <p className="text-[11px] text-navy/40 truncate mt-0.5">{secondary}</p>
                     )}
-                  </td>
-
-                  <td className="px-4 align-middle" style={{ height: "60px" }}>
-                    <CategoryPill category={t.category} categories={categories} onChange={(cat) => handleCategoryChange(t.id, cat)} />
-                  </td>
-
-                  <td className="px-4 align-middle overflow-hidden" style={{ height: "60px" }}>
                     {editingNotes === t.id ? (
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1 mt-1">
                         <input
                           autoFocus type="text" value={notesValue}
                           onChange={(e) => setNotesValue(e.target.value)}
                           onKeyDown={(e) => { if (e.key === "Enter") saveNotes(t.id); if (e.key === "Escape") setEditingNotes(null); }}
-                          className="text-xs border border-primary/30 rounded px-2 py-1 outline-none focus:border-primary/60 w-28"
-                          placeholder="Añadir nota…"
+                          className="text-xs border border-primary/30 rounded px-2 py-1 outline-none focus:border-primary/60 w-36"
+                          placeholder="Añadir descripción…"
                         />
                         <button onClick={() => saveNotes(t.id)} className="text-xs text-primary font-bold px-1">✓</button>
                         <button onClick={() => setEditingNotes(null)} className="text-xs text-navy/50">✕</button>
                       </div>
+                    ) : t.notes ? (
+                      <button onClick={() => openNotes(t)} className="text-left mt-0.5 block max-w-full">
+                        <span className="text-[11px] text-navy/45 hover:text-navy/65 transition-colors truncate block">{t.notes}</span>
+                      </button>
                     ) : (
-                      <button onClick={() => openNotes(t)} className="w-full text-left text-xs truncate block">
-                        {t.notes
-                          ? <span className="text-navy/50 hover:text-navy/70 transition-colors flex items-center gap-1"><span className="text-navy/30">↗</span> {t.notes}</span>
-                          : <span className="text-navy/30 opacity-0 group-hover:opacity-100 transition-opacity">+ nota</span>
-                        }
+                      <button onClick={() => openNotes(t)} className="mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <span className="text-[11px] text-navy/30">+ descripción</span>
                       </button>
                     )}
                   </td>
 
-                  <td className="px-4 align-middle text-right" style={{ height: "60px" }}>
+                  <td className="px-4 py-3 align-middle">
+                    <CategoryPill category={t.category} categories={categories} onChange={(cat) => handleCategoryChange(t.id, cat)} />
+                  </td>
+
+                  <td className="px-4 py-3 align-middle text-right">
                     <span className="text-xs text-navy/45 tabular-nums whitespace-nowrap">{fmtDate(t.date)}</span>
                   </td>
 
-                  <td className="pr-6 pl-4 align-middle text-right" style={{ height: "60px" }}>
+                  <td className="pr-6 pl-4 py-3 align-middle text-right">
                     <div className="flex items-center justify-end gap-1.5">
                       {t.payment_method === "efectivo" && (
                         <span className="shrink-0 text-[9px] font-semibold uppercase tracking-wide text-warning bg-warning/10 px-1.5 py-0.5 rounded">

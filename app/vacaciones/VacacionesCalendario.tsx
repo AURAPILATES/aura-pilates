@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Drawer from "@/app/components/Drawer";
 import { useRouter } from "next/navigation";
 import {
   addAusenciasAction,
@@ -205,12 +206,6 @@ function NuevoInstructorModal({
   const [diasTotales, setDiasTotales] = useState(23);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [onClose]);
-
   async function handleSubmit() {
     if (!nombre.trim()) return;
     setSaving(true);
@@ -220,17 +215,24 @@ function NuevoInstructorModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/30 backdrop-blur-sm p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-6 py-5 border-b border-navy/10">
-          <p className="font-semibold text-navy">Nuevo instructor</p>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-navy/5 text-navy/45 hover:text-navy transition-colors">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
+    <Drawer
+      title="Nuevo instructor"
+      onClose={onClose}
+      footer={
+        <div className="flex justify-end gap-3">
+          <button onClick={onClose} className="px-4 py-2.5 text-sm text-navy/55 hover:text-navy transition-colors">
+            Cancelar
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={!nombre.trim() || saving}
+            className="px-6 py-2.5 bg-primary text-white text-sm font-semibold rounded-xl hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            {saving ? "Creando…" : "Crear instructor"}
           </button>
         </div>
-
+      }
+    >
         <div className="px-6 py-5 space-y-4">
           <div>
             <label className="block text-xs text-navy/55 mb-1.5">Nombre</label>
@@ -279,21 +281,7 @@ function NuevoInstructorModal({
             </div>
           </div>
         </div>
-
-        <div className="flex justify-end gap-3 px-6 py-4 border-t border-navy/[0.07]">
-          <button onClick={onClose} className="px-4 py-2.5 text-sm text-navy/55 hover:text-navy transition-colors">
-            Cancelar
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={!nombre.trim() || saving}
-            className="px-6 py-2.5 bg-primary text-white text-sm font-semibold rounded-xl hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-          >
-            {saving ? "Creando…" : "Crear instructor"}
-          </button>
-        </div>
-      </div>
-    </div>
+    </Drawer>
   );
 }
 
@@ -332,12 +320,6 @@ function AñadirAusenciaModal({
   const [dateTo, setDateTo] = useState(TODAY);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [onClose]);
-
   const existingDates = getAbsenceDates(persona, absenceType);
 
   const newDates = duration === "day"
@@ -371,20 +353,23 @@ function AñadirAusenciaModal({
   const isVacaciones = absenceType === "vacaciones";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/30 backdrop-blur-sm p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-6 py-5 border-b border-navy/10">
-          <div>
-            <p className="font-semibold text-navy">Solicitar ausencia</p>
-            <p className="text-xs text-navy/55 mt-0.5">{persona.nombre}</p>
-          </div>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-navy/5 text-navy/45 hover:text-navy transition-colors">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
+    <Drawer
+      title="Solicitar ausencia"
+      subtitle={persona.nombre}
+      onClose={onClose}
+      maxWidth="max-w-xl"
+      footer={
+        <div className="flex justify-end">
+          <button
+            onClick={handleSolicitar}
+            disabled={newDates.length === 0 || saving}
+            className="px-6 py-2.5 bg-primary text-white text-sm font-semibold rounded-xl hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            {saving ? "Guardando…" : "Añadir"}
           </button>
         </div>
-
+      }
+    >
         <div className="flex flex-col sm:flex-row">
           <div className="flex-1 px-6 py-5 space-y-5">
             {/* Type selector */}
@@ -523,18 +508,7 @@ function AñadirAusenciaModal({
             )}
           </div>
         </div>
-
-        <div className="flex justify-end px-6 py-4 border-t border-navy/[0.07]">
-          <button
-            onClick={handleSolicitar}
-            disabled={newDates.length === 0 || saving}
-            className="px-6 py-2.5 bg-primary text-white text-sm font-semibold rounded-xl hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-          >
-            {saving ? "Guardando…" : "Añadir"}
-          </button>
-        </div>
-      </div>
-    </div>
+    </Drawer>
   );
 }
 
@@ -544,23 +518,8 @@ function AusenciasModal({ persona, idx, onClose }: { persona: Persona; idx: numb
   const colors = PERSON_COLORS[idx];
   const vacUsadas = persona.vacaciones.length;
 
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [onClose]);
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/30 backdrop-blur-sm" onClick={onClose}>
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-sm mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-6 py-5 border-b border-navy/10">
-          <div>
-            <p className="font-semibold text-navy">Resumen de ausencias</p>
-            <p className="text-xs text-navy/55 mt-0.5">{persona.nombre} · 2026</p>
-          </div>
-          <button onClick={onClose} className="text-navy/45 hover:text-navy text-xl leading-none">×</button>
-        </div>
-
+    <Drawer title="Resumen de ausencias" subtitle={`${persona.nombre} · 2026`} onClose={onClose} maxWidth="max-w-sm">
         <div className="px-6 py-4 space-y-4">
           <div>
             <div className="flex items-center justify-between">
@@ -605,8 +564,7 @@ function AusenciasModal({ persona, idx, onClose }: { persona: Persona; idx: numb
             );
           })}
         </div>
-      </div>
-    </div>
+    </Drawer>
   );
 }
 

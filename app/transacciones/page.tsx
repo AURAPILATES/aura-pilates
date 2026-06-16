@@ -64,16 +64,16 @@ export default async function TransaccionesPage(props: {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-[45px] flex items-center justify-between gap-3">
           <div className="flex items-center gap-4">
             <h1 className="text-sm font-bold text-navy uppercase tracking-widest">Transacciones</h1>
-            <Suspense fallback={null}><DateFilter /></Suspense>
+            {latestBal?.balance != null && (
+              <div className="hidden sm:flex items-baseline gap-2">
+                <span className="text-xs text-navy/45">Saldo · {fmtBalanceDate(latestBal.date)}</span>
+                <span className="text-sm font-bold text-navy tabular-nums">
+                  {latestBal.balance.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+                </span>
+              </div>
+            )}
           </div>
-          {latestBal?.balance != null && (
-            <div className="hidden sm:flex items-baseline gap-2">
-              <span className="text-xs text-navy/45">Saldo · {fmtBalanceDate(latestBal.date)}</span>
-              <span className="text-sm font-bold text-navy tabular-nums">
-                {latestBal.balance.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
-              </span>
-            </div>
-          )}
+          <Suspense fallback={null}><DateFilter /></Suspense>
         </div>
       </div>
 

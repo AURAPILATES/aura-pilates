@@ -2,6 +2,7 @@
 import { useState, useRef } from "react";
 import * as XLSX from "xlsx";
 import { importTransactions, type ImportRow } from "./actions";
+import Drawer from "@/app/components/Drawer";
 
 // ── CSV parser ────────────────────────────────────────────────────────────────
 
@@ -211,17 +212,7 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-navy/25 backdrop-blur-[2px]" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
-
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-navy/[0.07]">
-          <h2 className="text-base font-bold text-navy font-display">Importar movimientos</h2>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full text-navy/40 hover:text-navy hover:bg-navy/5 transition-colors">✕</button>
-        </div>
-
-        {/* Body */}
+    <Drawer title="Importar movimientos" onClose={onClose}>
         <div className="px-6 py-5">
 
           {/* ── Idle: dropzone ── */}
@@ -355,7 +346,6 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
             </div>
           )}
         </div>
-      </div>
-    </div>
+    </Drawer>
   );
 }
