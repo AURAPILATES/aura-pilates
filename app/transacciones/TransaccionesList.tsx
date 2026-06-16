@@ -132,6 +132,40 @@ function SelectWrapper({ children, className = "" }: { children: React.ReactNode
   );
 }
 
+type SortKey = "date" | "amount" | "concept";
+
+function SortableHeader({
+  label, sortKey, align, className = "", currentKey, dir, onClick,
+}: {
+  label: string;
+  sortKey: SortKey;
+  align: "left" | "right";
+  className?: string;
+  currentKey: SortKey | null;
+  dir: "asc" | "desc";
+  onClick: (key: SortKey) => void;
+}) {
+  const isActive = currentKey === sortKey;
+  return (
+    <th
+      onClick={() => onClick(sortKey)}
+      className={`${align === "right" ? "text-right" : "text-left"} ${className} py-3 text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none transition-colors ${
+        isActive ? "text-navy" : "text-navy/45 hover:text-navy/70"
+      }`}
+    >
+      <span className={`inline-flex items-center gap-1 ${align === "right" ? "flex-row-reverse" : ""}`}>
+        {label}
+        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"
+          className={`shrink-0 transition-opacity ${isActive ? "opacity-100" : "opacity-0 group-hover/head:opacity-30"}`}
+          style={{ transform: isActive && dir === "asc" ? "rotate(180deg)" : undefined }}
+        >
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </span>
+    </th>
+  );
+}
+
 type Props = {
   transactions: Transaction[];
   categories: Category[];
@@ -157,6 +191,17 @@ export default function TransaccionesList({
   const [selected,     setSelected]     = useState<Set<string>>(new Set());
   const [bulkCat,      setBulkCat]      = useState("");
   const [isPending,    startTransition] = useTransition();
+  const [sortKey, setSortKey] = useState<"date" | "amount" | "concept" | null>(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+
+  function toggleSort(key: "date" | "amount" | "concept") {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir(key === "concept" ? "asc" : "desc");
+    }
+  }
 
   const recurringSet = new Set(recurringContacts);
 
@@ -201,6 +246,18 @@ export default function TransaccionesList({
     if (catFilter !== "all" && t.category !== catFilter) return false;
     return true;
   });
+
+  const sortedFiltered = useMemo(() => {
+    if (!sortKey) return filtered;
+    const dir = sortDir === "asc" ? 1 : -1;
+    return [...filtered].sort((a, b) => {
+      if (sortKey === "date")   return a.date.localeCompare(b.date) * dir;
+      if (sortKey === "amount") return (a.amount - b.amount) * dir;
+      const ac = (a.contact || a.concept || "").toLowerCase();
+      const bc = (b.contact || b.concept || "").toLowerCase();
+      return ac.localeCompare(bc) * dir;
+    });
+  }, [filtered, sortKey, sortDir]);
 
   // ── Day grouping for mobile ──────────────────────────────────────────────────
   const byDay = useMemo(() => {
@@ -586,20 +643,20 @@ export default function TransaccionesList({
                   className="block rounded border-navy/[0.12] accent-primary cursor-pointer"
                   aria-label="Seleccionar todas" />
               </th>
-              <th className="text-left pl-2 pr-4 py-3 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Concepto</th>
+              <SortableHeader label="Concepto" sortKey="concept" align="left" className="pl-2 pr-4" currentKey={sortKey} dir={sortDir} onClick={toggleSort} />
               <th className="text-left px-4 py-3 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Categoría</th>
               <th className="text-left px-4 py-3 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Notas</th>
-              <th className="text-right px-4 py-3 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Fecha</th>
-              <th className="text-right pr-6 py-3 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Importe</th>
+              <SortableHeader label="Fecha" sortKey="date" align="right" className="px-4" currentKey={sortKey} dir={sortDir} onClick={toggleSort} />
+              <SortableHeader label="Importe" sortKey="amount" align="right" className="pr-6" currentKey={sortKey} dir={sortDir} onClick={toggleSort} />
             </tr>
           </thead>
           <tbody className={isPending ? "opacity-50 pointer-events-none" : ""}>
-            {filtered.length === 0 && (
+            {sortedFiltered.length === 0 && (
               <tr>
                 <td colSpan={6} className="px-4 py-12 text-center text-sm text-navy/40">Sin resultados</td>
               </tr>
             )}
-            {filtered.map((t) => {
+            {sortedFiltered.map((t) => {
               const isRecurring = !!t.contact && recurringSet.has(t.contact.toLowerCase().trim());
               const isSelected  = selected.has(t.id);
               const primary     = t.contact || t.concept || "—";
