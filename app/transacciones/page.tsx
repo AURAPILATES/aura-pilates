@@ -120,8 +120,8 @@ export default async function TransaccionesPage(props: {
             <Suspense fallback={null}><DateFilter /></Suspense>
           </div>
           {latestBal?.balance != null && (
-            <div className="flex items-baseline gap-2">
-              <span className="text-xs text-navy/45 hidden sm:inline">Saldo · {fmtBalanceDate(latestBal.date)}</span>
+            <div className="hidden sm:flex items-baseline gap-2">
+              <span className="text-xs text-navy/45">Saldo · {fmtBalanceDate(latestBal.date)}</span>
               <span className="text-sm font-bold text-navy tabular-nums">
                 {latestBal.balance.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
               </span>
@@ -129,6 +129,16 @@ export default async function TransaccionesPage(props: {
           )}
         </div>
       </div>
+
+      {/* ── Saldo (móvil) ── */}
+      {latestBal?.balance != null && (
+        <div className="sm:hidden px-4 pt-4 flex items-baseline justify-between max-w-6xl mx-auto">
+          <span className="text-xs text-navy/45">Saldo · {fmtBalanceDate(latestBal.date)}</span>
+          <span className="text-sm font-bold text-navy tabular-nums">
+            {latestBal.balance.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €
+          </span>
+        </div>
+      )}
 
       {/* ── Content ── */}
       <div className="px-2 sm:px-6 pt-6 sm:pt-8 pb-16 max-w-6xl mx-auto">
