@@ -168,28 +168,9 @@ export default function HorarioShell({
             </div>
           </div>
 
-          {/* Right: week nav + view toggle — desktop, horario tab only */}
+          {/* Right: view toggle — desktop, horario tab only */}
           {tab === "horario" && (
             <div className="hidden sm:flex items-center gap-2">
-              <div className="flex items-center gap-0.5 bg-white border border-navy/[0.08] rounded-lg overflow-hidden">
-                <button
-                  onClick={() => router.push(`?week=${prevWeek}`)}
-                  disabled={weekMonday <= MIN_WEEK}
-                  className="w-8 h-8 flex items-center justify-center disabled:opacity-20 text-navy/50 hover:text-navy hover:bg-navy/5 transition-colors"
-                >
-                  {chevLeft}
-                </button>
-                <span className="text-xs text-navy px-2 min-w-[130px] text-center">
-                  <span className="text-navy/45">Semana </span>
-                  <span className="font-semibold">{weekLabel(weekMonday)}</span>
-                </span>
-                <button
-                  onClick={() => router.push(`?week=${nextWeek}`)}
-                  className="w-8 h-8 flex items-center justify-center text-navy/50 hover:text-navy hover:bg-navy/5 transition-colors"
-                >
-                  {chevRight}
-                </button>
-              </div>
               <div className="flex border border-navy/[0.08] rounded-lg overflow-hidden bg-white text-xs">
                 {([{ v: "lista", l: "Lista" }, { v: "calendario", l: "Calendario" }] as { v: View; l: string }[]).map(({ v, l }) => (
                   <button
@@ -319,26 +300,49 @@ export default function HorarioShell({
 
           {tab === "horario" && (
             <div>
-              {/* Summary stats */}
-              {events.length > 0 && (
-                <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card px-5 py-4 mb-6 flex flex-wrap items-center gap-x-5 gap-y-3">
-                  <StatItem
-                    label="Ocupación"
-                    value={`${weekSoldSpots}/${weekTotalSpots} · ${pct(weekOcc)}`}
-                    accent={weekOcc >= 0.8 ? "text-success" : weekOcc >= 0.5 ? "text-warning" : "text-danger"}
-                  />
-                  <div className="h-7 w-px bg-navy/[0.08]" />
-                  <StatItem label="Plazas libres" value={`${weekFreeSpots}`} />
-                  {lowCount > 0 && (
-                    <>
-                      <div className="h-7 w-px bg-navy/[0.08]" />
-                      <span className="text-xs font-medium bg-warning/10 text-warning px-3 py-1.5 rounded-lg">
-                        {lowCount} clase{lowCount !== 1 ? "s" : ""} por llenar
-                      </span>
-                    </>
-                  )}
+              {/* Summary stats + week nav */}
+              <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card px-5 py-4 mb-6 flex flex-wrap items-center gap-x-5 gap-y-3">
+                {events.length > 0 ? (
+                  <>
+                    <StatItem
+                      label="Ocupación"
+                      value={`${weekSoldSpots}/${weekTotalSpots} · ${pct(weekOcc)}`}
+                      accent={weekOcc >= 0.8 ? "text-success" : weekOcc >= 0.5 ? "text-warning" : "text-danger"}
+                    />
+                    <div className="h-7 w-px bg-navy/[0.08]" />
+                    <StatItem label="Plazas libres" value={`${weekFreeSpots}`} />
+                    {lowCount > 0 && (
+                      <>
+                        <div className="h-7 w-px bg-navy/[0.08]" />
+                        <span className="text-xs font-medium bg-warning/10 text-warning px-3 py-1.5 rounded-lg">
+                          {lowCount} clase{lowCount !== 1 ? "s" : ""} por llenar
+                        </span>
+                      </>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-sm text-navy/40">Sin clases esta semana.</p>
+                )}
+
+                <div className="ml-auto flex items-center gap-1 bg-navy/[0.04] rounded-lg p-0.5">
+                  <button
+                    onClick={() => router.push(`?week=${prevWeek}`)}
+                    disabled={weekMonday <= MIN_WEEK}
+                    className="w-7 h-7 flex items-center justify-center rounded-md disabled:opacity-20 text-navy/50 hover:text-navy hover:bg-white transition-colors"
+                  >
+                    {chevLeft}
+                  </button>
+                  <span className="text-xs font-semibold text-navy px-1.5 min-w-[90px] text-center">
+                    {weekLabel(weekMonday)}
+                  </span>
+                  <button
+                    onClick={() => router.push(`?week=${nextWeek}`)}
+                    className="w-7 h-7 flex items-center justify-center rounded-md text-navy/50 hover:text-navy hover:bg-white transition-colors"
+                  >
+                    {chevRight}
+                  </button>
                 </div>
-              )}
+              </div>
 
               {/* Filters */}
               <div className="flex flex-wrap items-center gap-3 mb-6">
