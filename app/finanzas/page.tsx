@@ -38,7 +38,9 @@ import ConversionChart from "./ConversionChart";
 import MrrCard from "./MrrCard";
 import { subscriptionTiersFromMemberships, computeMrrByTier } from "@/lib/mrr";
 import { getMemberships, getProducts, getCustomers } from "@/lib/momence";
-import { catalogFromMomence, revenueByProductFromStripe } from "@/lib/productRevenue";
+import { catalogFromMomence, revenueByProductFromStripe, revenueByProductByMonth, addUscToMonthlyRevenue } from "@/lib/productRevenue";
+import { computeSubscriptionCohorts } from "@/lib/subscriptionCohort";
+import SubscriptionEvolutionChart from "./SubscriptionEvolutionChart";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -125,8 +127,6 @@ export default async function Finanzas(props: {
   const curMonth  = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}`;
   const prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const prevMonth = `${prevMonthDate.getFullYear()}-${pad2(prevMonthDate.getMonth() + 1)}`;
-  const prev2MonthDate = new Date(now.getFullYear(), now.getMonth() - 2, 1);
-  const prev2Month = `${prev2MonthDate.getFullYear()}-${pad2(prev2MonthDate.getMonth() + 1)}`;
 
   const [paymentsAll, membershipsAll, productsAll, customersAll] = await Promise.all([
     loadStripePaymentsCached(),
@@ -223,6 +223,18 @@ export default async function Finanzas(props: {
   // ── MRR/ARR por suscripción (suscriptores activos reales en Momence) ──────
   const subscriptionTiers = subscriptionTiersFromMemberships(membershipsAll);
   const mrrByTier = computeMrrByTier(customersAll, subscriptionTiers);
+
+  // ── Evolución de ingresos + altas/bajas/reactivaciones (histórico completo) ──
+  const paymentsAllBounded = uscLastDate ? paymentsAll.filter((p) => p.date <= uscLastDate) : paymentsAll;
+  const monthlyStripeRevenue = revenueByProductByMonth(paymentsAllBounded, productCatalog);
+  const uscByMonth = new Map<string, number>();
+  for (const s of momenceSalesAll) {
+    if (s.method !== "urban-sports-club") continue;
+    const m = s.paymentDate.slice(0, 7);
+    uscByMonth.set(m, (uscByMonth.get(m) ?? 0) + s.amount);
+  }
+  const monthlyRevenue = addUscToMonthlyRevenue(monthlyStripeRevenue, uscByMonth);
+  const subscriptionCohorts = computeSubscriptionCohorts(paymentsAllBounded, subscriptionTiers);
 
   // Rango real de transacciones para mostrarlo en el desglose
   const txnDates = txnsAll.map((t) => t.date).sort();
@@ -594,6 +606,12 @@ export default async function Finanzas(props: {
             <section id="q8">
               <QuestionHeader num={8} question="¿Cuál es el MRR/ARR por suscripción?" />
               <MrrCard tiers={mrrByTier} />
+            </section>
+
+            {/* Q9 ¿Cómo evolucionan los ingresos y las altas/bajas? */}
+            <section id="q9">
+              <QuestionHeader num={9} question="¿Cómo evolucionan los ingresos y las altas/bajas?" />
+              <SubscriptionEvolutionChart monthly={monthlyRevenue} cohorts={subscriptionCohorts} />
             </section>
 
         </div>
