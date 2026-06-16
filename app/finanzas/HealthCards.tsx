@@ -1,5 +1,3 @@
-"use client";
-import { useEffect, useRef, useState } from "react";
 import { fmt } from "@/lib/analytics";
 
 type Props = {
@@ -29,26 +27,12 @@ export default function HealthCards(props: Props) {
     avgMonthlyRevenue, clientesNecesarios, curMonthLabel,
   } = props;
 
-  const sentinelRef = useRef<HTMLDivElement>(null);
-  const [showStrip, setShowStrip] = useState(false);
-
-  useEffect(() => {
-    const el = sentinelRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => setShowStrip(!entry.isIntersecting),
-      { rootMargin: "0px 0px 0px 0px", threshold: 0 },
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
   const rColor = runwayColor(runwayMonths);
 
   return (
     <>
       {/* ── Cards (normal flow) ── */}
-      <div ref={sentinelRef} className="mb-8">
+      <div className="mb-8">
 
         {/* Mobile: tarjeta unificada 2×2 */}
         <div className="sm:hidden bg-white border border-navy/10 rounded-xl shadow-card overflow-hidden">

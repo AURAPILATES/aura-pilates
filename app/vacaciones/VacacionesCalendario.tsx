@@ -319,12 +319,10 @@ function fmtPreviewDate(dateStr: string) {
 
 function AñadirAusenciaModal({
   persona,
-  idx,
   onClose,
   onAdd,
 }: {
   persona: Persona;
-  idx: number;
   onClose: () => void;
   onAdd: (typeKey: AbsenceKey, dates: string[]) => Promise<void>;
 }) {
@@ -691,7 +689,6 @@ function PersonCard({
       {showAddModal && (
         <AñadirAusenciaModal
           persona={persona}
-          idx={idx}
           onClose={() => setShowAddModal(false)}
           onAdd={onAdd}
         />

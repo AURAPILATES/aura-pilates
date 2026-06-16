@@ -8,7 +8,6 @@ import {
   totalStudents,
   trend,
   pct,
-  fmt,
 } from "@/lib/analytics";
 
 export type ReportingData = {

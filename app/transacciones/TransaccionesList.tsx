@@ -3,7 +3,6 @@ import { useState, useTransition, useEffect, useRef, useMemo } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import type { Transaction } from "@/lib/transactions";
 import type { Category } from "@/lib/categories";
-import type { Anomaly } from "./page";
 import { updateTransactionCategory, updateTransactionNotes } from "./actions";
 import { RANGE_OPTIONS } from "@/lib/dateRange";
 import ImportButton from "./ImportButton";
@@ -138,11 +137,10 @@ type Props = {
   categories: Category[];
   uncategorizedCount: number;
   recurringContacts: string[];
-  anomalies: Anomaly[];
 };
 
 export default function TransaccionesList({
-  transactions, categories, uncategorizedCount, recurringContacts, anomalies,
+  transactions, categories, uncategorizedCount, recurringContacts,
 }: Props) {
   const router       = useRouter();
   const pathname     = usePathname();
@@ -248,8 +246,6 @@ export default function TransaccionesList({
     startTransition(() => updateTransactionNotes(id, notesValue));
     setEditingNotes(null);
   }
-
-  const rangeLabel = RANGE_OPTIONS.find(o => o.key === currentRange)?.label ?? "Todo";
 
   function exportCSV() {
     const cols = ["fecha", "concepto", "contacto", "categoría", "importe", "saldo", "notas"];
