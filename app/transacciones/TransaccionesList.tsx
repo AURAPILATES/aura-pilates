@@ -3,7 +3,7 @@ import { useState, useTransition, useEffect, useRef, useMemo } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import type { Transaction } from "@/lib/transactions";
 import type { Category } from "@/lib/categories";
-import { updateTransactionCategory, updateTransactionNotes } from "./actions";
+import { updateTransactionCategory, updateTransactionConcept, updateTransactionContact } from "./actions";
 import { RANGE_OPTIONS } from "@/lib/dateRange";
 import ImportButton from "./ImportButton";
 import AddCashModal from "./AddCashModal";
@@ -29,6 +29,26 @@ function fmtAmt(n: number) {
 }
 
 const CAT_FALLBACK = { emoji: "package", bg: "#F8FAFC", color: "#94A3B8" };
+
+// ── Source avatar (bank vs cash) ──────────────────────────────────────────────
+function SourceAvatar({ method }: { method: string }) {
+  if (method === "efectivo") {
+    return (
+      <div className="shrink-0 w-[22px] h-[22px] rounded-full bg-amber-100 flex items-center justify-center" title="Efectivo">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#92400E" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="2" y="6" width="20" height="14" rx="2"/><circle cx="12" cy="13" r="3"/><path d="M6 10h.01M18 10h.01"/>
+        </svg>
+      </div>
+    );
+  }
+  return (
+    <div className="shrink-0 w-[22px] h-[22px] rounded-full flex items-center justify-center" style={{ backgroundColor: "#004F9F" }} title="CaixaBank">
+      <svg width="10" height="10" viewBox="0 0 20 20" fill="white">
+        <path d="M10 1l2.4 7.4H20l-6.2 4.5 2.4 7.4L10 17l-6.2 3.3 2.4-7.4L0 8.5h7.6z"/>
+      </svg>
+    </div>
+  );
+}
 
 // ── Icon system ───────────────────────────────────────────────────────────────
 const ICON_PATHS: Record<string, React.ReactNode> = {
@@ -185,10 +205,11 @@ export default function TransaccionesList({
 
   const [search,      setSearch]      = useState("");
   const [catFilter,   setCatFilter]   = useState(() => searchParams.get("categoria") ?? "all");
+  const [originFilter, setOriginFilter] = useState("all");
   const [showMobileFilters,  setShowMobileFilters]  = useState(false);
   const [mobileSelectMode,   setMobileSelectMode]   = useState(false);
-  const [editingNotes, setEditingNotes] = useState<string | null>(null);
-  const [notesValue,   setNotesValue]   = useState("");
+  const [editingField, setEditingField] = useState<{ id: string; field: "contact" | "concept" } | null>(null);
+  const [editValue, setEditValue] = useState("");
   const [selected,     setSelected]     = useState<Set<string>>(new Set());
   const [bulkCat,      setBulkCat]      = useState("");
   const [isPending,    startTransition] = useTransition();
@@ -246,6 +267,7 @@ export default function TransaccionesList({
     const q = search.toLowerCase();
     if (q && !t.contact?.toLowerCase().includes(q) && !t.concept?.toLowerCase().includes(q)) return false;
     if (catFilter !== "all" && t.category !== catFilter) return false;
+    if (originFilter !== "all" && t.payment_method !== originFilter) return false;
     return true;
   });
 
@@ -300,10 +322,29 @@ export default function TransaccionesList({
   function handleCategoryChange(id: string, category: string) {
     startTransition(() => updateTransactionCategory(id, category));
   }
-  function openNotes(t: Transaction) { setEditingNotes(t.id); setNotesValue(t.notes ?? ""); }
-  function saveNotes(id: string) {
-    startTransition(() => updateTransactionNotes(id, notesValue));
-    setEditingNotes(null);
+  function startEditing(t: Transaction, which: "primary" | "secondary") {
+    if (which === "primary") {
+      if (t.contact != null) {
+        setEditingField({ id: t.id, field: "contact" });
+        setEditValue(t.contact);
+      } else {
+        setEditingField({ id: t.id, field: "concept" });
+        setEditValue(t.concept ?? "");
+      }
+    } else {
+      setEditingField({ id: t.id, field: "concept" });
+      setEditValue(t.concept ?? "");
+    }
+  }
+  function saveEdit() {
+    if (!editingField) return;
+    const { id, field } = editingField;
+    const val = editValue;
+    startTransition(async () => {
+      if (field === "contact") await updateTransactionContact(id, val);
+      else await updateTransactionConcept(id, val);
+    });
+    setEditingField(null);
   }
 
   function exportCSV() {
@@ -378,6 +419,13 @@ export default function TransaccionesList({
               {categories.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
             </select>
           </SelectWrapper>
+          <SelectWrapper>
+            <select value={originFilter} onChange={(e) => setOriginFilter(e.target.value)} className={SELECT_CLS}>
+              <option value="all">Origen</option>
+              <option value="banco">CaixaBank</option>
+              <option value="efectivo">Efectivo</option>
+            </select>
+          </SelectWrapper>
         </div>
       )}
 
@@ -440,6 +488,13 @@ export default function TransaccionesList({
           <select value={catFilter} onChange={(e) => setCatFilter(e.target.value)} className={SELECT_CLS}>
             <option value="all">Categoría</option>
             {categories.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+          </select>
+        </SelectWrapper>
+        <SelectWrapper>
+          <select value={originFilter} onChange={(e) => setOriginFilter(e.target.value)} className={SELECT_CLS} style={{ width: "140px" }}>
+            <option value="all">Origen</option>
+            <option value="banco">CaixaBank</option>
+            <option value="efectivo">Efectivo</option>
           </select>
         </SelectWrapper>
         <div className="flex-1" />
@@ -619,8 +674,9 @@ export default function TransaccionesList({
                         <div className="flex items-center gap-2.5 min-w-0">
                           {mobileSelectMode && (
                             <input type="checkbox" checked={isSelected} onChange={() => toggleOne(t.id)}
-                              className="shrink-0 rounded border-navy/20 accent-primary cursor-pointer" />
+                              className="shrink-0 rounded border-navy/20 accent-gray-400 cursor-pointer" />
                           )}
+                          <SourceAvatar method={t.payment_method} />
                           <div className="min-w-0">
                             <div className="flex items-center gap-1.5">
                               <span className="text-sm font-medium text-navy truncate">{primary}</span>
@@ -669,7 +725,7 @@ export default function TransaccionesList({
             <tr className="border-b border-navy/[0.06] bg-navy/[0.012] group/head">
               <th className="pl-3 py-3 align-middle">
                 <input type="checkbox" checked={allSelected} onChange={toggleAll}
-                  className="block rounded border-navy/[0.12] accent-primary cursor-pointer"
+                  className="block rounded border-navy/[0.12] accent-gray-400 cursor-pointer"
                   aria-label="Seleccionar todas" />
               </th>
               <SortableHeader label="Concepto" sortKey="concept" align="left" className="pl-2 pr-4" currentKey={sortKey} dir={sortDir} onClick={toggleSort} />
@@ -699,45 +755,61 @@ export default function TransaccionesList({
                 >
                   <td className="pl-3 py-3 align-middle">
                     <input type="checkbox" checked={isSelected} onChange={() => toggleOne(t.id)}
-                      className="block rounded border-navy/[0.12] accent-primary cursor-pointer" />
+                      className="block rounded border-navy/[0.12] accent-gray-400 cursor-pointer" />
                   </td>
 
                   <td className="pl-2 pr-4 py-2.5 align-middle overflow-hidden">
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="text-sm font-semibold text-navy truncate">{primary}</span>
-                      {isRecurring && (
-                        <span className="shrink-0 inline-flex items-center gap-0.5 text-[10px] text-primary/60 font-medium whitespace-nowrap">
-                          <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15"/>
-                          </svg>
-                          mensual
-                        </span>
-                      )}
-                    </div>
-                    {secondary && (
-                      <p className="text-[11px] text-navy/40 truncate mt-0.5">{secondary}</p>
-                    )}
-                    {editingNotes === t.id ? (
-                      <div className="flex items-center gap-1 mt-1">
-                        <input
-                          autoFocus type="text" value={notesValue}
-                          onChange={(e) => setNotesValue(e.target.value)}
-                          onKeyDown={(e) => { if (e.key === "Enter") saveNotes(t.id); if (e.key === "Escape") setEditingNotes(null); }}
-                          className="text-xs border border-primary/30 rounded px-2 py-1 outline-none focus:border-primary/60 w-36"
-                          placeholder="Añadir descripción…"
-                        />
-                        <button onClick={() => saveNotes(t.id)} className="text-xs text-primary font-bold px-1">✓</button>
-                        <button onClick={() => setEditingNotes(null)} className="text-xs text-navy/50">✕</button>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <SourceAvatar method={t.payment_method} />
+                      <div className="min-w-0 flex-1">
+                        {editingField?.id === t.id && editingField.field === (t.contact != null ? "contact" : "concept") ? (
+                          <div className="flex items-center gap-1">
+                            <input
+                              autoFocus type="text" value={editValue}
+                              onChange={(e) => setEditValue(e.target.value)}
+                              onKeyDown={(e) => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") setEditingField(null); }}
+                              className="text-sm font-semibold border border-primary/30 rounded px-2 py-0.5 outline-none focus:border-primary/60 w-full"
+                            />
+                            <button onClick={saveEdit} className="text-xs text-primary font-bold px-1 shrink-0">✓</button>
+                            <button onClick={() => setEditingField(null)} className="text-xs text-navy/50 shrink-0">✕</button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1.5">
+                            <span
+                              className="text-sm font-semibold text-navy truncate cursor-pointer hover:text-navy/70 transition-colors"
+                              onClick={() => startEditing(t, "primary")}
+                            >{primary}</span>
+                            {isRecurring && (
+                              <span className="shrink-0 inline-flex items-center gap-0.5 text-[10px] text-primary/60 font-medium whitespace-nowrap">
+                                <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15"/>
+                                </svg>
+                                mensual
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        {secondary && (
+                          editingField?.id === t.id && editingField.field === "concept" && t.contact != null ? (
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <input
+                                autoFocus type="text" value={editValue}
+                                onChange={(e) => setEditValue(e.target.value)}
+                                onKeyDown={(e) => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") setEditingField(null); }}
+                                className="text-[11px] border border-primary/30 rounded px-2 py-0.5 outline-none focus:border-primary/60 w-full"
+                              />
+                              <button onClick={saveEdit} className="text-xs text-primary font-bold px-1 shrink-0">✓</button>
+                              <button onClick={() => setEditingField(null)} className="text-xs text-navy/50 shrink-0">✕</button>
+                            </div>
+                          ) : (
+                            <p
+                              className="text-[11px] text-navy/40 truncate mt-0.5 cursor-pointer hover:text-navy/60 transition-colors"
+                              onClick={() => startEditing(t, "secondary")}
+                            >{secondary}</p>
+                          )
+                        )}
                       </div>
-                    ) : t.notes ? (
-                      <button onClick={() => openNotes(t)} className="text-left mt-0.5 block max-w-full">
-                        <span className="text-[11px] text-navy/45 hover:text-navy/65 transition-colors truncate block">{t.notes}</span>
-                      </button>
-                    ) : (
-                      <button onClick={() => openNotes(t)} className="mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <span className="text-[11px] text-navy/30">+ descripción</span>
-                      </button>
-                    )}
+                    </div>
                   </td>
 
                   <td className="px-4 py-3 align-middle">

@@ -173,3 +173,25 @@ export async function updateTransactionNotes(id: string, notes: string) {
   if (error) throw new Error(error.message);
   revalidatePath("/transacciones");
 }
+
+export async function updateTransactionConcept(id: string, concept: string) {
+  const supabase = createServerClient();
+  const { error } = await supabase
+    .from("transactions")
+    .update({ concept: concept.trim() || null })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath("/transacciones");
+  revalidatePath("/finanzas");
+}
+
+export async function updateTransactionContact(id: string, contact: string) {
+  const supabase = createServerClient();
+  const { error } = await supabase
+    .from("transactions")
+    .update({ contact: contact.trim() || null })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath("/transacciones");
+  revalidatePath("/finanzas");
+}
