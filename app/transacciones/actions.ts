@@ -1,6 +1,6 @@
 "use server";
 import { createServerClient } from "@/lib/supabase";
-import { revalidatePath } from "next/cache";
+import { revalidateTag } from "next/cache";
 import type { PaymentMethod } from "@/lib/transactions";
 
 export type ImportRow = {
@@ -69,8 +69,7 @@ export async function importTransactions(
     if (error) throw new Error(error.message);
   }
 
-  revalidatePath("/transacciones");
-  revalidatePath("/finanzas");
+  revalidateTag("transactions");
   return { imported: toInsert.length, skipped, batchId };
 }
 
@@ -116,8 +115,7 @@ export async function undoImport(batchId: string): Promise<{ deleted: number }> 
     .eq("import_batch_id", batchId)
     .select("id");
   if (error) throw new Error(error.message);
-  revalidatePath("/transacciones");
-  revalidatePath("/finanzas");
+  revalidateTag("transactions");
   return { deleted: data?.length ?? 0 };
 }
 
@@ -141,8 +139,7 @@ export async function addCashTransaction(input: {
     payment_method: "efectivo",
   });
   if (error) throw new Error(error.message);
-  revalidatePath("/transacciones");
-  revalidatePath("/finanzas");
+  revalidateTag("transactions");
 }
 
 export async function updateTransactionCategory(id: string, category: string) {
@@ -152,8 +149,7 @@ export async function updateTransactionCategory(id: string, category: string) {
     .update({ category })
     .eq("id", id);
   if (error) throw new Error(error.message);
-  revalidatePath("/transacciones");
-  revalidatePath("/finanzas");
+  revalidateTag("transactions");
 }
 
 export async function updateTransactionContactType(id: string, contactType: string | null) {
@@ -163,7 +159,7 @@ export async function updateTransactionContactType(id: string, contactType: stri
     .update({ contact_type: contactType || null })
     .eq("id", id);
   if (error) throw new Error(error.message);
-  revalidatePath("/transacciones");
+  revalidateTag("transactions");
 }
 
 export async function updateTransactionNotes(id: string, notes: string) {
@@ -173,7 +169,7 @@ export async function updateTransactionNotes(id: string, notes: string) {
     .update({ notes: notes.trim() || null })
     .eq("id", id);
   if (error) throw new Error(error.message);
-  revalidatePath("/transacciones");
+  revalidateTag("transactions");
 }
 
 export async function softDeleteTransactions(ids: string[]): Promise<void> {
@@ -184,8 +180,7 @@ export async function softDeleteTransactions(ids: string[]): Promise<void> {
     .update({ deleted_at: new Date().toISOString() })
     .in("id", ids);
   if (error) throw new Error(error.message);
-  revalidatePath("/transacciones");
-  revalidatePath("/finanzas");
+  revalidateTag("transactions");
 }
 
 export async function restoreTransactions(ids: string[]): Promise<void> {
@@ -196,8 +191,7 @@ export async function restoreTransactions(ids: string[]): Promise<void> {
     .update({ deleted_at: null })
     .in("id", ids);
   if (error) throw new Error(error.message);
-  revalidatePath("/transacciones");
-  revalidatePath("/finanzas");
+  revalidateTag("transactions");
 }
 
 export type DeletedTransaction = {
@@ -228,8 +222,7 @@ export async function updateTransactionConcept(id: string, concept: string) {
     .update({ concept: concept.trim() || null })
     .eq("id", id);
   if (error) throw new Error(error.message);
-  revalidatePath("/transacciones");
-  revalidatePath("/finanzas");
+  revalidateTag("transactions");
 }
 
 export async function updateTransactionContact(id: string, contact: string) {
@@ -239,6 +232,5 @@ export async function updateTransactionContact(id: string, contact: string) {
     .update({ contact: contact.trim() || null })
     .eq("id", id);
   if (error) throw new Error(error.message);
-  revalidatePath("/transacciones");
-  revalidatePath("/finanzas");
+  revalidateTag("transactions");
 }

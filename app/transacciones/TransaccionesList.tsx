@@ -43,10 +43,28 @@ function SourceAvatar({ method }: { method: string }) {
     );
   }
   return (
-    <div className="shrink-0 w-[22px] h-[22px] rounded-full flex items-center justify-center" style={{ backgroundColor: "#004F9F" }} title="CaixaBank">
-      <svg width="10" height="10" viewBox="0 0 20 20" fill="white">
-        <path d="M10 1l2.4 7.4H20l-6.2 4.5 2.4 7.4L10 17l-6.2 3.3 2.4-7.4L0 8.5h7.6z"/>
-      </svg>
+    <svg width="22" height="22" viewBox="0 0 100 90" fill="none" className="shrink-0" aria-label="CaixaBank">
+      <polygon points="80,5 65,37 98,44 63,49 68,85 49,49 5,43 51,37" fill="#009BE0"/>
+      <circle cx="24" cy="57" r="8" fill="#F5A000"/>
+      <circle cx="14" cy="76" r="14" fill="#D94B25"/>
+    </svg>
+  );
+}
+
+// ── Custom checkbox ────────────────────────────────────────────────────────────
+function Checkbox({ checked, onChange }: { checked: boolean; onChange: () => void }) {
+  return (
+    <div
+      onClick={(e) => { e.stopPropagation(); onChange(); }}
+      className={`w-[15px] h-[15px] rounded-[3px] border cursor-pointer flex items-center justify-center shrink-0 transition-colors ${
+        checked ? "bg-black border-black" : "bg-white border-gray-300 hover:border-gray-400"
+      }`}
+    >
+      {checked && (
+        <svg width="9" height="7" viewBox="0 0 9 7" fill="none">
+          <polyline points="1,3.5 3.5,6 8,1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      )}
     </div>
   );
 }
@@ -727,8 +745,7 @@ export default function TransaccionesList({
                       <div className="flex items-center justify-between gap-3">
                         <div className="flex items-center gap-2.5 min-w-0">
                           {mobileSelectMode && (
-                            <input type="checkbox" checked={isSelected} onChange={() => toggleOne(t.id)}
-                              className="shrink-0 rounded border-navy/20 accent-gray-400 cursor-pointer" />
+                            <Checkbox checked={isSelected} onChange={() => toggleOne(t.id)} />
                           )}
                           <SourceAvatar method={t.payment_method} />
                           <div className="min-w-0">
@@ -764,7 +781,7 @@ export default function TransaccionesList({
       <div className="hidden sm:block bg-white border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden">
         <table className="w-full" style={{ tableLayout: "fixed" }}>
           <colgroup>
-            <col style={{ width: "32px" }} />
+            <col style={{ width: "44px" }} />
             <col />
             <col style={{ width: "172px" }} />
             <col style={{ width: "110px" }} />
@@ -773,9 +790,7 @@ export default function TransaccionesList({
           <thead>
             <tr className="border-b border-navy/[0.06] bg-navy/[0.012] group/head">
               <th className="pl-3 py-3 align-middle">
-                <input type="checkbox" checked={allSelected} onChange={toggleAll}
-                  className="block rounded border-navy/[0.12] accent-gray-400 cursor-pointer"
-                  aria-label="Seleccionar todas" />
+                <Checkbox checked={allSelected} onChange={toggleAll} />
               </th>
               <SortableHeader label="Concepto" sortKey="concept" align="left" className="pl-2 pr-4" currentKey={sortKey} dir={sortDir} onClick={toggleSort} />
               <th className="text-left px-4 py-3 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Categoría</th>
@@ -802,15 +817,20 @@ export default function TransaccionesList({
                     isSelected ? "bg-primary/[0.03]" : "hover:bg-navy/[0.01]"
                   }`}
                 >
-                  <td className="pl-3 py-3 align-middle">
-                    <input type="checkbox" checked={isSelected} onChange={() => toggleOne(t.id)}
-                      className="block rounded border-navy/[0.12] accent-gray-400 cursor-pointer" />
+                  <td className="pl-3 py-2.5 align-middle">
+                    <div className="relative w-[22px] h-[22px] flex items-center justify-center">
+                      <div className={`absolute inset-0 flex items-center justify-center pointer-events-none transition-opacity ${isSelected ? "opacity-0" : "opacity-100 group-hover:opacity-0"}`}>
+                        <SourceAvatar method={t.payment_method} />
+                      </div>
+                      <div className={`absolute inset-0 flex items-center justify-center transition-opacity ${isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}>
+                        <Checkbox checked={isSelected} onChange={() => toggleOne(t.id)} />
+                      </div>
+                    </div>
                   </td>
 
                   <td className="pl-2 pr-4 py-2.5 align-middle overflow-hidden">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <SourceAvatar method={t.payment_method} />
-                      <div className="min-w-0 flex-1">
+                    <div className="min-w-0">
+                      <div className="min-w-0">
                         {editingField?.id === t.id && editingField.field === (t.contact != null ? "contact" : "concept") ? (
                           <div className="flex items-center gap-1">
                             <input
