@@ -43,11 +43,7 @@ function SourceAvatar({ method }: { method: string }) {
     );
   }
   return (
-    <svg width="20" height="20" viewBox="0 0 100 100" fill="none" className="shrink-0" aria-label="CaixaBank">
-      <polygon points="83,5 80,35 97,54 75,65 67,93 42,64 3,49 48,33" fill="#009BE0"/>
-      <circle cx="18" cy="60" r="8" fill="#F5A000"/>
-      <circle cx="14" cy="76" r="13" fill="#D94B25"/>
-    </svg>
+    <img src="/Caixabank logo.png" alt="CaixaBank" width={20} height={20} className="shrink-0 object-contain" />
   );
 }
 
