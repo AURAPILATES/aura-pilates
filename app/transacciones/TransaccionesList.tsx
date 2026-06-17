@@ -43,7 +43,7 @@ function SourceAvatar({ method }: { method: string }) {
     );
   }
   return (
-    <img src="/Caixabank logo.png" alt="CaixaBank" width={20} height={20} className="shrink-0 object-contain" />
+    <img src="/Caixabank logo.png" alt="CaixaBank" width={16} height={16} className="shrink-0 object-contain" />
   );
 }
 
