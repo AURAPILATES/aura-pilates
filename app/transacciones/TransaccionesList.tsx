@@ -43,10 +43,10 @@ function SourceAvatar({ method }: { method: string }) {
     );
   }
   return (
-    <svg width="22" height="22" viewBox="0 0 100 90" fill="none" className="shrink-0" aria-label="CaixaBank">
-      <polygon points="80,5 65,37 98,44 63,49 68,85 49,49 5,43 51,37" fill="#009BE0"/>
-      <circle cx="24" cy="57" r="8" fill="#F5A000"/>
-      <circle cx="14" cy="76" r="14" fill="#D94B25"/>
+    <svg width="22" height="22" viewBox="0 0 100 100" fill="none" className="shrink-0" aria-label="CaixaBank">
+      <polygon points="68,8 76,37 98,58 79,67 78,96 47,65 5,50 43,34" fill="#009BE0"/>
+      <circle cx="20" cy="61" r="6" fill="#F5A000"/>
+      <circle cx="15" cy="77" r="11" fill="#D94B25"/>
     </svg>
   );
 }

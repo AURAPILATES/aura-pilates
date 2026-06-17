@@ -23,11 +23,11 @@ function SourceAvatar({ method }: { method: string }) {
     );
   }
   return (
-    <div className="shrink-0 w-[22px] h-[22px] rounded-full flex items-center justify-center" style={{ backgroundColor: "#004F9F" }} title="CaixaBank">
-      <svg width="10" height="10" viewBox="0 0 20 20" fill="white">
-        <path d="M10 1l2.4 7.4H20l-6.2 4.5 2.4 7.4L10 17l-6.2 3.3 2.4-7.4L0 8.5h7.6z"/>
-      </svg>
-    </div>
+    <svg width="22" height="22" viewBox="0 0 100 100" fill="none" className="shrink-0" aria-label="CaixaBank">
+      <polygon points="68,8 76,37 98,58 79,67 78,96 47,65 5,50 43,34" fill="#009BE0"/>
+      <circle cx="20" cy="61" r="6" fill="#F5A000"/>
+      <circle cx="15" cy="77" r="11" fill="#D94B25"/>
+    </svg>
   );
 }
 
