@@ -335,20 +335,21 @@ export default function HorarioShell({
               {/* Occ filter pills */}
               <div className="flex gap-2 overflow-x-auto pb-1 mb-5 scrollbar-none">
                 {([
-                  { value: "all", label: "Todas" },
-                  { value: "low", label: "Por llenar" },
-                  { value: "mid", label: "A medias" },
-                  { value: "high", label: "Llenas" },
-                ] as { value: OccFilter; label: string }[]).map(({ value, label }) => (
+                  { value: "all",  label: "Todas",      dot: "bg-navy/25" },
+                  { value: "low",  label: "Por llenar", dot: "bg-[#c03828]" },
+                  { value: "mid",  label: "A medias",   dot: "bg-[#a38540]" },
+                  { value: "high", label: "Llenas",     dot: "bg-[#4e8a5d]" },
+                ] as { value: OccFilter; label: string; dot: string }[]).map(({ value, label, dot }) => (
                   <button
                     key={value}
                     onClick={() => setOccFilter(value)}
-                    className={`shrink-0 px-4 py-1.5 text-sm rounded-full border transition-colors ${
+                    className={`shrink-0 flex items-center gap-1.5 px-4 py-1.5 text-sm rounded-full border transition-colors ${
                       occFilter === value
                         ? "bg-navy text-white border-navy"
                         : "bg-white text-navy/60 border-navy/[0.12] hover:text-navy"
                     }`}
                   >
+                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${occFilter === value ? "bg-white/60" : dot}`} />
                     {label}
                   </button>
                 ))}
@@ -447,18 +448,19 @@ export default function HorarioShell({
                 <Select value={instructoraFilter}  onChange={setInstructoraFilter}  options={instructoras}  placeholder="Todas las instructoras" />
                 <div className="flex items-center border border-navy/[0.12] rounded-lg bg-white p-1 gap-0.5">
                   {([
-                    { value: "all", label: "Todas" },
-                    { value: "low", label: "Por llenar" },
-                    { value: "mid", label: "A medias" },
-                    { value: "high", label: "Llenas" },
-                  ] as { value: OccFilter; label: string }[]).map(({ value, label }) => (
+                    { value: "all",  label: "Todas",      dot: "bg-navy/25" },
+                    { value: "low",  label: "Por llenar", dot: "bg-[#c03828]" },
+                    { value: "mid",  label: "A medias",   dot: "bg-[#a38540]" },
+                    { value: "high", label: "Llenas",     dot: "bg-[#4e8a5d]" },
+                  ] as { value: OccFilter; label: string; dot: string }[]).map(({ value, label, dot }) => (
                     <button
                       key={value}
                       onClick={() => setOccFilter(value)}
-                      className={`px-4 py-1.5 text-sm rounded-md transition-colors ${
+                      className={`flex items-center gap-1.5 px-4 py-1.5 text-sm rounded-md transition-colors ${
                         occFilter === value ? "bg-navy text-white font-medium" : "text-navy/50 hover:text-navy"
                       }`}
                     >
+                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${occFilter === value ? "bg-white/60" : dot}`} />
                       {label}
                     </button>
                   ))}
