@@ -114,14 +114,14 @@ export default memo(function HorarioList({
                             />
                           </div>
                         </div>
-                        <span className="text-xs text-navy/50 tabular-nums">{e.ticketsSold}/{e.capacity}</span>
-                        <span className="text-xs text-navy/40 tabular-nums w-14 text-right">
+                        <span className="text-xs text-navy/50 tabular-nums w-8 text-right shrink-0">{e.ticketsSold}/{e.capacity}</span>
+                        <span className="text-xs text-navy/40 tabular-nums w-14 text-right shrink-0">
                           {e.spotsRemaining} libres
                         </span>
                         <span className={`text-sm font-bold tabular-nums w-10 text-right shrink-0 ${occText(occ)}`}>
                           {pctVal}%
                         </span>
-                        <span className={`text-xs px-2.5 py-1 rounded-full font-medium shrink-0 ${badge.bg} ${badge.text}`}>
+                        <span className={`text-xs py-1 rounded-full font-medium shrink-0 w-[88px] inline-flex items-center justify-center ${badge.bg} ${badge.text}`}>
                           {badge.label}
                         </span>
                         <svg
