@@ -7,6 +7,7 @@ import { subscriptionTiersFromMemberships, computeMrrByTier } from "@/lib/mrr";
 import {
   detectRecurringExpenses,
   avgPackRevenuePerMonth,
+  historicalMonthly,
 } from "@/lib/previsiones";
 import PrevisionesTable from "./PrevisionesTable";
 
@@ -23,13 +24,16 @@ export default async function PrevisionesPage() {
   const tierMrr = computeMrrByTier(customers, tiers);
   const baseMrr = tierMrr.reduce((s, t) => s + t.mrr, 0);
 
-  // Media de ingresos por packs/clases sueltas (Stripe, últimos meses)
+  // Media de ingresos por packs/clases desde Stripe
   const packsBase = avgPackRevenuePerMonth(paymentsAll);
 
   // Gastos recurrentes detectados en transacciones
   const recurringExpenses = detectRecurringExpenses(txnsAll);
 
-  // Saldo inicial = último saldo conocido del banco
+  // Datos históricos agrupados por mes
+  const historical = historicalMonthly(txnsAll);
+
+  // Saldo inicial de la previsión = último saldo conocido del banco
   const latestBal = [...txnsAll]
     .sort((a, b) => b.date.localeCompare(a.date))
     .find((t) => t.balance !== null);
@@ -39,7 +43,7 @@ export default async function PrevisionesPage() {
     <div>
       {/* ── Sticky header ── */}
       <div className="sticky top-0 z-20 bg-app-bg/95 backdrop-blur-sm border-b border-navy/[0.06]">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-[45px] flex items-center justify-between gap-3">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-[45px] flex items-center">
           <h1 className="text-sm font-bold text-navy uppercase tracking-widest">Previsiones</h1>
         </div>
       </div>
@@ -50,6 +54,7 @@ export default async function PrevisionesPage() {
           packsBase={packsBase}
           startingBalance={startingBalance}
           recurringExpenses={recurringExpenses}
+          historical={historical}
         />
       </div>
     </div>

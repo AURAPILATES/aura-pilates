@@ -8,6 +8,59 @@ export function forecastMonthLabel(ym: string) {
   return `${MES[parseInt(m, 10) - 1]} ${y.slice(2)}`;
 }
 
+// ── Capacity scenarios (from Excel "Aura Pilates Studio SL.xlsx") ─────────────
+
+export type CapacityScenario = {
+  id: string;
+  label: string;
+  sublabel: string;
+  plazasMes: number;
+  maxAlumnos: number;         // at 85% occupancy
+  breakEvenAlumnos: number;
+  salariosMes: number;        // coste empresa total mensual
+};
+
+// Data extracted from Excel sheets: SOUS INSTRUCTORS, 1 INSTRUCTOR, 1,5 INSTRUCTORS,
+// 2 INSTRUCTORS, 2 INSTRUCT 30H. Salarios = coste empresa total.
+export const CAPACITY_SCENARIOS: CapacityScenario[] = [
+  {
+    id: "actual",
+    label: "Actual",
+    sublabel: "Yuruaní 16h · Gisele 16h",
+    plazasMes: 640,
+    maxAlumnos: 75,
+    breakEvenAlumnos: 63,
+    salariosMes: 2660,       // 2500 coste empresa + 160 cash (L-V horario parcial)
+  },
+  {
+    id: "1.5i",
+    label: "1,5 instructores",
+    sublabel: "2 instructores, uno parcial",
+    plazasMes: 1200,
+    maxAlumnos: 166,
+    breakEvenAlumnos: 62,
+    salariosMes: 3773,       // coste empresa 32h+parcial desde SOUS sheet
+  },
+  {
+    id: "2i-30h",
+    label: "2 instruct. 30h",
+    sublabel: "Yuruaní 30h · Úrsula 30h",
+    plazasMes: 1080,
+    maxAlumnos: 150,
+    breakEvenAlumnos: 76,
+    salariosMes: 4364,       // 2244 + 2119 coste empresa
+  },
+  {
+    id: "2i-40h",
+    label: "2 instruct. 40h",
+    sublabel: "Yuruaní 40h · Úrsula 40h",
+    plazasMes: 1440,
+    maxAlumnos: 200,
+    breakEvenAlumnos: 76,
+    salariosMes: 5818,       // 2992 + 2826 coste empresa
+  },
+];
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export type RecurringExpense = {
@@ -17,12 +70,22 @@ export type RecurringExpense = {
 };
 
 export type ForecastParams = {
-  mrrBase: number;           // MRR actual (editable)
-  packsBase: number;         // Ingresos medios packs/clases/mes (editable)
-  crecimientoPct: number;    // % crecimiento mensual de ingresos (default 0)
-  retencionesPct: number;    // % retenido en facturación recibida (IRPF, default 0)
-  prestamo: number;          // amortización mensual de préstamo (default 0)
-  salarioAumentoPct: number; // % aumento sobre salarios base (default 0)
+  mrrBase: number;
+  packsBase: number;
+  crecimientoPct: number;
+  retencionesPct: number;
+  prestamo: number;
+  salarioAumentoPct: number;
+};
+
+export type MonthlyActual = {
+  month: string;
+  label: string;
+  entradas: number;
+  salidas: number;
+  resultado: number;
+  saldoInicial: number | null;
+  saldoFinal: number | null;
 };
 
 export type MonthlyForecast = {
@@ -39,6 +102,47 @@ export type MonthlyForecast = {
   resultado: number;
   saldoFinal: number;
 };
+
+// ── Historical aggregation ────────────────────────────────────────────────────
+
+export function historicalMonthly(txns: Transaction[]): MonthlyActual[] {
+  const byMonth = new Map<string, {
+    entradas: number;
+    salidas: number;
+    txnsSorted: Transaction[];
+  }>();
+
+  for (const t of txns) {
+    const month = t.date.slice(0, 7);
+    if (!byMonth.has(month)) byMonth.set(month, { entradas: 0, salidas: 0, txnsSorted: [] });
+    const e = byMonth.get(month)!;
+    e.txnsSorted.push(t);
+    if (t.amount > 0) e.entradas += t.amount;
+    else e.salidas += Math.abs(t.amount);
+  }
+
+  return [...byMonth.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([month, data]) => {
+      const sorted = [...data.txnsSorted].sort((a, b) => a.date.localeCompare(b.date));
+      const withBal = sorted.filter(t => t.balance !== null);
+      const saldoFinal = withBal.length > 0 ? withBal[withBal.length - 1].balance : null;
+      // balance field = balance after transaction; balance_before = balance - amount
+      const saldoInicial = withBal.length > 0
+        ? withBal[0].balance! - withBal[0].amount
+        : null;
+
+      return {
+        month,
+        label: forecastMonthLabel(month),
+        entradas: data.entradas,
+        salidas: data.salidas,
+        resultado: data.entradas - data.salidas,
+        saldoInicial,
+        saldoFinal,
+      };
+    });
+}
 
 // ── Expense detection ─────────────────────────────────────────────────────────
 
@@ -82,6 +186,7 @@ export function buildForecast(
   startingBalance: number,
   recurringExpenses: RecurringExpense[],
   params: ForecastParams,
+  salaryOverride?: number,
   months = 12,
 ): MonthlyForecast[] {
   const now = new Date();
@@ -103,7 +208,7 @@ export function buildForecast(
     const expenses = recurringExpenses.map((e) => ({
       category: e.category,
       amount: SALARY_CATS.has(e.category)
-        ? e.avgMonthly * (1 + params.salarioAumentoPct / 100)
+        ? (salaryOverride ?? (e.avgMonthly * (1 + params.salarioAumentoPct / 100)))
         : e.avgMonthly,
     }));
     const totalSalidas = expenses.reduce((s, e) => s + e.amount, 0) + params.prestamo;
