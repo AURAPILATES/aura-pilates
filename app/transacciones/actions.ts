@@ -155,6 +155,7 @@ export async function addCashTransaction(input: {
   concept: string;
   category: string;
   notes?: string;
+  paymentMethod?: PaymentMethod;
 }): Promise<void> {
   const supabase = createServerClient();
   const { error } = await supabase.from("transactions").insert({
@@ -166,7 +167,7 @@ export async function addCashTransaction(input: {
     category: input.category,
     notes: input.notes?.trim() || null,
     source: "manual",
-    payment_method: "efectivo",
+    payment_method: input.paymentMethod ?? "efectivo",
   });
   if (error) throw new Error(error.message);
   revalidateTag("transactions");

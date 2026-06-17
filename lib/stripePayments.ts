@@ -4,7 +4,9 @@ import { stripe } from "./stripe";
 
 export type StripePayment = {
   id: string;
-  amount: number;       // euros
+  amount: number;       // bruto — lo que paga el cliente, en euros
+  fee: number;          // comisión Stripe, en euros
+  net: number;          // neto — lo que llega al banco, en euros
   date: string;         // YYYY-MM-DD
   customerId: string | null;
   customerName: string | null;
@@ -50,6 +52,7 @@ export async function loadStripePayments(
 
   const params: Stripe.ChargeListParams = {
     limit: 100,
+    expand: ["data.balance_transaction"],
     ...(Object.keys(created).length > 0 ? { created } : {}),
   };
 
@@ -57,9 +60,14 @@ export async function loadStripePayments(
 
   for await (const charge of stripe.charges.list(params)) {
     if (charge.status !== "succeeded") continue;
+    const bt = charge.balance_transaction as Stripe.BalanceTransaction | null;
+    const fee = bt ? bt.fee / 100 : 0;
+    const net = bt ? bt.net / 100 : toEuros(charge.amount, charge.currency);
     payments.push({
       id: charge.id,
       amount: toEuros(charge.amount, charge.currency),
+      fee,
+      net,
       date: toDate(charge.created),
       customerId: typeof charge.customer === "string" ? charge.customer : null,
       customerName: charge.billing_details?.name ?? null,
@@ -135,6 +143,20 @@ export function revenueForMonth(payments: StripePayment[], month: string): numbe
 
 export function subscriptionRevenue(payments: StripePayment[]): number {
   return payments.filter((p) => p.category === "Suscripción").reduce((s, p) => s + p.amount, 0);
+}
+
+export function totalFees(payments: StripePayment[]): number {
+  return payments.reduce((s, p) => s + p.fee, 0);
+}
+
+export function feesForMonth(payments: StripePayment[], month: string): number {
+  return payments
+    .filter((p) => p.date.startsWith(month))
+    .reduce((s, p) => s + p.fee, 0);
+}
+
+export function totalNet(payments: StripePayment[]): number {
+  return payments.reduce((s, p) => s + p.net, 0);
 }
 
 // ── Cached loader (10 min, invalidable with revalidateTag('stripe')) ─────────────

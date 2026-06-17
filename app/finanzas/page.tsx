@@ -10,6 +10,8 @@ import {
   stripeByMethod,
   totalRevenue as stripeTotalRevenue,
   revenueForMonth as stripeRevenueForMonth,
+  totalFees as stripeTotalFees,
+  totalNet as stripeTotalNet,
   toSales,
 } from "@/lib/stripePayments";
 import {
@@ -138,6 +140,8 @@ export default async function Finanzas(props: {
     : paymentsAll;
   const hasSales  = paymentsAll.length > 0;
   const totalRev  = stripeTotalRevenue(payments);
+  const stripeFees = stripeTotalFees(payments);
+  const stripeNet  = stripeTotalNet(payments);
 
   const cur       = stripeRevenueForMonth(paymentsAll, curMonth);
   const prev      = stripeRevenueForMonth(paymentsAll, prevMonth);
@@ -497,6 +501,30 @@ export default async function Finanzas(props: {
                     </div>
                   </div>
                 </div>
+                {stripeFees > 0 && (
+                  <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
+                    <p className="text-xs font-semibold text-navy/55 uppercase tracking-wider mb-4">Comisiones Stripe</p>
+                    <div className="grid grid-cols-3 gap-4 divide-x divide-navy/[0.06]">
+                      <div className="pr-4">
+                        <p className="text-[10px] text-navy/45 uppercase tracking-wider mb-1">Bruto cobrado</p>
+                        <p className="text-lg font-semibold text-navy tabular-nums">{fmt(totalRev)}</p>
+                        <p className="text-[10px] text-navy/45 mt-0.5">{payments.length} cobros</p>
+                      </div>
+                      <div className="px-4">
+                        <p className="text-[10px] text-navy/45 uppercase tracking-wider mb-1">Comisión Stripe</p>
+                        <p className="text-lg font-semibold text-danger tabular-nums">−{fmt(stripeFees)}</p>
+                        <p className="text-[10px] text-navy/45 mt-0.5">
+                          {totalRev > 0 ? `${((stripeFees / totalRev) * 100).toFixed(1)}% del bruto` : ""}
+                        </p>
+                      </div>
+                      <div className="pl-4">
+                        <p className="text-[10px] text-navy/45 uppercase tracking-wider mb-1">Neto recibido</p>
+                        <p className="text-lg font-semibold text-success tabular-nums">{fmt(stripeNet)}</p>
+                        <p className="text-[10px] text-navy/45 mt-0.5">lo que llega al banco</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 <p className="text-xs text-navy/45 flex items-center gap-1.5">
                   <BookOpen size={12} className="shrink-0" />
                   Stripe · pagos en tiempo real.

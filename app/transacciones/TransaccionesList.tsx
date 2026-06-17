@@ -31,7 +31,14 @@ function fmtAmt(n: number) {
 
 const CAT_FALLBACK = { emoji: "package", bg: "#F8FAFC", color: "#94A3B8" };
 
-// ── Source avatar (bank vs cash) ──────────────────────────────────────────────
+// ── Source avatar ─────────────────────────────────────────────────────────────
+const SOCIO_INITIALS: Record<string, { initials: string; bg: string; color: string }> = {
+  victor: { initials: "V",  bg: "#EDE9FE", color: "#5B21B6" },
+  celia:  { initials: "Ce", bg: "#FCE7F3", color: "#9D174D" },
+  olga:   { initials: "O",  bg: "#D1FAE5", color: "#065F46" },
+  carles: { initials: "Ca", bg: "#DBEAFE", color: "#1D4ED8" },
+};
+
 function SourceAvatar({ method }: { method: string }) {
   if (method === "efectivo") {
     return (
@@ -39,6 +46,18 @@ function SourceAvatar({ method }: { method: string }) {
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#92400E" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
           <rect x="2" y="6" width="20" height="14" rx="2"/><circle cx="12" cy="13" r="3"/><path d="M6 10h.01M18 10h.01"/>
         </svg>
+      </div>
+    );
+  }
+  const socio = SOCIO_INITIALS[method];
+  if (socio) {
+    return (
+      <div
+        className="shrink-0 w-[22px] h-[22px] rounded-full flex items-center justify-center"
+        style={{ background: socio.bg, color: socio.color }}
+        title={method.charAt(0).toUpperCase() + method.slice(1)}
+      >
+        <span style={{ fontSize: "9px", fontWeight: 700, lineHeight: 1 }}>{socio.initials}</span>
       </div>
     );
   }
@@ -446,6 +465,10 @@ export default function TransaccionesList({
               <option value="all">Origen</option>
               <option value="banco">CaixaBank</option>
               <option value="efectivo">Efectivo</option>
+              <option value="victor">Víctor</option>
+              <option value="celia">Celia</option>
+              <option value="olga">Olga</option>
+              <option value="carles">Carles</option>
             </select>
           </SelectWrapper>
         </div>
@@ -517,6 +540,10 @@ export default function TransaccionesList({
             <option value="all">Origen</option>
             <option value="banco">CaixaBank</option>
             <option value="efectivo">Efectivo</option>
+            <option value="victor">Víctor</option>
+            <option value="celia">Celia</option>
+            <option value="olga">Olga</option>
+            <option value="carles">Carles</option>
           </select>
         </SelectWrapper>
         <div className="flex-1" />
@@ -527,7 +554,7 @@ export default function TransaccionesList({
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
           </svg>
-          Efectivo
+          Manual
         </button>
         <ImportButton />
         <button

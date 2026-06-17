@@ -2,7 +2,7 @@ import { createServerClient } from "@/lib/supabase";
 import { unstable_cache } from "next/cache";
 
 export type ContactType = "empleado" | "socio" | "proveedor" | "administracion" | "banco" | null;
-export type PaymentMethod = "banco" | "efectivo";
+export type PaymentMethod = "banco" | "efectivo" | "victor" | "celia" | "olga" | "carles";
 
 export type Transaction = {
   id: string;

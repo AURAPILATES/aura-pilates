@@ -1,8 +1,17 @@
 "use client";
 import { useState } from "react";
 import type { Category } from "@/lib/categories";
+import type { PaymentMethod } from "@/lib/transactions";
 import { addCashTransaction } from "./actions";
 import Drawer from "@/app/components/Drawer";
+
+const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
+  { value: "efectivo", label: "Efectivo" },
+  { value: "victor", label: "Víctor" },
+  { value: "celia", label: "Celia" },
+  { value: "olga", label: "Olga" },
+  { value: "carles", label: "Carles" },
+];
 
 function todayISO() {
   return new Date().toISOString().slice(0, 10);
@@ -15,6 +24,7 @@ export default function AddCashModal({ categories, onClose }: { categories: Cate
   const [concept, setConcept] = useState("");
   const [notes, setNotes] = useState("");
   const [category, setCategory] = useState(categories[0]?.value ?? "Otros");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("efectivo");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,6 +42,7 @@ export default function AddCashModal({ categories, onClose }: { categories: Cate
         concept,
         category,
         notes,
+        paymentMethod,
       });
       onClose();
     } catch (err) {
@@ -42,7 +53,7 @@ export default function AddCashModal({ categories, onClose }: { categories: Cate
 
   return (
     <Drawer
-      title="Añadir movimiento en efectivo"
+      title="Añadir movimiento manual"
       onClose={onClose}
       footer={
         <button
@@ -123,6 +134,19 @@ export default function AddCashModal({ categories, onClose }: { categories: Cate
             >
               {categories.map((c) => (
                 <option key={c.value} value={c.value}>{c.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs text-navy/55 mb-1.5">Origen del pago</label>
+            <select
+              value={paymentMethod}
+              onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
+              className="w-full border border-navy/[0.12] rounded-lg px-3 py-2 text-sm text-navy focus:outline-none focus:border-primary/40 bg-white"
+            >
+              {PAYMENT_METHODS.map((m) => (
+                <option key={m.value} value={m.value}>{m.label}</option>
               ))}
             </select>
           </div>

@@ -89,15 +89,6 @@ export default function HorarioShell({
     [weekDays, events],
   );
 
-  const defaultDay = useMemo(() => {
-    const today = new Date().toISOString().split("T")[0];
-    if (today >= weekMonday && today <= addDays(weekMonday, 6)) return today;
-    return weekDays.find((d) => d.hasEvents)?.key ?? weekMonday;
-  }, [weekMonday, weekDays]);
-
-  const [selectedDay, setSelectedDay] = useState(defaultDay);
-  useEffect(() => setSelectedDay(defaultDay), [defaultDay]);
-
   // ── Filters ─────────────────────────────────────────────────────────────────
   const clases = useMemo(
     () => ["all", ...Array.from(new Set(events.map((e) => e.title))).sort()],
@@ -130,19 +121,6 @@ export default function HorarioShell({
   const weekSoldSpots  = events.reduce((s, e) => s + e.ticketsSold, 0);
   const lowCount       = events.filter((e) => e.capacity > 0 && e.ticketsSold / e.capacity < 0.5).length;
 
-  // ── Mobile: selected day data ────────────────────────────────────────────────
-  const selectedDayEvents = useMemo(
-    () => filtered.filter((e) => e.dateTime.startsWith(selectedDay)),
-    [filtered, selectedDay],
-  );
-  const selectedDayName = new Date(selectedDay + "T12:00:00").toLocaleDateString("es-ES", {
-    weekday: "long", timeZone: "Europe/Madrid",
-  });
-  const selectedDayNum = new Date(selectedDay + "T12:00:00").getDate();
-  const selectedDayOcc   = occupancyRate(selectedDayEvents);
-  const selectedDaySold  = selectedDayEvents.reduce((s, e) => s + e.ticketsSold, 0);
-  const selectedDayTotal = selectedDayEvents.reduce((s, e) => s + e.capacity, 0);
-
   const prevWeek  = addDays(weekMonday, -7);
   const nextWeek  = addDays(weekMonday, 7);
   const hasFilters = claseFilter !== "all" || instructoraFilter !== "all" || occFilter !== "all";
@@ -158,10 +136,10 @@ export default function HorarioShell({
       ══════════════════════════════════════════════════════════════════════ */}
       <div className="sticky top-0 z-20 bg-app-bg/95 backdrop-blur-sm border-b border-navy/[0.06]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-[45px] flex items-center justify-between gap-3">
-          {/* Left: title + tabs */}
+          {/* Left: title + tabs (desktop) */}
           <div className="flex items-center gap-4">
             <span className="text-sm font-bold text-navy uppercase tracking-widest">Horario</span>
-            <div className="flex items-center border border-navy/[0.12] rounded-lg bg-white p-0.5 gap-0.5">
+            <div className="hidden sm:flex items-center border border-navy/[0.12] rounded-lg bg-white p-0.5 gap-0.5">
               {([{ v: "horario", l: "Horario" }, { v: "analisis", l: "Análisis" }] as { v: Tab; l: string }[]).map(({ v, l }) => (
                 <button
                   key={v}
@@ -176,9 +154,45 @@ export default function HorarioShell({
             </div>
           </div>
 
-          {/* Right: view toggle — desktop, horario tab only */}
-          {tab === "horario" && (
+          {/* Right: tabs (mobile) + week nav + view toggle (desktop) */}
+          <div className="flex items-center gap-2">
+            {/* Tabs — mobile only, right side */}
+            <div className="sm:hidden flex items-center border border-navy/[0.12] rounded-lg bg-white p-0.5 gap-0.5">
+              {([{ v: "horario", l: "Horario" }, { v: "analisis", l: "Análisis" }] as { v: Tab; l: string }[]).map(({ v, l }) => (
+                <button
+                  key={v}
+                  onClick={() => setTab(v)}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                    tab === v ? "bg-navy text-white" : "text-navy/50 hover:text-navy"
+                  }`}
+                >
+                  {l}
+                </button>
+              ))}
+            </div>
+
+            {/* Desktop: week nav + view toggle — horario tab only */}
+            {tab === "horario" && (
             <div className="hidden sm:flex items-center gap-2">
+              <div className="flex items-center gap-0.5">
+                <button
+                  onClick={() => router.push(`?week=${prevWeek}`)}
+                  disabled={weekMonday <= MIN_WEEK}
+                  className="w-7 h-7 flex items-center justify-center rounded-md border border-navy/[0.12] bg-white text-navy/50 disabled:opacity-20 hover:text-navy hover:bg-navy/[0.03] transition-colors"
+                >
+                  {chevLeft}
+                </button>
+                <span className="text-xs font-semibold text-navy px-2 min-w-[110px] text-center">
+                  Semana {weekLabel(weekMonday)}
+                </span>
+                <button
+                  onClick={() => router.push(`?week=${nextWeek}`)}
+                  className="w-7 h-7 flex items-center justify-center rounded-md border border-navy/[0.12] bg-white text-navy/50 hover:text-navy hover:bg-navy/[0.03] transition-colors"
+                >
+                  {chevRight}
+                </button>
+              </div>
+              <div className="w-px h-5 bg-navy/[0.12]" />
               <div className="flex border border-navy/[0.08] rounded-lg overflow-hidden bg-white text-xs">
                 <button
                   onClick={() => setView("lista")}
@@ -200,27 +214,9 @@ export default function HorarioShell({
                   Calendario
                 </button>
               </div>
-              <div className="w-px h-5 bg-navy/[0.12]" />
-              <div className="flex items-center gap-0.5">
-                <button
-                  onClick={() => router.push(`?week=${prevWeek}`)}
-                  disabled={weekMonday <= MIN_WEEK}
-                  className="w-7 h-7 flex items-center justify-center rounded-md border border-navy/[0.12] bg-white text-navy/50 disabled:opacity-20 hover:text-navy hover:bg-navy/[0.03] transition-colors"
-                >
-                  {chevLeft}
-                </button>
-                <span className="text-xs font-semibold text-navy px-2 min-w-[80px] text-center">
-                  {weekLabel(weekMonday)}
-                </span>
-                <button
-                  onClick={() => router.push(`?week=${nextWeek}`)}
-                  className="w-7 h-7 flex items-center justify-center rounded-md border border-navy/[0.12] bg-white text-navy/50 hover:text-navy hover:bg-navy/[0.03] transition-colors"
-                >
-                  {chevRight}
-                </button>
-              </div>
             </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
@@ -301,7 +297,7 @@ export default function HorarioShell({
                   </div>
                   {firstLowDay && (
                     <button
-                      onClick={() => setSelectedDay(firstLowDay)}
+                      onClick={() => document.getElementById(`mday-${firstLowDay}`)?.scrollIntoView({ behavior: "smooth", block: "start" })}
                       className="shrink-0 text-sm font-semibold text-warning border border-warning/30 rounded-lg px-3 py-1.5 hover:bg-warning/10 transition-colors"
                     >
                       Ver →
@@ -310,20 +306,17 @@ export default function HorarioShell({
                 </div>
               )}
 
-              {/* Day pills */}
-              <div className="flex gap-2 overflow-x-auto pb-1 mb-5 scrollbar-none">
+              {/* Day pills — tap to scroll to that day */}
+              <div className="flex gap-2 overflow-x-auto pb-1 mb-3 scrollbar-none">
                 {weekDays.map((day) => {
-                  const isSelected = selectedDay === day.key;
                   const status = day.hasEvents ? getOccStatus(day.occ) : null;
                   return (
                     <button
                       key={day.key}
-                      onClick={() => setSelectedDay(day.key)}
+                      onClick={() => document.getElementById(`mday-${day.key}`)?.scrollIntoView({ behavior: "smooth", block: "start" })}
                       className={`shrink-0 flex flex-col items-center w-[52px] py-2.5 rounded-xl transition-colors ${
-                        isSelected
+                        day.isToday
                           ? "bg-navy text-white"
-                          : day.isToday
-                          ? "bg-white border-2 border-danger text-navy"
                           : day.hasEvents
                           ? "bg-white border border-navy/[0.12] text-navy"
                           : "bg-white border border-navy/[0.07] text-navy/25"
@@ -332,32 +325,67 @@ export default function HorarioShell({
                       <span className="text-[10px] font-semibold uppercase tracking-wide">{day.letter}</span>
                       <span className="text-xl font-bold leading-none mt-1">{day.num}</span>
                       <span className={`w-1.5 h-1.5 rounded-full mt-1.5 ${
-                        !day.hasEvents ? "opacity-0" : isSelected ? "bg-white/50" : status!.dot
+                        !day.hasEvents ? "opacity-0" : day.isToday ? "bg-white/50" : status!.dot
                       }`} />
                     </button>
                   );
                 })}
               </div>
 
-              {/* Selected day content */}
-              {selectedDayEvents.length === 0 ? (
-                <p className="text-sm text-navy/40 text-center py-10">Sin clases este día.</p>
+              {/* Occ filter pills */}
+              <div className="flex gap-2 overflow-x-auto pb-1 mb-5 scrollbar-none">
+                {([
+                  { value: "all", label: "Todas" },
+                  { value: "low", label: "Por llenar" },
+                  { value: "mid", label: "A medias" },
+                  { value: "high", label: "Llenas" },
+                ] as { value: OccFilter; label: string }[]).map(({ value, label }) => (
+                  <button
+                    key={value}
+                    onClick={() => setOccFilter(value)}
+                    className={`shrink-0 px-4 py-1.5 text-sm rounded-full border transition-colors ${
+                      occFilter === value
+                        ? "bg-navy text-white border-navy"
+                        : "bg-white text-navy/60 border-navy/[0.12] hover:text-navy"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              {/* All days — continuous scroll */}
+              {days.length === 0 ? (
+                <p className="text-sm text-navy/40 text-center py-10">Sin clases con estos filtros.</p>
               ) : (
-                <div>
-                  <div className="flex items-baseline justify-between mb-3">
-                    <h2 className="text-2xl font-bold text-navy font-display capitalize">
-                      {selectedDayName} <span className="font-light text-xl">{selectedDayNum}</span>
-                    </h2>
-                    <span className="text-sm text-navy/50">
-                      <span className={`font-semibold ${occText(selectedDayOcc)}`}>{pct(selectedDayOcc)}</span>
-                      {" · "}{selectedDaySold}/{selectedDayTotal}
-                    </span>
-                  </div>
-                  <div className="space-y-3">
-                    {selectedDayEvents.map((e) => (
-                      <MobileClassCard key={e.id} event={e} onSelect={handleSelect} />
-                    ))}
-                  </div>
+                <div className="space-y-8">
+                  {days.map(({ dateKey, events: dayEvs }) => {
+                    const dayOcc  = occupancyRate(dayEvs);
+                    const daySold = dayEvs.reduce((s, e) => s + e.ticketsSold, 0);
+                    const dayTotal = dayEvs.reduce((s, e) => s + e.capacity, 0);
+                    const dName = new Date(dateKey + "T12:00:00").toLocaleDateString("es-ES", {
+                      weekday: "long", timeZone: "Europe/Madrid",
+                    });
+                    const dNum = new Date(dateKey + "T12:00:00").getDate();
+                    return (
+                      <div key={dateKey} id={`mday-${dateKey}`}>
+                        <div className="flex items-baseline justify-between mb-3">
+                          <h2 className="text-2xl font-bold text-navy font-display capitalize">
+                            {dName} <span className="font-light text-xl">{dNum}</span>
+                          </h2>
+                          <span className="text-sm text-navy/50">
+                            <span className={`font-semibold ${occText(dayOcc)}`}>{pct(dayOcc)}</span>
+                            {" · "}{daySold}/{dayTotal}
+                          </span>
+                        </div>
+                        <div className="space-y-3">
+                          {dayEvs.map((e) => (
+                            <MobileClassCard key={e.id} event={e} onSelect={handleSelect} />
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </>
