@@ -11,19 +11,8 @@ export type ImportRow = {
   contact: string | null;
 };
 
-export async function importTransactions(
-  rows: ImportRow[],
-  paymentMethod: PaymentMethod = "banco",
-): Promise<{ imported: number; skipped: number; batchId: string }> {
-  if (rows.length === 0) return { imported: 0, skipped: 0, batchId: "" };
-  const batchId = crypto.randomUUID();
-  const supabase = createServerClient();
-
-  // Categories for auto-assignment
-  const { data: cats } = await supabase.from("categories").select("value, auto_keywords");
-  const categories = cats ?? [];
-
-  function autoCategory(row: ImportRow): string {
+function buildAutoCategory(categories: { value: string; auto_keywords: string | null }[]) {
+  return function (row: ImportRow): string {
     const hay = `${row.concept ?? ""} ${row.contact ?? ""}`.toLowerCase();
     for (const cat of categories) {
       if (!cat.auto_keywords) continue;
@@ -31,7 +20,19 @@ export async function importTransactions(
       if (kws.some((kw: string) => hay.includes(kw))) return cat.value;
     }
     return "Otros";
-  }
+  };
+}
+
+export async function importTransactions(
+  rows: ImportRow[],
+  paymentMethod: PaymentMethod = "banco",
+): Promise<{ imported: number; skipped: number; skippedRows: ImportRow[]; batchId: string }> {
+  if (rows.length === 0) return { imported: 0, skipped: 0, skippedRows: [], batchId: "" };
+  const batchId = crypto.randomUUID();
+  const supabase = createServerClient();
+
+  const { data: cats } = await supabase.from("categories").select("value, auto_keywords");
+  const autoCategory = buildAutoCategory(cats ?? []);
 
   // Deduplicate: load existing in same date range
   const dates = rows.map((r) => r.date).sort();
@@ -48,21 +49,23 @@ export async function importTransactions(
     ),
   );
 
-  const toInsert = rows
-    .filter((r) => !seen.has(`${r.date}|${r.amount}|${(r.concept ?? "").toLowerCase().slice(0, 50)}|${paymentMethod}`))
-    .map((r) => ({
-      date: r.date,
-      amount: r.amount,
-      balance: r.balance,
-      concept: r.concept,
-      contact: r.contact,
-      category: autoCategory(r),
-      source: "csv-import",
-      payment_method: paymentMethod,
-      import_batch_id: batchId,
-    }));
-
-  const skipped = rows.length - toInsert.length;
+  const skippedRows: ImportRow[] = [];
+  const filteredRows = rows.filter((r) => {
+    const key = `${r.date}|${r.amount}|${(r.concept ?? "").toLowerCase().slice(0, 50)}|${paymentMethod}`;
+    if (seen.has(key)) { skippedRows.push(r); return false; }
+    return true;
+  });
+  const toInsert = filteredRows.map((r) => ({
+    date: r.date,
+    amount: r.amount,
+    balance: r.balance,
+    concept: r.concept,
+    contact: r.contact,
+    category: autoCategory(r),
+    source: "csv-import",
+    payment_method: paymentMethod,
+    import_batch_id: batchId,
+  }));
 
   if (toInsert.length > 0) {
     const { error } = await supabase.from("transactions").insert(toInsert);
@@ -70,7 +73,34 @@ export async function importTransactions(
   }
 
   revalidateTag("transactions");
-  return { imported: toInsert.length, skipped, batchId };
+  return { imported: toInsert.length, skipped: skippedRows.length, skippedRows, batchId };
+}
+
+export async function forceImportTransactions(
+  rows: ImportRow[],
+  paymentMethod: PaymentMethod,
+  batchId: string,
+): Promise<void> {
+  if (!rows.length) return;
+  const supabase = createServerClient();
+  const { data: cats } = await supabase.from("categories").select("value, auto_keywords");
+  const autoCategory = buildAutoCategory(cats ?? []);
+
+  const toInsert = rows.map((r) => ({
+    date: r.date,
+    amount: r.amount,
+    balance: r.balance,
+    concept: r.concept,
+    contact: r.contact,
+    category: autoCategory(r),
+    source: "csv-import",
+    payment_method: paymentMethod,
+    import_batch_id: batchId,
+  }));
+
+  const { error } = await supabase.from("transactions").insert(toInsert);
+  if (error) throw new Error(error.message);
+  revalidateTag("transactions");
 }
 
 export type ImportBatch = {

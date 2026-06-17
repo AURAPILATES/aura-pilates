@@ -1,7 +1,7 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import * as XLSX from "xlsx";
-import { importTransactions, undoImport, getRecentImports, type ImportRow, type ImportBatch } from "./actions";
+import { importTransactions, undoImport, getRecentImports, forceImportTransactions, type ImportRow, type ImportBatch } from "./actions";
 import Drawer from "@/app/components/Drawer";
 
 // ── CSV parser ────────────────────────────────────────────────────────────────
@@ -172,7 +172,7 @@ type State =
   | { kind: "idle" }
   | { kind: "preview"; rows: ImportRow[]; filename: string }
   | { kind: "importing" }
-  | { kind: "done"; imported: number; skipped: number; batchId: string }
+  | { kind: "done"; imported: number; skipped: number; skippedRows: ImportRow[]; batchId: string }
   | { kind: "error"; message: string };
 
 function fmtAmt(n: number) {
@@ -186,6 +186,7 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
   const [historial, setHistorial] = useState<ImportBatch[]>([]);
   const [confirmUndo, setConfirmUndo] = useState<string | null>(null);
   const [undoingId, setUndoingId] = useState<string | null>(null);
+  const [forcingDuplicates, setForcingDuplicates] = useState(false);
 
   useEffect(() => {
     getRecentImports().then(setHistorial).catch(() => {});
@@ -226,11 +227,25 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
     else reader.readAsText(file, "utf-8");
   }
 
+  async function handleForceImport(rows: ImportRow[], batchId: string) {
+    setForcingDuplicates(true);
+    try {
+      await forceImportTransactions(rows, isCash ? "efectivo" : "banco", batchId);
+      const keys = new Set(rows.map((r) => `${r.date}|${r.amount}|${r.concept}`));
+      setState((prev) => {
+        if (prev.kind !== "done") return prev;
+        return { ...prev, skippedRows: prev.skippedRows.filter((r) => !keys.has(`${r.date}|${r.amount}|${r.concept}`)) };
+      });
+    } finally {
+      setForcingDuplicates(false);
+    }
+  }
+
   async function doImport(rows: ImportRow[]) {
     setState({ kind: "importing" });
     try {
       const res = await importTransactions(rows, isCash ? "efectivo" : "banco");
-      setState({ kind: "done", imported: res.imported, skipped: res.skipped, batchId: res.batchId });
+      setState({ kind: "done", imported: res.imported, skipped: res.skipped, skippedRows: res.skippedRows, batchId: res.batchId });
       if (res.batchId) {
         getRecentImports().then(setHistorial).catch(() => {});
       }
@@ -391,8 +406,8 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                 </svg>
               </div>
               <p className="text-base font-bold text-navy mb-1">{state.imported} movimientos importados</p>
-              {state.skipped > 0 && (
-                <p className="text-sm text-navy/45">{state.skipped} ya existían y se omitieron</p>
+              {state.skippedRows.length > 0 && (
+                <p className="text-sm text-navy/45">{state.skippedRows.length} posibles duplicados</p>
               )}
               <button
                 onClick={onClose}
@@ -400,6 +415,44 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
               >
                 Cerrar
               </button>
+
+              {state.skippedRows.length > 0 && (
+                <div className="mt-5 border border-navy/[0.08] rounded-xl overflow-hidden text-left">
+                  <div className="flex items-center justify-between px-4 py-2.5 bg-navy/[0.02] border-b border-navy/[0.06]">
+                    <span className="text-xs font-semibold text-navy/50">Posibles duplicados</span>
+                    <button
+                      onClick={() => handleForceImport(state.skippedRows, state.batchId)}
+                      disabled={forcingDuplicates}
+                      className="text-xs font-medium text-primary hover:text-primary/75 transition-colors disabled:opacity-40"
+                    >
+                      Importar todos
+                    </button>
+                  </div>
+                  <div className="divide-y divide-navy/[0.04]">
+                    {state.skippedRows.map((r, i) => (
+                      <div key={i} className="flex items-center gap-3 px-4 py-2.5">
+                        <span className="text-xs text-navy/45 whitespace-nowrap tabular-nums shrink-0">
+                          {r.date.split("-").reverse().join("/")}
+                        </span>
+                        <span className="text-xs text-navy truncate flex-1">
+                          {r.concept ?? r.contact ?? "—"}
+                        </span>
+                        <span className={`text-xs font-semibold tabular-nums shrink-0 ${r.amount >= 0 ? "text-success" : "text-navy/70"}`}>
+                          {r.amount >= 0 ? "+" : "−"}{fmtAmt(r.amount)} €
+                        </span>
+                        <button
+                          onClick={() => handleForceImport([r], state.batchId)}
+                          disabled={forcingDuplicates}
+                          className="text-xs text-navy/35 hover:text-primary transition-colors shrink-0 disabled:opacity-40"
+                        >
+                          Importar
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {state.batchId && (
                 <div className="mt-4">
                   {confirmUndo === state.batchId ? (
