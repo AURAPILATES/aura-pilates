@@ -1,7 +1,7 @@
 "use client";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import * as XLSX from "xlsx";
-import { importTransactions, type ImportRow } from "./actions";
+import { importTransactions, undoImport, getRecentImports, type ImportRow, type ImportBatch } from "./actions";
 import Drawer from "@/app/components/Drawer";
 
 // ── CSV parser ────────────────────────────────────────────────────────────────
@@ -162,11 +162,17 @@ function parseExcel(buffer: ArrayBuffer): ImportRow[] {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
+function fmtDateShort(d: string) {
+  const [, m, day] = d.split("-");
+  const months = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+  return `${parseInt(day)} ${months[parseInt(m) - 1]}`;
+}
+
 type State =
   | { kind: "idle" }
   | { kind: "preview"; rows: ImportRow[]; filename: string }
   | { kind: "importing" }
-  | { kind: "done"; imported: number; skipped: number }
+  | { kind: "done"; imported: number; skipped: number; batchId: string }
   | { kind: "error"; message: string };
 
 function fmtAmt(n: number) {
@@ -177,6 +183,25 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
   const [state, setState] = useState<State>({ kind: "idle" });
   const [isCash, setIsCash] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [historial, setHistorial] = useState<ImportBatch[]>([]);
+  const [confirmUndo, setConfirmUndo] = useState<string | null>(null);
+  const [undoingId, setUndoingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    getRecentImports().then(setHistorial).catch(() => {});
+  }, []);
+
+  async function handleUndo(batchId: string) {
+    setUndoingId(batchId);
+    try {
+      await undoImport(batchId);
+      setHistorial((prev) => prev.filter((b) => b.batchId !== batchId));
+      setState((prev) => (prev.kind === "done" && prev.batchId === batchId ? { kind: "idle" } : prev));
+    } finally {
+      setUndoingId(null);
+      setConfirmUndo(null);
+    }
+  }
 
   function handleFile(file: File) {
     const name = file.name.toLowerCase();
@@ -205,7 +230,10 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
     setState({ kind: "importing" });
     try {
       const res = await importTransactions(rows, isCash ? "efectivo" : "banco");
-      setState({ kind: "done", ...res });
+      setState({ kind: "done", imported: res.imported, skipped: res.skipped, batchId: res.batchId });
+      if (res.batchId) {
+        getRecentImports().then(setHistorial).catch(() => {});
+      }
     } catch (err) {
       setState({ kind: "error", message: err instanceof Error ? err.message : "Error al importar." });
     }
@@ -236,6 +264,50 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                 <input ref={fileRef} type="file" accept=".csv,.xls,.xlsx,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" className="hidden"
                   onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
               </label>
+
+              {historial.length > 0 && (
+                <div className="mt-6">
+                  <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-2">Importaciones recientes</p>
+                  <div className="space-y-1">
+                    {historial.map((b) => (
+                      <div key={b.batchId} className="flex items-center justify-between gap-3 py-2 px-3 rounded-lg hover:bg-navy/[0.02] transition-colors">
+                        <div className="min-w-0">
+                          <span className="text-xs text-navy/70 font-medium">
+                            {fmtDateShort(b.minDate)} – {fmtDateShort(b.maxDate)}
+                          </span>
+                          <span className="text-xs text-navy/35 ml-2">
+                            {b.count} movs · {b.paymentMethod}
+                          </span>
+                        </div>
+                        {confirmUndo === b.batchId ? (
+                          <div className="flex items-center gap-2 shrink-0">
+                            <button
+                              onClick={() => setConfirmUndo(null)}
+                              className="text-xs text-navy/40 hover:text-navy transition-colors"
+                            >
+                              Cancelar
+                            </button>
+                            <button
+                              onClick={() => handleUndo(b.batchId)}
+                              disabled={undoingId === b.batchId}
+                              className="text-xs font-semibold text-danger hover:text-danger/80 transition-colors disabled:opacity-50"
+                            >
+                              {undoingId === b.batchId ? "Deshaciendo…" : "Confirmar"}
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setConfirmUndo(b.batchId)}
+                            className="text-xs text-navy/35 hover:text-danger transition-colors shrink-0"
+                          >
+                            Deshacer
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -328,6 +400,31 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
               >
                 Cerrar
               </button>
+              {state.batchId && (
+                <div className="mt-4">
+                  {confirmUndo === state.batchId ? (
+                    <div className="flex items-center justify-center gap-3">
+                      <button onClick={() => setConfirmUndo(null)} className="text-xs text-navy/40 hover:text-navy transition-colors">
+                        Cancelar
+                      </button>
+                      <button
+                        onClick={() => handleUndo(state.batchId)}
+                        disabled={!!undoingId}
+                        className="text-xs font-semibold text-danger hover:text-danger/80 transition-colors disabled:opacity-50"
+                      >
+                        {undoingId ? "Deshaciendo…" : "Sí, deshacer importación"}
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setConfirmUndo(state.batchId)}
+                      className="text-xs text-navy/35 hover:text-danger transition-colors"
+                    >
+                      Deshacer esta importación
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           )}
 

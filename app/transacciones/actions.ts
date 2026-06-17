@@ -14,8 +14,9 @@ export type ImportRow = {
 export async function importTransactions(
   rows: ImportRow[],
   paymentMethod: PaymentMethod = "banco",
-): Promise<{ imported: number; skipped: number }> {
-  if (rows.length === 0) return { imported: 0, skipped: 0 };
+): Promise<{ imported: number; skipped: number; batchId: string }> {
+  if (rows.length === 0) return { imported: 0, skipped: 0, batchId: "" };
+  const batchId = crypto.randomUUID();
   const supabase = createServerClient();
 
   // Categories for auto-assignment
@@ -58,6 +59,7 @@ export async function importTransactions(
       category: autoCategory(r),
       source: "csv-import",
       payment_method: paymentMethod,
+      import_batch_id: batchId,
     }));
 
   const skipped = rows.length - toInsert.length;
@@ -69,7 +71,54 @@ export async function importTransactions(
 
   revalidatePath("/transacciones");
   revalidatePath("/finanzas");
-  return { imported: toInsert.length, skipped };
+  return { imported: toInsert.length, skipped, batchId };
+}
+
+export type ImportBatch = {
+  batchId: string;
+  count: number;
+  minDate: string;
+  maxDate: string;
+  paymentMethod: string;
+};
+
+export async function getRecentImports(): Promise<ImportBatch[]> {
+  const supabase = createServerClient();
+  const { data } = await supabase
+    .from("transactions")
+    .select("import_batch_id, date, payment_method")
+    .not("import_batch_id", "is", null)
+    .order("date", { ascending: false });
+
+  const byBatch = new Map<string, { dates: string[]; paymentMethod: string }>();
+  for (const row of data ?? []) {
+    const bid = row.import_batch_id as string;
+    if (!byBatch.has(bid)) byBatch.set(bid, { dates: [], paymentMethod: row.payment_method ?? "banco" });
+    byBatch.get(bid)!.dates.push(row.date);
+  }
+
+  return [...byBatch.entries()]
+    .map(([batchId, { dates, paymentMethod }]) => ({
+      batchId,
+      count: dates.length,
+      maxDate: dates[0],
+      minDate: dates[dates.length - 1],
+      paymentMethod,
+    }))
+    .slice(0, 8);
+}
+
+export async function undoImport(batchId: string): Promise<{ deleted: number }> {
+  const supabase = createServerClient();
+  const { data, error } = await supabase
+    .from("transactions")
+    .delete()
+    .eq("import_batch_id", batchId)
+    .select("id");
+  if (error) throw new Error(error.message);
+  revalidatePath("/transacciones");
+  revalidatePath("/finanzas");
+  return { deleted: data?.length ?? 0 };
 }
 
 export async function addCashTransaction(input: {
