@@ -174,6 +174,51 @@ export async function updateTransactionNotes(id: string, notes: string) {
   revalidatePath("/transacciones");
 }
 
+export async function softDeleteTransactions(ids: string[]): Promise<void> {
+  if (!ids.length) return;
+  const supabase = createServerClient();
+  const { error } = await supabase
+    .from("transactions")
+    .update({ deleted_at: new Date().toISOString() })
+    .in("id", ids);
+  if (error) throw new Error(error.message);
+  revalidatePath("/transacciones");
+  revalidatePath("/finanzas");
+}
+
+export async function restoreTransactions(ids: string[]): Promise<void> {
+  if (!ids.length) return;
+  const supabase = createServerClient();
+  const { error } = await supabase
+    .from("transactions")
+    .update({ deleted_at: null })
+    .in("id", ids);
+  if (error) throw new Error(error.message);
+  revalidatePath("/transacciones");
+  revalidatePath("/finanzas");
+}
+
+export type DeletedTransaction = {
+  id: string;
+  date: string;
+  amount: number;
+  concept: string | null;
+  contact: string | null;
+  category: string;
+  payment_method: string;
+  deleted_at: string;
+};
+
+export async function loadDeletedTransactions(): Promise<DeletedTransaction[]> {
+  const supabase = createServerClient();
+  const { data } = await supabase
+    .from("transactions")
+    .select("id, date, amount, concept, contact, category, payment_method, deleted_at")
+    .not("deleted_at", "is", null)
+    .order("deleted_at", { ascending: false });
+  return (data ?? []) as DeletedTransaction[];
+}
+
 export async function updateTransactionConcept(id: string, concept: string) {
   const supabase = createServerClient();
   const { error } = await supabase

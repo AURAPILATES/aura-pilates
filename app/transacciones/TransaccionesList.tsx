@@ -3,10 +3,11 @@ import { useState, useTransition, useEffect, useRef, useMemo } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import type { Transaction } from "@/lib/transactions";
 import type { Category } from "@/lib/categories";
-import { updateTransactionCategory, updateTransactionConcept, updateTransactionContact } from "./actions";
+import { updateTransactionCategory, updateTransactionConcept, updateTransactionContact, softDeleteTransactions } from "./actions";
 import { RANGE_OPTIONS } from "@/lib/dateRange";
 import ImportButton from "./ImportButton";
 import AddCashModal from "./AddCashModal";
+import PapeleraDrawer from "./PapeleraDrawer";
 
 const MONTHS_ES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
 
@@ -212,6 +213,8 @@ export default function TransaccionesList({
   const [editValue, setEditValue] = useState("");
   const [selected,     setSelected]     = useState<Set<string>>(new Set());
   const [bulkCat,      setBulkCat]      = useState("");
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [showPapelera,  setShowPapelera]  = useState(false);
   const [isPending,    startTransition] = useTransition();
   const [sortKey, setSortKey] = useState<"date" | "amount" | "concept" | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
@@ -312,7 +315,12 @@ export default function TransaccionesList({
       return next;
     });
   }
-  function clearSelection() { setSelected(new Set()); setBulkCat(""); }
+  function clearSelection() { setSelected(new Set()); setBulkCat(""); setDeleteConfirm(false); }
+  async function applyBulkDelete() {
+    const ids = [...selected];
+    startTransition(async () => { await softDeleteTransactions(ids); });
+    clearSelection();
+  }
   function applyBulkCategory() {
     if (!bulkCat) return;
     const ids = [...selected];
@@ -518,6 +526,16 @@ export default function TransaccionesList({
           </svg>
           Exportar CSV
         </button>
+        <button
+          onClick={() => setShowPapelera(true)}
+          title="Papelera — transacciones eliminadas"
+          className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-navy/55 border border-navy/[0.12] rounded-xl bg-white hover:bg-navy/[0.02] hover:text-navy transition-colors whitespace-nowrap"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+          </svg>
+          Papelera
+        </button>
       </div>
 
 
@@ -585,6 +603,15 @@ export default function TransaccionesList({
           </svg>
           Exportar CSV
         </button>
+        <button
+          onClick={() => setShowPapelera(true)}
+          title="Papelera"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-navy/55 border border-navy/[0.12] rounded-lg bg-white hover:bg-navy/[0.02] hover:text-navy transition-colors"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/>
+          </svg>
+        </button>
       </div>
 
       {/* ── Bulk selection bar ─────────────────────────────────────────────── */}
@@ -594,24 +621,51 @@ export default function TransaccionesList({
             {selected.size} seleccionada{selected.size !== 1 ? "s" : ""}
           </span>
           <div className="w-px h-4 bg-white/20 shrink-0" />
-          <select
-            value={bulkCat}
-            onChange={(e) => setBulkCat(e.target.value)}
-            className="text-sm rounded-lg px-3 py-1.5 bg-white/10 text-white border border-white/20 outline-none focus:border-white/40 min-w-48 cursor-pointer"
-          >
-            <option value="" disabled>Cambiar categoría…</option>
-            {categories.map((c) => (
-              <option key={c.value} value={c.value} className="text-navy bg-white">{c.label}</option>
-            ))}
-          </select>
-          <button
-            onClick={applyBulkCategory}
-            disabled={!bulkCat || isPending}
-            className="text-sm font-semibold px-4 py-1.5 rounded-lg bg-white text-navy disabled:opacity-40 hover:bg-white/90 transition-colors shrink-0"
-          >
-            Aplicar
-          </button>
-          <button onClick={clearSelection} className="text-sm text-white/50 hover:text-white/80 px-1 shrink-0">✕</button>
+          {deleteConfirm ? (
+            <>
+              <span className="text-sm text-white/70 shrink-0">¿Eliminar {selected.size}?</span>
+              <button
+                onClick={applyBulkDelete}
+                disabled={isPending}
+                className="text-sm font-semibold px-4 py-1.5 rounded-lg bg-danger text-white disabled:opacity-40 hover:bg-danger/85 transition-colors shrink-0"
+              >
+                Confirmar
+              </button>
+              <button onClick={() => setDeleteConfirm(false)} className="text-sm text-white/50 hover:text-white/80 px-1 shrink-0">Cancelar</button>
+            </>
+          ) : (
+            <>
+              <select
+                value={bulkCat}
+                onChange={(e) => setBulkCat(e.target.value)}
+                className="text-sm rounded-lg px-3 py-1.5 bg-white/10 text-white border border-white/20 outline-none focus:border-white/40 min-w-48 cursor-pointer"
+              >
+                <option value="" disabled>Cambiar categoría…</option>
+                {categories.map((c) => (
+                  <option key={c.value} value={c.value} className="text-navy bg-white">{c.label}</option>
+                ))}
+              </select>
+              <button
+                onClick={applyBulkCategory}
+                disabled={!bulkCat || isPending}
+                className="text-sm font-semibold px-4 py-1.5 rounded-lg bg-white text-navy disabled:opacity-40 hover:bg-white/90 transition-colors shrink-0"
+              >
+                Aplicar
+              </button>
+              <div className="w-px h-4 bg-white/20 shrink-0" />
+              <button
+                onClick={() => setDeleteConfirm(true)}
+                className="flex items-center gap-1.5 text-sm font-medium text-white/70 hover:text-danger transition-colors shrink-0"
+                title="Eliminar seleccionadas"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/>
+                </svg>
+                Eliminar
+              </button>
+              <button onClick={clearSelection} className="text-sm text-white/50 hover:text-white/80 px-1 shrink-0">✕</button>
+            </>
+          )}
         </div>
       )}
 
@@ -844,6 +898,9 @@ export default function TransaccionesList({
 
       {showAddCash && (
         <AddCashModal categories={categories} onClose={() => setShowAddCash(false)} />
+      )}
+      {showPapelera && (
+        <PapeleraDrawer onClose={() => setShowPapelera(false)} />
       )}
     </div>
   );

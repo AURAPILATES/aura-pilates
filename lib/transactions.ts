@@ -17,6 +17,7 @@ export type Transaction = {
   source: string;
   payment_method: PaymentMethod;
   created_at: string;
+  deleted_at: string | null;
 };
 
 const OPERATIONAL_CATS = new Set([
@@ -58,7 +59,7 @@ export async function loadTransactions(
   to?: string | null,
 ): Promise<Transaction[]> {
   const supabase = createServerClient();
-  let query = supabase.from("transactions").select("*").order("date", { ascending: false });
+  let query = supabase.from("transactions").select("*").is("deleted_at", null).order("date", { ascending: false });
   if (from) query = query.gte("date", from);
   if (to)   query = query.lte("date", to);
   const { data, error } = await query;
