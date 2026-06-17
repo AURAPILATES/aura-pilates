@@ -32,6 +32,7 @@ Momence es la fuente de verdad de **qué productos existen, sus precios, y quié
   - **MRR/ARR real** (Finanzas → Q8): nº de suscriptores activos (no congelados) por tier × precio del tier. Ya no se basa en CSV ni en adivinar por importe de Stripe.
   - **Limitación:** este endpoint solo devuelve el estado **actual**. No expone historial de bajas o reactivaciones pasadas en una sola llamada.
 - **No existen** en la API de Momence: `Sales`, `Transactions`, `Payments`, `Orders`, `Bookings` ni `CustomerMemberships` (probado y devuelven 404). Por eso el histórico de ventas por producto (breakeven, conversión del Pack Benvinguda) sigue usando el CSV `data/sales.csv`.
+- **Sin datos de asistentes por clase (investigado jun 2026):** la API no expone quién asistió a cada sesión ni con qué membresía reservó. Todos los endpoints probados devuelven 404: `Events/{id}/Registrations`, `/Attendees`, `/Tickets`, `/Bookings`, `/Members`, `/CheckIns`, `EventRegistrations`, `Bookings`, `MemberBookings`, `Customers/{id}/Bookings`, `Customers/{id}/Attendances`, `Customers/{id}/Sessions`. El único dato de ocupación disponible por clase es el agregado `ticketsSold` (número total de plazas ocupadas, sin desglose por tipo de membresía). Para ver asistentes reales hay que entrar al panel de Momence manualmente.
 
 #### Snapshot diario de suscriptores (para medir bajas y reactivaciones)
 Como `Customers` solo da el estado actual, se monta un cron diario que guarda una foto:
@@ -104,5 +105,6 @@ Los datos de vacaciones se leen del archivo `data/vacaciones.json`. Para modific
 | Finanzas – financiación / préstamos | Supabase (tabla `budgets`) | Manual (editar desde la app) |
 | Transacciones | CaixaBank CSV/Excel → Supabase | Manual (importar desde la app) |
 | Horario | Momence (API, tiempo real) | Automáticamente |
+| Horario – alumnos activos por membresía | Momence `Customers` (tiempo real) | Automáticamente |
 | Bajas / reactivaciones de suscriptores | Supabase `subscriber_snapshots` | Automáticamente (cron diario 3 AM) |
 | Vacaciones | `data/vacaciones.json` | Manual (editar archivo) |

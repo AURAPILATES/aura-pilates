@@ -18,6 +18,7 @@ export type ReportingData = {
   topProducts: Array<{ item: string; revenue: number; count: number }>;
   uscByHour: Array<{ hour: number; label: string; count: number }>;
   uscByWeekday: Array<{ weekday: number; label: string; count: number }>;
+  activeByMembership: Array<{ name: string; count: number; type: "subscription" | "package-events" }>;
 };
 
 function TrendBadge({ value }: { value: number | null }) {
@@ -54,7 +55,7 @@ function OccBar({ value }: { value: number }) {
 const WEEKDAY_SHORT = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
 
 export default function HorarioReporting({ data }: { data: ReportingData }) {
-  const { past30, prev30, upcoming7, topProducts, uscByHour, uscByWeekday } = data;
+  const { past30, prev30, upcoming7, topProducts, uscByHour, uscByWeekday, activeByMembership } = data;
 
   const occ     = occupancyRate(past30);
   const occPrev = occupancyRate(prev30);
@@ -407,6 +408,41 @@ export default function HorarioReporting({ data }: { data: ReportingData }) {
 
         </div>
       </section>
+
+      {/* ── Base activa por membresía ── */}
+      {activeByMembership.length > 0 && (
+        <section id="q5" className="space-y-4">
+          <QuestionHeader num={5} question="¿Cuántos alumnos activos hay por tipo de membresía?" />
+          <Card>
+            <CardTitle>Alumnos activos ahora mismo (no congelados)</CardTitle>
+            <div className="space-y-2.5">
+              {activeByMembership.map(({ name, count, type }) => {
+                const max = activeByMembership[0].count;
+                return (
+                  <div key={name} className="flex items-center gap-3">
+                    <span className="text-sm text-navy w-40 shrink-0 truncate">{name}</span>
+                    <div className="flex-1 h-1.5 bg-navy/[0.06] rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full ${type === "subscription" ? "bg-primary" : "bg-warning"}`}
+                        style={{ width: `${Math.round((count / max) * 100)}%` }}
+                      />
+                    </div>
+                    <span className="text-sm font-semibold text-navy tabular-nums w-8 text-right shrink-0">{count}</span>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium shrink-0 ${type === "subscription" ? "bg-primary/10 text-primary" : "bg-warning/15 text-warning"}`}>
+                      {type === "subscription" ? "suscrip." : "pack"}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+            <p className="text-xs text-navy/35 mt-4">
+              Total: {activeByMembership.reduce((s, m) => s + m.count, 0)} alumnos con membresía activa ·{" "}
+              {activeByMembership.filter((m) => m.type === "subscription").reduce((s, m) => s + m.count, 0)} suscripciones ·{" "}
+              {activeByMembership.filter((m) => m.type === "package-events").reduce((s, m) => s + m.count, 0)} packs
+            </p>
+          </Card>
+        </section>
+      )}
 
     </div>
   );

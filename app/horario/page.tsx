@@ -1,6 +1,6 @@
 export const dynamic = "force-dynamic";
 
-import { getEvents } from "@/lib/momence";
+import { getEvents, getCustomers } from "@/lib/momence";
 import { saveHistoricalEvents, loadHistoricalEvents } from "@/lib/history";
 import {
   filterActive,
@@ -30,9 +30,10 @@ export default async function Horario({
   const monday = getMondayFromParam(params.week ?? null);
   const sunday = new Date(monday.getTime() + 7 * 86400000 - 1);
 
-  const [liveEvents, historicalEvents] = await Promise.all([
+  const [liveEvents, historicalEvents, customers] = await Promise.all([
     getEvents(),
     loadHistoricalEvents(),
+    getCustomers(),
   ]);
   await saveHistoricalEvents(liveEvents);
 
@@ -60,6 +61,21 @@ export default async function Horario({
   const uscByHour    = urbanBookingsByHour();
   const uscByWeekday = urbanBookingsByWeekday();
 
+  // Active subscribers by membership (not frozen)
+  const membershipMap = new Map<string, { count: number; type: "subscription" | "package-events" }>();
+  for (const customer of customers) {
+    for (const sub of customer.activeSubscriptions) {
+      if (sub.isFreezed) continue;
+      const name = sub.membership.name;
+      const existing = membershipMap.get(name);
+      if (existing) existing.count++;
+      else membershipMap.set(name, { count: 1, type: sub.type });
+    }
+  }
+  const activeByMembership = [...membershipMap.entries()]
+    .map(([name, { count, type }]) => ({ name, count, type }))
+    .sort((a, b) => b.count - a.count);
+
   const weekMonday  = monday.toISOString().split("T")[0];
   const initialView = params.view === "calendario" ? "calendario" : "lista";
   const initialTab  = params.tab === "analisis" ? "analisis" : "horario";
@@ -70,7 +86,7 @@ export default async function Horario({
       weekMonday={weekMonday}
       initialView={initialView as "lista" | "calendario"}
       initialTab={initialTab as "horario" | "analisis"}
-      reportingData={{ past30, prev30, upcoming7, topProducts, uscByHour, uscByWeekday }}
+      reportingData={{ past30, prev30, upcoming7, topProducts, uscByHour, uscByWeekday, activeByMembership }}
     />
   );
 }
