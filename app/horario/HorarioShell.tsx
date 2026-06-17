@@ -73,13 +73,20 @@ export default function HorarioShell({
   const handleSelect = useCallback((e: MomenceEvent) => setSelected(e), []);
 
   // ── Week days for mobile pill selector ──────────────────────────────────────
+  const todayISO = new Date().toISOString().split("T")[0];
   const weekDays = useMemo(() =>
     Array.from({ length: 7 }, (_, i) => {
-      const key = addDays(weekMonday, i);
-      const d   = new Date(key + "T12:00:00");
-      return { key, letter: DAY_LETTERS[i], num: d.getDate(), hasEvents: events.some((e) => e.dateTime.startsWith(key)) };
+      const key    = addDays(weekMonday, i);
+      const d      = new Date(key + "T12:00:00");
+      const dayEvs = events.filter((e) => e.dateTime.startsWith(key));
+      return { key, letter: DAY_LETTERS[i], num: d.getDate(), hasEvents: dayEvs.length > 0, isToday: key === todayISO, occ: occupancyRate(dayEvs) };
     }),
     [weekMonday, events],
+  );
+
+  const firstLowDay = useMemo(
+    () => weekDays.find((d) => d.hasEvents && events.some((e) => e.dateTime.startsWith(d.key) && e.capacity > 0 && e.ticketsSold / e.capacity < 0.5))?.key ?? null,
+    [weekDays, events],
   );
 
   const defaultDay = useMemo(() => {
@@ -131,6 +138,7 @@ export default function HorarioShell({
   const selectedDayName = new Date(selectedDay + "T12:00:00").toLocaleDateString("es-ES", {
     weekday: "long", timeZone: "Europe/Madrid",
   });
+  const selectedDayNum = new Date(selectedDay + "T12:00:00").getDate();
   const selectedDayOcc   = occupancyRate(selectedDayEvents);
   const selectedDaySold  = selectedDayEvents.reduce((s, e) => s + e.ticketsSold, 0);
   const selectedDayTotal = selectedDayEvents.reduce((s, e) => s + e.capacity, 0);
@@ -172,15 +180,25 @@ export default function HorarioShell({
           {tab === "horario" && (
             <div className="hidden sm:flex items-center gap-2">
               <div className="flex border border-navy/[0.08] rounded-lg overflow-hidden bg-white text-xs">
-                {([{ v: "lista", l: "Lista" }, { v: "calendario", l: "Calendario" }] as { v: View; l: string }[]).map(({ v, l }) => (
-                  <button
-                    key={v}
-                    onClick={() => setView(v)}
-                    className={`px-3 py-1.5 transition-colors ${view === v ? "bg-navy text-white font-medium" : "text-navy/50 hover:text-navy"}`}
-                  >
-                    {l}
-                  </button>
-                ))}
+                <button
+                  onClick={() => setView("lista")}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 transition-colors ${view === "lista" ? "bg-navy text-white font-medium" : "text-navy/50 hover:text-navy"}`}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
+                    <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+                  </svg>
+                  Lista
+                </button>
+                <button
+                  onClick={() => setView("calendario")}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 transition-colors ${view === "calendario" ? "bg-navy text-white font-medium" : "text-navy/50 hover:text-navy"}`}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                  </svg>
+                  Calendario
+                </button>
               </div>
             </div>
           )}
@@ -250,24 +268,56 @@ export default function HorarioShell({
                 </div>
               )}
 
+              {/* Alert: low occupancy */}
+              {lowCount > 0 && (
+                <div className="flex items-center justify-between gap-3 bg-warning/[0.08] border border-warning/20 rounded-xl px-4 py-3 mb-5">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-warning shrink-0">
+                      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                      <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                    <span className="text-sm text-warning font-medium leading-snug">
+                      {lowCount} clase{lowCount !== 1 ? "s" : ""} con baja ocupación esta semana
+                    </span>
+                  </div>
+                  {firstLowDay && (
+                    <button
+                      onClick={() => setSelectedDay(firstLowDay)}
+                      className="shrink-0 text-sm font-semibold text-warning border border-warning/30 rounded-lg px-3 py-1.5 hover:bg-warning/10 transition-colors"
+                    >
+                      Ver →
+                    </button>
+                  )}
+                </div>
+              )}
+
               {/* Day pills */}
               <div className="flex gap-2 overflow-x-auto pb-1 mb-5 scrollbar-none">
-                {weekDays.map((day) => (
-                  <button
-                    key={day.key}
-                    onClick={() => setSelectedDay(day.key)}
-                    className={`shrink-0 flex flex-col items-center w-[52px] py-2.5 rounded-xl transition-colors ${
-                      selectedDay === day.key
-                        ? "bg-navy text-white"
-                        : day.hasEvents
-                        ? "bg-white border border-navy/[0.12] text-navy"
-                        : "bg-white border border-navy/[0.07] text-navy/25"
-                    }`}
-                  >
-                    <span className="text-[10px] font-semibold uppercase tracking-wide">{day.letter}</span>
-                    <span className="text-xl font-bold leading-none mt-1">{day.num}</span>
-                  </button>
-                ))}
+                {weekDays.map((day) => {
+                  const isSelected = selectedDay === day.key;
+                  const status = day.hasEvents ? getOccStatus(day.occ) : null;
+                  return (
+                    <button
+                      key={day.key}
+                      onClick={() => setSelectedDay(day.key)}
+                      className={`shrink-0 flex flex-col items-center w-[52px] py-2.5 rounded-xl transition-colors ${
+                        isSelected
+                          ? "bg-navy text-white"
+                          : day.isToday
+                          ? "bg-white border-2 border-danger text-navy"
+                          : day.hasEvents
+                          ? "bg-white border border-navy/[0.12] text-navy"
+                          : "bg-white border border-navy/[0.07] text-navy/25"
+                      }`}
+                    >
+                      <span className="text-[10px] font-semibold uppercase tracking-wide">{day.letter}</span>
+                      <span className="text-xl font-bold leading-none mt-1">{day.num}</span>
+                      <span className={`w-1.5 h-1.5 rounded-full mt-1.5 ${
+                        !day.hasEvents ? "opacity-0" : isSelected ? "bg-white/50" : status!.dot
+                      }`} />
+                    </button>
+                  );
+                })}
               </div>
 
               {/* Selected day content */}
@@ -276,10 +326,12 @@ export default function HorarioShell({
               ) : (
                 <div>
                   <div className="flex items-baseline justify-between mb-3">
-                    <h2 className="text-2xl font-bold text-navy font-display capitalize">{selectedDayName}</h2>
+                    <h2 className="text-2xl font-bold text-navy font-display capitalize">
+                      {selectedDayName} <span className="font-light text-xl">{selectedDayNum}</span>
+                    </h2>
                     <span className="text-sm text-navy/50">
                       <span className={`font-semibold ${occText(selectedDayOcc)}`}>{pct(selectedDayOcc)}</span>
-                      {" · "}{selectedDaySold}/{selectedDayTotal} plazas
+                      {" · "}{selectedDaySold}/{selectedDayTotal}
                     </span>
                   </div>
                   <div className="space-y-3">
