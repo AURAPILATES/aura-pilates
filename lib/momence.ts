@@ -1,3 +1,5 @@
+import { unstable_cache } from "next/cache";
+
 const BASE_URL = "https://momence.com/_api/primary/api/v1";
 
 async function fetchMomence<T>(endpoint: string): Promise<T> {
@@ -82,11 +84,26 @@ export type MomenceVideo = {
   isDeleted: boolean;
 };
 
-export const getEvents = () => fetchMomence<MomenceEvent[]>("Events");
-export const getTeachers = () => fetchMomence<MomenceTeacher[]>("Teachers");
-export const getMemberships = () => fetchMomence<MomenceMembership[]>("Memberships");
-export const getProducts = () => fetchMomence<MomenceProduct[]>("Products");
-export const getVideos = () => fetchMomence<MomenceVideo[]>("Videos");
+export const getEvents = unstable_cache(
+  () => fetchMomence<MomenceEvent[]>("Events"),
+  ["momence-events"], { revalidate: 300, tags: ["momence"] },
+);
+export const getTeachers = unstable_cache(
+  () => fetchMomence<MomenceTeacher[]>("Teachers"),
+  ["momence-teachers"], { revalidate: 300, tags: ["momence"] },
+);
+export const getMemberships = unstable_cache(
+  () => fetchMomence<MomenceMembership[]>("Memberships"),
+  ["momence-memberships"], { revalidate: 300, tags: ["momence"] },
+);
+export const getProducts = unstable_cache(
+  () => fetchMomence<MomenceProduct[]>("Products"),
+  ["momence-products"], { revalidate: 300, tags: ["momence"] },
+);
+export const getVideos = unstable_cache(
+  () => fetchMomence<MomenceVideo[]>("Videos"),
+  ["momence-videos"], { revalidate: 300, tags: ["momence"] },
+);
 
 export type MomenceActiveSubscription = {
   id: number;
@@ -130,7 +147,7 @@ async function fetchCustomersPage(page: number, pageSize: number): Promise<Custo
 }
 
 // Trae todos los clientes paginando (≈368 a fecha de hoy).
-export async function getCustomers(): Promise<MomenceCustomer[]> {
+async function _getCustomers(): Promise<MomenceCustomer[]> {
   const pageSize = 100;
   const first = await fetchCustomersPage(1, pageSize);
   const all = [...first.payload];
@@ -141,3 +158,9 @@ export async function getCustomers(): Promise<MomenceCustomer[]> {
   }
   return all;
 }
+
+export const getCustomers = unstable_cache(
+  _getCustomers,
+  ["momence-customers"],
+  { revalidate: 300, tags: ["momence"] },
+);

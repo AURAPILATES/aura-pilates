@@ -1,6 +1,6 @@
 import { Suspense } from "react";
-import { loadTransactions, type Transaction } from "@/lib/transactions";
-import { loadCategories } from "@/lib/categories";
+import { loadTransactionsCached, type Transaction } from "@/lib/transactions";
+import { loadCategoriesCached } from "@/lib/categories";
 import { getDateRange } from "@/lib/dateRange";
 import TransaccionesList from "./TransaccionesList";
 import DateFilter from "@/app/components/DateFilter";
@@ -46,8 +46,8 @@ export default async function TransaccionesPage(props: {
     : getDateRange(sp.range);
 
   const [transactions, categories] = await Promise.all([
-    loadTransactions(from, to),
-    loadCategories(),
+    loadTransactionsCached(from, to),
+    loadCategoriesCached(),
   ]);
 
   const uncategorizedCount = transactions.filter((t) => t.category === "Otros").length;

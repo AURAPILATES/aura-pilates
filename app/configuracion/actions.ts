@@ -1,6 +1,6 @@
 "use server";
 import { createServerClient } from "@/lib/supabase";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 type CategoryInput = {
   value: string;
@@ -14,9 +14,8 @@ type CategoryInput = {
 };
 
 function revalidateAll() {
+  revalidateTag("categories");
   revalidatePath("/configuracion");
-  revalidatePath("/transacciones");
-  revalidatePath("/finanzas");
 }
 
 export async function createCategory(data: CategoryInput) {

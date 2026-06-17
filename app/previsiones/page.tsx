@@ -1,6 +1,6 @@
 export const dynamic = "force-dynamic";
 
-import { loadTransactions } from "@/lib/transactions";
+import { loadTransactionsCached } from "@/lib/transactions";
 import { loadStripePaymentsCached } from "@/lib/stripePayments";
 import { getMemberships, getCustomers } from "@/lib/momence";
 import { subscriptionTiersFromMemberships, computeMrrByTier } from "@/lib/mrr";
@@ -13,7 +13,7 @@ import PrevisionesTable from "./PrevisionesTable";
 
 export default async function PrevisionesPage() {
   const [txnsAll, paymentsAll, memberships, customers] = await Promise.all([
-    loadTransactions(),
+    loadTransactionsCached(),
     loadStripePaymentsCached(),
     getMemberships(),
     getCustomers(),

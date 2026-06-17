@@ -1,4 +1,5 @@
 import { createServerClient } from "./supabase";
+import { unstable_cache } from "next/cache";
 
 export type Budget = {
   id: string;
@@ -6,6 +7,12 @@ export type Budget = {
   limit: number;
   contactKeyword: string;
 };
+
+export const loadBudgetsCached = unstable_cache(
+  () => loadBudgets(),
+  ["budgets"],
+  { revalidate: 3600, tags: ["budgets"] },
+);
 
 export async function loadBudgets(): Promise<Budget[]> {
   const db = createServerClient();

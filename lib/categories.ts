@@ -1,4 +1,5 @@
 import { createServerClient } from "@/lib/supabase";
+import { unstable_cache } from "next/cache";
 
 export type GroupType = "operational" | "income" | "transfer" | "internal";
 
@@ -24,3 +25,9 @@ export async function loadCategories(): Promise<Category[]> {
   if (error) throw new Error(error.message);
   return data as Category[];
 }
+
+export const loadCategoriesCached = unstable_cache(
+  loadCategories,
+  ["categories"],
+  { revalidate: 3600, tags: ["categories"] },
+);

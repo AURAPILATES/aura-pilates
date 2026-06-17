@@ -19,12 +19,12 @@ import {
   possibleChurnIds,
 } from "@/lib/stripeRecurrence";
 import {
-  loadTransactions,
+  loadTransactionsCached,
   totalOperationalExpenses,
   totalStartupCosts,
   operationalExpensesByCategory,
 } from "@/lib/transactions";
-import { loadCategories } from "@/lib/categories";
+import { loadCategoriesCached } from "@/lib/categories";
 import { getDateRange, getComparisonRangeKey } from "@/lib/dateRange";
 import DateFilter from "@/app/components/DateFilter";
 import HealthCards from "./HealthCards";
@@ -32,7 +32,7 @@ import GastosBreakdown from "./GastosBreakdown";
 import FinanzasBarChart from "./FinanzasBarChart";
 import EvolucionChart from "./EvolucionChart";
 import PresupuestosBlock from "./PresupuestosBlock";
-import { loadBudgets, computeSpent } from "@/lib/budgets";
+import { loadBudgetsCached, computeSpent } from "@/lib/budgets";
 import BreakevenChart from "./BreakevenChart";
 import { computeBreakeven } from "@/lib/breakeven";
 import ConversionChart from "./ConversionChart";
@@ -220,7 +220,7 @@ export default async function Finanzas(props: {
   const byMethodBounded = stripeByMethod(paymentsBounded);
 
   // ── Transactions (siempre datos completos — el banco solo exporta hasta fecha fija) ──
-  const [txnsAll, dbCategories, budgets] = await Promise.all([loadTransactions(), loadCategories(), loadBudgets()]);
+  const [txnsAll, dbCategories, budgets] = await Promise.all([loadTransactionsCached(), loadCategoriesCached(), loadBudgetsCached()]);
   const dbCatByLabel = new Map(dbCategories.map((c) => [c.label, c]));
   const totalOpEx     = totalOperationalExpenses(txnsAll);
   const totalStartup  = totalStartupCosts(txnsAll);

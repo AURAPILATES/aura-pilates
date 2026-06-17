@@ -1,4 +1,5 @@
 import { createServerClient } from "@/lib/supabase";
+import { unstable_cache } from "next/cache";
 
 export type ContactType = "empleado" | "socio" | "proveedor" | "administracion" | "banco" | null;
 export type PaymentMethod = "banco" | "efectivo";
@@ -66,6 +67,12 @@ export async function loadTransactions(
   if (error) throw new Error(error.message);
   return data as Transaction[];
 }
+
+export const loadTransactionsCached = unstable_cache(
+  (from?: string | null, to?: string | null) => loadTransactions(from, to),
+  ["transactions"],
+  { revalidate: 300, tags: ["transactions"] },
+);
 
 export function totalOperationalExpenses(txns: Transaction[]): number {
   return txns
