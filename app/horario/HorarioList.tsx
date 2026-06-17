@@ -88,10 +88,6 @@ export default memo(function HorarioList({
                   timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit",
                 });
                 const badge = occBadge(occ);
-                const isLow = occ < 0.8;
-                const hint  = occ >= 0.5
-                  ? "Ocupación media — podrías llenarla"
-                  : "Clase por llenar — considera abrir más plazas";
 
                 return (
                   <div
@@ -138,14 +134,6 @@ export default memo(function HorarioList({
                       </div>
                     </button>
 
-                    {isLow && (
-                      <div className="flex items-center justify-between px-4 py-2.5 bg-navy/[0.015] border-t border-navy/[0.06]">
-                        <p className="text-xs text-navy/45">{hint}</p>
-                        <button className="text-xs font-medium text-navy/60 border border-navy/20 rounded-lg px-3 py-1.5 hover:bg-navy/[0.04] transition-colors shrink-0 ml-4">
-                          Enviar recordatorio
-                        </button>
-                      </div>
-                    )}
                   </div>
                 );
               })}
