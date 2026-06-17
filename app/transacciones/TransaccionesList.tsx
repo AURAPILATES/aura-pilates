@@ -750,11 +750,6 @@ export default function TransaccionesList({
                       </div>
                       <div className="flex items-center gap-2 mt-2.5 flex-wrap">
                         <CategoryPill category={t.category} categories={categories} onChange={(cat) => handleCategoryChange(t.id, cat)} />
-                        {t.payment_method === "efectivo" && (
-                          <span className="text-[10px] font-semibold uppercase tracking-wide text-warning bg-warning/10 px-1.5 py-0.5 rounded">
-                            Efectivo
-                          </span>
-                        )}
                       </div>
                     </div>
                   );
@@ -876,11 +871,6 @@ export default function TransaccionesList({
 
                   <td className="pr-6 pl-4 py-3 align-middle text-right">
                     <div className="flex items-center justify-end gap-1.5">
-                      {t.payment_method === "efectivo" && (
-                        <span className="shrink-0 text-[9px] font-semibold uppercase tracking-wide text-warning bg-warning/10 px-1.5 py-0.5 rounded">
-                          Efectivo
-                        </span>
-                      )}
                       <span className={`text-sm font-semibold tabular-nums ${t.amount > 0 ? "text-success" : "text-navy/75"}`}>
                         {t.amount > 0 ? "+" : "−"}{fmtAmt(t.amount)}
                       </span>

@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Drawer from "@/app/components/Drawer";
 import { loadDeletedTransactions, restoreTransactions, type DeletedTransaction } from "./actions";
 
@@ -10,6 +10,60 @@ function fmtDate(d: string) {
 
 function fmtAmt(n: number) {
   return Math.abs(n).toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
+}
+
+function SourceAvatar({ method }: { method: string }) {
+  if (method === "efectivo") {
+    return (
+      <div className="shrink-0 w-[22px] h-[22px] rounded-full bg-amber-100 flex items-center justify-center" title="Efectivo">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#92400E" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="2" y="6" width="20" height="14" rx="2"/><circle cx="12" cy="13" r="3"/><path d="M6 10h.01M18 10h.01"/>
+        </svg>
+      </div>
+    );
+  }
+  return (
+    <div className="shrink-0 w-[22px] h-[22px] rounded-full flex items-center justify-center" style={{ backgroundColor: "#004F9F" }} title="CaixaBank">
+      <svg width="10" height="10" viewBox="0 0 20 20" fill="white">
+        <path d="M10 1l2.4 7.4H20l-6.2 4.5 2.4 7.4L10 17l-6.2 3.3 2.4-7.4L0 8.5h7.6z"/>
+      </svg>
+    </div>
+  );
+}
+
+function CategoryBadge({ category }: { category: string }) {
+  return (
+    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-navy/[0.05] text-navy/50 whitespace-nowrap">
+      {category}
+    </span>
+  );
+}
+
+function RestoreButton({ onClick, disabled }: { onClick: () => void; disabled: boolean }) {
+  const [confirm, setConfirm] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function handleClick() {
+    if (!confirm) {
+      setConfirm(true);
+      timerRef.current = setTimeout(() => setConfirm(false), 3000);
+    } else {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      onClick();
+    }
+  }
+
+  return (
+    <button
+      onClick={handleClick}
+      disabled={disabled}
+      className={`shrink-0 text-xs font-medium transition-colors disabled:opacity-40 whitespace-nowrap ${
+        confirm ? "text-success font-semibold" : "text-navy/35 hover:text-primary"
+      }`}
+    >
+      {confirm ? "¿Restaurar?" : "Restaurar"}
+    </button>
+  );
 }
 
 export default function PapeleraDrawer({ onClose }: { onClose: () => void }) {
@@ -34,8 +88,8 @@ export default function PapeleraDrawer({ onClose }: { onClose: () => void }) {
   const subtitle = loading ? "" : items.length === 0 ? "Vacía" : `${items.length} transacción${items.length !== 1 ? "es" : ""}`;
 
   return (
-    <Drawer title="Papelera" subtitle={subtitle} onClose={onClose} maxWidth="max-w-[500px]">
-      <div className="px-6 py-4">
+    <Drawer title="Papelera" subtitle={subtitle} onClose={onClose} maxWidth="max-w-[560px]">
+      <div className="py-2">
         {loading && (
           <div className="py-10 text-center">
             <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
@@ -55,7 +109,7 @@ export default function PapeleraDrawer({ onClose }: { onClose: () => void }) {
 
         {!loading && items.length > 0 && (
           <>
-            <div className="flex justify-end mb-3">
+            <div className="flex justify-end px-5 py-2 border-b border-navy/[0.06]">
               <button
                 onClick={() => handleRestore(items.map((t) => t.id))}
                 disabled={restoring.size > 0}
@@ -64,36 +118,36 @@ export default function PapeleraDrawer({ onClose }: { onClose: () => void }) {
                 Restaurar todas ({items.length})
               </button>
             </div>
-            <div className="divide-y divide-navy/[0.05]">
+
+            <div className="divide-y divide-navy/[0.04]">
               {items.map((t) => {
                 const isRestoring = restoring.has(t.id);
                 const primary = t.contact || t.concept || "—";
                 const secondary = t.contact && t.concept && t.concept !== t.contact ? t.concept : null;
+
                 return (
                   <div
                     key={t.id}
-                    className={`flex items-center gap-3 py-3 transition-opacity ${isRestoring ? "opacity-40 pointer-events-none" : ""}`}
+                    className={`flex items-center gap-3 px-5 py-3 transition-opacity ${isRestoring ? "opacity-40 pointer-events-none" : "hover:bg-navy/[0.01]"}`}
                   >
+                    <SourceAvatar method={t.payment_method} />
+
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-baseline gap-2 min-w-0">
-                        <span className="text-sm font-medium text-navy truncate">{primary}</span>
-                        <span className={`text-sm font-semibold tabular-nums shrink-0 ${t.amount > 0 ? "text-success" : "text-navy/75"}`}>
-                          {t.amount > 0 ? "+" : "−"}{fmtAmt(t.amount)}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                        <span className="text-[11px] text-navy/40 tabular-nums">{fmtDate(t.date)}</span>
-                        {secondary && <span className="text-[11px] text-navy/35 truncate max-w-[180px]">{secondary}</span>}
-                        <span className="text-[11px] text-navy/30">{t.category}</span>
-                      </div>
+                      <span className="text-sm font-semibold text-navy truncate block">{primary}</span>
+                      {secondary && <p className="text-[11px] text-navy/40 truncate mt-0.5">{secondary}</p>}
                     </div>
-                    <button
-                      onClick={() => handleRestore([t.id])}
-                      disabled={restoring.size > 0}
-                      className="shrink-0 text-xs font-medium text-primary hover:text-primary/75 transition-colors disabled:opacity-40 whitespace-nowrap"
-                    >
-                      Restaurar
-                    </button>
+
+                    <CategoryBadge category={t.category} />
+
+                    <span className="text-xs text-navy/40 tabular-nums whitespace-nowrap shrink-0">
+                      {fmtDate(t.date)}
+                    </span>
+
+                    <span className={`text-sm font-semibold tabular-nums shrink-0 ${t.amount > 0 ? "text-success" : "text-navy/75"}`}>
+                      {t.amount > 0 ? "+" : "−"}{fmtAmt(t.amount)}
+                    </span>
+
+                    <RestoreButton onClick={() => handleRestore([t.id])} disabled={restoring.size > 0} />
                   </div>
                 );
               })}

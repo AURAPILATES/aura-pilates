@@ -13,6 +13,7 @@ export default function AddCashModal({ categories, onClose }: { categories: Cate
   const [amount, setAmount] = useState("");
   const [isIncome, setIsIncome] = useState(true);
   const [concept, setConcept] = useState("");
+  const [notes, setNotes] = useState("");
   const [category, setCategory] = useState(categories[0]?.value ?? "Otros");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,6 +31,7 @@ export default function AddCashModal({ categories, onClose }: { categories: Cate
         amount: isIncome ? Math.abs(parsedAmount) : -Math.abs(parsedAmount),
         concept,
         category,
+        notes,
       });
       onClose();
     } catch (err) {
@@ -98,6 +100,17 @@ export default function AddCashModal({ categories, onClose }: { categories: Cate
               onChange={(e) => setConcept(e.target.value)}
               placeholder="ej: clase suelta pagada en caja"
               className="w-full border border-navy/[0.12] rounded-lg px-3 py-2 text-sm text-navy focus:outline-none focus:border-primary/40"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs text-navy/55 mb-1.5">Descripción</label>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Notas adicionales…"
+              rows={2}
+              className="w-full border border-navy/[0.12] rounded-lg px-3 py-2 text-sm text-navy focus:outline-none focus:border-primary/40 resize-none"
             />
           </div>
 
