@@ -103,6 +103,21 @@ export type MonthlyForecast = {
   saldoFinal: number;
 };
 
+// ── Historical by-category breakdown ─────────────────────────────────────────
+
+export type HistoricalByCategory = Record<string, Record<string, number>>;
+
+export function historicalByCategory(txns: Transaction[]): HistoricalByCategory {
+  const result: HistoricalByCategory = {};
+  for (const t of txns) {
+    if (t.amount >= 0) continue;
+    const month = t.date.slice(0, 7);
+    if (!result[t.category]) result[t.category] = {};
+    result[t.category][month] = (result[t.category][month] ?? 0) + Math.abs(t.amount);
+  }
+  return result;
+}
+
 // ── Historical aggregation ────────────────────────────────────────────────────
 
 export function historicalMonthly(txns: Transaction[]): MonthlyActual[] {
@@ -182,12 +197,15 @@ export function avgPackRevenuePerMonth(payments: StripePayment[]): number {
 
 // ── Forecast builder ──────────────────────────────────────────────────────────
 
+// cellOverrides: rowKey → month → override value
+// rowKeys: "mrr", "packs", or expense category string
 export function buildForecast(
   startingBalance: number,
   recurringExpenses: RecurringExpense[],
   params: ForecastParams,
   salaryOverride?: number,
   months = 12,
+  cellOverrides?: Record<string, Record<string, number>>,
 ): MonthlyForecast[] {
   const now = new Date();
   const forecast: MonthlyForecast[] = [];
@@ -199,17 +217,19 @@ export function buildForecast(
     const label = forecastMonthLabel(ym);
 
     const growthFactor = Math.pow(1 + params.crecimientoPct / 100, i);
-    const mrr   = params.mrrBase  * growthFactor;
-    const packs = params.packsBase * growthFactor;
+    const mrr   = cellOverrides?.["mrr"]?.[ym]   ?? (params.mrrBase  * growthFactor);
+    const packs = cellOverrides?.["packs"]?.[ym] ?? (params.packsBase * growthFactor);
     const gross = mrr + packs;
     const retenciones = gross * (params.retencionesPct / 100);
     const totalEntradas = gross - retenciones;
 
     const expenses = recurringExpenses.map((e) => ({
       category: e.category,
-      amount: SALARY_CATS.has(e.category)
-        ? (salaryOverride ?? (e.avgMonthly * (1 + params.salarioAumentoPct / 100)))
-        : e.avgMonthly,
+      amount: cellOverrides?.[e.category]?.[ym] ?? (
+        SALARY_CATS.has(e.category)
+          ? (salaryOverride ?? (e.avgMonthly * (1 + params.salarioAumentoPct / 100)))
+          : e.avgMonthly
+      ),
     }));
     const totalSalidas = expenses.reduce((s, e) => s + e.amount, 0) + params.prestamo;
 

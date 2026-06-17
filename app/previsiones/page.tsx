@@ -8,6 +8,7 @@ import {
   detectRecurringExpenses,
   avgPackRevenuePerMonth,
   historicalMonthly,
+  historicalByCategory,
 } from "@/lib/previsiones";
 import PrevisionesTable from "./PrevisionesTable";
 
@@ -30,8 +31,8 @@ export default async function PrevisionesPage() {
   // Gastos recurrentes detectados en transacciones
   const recurringExpenses = detectRecurringExpenses(txnsAll);
 
-  // Datos históricos agrupados por mes
   const historical = historicalMonthly(txnsAll);
+  const historicalByCat = historicalByCategory(txnsAll);
 
   // Saldo inicial de la previsión = último saldo conocido del banco
   const latestBal = [...txnsAll]
@@ -55,6 +56,7 @@ export default async function PrevisionesPage() {
           startingBalance={startingBalance}
           recurringExpenses={recurringExpenses}
           historical={historical}
+          historicalByCat={historicalByCat}
         />
       </div>
     </div>
