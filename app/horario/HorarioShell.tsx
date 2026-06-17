@@ -200,6 +200,25 @@ export default function HorarioShell({
                   Calendario
                 </button>
               </div>
+              <div className="w-px h-5 bg-navy/[0.12]" />
+              <div className="flex items-center gap-0.5">
+                <button
+                  onClick={() => router.push(`?week=${prevWeek}`)}
+                  disabled={weekMonday <= MIN_WEEK}
+                  className="w-7 h-7 flex items-center justify-center rounded-md border border-navy/[0.12] bg-white text-navy/50 disabled:opacity-20 hover:text-navy hover:bg-navy/[0.03] transition-colors"
+                >
+                  {chevLeft}
+                </button>
+                <span className="text-xs font-semibold text-navy px-2 min-w-[80px] text-center">
+                  {weekLabel(weekMonday)}
+                </span>
+                <button
+                  onClick={() => router.push(`?week=${nextWeek}`)}
+                  className="w-7 h-7 flex items-center justify-center rounded-md border border-navy/[0.12] bg-white text-navy/50 hover:text-navy hover:bg-navy/[0.03] transition-colors"
+                >
+                  {chevRight}
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -352,49 +371,47 @@ export default function HorarioShell({
 
           {tab === "horario" && (
             <div>
-              {/* Summary stats + week nav */}
-              <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card px-5 py-4 mb-6 flex flex-wrap items-center gap-x-5 gap-y-3">
-                {events.length > 0 ? (
-                  <>
-                    <StatItem
-                      label="Ocupación"
-                      value={`${weekSoldSpots}/${weekTotalSpots} · ${pct(weekOcc)}`}
-                      accent={weekOcc >= 0.8 ? "text-success" : weekOcc >= 0.5 ? "text-warning" : "text-danger"}
-                    />
-                    <div className="h-7 w-px bg-navy/[0.08]" />
-                    <StatItem label="Plazas libres" value={`${weekFreeSpots}`} />
-                    {lowCount > 0 && (
-                      <>
-                        <div className="h-7 w-px bg-navy/[0.08]" />
-                        <span className="text-xs font-medium bg-warning/10 text-warning px-3 py-1.5 rounded-lg">
-                          {lowCount} clase{lowCount !== 1 ? "s" : ""} por llenar
-                        </span>
-                      </>
-                    )}
-                  </>
-                ) : (
-                  <p className="text-sm text-navy/40">Sin clases esta semana.</p>
-                )}
+              {/* Stats cards */}
+              {events.length === 0 ? (
+                <p className="text-sm text-navy/40 mb-6">Sin clases esta semana.</p>
+              ) : (
+                <div className="grid grid-cols-4 gap-3 mb-5">
+                  <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card px-5 py-4">
+                    <div className="flex items-end gap-2">
+                      <span className="text-5xl font-bold text-navy leading-none">{Math.round(weekOcc * 100)}</span>
+                      <span className="text-2xl font-bold text-navy mb-0.5">%</span>
+                      <div className="mb-1">
+                        <p className="text-xs text-navy/45 leading-tight">ocupación</p>
+                        <p className="text-xs text-navy/45 leading-tight">media semana</p>
+                      </div>
+                    </div>
+                  </div>
+                  <DesktopStatCard label="VENDIDAS" value={`${weekSoldSpots}/${weekTotalSpots}`} />
+                  <DesktopStatCard label="LIBRES"   value={String(weekFreeSpots)} />
+                  <DesktopStatCard label="POR LLENAR" value={String(lowCount)} valueClass={lowCount > 0 ? "text-danger" : "text-navy/30"} />
+                </div>
+              )}
 
-                <div className="ml-auto flex items-center gap-1 bg-navy/[0.04] rounded-lg p-0.5">
+              {/* Alert banner */}
+              {lowCount > 0 && (
+                <div className="flex items-center justify-between gap-4 bg-warning/[0.07] border border-warning/20 rounded-xl px-5 py-3.5 mb-5">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-warning shrink-0">
+                      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                      <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                    <span className="text-sm text-warning font-medium">
+                      {lowCount} clase{lowCount !== 1 ? "s" : ""} con baja ocupación esta semana — considera enviar un recordatorio
+                    </span>
+                  </div>
                   <button
-                    onClick={() => router.push(`?week=${prevWeek}`)}
-                    disabled={weekMonday <= MIN_WEEK}
-                    className="w-7 h-7 flex items-center justify-center rounded-md disabled:opacity-20 text-navy/50 hover:text-navy hover:bg-white transition-colors"
+                    onClick={() => setOccFilter("low")}
+                    className="shrink-0 text-sm font-semibold text-warning border border-warning/30 rounded-lg px-4 py-1.5 hover:bg-warning/10 transition-colors whitespace-nowrap"
                   >
-                    {chevLeft}
-                  </button>
-                  <span className="text-xs font-semibold text-navy px-1.5 min-w-[90px] text-center">
-                    {weekLabel(weekMonday)}
-                  </span>
-                  <button
-                    onClick={() => router.push(`?week=${nextWeek}`)}
-                    className="w-7 h-7 flex items-center justify-center rounded-md text-navy/50 hover:text-navy hover:bg-white transition-colors"
-                  >
-                    {chevRight}
+                    Ver clases →
                   </button>
                 </div>
-              </div>
+              )}
 
               {/* Filters */}
               <div className="flex flex-wrap items-center gap-3 mb-6">
@@ -428,22 +445,7 @@ export default function HorarioShell({
                 )}
               </div>
 
-              {/* Color legend */}
-              {events.length > 0 && (
-                <div className="flex items-center gap-5 mb-4 flex-wrap">
-                  {[
-                    { color: "bg-[#c03828]", label: "Por llenar" },
-                    { color: "bg-[#a38540]", label: "A medias" },
-                    { color: "bg-[#c07030]", label: "Casi llena" },
-                    { color: "bg-[#4e8a5d]", label: "Llena" },
-                  ].map(({ color, label }) => (
-                    <div key={label} className="flex items-center gap-1.5">
-                      <span className={`w-2 h-2 rounded-full shrink-0 ${color}`} />
-                      <span className="text-xs text-navy/55">{label}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
+
 
               {events.length === 0 ? (
                 <div className="text-center py-20">
@@ -482,8 +484,6 @@ function MobileClassCard({ event: e, onSelect }: { event: MomenceEvent; onSelect
   const time   = new Date(e.dateTime).toLocaleTimeString("es-ES", {
     timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit",
   });
-  const DOTS       = 5;
-  const filledDots = Math.min(Math.round(occ * DOTS), DOTS);
 
   return (
     <button
@@ -498,19 +498,14 @@ function MobileClassCard({ event: e, onSelect }: { event: MomenceEvent; onSelect
       </div>
       <p className="text-base font-bold text-navy leading-snug">{e.title}</p>
       {e.teacher && <p className="text-sm text-navy/50 mt-0.5">{e.teacher}</p>}
-      <div className="flex items-center justify-between mt-3">
-        <div className="flex items-center gap-2">
-          <div className="flex gap-1">
-            {Array.from({ length: DOTS }, (_, i) => (
-              <span key={i} className={`w-2 h-2 rounded-full ${i < filledDots ? status.dot : "bg-navy/15"}`} />
-            ))}
-          </div>
-          <span className="text-xs text-navy/45">
-            {e.spotsRemaining === 0 ? "completa" : `${e.spotsRemaining} libre${e.spotsRemaining !== 1 ? "s" : ""}`}
-          </span>
+      <div className="mt-3">
+        <div className="h-1 bg-navy/[0.08] rounded-full overflow-hidden mb-2">
+          <div className={`h-full rounded-full ${status.dot}`} style={{ width: `${Math.round(occ * 100)}%` }} />
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-navy/40 tabular-nums">{e.ticketsSold}/{e.capacity}</span>
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-navy/45 tabular-nums">
+            {e.ticketsSold}/{e.capacity} · {e.spotsRemaining === 0 ? "completa" : `${e.spotsRemaining} libre${e.spotsRemaining !== 1 ? "s" : ""}`}
+          </span>
           <span className={`text-sm font-semibold tabular-nums ${status.text}`}>{Math.round(occ * 100)}%</span>
         </div>
       </div>
@@ -520,11 +515,11 @@ function MobileClassCard({ event: e, onSelect }: { event: MomenceEvent; onSelect
 
 // ── Desktop sub-components ─────────────────────────────────────────────────────
 
-function StatItem({ label, value, accent = "text-navy" }: { label: string; value: string; accent?: string }) {
+function DesktopStatCard({ label, value, valueClass = "text-navy" }: { label: string; value: string; valueClass?: string }) {
   return (
-    <div>
-      <p className="text-[10px] text-navy/40 uppercase tracking-wide mb-0.5">{label}</p>
-      <p className={`text-sm font-semibold ${accent}`}>{value}</p>
+    <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card px-5 py-4">
+      <p className="text-[9px] text-navy/40 uppercase tracking-widest font-semibold mb-2">{label}</p>
+      <p className={`text-3xl font-bold tabular-nums ${valueClass}`}>{value}</p>
     </div>
   );
 }
