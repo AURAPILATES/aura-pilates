@@ -753,7 +753,7 @@ export default function TransaccionesList({
                           )}
                           <SourceAvatar method={t.payment_method} />
                           <div className="min-w-0">
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
                               <span className="text-sm font-medium text-navy truncate">{primary}</span>
                               {isRecurring && <span className="shrink-0 text-[10px] text-primary/50">↺</span>}
                             </div>
@@ -847,7 +847,7 @@ export default function TransaccionesList({
                             <button onClick={() => setEditingField(null)} className="text-xs text-navy/50 shrink-0">✕</button>
                           </div>
                         ) : (
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
                             <span
                               className="text-sm font-semibold text-navy truncate cursor-pointer hover:text-navy/70 transition-colors"
                               onClick={() => startEditing(t, "primary")}
