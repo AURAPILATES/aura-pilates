@@ -716,7 +716,7 @@ export default async function Finanzas(props: {
                 {/* Posibles bajas */}
                 <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
                   <p className="text-xs font-semibold text-navy/55 uppercase tracking-wider mb-1">Posibles bajas detectadas</p>
-                  <p className="text-xs text-navy/40 mb-4">Suscriptores sin pago en los últimos 45+ días</p>
+                  <p className="text-xs text-navy/40 mb-4">Suscriptores sin pago en los últimos 35+ días</p>
                   {churnedCustomers.length === 0 ? (
                     <p className="text-sm text-navy/40 py-4 text-center">Sin bajas detectadas</p>
                   ) : (

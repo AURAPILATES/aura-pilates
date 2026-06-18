@@ -207,7 +207,7 @@ export function detectChurn(payments: StripePayment[], referenceDate?: string): 
       const daysSilent = Math.floor((ref.getTime() - new Date(last).getTime()) / 86400000);
       return { email, name, lastPayment: last, lastProduct: product, daysSilent };
     })
-    .filter((c) => c.daysSilent >= 45)
+    .filter((c) => c.daysSilent >= 35)
     .sort((a, b) => b.daysSilent - a.daysSilent);
 }
 
