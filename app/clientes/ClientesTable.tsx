@@ -40,6 +40,16 @@ function fmtDate(d: string) {
   return d.split("-").reverse().join("/");
 }
 
+function timeAgo(dateStr: string): string {
+  const days = Math.floor((Date.now() - new Date(dateStr + "T00:00:00").getTime()) / 86400000);
+  if (days < 7)   return `Hace ${days} día${days !== 1 ? "s" : ""}`;
+  if (days < 30)  return `Hace ${Math.round(days / 7)} semana${Math.round(days / 7) !== 1 ? "s" : ""}`;
+  const months = Math.round((days / 30) * 2) / 2;
+  if (days < 365) return `Hace ${String(months).replace(".", ",")} mes${months !== 1 ? "es" : ""}`;
+  const years = Math.round((days / 365) * 2) / 2;
+  return `Hace ${String(years).replace(".", ",")} año${years !== 1 ? "s" : ""}`;
+}
+
 function addDays(dateStr: string, n: number): string {
   const d = new Date(dateStr + "T00:00:00");
   d.setDate(d.getDate() + n);
@@ -459,6 +469,9 @@ export default function ClientesTable({ customers, payments }: { customers: Cust
               <p className="text-sm font-semibold text-navy/70">
                 {selected.firstPaymentDate ? fmtDate(selected.firstPaymentDate) : "—"}
               </p>
+              {selected.firstPaymentDate && (
+                <p className="text-[10px] text-navy/35 mt-0.5">{timeAgo(selected.firstPaymentDate)}</p>
+              )}
             </div>
           </div>
 
