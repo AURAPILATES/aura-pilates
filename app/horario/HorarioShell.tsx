@@ -260,8 +260,8 @@ export default function HorarioShell({
                 <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card mb-5 overflow-hidden">
                   <div className="px-5 pt-5 pb-4 flex items-end gap-3">
                     <div className="flex items-end gap-1">
-                      <span className="text-5xl font-bold text-navy leading-none">{Math.round(weekOcc * 100)}</span>
-                      <span className="text-2xl font-bold text-navy mb-0.5">%</span>
+                      <span className="text-5xl font-medium text-navy leading-none">{Math.round(weekOcc * 100)}</span>
+                      <span className="text-2xl font-medium text-navy mb-0.5">%</span>
                     </div>
                     <div className="mb-1">
                       <p className="text-xs text-navy/45 leading-tight">ocupación</p>
@@ -271,11 +271,11 @@ export default function HorarioShell({
                   <div className="border-t border-navy/[0.06] grid grid-cols-3 divide-x divide-navy/[0.06]">
                     <div className="px-4 py-3">
                       <p className="text-[9px] text-navy/40 uppercase tracking-widest font-semibold">Vendidas</p>
-                      <p className="text-base font-bold text-navy mt-0.5 tabular-nums">{weekSoldSpots}</p>
+                      <p className="text-base font-medium text-navy mt-0.5 tabular-nums">{weekSoldSpots}</p>
                     </div>
                     <div className="px-4 py-3">
                       <p className="text-[9px] text-navy/40 uppercase tracking-widest font-semibold">Libres</p>
-                      <p className="text-base font-bold text-navy mt-0.5 tabular-nums">{weekFreeSpots}</p>
+                      <p className="text-base font-medium text-navy mt-0.5 tabular-nums">{weekFreeSpots}</p>
                     </div>
                     <div className="px-4 py-3">
                       <p className="text-[9px] text-navy/40 uppercase tracking-widest font-semibold">Por llenar</p>
@@ -375,7 +375,7 @@ export default function HorarioShell({
                     return (
                       <div key={dateKey} id={`mday-${dateKey}`}>
                         <div className="flex items-baseline justify-between mb-3">
-                          <h2 className="text-2xl font-bold text-navy font-display capitalize">
+                          <h2 className="text-2xl font-bold text-navy capitalize">
                             {dName} <span className="font-light text-xl">{dNum}</span>
                           </h2>
                           <span className="text-sm text-navy/50">
@@ -416,8 +416,8 @@ export default function HorarioShell({
                 <div className="grid grid-cols-4 gap-3 mb-5">
                   <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card px-5 py-4">
                     <div className="flex items-end gap-2">
-                      <span className="text-5xl font-bold text-navy leading-none">{Math.round(weekOcc * 100)}</span>
-                      <span className="text-2xl font-bold text-navy mb-0.5">%</span>
+                      <span className="text-5xl font-medium text-navy leading-none">{Math.round(weekOcc * 100)}</span>
+                      <span className="text-2xl font-medium text-navy mb-0.5">%</span>
                       <div className="mb-1">
                         <p className="text-xs text-navy/45 leading-tight">ocupación</p>
                         <p className="text-xs text-navy/45 leading-tight">media semana</p>
@@ -539,7 +539,7 @@ function DesktopStatCard({ label, value, valueClass = "text-navy" }: { label: st
   return (
     <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card px-5 py-4">
       <p className="text-[9px] text-navy/40 uppercase tracking-widest font-semibold mb-2">{label}</p>
-      <p className={`text-3xl font-bold tabular-nums ${valueClass}`}>{value}</p>
+      <p className={`text-3xl font-medium tabular-nums ${valueClass}`}>{value}</p>
     </div>
   );
 }
