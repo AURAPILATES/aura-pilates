@@ -54,14 +54,57 @@ function KPICard({ label, value, sub, valueClass = "text-navy", onClick, accent 
   );
 }
 
+function pct(cur: number, prev: number): number {
+  if (prev === 0) return 0;
+  return ((cur - prev) / prev) * 100;
+}
+
+function TrendBadge({ cur, prev }: { cur: number; prev: number }) {
+  const p = pct(cur, prev);
+  if (p === 0 || prev === 0) return null;
+  const pos = p > 0;
+  return (
+    <span className={`text-xs font-semibold ${pos ? "text-success" : "text-danger"}`}>
+      {pos ? "+" : ""}{p.toFixed(2).replace(".", ",")} %
+    </span>
+  );
+}
+
+type TrendCardProps = {
+  label: string;
+  value: string;
+  prevLabel: string;
+  cur: number;
+  prev: number;
+};
+
+function TrendCard({ label, value, prevLabel, cur, prev }: TrendCardProps) {
+  return (
+    <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-4 sm:p-5">
+      <p className="text-[11px] text-navy/55 uppercase tracking-wider mb-1">{label}</p>
+      <div className="flex items-baseline gap-2 flex-wrap">
+        <p className="text-2xl font-semibold text-navy">{value}</p>
+        <TrendBadge cur={cur} prev={prev} />
+      </div>
+      <p className="text-[10px] text-navy/35 mt-1.5">{prevLabel} período anterior</p>
+    </div>
+  );
+}
+
 type Props = {
   customers: CustomerRow[];
   mrr: number;
   prevMonthLabel: string;
   curMonthLabel: string;
+  grossRevenue30d: number;
+  grossRevenuePrev30d: number;
+  newCount30d: number;
+  newCountPrev30d: number;
+  activeCount30d: number;
+  activeCountPrev30d: number;
 };
 
-export default function ClientesKPIs({ customers, mrr, prevMonthLabel, curMonthLabel }: Props) {
+export default function ClientesKPIs({ customers, mrr, prevMonthLabel, curMonthLabel, grossRevenue30d, grossRevenuePrev30d, newCount30d, newCountPrev30d, activeCount30d, activeCountPrev30d }: Props) {
   const [drawer, setDrawer] = useState<DrawerKey>(null);
 
   const activeList      = customers.filter((c) => c.isActive);
@@ -103,8 +146,36 @@ export default function ClientesKPIs({ customers, mrr, prevMonthLabel, curMonthL
     },
   };
 
+  const spendPerClient30d     = activeCount30d     > 0 ? grossRevenue30d     / activeCount30d     : 0;
+  const spendPerClientPrev30d = activeCountPrev30d > 0 ? grossRevenuePrev30d / activeCountPrev30d : 0;
+
   return (
     <>
+      {/* 3 KPIs de tendencia: últimos 30d vs período anterior */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4">
+        <TrendCard
+          label="Volumen bruto"
+          value={fmt(grossRevenue30d)}
+          prevLabel={fmt(grossRevenuePrev30d)}
+          cur={grossRevenue30d}
+          prev={grossRevenuePrev30d}
+        />
+        <TrendCard
+          label="Clientes nuevos"
+          value={String(newCount30d)}
+          prevLabel={String(newCountPrev30d)}
+          cur={newCount30d}
+          prev={newCountPrev30d}
+        />
+        <TrendCard
+          label="Gasto por cliente"
+          value={fmt(spendPerClient30d)}
+          prevLabel={fmt(spendPerClientPrev30d)}
+          cur={spendPerClient30d}
+          prev={spendPerClientPrev30d}
+        />
+      </div>
+
       {/* 6 KPIs: 2 cols móvil, 3 en sm, 6 en xl */}
       <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4 mb-6">
         <KPICard
