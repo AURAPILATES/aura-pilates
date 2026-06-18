@@ -21,13 +21,34 @@ type KPICardProps = {
   label: string;
   value: number | string;
   sub: string;
+  tooltip?: string;
   dateRange?: string;
   valueClass?: string;
   onClick?: () => void;
   accent?: "primary" | "success" | "warning" | "neutral";
 };
 
-function KPICard({ label, value, sub, dateRange, valueClass = "text-navy", onClick, accent }: KPICardProps) {
+function InfoTooltip({ text }: { text: string }) {
+  return (
+    <span className="relative group/tip inline-flex items-center">
+      <svg
+        width="12" height="12" viewBox="0 0 16 16" fill="none"
+        className="text-navy/30 hover:text-navy/55 transition-colors cursor-default shrink-0"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5"/>
+        <path d="M8 7v5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+        <circle cx="8" cy="4.5" r="0.75" fill="currentColor"/>
+      </svg>
+      <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[200px] rounded-lg bg-navy px-2.5 py-1.5 text-[11px] leading-snug text-white shadow-lg opacity-0 group-hover/tip:opacity-100 transition-opacity z-50 whitespace-normal text-center">
+        {text}
+        <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-navy" />
+      </span>
+    </span>
+  );
+}
+
+function KPICard({ label, value, sub, tooltip, dateRange, valueClass = "text-navy", onClick, accent }: KPICardProps) {
   const hoverBorder = {
     primary: "hover:border-primary/30",
     success:  "hover:border-success/30",
@@ -35,10 +56,17 @@ function KPICard({ label, value, sub, dateRange, valueClass = "text-navy", onCli
     neutral:  "hover:border-navy/20",
   }[accent ?? "neutral"];
 
+  const labelEl = (
+    <div className="flex items-center gap-1 mb-0.5">
+      <p className="text-[11px] text-navy/55 uppercase tracking-wider">{label}</p>
+      {tooltip && <InfoTooltip text={tooltip} />}
+    </div>
+  );
+
   if (!onClick) {
     return (
       <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-4 sm:p-5">
-        <p className="text-[11px] text-navy/55 uppercase tracking-wider mb-0.5">{label}</p>
+        {labelEl}
         {dateRange && <p className="text-[10px] text-navy/35 mb-1.5">{dateRange}</p>}
         <p className={`text-2xl font-semibold ${valueClass}`}>{value}</p>
         <p className="text-[10px] text-navy/35 mt-1.5">{sub}</p>
@@ -51,7 +79,7 @@ function KPICard({ label, value, sub, dateRange, valueClass = "text-navy", onCli
       onClick={onClick}
       className={`bg-white border border-navy/[0.07] rounded-2xl shadow-card p-4 sm:p-5 text-left transition-all group ${hoverBorder} hover:shadow-md`}
     >
-      <p className="text-[11px] text-navy/55 uppercase tracking-wider mb-0.5">{label}</p>
+      {labelEl}
       {dateRange && <p className="text-[10px] text-navy/35 mb-1.5">{dateRange}</p>}
       <p className={`text-2xl font-semibold ${valueClass} group-hover:opacity-80 transition-opacity`}>{value}</p>
       <p className="text-[10px] text-navy/35 mt-1.5 flex items-center gap-1">
@@ -271,6 +299,7 @@ export default function ClientesKPIs({ customers, mrr, prevMonthLabel, curMonthL
           label="Activos"
           value={activeList.length}
           sub="suscripción o pack vigente"
+          tooltip="Suscripción renovada hace ≤30 días, o pack con fecha de caducidad aún vigente (Benvinguda: 15d · Pack 4/8: 90d)"
           valueClass="text-navy"
           accent="neutral"
           onClick={() => setDrawer("active")}
