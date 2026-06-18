@@ -786,10 +786,11 @@ export default function TransaccionesList({
         <table className="w-full" style={{ tableLayout: "fixed" }}>
           <colgroup>
             <col style={{ width: "44px" }} />
-            <col />
+            <col style={{ width: "280px" }} />
             <col style={{ width: "172px" }} />
             <col style={{ width: "110px" }} />
             <col style={{ width: "128px" }} />
+            <col />
           </colgroup>
           <thead>
             <tr className="border-b border-navy/[0.06] bg-navy/[0.012] group/head">
@@ -800,12 +801,13 @@ export default function TransaccionesList({
               <th className="text-left px-4 py-3 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Categoría</th>
               <SortableHeader label="Fecha" sortKey="date" align="right" className="px-4" currentKey={sortKey} dir={sortDir} onClick={toggleSort} />
               <SortableHeader label="Importe" sortKey="amount" align="right" className="pr-6" currentKey={sortKey} dir={sortDir} onClick={toggleSort} />
+              <th />
             </tr>
           </thead>
           <tbody className={isPending ? "opacity-50 pointer-events-none" : ""}>
             {sortedFiltered.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-12 text-center text-sm text-navy/40">Sin resultados</td>
+                <td colSpan={6} className="px-4 py-12 text-center text-sm text-navy/40">Sin resultados</td>
               </tr>
             )}
             {sortedFiltered.map((t) => {
@@ -903,6 +905,7 @@ export default function TransaccionesList({
                       <p className="text-[10px] text-navy/40 tabular-nums mt-0.5">{fmtAmt(t.balance)} €</p>
                     )}
                   </td>
+                  <td />
                 </tr>
               );
             })}
