@@ -142,12 +142,10 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
     [payments, selected],
   );
 
-  const topIds = useMemo(() => {
-    return [...customers]
-      .sort((a, b) => b.totalSpent - a.totalSpent)
-      .slice(0, 3)
-      .map((c) => c.id);
-  }, [customers]);
+  const topCustomers = useMemo(
+    () => [...customers].sort((a, b) => b.totalSpent - a.totalSpent).slice(0, 5),
+    [customers],
+  );
 
   const couponStripeIds = useMemo(
     () => new Set(payments.filter((p) => p.inferredType === "coupon" && p.customerId).map((p) => p.customerId!)),
@@ -259,6 +257,29 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
           <button onClick={onClearMonth} className="text-primary/60 hover:text-primary text-xs font-medium">Limpiar ✕</button>
         </div>
       )}
+      {/* Top 5 clientes */}
+      <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card mb-6 overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-navy/[0.06]">
+          <p className="text-sm font-semibold text-navy">Principales clientes</p>
+          <p className="text-xs text-navy/40">Por total gastado</p>
+        </div>
+        <div className="divide-y divide-navy/[0.05]">
+          {topCustomers.map((c) => (
+            <button
+              key={c.id}
+              onClick={() => { setSelected(c); setStripeOpen(false); }}
+              className="w-full flex items-center justify-between gap-4 px-5 py-3 hover:bg-primary/[0.025] transition-colors text-left"
+            >
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-navy truncate">{c.name ?? "—"}</p>
+                {c.email && <p className="text-xs text-navy/45 truncate">{c.email}</p>}
+              </div>
+              <span className="shrink-0 text-sm font-semibold text-navy tabular-nums">{fmt(c.totalSpent)}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Controls */}
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
         {/* Search */}
@@ -352,10 +373,6 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
                 </tr>
               ) : (
                 filtered.map((c, i) => {
-                  const topRank = topIds.indexOf(c.id);
-                  const isTop   = topRank !== -1;
-                  const crowns  = ["👑", "🥈", "🥉"];
-
                   const { status, days } = clientStatus(c);
                   const dSub  = c.daysSinceLastSub  ?? Infinity;
                   const dPack = c.daysSinceLastPack ?? Infinity;
@@ -372,11 +389,6 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
                     >
                       <td className="px-5 py-3">
                         <div className="flex items-center gap-1.5">
-                          {isTop && (
-                            <span title={topRank === 0 ? "Top cliente" : `Top ${topRank + 1}`} className="text-sm leading-none">
-                              {crowns[topRank]}
-                            </span>
-                          )}
                           <div className="min-w-0">
                             <p className="font-medium text-navy truncate max-w-[160px]">{c.name ?? "—"}</p>
                             {c.email && <p className="text-[11px] text-navy/50 truncate max-w-[160px]">{c.email}</p>}

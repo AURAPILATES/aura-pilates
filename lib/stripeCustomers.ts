@@ -30,28 +30,33 @@ export type StripeCustomer = {
 
 type RawCustomer = Pick<Stripe.Customer, "id" | "name" | "email" | "created" | "discount" | "delinquent">;
 
-// IDs de clientes con pagos fallidos en los últimos 90 días
-// Cubre: (1) facturas de suscripción intentadas y no cobradas, (2) PaymentIntents fallidos directos
-const fetchFailedPaymentCustomerIds = unstable_cache(
-  async (): Promise<string[]> => {
+// Pagos fallidos en los últimos 30 días: devuelve customerId + fecha del fallo más reciente
+const fetchFailedPayments = unstable_cache(
+  async (): Promise<{ customerId: string; failedAt: string }[]> => {
     const cutoff = Math.floor(Date.now() / 1000) - 30 * 86400;
-    const ids = new Set<string>();
+    const map = new Map<string, string>(); // stripeId → fecha más reciente de fallo (YYYY-MM-DD)
+
+    const toDate = (ts: number) => new Date(ts * 1000).toISOString().split("T")[0];
+    const setIfNewer = (cid: string, date: string) => {
+      const ex = map.get(cid);
+      if (!ex || date > ex) map.set(cid, date);
+    };
 
     // Facturas abiertas que Stripe ya intentó cobrar
     for await (const inv of stripe.invoices.list({ status: "open", limit: 100, created: { gte: cutoff } })) {
       if (!inv.attempted) continue;
       const cid = typeof inv.customer === "string" ? inv.customer : (inv.customer as Stripe.Customer | null)?.id ?? null;
-      if (cid) ids.add(cid);
+      if (cid) setIfNewer(cid, toDate(inv.created));
     }
 
     // PaymentIntents fallidos (requires_payment_method + last_payment_error)
     for await (const pi of stripe.paymentIntents.list({ limit: 100, created: { gte: cutoff } })) {
       if (pi.status !== "requires_payment_method" || !pi.last_payment_error) continue;
       const cid = typeof pi.customer === "string" ? pi.customer : (pi.customer as Stripe.Customer | null)?.id ?? null;
-      if (cid) ids.add(cid);
+      if (cid) setIfNewer(cid, toDate(pi.created));
     }
 
-    return [...ids];
+    return [...map.entries()].map(([customerId, failedAt]) => ({ customerId, failedAt }));
   },
   ["stripe-failed-payments"],
   { revalidate: 600, tags: ["stripe"] },
@@ -100,10 +105,19 @@ export async function loadStripeCustomers(
     hasPaymentError: boolean;
   };
 
-  const [stripeCustomers, failedInvoiceIds] = await Promise.all([
+  // Último pago exitoso por stripeId (ya tenemos los pagos cargados)
+  const lastSuccessMap = new Map<string, string>();
+  for (const p of payments) {
+    if (!p.customerId) continue;
+    const ex = lastSuccessMap.get(p.customerId);
+    if (!ex || p.date > ex) lastSuccessMap.set(p.customerId, p.date);
+  }
+
+  const [stripeCustomers, failedPayments] = await Promise.all([
     fetchStripeCustomerList(),
-    fetchFailedPaymentCustomerIds().then((ids) => new Set(ids)),
+    fetchFailedPayments(),
   ]);
+  const failedByStripeId = new Map(failedPayments.map((f) => [f.customerId, f.failedAt]));
   const raw_customers: RawEntry[] = [];
 
   for (const c of stripeCustomers) {
@@ -125,7 +139,14 @@ export async function loadStripeCustomers(
       stats,
       isRecurring: recurring.has(c.id),
       delinquent: c.delinquent ?? false,
-      hasPaymentError: (c.delinquent ?? false) || failedInvoiceIds.has(c.id),
+      hasPaymentError: (() => {
+        if (c.delinquent) return true;
+        const failedAt = failedByStripeId.get(c.id);
+        if (!failedAt) return false;
+        // Resuelto si hay un pago exitoso posterior al fallo
+        const lastSuccess = lastSuccessMap.get(c.id);
+        return !lastSuccess || lastSuccess < failedAt;
+      })(),
     });
   }
 
