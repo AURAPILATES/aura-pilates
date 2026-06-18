@@ -247,7 +247,7 @@ export const loadStripePaymentsCached = unstable_cache(
   { revalidate: 600, tags: ["stripe"] },
 );
 
-// ── Resumen de pagos últimos 30d (reembolsos + disputas + errores) ────────────
+// ── Resumen de pagos por rango de fechas (reembolsos + disputas + errores) ────
 
 export type PaymentsBreakdown = {
   refunded: number;
@@ -258,25 +258,25 @@ export type PaymentsBreakdown = {
   failedIds:   string[];   // stripeIds de clientes con charge fallido
 };
 
-export const loadPaymentsBreakdown30d = unstable_cache(
-  async (): Promise<PaymentsBreakdown> => {
-    const cutoff = Math.floor(Date.now() / 1000) - 30 * 86400;
+export const loadPaymentsBreakdown = unstable_cache(
+  async (fromDate: string, toDate: string): Promise<PaymentsBreakdown> => {
+    const fromTs = Math.floor(new Date(fromDate + "T00:00:00").getTime() / 1000);
+    const toTs   = Math.floor(new Date(toDate   + "T23:59:59").getTime() / 1000);
 
     let refunded = 0;
     const refundedSet = new Set<string>();
-    for await (const r of stripe.refunds.list({ limit: 100, created: { gte: cutoff } })) {
+    for await (const r of stripe.refunds.list({ limit: 100, created: { gte: fromTs, lte: toTs } })) {
       if (r.status !== "succeeded") continue;
       refunded += r.amount / 100;
       const cid = typeof (r as { charge?: unknown }).charge === "string"
         ? (r as { charge: string }).charge
         : null;
-      // charge ID, not customer ID — we match via stripeIds later
       if (cid) refundedSet.add(cid);
     }
 
     let disputed = 0;
     const disputedSet = new Set<string>();
-    for await (const d of stripe.disputes.list({ limit: 100, created: { gte: cutoff } })) {
+    for await (const d of stripe.disputes.list({ limit: 100, created: { gte: fromTs, lte: toTs } })) {
       disputed += d.amount / 100;
       const cid = typeof d.charge === "string" ? d.charge : (d.charge as { id: string } | null)?.id ?? null;
       if (cid) disputedSet.add(cid);
@@ -284,7 +284,7 @@ export const loadPaymentsBreakdown30d = unstable_cache(
 
     let failed = 0;
     const failedSet = new Set<string>();
-    for await (const ch of stripe.charges.list({ limit: 100, created: { gte: cutoff } })) {
+    for await (const ch of stripe.charges.list({ limit: 100, created: { gte: fromTs, lte: toTs } })) {
       if (ch.status !== "failed") continue;
       failed += toEuros(ch.amount, ch.currency);
       const cid = typeof ch.customer === "string" ? ch.customer : (ch.customer as { id: string } | null)?.id ?? null;
@@ -292,7 +292,6 @@ export const loadPaymentsBreakdown30d = unstable_cache(
     }
 
     // Resolver charge IDs a customer IDs para reembolsos y disputas
-    // Necesitamos cargar los charges para obtener el customer
     const chargeIds = [...refundedSet, ...disputedSet];
     const chargeToCustomer = new Map<string, string>();
     if (chargeIds.length > 0) {
@@ -319,7 +318,7 @@ export const loadPaymentsBreakdown30d = unstable_cache(
       failedIds:   [...failedSet],
     };
   },
-  ["stripe-payments-breakdown-30d"],
+  ["stripe-payments-breakdown"],
   { revalidate: 600, tags: ["stripe"] },
 );
 

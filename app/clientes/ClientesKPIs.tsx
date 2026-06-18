@@ -96,15 +96,16 @@ type Props = {
   mrr: number;
   prevMonthLabel: string;
   curMonthLabel: string;
-  grossRevenue30d: number;
-  grossRevenuePrev30d: number;
-  newCount30d: number;
-  newCountPrev30d: number;
-  activeCount30d: number;
-  activeCountPrev30d: number;
+  periodLabel: string;
+  grossRevenue: number;
+  grossRevenueComp: number;
+  newCount: number;
+  newCountComp: number;
+  activeCount: number;
+  activeCountComp: number;
 };
 
-export default function ClientesKPIs({ customers, mrr, prevMonthLabel, curMonthLabel, grossRevenue30d, grossRevenuePrev30d, newCount30d, newCountPrev30d, activeCount30d, activeCountPrev30d }: Props) {
+export default function ClientesKPIs({ customers, mrr, prevMonthLabel, curMonthLabel, periodLabel, grossRevenue, grossRevenueComp, newCount, newCountComp, activeCount, activeCountComp }: Props) {
   const [drawer, setDrawer] = useState<DrawerKey>(null);
 
   const activeList      = customers.filter((c) => c.isActive);
@@ -146,33 +147,33 @@ export default function ClientesKPIs({ customers, mrr, prevMonthLabel, curMonthL
     },
   };
 
-  const spendPerClient30d     = activeCount30d     > 0 ? grossRevenue30d     / activeCount30d     : 0;
-  const spendPerClientPrev30d = activeCountPrev30d > 0 ? grossRevenuePrev30d / activeCountPrev30d : 0;
+  const spendPerClient     = activeCount     > 0 ? grossRevenue     / activeCount     : 0;
+  const spendPerClientComp = activeCountComp > 0 ? grossRevenueComp / activeCountComp : 0;
 
   return (
     <>
-      {/* 3 KPIs de tendencia: últimos 30d vs período anterior */}
+      {/* 3 KPIs de tendencia: período seleccionado vs comparación */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4">
         <TrendCard
           label="Volumen bruto"
-          value={fmt(grossRevenue30d)}
-          prevLabel={fmt(grossRevenuePrev30d)}
-          cur={grossRevenue30d}
-          prev={grossRevenuePrev30d}
+          value={fmt(grossRevenue)}
+          prevLabel={fmt(grossRevenueComp)}
+          cur={grossRevenue}
+          prev={grossRevenueComp}
         />
         <TrendCard
           label="Clientes nuevos"
-          value={String(newCount30d)}
-          prevLabel={String(newCountPrev30d)}
-          cur={newCount30d}
-          prev={newCountPrev30d}
+          value={String(newCount)}
+          prevLabel={String(newCountComp)}
+          cur={newCount}
+          prev={newCountComp}
         />
         <TrendCard
           label="Gasto por cliente"
-          value={fmt(spendPerClient30d)}
-          prevLabel={fmt(spendPerClientPrev30d)}
-          cur={spendPerClient30d}
-          prev={spendPerClientPrev30d}
+          value={fmt(spendPerClient)}
+          prevLabel={fmt(spendPerClientComp)}
+          cur={spendPerClient}
+          prev={spendPerClientComp}
         />
       </div>
 
@@ -181,7 +182,7 @@ export default function ClientesKPIs({ customers, mrr, prevMonthLabel, curMonthL
         <KPICard
           label="Suscritos"
           value={activeList.length}
-          sub="últimos 30 días"
+          sub={periodLabel}
           valueClass="text-navy"
           accent="neutral"
           onClick={() => setDrawer("active")}
@@ -197,7 +198,7 @@ export default function ClientesKPIs({ customers, mrr, prevMonthLabel, curMonthL
         <KPICard
           label="Nuevos"
           value={newList.length}
-          sub="primer pago 30 días"
+          sub={`primer pago · ${periodLabel}`}
           valueClass="text-success"
           accent="success"
           onClick={newList.length > 0 ? () => setDrawer("new") : undefined}

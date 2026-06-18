@@ -1,61 +1,126 @@
 export const dynamic = "force-dynamic";
 
-import { loadStripePaymentsCached, loadPaymentsBreakdown30d } from "@/lib/stripePayments";
+import { loadStripePaymentsCached, loadPaymentsBreakdown } from "@/lib/stripePayments";
 import { loadStripeCustomers } from "@/lib/stripeCustomers";
-import { estimatedMRR, activeCustomersLast30Days, newCustomersLast30Days } from "@/lib/stripeRecurrence";
+import { estimatedMRR } from "@/lib/stripeRecurrence";
 import { loadBusinessEvents } from "@/lib/businessEvents";
 import ClientesShell from "./ClientesShell";
 import ClientesKPIs from "./ClientesKPIs";
 import ClientesPaymentsBreakdown from "./ClientesPaymentsBreakdown";
+import ClientesFilterBar from "./ClientesFilterBar";
 
 function pad2(n: number) { return String(n).padStart(2, "0"); }
 
-export default async function ClientesPage() {
+function addDays(dateStr: string, days: number): string {
+  const d = new Date(dateStr + "T12:00:00");
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split("T")[0];
+}
+
+function daysBetween(from: string, to: string): number {
+  return Math.round(
+    (new Date(to + "T12:00:00").getTime() - new Date(from + "T12:00:00").getTime()) / 86400000,
+  );
+}
+
+function fmtShort(d: string) {
+  const [y, m, day] = d.split("-");
+  return `${day}/${m}/${y.slice(2)}`;
+}
+
+export default async function ClientesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const sp = await searchParams;
   const now = new Date();
+  const todayStr = now.toISOString().split("T")[0];
+
+  // ── Parse filter params ──────────────────────────────────────────────────────
+  const periodParam  = typeof sp.period      === "string" ? sp.period      : "30";
+  const customFrom   = typeof sp.from        === "string" ? sp.from        : "";
+  const customTo     = typeof sp.to          === "string" ? sp.to          : "";
+  const compareParam = typeof sp.compareWith === "string" ? sp.compareWith : "previous";
+  const cpFrom       = typeof sp.compareFrom === "string" ? sp.compareFrom : "";
+  const cpTo         = typeof sp.compareTo   === "string" ? sp.compareTo   : "";
+
+  // ── Main period ───────────────────────────────────────────────────────────────
+  let mainFrom: string;
+  let mainTo: string = todayStr;
+
+  if (periodParam === "custom" && customFrom && customTo) {
+    mainFrom = customFrom;
+    mainTo   = customTo;
+  } else {
+    const days = periodParam === "7" ? 7 : periodParam === "90" ? 90 : 30;
+    mainFrom = addDays(todayStr, -days);
+  }
+
+  // ── Comparison period ─────────────────────────────────────────────────────────
+  let compFrom: string;
+  let compTo: string;
+
+  if (compareParam === "custom" && cpFrom && cpTo) {
+    compFrom = cpFrom;
+    compTo   = cpTo;
+  } else {
+    const duration = daysBetween(mainFrom, mainTo);
+    compTo   = addDays(mainFrom, -1);
+    compFrom = addDays(compTo,   -duration);
+  }
+
+  // ── Period label ──────────────────────────────────────────────────────────────
+  const periodLabel =
+    periodParam === "7"  ? "7 días"  :
+    periodParam === "30" ? "30 días" :
+    periodParam === "90" ? "90 días" :
+    `${fmtShort(mainFrom)}–${fmtShort(mainTo)}`;
+
+  // ── Fetch data ────────────────────────────────────────────────────────────────
   const curMonth  = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}`;
   const prevMonth = (() => {
     const d = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`;
   })();
+
   const payments = await loadStripePaymentsCached();
   const [customers, businessEvents, breakdown] = await Promise.all([
     loadStripeCustomers(payments, curMonth),
     loadBusinessEvents(),
-    loadPaymentsBreakdown30d(),
+    loadPaymentsBreakdown(mainFrom, mainTo),
   ]);
 
-  const total      = customers.length;
-  const mrr        = estimatedMRR(payments, curMonth);
-  const activeIds  = activeCustomersLast30Days(payments);
-  const newIds     = newCustomersLast30Days(payments);
+  const total = customers.length;
+  const mrr   = estimatedMRR(payments, curMonth);
 
-  // Métricas rolling 30d vs período anterior (días 31-60)
-  const day30ago = new Date(now.getTime() - 30 * 86400000).toISOString().split("T")[0];
-  const day60ago = new Date(now.getTime() - 60 * 86400000).toISOString().split("T")[0];
+  // ── Filter payments to each period ───────────────────────────────────────────
+  const pMain = payments.filter((p) => p.date >= mainFrom && p.date <= mainTo);
+  const pComp = payments.filter((p) => p.date >= compFrom && p.date <= compTo);
 
-  const p30d     = payments.filter((p) => p.date >= day30ago);
-  const pPrev30d = payments.filter((p) => p.date >= day60ago && p.date < day30ago);
+  const grossRevenue     = pMain.reduce((s, p) => s + p.amount, 0);
+  const grossRevenueComp = pComp.reduce((s, p) => s + p.amount, 0);
 
-  const grossRevenue30d     = p30d.reduce((s, p) => s + p.amount, 0);
-  const grossRevenuePrev30d = pPrev30d.reduce((s, p) => s + p.amount, 0);
+  const mainActiveSet = new Set(pMain.filter((p) => p.customerId).map((p) => p.customerId!));
+  const compActiveSet = new Set(pComp.filter((p) => p.customerId).map((p) => p.customerId!));
 
-  const activeSet30d     = new Set(p30d.filter((p) => p.customerId).map((p) => p.customerId!));
-  const activeSetPrev30d = new Set(pPrev30d.filter((p) => p.customerId).map((p) => p.customerId!));
-
-  // Clientes nuevos: primer pago dentro del período
-  const firstPaymentMap = new Map<string, string>(); // stripeId → fecha primer pago
+  // ── New customers: first payment within each period ───────────────────────────
+  const firstPaymentMap = new Map<string, string>();
   for (const p of payments) {
     if (!p.customerId) continue;
     const ex = firstPaymentMap.get(p.customerId);
     if (!ex || p.date < ex) firstPaymentMap.set(p.customerId, p.date);
   }
-  let newCount30d = 0, newCountPrev30d = 0;
-  for (const firstDate of firstPaymentMap.values()) {
-    if (firstDate >= day30ago) newCount30d++;
-    else if (firstDate >= day60ago) newCountPrev30d++;
+
+  const mainNewSet = new Set<string>();
+  const compNewSet = new Set<string>();
+  let newCountMain = 0, newCountComp = 0;
+  for (const [cid, firstDate] of firstPaymentMap) {
+    if (firstDate >= mainFrom && firstDate <= mainTo) { mainNewSet.add(cid); newCountMain++; }
+    else if (firstDate >= compFrom && firstDate <= compTo) { compNewSet.add(cid); newCountComp++; }
   }
 
-  // Último pago por tipo — suscripciones y packs tienen ventanas de caducidad distintas
+  // ── Last sub/pack by customer (structural, not period-dependent) ──────────────
   const lastSubById  = new Map<string, { date: string; product: string }>();
   const lastPackById = new Map<string, { date: string; product: string }>();
 
@@ -64,7 +129,7 @@ export default async function ClientesPage() {
     if (p.inferredType === "subscription") {
       const ex = lastSubById.get(p.customerId);
       if (!ex || p.date > ex.date) lastSubById.set(p.customerId, { date: p.date, product: p.inferredProduct });
-    } else if (p.inferredType === "pack" && p.inferredProduct !== "Clase suelta") {
+    } else if (p.inferredType === "pack") {
       const ex = lastPackById.get(p.customerId);
       if (!ex || p.date > ex.date) lastPackById.set(p.customerId, { date: p.date, product: p.inferredProduct });
     }
@@ -90,8 +155,8 @@ export default async function ClientesPage() {
       daysSinceLastPack: lastPack ? daysSince(lastPack.date) : null,
       lastPackProduct:   lastPack?.product ?? null,
       lastSubProduct:    lastSub?.product  ?? null,
-      isActive: activeIds.has(c.id),
-      isNew:    newIds.has(c.id),
+      isActive: c.stripeIds.some((sid) => mainActiveSet.has(sid)),
+      isNew:    c.stripeIds.some((sid) => mainNewSet.has(sid)),
     };
   });
 
@@ -108,23 +173,27 @@ export default async function ClientesPage() {
       </div>
 
       <div className="p-6 max-w-6xl mx-auto">
+        <ClientesFilterBar />
+
         <ClientesKPIs
           customers={customersWithChurn}
           mrr={mrr}
           prevMonthLabel={prevMonth.slice(5)}
           curMonthLabel={curMonth.slice(5)}
-          grossRevenue30d={grossRevenue30d}
-          grossRevenuePrev30d={grossRevenuePrev30d}
-          newCount30d={newCount30d}
-          newCountPrev30d={newCountPrev30d}
-          activeCount30d={activeSet30d.size}
-          activeCountPrev30d={activeSetPrev30d.size}
+          periodLabel={periodLabel}
+          grossRevenue={grossRevenue}
+          grossRevenueComp={grossRevenueComp}
+          newCount={newCountMain}
+          newCountComp={newCountComp}
+          activeCount={mainActiveSet.size}
+          activeCountComp={compActiveSet.size}
         />
 
         <ClientesPaymentsBreakdown
           customers={customersWithChurn}
-          succeeded={grossRevenue30d}
-          succeededIds={[...activeSet30d]}
+          periodLabel={periodLabel}
+          succeeded={grossRevenue}
+          succeededIds={[...mainActiveSet]}
           refunded={breakdown.refunded}
           disputed={breakdown.disputed}
           failed={breakdown.failed}

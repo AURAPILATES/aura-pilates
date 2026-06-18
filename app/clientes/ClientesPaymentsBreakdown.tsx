@@ -12,6 +12,7 @@ type Props = PaymentsBreakdown & {
   succeeded: number;
   succeededIds: string[];
   customers: CustomerRow[];
+  periodLabel: string;
 };
 
 const ITEMS: { key: SegmentKey; label: string; bg: string; drawerTitle: string; drawerSub: string }[] = [
@@ -29,7 +30,7 @@ function fmtDate(d: string | null) {
 export default function ClientesPaymentsBreakdown({
   succeeded, refunded, disputed, failed,
   succeededIds, refundedIds, disputedIds, failedIds,
-  customers,
+  customers, periodLabel,
 }: Props) {
   const [open, setOpen] = useState<SegmentKey | null>(null);
 
@@ -51,7 +52,7 @@ export default function ClientesPaymentsBreakdown({
       <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5 mb-4">
         <div className="flex items-center justify-between mb-3">
           <p className="text-sm font-semibold text-navy">Resumen de pagos</p>
-          <p className="text-[11px] text-navy/40">Últimos 30 días</p>
+          <p className="text-[11px] text-navy/40">{periodLabel}</p>
         </div>
 
         {/* Barra proporcional */}
