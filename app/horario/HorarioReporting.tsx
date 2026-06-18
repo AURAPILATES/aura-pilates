@@ -77,12 +77,6 @@ export default function HorarioReporting({ data }: { data: ReportingData }) {
 
   const totalRev = topProducts.reduce((s, p) => s + p.revenue, 0);
 
-  // Baja asistencia próximos 7 días
-  const lowOcc = upcoming7
-    .filter((e) => e.capacity > 0 && e.ticketsSold / e.capacity < 0.4)
-    .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime())
-    .slice(0, 5);
-
   // Top clases (período, ≥2 sesiones)
   const classByTitle = new Map<string, { total: number; count: number }>();
   for (const e of main) {
@@ -150,35 +144,6 @@ export default function HorarioReporting({ data }: { data: ReportingData }) {
             </Card>
           ))}
         </div>
-      </section>
-
-      {/* ── Alertas + Oportunidades ── */}
-      <section id="q2">
-        <QuestionHeader num={2} question="¿Qué clases hay que rellenar esta semana?" />
-        {lowOcc.length === 0 ? (
-          <Card>
-            <div className="flex items-center gap-2 text-success text-sm">
-              <span className="text-base">✓</span>
-              <span>Todas las clases próximas tienen buena cobertura</span>
-            </div>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {lowOcc.map((e) => {
-              const fillRate = e.capacity > 0 ? e.ticketsSold / e.capacity : 0;
-              return (
-                <Card key={e.id}>
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-sm font-medium text-navy truncate max-w-[160px]">{e.title}</p>
-                    <span className="text-xs text-danger font-semibold tabular-nums shrink-0">{e.ticketsSold}/{e.capacity}</span>
-                  </div>
-                  <OccBar value={fillRate} />
-                  <p className="text-[11px] text-navy/50 mt-1.5">{fmtDate(e.dateTime)} · {e.teacher}</p>
-                </Card>
-              );
-            })}
-          </div>
-        )}
       </section>
 
       {/* ── Oportunidades ── */}
