@@ -218,7 +218,12 @@ export default function ClientesKPIs({ customers, mrr, prevMonthLabel, curMonthL
 
   const recurringList   = customers.filter((c) => c.isRecurring);
   const newList         = customers.filter((c) => c.isNew);
-  const churnList       = customers.filter((c) => clientStatus(c).status !== "ok");
+  // Bajas de suscripción: 46-76 días sin pagar (31 días de gracia + 15 de confirmación)
+  // Solo suscripciones (daysSinceLastSub), no packs. Tope 76d para no recoger meses anteriores.
+  const churnList       = customers.filter((c) => {
+    const d = c.daysSinceLastSub;
+    return d != null && d >= 46 && d <= 76;
+  });
   const delinquentList  = customers.filter((c) => c.hasPaymentError);
 
   const drawerConfig: Record<NonNullable<DrawerKey>, DrawerEntry> = {
@@ -246,8 +251,8 @@ export default function ClientesKPIs({ customers, mrr, prevMonthLabel, curMonthL
       customers: newList,
     },
     churn: {
-      title: "Posibles bajas",
-      subtitle: "Suscriptores con renovación vencida o pack caducado",
+      title: "Bajas de suscripción",
+      subtitle: "Sin renovar entre 46 y 76 días (Bàsic / Plus / Pro)",
       customers: churnList,
     },
     error: {
@@ -330,11 +335,10 @@ export default function ClientesKPIs({ customers, mrr, prevMonthLabel, curMonthL
           valueClass="text-success"
         />
         <KPICard
-          label="Posibles bajas"
-          dateRange={rangePrevMonth}
+          label="Bajas suscrip."
           value={churnList.length}
-          sub={`sin pagar en ${curMonthLabel}`}
-          valueClass={churnList.length > 0 ? "text-warning" : "text-navy/50"}
+          sub="sin renovar 46–76 días"
+          valueClass={churnList.length > 0 ? "text-danger" : "text-navy/50"}
           accent="warning"
           onClick={churnList.length > 0 ? () => setDrawer("churn") : undefined}
         />
