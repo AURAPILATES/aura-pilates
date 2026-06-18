@@ -15,7 +15,7 @@ export type StripePayment = {
   method: string;       // "card" | "sepa_debit" | ...
   category: "Suscripción" | "Pago único";
   inferredProduct: string;  // nombre del producto inferido del importe
-  inferredType: "subscription" | "pack" | "unknown";
+  inferredType: "subscription" | "pack" | "coupon" | "unknown";
 };
 
 // Mapa de importes → producto (precios Momence a jun 2026)
@@ -29,9 +29,9 @@ const PRODUCT_MAP: Array<{ amount: number; name: string; type: "subscription" | 
   { amount: 20,  name: "Clase suelta",    type: "pack" },
 ];
 
-function inferProduct(amount: number): { name: string; type: "subscription" | "pack" | "unknown" } {
+function inferProduct(amount: number): { name: string; type: "subscription" | "pack" | "coupon" | "unknown" } {
   const match = PRODUCT_MAP.find((p) => Math.abs(p.amount - amount) < 1);
-  return match ? { name: match.name, type: match.type } : { name: "Otro", type: "unknown" };
+  return match ? { name: match.name, type: match.type } : { name: "Con cupón", type: "coupon" };
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -155,7 +155,7 @@ export function stripeByMethod(payments: StripePayment[]): MethodRevenue[] {
 
 export type ProductRevenue = {
   product: string;
-  type: "subscription" | "pack" | "unknown";
+  type: "subscription" | "pack" | "coupon" | "unknown";
   revenue: number;
   count: number;
   uniqueCustomers: number;
