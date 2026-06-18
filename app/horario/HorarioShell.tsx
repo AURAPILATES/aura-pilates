@@ -8,6 +8,7 @@ import HorarioList from "./HorarioList";
 import HorarioCalendar from "./HorarioCalendar";
 import HorarioDrawer from "./HorarioDrawer";
 import HorarioReporting, { type ReportingData } from "./HorarioReporting";
+import ClientesFilterBar from "@/app/clientes/ClientesFilterBar";
 
 type OccFilter = "all" | "low" | "mid" | "high";
 type View = "lista" | "calendario";
@@ -228,7 +229,10 @@ export default function HorarioShell({
         {/* ── MOBILE ─────────────────────────────────────────────────────────── */}
         <div className="sm:hidden">
           {tab === "analisis" ? (
-            <HorarioReporting data={reportingData} />
+            <>
+              <ClientesFilterBar />
+              <HorarioReporting data={reportingData} />
+            </>
           ) : (
             <>
               {/* Week nav */}
@@ -396,7 +400,12 @@ export default function HorarioShell({
         {/* ── DESKTOP ────────────────────────────────────────────────────────── */}
         <div className="hidden sm:block">
 
-          {tab === "analisis" && <HorarioReporting data={reportingData} />}
+          {tab === "analisis" && (
+            <>
+              <ClientesFilterBar />
+              <HorarioReporting data={reportingData} />
+            </>
+          )}
 
           {tab === "horario" && (
             <div>

@@ -12,9 +12,10 @@ import {
 import QuestionHeader from "@/app/components/QuestionHeader";
 
 export type ReportingData = {
-  past30: MomenceEvent[];
-  prev30: MomenceEvent[];
+  main: MomenceEvent[];
+  compare: MomenceEvent[];
   upcoming7: MomenceEvent[];
+  periodLabel: string;
   topProducts: Array<{ item: string; revenue: number; count: number }>;
   uscByHour: Array<{ hour: number; label: string; count: number }>;
   uscByWeekday: Array<{ weekday: number; label: string; count: number }>;
@@ -56,14 +57,14 @@ function OccBar({ value }: { value: number }) {
 const WEEKDAY_SHORT = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
 
 export default function HorarioReporting({ data }: { data: ReportingData }) {
-  const { past30, prev30, upcoming7, topProducts, uscByHour, uscByWeekday, activeByMembership, totalCustomers } = data;
+  const { main, compare, upcoming7, periodLabel, topProducts, uscByHour, uscByWeekday, activeByMembership, totalCustomers } = data;
 
-  const occ     = occupancyRate(past30);
-  const occPrev = occupancyRate(prev30);
-  const byTeacher  = occupancyByTeacher(past30);
-  const byWeekday  = occupancyByWeekday(past30);
-  const byHour     = occupancyByHour(past30);
-  const heatmap    = occupancyHeatmap(past30);
+  const occ     = occupancyRate(main);
+  const occPrev = occupancyRate(compare);
+  const byTeacher  = occupancyByTeacher(main);
+  const byWeekday  = occupancyByWeekday(main);
+  const byHour     = occupancyByHour(main);
+  const heatmap    = occupancyHeatmap(main);
   const heatmapHours = [...new Set(heatmap.map((c) => c.hour))].sort((a, b) => a - b);
   const heatCell = (wd: number, hour: number) => heatmap.find((c) => c.weekday === wd && c.hour === hour);
 
@@ -82,9 +83,9 @@ export default function HorarioReporting({ data }: { data: ReportingData }) {
     .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime())
     .slice(0, 5);
 
-  // Top clases (30d, ≥2 sesiones)
+  // Top clases (período, ≥2 sesiones)
   const classByTitle = new Map<string, { total: number; count: number }>();
-  for (const e of past30) {
+  for (const e of main) {
     if (e.capacity === 0) continue;
     const v = e.ticketsSold / e.capacity;
     const ex = classByTitle.get(e.title) ?? { total: 0, count: 0 };
@@ -110,25 +111,25 @@ export default function HorarioReporting({ data }: { data: ReportingData }) {
 
       {/* ── KPIs ── */}
       <section id="q1" className="space-y-4">
-        <QuestionHeader num={1} question="¿Cómo fue el rendimiento de los últimos 30 días?" />
+        <QuestionHeader num={1} question={`¿Cómo fue el rendimiento de los últimos ${periodLabel}?`} />
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {[
             {
               label: "Clases impartidas",
-              value: past30.length.toString(),
-              sub: `${totalStudents(past30)} alumnos en total`,
-              trendVal: trend(past30.length, prev30.length),
+              value: main.length.toString(),
+              sub: `${totalStudents(main)} alumnos en total`,
+              trendVal: trend(main.length, compare.length),
             },
             {
               label: "Alumnos",
-              value: totalStudents(past30).toString(),
-              sub: `Media ${past30.length > 0 ? (totalStudents(past30) / past30.length).toFixed(1) : 0} por clase`,
-              trendVal: trend(totalStudents(past30), totalStudents(prev30)),
+              value: totalStudents(main).toString(),
+              sub: `Media ${main.length > 0 ? (totalStudents(main) / main.length).toFixed(1) : 0} por clase`,
+              trendVal: trend(totalStudents(main), totalStudents(compare)),
             },
             {
               label: "Ocupación media",
               value: pct(occ),
-              sub: `${past30.reduce((s, e) => s + e.capacity, 0)} plazas totales`,
+              sub: `${main.reduce((s, e) => s + e.capacity, 0)} plazas totales`,
               trendVal: trend(occ, occPrev),
               valueColor: occ >= 0.7 ? "text-success" : occ >= 0.4 ? "text-warning" : "text-danger",
             },
