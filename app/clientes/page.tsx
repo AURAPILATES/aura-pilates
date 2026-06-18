@@ -181,6 +181,8 @@ export default async function ClientesPage({
           prevMonthLabel={prevMonth.slice(5)}
           curMonthLabel={curMonth.slice(5)}
           periodLabel={periodLabel}
+          periodFrom={mainFrom}
+          periodTo={mainTo}
           grossRevenue={grossRevenue}
           grossRevenueComp={grossRevenueComp}
           newCount={newCountMain}

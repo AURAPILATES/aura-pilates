@@ -11,17 +11,23 @@ function fmtDate(d: string | null) {
   return d.split("-").reverse().join("/");
 }
 
+const MONTHS_ES = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+function fmtD(d: string): string {
+  const [y, m, day] = d.split("-");
+  return `${parseInt(day)} ${MONTHS_ES[parseInt(m) - 1]} ${y}`;
+}
 
 type KPICardProps = {
   label: string;
   value: number | string;
   sub: string;
+  dateRange?: string;
   valueClass?: string;
   onClick?: () => void;
   accent?: "primary" | "success" | "warning" | "neutral";
 };
 
-function KPICard({ label, value, sub, valueClass = "text-navy", onClick, accent }: KPICardProps) {
+function KPICard({ label, value, sub, dateRange, valueClass = "text-navy", onClick, accent }: KPICardProps) {
   const hoverBorder = {
     primary: "hover:border-primary/30",
     success:  "hover:border-success/30",
@@ -32,7 +38,8 @@ function KPICard({ label, value, sub, valueClass = "text-navy", onClick, accent 
   if (!onClick) {
     return (
       <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-4 sm:p-5">
-        <p className="text-[11px] text-navy/55 uppercase tracking-wider mb-1">{label}</p>
+        <p className="text-[11px] text-navy/55 uppercase tracking-wider mb-0.5">{label}</p>
+        {dateRange && <p className="text-[10px] text-navy/35 mb-1.5">{dateRange}</p>}
         <p className={`text-2xl font-semibold ${valueClass}`}>{value}</p>
         <p className="text-[10px] text-navy/35 mt-1.5">{sub}</p>
       </div>
@@ -44,7 +51,8 @@ function KPICard({ label, value, sub, valueClass = "text-navy", onClick, accent 
       onClick={onClick}
       className={`bg-white border border-navy/[0.07] rounded-2xl shadow-card p-4 sm:p-5 text-left transition-all group ${hoverBorder} hover:shadow-md`}
     >
-      <p className="text-[11px] text-navy/55 uppercase tracking-wider mb-1">{label}</p>
+      <p className="text-[11px] text-navy/55 uppercase tracking-wider mb-0.5">{label}</p>
+      {dateRange && <p className="text-[10px] text-navy/35 mb-1.5">{dateRange}</p>}
       <p className={`text-2xl font-semibold ${valueClass} group-hover:opacity-80 transition-opacity`}>{value}</p>
       <p className="text-[10px] text-navy/35 mt-1.5 flex items-center gap-1">
         <span>{sub}</span>
@@ -76,12 +84,14 @@ type TrendCardProps = {
   prevLabel: string;
   cur: number;
   prev: number;
+  dateRange: string;
 };
 
-function TrendCard({ label, value, prevLabel, cur, prev }: TrendCardProps) {
+function TrendCard({ label, value, prevLabel, cur, prev, dateRange }: TrendCardProps) {
   return (
     <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-4 sm:p-5">
-      <p className="text-[11px] text-navy/55 uppercase tracking-wider mb-1">{label}</p>
+      <p className="text-[11px] text-navy/55 uppercase tracking-wider mb-0.5">{label}</p>
+      <p className="text-[10px] text-navy/35 mb-1.5">{dateRange}</p>
       <div className="flex items-baseline gap-2 flex-wrap">
         <p className="text-2xl font-semibold text-navy">{value}</p>
         <TrendBadge cur={cur} prev={prev} />
@@ -97,6 +107,8 @@ type Props = {
   prevMonthLabel: string;
   curMonthLabel: string;
   periodLabel: string;
+  periodFrom: string;
+  periodTo: string;
   grossRevenue: number;
   grossRevenueComp: number;
   newCount: number;
@@ -105,8 +117,20 @@ type Props = {
   activeCountComp: number;
 };
 
-export default function ClientesKPIs({ customers, mrr, prevMonthLabel, curMonthLabel, periodLabel, grossRevenue, grossRevenueComp, newCount, newCountComp, activeCount, activeCountComp }: Props) {
+export default function ClientesKPIs({ customers, mrr, prevMonthLabel, curMonthLabel, periodLabel, periodFrom, periodTo, grossRevenue, grossRevenueComp, newCount, newCountComp, activeCount, activeCountComp }: Props) {
   const [drawer, setDrawer] = useState<DrawerKey>(null);
+
+  // Date range strings for each card
+  const dateRange = `${fmtD(periodFrom)} – ${fmtD(periodTo)}`;
+  const now = new Date();
+  const todayStr = now.toISOString().split("T")[0];
+  const d30ago = new Date(now); d30ago.setDate(d30ago.getDate() - 30);
+  const d90ago = new Date(now); d90ago.setDate(d90ago.getDate() - 90);
+  const range30 = `${fmtD(d30ago.toISOString().split("T")[0])} – ${fmtD(todayStr)}`;
+  const range90 = `${fmtD(d90ago.toISOString().split("T")[0])} – ${fmtD(todayStr)}`;
+  const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const prevMonthEnd   = new Date(now.getFullYear(), now.getMonth(), 0);
+  const rangePrevMonth = `${fmtD(prevMonthStart.toISOString().split("T")[0])} – ${fmtD(prevMonthEnd.toISOString().split("T")[0])}`;
 
   const activeList      = customers.filter((c) => c.isActive);
   const recurringList   = customers.filter((c) => c.isRecurring);
@@ -156,6 +180,7 @@ export default function ClientesKPIs({ customers, mrr, prevMonthLabel, curMonthL
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4">
         <TrendCard
           label="Volumen bruto"
+          dateRange={dateRange}
           value={fmt(grossRevenue)}
           prevLabel={fmt(grossRevenueComp)}
           cur={grossRevenue}
@@ -163,6 +188,7 @@ export default function ClientesKPIs({ customers, mrr, prevMonthLabel, curMonthL
         />
         <TrendCard
           label="Clientes nuevos"
+          dateRange={dateRange}
           value={String(newCount)}
           prevLabel={String(newCountComp)}
           cur={newCount}
@@ -170,6 +196,7 @@ export default function ClientesKPIs({ customers, mrr, prevMonthLabel, curMonthL
         />
         <TrendCard
           label="Gasto por cliente"
+          dateRange={dateRange}
           value={fmt(spendPerClient)}
           prevLabel={fmt(spendPerClientComp)}
           cur={spendPerClient}
@@ -181,14 +208,16 @@ export default function ClientesKPIs({ customers, mrr, prevMonthLabel, curMonthL
       <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4 mb-6">
         <KPICard
           label="Suscritos"
+          dateRange={dateRange}
           value={activeList.length}
-          sub={periodLabel}
+          sub="con pago en el período"
           valueClass="text-navy"
           accent="neutral"
           onClick={() => setDrawer("active")}
         />
         <KPICard
           label="Recurrentes"
+          dateRange={range90}
           value={recurringList.length}
           sub="2+ meses de 3"
           valueClass="text-primary"
@@ -197,20 +226,23 @@ export default function ClientesKPIs({ customers, mrr, prevMonthLabel, curMonthL
         />
         <KPICard
           label="Nuevos"
+          dateRange={dateRange}
           value={newList.length}
-          sub={`primer pago · ${periodLabel}`}
+          sub="primer pago en el período"
           valueClass="text-success"
           accent="success"
           onClick={newList.length > 0 ? () => setDrawer("new") : undefined}
         />
         <KPICard
           label="MRR estimado"
+          dateRange={range90}
           value={fmt(mrr)}
           sub="media 3 meses"
           valueClass="text-success"
         />
         <KPICard
           label="Posibles bajas"
+          dateRange={rangePrevMonth}
           value={churnList.length}
           sub={`sin pagar en ${curMonthLabel}`}
           valueClass={churnList.length > 0 ? "text-warning" : "text-navy/50"}
@@ -219,8 +251,9 @@ export default function ClientesKPIs({ customers, mrr, prevMonthLabel, curMonthL
         />
         <KPICard
           label="Error de pago"
+          dateRange={range30}
           value={delinquentList.length}
-          sub="últimos 30 días"
+          sub="cobro fallido reciente"
           valueClass={delinquentList.length > 0 ? "text-danger" : "text-navy/50"}
           accent="warning"
           onClick={delinquentList.length > 0 ? () => setDrawer("error") : undefined}
