@@ -2,10 +2,8 @@
 
 import { useState } from "react";
 import { fmt } from "@/lib/analytics";
-import type { StripeCustomer } from "@/lib/stripeCustomers";
 import Drawer from "@/app/components/Drawer";
-
-type CustomerRow = StripeCustomer & { possibleChurn?: boolean; isActive?: boolean; isNew?: boolean };
+import { type CustomerRow, clientStatus } from "./ClientesTable";
 type DrawerKey = "all" | "active" | "recurring" | "new" | "churn" | "error" | null;
 
 function fmtDate(d: string | null) {
@@ -69,7 +67,7 @@ export default function ClientesKPIs({ customers, mrr, prevMonthLabel, curMonthL
   const activeList      = customers.filter((c) => c.isActive);
   const recurringList   = customers.filter((c) => c.isRecurring);
   const newList         = customers.filter((c) => c.isNew);
-  const churnList       = customers.filter((c) => c.possibleChurn);
+  const churnList       = customers.filter((c) => clientStatus(c).status !== "ok");
   const delinquentList  = customers.filter((c) => c.delinquent);
 
   const drawerConfig: Record<NonNullable<DrawerKey>, { title: string; subtitle: string; customers: CustomerRow[] }> = {

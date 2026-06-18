@@ -65,9 +65,9 @@ function nextPaymentInfo(c: CustomerRow): { date: string; overdue: boolean; days
   return { date: nextDate, overdue: daysLate > 3, daysLate: Math.max(0, daysLate) };
 }
 
-type ClientStatus = "baja" | "sinpagar" | "caducado" | "porvencer" | "ok";
+export type ClientStatus = "baja" | "sinpagar" | "caducado" | "porvencer" | "ok";
 
-function clientStatus(c: CustomerRow): { status: ClientStatus; days: number | null } {
+export function clientStatus(c: CustomerRow): { status: ClientStatus; days: number | null } {
   if (c.isRecurring) {
     const d = c.daysSinceLastSub ?? null;
     if (d == null) return { status: "ok", days: null };
@@ -82,7 +82,7 @@ function clientStatus(c: CustomerRow): { status: ClientStatus; days: number | nu
       return d > 15 ? { status: "caducado", days: d - 15 } : { status: "ok", days: null };
     }
     if (prod === "Pack 4 clases" || prod === "Pack 8 clases") {
-      if (d > 120) return { status: "baja",      days: d - 90 };
+      if (d > 105) return { status: "baja",      days: d - 90 };
       if (d > 90)  return { status: "caducado",  days: d - 90 };
       if (d > 76)  return { status: "porvencer", days: 90 - d };
     }

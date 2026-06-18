@@ -16,7 +16,14 @@ export default function ClientesShell({ customers, payments }: Props) {
   const [activeMonth, setActiveMonth] = useState<string | null>(null);
   const tableRef = useRef<ClientesTableHandle>(null);
 
-  const churnCustomers = customers.filter((c) => c.possibleChurn);
+  const churnCustomers = customers.filter((c) => {
+    if (c.isRecurring) return c.daysSinceLastSub != null && c.daysSinceLastSub > 30;
+    if (c.daysSinceLastPack != null && c.lastPackProduct) {
+      if (c.lastPackProduct === "Pack Benvinguda") return c.daysSinceLastPack > 15;
+      if (c.lastPackProduct === "Pack 4 clases" || c.lastPackProduct === "Pack 8 clases") return c.daysSinceLastPack > 90;
+    }
+    return false;
+  });
 
   function handleBarClick(month: string) {
     setActiveMonth((prev) => (prev === month ? null : month));
