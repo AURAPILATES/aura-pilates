@@ -6,7 +6,7 @@ import { fmt } from "@/lib/analytics";
 import type { StripeCustomer } from "@/lib/stripeCustomers";
 import type { StripePayment } from "@/lib/stripePayments";
 
-export type CustomerRow = StripeCustomer & { daysSinceLastSub?: number | null; daysSinceLastPack?: number | null; lastPackProduct?: string | null; lastSubProduct?: string | null; isPackRecurring?: boolean; isActive?: boolean; isNew?: boolean };
+export type CustomerRow = StripeCustomer & { daysSinceLastSub?: number | null; daysSinceLastPack?: number | null; lastPackProduct?: string | null; lastSubProduct?: string | null; isActive?: boolean; isNew?: boolean };
 export type ClientesTableHandle = { openCustomer: (id: string) => void };
 
 type SortKey = "totalSpent" | "lastPaymentDate" | "name";
@@ -208,7 +208,8 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
     const rows = [
       ["Nombre", "Email", "Tipo", "Plan", "Total gastado (€)", "Pagos", "Fecha alta", "Último pago", "Estado", "Descuento"],
       ...filtered.map((c) => {
-        const tipo = c.isRecurring ? "Suscripción" : c.isPackRecurring ? "Recurrente sin subs" : "Ocasional";
+        const isPack = !c.isRecurring && c.lastPackProduct && c.lastPackProduct !== "Otro";
+        const tipo = c.isRecurring ? "Suscripción" : isPack ? "Pack" : "Por sesión";
         const plan = c.isRecurring ? (c.lastSubProduct ?? "") : (c.lastPackProduct ?? "");
         const { status } = clientStatus(c);
         return [
@@ -354,9 +355,6 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
                   const crowns  = ["👑", "🥈", "🥉"];
 
                   const { status, days } = clientStatus(c);
-                  const planName = c.isRecurring
-                    ? (c.lastSubProduct && c.lastSubProduct !== "Con cupón" ? c.lastSubProduct : null)
-                    : (c.lastPackProduct ?? null);
                   return (
                     <tr
                       key={c.id}
@@ -383,18 +381,23 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
                         {c.isRecurring ? (
                           <div>
                             <span className="text-xs bg-primary/[0.08] text-primary px-2 py-0.5 rounded-full font-medium">Suscripción</span>
-                            {planName && <p className="text-[11px] text-navy/40 mt-1">{planName}</p>}
+                            {c.lastSubProduct && c.lastSubProduct !== "Con cupón" && (
+                              <p className="text-[11px] text-navy/40 mt-1">{c.lastSubProduct}</p>
+                            )}
                           </div>
-                        ) : c.isPackRecurring ? (
+                        ) : c.lastPackProduct ? (
                           <div>
-                            <span className="text-xs bg-violet-50 text-violet-600 px-2 py-0.5 rounded-full font-medium">Recurrente sin subs</span>
-                            {planName && <p className="text-[11px] text-navy/40 mt-1">{planName}</p>}
+                            <span className="text-xs bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full font-medium">Pack</span>
+                            <p className="text-[11px] text-navy/40 mt-1">
+                              {(() => {
+                                const validity = c.lastPackProduct === "Pack Benvinguda" ? 15 : 90;
+                                const remaining = validity - (c.daysSinceLastPack ?? 0);
+                                return remaining > 0 ? `finaliza en ${remaining}d` : "vencido";
+                              })()}
+                            </p>
                           </div>
                         ) : (
-                          <div>
-                            <span className="text-xs text-navy/45">Ocasional</span>
-                            {planName && <p className="text-[11px] text-navy/40 mt-1">{planName}</p>}
-                          </div>
+                          <span className="text-xs text-navy/45">Por sesión</span>
                         )}
                       </td>
                       <td className="px-5 py-3 text-right">
@@ -461,9 +464,11 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
               </div>
               <div className="flex items-center gap-2 mt-3 flex-wrap">
                 {selected.isRecurring ? (
-                  <span className="text-xs bg-primary/[0.08] text-primary px-2.5 py-1 rounded-full font-medium">Recurrente</span>
+                  <span className="text-xs bg-primary/[0.08] text-primary px-2.5 py-1 rounded-full font-medium">Suscripción</span>
+                ) : selected.lastPackProduct ? (
+                  <span className="text-xs bg-indigo-50 text-indigo-600 px-2.5 py-1 rounded-full font-medium">Pack</span>
                 ) : (
-                  <span className="text-xs bg-navy/[0.06] text-navy/55 px-2.5 py-1 rounded-full font-medium">Ocasional</span>
+                  <span className="text-xs bg-navy/[0.06] text-navy/55 px-2.5 py-1 rounded-full font-medium">Por sesión</span>
                 )}
                 {(() => {
                   const { status, days } = clientStatus(selected);
