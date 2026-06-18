@@ -22,11 +22,12 @@ export type StripeCustomer = {
   firstPaymentDate: string | null;
   isRecurring: boolean;
   discount: StripeDiscount | null;
+  delinquent: boolean;
 };
 
 // ── Cached raw customer list from Stripe ──────────────────────────────────────
 
-type RawCustomer = Pick<Stripe.Customer, "id" | "name" | "email" | "created" | "discount">;
+type RawCustomer = Pick<Stripe.Customer, "id" | "name" | "email" | "created" | "discount" | "delinquent">;
 
 const fetchStripeCustomerList = unstable_cache(
   async (): Promise<RawCustomer[]> => {
@@ -67,6 +68,7 @@ export async function loadStripeCustomers(
     createdAt: string; discount: StripeDiscount | null;
     stats: { total: number; count: number; last: string; first: string };
     isRecurring: boolean;
+    delinquent: boolean;
   };
 
   const stripeCustomers = await fetchStripeCustomerList();
@@ -90,6 +92,7 @@ export async function loadStripeCustomers(
       discount,
       stats,
       isRecurring: recurring.has(c.id),
+      delinquent: c.delinquent ?? false,
     });
   }
 
@@ -130,6 +133,7 @@ export async function loadStripeCustomers(
       firstPaymentDate: merged.first !== "9999-99-99" ? merged.first : null,
       isRecurring:     group.some((r) => r.isRecurring || recurring.has(r.id)),
       discount:        primary.discount,
+      delinquent:      group.some((r) => r.delinquent),
     };
   }
 

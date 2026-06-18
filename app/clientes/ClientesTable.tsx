@@ -11,7 +11,7 @@ export type ClientesTableHandle = { openCustomer: (id: string) => void };
 
 type SortKey = "totalSpent" | "paymentCount" | "lastPaymentDate" | "firstPaymentDate" | "name";
 type SortDir = "asc" | "desc";
-type Filter  = "all" | "recurring" | "occasional" | "discount" | "churn";
+type Filter  = "all" | "recurring" | "occasional" | "discount" | "error" | "churn";
 
 function SortIcon({ active, dir }: { active: boolean; dir: SortDir }) {
   return (
@@ -138,6 +138,7 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
   const hasDiscount = (c: CustomerRow) => !!c.discount || c.stripeIds.some((sid) => couponStripeIds.has(sid));
 
   const discountCount = customers.filter(hasDiscount).length;
+  const errorCount    = customers.filter((c) => c.delinquent).length;
   const churnCount    = customers.filter((c) => c.possibleChurn).length;
 
   const activeMonthIds = useMemo(() => {
@@ -155,6 +156,7 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
         if (filter === "recurring"   && !c.isRecurring)   return false;
         if (filter === "occasional"  &&  c.isRecurring)   return false;
         if (filter === "discount"    && !hasDiscount(c))   return false;
+        if (filter === "error"       && !c.delinquent)    return false;
         if (filter === "churn"       && !c.possibleChurn) return false;
         if (!q) return true;
         return (
@@ -222,7 +224,8 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
     { key: "recurring",  label: "Recurrentes" },
     { key: "occasional", label: "Ocasionales" },
     { key: "discount",   label: "Descuento", count: discountCount },
-    { key: "churn",      label: "Sin pagar este mes", count: churnCount },
+    { key: "error",      label: "Error de pago", count: errorCount },
+    { key: "churn",      label: "Posibles bajas", count: churnCount },
   ];
 
   const MES: Record<string, string> = { "01":"Ene","02":"Feb","03":"Mar","04":"Abr","05":"May","06":"Jun","07":"Jul","08":"Ago","09":"Sep","10":"Oct","11":"Nov","12":"Dic" };
