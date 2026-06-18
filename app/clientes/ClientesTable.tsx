@@ -90,6 +90,24 @@ export function clientStatus(c: CustomerRow): { status: ClientStatus; days: numb
   return { status: "ok", days: null };
 }
 
+type PlanBadgeCfg = { label: string; cls: string };
+function planBadgeCfg(planType: "sub" | "pack" | "session", lastSubProduct?: string | null, lastPackProduct?: string | null): PlanBadgeCfg {
+  if (planType === "sub") {
+    if (lastSubProduct === "Bàsic") return { label: "Suscripción Bàsic", cls: "bg-violet-50 text-violet-600" };
+    if (lastSubProduct === "Plus")  return { label: "Suscripción Plus",  cls: "bg-indigo-50 text-indigo-600" };
+    if (lastSubProduct === "Pro")   return { label: "Suscripción Pro",   cls: "bg-purple-50 text-purple-700" };
+    return { label: "Suscripción",                                        cls: "bg-violet-50 text-violet-600" };
+  }
+  if (planType === "pack") {
+    if (lastPackProduct === "Pack 4 clases")   return { label: "Pack 4",       cls: "bg-orange-50 text-orange-600" };
+    if (lastPackProduct === "Pack 8 clases")   return { label: "Pack 8",       cls: "bg-orange-100 text-orange-700" };
+    if (lastPackProduct === "Pack Benvinguda") return { label: "Pack 2x1",     cls: "bg-pink-50 text-pink-600" };
+    if (lastPackProduct === "Clase suelta")    return { label: "Clase suelta", cls: "bg-yellow-50 text-yellow-600" };
+    return { label: "Pack",                                                cls: "bg-orange-50 text-orange-600" };
+  }
+  return { label: "Por sesión", cls: "bg-navy/[0.06] text-navy/55" };
+}
+
 function initials(name: string | null, email: string | null): string {
   if (name) {
     const parts = name.trim().split(/\s+/);
@@ -210,7 +228,7 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
         const dPack = c.daysSinceLastPack ?? Infinity;
         const ptCsv = dSub <= dPack && dSub < Infinity ? "sub" : dPack < Infinity ? "pack" : "session";
         const tipo  = ptCsv === "sub" ? "Suscripción" : ptCsv === "pack" ? "Pack" : "Por sesión";
-        const plan  = ptCsv === "sub" ? (c.lastSubProduct ?? "") : ptCsv === "pack" ? (c.lastPackProduct ?? "") : "";
+        const plan  = planBadgeCfg(ptCsv, c.lastSubProduct, c.lastPackProduct).label;
         const { status } = clientStatus(c);
         return [
           c.name ?? "",
@@ -397,27 +415,24 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
                         </div>
                       </td>
                       <td className="px-5 py-3">
-                        {planType === "sub" ? (
-                          <div>
-                            <span className="text-xs bg-primary/[0.08] text-primary px-2 py-0.5 rounded-full font-medium">Suscripción</span>
-                            {c.lastSubProduct && c.lastSubProduct !== "Con cupón" && (
-                              <p className="text-[11px] text-navy/40 mt-1">{c.lastSubProduct}</p>
-                            )}
-                          </div>
-                        ) : planType === "pack" ? (
-                          <div>
-                            <span className="text-xs bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full font-medium">Pack</span>
-                            <p className="text-[11px] text-navy/40 mt-1">
-                              {(() => {
-                                const validity = c.lastPackProduct === "Pack Benvinguda" ? 15 : 90;
-                                const remaining = validity - (c.daysSinceLastPack ?? 0);
-                                return remaining > 0 ? `finaliza en ${remaining}d` : "vencido";
-                              })()}
-                            </p>
-                          </div>
-                        ) : (
-                          <span className="text-xs text-navy/45">Por sesión</span>
-                        )}
+                        {(() => {
+                          const { label, cls } = planBadgeCfg(planType, c.lastSubProduct, c.lastPackProduct);
+                          const showExpiry = planType === "pack" && c.lastPackProduct !== "Clase suelta";
+                          return (
+                            <div>
+                              <span className={`text-xs ${cls} px-2 py-0.5 rounded-full font-medium`}>{label}</span>
+                              {showExpiry && (
+                                <p className="text-[11px] text-navy/40 mt-1">
+                                  {(() => {
+                                    const validity = c.lastPackProduct === "Pack Benvinguda" ? 15 : 90;
+                                    const remaining = validity - (c.daysSinceLastPack ?? 0);
+                                    return remaining > 0 ? `finaliza en ${remaining}d` : "vencido";
+                                  })()}
+                                </p>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </td>
                       <td className="px-5 py-3 text-right">
                         <p className="font-semibold text-navy tabular-nums">{fmt(c.totalSpent)}</p>
@@ -488,9 +503,8 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
                   const pt = dSub <= dPack && dSub < Infinity ? "sub"
                            : dPack < Infinity                  ? "pack"
                            : "session";
-                  if (pt === "sub")  return <span className="text-xs bg-primary/[0.08] text-primary px-2.5 py-1 rounded-full font-medium">Suscripción</span>;
-                  if (pt === "pack") return <span className="text-xs bg-indigo-50 text-indigo-600 px-2.5 py-1 rounded-full font-medium">Pack</span>;
-                  return <span className="text-xs bg-navy/[0.06] text-navy/55 px-2.5 py-1 rounded-full font-medium">Por sesión</span>;
+                  const { label, cls } = planBadgeCfg(pt, selected.lastSubProduct, selected.lastPackProduct);
+                  return <span className={`text-xs ${cls} px-2.5 py-1 rounded-full font-medium`}>{label}</span>;
                 })()}
                 {(() => {
                   const { status, days } = clientStatus(selected);
