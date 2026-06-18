@@ -162,7 +162,7 @@ export type ProductRevenue = {
 };
 
 export function stripeByProduct(payments: StripePayment[]): ProductRevenue[] {
-  const map = new Map<string, { type: "subscription" | "pack" | "unknown"; revenue: number; count: number; emails: Set<string> }>();
+  const map = new Map<string, { type: "subscription" | "pack" | "coupon" | "unknown"; revenue: number; count: number; emails: Set<string> }>();
   for (const p of payments) {
     const key = p.inferredProduct;
     const ex  = map.get(key) ?? { type: p.inferredType, revenue: 0, count: 0, emails: new Set() };
