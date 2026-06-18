@@ -259,20 +259,22 @@ export const loadPaymentsBreakdown30d = unstable_cache(
   async (): Promise<PaymentsBreakdown> => {
     const cutoff = Math.floor(Date.now() / 1000) - 30 * 86400;
 
+    // Reembolsos emitidos en el período
     let refunded = 0;
     for await (const r of stripe.refunds.list({ limit: 100, created: { gte: cutoff } })) {
       if (r.status === "succeeded") refunded += r.amount / 100;
     }
 
+    // Disputas abiertas en el período (chargebacks)
     let disputed = 0;
     for await (const d of stripe.disputes.list({ limit: 100, created: { gte: cutoff } })) {
       disputed += d.amount / 100;
     }
 
+    // Charges fallidos — misma fuente que Stripe usa en su dashboard
     let failed = 0;
-    for await (const pi of stripe.paymentIntents.list({ limit: 100, created: { gte: cutoff } })) {
-      if (pi.status !== "requires_payment_method" || !pi.last_payment_error) continue;
-      failed += pi.amount / 100;
+    for await (const ch of stripe.charges.list({ limit: 100, created: { gte: cutoff } })) {
+      if (ch.status === "failed") failed += toEuros(ch.amount, ch.currency);
     }
 
     return { refunded, disputed, failed };
