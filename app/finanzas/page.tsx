@@ -710,7 +710,7 @@ export default async function Finanzas(props: {
                       );
                     })}
                   </div>
-                  <p className="text-xs text-navy/35 mt-4">Inferido del importe del cobro en Stripe. Pagos con importe no reconocido → "Otro".</p>
+                  <p className="text-xs text-navy/35 mt-4">Inferido del importe del cobro en Stripe. Pagos con importe no reconocido → &ldquo;Otro&rdquo;.</p>
                 </div>
 
                 {/* Posibles bajas */}
