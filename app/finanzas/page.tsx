@@ -22,7 +22,7 @@ import {
   recurringCustomerIds,
   possibleChurnIds,
 } from "@/lib/stripeRecurrence";
-import { loadDelinquentCustomers } from "@/lib/stripeCustomers";
+
 import {
   loadTransactionsCached,
   totalOperationalExpenses,
@@ -253,7 +253,6 @@ export default async function Finanzas(props: {
   // ── Ingresos por producto inferido + bajas detectadas ────────────────────────
   const productBreakdown = stripeByProduct(paymentsAll);
   const churnedCustomers = detectChurn(paymentsAll);
-  const delinquentCustomers = await loadDelinquentCustomers();
 
   // ── Evolución de ingresos + altas/bajas/reactivaciones (histórico completo) ──
   const paymentsAllBounded = uscLastDate ? paymentsAll.filter((p) => p.date <= uscLastDate) : paymentsAll;
@@ -608,7 +607,7 @@ export default async function Finanzas(props: {
                     })()}
                   </Block>
                 </div>
-                <EvolucionChart sales={toSales(payments)} salesAll={salesAll} />
+                <EvolucionChart sales={toSales(payments)} salesAll={salesAll} monthly={monthlyRevenue} />
               </div>
             </section>
 
@@ -714,25 +713,6 @@ export default async function Finanzas(props: {
                   </div>
                   <p className="text-xs text-navy/35 mt-4">Inferido del importe del cobro en Stripe. Pagos con importe no reconocido → &ldquo;Otro&rdquo;.</p>
                 </div>
-
-                {/* Error de pago */}
-                {delinquentCustomers.length > 0 && (
-                  <div className="bg-white border border-danger/20 rounded-2xl shadow-card p-5">
-                    <p className="text-xs font-semibold text-danger/70 uppercase tracking-wider mb-1">Error de pago</p>
-                    <p className="text-xs text-navy/40 mb-4">Stripe no pudo cobrar la última renovación</p>
-                    <div className="space-y-2 max-h-48 overflow-y-auto">
-                      {delinquentCustomers.map((c) => (
-                        <div key={c.email ?? c.name} className="flex items-center gap-2 py-1.5 border-b border-navy/[0.05] last:border-0">
-                          <span className="w-1.5 h-1.5 rounded-full bg-danger shrink-0" />
-                          <div className="min-w-0">
-                            {c.name && <p className="text-sm font-medium text-navy truncate">{c.name}</p>}
-                            {c.email && <p className="text-xs text-navy/45 truncate">{c.email}</p>}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
 
                 {/* Posibles bajas */}
                 <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">

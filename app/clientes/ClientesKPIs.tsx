@@ -6,7 +6,7 @@ import type { StripeCustomer } from "@/lib/stripeCustomers";
 import Drawer from "@/app/components/Drawer";
 
 type CustomerRow = StripeCustomer & { possibleChurn?: boolean; isActive?: boolean; isNew?: boolean };
-type DrawerKey = "all" | "active" | "recurring" | "new" | "churn" | null;
+type DrawerKey = "all" | "active" | "recurring" | "new" | "churn" | "error" | null;
 
 function fmtDate(d: string | null) {
   if (!d) return "—";
@@ -66,10 +66,11 @@ type Props = {
 export default function ClientesKPIs({ customers, mrr, prevMonthLabel, curMonthLabel }: Props) {
   const [drawer, setDrawer] = useState<DrawerKey>(null);
 
-  const activeList    = customers.filter((c) => c.isActive);
-  const recurringList = customers.filter((c) => c.isRecurring);
-  const newList       = customers.filter((c) => c.isNew);
-  const churnList     = customers.filter((c) => c.possibleChurn);
+  const activeList      = customers.filter((c) => c.isActive);
+  const recurringList   = customers.filter((c) => c.isRecurring);
+  const newList         = customers.filter((c) => c.isNew);
+  const churnList       = customers.filter((c) => c.possibleChurn);
+  const delinquentList  = customers.filter((c) => c.delinquent);
 
   const drawerConfig: Record<NonNullable<DrawerKey>, { title: string; subtitle: string; customers: CustomerRow[] }> = {
     all: {
@@ -97,12 +98,17 @@ export default function ClientesKPIs({ customers, mrr, prevMonthLabel, curMonthL
       subtitle: `Pagaron en ${prevMonthLabel} pero no en ${curMonthLabel}`,
       customers: churnList,
     },
+    error: {
+      title: "Error de pago",
+      subtitle: "Stripe no pudo cobrar la última renovación",
+      customers: delinquentList,
+    },
   };
 
   return (
     <>
-      {/* 5 KPIs: 2 cols móvil, 3+2 en sm, 5 en lg */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-6">
+      {/* 6 KPIs: 2 cols móvil, 3 en sm, 6 en xl */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4 mb-6">
         <KPICard
           label="Suscritos"
           value={activeList.length}
@@ -140,6 +146,14 @@ export default function ClientesKPIs({ customers, mrr, prevMonthLabel, curMonthL
           valueClass={churnList.length > 0 ? "text-warning" : "text-navy/50"}
           accent="warning"
           onClick={churnList.length > 0 ? () => setDrawer("churn") : undefined}
+        />
+        <KPICard
+          label="Error de pago"
+          value={delinquentList.length}
+          sub="fallo en Stripe"
+          valueClass={delinquentList.length > 0 ? "text-danger" : "text-navy/50"}
+          accent="warning"
+          onClick={delinquentList.length > 0 ? () => setDrawer("error") : undefined}
         />
       </div>
 
