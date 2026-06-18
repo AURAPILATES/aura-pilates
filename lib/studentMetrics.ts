@@ -69,10 +69,11 @@ export function computeAltasMes(
 /**
  * Bajas de suscripción = ex-suscriptores (Bàsic / Plus / Pro) que no han renovado:
  *   - Al menos 2 pagos de tipo suscripción (confirma patrón recurrente, no alta única)
- *   - Último pago entre 35 y 75 días atrás (ventana de ~un mes de ciclo perdido)
+ *   - Último pago entre 46 y 76 días atrás:
+ *       31 días = umbral de "posible problema"
+ *       + 15 días de confirmación = 46 días → baja confirmada
+ *       tope 76 días = 46+30 para no recoger bajas de meses anteriores
  *   - Sin suscripción activa en Momence ahora mismo
- * El rango 35-75 días evita falsos positivos (cobro a día 28 cuando hoy es día 15)
- * y excluye bajas antiguas ya contabilizadas en meses anteriores.
  */
 export function computeBasjasMes(
   payments: StripePayment[],
@@ -112,7 +113,7 @@ export function computeBasjasMes(
     const days = Math.floor(
       (new Date(today).getTime() - new Date(lastDate).getTime()) / 86_400_000,
     );
-    if (days >= 35 && days <= 75) count++;
+    if (days >= 46 && days <= 76) count++;
   }
 
   return count;
