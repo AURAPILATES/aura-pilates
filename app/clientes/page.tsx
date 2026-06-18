@@ -27,15 +27,20 @@ export default async function ClientesPage() {
   const activeIds  = activeCustomersLast30Days(payments);
   const newIds     = newCustomersLast30Days(payments);
 
-  const customersWithChurn = customers.map((c) => ({
-    ...c,
-    // Posible baja: recurrente cuyo último pago fue el mes pasado (no este mes).
-    // Usamos lastPaymentDate (fusionado por email) para evitar falsos positivos
-    // cuando el cliente tiene varios perfiles Stripe con distinto ID.
-    possibleChurn: c.isRecurring && !!c.lastPaymentDate && c.lastPaymentDate.startsWith(prevMonth),
-    isActive: activeIds.has(c.id),
-    isNew: newIds.has(c.id),
-  }));
+  const today = new Date();
+  const customersWithChurn = customers.map((c) => {
+    const daysSinceLast = c.lastPaymentDate
+      ? Math.floor((today.getTime() - new Date(c.lastPaymentDate + "T12:00:00").getTime()) / 86_400_000)
+      : null;
+    return {
+      ...c,
+      // Posible baja: recurrente cuyo ciclo mensual ya venció (>30 días sin pagar).
+      // Evita falsos positivos cuando el próximo pago aún no ha llegado.
+      possibleChurn: c.isRecurring && daysSinceLast !== null && daysSinceLast > 30,
+      isActive: activeIds.has(c.id),
+      isNew: newIds.has(c.id),
+    };
+  });
 
   const churnCount = customersWithChurn.filter((c) => c.possibleChurn).length;
 
