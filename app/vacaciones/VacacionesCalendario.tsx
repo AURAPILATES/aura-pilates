@@ -191,6 +191,24 @@ function SugerenciasBlock({ personas, festivos }: { personas: Persona[]; festivo
   );
 }
 
+// ── Cálculo de vacaciones según ET art. 38 ───────────────────────────────────
+// 22 días laborables/año para jornada completa (5d/sem), prorrateados por:
+//   - fracción de jornada (jornadaDias/5)
+//   - días restantes del año desde la fecha de inicio
+
+function calcVacaciones(startDate: string, jornadaDias: number): { dias: number; hint: string } {
+  if (!startDate) return { dias: 0, hint: "" };
+  const start  = new Date(startDate + "T12:00:00");
+  const year   = start.getFullYear();
+  const yearEnd = new Date(year, 11, 31, 12, 0, 0);
+  const totalDays    = 365 + (year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0) ? 1 : 0);
+  const remainingDays = Math.round((yearEnd.getTime() - start.getTime()) / 86400000) + 1;
+  const baseAnual = Math.round(22 * (jornadaDias / 5));
+  const dias = Math.max(0, Math.round((remainingDays / totalDays) * baseAnual));
+  const hint = `${baseAnual} días/año × ${remainingDays}/${totalDays} días = ${dias} días`;
+  return { dias, hint };
+}
+
 // ── Nuevo instructor modal ────────────────────────────────────────────────────
 
 function NuevoInstructorModal({
@@ -203,8 +221,24 @@ function NuevoInstructorModal({
   const [nombre, setNombre] = useState("");
   const [inicioContrato, setInicioContrato] = useState(TODAY);
   const [jornadaDias, setJornadaDias] = useState(5);
-  const [diasTotales, setDiasTotales] = useState(23);
   const [saving, setSaving] = useState(false);
+
+  const { dias: diasAuto, hint } = calcVacaciones(inicioContrato, jornadaDias);
+  const [diasTotales, setDiasTotales] = useState(diasAuto);
+  const [userEdited, setUserEdited] = useState(false);
+
+  function handleJornada(v: number) {
+    setJornadaDias(v);
+    if (!userEdited) setDiasTotales(calcVacaciones(inicioContrato, v).dias);
+  }
+  function handleInicio(v: string) {
+    setInicioContrato(v);
+    if (!userEdited) setDiasTotales(calcVacaciones(v, jornadaDias).dias);
+  }
+  function handleDias(v: number) {
+    setDiasTotales(v);
+    setUserEdited(true);
+  }
 
   async function handleSubmit() {
     if (!nombre.trim()) return;
@@ -251,7 +285,7 @@ function NuevoInstructorModal({
             <input
               type="date"
               value={inicioContrato}
-              onChange={(e) => setInicioContrato(e.target.value)}
+              onChange={(e) => handleInicio(e.target.value)}
               className="w-full text-sm border border-navy/[0.12] rounded-lg px-4 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary/30 text-navy"
             />
           </div>
@@ -264,22 +298,39 @@ function NuevoInstructorModal({
                 min={1}
                 max={7}
                 value={jornadaDias}
-                onChange={(e) => setJornadaDias(Number(e.target.value))}
+                onChange={(e) => handleJornada(Number(e.target.value))}
                 className="w-full text-sm border border-navy/[0.12] rounded-lg px-4 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary/30 text-navy"
               />
             </div>
             <div>
-              <label className="block text-xs text-navy/55 mb-1.5">Días de vacaciones</label>
+              <label className="block text-xs text-navy/55 mb-1.5">
+                Días de vacaciones
+                {!userEdited && <span className="ml-1 text-[10px] text-primary/70 normal-case font-normal">calculado</span>}
+              </label>
               <input
                 type="number"
                 min={0}
-                max={30}
+                max={365}
                 value={diasTotales}
-                onChange={(e) => setDiasTotales(Number(e.target.value))}
+                onChange={(e) => handleDias(Number(e.target.value))}
                 className="w-full text-sm border border-navy/[0.12] rounded-lg px-4 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary/30 text-navy"
               />
             </div>
           </div>
+          {hint && (
+            <p className="text-[11px] text-navy/40 leading-relaxed">
+              ET art. 38 · {hint}
+              {userEdited && (
+                <button
+                  type="button"
+                  onClick={() => { setDiasTotales(diasAuto); setUserEdited(false); }}
+                  className="ml-2 text-primary/70 hover:text-primary underline underline-offset-2 transition-colors"
+                >
+                  restablecer
+                </button>
+              )}
+            </p>
+          )}
         </div>
     </Drawer>
   );
