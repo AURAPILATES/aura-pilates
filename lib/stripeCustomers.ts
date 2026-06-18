@@ -33,8 +33,9 @@ type RawCustomer = Pick<Stripe.Customer, "id" | "name" | "email" | "created" | "
 // IDs de clientes con facturas abiertas que Stripe ya intentó cobrar y no pudo
 const fetchFailedInvoiceCustomerIds = unstable_cache(
   async (): Promise<string[]> => {
+    const cutoff = Math.floor(Date.now() / 1000) - 90 * 86400; // 90 días atrás
     const ids: string[] = [];
-    for await (const inv of stripe.invoices.list({ status: "open", limit: 100 })) {
+    for await (const inv of stripe.invoices.list({ status: "open", limit: 100, created: { gte: cutoff } })) {
       if (!inv.attempted) continue;
       const cid = typeof inv.customer === "string" ? inv.customer : (inv.customer as Stripe.Customer | null)?.id ?? null;
       if (cid) ids.push(cid);
