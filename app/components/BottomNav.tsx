@@ -58,6 +58,15 @@ const links = [
       </svg>
     ),
   },
+  {
+    href: "/historial",
+    label: "Historial",
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+      </svg>
+    ),
+  },
 ];
 
 export default function BottomNav() {
@@ -65,7 +74,7 @@ export default function BottomNav() {
 
   return (
     <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-navy/[0.08]" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
-      <div className="grid grid-cols-6 h-16">
+      <div className="grid grid-cols-7 h-16">
         {links.map(({ href, label, icon }) => {
           const active = pathname === href;
           return (
