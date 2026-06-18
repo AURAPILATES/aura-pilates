@@ -474,12 +474,16 @@ export default function ClientesTable({ customers, payments }: { customers: Cust
               <div key={p.id} className="px-6 py-3 flex items-center justify-between gap-4">
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-navy truncate">
-                    {p.description ?? p.category}
+                    {p.inferredProduct !== "Otro" ? p.inferredProduct : (p.description ?? p.category)}
                   </p>
                   <div className="flex items-center gap-2 mt-0.5">
                     <span className="text-xs text-navy/45">{fmtDate(p.date)}</span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-navy/[0.05] text-navy/45 font-medium">
-                      {p.category}
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                      p.inferredType === "subscription" ? "bg-primary/10 text-primary" :
+                      p.inferredType === "pack"         ? "bg-warning/15 text-warning" :
+                                                          "bg-navy/[0.05] text-navy/45"
+                    }`}>
+                      {p.inferredType === "subscription" ? "Suscripción" : p.inferredType === "pack" ? "Pack" : p.category}
                     </span>
                   </div>
                 </div>
