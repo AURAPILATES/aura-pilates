@@ -79,6 +79,7 @@ export default function ClientesTable({ customers, payments }: { customers: Cust
   const [sortKey,  setSortKey]  = useState<SortKey>("totalSpent");
   const [sortDir,  setSortDir]  = useState<SortDir>("desc");
   const [selected, setSelected] = useState<CustomerRow | null>(null);
+  const [stripeOpen, setStripeOpen] = useState(false);
 
   function toggleSort(key: SortKey) {
     if (sortKey === key) {
@@ -296,7 +297,7 @@ export default function ClientesTable({ customers, payments }: { customers: Cust
                   return (
                     <tr
                       key={c.id}
-                      onClick={() => setSelected(c)}
+                      onClick={() => { setSelected(c); setStripeOpen(false); }}
                       className={`border-b border-navy/[0.04] last:border-0 transition-colors cursor-pointer hover:bg-primary/[0.025] ${
                         c.possibleChurn ? "bg-warning/[0.04]" : i % 2 === 0 ? "" : "bg-navy/[0.008]"
                       }`}
@@ -413,44 +414,18 @@ export default function ClientesTable({ customers, payments }: { customers: Cust
             </div>
           }
           footer={
-            <div className="flex flex-col gap-2">
-              {selected.stripeIds.length === 1 ? (
-                <a
-                  href={`https://dashboard.stripe.com/customers/${selected.id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-[#635bff] rounded-xl hover:bg-[#4f46e5] transition-colors"
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-                    <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
-                  </svg>
-                  Ver en Stripe
-                </a>
-              ) : (
-                <>
-                  <p className="text-[11px] text-navy/40 font-medium uppercase tracking-wider">
-                    {selected.stripeIds.length} perfiles en Stripe (mismo email)
-                  </p>
-                  {selected.stripeIds.map((sid, i) => (
-                    <a
-                      key={sid}
-                      href={`https://dashboard.stripe.com/customers/${sid}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-between gap-2 px-4 py-2 text-sm font-medium text-[#635bff] bg-[#635bff]/[0.06] border border-[#635bff]/20 rounded-xl hover:bg-[#635bff]/10 transition-colors"
-                    >
-                      <span className="text-navy/50 text-xs">Perfil {i + 1}</span>
-                      <span className="font-mono text-xs truncate">{sid}</span>
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-                        <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
-                      </svg>
-                    </a>
-                  ))}
-                </>
-              )}
-            </div>
+            <a
+              href={`https://dashboard.stripe.com/customers/${selected.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-[#635bff] rounded-xl hover:bg-[#4f46e5] transition-colors"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+              </svg>
+              Ver en Stripe
+            </a>
           }
           onClose={() => setSelected(null)}
         >
@@ -489,16 +464,7 @@ export default function ClientesTable({ customers, payments }: { customers: Cust
                   <p className="text-sm font-medium text-navy truncate">
                     {p.inferredProduct !== "Otro" ? p.inferredProduct : (p.description ?? p.category)}
                   </p>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-xs text-navy/45">{fmtDate(p.date)}</span>
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
-                      p.inferredType === "subscription" ? "bg-primary/10 text-primary" :
-                      p.inferredType === "pack"         ? "bg-warning/15 text-warning" :
-                                                          "bg-navy/[0.05] text-navy/45"
-                    }`}>
-                      {p.inferredType === "subscription" ? "Suscripción" : p.inferredType === "pack" ? "Pack" : p.category}
-                    </span>
-                  </div>
+                  <p className="text-xs text-navy/45 mt-0.5">{fmtDate(p.date)}</p>
                 </div>
                 <span className="shrink-0 text-sm font-semibold text-navy tabular-nums">
                   {fmt(p.amount)}
@@ -506,6 +472,45 @@ export default function ClientesTable({ customers, payments }: { customers: Cust
               </div>
             ))}
           </div>
+
+          {/* Perfiles Stripe — acordeón, solo si hay más de uno */}
+          {selected.stripeIds.length > 1 && (
+            <div className="border-t border-navy/[0.06] mt-2">
+              <button
+                onClick={() => setStripeOpen((v) => !v)}
+                className="w-full flex items-center justify-between px-6 py-3 text-xs text-navy/40 hover:text-navy/60 transition-colors"
+              >
+                <span>{selected.stripeIds.length} perfiles en Stripe (mismo email)</span>
+                <svg
+                  width="12" height="12" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                  className={`transition-transform ${stripeOpen ? "rotate-180" : ""}`}
+                >
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </button>
+              {stripeOpen && (
+                <div className="px-6 pb-4 flex flex-col gap-1.5">
+                  {selected.stripeIds.map((sid, i) => (
+                    <a
+                      key={sid}
+                      href={`https://dashboard.stripe.com/customers/${sid}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-between gap-2 px-3 py-2 text-xs text-[#635bff] bg-[#635bff]/[0.05] border border-[#635bff]/15 rounded-lg hover:bg-[#635bff]/10 transition-colors"
+                    >
+                      <span className="text-navy/40 shrink-0">Perfil {i + 1}</span>
+                      <span className="font-mono truncate">{sid}</span>
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                        <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+                      </svg>
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </Drawer>
       )}
     </div>
