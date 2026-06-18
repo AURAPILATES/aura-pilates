@@ -45,6 +45,7 @@ import MrrCard from "./MrrCard";
 import { subscriptionTiersFromMemberships, computeMrrByTier } from "@/lib/mrr";
 import { getMemberships, getProducts, getCustomers } from "@/lib/momence";
 import { catalogFromMomence, revenueByProductFromStripe, revenueByProductByMonth, addUscToMonthlyRevenue } from "@/lib/productRevenue";
+import { countActiveStudents, computeAltasMes, computeBasjasMes } from "@/lib/studentMetrics";
 import { computeSubscriptionCohorts } from "@/lib/subscriptionCohort";
 import SubscriptionEvolutionChart from "./SubscriptionEvolutionChart";
 import QuestionHeader from "@/app/components/QuestionHeader";
@@ -253,6 +254,13 @@ export default async function Finanzas(props: {
   const subscriptionTiers = subscriptionTiersFromMemberships(membershipsAll);
   const mrrByTier = computeMrrByTier(customersAll, subscriptionTiers);
 
+  // ── KPIs de alumnos ──────────────────────────────────────────────────────
+  const todayIso        = now.toISOString().slice(0, 10);
+  const alumnosActivos  = countActiveStudents(customersAll, todayIso);
+  const altasMes        = computeAltasMes(paymentsAll, customersAll, curMonth);
+  const bajasMes        = computeBasjasMes(paymentsAll, customersAll, todayIso);
+  const facturacionPrev = mrrByTier.reduce((s, t) => s + t.mrr, 0);
+
   // ── Ingresos por producto inferido + bajas detectadas ────────────────────────
   const productBreakdown = stripeByProduct(paymentsAll);
   const churnedCustomers = detectChurn(paymentsAll);
@@ -379,6 +387,46 @@ export default async function Finanzas(props: {
             <code className="font-mono bg-warning/10 px-1 rounded text-xs">data/sales.csv</code>.
           </div>
         )}
+
+        {/* ── KPIs principales ── */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
+          {/* Alumnos activos */}
+          <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-4">
+            <p className="text-[11px] font-semibold text-navy/45 uppercase tracking-wider mb-1">Alumnos activos</p>
+            <p className="text-3xl font-bold text-navy tabular-nums">{alumnosActivos}</p>
+            <p className="text-[11px] text-navy/40 mt-1">con suscripción o pack vigente</p>
+          </div>
+
+          {/* Altas del mes */}
+          <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-4">
+            <p className="text-[11px] font-semibold text-navy/45 uppercase tracking-wider mb-1">Altas · {monthLabel(curMonth)}</p>
+            <p className="text-3xl font-bold text-success tabular-nums">
+              +{altasMes.nuevos + altasMes.reactivados}
+            </p>
+            <p className="text-[11px] text-navy/40 mt-1">
+              {altasMes.nuevos > 0 && `${altasMes.nuevos} nuevos`}
+              {altasMes.nuevos > 0 && altasMes.reactivados > 0 && " · "}
+              {altasMes.reactivados > 0 && `${altasMes.reactivados} reactivados`}
+              {altasMes.nuevos === 0 && altasMes.reactivados === 0 && "sin altas este mes"}
+            </p>
+          </div>
+
+          {/* Bajas del mes */}
+          <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-4">
+            <p className="text-[11px] font-semibold text-navy/45 uppercase tracking-wider mb-1">Bajas · {monthLabel(curMonth)}</p>
+            <p className={`text-3xl font-bold tabular-nums ${bajasMes > 0 ? "text-danger" : "text-navy/30"}`}>
+              {bajasMes > 0 ? `−${bajasMes}` : "−0"}
+            </p>
+            <p className="text-[11px] text-navy/40 mt-1">suscripciones sin renovar</p>
+          </div>
+
+          {/* Facturación prevista */}
+          <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-4">
+            <p className="text-[11px] font-semibold text-navy/45 uppercase tracking-wider mb-1">Facturación prevista</p>
+            <p className="text-3xl font-bold text-navy tabular-nums">{fmt(facturacionPrev)}</p>
+            <p className="text-[11px] text-navy/40 mt-1">MRR · suscripciones activas</p>
+          </div>
+        </div>
 
         <HealthCards
           currentBalance={currentBalance}
