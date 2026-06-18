@@ -27,16 +27,34 @@ export default async function ClientesPage() {
   const activeIds  = activeCustomersLast30Days(payments);
   const newIds     = newCustomersLast30Days(payments);
 
+  // Último pago por customerId (para saber tipo del pago más reciente por cliente)
+  const lastPmtById = new Map<string, { date: string; category: string }>();
+  for (const p of payments) {
+    if (!p.customerId) continue;
+    const ex = lastPmtById.get(p.customerId);
+    if (!ex || p.date > ex.date) lastPmtById.set(p.customerId, { date: p.date, category: p.category });
+  }
+
   const today = new Date();
   const customersWithChurn = customers.map((c) => {
-    const daysSinceLast = c.lastPaymentDate
-      ? Math.floor((today.getTime() - new Date(c.lastPaymentDate + "T12:00:00").getTime()) / 86_400_000)
+    // Último pago real entre todos los IDs fusionados
+    let lastPmt: { date: string; category: string } | null = null;
+    for (const sid of c.stripeIds) {
+      const p = lastPmtById.get(sid);
+      if (p && (!lastPmt || p.date > lastPmt.date)) lastPmt = p;
+    }
+    const daysSinceLast = lastPmt
+      ? Math.floor((today.getTime() - new Date(lastPmt.date + "T12:00:00").getTime()) / 86_400_000)
       : null;
     return {
       ...c,
-      // Posible baja: recurrente cuyo ciclo mensual ya venció (>30 días sin pagar).
-      // Evita falsos positivos cuando el próximo pago aún no ha llegado.
-      possibleChurn: c.isRecurring && daysSinceLast !== null && daysSinceLast > 30,
+      // Posible baja: suscriptora cuyo ciclo mensual ya venció (>30 días sin renovar).
+      // Solo aplica si el último pago fue una suscripción — clientes de clases sueltas no cuentan.
+      possibleChurn:
+        c.isRecurring &&
+        daysSinceLast !== null &&
+        daysSinceLast > 30 &&
+        lastPmt?.category === "Suscripción",
       isActive: activeIds.has(c.id),
       isNew: newIds.has(c.id),
     };
