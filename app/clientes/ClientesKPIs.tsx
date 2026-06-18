@@ -98,7 +98,7 @@ export default function ClientesKPIs({ customers, mrr, prevMonthLabel, curMonthL
     },
     error: {
       title: "Error de pago",
-      subtitle: "Stripe no pudo cobrar la última renovación",
+      subtitle: "Stripe no pudo cobrar en los últimos 30 días",
       customers: delinquentList,
     },
   };
@@ -148,7 +148,7 @@ export default function ClientesKPIs({ customers, mrr, prevMonthLabel, curMonthL
         <KPICard
           label="Error de pago"
           value={delinquentList.length}
-          sub="fallo en Stripe"
+          sub="últimos 30 días"
           valueClass={delinquentList.length > 0 ? "text-danger" : "text-navy/50"}
           accent="warning"
           onClick={delinquentList.length > 0 ? () => setDrawer("error") : undefined}

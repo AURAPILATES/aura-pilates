@@ -34,7 +34,7 @@ type RawCustomer = Pick<Stripe.Customer, "id" | "name" | "email" | "created" | "
 // Cubre: (1) facturas de suscripción intentadas y no cobradas, (2) PaymentIntents fallidos directos
 const fetchFailedPaymentCustomerIds = unstable_cache(
   async (): Promise<string[]> => {
-    const cutoff = Math.floor(Date.now() / 1000) - 90 * 86400;
+    const cutoff = Math.floor(Date.now() / 1000) - 30 * 86400;
     const ids = new Set<string>();
 
     // Facturas abiertas que Stripe ya intentó cobrar
