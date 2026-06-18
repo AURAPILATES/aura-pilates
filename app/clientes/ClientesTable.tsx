@@ -210,7 +210,7 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
         const dPack = c.daysSinceLastPack ?? Infinity;
         const ptCsv = dSub <= dPack && dSub < Infinity ? "sub" : dPack < Infinity ? "pack" : "session";
         const tipo  = ptCsv === "sub" ? "Suscripción" : ptCsv === "pack" ? "Pack" : "Por sesión";
-        const plan = c.isRecurring ? (c.lastSubProduct ?? "") : (c.lastPackProduct ?? "");
+        const plan  = ptCsv === "sub" ? (c.lastSubProduct ?? "") : ptCsv === "pack" ? (c.lastPackProduct ?? "") : "";
         const { status } = clientStatus(c);
         return [
           c.name ?? "",
