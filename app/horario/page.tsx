@@ -86,7 +86,7 @@ export default async function Horario({
       weekMonday={weekMonday}
       initialView={initialView as "lista" | "calendario"}
       initialTab={initialTab as "horario" | "analisis"}
-      reportingData={{ past30, prev30, upcoming7, topProducts, uscByHour, uscByWeekday, activeByMembership }}
+      reportingData={{ past30, prev30, upcoming7, topProducts, uscByHour, uscByWeekday, activeByMembership, totalCustomers: customers.length }}
     />
   );
 }

@@ -19,6 +19,7 @@ export type ReportingData = {
   uscByHour: Array<{ hour: number; label: string; count: number }>;
   uscByWeekday: Array<{ weekday: number; label: string; count: number }>;
   activeByMembership: Array<{ name: string; count: number; type: "subscription" | "package-events" }>;
+  totalCustomers: number;
 };
 
 function TrendBadge({ value }: { value: number | null }) {
@@ -55,7 +56,7 @@ function OccBar({ value }: { value: number }) {
 const WEEKDAY_SHORT = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
 
 export default function HorarioReporting({ data }: { data: ReportingData }) {
-  const { past30, prev30, upcoming7, topProducts, uscByHour, uscByWeekday, activeByMembership } = data;
+  const { past30, prev30, upcoming7, topProducts, uscByHour, uscByWeekday, activeByMembership, totalCustomers } = data;
 
   const occ     = occupancyRate(past30);
   const occPrev = occupancyRate(prev30);
@@ -414,7 +415,15 @@ export default function HorarioReporting({ data }: { data: ReportingData }) {
         <section id="q5" className="space-y-4">
           <QuestionHeader num={5} question="¿Cuántos alumnos activos hay por tipo de membresía?" />
           <Card>
-            <CardTitle>Alumnos activos ahora mismo (no congelados)</CardTitle>
+            <CardTitle>Membresías vigentes ahora mismo</CardTitle>
+            <div className="flex items-baseline gap-2 mb-4">
+              <span className="text-3xl font-bold text-navy tabular-nums">
+                {activeByMembership.reduce((s, m) => s + m.count, 0)}
+              </span>
+              <span className="text-sm text-navy/45">con membresía activa</span>
+              <span className="text-sm text-navy/30">·</span>
+              <span className="text-sm text-navy/45">{totalCustomers} alumnos en total en Momence</span>
+            </div>
             <div className="space-y-2.5">
               {activeByMembership.map(({ name, count, type }) => {
                 const max = activeByMembership[0].count;
@@ -436,9 +445,8 @@ export default function HorarioReporting({ data }: { data: ReportingData }) {
               })}
             </div>
             <p className="text-xs text-navy/35 mt-4">
-              Total: {activeByMembership.reduce((s, m) => s + m.count, 0)} alumnos con membresía activa ·{" "}
               {activeByMembership.filter((m) => m.type === "subscription").reduce((s, m) => s + m.count, 0)} suscripciones ·{" "}
-              {activeByMembership.filter((m) => m.type === "package-events").reduce((s, m) => s + m.count, 0)} packs
+              {activeByMembership.filter((m) => m.type === "package-events").reduce((s, m) => s + m.count, 0)} packs activos
             </p>
           </Card>
         </section>
