@@ -415,16 +415,7 @@ export default function TransaccionesList({
     <div>
       {/* ── Mobile: Import + Filtros buttons ────────────────────────────────── */}
       <div className="sm:hidden flex gap-2 mb-3">
-        <ImportButton className="flex-1" />
-        <button
-          onClick={() => setShowAddCash(true)}
-          className="flex items-center justify-center px-3 py-2.5 bg-white border border-navy/[0.12] rounded-lg text-navy/55"
-          title="Añadir movimiento manual"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-          </svg>
-        </button>
+        <ImportButton className="flex-1" onManual={() => setShowAddCash(true)} />
         <button
           onClick={() => setShowMobileFilters((v) => !v)}
           className="flex items-center gap-1.5 px-4 py-2.5 bg-white border border-navy/[0.12] rounded-lg text-sm font-semibold text-navy"
@@ -547,16 +538,7 @@ export default function TransaccionesList({
           </select>
         </SelectWrapper>
         <div className="flex-1" />
-        <button
-          onClick={() => setShowAddCash(true)}
-          className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-navy/55 border border-navy/[0.12] rounded-xl bg-white hover:bg-navy/[0.02] hover:text-navy transition-colors whitespace-nowrap"
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-          </svg>
-          Manual
-        </button>
-        <ImportButton />
+        <ImportButton onManual={() => setShowAddCash(true)} />
         <button
           onClick={exportCSV}
           title="Exportar vista actual a CSV"
