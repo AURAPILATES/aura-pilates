@@ -1,11 +1,12 @@
 export const dynamic = "force-dynamic";
 
-import { loadStripePaymentsCached } from "@/lib/stripePayments";
+import { loadStripePaymentsCached, loadPaymentsBreakdown30d } from "@/lib/stripePayments";
 import { loadStripeCustomers } from "@/lib/stripeCustomers";
 import { estimatedMRR, activeCustomersLast30Days, newCustomersLast30Days } from "@/lib/stripeRecurrence";
 import { loadBusinessEvents } from "@/lib/businessEvents";
 import ClientesShell from "./ClientesShell";
 import ClientesKPIs from "./ClientesKPIs";
+import ClientesPaymentsBreakdown from "./ClientesPaymentsBreakdown";
 
 function pad2(n: number) { return String(n).padStart(2, "0"); }
 
@@ -17,9 +18,10 @@ export default async function ClientesPage() {
     return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`;
   })();
   const payments = await loadStripePaymentsCached();
-  const [customers, businessEvents] = await Promise.all([
+  const [customers, businessEvents, breakdown] = await Promise.all([
     loadStripeCustomers(payments, curMonth),
     loadBusinessEvents(),
+    loadPaymentsBreakdown30d(),
   ]);
 
   const total      = customers.length;
@@ -117,6 +119,13 @@ export default async function ClientesPage() {
           newCountPrev30d={newCountPrev30d}
           activeCount30d={activeSet30d.size}
           activeCountPrev30d={activeSetPrev30d.size}
+        />
+
+        <ClientesPaymentsBreakdown
+          succeeded={grossRevenue30d}
+          refunded={breakdown.refunded}
+          disputed={breakdown.disputed}
+          failed={breakdown.failed}
         />
 
         <ClientesShell customers={customersWithChurn} payments={payments} events={businessEvents} />

@@ -247,6 +247,40 @@ export const loadStripePaymentsCached = unstable_cache(
   { revalidate: 600, tags: ["stripe"] },
 );
 
+// ── Resumen de pagos últimos 30d (reembolsos + disputas + errores) ────────────
+
+export type PaymentsBreakdown = {
+  refunded: number;
+  disputed: number;
+  failed: number;
+};
+
+export const loadPaymentsBreakdown30d = unstable_cache(
+  async (): Promise<PaymentsBreakdown> => {
+    const cutoff = Math.floor(Date.now() / 1000) - 30 * 86400;
+
+    let refunded = 0;
+    for await (const r of stripe.refunds.list({ limit: 100, created: { gte: cutoff } })) {
+      if (r.status === "succeeded") refunded += r.amount / 100;
+    }
+
+    let disputed = 0;
+    for await (const d of stripe.disputes.list({ limit: 100, created: { gte: cutoff } })) {
+      disputed += d.amount / 100;
+    }
+
+    let failed = 0;
+    for await (const pi of stripe.paymentIntents.list({ limit: 100, created: { gte: cutoff } })) {
+      if (pi.status !== "requires_payment_method" || !pi.last_payment_error) continue;
+      failed += pi.amount / 100;
+    }
+
+    return { refunded, disputed, failed };
+  },
+  ["stripe-payments-breakdown-30d"],
+  { revalidate: 600, tags: ["stripe"] },
+);
+
 // ── Compatibility shim: convert to Sale shape for existing charts ──────────────
 
 import type { Sale } from "./sales";
