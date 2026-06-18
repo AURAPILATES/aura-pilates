@@ -372,9 +372,10 @@ export default function ClientesKPIs({ customers, mrr, prevMonthLabel, curMonthL
           valueClass="text-success"
         />
         <KPICard
-          label="Bajas suscrip."
+          label="Sin renovar"
           value={churnList.length}
-          sub="sin renovar 46–76 días"
+          sub="entre 46 y 76 días sin pagar"
+          tooltip="Suscriptoras que llevan entre 46 y 76 días sin renovar — periodo accionable para reactivación"
           valueClass={churnList.length > 0 ? "text-danger" : "text-navy/50"}
           accent="warning"
           onClick={churnList.length > 0 ? () => setDrawer("churn") : undefined}
