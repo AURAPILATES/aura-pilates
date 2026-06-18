@@ -11,7 +11,7 @@ Toda la actividad de cobros a clientes se obtiene en tiempo real desde **Stripe*
   - Clientes recurrentes: los que han pagado en 2 o más de los últimos 3 meses
   - Posibles bajas: clientes que pagaron el mes pasado pero no este mes
   - Ingresos recurrentes vs. pagos únicos en la sección Finanzas
-- **Confirmado por investigación directa en la API (jun 2026):** la cuenta de Stripe tiene **0 Products, 0 Prices y 0 Subscriptions configurados**. Los clientes pagan a través de **Payment Links** (cobros individuales, sin vincular a esos objetos), por lo que Stripe nunca podrá darnos un desglose de ingresos por producto ni un MRR/ARR real — solo importe y fecha del cobro. Cualquier intento de "adivinar" el producto por el importe del cobro es una heurística frágil (descuentos, prorrateos) y se ha descartado en favor de Momence (ver abajo).
+- **Confirmado por investigación directa en la API (jun 2026):** la cuenta de Stripe tiene **0 Products, 0 Prices y 0 Subscriptions configurados**. Esto es consecuencia de cómo funciona Momence: cuando un alumno compra una suscripción o pack en Momence, Momence genera un **Payment Link puntual en Stripe** (un cobro individual) en lugar de crear una Subscription object de Stripe. Momence gestiona internamente la lógica de renovación y acceso, pero no traspasa esa estructura a Stripe. El resultado es que desde Stripe solo vemos cobros individuales sin ningún metadato de producto, por lo que Stripe nunca podrá darnos un desglose de ingresos por producto ni un MRR/ARR real — solo importe y fecha. Cualquier intento de "adivinar" el producto por el importe del cobro es una heurística frágil (descuentos, prorrateos) y se ha descartado en favor de Momence (ver abajo).
 
 ---
 
