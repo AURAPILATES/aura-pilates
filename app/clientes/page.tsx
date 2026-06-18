@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { loadStripePaymentsCached } from "@/lib/stripePayments";
 import { loadStripeCustomers } from "@/lib/stripeCustomers";
-import { estimatedMRR, possibleChurnIds, activeCustomersLast30Days, newCustomersLast30Days } from "@/lib/stripeRecurrence";
+import { estimatedMRR, activeCustomersLast30Days, newCustomersLast30Days } from "@/lib/stripeRecurrence";
 import ClientesTable from "./ClientesTable";
 import ClientesKPIs from "./ClientesKPIs";
 import ClientesEvolucionChart from "./ClientesEvolucionChart";
@@ -24,17 +24,20 @@ export default async function ClientesPage() {
 
   const total      = customers.length;
   const mrr        = estimatedMRR(payments, curMonth);
-  const churnIds   = possibleChurnIds(payments, curMonth);
   const activeIds  = activeCustomersLast30Days(payments);
   const newIds     = newCustomersLast30Days(payments);
-  const churnCount = churnIds.size;
 
   const customersWithChurn = customers.map((c) => ({
     ...c,
-    possibleChurn: churnIds.has(c.id),
+    // Posible baja: recurrente cuyo último pago fue el mes pasado (no este mes).
+    // Usamos lastPaymentDate (fusionado por email) para evitar falsos positivos
+    // cuando el cliente tiene varios perfiles Stripe con distinto ID.
+    possibleChurn: c.isRecurring && !!c.lastPaymentDate && c.lastPaymentDate.startsWith(prevMonth),
     isActive: activeIds.has(c.id),
     isNew: newIds.has(c.id),
   }));
+
+  const churnCount = customersWithChurn.filter((c) => c.possibleChurn).length;
 
   return (
     <div>
