@@ -133,7 +133,18 @@ function TrendCard({ label, value, prevLabel, cur, prev, dateRange, compDateRang
 type DrawerSection = { title: string; customers: CustomerRow[] };
 type DrawerEntry = { title: string; subtitle: string; customers?: CustomerRow[]; sections?: DrawerSection[] };
 
+const extIcon = (
+  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+    <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+  </svg>
+);
+
 function CustomerRow({ c }: { c: CustomerRow }) {
+  const [profilesOpen, setProfilesOpen] = useState(false);
+  const ids = c.stripeIds;
+  const latestId = ids[ids.length - 1];
+
   return (
     <div className="px-6 py-4 flex items-center justify-between gap-4 hover:bg-navy/[0.015] transition-colors">
       <div className="min-w-0">
@@ -151,19 +162,45 @@ function CustomerRow({ c }: { c: CustomerRow }) {
           <span className="text-xs font-semibold text-navy">{fmt(c.totalSpent)}</span>
         </div>
       </div>
-      <a
-        href={`https://dashboard.stripe.com/customers/${c.id}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-[#635bff] rounded-lg hover:bg-[#4f46e5] transition-colors"
-        title="Ver en Stripe"
-      >
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-          <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
-        </svg>
-        Stripe
-      </a>
+      <div className="shrink-0 flex items-center gap-1">
+        <a
+          href={`https://dashboard.stripe.com/customers/${latestId}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-[#635bff] rounded-lg hover:bg-[#4f46e5] transition-colors"
+          title="Ver perfil más reciente en Stripe"
+        >
+          {extIcon}
+          Stripe
+        </a>
+        {ids.length > 1 && (
+          <div className="relative">
+            <button
+              onClick={() => setProfilesOpen((v) => !v)}
+              className="text-[10px] font-semibold text-[#635bff] bg-[#635bff]/10 hover:bg-[#635bff]/20 px-1.5 py-1.5 rounded-lg transition-colors leading-none"
+              title={`${ids.length} perfiles en Stripe`}
+            >
+              +{ids.length - 1}
+            </button>
+            {profilesOpen && (
+              <div className="absolute right-0 bottom-full mb-1 w-44 bg-white border border-navy/10 rounded-xl shadow-lg z-20 overflow-hidden">
+                {ids.map((sid, i) => (
+                  <a
+                    key={sid}
+                    href={`https://dashboard.stripe.com/customers/${sid}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between px-3 py-2 text-xs font-medium text-[#635bff] hover:bg-[#635bff]/[0.05] border-b border-navy/[0.05] last:border-0 transition-colors"
+                  >
+                    Perfil {i + 1}{i === ids.length - 1 ? " · reciente" : ""}
+                    <span className="text-[10px] text-navy/30 font-mono">{sid.slice(-6)}</span>
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
