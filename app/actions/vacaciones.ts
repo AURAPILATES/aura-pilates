@@ -52,6 +52,15 @@ export async function archivePersonaAction(id: string) {
   revalidatePath("/vacaciones");
 }
 
+export async function deletePersonaAction(id: string) {
+  const supabase = createServerClient();
+  // Borrar ausencias primero (FK), luego la persona
+  await supabase.from("ausencias").delete().eq("persona_id", id);
+  const { error } = await supabase.from("personas").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath("/vacaciones");
+}
+
 export async function unarchivePersonaAction(id: string) {
   const supabase = createServerClient();
   const { error } = await supabase

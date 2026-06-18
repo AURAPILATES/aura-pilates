@@ -9,6 +9,7 @@ import {
   createPersonaAction,
   archivePersonaAction,
   unarchivePersonaAction,
+  deletePersonaAction,
   loadArchivedPersonasAction,
 } from "@/app/actions/vacaciones";
 
@@ -1188,6 +1189,18 @@ export default function VacacionesCalendario({
   const [archivados, setArchivados] = useState<{ id: string; nombre: string; inicio_contrato: string; dias_totales: number }[]>([]);
   const [loadingArchivados, setLoadingArchivados] = useState(false);
   const [unarchivingId, setUnarchivingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  async function handleDelete(id: string, nombre: string) {
+    if (!confirm(`¿Eliminar definitivamente a ${nombre}? Esta acción no se puede deshacer.`)) return;
+    setDeletingId(id);
+    try {
+      await deletePersonaAction(id);
+      setArchivados((prev) => prev.filter((p) => p.id !== id));
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   async function openArchivados() {
     setShowArchivados(true);
@@ -1343,13 +1356,22 @@ export default function VacacionesCalendario({
                       Contrato: {p.inicio_contrato?.split("-").reverse().join("/")} · {p.dias_totales} días/año
                     </p>
                   </div>
-                  <button
-                    onClick={() => handleUnarchive(p.id)}
-                    disabled={unarchivingId === p.id}
-                    className="shrink-0 text-xs font-semibold text-primary border border-primary/30 hover:bg-primary/5 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40"
-                  >
-                    {unarchivingId === p.id ? "Reactivando…" : "Reactivar"}
-                  </button>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={() => handleUnarchive(p.id)}
+                      disabled={unarchivingId === p.id}
+                      className="text-xs font-semibold text-primary border border-primary/30 hover:bg-primary/5 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40"
+                    >
+                      {unarchivingId === p.id ? "Reactivando…" : "Reactivar"}
+                    </button>
+                    <button
+                      onClick={() => handleDelete(p.id, p.nombre)}
+                      disabled={deletingId === p.id}
+                      className="text-xs font-semibold text-danger/70 border border-danger/20 hover:bg-danger/5 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40"
+                    >
+                      {deletingId === p.id ? "…" : "Eliminar"}
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
