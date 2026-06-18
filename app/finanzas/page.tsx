@@ -610,7 +610,7 @@ export default async function Finanzas(props: {
                     })()}
                   </Block>
                 </div>
-                <EvolucionChart sales={toSales(payments)} salesAll={salesAll} monthly={monthlyRevenue} events={businessEvents} />
+                <EvolucionChart sales={toSales(payments)} salesAll={salesAll} monthly={monthlyRevenue} events={businessEvents} rawPayments={payments} />
               </div>
             </section>
 

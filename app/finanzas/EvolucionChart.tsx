@@ -4,8 +4,9 @@ import { BookOpen } from "react-feather";
 import type { Sale } from "@/lib/sales";
 import type { MonthlyProductRevenue } from "@/lib/productRevenue";
 import type { BusinessEvent, EventCategoria } from "@/lib/businessEvents";
+import type { StripePayment } from "@/lib/stripePayments";
 
-type View        = "canal" | "producto";
+type View        = "procedencia" | "producto";
 type ChartType   = "line" | "bar";
 type CompareMode = "none" | "prev" | "months";
 
@@ -15,16 +16,9 @@ const MONTH_NAMES: Record<string, string> = {
   "09":"Sep","10":"Oct","11":"Nov","12":"Dic",
 };
 
-const CHANNEL_COLORS: Record<string, string> = {
-  "Tarjeta":           "#6B7ED6",
-  "urban-sports-club": "#D4AA35",
-  "Efectivo":          "#4A9870",
-};
-
-const CHANNEL_LABELS: Record<string, string> = {
-  "Tarjeta":           "Tarjeta",
-  "urban-sports-club": "Urban Sports Club",
-  "Efectivo":          "Efectivo",
+const PROCEDENCIA_COLORS: Record<string, string> = {
+  "Interna": "#6B7ED6",
+  "Urban":   "#D4AA35",
 };
 
 const PRODUCT_COLORS = [
@@ -89,10 +83,85 @@ function buildSeriesFromMonthly(monthly: MonthlyProductRevenue[]) {
   return { months, data };
 }
 
+function buildSeriesFromProcedencia(monthly: MonthlyProductRevenue[]) {
+  const months = monthly.map((m) => m.month);
+  const data   = new Map<string, Map<string, number>>();
+  for (const m of monthly) {
+    const urban   = m.items.find((i) => i.name === "Urban")?.revenue ?? 0;
+    const interna = m.total - urban;
+    const row     = new Map<string, number>();
+    if (interna > 0) row.set("Interna", interna);
+    if (urban > 0)   row.set("Urban", urban);
+    data.set(m.month, row);
+  }
+  return { months, data };
+}
+
 function shiftMonth(ym: string, delta: number): string {
   const [y, m] = ym.split("-").map(Number);
   const d = new Date(y, m - 1 + delta, 1);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function makeTrendSummary(
+  months: string[],
+  data: Map<string, Map<string, number>>,
+  keys: string[],
+  getLabel: (k: string) => string,
+): string[] {
+  if (months.length < 2) return [];
+  const win = Math.min(3, Math.floor(months.length / 2));
+  const recent = months.slice(-win);
+  const prev   = months.slice(-(win * 2), -win);
+  if (prev.length === 0) return [];
+
+  const sum = (ms: string[], k: string) =>
+    ms.reduce((s, m) => s + (data.get(m)?.get(k) ?? 0), 0);
+  const sumAll = (ms: string[]) =>
+    keys.reduce((s, k) => s + sum(ms, k), 0);
+
+  const sentences: string[] = [];
+
+  // Total
+  const rTot = sumAll(recent);
+  const pTot = sumAll(prev);
+  if (pTot > 0) {
+    const pct = Math.round(((rTot - pTot) / pTot) * 100);
+    const ref = win === 1 ? "el mes anterior" : `los ${win} meses anteriores`;
+    if (Math.abs(pct) < 4) {
+      sentences.push(`Los ingresos totales se mantienen estables respecto a ${ref}.`);
+    } else if (pct > 0) {
+      sentences.push(`Los ingresos totales han crecido un ${pct}% respecto a ${ref}.`);
+    } else {
+      sentences.push(`Los ingresos totales han bajado un ${Math.abs(pct)}% respecto a ${ref}.`);
+    }
+  }
+
+  // Per-product
+  const trends = keys.slice(0, 6).flatMap((k) => {
+    const r = sum(recent, k);
+    const p = sum(prev, k);
+    if (p === 0 || (r === 0 && p === 0)) return [];
+    return [{ label: getLabel(k), pct: Math.round(((r - p) / p) * 100) }];
+  });
+
+  const growing  = trends.filter((t) => t.pct >=  5).sort((a, b) => b.pct - a.pct);
+  const stable   = trends.filter((t) => Math.abs(t.pct) < 5);
+  const declining = trends.filter((t) => t.pct <= -5).sort((a, b) => a.pct - b.pct);
+
+  if (growing.length > 0) {
+    const parts = growing.map((t) => `${t.label} (+${t.pct}%)`);
+    sentences.push(`Suben: ${parts.join(", ")}.`);
+  }
+  if (stable.length > 0) {
+    sentences.push(`Se mantienen estables: ${stable.map((t) => t.label).join(", ")}.`);
+  }
+  if (declining.length > 0) {
+    const parts = declining.map((t) => `${t.label} (${t.pct}%)`);
+    sentences.push(`Bajan: ${parts.join(", ")}.`);
+  }
+
+  return sentences;
 }
 
 const SVG_W = 900;
@@ -129,19 +198,23 @@ function RadioDot({ active }: { active: boolean }) {
   );
 }
 
-export default function EvolucionChart({ sales, salesAll, monthly, events }: {
+export default function EvolucionChart({ sales, salesAll, monthly, events, rawPayments }: {
   sales: Sale[];
   salesAll?: Sale[];
   monthly?: MonthlyProductRevenue[];
   events?: BusinessEvent[];
+  rawPayments?: StripePayment[];
 }) {
-  const [view,          setView]          = useState<View>("canal");
-  const [chartType,     setChartType]     = useState<ChartType>("line");
-  const [hoveredIdx,    setHoveredIdx]    = useState<number | null>(null);
-  const [hoveredEventId,setHoveredEventId]= useState<string | null>(null);
-  const [compareMode,   setCompareMode]   = useState<CompareMode>("none");
-  const [compareN,      setCompareN]      = useState(1);
-  const [showPicker,    setShowPicker]    = useState(false);
+  const [view,           setView]           = useState<View>("procedencia");
+  const [chartType,      setChartType]      = useState<ChartType>("line");
+  const [hoveredIdx,     setHoveredIdx]     = useState<number | null>(null);
+  const [hoveredEventId, setHoveredEventId] = useState<string | null>(null);
+  const [compareMode,    setCompareMode]    = useState<CompareMode>("none");
+  const [compareN,       setCompareN]       = useState(1);
+  const [showPicker,     setShowPicker]     = useState(false);
+  const [hoveredLegendKey, setHoveredLegendKey] = useState<string | null>(null);
+  const [hiddenKeys,     setHiddenKeys]     = useState<Set<string>>(new Set());
+  const [barDrawer,      setBarDrawer]      = useState<{ month: string; key: string } | null>(null);
   const pickerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -157,17 +230,27 @@ export default function EvolucionChart({ sales, salesAll, monthly, events }: {
 
   const getKey = (s: Sale) => s.method;
 
-  const useMonthly = view === "producto" && !!monthly && monthly.length > 0;
-  const { months, data } = useMonthly
+  const useProcedencia = view === "procedencia" && !!monthly && monthly.length > 0;
+  const useMonthly     = view === "producto"    && !!monthly && monthly.length > 0;
+
+  const { months, data } = useProcedencia
+    ? buildSeriesFromProcedencia(monthly!)
+    : useMonthly
     ? buildSeriesFromMonthly(monthly!)
     : buildSeries(sales, getKey);
-  const dataAll = useMonthly
+
+  const dataAll = useProcedencia
+    ? buildSeriesFromProcedencia(monthly!).data
+    : useMonthly
     ? buildSeriesFromMonthly(monthly!).data
     : buildSeries(salesAll ?? [], getKey).data;
 
-  const rawKeys = useMonthly
+  const rawKeys = useProcedencia
+    ? ["Interna", "Urban"]
+    : useMonthly
     ? [...new Set(monthly!.flatMap((m) => m.items.map((i) => i.name)))]
     : [...new Set(sales.map(getKey))];
+
   const keysByRevenue = [...rawKeys].sort((a, b) => {
     const totA = months.reduce((s, m) => s + (data.get(m)?.get(a) ?? 0), 0);
     const totB = months.reduce((s, m) => s + (data.get(m)?.get(b) ?? 0), 0);
@@ -206,9 +289,20 @@ export default function EvolucionChart({ sales, salesAll, monthly, events }: {
   const barCx     = (mi: number) => ML + (mi + 0.5) * groupW;
 
   const getColor = (key: string, i: number) =>
-    view === "canal" ? (CHANNEL_COLORS[key] ?? "#6B7280") : PRODUCT_COLORS[i % PRODUCT_COLORS.length];
-  const getLabel = (key: string) =>
-    view === "canal" ? (CHANNEL_LABELS[key] ?? key) : key;
+    view === "procedencia"
+      ? (PROCEDENCIA_COLORS[key] ?? "#6B7280")
+      : PRODUCT_COLORS[i % PRODUCT_COLORS.length];
+  const getLabel = (key: string) => key;
+
+  const trendSummary = makeTrendSummary(months, data, keys, getLabel);
+
+  const drawerStudents = useMemo(() => {
+    if (!barDrawer || !rawPayments) return [];
+    if (barDrawer.key === "Urban" || barDrawer.key === "Interna") return [];
+    return rawPayments
+      .filter((p) => p.date.slice(0, 7) === barDrawer.month && p.inferredProduct === barDrawer.key)
+      .map((p) => ({ name: p.customerName, email: p.customerEmail, amount: p.amount }));
+  }, [barDrawer, rawPayments]);
 
   const showEvery = N > 8 ? 2 : 1;
 
@@ -358,21 +452,19 @@ export default function EvolucionChart({ sales, salesAll, monthly, events }: {
             </div>
           )}
 
-          {/* Canal / Producto toggle */}
+          {/* Procedencia / Producto toggle */}
           <div className="flex border border-navy/10 rounded-lg overflow-hidden text-xs shrink-0">
-            {(["canal", "producto"] as const).map((v) => (
+            {(["procedencia", "producto"] as const).map((v) => (
               <button
                 key={v}
-                onClick={() => setView(v)}
+                onClick={() => { setView(v); setHiddenKeys(new Set()); }}
                 className={`px-2.5 sm:px-3 py-1.5 font-medium transition-colors ${
                   view === v
                     ? "bg-navy text-white"
                     : "bg-white text-navy/55 hover:text-navy/70 hover:bg-navy/[0.03]"
                 } ${v === "producto" ? "border-l border-navy/10" : ""}`}
               >
-                {v === "canal"
-                  ? <span><span className="sm:hidden">Canal</span><span className="hidden sm:inline">Canal de pago</span></span>
-                  : "Producto"}
+                {v === "procedencia" ? "Procedencia" : "Producto"}
               </button>
             ))}
           </div>
@@ -382,14 +474,25 @@ export default function EvolucionChart({ sales, salesAll, monthly, events }: {
       {/* Legend */}
       <div className="flex flex-wrap gap-x-4 gap-y-1.5 mb-3 items-center">
         {keys.map((key, i) => {
-          const color = getColor(key, i);
+          const color   = getColor(key, i);
+          const isHid   = hiddenKeys.has(key);
+          const isDimmed = hoveredLegendKey !== null && hoveredLegendKey !== key && !isHid;
           return (
-            <span key={key} className="flex items-center gap-1.5 text-xs text-navy/60">
-              {chartType === "line" ? (
-                <span className="inline-block w-8 h-0.5 rounded-full" style={{ backgroundColor: color }} />
-              ) : (
-                <span className="inline-block w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: color }} />
-              )}
+            <span
+              key={key}
+              className={`flex items-center gap-1.5 text-xs cursor-pointer select-none transition-opacity ${
+                isHid ? "opacity-30 line-through" : isDimmed ? "opacity-40 text-navy/60" : "text-navy/60"
+              }`}
+              title={isHid ? "Clic para mostrar" : "Clic para ocultar"}
+              onMouseEnter={() => setHoveredLegendKey(key)}
+              onMouseLeave={() => setHoveredLegendKey(null)}
+              onClick={() => setHiddenKeys((prev) => {
+                const next = new Set(prev);
+                if (next.has(key)) next.delete(key); else next.add(key);
+                return next;
+              })}
+            >
+              <span className="inline-block w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
               {getLabel(key)}
             </span>
           );
@@ -458,38 +561,44 @@ export default function EvolucionChart({ sales, salesAll, monthly, events }: {
             <>
               {/* Area fills */}
               {keys.map((key, ki) => {
-                const color = getColor(key, ki);
-                const ptArr = months.map((m, i) => ({ x: xOf(i), y: yOf(data.get(m)?.get(key) ?? 0) }));
-                const pathD =
+                if (hiddenKeys.has(key)) return null;
+                const color  = getColor(key, ki);
+                const dimmed = hoveredLegendKey !== null && hoveredLegendKey !== key;
+                const ptArr  = months.map((m, i) => ({ x: xOf(i), y: yOf(data.get(m)?.get(key) ?? 0) }));
+                const pathD  =
                   ptArr.map((p, i) => `${i === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ") +
                   ` L${ptArr[ptArr.length - 1].x},${MT + cH} L${ptArr[0].x},${MT + cH} Z`;
-                return <path key={`area-${key}`} d={pathD} fill={color} fillOpacity="0.06" />;
+                return <path key={`area-${key}`} d={pathD} fill={color} fillOpacity={dimmed ? 0.02 : 0.06} />;
               })}
 
               {/* Comparison lines (dashed) */}
               {isComparing && keys.map((key, ki) => {
-                const color = getColor(key, ki);
-                const pts   = months.map((m, i) => {
+                if (hiddenKeys.has(key)) return null;
+                const color  = getColor(key, ki);
+                const dimmed = hoveredLegendKey !== null && hoveredLegendKey !== key;
+                const pts    = months.map((m, i) => {
                   const cm = shiftMonth(m, -compareOffset);
                   return `${xOf(i)},${yOf(dataAll.get(cm)?.get(key) ?? 0)}`;
                 }).join(" ");
                 return (
                   <polyline key={`comp-${key}`} points={pts} fill="none" stroke={color}
                     strokeWidth="1.5" strokeDasharray="5 3" strokeLinejoin="round"
-                    strokeLinecap="round" opacity="0.45" />
+                    strokeLinecap="round" opacity={dimmed ? 0.12 : 0.45} />
                 );
               })}
 
               {/* Lines + dots */}
               {keys.map((key, ki) => {
-                const color = getColor(key, ki);
-                const pts   = months.map((m, i) => `${xOf(i)},${yOf(data.get(m)?.get(key) ?? 0)}`).join(" ");
+                if (hiddenKeys.has(key)) return null;
+                const color  = getColor(key, ki);
+                const dimmed = hoveredLegendKey !== null && hoveredLegendKey !== key;
+                const pts    = months.map((m, i) => `${xOf(i)},${yOf(data.get(m)?.get(key) ?? 0)}`).join(" ");
                 return (
-                  <g key={key}>
+                  <g key={key} opacity={dimmed ? 0.15 : 1}>
                     <polyline points={pts} fill="none" stroke={color} strokeWidth="2"
                       strokeLinejoin="round" strokeLinecap="round" />
                     {months.map((m, i) => {
-                      const v = data.get(m)?.get(key) ?? 0;
+                      const v   = data.get(m)?.get(key) ?? 0;
                       const isH = hoveredIdx === i;
                       if (v === 0 && !isH) return null;
                       return (
@@ -508,16 +617,20 @@ export default function EvolucionChart({ sales, salesAll, monthly, events }: {
                 <g key={m}>
                   {keys.map((key, ki) => {
                     const v = data.get(m)?.get(key) ?? 0;
-                    if (v === 0) return null;
-                    const color = getColor(key, ki);
-                    const bh    = (v / niceTop) * cH;
-                    const isH   = hoveredIdx === mi;
+                    if (v === 0 || hiddenKeys.has(key)) return null;
+                    const color  = getColor(key, ki);
+                    const bh     = (v / niceTop) * cH;
+                    const isH    = hoveredIdx === mi;
+                    const dimmed = hoveredLegendKey !== null && hoveredLegendKey !== key;
+                    const canClick = view === "producto" && rawPayments;
                     return (
                       <rect key={key}
                         x={barX(mi, ki)} y={MT + cH - bh}
                         width={barW} height={bh} rx="2"
                         fill={color}
-                        opacity={hoveredIdx !== null && !isH ? 0.4 : 1}
+                        opacity={dimmed ? 0.12 : hoveredIdx !== null && !isH ? 0.4 : 1}
+                        style={{ cursor: canClick ? "pointer" : undefined }}
+                        onClick={canClick ? () => setBarDrawer({ month: m, key }) : undefined}
                       />
                     );
                   })}
@@ -723,10 +836,71 @@ export default function EvolucionChart({ sales, salesAll, monthly, events }: {
         </svg>
       )}
 
-      <p className="text-xs text-navy/45 mt-2 flex items-center gap-1.5">
+      {trendSummary.length > 0 && (
+        <div className="mt-3 border-t border-navy/[0.06] pt-3 space-y-1">
+          {trendSummary.map((sentence, i) => (
+            <p key={i} className="text-xs text-navy/55 leading-relaxed">{sentence}</p>
+          ))}
+        </div>
+      )}
+
+      <p className="text-xs text-navy/45 mt-3 flex items-center gap-1.5">
         <BookOpen size={12} className="shrink-0" />
         Stripe · ingresos brutos por mes.
       </p>
+
+      {/* Drawer: alumnos por producto × mes */}
+      {barDrawer && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-start sm:justify-end">
+          <div className="fixed inset-0 bg-navy/20 backdrop-blur-[2px]" onClick={() => setBarDrawer(null)} />
+          <div className="relative bg-white rounded-t-2xl sm:rounded-2xl sm:rounded-tr-none shadow-xl border border-navy/10 w-full sm:w-80 sm:h-screen sm:mt-0 max-h-[75vh] sm:max-h-none flex flex-col">
+            <div className="flex items-start justify-between p-4 border-b border-navy/10 shrink-0">
+              <div>
+                <p className="text-xs text-navy/45 uppercase tracking-wider mb-0.5">Alumnos</p>
+                <p className="font-semibold text-navy text-sm">{barDrawer.key}</p>
+                <p className="text-xs text-navy/45 mt-0.5">
+                  {(() => {
+                    const [y, mm] = barDrawer.month.split("-");
+                    return `${MONTH_NAMES[mm]} ${y}`;
+                  })()}
+                </p>
+              </div>
+              <button
+                onClick={() => setBarDrawer(null)}
+                className="p-1.5 rounded-lg hover:bg-navy/5 text-navy/40 hover:text-navy/60 transition-colors mt-0.5"
+              >
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path d="M1 1l12 12M13 1L1 13" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+                </svg>
+              </button>
+            </div>
+            <div className="overflow-y-auto flex-1 p-3">
+              {barDrawer.key === "Urban" ? (
+                <p className="text-xs text-navy/45 text-center py-8 px-4">
+                  Los ingresos de Urban Sports Club llegan por transferencia bancaria — no hay datos individuales por alumno.
+                </p>
+              ) : drawerStudents.length === 0 ? (
+                <p className="text-xs text-navy/45 text-center py-8">Sin pagos registrados en Stripe para este producto y mes.</p>
+              ) : (
+                <div className="space-y-0">
+                  {drawerStudents.map((s, idx) => (
+                    <div key={idx} className="flex items-center gap-3 py-2.5 border-b border-navy/[0.06] last:border-0">
+                      <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-[11px] font-semibold text-primary shrink-0">
+                        {s.name?.charAt(0)?.toUpperCase() ?? "?"}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium text-navy truncate">{s.name ?? "Sin nombre"}</p>
+                        <p className="text-[11px] text-navy/45 truncate">{s.email ?? ""}</p>
+                      </div>
+                      <p className="text-xs font-semibold text-navy shrink-0">{fmtEur(s.amount)}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
