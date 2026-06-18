@@ -287,28 +287,6 @@ export default function HorarioShell({
                 </div>
               )}
 
-              {/* Alert: low occupancy */}
-              {lowCount > 0 && (
-                <div className="flex items-center justify-between gap-3 bg-warning/[0.08] border border-warning/20 rounded-xl px-4 py-3 mb-5">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-warning shrink-0">
-                      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-                      <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-                    </svg>
-                    <span className="text-sm text-warning font-medium leading-snug">
-                      {lowCount} clase{lowCount !== 1 ? "s" : ""} con baja ocupación esta semana
-                    </span>
-                  </div>
-                  {firstLowDay && (
-                    <button
-                      onClick={() => document.getElementById(`mday-${firstLowDay}`)?.scrollIntoView({ behavior: "smooth", block: "start" })}
-                      className="shrink-0 text-sm font-semibold text-warning border border-warning/30 rounded-lg px-3 py-1.5 hover:bg-warning/10 transition-colors"
-                    >
-                      Ver →
-                    </button>
-                  )}
-                </div>
-              )}
 
               {/* Day pills — tap to scroll to that day */}
               <div className="flex gap-2 overflow-x-auto pb-1 mb-3 scrollbar-none">
