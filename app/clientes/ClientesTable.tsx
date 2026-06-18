@@ -79,7 +79,9 @@ export function clientStatus(c: CustomerRow): { status: ClientStatus; days: numb
   const prod = c.lastPackProduct   ?? null;
   if (d != null && prod) {
     if (prod === "Pack Benvinguda") {
-      return d > 15 ? { status: "caducado", days: d - 15 } : { status: "ok", days: null };
+      if (d > 15) return { status: "caducado",  days: d - 15 };
+      if (d > 12) return { status: "porvencer", days: 15 - d };
+      return { status: "ok", days: null };
     }
     if (prod === "Pack 4 clases" || prod === "Pack 8 clases") {
       if (d > 105) return { status: "baja",      days: d - 90 };
@@ -101,7 +103,7 @@ function planBadgeCfg(planType: "sub" | "pack" | "session", lastSubProduct?: str
   if (planType === "pack") {
     if (lastPackProduct === "Pack 4 clases")   return { label: "Pack 4",       cls: "bg-orange-50 text-orange-600" };
     if (lastPackProduct === "Pack 8 clases")   return { label: "Pack 8",       cls: "bg-orange-100 text-orange-700" };
-    if (lastPackProduct === "Pack Benvinguda") return { label: "Pack 2x1",     cls: "bg-pink-50 text-pink-600" };
+    if (lastPackProduct === "Pack Benvinguda") return { label: "Pack Benvinguda", cls: "bg-pink-50 text-pink-600" };
     if (lastPackProduct === "Clase suelta")    return { label: "Clase suelta", cls: "bg-yellow-50 text-yellow-600" };
     return { label: "Pack",                                                cls: "bg-orange-50 text-orange-600" };
   }

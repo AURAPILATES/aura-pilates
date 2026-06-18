@@ -7,6 +7,7 @@ import { loadSales, benvingudaConversion, subscriberFirstPurchase } from "@/lib/
 import FirstPurchaseCard from "./FirstPurchaseCard";
 import {
   loadStripePaymentsCached,
+  loadPaymentsBreakdown,
   stripeByMethod,
   stripeByProduct,
   detectChurn,
@@ -16,6 +17,7 @@ import {
   totalNet as stripeTotalNet,
   toSales,
 } from "@/lib/stripePayments";
+import ClientesPaymentsBreakdown from "@/app/clientes/ClientesPaymentsBreakdown";
 import {
   estimatedMRR,
   activeCustomersInMonth,
@@ -130,11 +132,18 @@ export default async function Finanzas(props: {
   const prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const prevMonth = `${prevMonthDate.getFullYear()}-${pad2(prevMonthDate.getMonth() + 1)}`;
 
-  const [paymentsAll, membershipsAll, productsAll, customersAll] = await Promise.all([
+  const nowD = new Date();
+  const breakdownTo   = from && to ? to   : nowD.toISOString().split("T")[0];
+  const breakdownFrom = from       ? from : (() => {
+    const d = new Date(nowD); d.setDate(d.getDate() - 30); return d.toISOString().split("T")[0];
+  })();
+
+  const [paymentsAll, membershipsAll, productsAll, customersAll, breakdown] = await Promise.all([
     loadStripePaymentsCached(),
     getMemberships(),
     getProducts(),
     getCustomers(),
+    loadPaymentsBreakdown(breakdownFrom, breakdownTo),
   ]);
   const payments = (from || to)
     ? paymentsAll.filter((p) => {
@@ -583,6 +592,17 @@ export default async function Finanzas(props: {
                     </div>
                   </div>
                 )}
+                <ClientesPaymentsBreakdown
+                  succeeded={totalRev}
+                  refunded={breakdown.refunded}
+                  disputed={breakdown.disputed}
+                  failed={breakdown.failed}
+                  refundedIds={breakdown.refundedIds}
+                  disputedIds={breakdown.disputedIds}
+                  failedIds={breakdown.failedIds}
+                  periodLabel={rangeLabel}
+                  excludeSegments={["failed"]}
+                />
                 <p className="text-xs text-navy/45 flex items-center gap-1.5">
                   <BookOpen size={12} className="shrink-0" />
                   Stripe · pagos en tiempo real.

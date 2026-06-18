@@ -1,12 +1,11 @@
 export const dynamic = "force-dynamic";
 
-import { loadStripePaymentsCached, loadPaymentsBreakdown } from "@/lib/stripePayments";
+import { loadStripePaymentsCached } from "@/lib/stripePayments";
 import { loadStripeCustomers } from "@/lib/stripeCustomers";
 import { estimatedMRR } from "@/lib/stripeRecurrence";
 import { loadBusinessEvents } from "@/lib/businessEvents";
 import ClientesShell from "./ClientesShell";
 import ClientesKPIs from "./ClientesKPIs";
-import ClientesPaymentsBreakdown from "./ClientesPaymentsBreakdown";
 import ClientesFilterBar from "./ClientesFilterBar";
 
 function pad2(n: number) { return String(n).padStart(2, "0"); }
@@ -77,6 +76,8 @@ export default async function ClientesPage({
     periodParam === "90" ? "90 días" :
     `${fmtShort(mainFrom)}–${fmtShort(mainTo)}`;
 
+  const compDateRange = `${fmtShort(compFrom)}–${fmtShort(compTo)}`;
+
   // ── Fetch data ────────────────────────────────────────────────────────────────
   const curMonth  = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}`;
   const prevMonth = (() => {
@@ -85,10 +86,9 @@ export default async function ClientesPage({
   })();
 
   const payments = await loadStripePaymentsCached();
-  const [customers, businessEvents, breakdown] = await Promise.all([
+  const [customers, businessEvents] = await Promise.all([
     loadStripeCustomers(payments, curMonth),
     loadBusinessEvents(),
-    loadPaymentsBreakdown(mainFrom, mainTo),
   ]);
 
   const total = customers.length;
@@ -183,25 +183,13 @@ export default async function ClientesPage({
           periodLabel={periodLabel}
           periodFrom={mainFrom}
           periodTo={mainTo}
+          compDateRange={compDateRange}
           grossRevenue={grossRevenue}
           grossRevenueComp={grossRevenueComp}
           newCount={newCountMain}
           newCountComp={newCountComp}
           activeCount={mainActiveSet.size}
           activeCountComp={compActiveSet.size}
-        />
-
-        <ClientesPaymentsBreakdown
-          customers={customersWithChurn}
-          periodLabel={periodLabel}
-          succeeded={grossRevenue}
-          succeededIds={[...mainActiveSet]}
-          refunded={breakdown.refunded}
-          disputed={breakdown.disputed}
-          failed={breakdown.failed}
-          refundedIds={breakdown.refundedIds}
-          disputedIds={breakdown.disputedIds}
-          failedIds={breakdown.failedIds}
         />
 
         <ClientesShell customers={customersWithChurn} payments={payments} events={businessEvents} />

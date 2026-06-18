@@ -10,16 +10,17 @@ type SegmentKey = "succeeded" | "refunded" | "disputed" | "failed";
 
 type Props = PaymentsBreakdown & {
   succeeded: number;
-  succeededIds: string[];
-  customers: CustomerRow[];
+  succeededIds?: string[];
+  customers?: CustomerRow[];
   periodLabel: string;
+  excludeSegments?: SegmentKey[];
 };
 
-const ITEMS: { key: SegmentKey; label: string; bg: string; drawerTitle: string; drawerSub: string }[] = [
-  { key: "succeeded", label: "Efectuado",   bg: "bg-[#635bff]", drawerTitle: "Pagos efectuados",  drawerSub: "Clientes con cobro exitoso en los últimos 30 días" },
-  { key: "refunded",  label: "Reembolsada", bg: "bg-[#0ea5e9]", drawerTitle: "Reembolsos",         drawerSub: "Clientes con reembolso emitido en los últimos 30 días" },
-  { key: "disputed",  label: "Bloqueado",   bg: "bg-[#f97316]", drawerTitle: "Disputas / Bloqueado", drawerSub: "Clientes con disputa o chargeback en los últimos 30 días" },
-  { key: "failed",    label: "Error",       bg: "bg-[#dc2626]", drawerTitle: "Errores de pago",    drawerSub: "Clientes con charge fallido en los últimos 30 días" },
+const ITEMS: { key: SegmentKey; label: string; bg: string; drawerTitle: string }[] = [
+  { key: "succeeded", label: "Efectuado",   bg: "bg-[#635bff]", drawerTitle: "Pagos efectuados"       },
+  { key: "refunded",  label: "Reembolsada", bg: "bg-[#0ea5e9]", drawerTitle: "Reembolsos"              },
+  { key: "disputed",  label: "Bloqueado",   bg: "bg-[#f97316]", drawerTitle: "Disputas / Bloqueado"    },
+  { key: "failed",    label: "Error",       bg: "bg-[#dc2626]", drawerTitle: "Errores de pago"         },
 ];
 
 function fmtDate(d: string | null) {
@@ -29,17 +30,23 @@ function fmtDate(d: string | null) {
 
 export default function ClientesPaymentsBreakdown({
   succeeded, refunded, disputed, failed,
-  succeededIds, refundedIds, disputedIds, failedIds,
-  customers, periodLabel,
+  succeededIds = [], refundedIds, disputedIds, failedIds,
+  customers, periodLabel, excludeSegments = [],
 }: Props) {
   const [open, setOpen] = useState<SegmentKey | null>(null);
 
-  const values  = { succeeded, refunded, disputed, failed };
-  const ids     = { succeeded: succeededIds, refunded: refundedIds, disputed: disputedIds, failed: failedIds };
-  const total   = succeeded + refunded + disputed + failed;
-  const visible = ITEMS.filter((it) => values[it.key] > 0);
+  const values = { succeeded, refunded, disputed, failed };
+  const ids    = { succeeded: succeededIds, refunded: refundedIds, disputed: disputedIds, failed: failedIds };
+  const total  = succeeded + refunded + disputed + failed;
+
+  const visible = ITEMS
+    .filter((it) => !excludeSegments.includes(it.key))
+    .filter((it) => values[it.key] > 0);
+
+  const hasCustomers = !!(customers && customers.length > 0);
 
   function customersForSegment(key: SegmentKey): CustomerRow[] {
+    if (!customers) return [];
     const segIds = new Set(ids[key]);
     return customers.filter((c) => c.stripeIds.some((sid) => segIds.has(sid)));
   }
@@ -60,10 +67,10 @@ export default function ClientesPaymentsBreakdown({
           {total === 0
             ? <div className="flex-1 bg-navy/[0.06]" />
             : visible.map((it) => (
-                <button
+                <div
                   key={it.key}
-                  onClick={() => setOpen(it.key)}
-                  className={`${it.bg} cursor-pointer hover:opacity-80 transition-opacity`}
+                  onClick={hasCustomers ? () => setOpen(it.key) : undefined}
+                  className={`${it.bg} ${hasCustomers ? "cursor-pointer hover:opacity-80" : ""} transition-opacity`}
                   style={{ width: `${(values[it.key] / total) * 100}%` }}
                   title={it.label}
                 />
@@ -73,30 +80,32 @@ export default function ClientesPaymentsBreakdown({
         {/* Desglose */}
         <div className="divide-y divide-navy/[0.05]">
           {visible.map((it) => (
-            <button
+            <div
               key={it.key}
-              onClick={() => setOpen(it.key)}
-              className="w-full flex items-center justify-between py-2.5 hover:bg-navy/[0.02] -mx-1 px-1 rounded-lg transition-colors group"
+              onClick={hasCustomers ? () => setOpen(it.key) : undefined}
+              className={`flex items-center justify-between py-2.5 ${hasCustomers ? "cursor-pointer hover:bg-navy/[0.02] -mx-1 px-1 rounded-lg group" : ""} transition-colors`}
             >
               <div className="flex items-center gap-2.5">
                 <span className={`w-2 h-2 rounded-full ${it.bg} shrink-0`} />
-                <span className="text-sm text-navy/65 group-hover:text-navy transition-colors">{it.label}</span>
+                <span className={`text-sm text-navy/65 ${hasCustomers ? "group-hover:text-navy" : ""} transition-colors`}>{it.label}</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className={`text-sm font-semibold tabular-nums ${it.key === "succeeded" ? "text-navy" : "text-navy/60"}`}>
                   {fmt(values[it.key])}
                 </span>
-                <span className="text-navy/25 text-xs opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+                {hasCustomers && (
+                  <span className="text-navy/25 text-xs opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+                )}
               </div>
-            </button>
+            </div>
           ))}
         </div>
       </div>
 
-      {open && drawerItem && (
+      {open && drawerItem && hasCustomers && (
         <Drawer
           title={drawerItem.drawerTitle}
-          subtitle={drawerItem.drawerSub}
+          subtitle={`${periodLabel}`}
           maxWidth="max-w-[420px]"
           footer={
             <p className="text-xs text-navy/45">{drawerCustomers.length} cliente{drawerCustomers.length !== 1 ? "s" : ""}</p>
