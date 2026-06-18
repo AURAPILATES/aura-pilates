@@ -1,14 +1,13 @@
 "use client";
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { BookOpen } from "react-feather";
 import type { Sale } from "@/lib/sales";
 import type { MonthlyProductRevenue } from "@/lib/productRevenue";
 import type { BusinessEvent, EventCategoria } from "@/lib/businessEvents";
 import type { StripePayment } from "@/lib/stripePayments";
 
-type View        = "procedencia" | "producto";
-type ChartType   = "line" | "bar";
-type CompareMode = "none" | "prev" | "months";
+type View      = "procedencia" | "producto";
+type ChartType = "line" | "bar";
 
 const MONTH_NAMES: Record<string, string> = {
   "01":"Ene","02":"Feb","03":"Mar","04":"Abr",
@@ -97,12 +96,6 @@ function buildSeriesFromProcedencia(monthly: MonthlyProductRevenue[]) {
   return { months, data };
 }
 
-function shiftMonth(ym: string, delta: number): string {
-  const [y, m] = ym.split("-").map(Number);
-  const d = new Date(y, m - 1 + delta, 1);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-}
-
 function makeTrendSummary(
   months: string[],
   data: Map<string, Map<string, number>>,
@@ -188,19 +181,8 @@ function IconBar() {
   );
 }
 
-function RadioDot({ active }: { active: boolean }) {
-  return (
-    <span className={`w-3 h-3 rounded-full border-2 flex items-center justify-center shrink-0 ${
-      active ? "border-navy" : "border-navy/30"
-    }`}>
-      {active && <span className="w-1.5 h-1.5 rounded-full bg-navy" />}
-    </span>
-  );
-}
-
-export default function EvolucionChart({ sales, salesAll, monthly, events, rawPayments }: {
+export default function EvolucionChart({ sales, monthly, events, rawPayments }: {
   sales: Sale[];
-  salesAll?: Sale[];
   monthly?: MonthlyProductRevenue[];
   events?: BusinessEvent[];
   rawPayments?: StripePayment[];
@@ -209,24 +191,9 @@ export default function EvolucionChart({ sales, salesAll, monthly, events, rawPa
   const [chartType,      setChartType]      = useState<ChartType>("line");
   const [hoveredIdx,     setHoveredIdx]     = useState<number | null>(null);
   const [hoveredEventId, setHoveredEventId] = useState<string | null>(null);
-  const [compareMode,    setCompareMode]    = useState<CompareMode>("none");
-  const [compareN,       setCompareN]       = useState(1);
-  const [showPicker,     setShowPicker]     = useState(false);
   const [hoveredLegendKey, setHoveredLegendKey] = useState<string | null>(null);
   const [hiddenKeys,     setHiddenKeys]     = useState<Set<string>>(new Set());
   const [barDrawer,      setBarDrawer]      = useState<{ month: string; key: string } | null>(null);
-  const pickerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!showPicker) return;
-    const handler = (e: MouseEvent) => {
-      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
-        setShowPicker(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [showPicker]);
 
   const getKey = (s: Sale) => s.method;
 
@@ -238,12 +205,6 @@ export default function EvolucionChart({ sales, salesAll, monthly, events, rawPa
     : useMonthly
     ? buildSeriesFromMonthly(monthly!)
     : buildSeries(sales, getKey);
-
-  const dataAll = useProcedencia
-    ? buildSeriesFromProcedencia(monthly!).data
-    : useMonthly
-    ? buildSeriesFromMonthly(monthly!).data
-    : buildSeries(salesAll ?? [], getKey).data;
 
   const rawKeys = useProcedencia
     ? ["Interna", "Urban"]
@@ -258,18 +219,9 @@ export default function EvolucionChart({ sales, salesAll, monthly, events, rawPa
   });
   const keys = view === "producto" ? keysByRevenue.slice(0, 8) : keysByRevenue;
 
-  const compareOffset = compareMode === "none" ? 0
-    : compareMode === "prev" ? months.length
-    : compareN;
-  const isComparing = compareOffset > 0 && (useMonthly || (!!salesAll && salesAll.length > 0));
-
-  const allValues = months.flatMap((m) => {
-    const curr = keys.map((k) => data.get(m)?.get(k) ?? 0);
-    const comp = isComparing
-      ? keys.map((k) => dataAll.get(shiftMonth(m, -compareOffset))?.get(k) ?? 0)
-      : [];
-    return [...curr, ...comp];
-  });
+  const allValues = months.flatMap((m) =>
+    keys.map((k) => data.get(m)?.get(k) ?? 0)
+  );
   const maxValue = Math.max(...allValues, 1);
   const mag      = Math.pow(10, Math.floor(Math.log10(maxValue)));
   const niceTop  = Math.ceil(maxValue / mag) * mag;
@@ -333,20 +285,13 @@ export default function EvolucionChart({ sales, salesAll, monthly, events, rawPa
   }
 
   // Tooltip dimensions
-  const TW       = isComparing ? 218 : 172;
-  const ROW_H    = 16;
-  const DIV_H    = 16;
-  const TH       = 24 + K * ROW_H + (isComparing ? DIV_H + K * ROW_H : 0) + 8;
+  const TW    = 172;
+  const ROW_H = 16;
+  const TH    = 24 + K * ROW_H + 8;
 
   const hoverX = hoveredIdx !== null
     ? (chartType === "line" ? xOf(hoveredIdx) : barCx(hoveredIdx))
     : null;
-
-  const compareLabel = compareMode === "none"
-    ? "Comparar"
-    : compareMode === "prev"
-    ? "vs período anterior"
-    : `vs hace ${compareN}m`;
 
   return (
     <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
@@ -379,79 +324,6 @@ export default function EvolucionChart({ sales, salesAll, monthly, events, rawPa
         </div>
 
         <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
-          {/* Comparison picker */}
-          {salesAll && (
-            <div className="relative" ref={pickerRef}>
-              <button
-                onClick={() => setShowPicker((v) => !v)}
-                className={`flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border transition-colors ${
-                  compareMode !== "none"
-                    ? "border-primary/40 bg-primary/5 text-primary font-medium"
-                    : "border-navy/10 bg-white text-navy/55 hover:text-navy/70"
-                }`}
-              >
-                {compareLabel}
-                <svg width="10" height="10" viewBox="0 0 10 10" fill="none"
-                  className={`transition-transform ${showPicker ? "rotate-180" : ""}`}>
-                  <path d="M2 3.5l3 3 3-3" stroke="currentColor" strokeWidth="1.5"
-                    strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
-
-              {showPicker && (
-                <div className="absolute right-0 top-full mt-1 z-30 bg-white border border-navy/10 rounded-xl shadow-lg p-2 min-w-[210px]">
-                  <button
-                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs transition-colors text-left ${
-                      compareMode === "none" ? "bg-navy/5 text-navy font-medium" : "text-navy/60 hover:bg-navy/[0.03]"
-                    }`}
-                    onClick={() => { setCompareMode("none"); setShowPicker(false); }}
-                  >
-                    <RadioDot active={compareMode === "none"} />
-                    Sin comparativa
-                  </button>
-
-                  <button
-                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs transition-colors text-left ${
-                      compareMode === "prev" ? "bg-navy/5 text-navy font-medium" : "text-navy/60 hover:bg-navy/[0.03]"
-                    }`}
-                    onClick={() => { setCompareMode("prev"); setShowPicker(false); }}
-                  >
-                    <RadioDot active={compareMode === "prev"} />
-                    Período anterior
-                  </button>
-
-                  <div className="my-1 border-t border-navy/5" />
-
-                  <div
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs cursor-pointer transition-colors ${
-                      compareMode === "months" ? "bg-navy/5" : "hover:bg-navy/[0.03]"
-                    }`}
-                    onClick={() => setCompareMode("months")}
-                  >
-                    <RadioDot active={compareMode === "months"} />
-                    <span className={compareMode === "months" ? "text-navy font-medium" : "text-navy/60"}>Hace</span>
-                    <div className="flex items-center gap-1 ml-1" onClick={(e) => e.stopPropagation()}>
-                      <button
-                        className="w-5 h-5 flex items-center justify-center rounded border border-navy/15 text-navy/60 hover:bg-navy/5 disabled:opacity-30"
-                        onClick={(e) => { e.stopPropagation(); setCompareN((n) => Math.max(1, n - 1)); setCompareMode("months"); }}
-                        disabled={compareN <= 1}
-                      >−</button>
-                      <span className={`w-5 text-center font-semibold tabular-nums ${compareMode === "months" ? "text-navy" : "text-navy/60"}`}>
-                        {compareN}
-                      </span>
-                      <button
-                        className="w-5 h-5 flex items-center justify-center rounded border border-navy/15 text-navy/60 hover:bg-navy/5 disabled:opacity-30"
-                        onClick={(e) => { e.stopPropagation(); setCompareN((n) => Math.min(24, n + 1)); setCompareMode("months"); }}
-                        disabled={compareN >= 24}
-                      >+</button>
-                    </div>
-                    <span className={compareMode === "months" ? "text-navy font-medium" : "text-navy/60"}>meses</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
           {/* Procedencia / Producto toggle */}
           <div className="flex border border-navy/10 rounded-lg overflow-hidden text-xs shrink-0">
             {(["procedencia", "producto"] as const).map((v) => (
@@ -497,14 +369,6 @@ export default function EvolucionChart({ sales, salesAll, monthly, events, rawPa
             </span>
           );
         })}
-        {isComparing && (
-          <span className="flex items-center gap-1.5 text-xs text-navy/40 italic ml-1">
-            <svg width="20" height="4" viewBox="0 0 20 4">
-              <line x1="0" y1="2" x2="20" y2="2" stroke="#94A3B8" strokeWidth="1.5" strokeDasharray="4 2" />
-            </svg>
-            {compareMode === "prev" ? `hace ${months.length}m` : `hace ${compareN}m`}
-          </span>
-        )}
       </div>
 
       {sales.length === 0 ? (
@@ -571,22 +435,6 @@ export default function EvolucionChart({ sales, salesAll, monthly, events, rawPa
                 return <path key={`area-${key}`} d={pathD} fill={color} fillOpacity={dimmed ? 0.02 : 0.06} />;
               })}
 
-              {/* Comparison lines (dashed) */}
-              {isComparing && keys.map((key, ki) => {
-                if (hiddenKeys.has(key)) return null;
-                const color  = getColor(key, ki);
-                const dimmed = hoveredLegendKey !== null && hoveredLegendKey !== key;
-                const pts    = months.map((m, i) => {
-                  const cm = shiftMonth(m, -compareOffset);
-                  return `${xOf(i)},${yOf(dataAll.get(cm)?.get(key) ?? 0)}`;
-                }).join(" ");
-                return (
-                  <polyline key={`comp-${key}`} points={pts} fill="none" stroke={color}
-                    strokeWidth="1.5" strokeDasharray="5 3" strokeLinejoin="round"
-                    strokeLinecap="round" opacity={dimmed ? 0.12 : 0.45} />
-                );
-              })}
-
               {/* Lines + dots */}
               {keys.map((key, ki) => {
                 if (hiddenKeys.has(key)) return null;
@@ -636,27 +484,6 @@ export default function EvolucionChart({ sales, salesAll, monthly, events, rawPa
                   })}
                 </g>
               ))}
-              {/* Comparison: horizontal tick at comparison value height */}
-              {isComparing && months.map((m, mi) => (
-                <g key={`comp-${m}`}>
-                  {keys.map((key, ki) => {
-                    const cm = shiftMonth(m, -compareOffset);
-                    const v  = dataAll.get(cm)?.get(key) ?? 0;
-                    if (v === 0) return null;
-                    const color = getColor(key, ki);
-                    const cy   = yOf(v);
-                    const bx   = barX(mi, ki);
-                    const isH  = hoveredIdx === mi;
-                    return (
-                      <line key={key}
-                        x1={bx} x2={bx + barW} y1={cy} y2={cy}
-                        stroke={color} strokeWidth="2" strokeLinecap="round"
-                        opacity={hoveredIdx !== null && !isH ? 0.2 : 0.55}
-                      />
-                    );
-                  })}
-                </g>
-              ))}
             </>
           )}
 
@@ -681,7 +508,6 @@ export default function EvolucionChart({ sales, salesAll, monthly, events, rawPa
           {/* Data tooltip — hidden when hovering an event */}
           {hoveredIdx !== null && hoveredEventId === null && (() => {
             const month   = months[hoveredIdx];
-            const compM   = isComparing ? shiftMonth(month, -compareOffset) : null;
             const sx      = hoverX!;
             const flipL   = sx + TW + 16 > SVG_W - MR;
             const tx      = flipL ? sx - TW - 12 : sx + 12;
@@ -698,67 +524,24 @@ export default function EvolucionChart({ sales, salesAll, monthly, events, rawPa
                   {MONTH_NAMES[mm]} {y}
                 </text>
 
-                {/* Current rows (with delta badge when comparing) */}
                 {keys.map((key, ki) => {
                   const v     = data.get(month)?.get(key) ?? 0;
                   const color = getColor(key, ki);
                   const rowY  = ty + 24 + ki * ROW_H;
-                  const compV = compM ? (dataAll.get(compM)?.get(key) ?? 0) : 0;
-                  const delta = compM && compV > 0 ? ((v - compV) / compV) * 100 : null;
                   return (
                     <g key={key}>
                       <circle cx={tx + 14} cy={rowY + 4} r="3.5" fill={color} />
                       <text x={tx + 24} y={rowY + 8} fontSize="9.5" fill="#64748B">
                         {getLabel(key)}
                       </text>
-                      <text
-                        x={tx + TW - (delta !== null ? 36 : 10)}
-                        y={rowY + 8}
+                      <text x={tx + TW - 10} y={rowY + 8}
                         fontSize="9.5" fontWeight="600" fill="#0F172A" textAnchor="end"
                       >
                         {fmtEur(v)}
                       </text>
-                      {delta !== null && (
-                        <text x={tx + TW - 6} y={rowY + 8} fontSize="8.5" fontWeight="600"
-                          fill={delta >= 0 ? "#22c55e" : "#ef4444"} textAnchor="end">
-                          {delta >= 0 ? "▲" : "▼"}{Math.abs(Math.round(delta))}%
-                        </text>
-                      )}
                     </g>
                   );
                 })}
-
-                {/* Comparison section */}
-                {compM && (() => {
-                  const [cy2, cmm] = compM.split("-");
-                  const divY = ty + 24 + K * ROW_H + 2;
-                  return (
-                    <>
-                      <line x1={tx + 8} y1={divY} x2={tx + TW - 8} y2={divY}
-                        stroke="#E2E8F0" strokeWidth="1" />
-                      <text x={tx + 10} y={divY + 11} fontSize="8.5" fill="#94A3B8">
-                        vs {MONTH_NAMES[cmm]} {cy2}
-                      </text>
-                      {keys.map((key, ki) => {
-                        const v     = dataAll.get(compM)?.get(key) ?? 0;
-                        const color = getColor(key, ki);
-                        const rowY  = divY + 14 + ki * ROW_H;
-                        return (
-                          <g key={`comp-tip-${key}`}>
-                            <circle cx={tx + 14} cy={rowY + 4} r="3" fill={color} opacity="0.4" />
-                            <text x={tx + 24} y={rowY + 8} fontSize="9.5" fill="#94A3B8">
-                              {getLabel(key)}
-                            </text>
-                            <text x={tx + TW - 10} y={rowY + 8} fontSize="9.5"
-                              fill="#94A3B8" textAnchor="end">
-                              {fmtEur(v)}
-                            </text>
-                          </g>
-                        );
-                      })}
-                    </>
-                  );
-                })()}
               </g>
             );
           })()}
