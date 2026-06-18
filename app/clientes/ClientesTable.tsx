@@ -65,6 +65,25 @@ function nextPaymentInfo(c: CustomerRow): { date: string; overdue: boolean; days
   return { date: nextDate, overdue: daysLate > 3, daysLate: Math.max(0, daysLate) };
 }
 
+function packExpiryDate(c: CustomerRow): string | null {
+  const d = c.daysSinceLastPack;
+  const prod = c.lastPackProduct;
+  if (d == null || !prod) return null;
+  const duration = prod === "Pack Benvinguda" ? 15 : (prod === "Pack 4 clases" || prod === "Pack 8 clases") ? 90 : null;
+  if (!duration) return null;
+  const today = new Date();
+  const expiry = new Date(today);
+  expiry.setDate(today.getDate() - d + duration);
+  return expiry.toISOString().split("T")[0];
+}
+
+function paymentExpiry(p: { category: string; inferredProduct: string; date: string }): string | null {
+  if (p.category === "Suscripción") return addDays(p.date, 30);
+  if (p.inferredProduct === "Pack Benvinguda") return addDays(p.date, 15);
+  if (p.inferredProduct === "Pack 4 clases" || p.inferredProduct === "Pack 8 clases") return addDays(p.date, 90);
+  return null;
+}
+
 export type ClientStatus = "baja" | "sinpagar" | "caducado" | "porvencer" | "ok";
 
 export function clientStatus(c: CustomerRow): { status: ClientStatus; days: number | null } {
@@ -153,6 +172,15 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
     () => new Set(payments.filter((p) => p.inferredType === "coupon" && p.customerId).map((p) => p.customerId!)),
     [payments],
   );
+
+  const lastSubProductMap = useMemo(() => {
+    const map = new Map<string, string>();
+    const subs = payments.filter((p) => p.category === "Suscripción" && p.customerId).sort((a, b) => b.date.localeCompare(a.date));
+    for (const p of subs) {
+      if (!map.has(p.customerId!)) map.set(p.customerId!, p.inferredProduct);
+    }
+    return map;
+  }, [payments]);
 
   const hasDiscount = (c: CustomerRow) => !!c.discount || c.stripeIds.some((sid) => couponStripeIds.has(sid));
 
@@ -345,7 +373,7 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
                 <ThSort col="firstPaymentDate" label="Fecha alta"    className="text-right hidden sm:table-cell" />
                 <ThSort col="lastPaymentDate"  label="Último pago"   className="text-right hidden sm:table-cell" />
                 <th className="text-right px-5 py-3 text-[11px] font-semibold text-navy/50 uppercase tracking-wider hidden sm:table-cell">
-                  Próximo pago
+                  Próx. / Vence
                 </th>
                 <th className="text-center px-5 py-3 text-[11px] font-semibold text-navy/50 uppercase tracking-wider">
                   Estado
@@ -366,6 +394,11 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
                   const crowns  = ["👑", "🥈", "🥉"];
 
                   const { status, days } = clientStatus(c);
+                  const subProduct = c.isRecurring
+                    ? (c.stripeIds.map((sid) => lastSubProductMap.get(sid)).find((v) => v != null) ?? null)
+                    : null;
+                  const packExpiry = !c.isRecurring ? packExpiryDate(c) : null;
+                  const packExpired = packExpiry != null && packExpiry < new Date().toISOString().split("T")[0];
                   return (
                     <tr
                       key={c.id}
@@ -390,11 +423,21 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
                       </td>
                       <td className="px-5 py-3">
                         {c.isRecurring ? (
-                          <span className="text-xs bg-primary/[0.08] text-primary px-2 py-0.5 rounded-full font-medium">
-                            Recurrente
-                          </span>
+                          <div>
+                            <span className="text-xs bg-primary/[0.08] text-primary px-2 py-0.5 rounded-full font-medium">
+                              Recurrente
+                            </span>
+                            {subProduct && subProduct !== "Otro" && (
+                              <p className="text-[11px] text-navy/40 mt-1">{subProduct}</p>
+                            )}
+                          </div>
                         ) : (
-                          <span className="text-xs text-navy/45">Ocasional</span>
+                          <div>
+                            <span className="text-xs text-navy/45">Ocasional</span>
+                            {c.lastPackProduct && (
+                              <p className="text-[11px] text-navy/40 mt-1">{c.lastPackProduct}</p>
+                            )}
+                          </div>
                         )}
                       </td>
                       <td className="px-5 py-3 text-right font-semibold text-navy tabular-nums">{fmt(c.totalSpent)}</td>
@@ -408,8 +451,15 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
                       <td className="px-5 py-3 text-right text-xs hidden sm:table-cell">
                         {(() => {
                           const nxt = nextPaymentInfo(c);
-                          if (!nxt) return <span className="text-navy/30">—</span>;
-                          return <span className="text-navy/55">{fmtDate(nxt.date)}</span>;
+                          if (nxt) return <span className="text-navy/55">{fmtDate(nxt.date)}</span>;
+                          if (packExpiry) {
+                            return (
+                              <span className={packExpired ? "text-danger/60" : "text-navy/55"}>
+                                {packExpired ? "Vencido" : fmtDate(packExpiry)}
+                              </span>
+                            );
+                          }
+                          return <span className="text-navy/30">—</span>;
                         })()}
                       </td>
                       <td className="px-5 py-3 text-center">
@@ -613,26 +663,39 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
             {selectedPayments.length === 0 && (
               <p className="px-6 py-8 text-sm text-center text-navy/40">Sin pagos registrados</p>
             )}
-            {selectedPayments.map((p) => (
-              <div key={p.id} className="px-6 py-3 flex items-center justify-between gap-4">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <p className="text-sm font-medium text-navy truncate">
-                      {p.inferredProduct !== "Otro" ? p.inferredProduct : (p.description ?? p.category)}
-                    </p>
-                    {p.inferredType === "coupon" && (
-                      <span className="shrink-0 text-[10px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200/80 px-1.5 py-0.5 rounded-full">
-                        cupón
-                      </span>
-                    )}
+            {selectedPayments.map((p) => {
+              const expiry = paymentExpiry(p);
+              const today = new Date().toISOString().split("T")[0];
+              const isExpired = expiry != null && expiry < today;
+              const isCurrent = expiry != null && expiry >= today;
+              return (
+                <div key={p.id} className="px-6 py-3 flex items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <p className="text-sm font-medium text-navy truncate">
+                        {p.inferredProduct !== "Otro" ? p.inferredProduct : (p.description ?? p.category)}
+                      </p>
+                      {p.inferredType === "coupon" && (
+                        <span className="shrink-0 text-[10px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200/80 px-1.5 py-0.5 rounded-full">
+                          cupón
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <p className="text-xs text-navy/45">{fmtDate(p.date)}</p>
+                      {expiry && (
+                        <p className={`text-[10px] ${isCurrent ? "text-success/70" : "text-navy/30"}`}>
+                          · hasta {fmtDate(expiry)}{isExpired ? " (vencido)" : ""}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                  <p className="text-xs text-navy/45 mt-0.5">{fmtDate(p.date)}</p>
+                  <span className="shrink-0 text-sm font-semibold text-navy tabular-nums">
+                    {fmt(p.amount)}
+                  </span>
                 </div>
-                <span className="shrink-0 text-sm font-semibold text-navy tabular-nums">
-                  {fmt(p.amount)}
-                </span>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
         </Drawer>
