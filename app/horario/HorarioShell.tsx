@@ -230,7 +230,7 @@ export default function HorarioShell({
         <div className="sm:hidden">
           {tab === "analisis" ? (
             <>
-              <ClientesFilterBar />
+              <ClientesFilterBar defaultPeriod="" />
               <HorarioReporting data={reportingData} />
             </>
           ) : (
@@ -402,7 +402,7 @@ export default function HorarioShell({
 
           {tab === "analisis" && (
             <>
-              <ClientesFilterBar />
+              <ClientesFilterBar defaultPeriod="" />
               <HorarioReporting data={reportingData} />
             </>
           )}

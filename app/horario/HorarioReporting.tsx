@@ -16,11 +16,11 @@ export type ReportingData = {
   compare: MomenceEvent[];
   upcoming7: MomenceEvent[];
   periodLabel: string;
+  periodFrom: string;
+  periodTo: string;
   topProducts: Array<{ item: string; revenue: number; count: number }>;
   uscByHour: Array<{ hour: number; label: string; count: number }>;
   uscByWeekday: Array<{ weekday: number; label: string; count: number }>;
-  activeByMembership: Array<{ name: string; count: number; type: "subscription" | "package-events" }>;
-  totalCustomers: number;
 };
 
 function TrendBadge({ value }: { value: number | null }) {
@@ -56,8 +56,14 @@ function OccBar({ value }: { value: number }) {
 
 const WEEKDAY_SHORT = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
 
+function fmtD(d: string) {
+  const [y, m, day] = d.split("-");
+  return `${day}/${m}/${y.slice(2)}`;
+}
+
 export default function HorarioReporting({ data }: { data: ReportingData }) {
-  const { main, compare, upcoming7, periodLabel, topProducts, uscByHour, uscByWeekday, activeByMembership, totalCustomers } = data;
+  const { main, compare, upcoming7, periodLabel, periodFrom, periodTo, topProducts, uscByHour, uscByWeekday } = data;
+  const dateRange = `${fmtD(periodFrom)} – ${fmtD(periodTo)}`;
 
   const occ     = occupancyRate(main);
   const occPrev = occupancyRate(compare);
@@ -139,6 +145,7 @@ export default function HorarioReporting({ data }: { data: ReportingData }) {
                 <p className="text-xs text-navy/55 uppercase tracking-wider leading-tight">{k.label}</p>
                 <TrendBadge value={k.trendVal ?? null} />
               </div>
+              <p className="text-[10px] text-navy/35 mb-1">{dateRange}</p>
               <p className={`text-2xl font-semibold ${k.valueColor ?? "text-navy"}`}>{k.value}</p>
               <p className="text-xs text-navy/55 mt-1">{k.sub}</p>
             </Card>
@@ -146,30 +153,10 @@ export default function HorarioReporting({ data }: { data: ReportingData }) {
         </div>
       </section>
 
-      {/* ── Oportunidades ── */}
-      <section id="q3">
-        <QuestionHeader num={3} question="¿Qué está funcionando mejor?" />
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <Card>
-            <CardTitle>Clases más demandadas</CardTitle>
-            {topClasses.length === 0 ? (
-              <p className="text-sm text-navy/45">Sin datos suficientes</p>
-            ) : (
-              <div className="space-y-3">
-                {topClasses.map((c) => (
-                  <div key={c.title}>
-                    <div className="flex items-center justify-between mb-1">
-                      <p className="text-xs font-medium text-navy truncate max-w-[160px]">{c.title}</p>
-                      <span className="text-xs text-success font-semibold tabular-nums">{pct(c.avgOcc)}</span>
-                    </div>
-                    <OccBar value={c.avgOcc} />
-                    <p className="text-[11px] text-navy/50 mt-0.5">{c.count} sesiones</p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </Card>
-
+      {/* ── Qué está funcionando mejor ── */}
+      <section id="q2">
+        <QuestionHeader num={2} question="¿Qué está funcionando mejor?" />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Card>
             <CardTitle>Mejores franjas horarias</CardTitle>
             {topHours.length === 0 ? (
@@ -217,8 +204,8 @@ export default function HorarioReporting({ data }: { data: ReportingData }) {
       </section>
 
       {/* ── Análisis de ocupación ── */}
-      <section id="q4">
-        <QuestionHeader num={4} question="¿Cómo se reparte la ocupación?" />
+      <section id="q3">
+        <QuestionHeader num={3} question="¿Cómo se reparte la ocupación?" />
         <div className="space-y-4">
 
           {/* Mapa de calor */}
@@ -268,8 +255,28 @@ export default function HorarioReporting({ data }: { data: ReportingData }) {
             )}
           </Card>
 
-          {/* Profesora + Día de la semana */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {/* Por clase + Por profesora + Por día de la semana */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <Card>
+              <CardTitle>Por clase</CardTitle>
+              {topClasses.length === 0 ? (
+                <p className="text-sm text-navy/45">Sin datos suficientes</p>
+              ) : (
+                <div className="space-y-3">
+                  {topClasses.map((c) => (
+                    <div key={c.title}>
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="text-xs font-medium text-navy truncate max-w-[160px]">{c.title}</p>
+                        <span className="text-xs text-success font-semibold tabular-nums">{pct(c.avgOcc)}</span>
+                      </div>
+                      <OccBar value={c.avgOcc} />
+                      <p className="text-[11px] text-navy/50 mt-0.5">{c.count} sesiones</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+
             <Card>
               <CardTitle>Por profesora</CardTitle>
               <div className="space-y-3">
@@ -376,47 +383,6 @@ export default function HorarioReporting({ data }: { data: ReportingData }) {
         </div>
       </section>
 
-      {/* ── Base activa por membresía ── */}
-      {activeByMembership.length > 0 && (
-        <section id="q5" className="space-y-4">
-          <QuestionHeader num={5} question="¿Cuántos alumnos activos hay por tipo de membresía?" />
-          <Card>
-            <CardTitle>Membresías vigentes ahora mismo</CardTitle>
-            <div className="flex items-baseline gap-2 mb-4">
-              <span className="text-3xl font-bold text-navy tabular-nums">
-                {activeByMembership.reduce((s, m) => s + m.count, 0)}
-              </span>
-              <span className="text-sm text-navy/45">con membresía activa</span>
-              <span className="text-sm text-navy/30">·</span>
-              <span className="text-sm text-navy/45">{totalCustomers} alumnos en total en Momence</span>
-            </div>
-            <div className="space-y-2.5">
-              {activeByMembership.map(({ name, count, type }) => {
-                const max = activeByMembership[0].count;
-                return (
-                  <div key={name} className="flex items-center gap-3">
-                    <span className="text-sm text-navy w-40 shrink-0 truncate">{name}</span>
-                    <div className="flex-1 h-1.5 bg-navy/[0.06] rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full ${type === "subscription" ? "bg-primary" : "bg-warning"}`}
-                        style={{ width: `${Math.round((count / max) * 100)}%` }}
-                      />
-                    </div>
-                    <span className="text-sm font-semibold text-navy tabular-nums w-8 text-right shrink-0">{count}</span>
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium shrink-0 ${type === "subscription" ? "bg-primary/10 text-primary" : "bg-warning/15 text-warning"}`}>
-                      {type === "subscription" ? "suscrip." : "pack"}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-            <p className="text-xs text-navy/35 mt-4">
-              {activeByMembership.filter((m) => m.type === "subscription").reduce((s, m) => s + m.count, 0)} suscripciones ·{" "}
-              {activeByMembership.filter((m) => m.type === "package-events").reduce((s, m) => s + m.count, 0)} packs activos
-            </p>
-          </Card>
-        </section>
-      )}
 
     </div>
   );

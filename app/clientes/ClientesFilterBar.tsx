@@ -6,12 +6,12 @@ import { Suspense } from "react";
 const PRESETS = ["7", "30", "90"] as const;
 type Preset = (typeof PRESETS)[number];
 
-function FilterBarInner() {
+function FilterBarInner({ defaultPeriod = "30" }: { defaultPeriod?: string }) {
   const router = useRouter();
   const pathname = usePathname();
   const sp = useSearchParams();
 
-  const period = sp.get("period") ?? "30";
+  const period = sp.get("period") ?? defaultPeriod;
   const compareWith = sp.get("compareWith") ?? "previous";
   const customFrom = sp.get("from") ?? "";
   const customTo = sp.get("to") ?? "";
@@ -122,10 +122,10 @@ function FilterBarInner() {
   );
 }
 
-export default function ClientesFilterBar() {
+export default function ClientesFilterBar({ defaultPeriod }: { defaultPeriod?: string }) {
   return (
     <Suspense fallback={<div className="h-10 mb-4" />}>
-      <FilterBarInner />
+      <FilterBarInner defaultPeriod={defaultPeriod} />
     </Suspense>
   );
 }
