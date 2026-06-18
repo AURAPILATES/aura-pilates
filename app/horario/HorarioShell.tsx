@@ -267,7 +267,7 @@ export default function HorarioShell({
                   <div className="border-t border-navy/[0.06] grid grid-cols-3 divide-x divide-navy/[0.06]">
                     <div className="px-4 py-3">
                       <p className="text-[9px] text-navy/40 uppercase tracking-widest font-semibold">Vendidas</p>
-                      <p className="text-base font-bold text-navy mt-0.5 tabular-nums">{weekSoldSpots}/{weekTotalSpots}</p>
+                      <p className="text-base font-bold text-navy mt-0.5 tabular-nums">{weekSoldSpots}</p>
                     </div>
                     <div className="px-4 py-3">
                       <p className="text-[9px] text-navy/40 uppercase tracking-widest font-semibold">Libres</p>
@@ -415,32 +415,13 @@ export default function HorarioShell({
                       </div>
                     </div>
                   </div>
-                  <DesktopStatCard label="VENDIDAS" value={`${weekSoldSpots}/${weekTotalSpots}`} />
+                  <DesktopStatCard label="VENDIDAS" value={String(weekSoldSpots)} />
                   <DesktopStatCard label="LIBRES"   value={String(weekFreeSpots)} />
                   <DesktopStatCard label="POR LLENAR" value={String(lowCount)} valueClass={lowCount > 0 ? "text-danger" : "text-navy/30"} />
                 </div>
               )}
 
               {/* Alert banner */}
-              {lowCount > 0 && (
-                <div className="flex items-center justify-between gap-4 bg-warning/[0.07] border border-warning/20 rounded-xl px-5 py-3.5 mb-5">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-warning shrink-0">
-                      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-                      <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-                    </svg>
-                    <span className="text-sm text-warning font-medium">
-                      {lowCount} clase{lowCount !== 1 ? "s" : ""} con baja ocupación esta semana — considera enviar un recordatorio
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => setOccFilter("low")}
-                    className="shrink-0 text-sm font-semibold text-warning border border-warning/30 rounded-lg px-4 py-1.5 hover:bg-warning/10 transition-colors whitespace-nowrap"
-                  >
-                    Ver clases →
-                  </button>
-                </div>
-              )}
 
               {/* Filters */}
               <div className="flex flex-wrap items-center gap-3 mb-6">
