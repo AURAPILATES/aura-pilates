@@ -122,10 +122,15 @@ export default async function ClientesPage() {
         />
 
         <ClientesPaymentsBreakdown
+          customers={customersWithChurn}
           succeeded={grossRevenue30d}
+          succeededIds={[...activeSet30d]}
           refunded={breakdown.refunded}
           disputed={breakdown.disputed}
           failed={breakdown.failed}
+          refundedIds={breakdown.refundedIds}
+          disputedIds={breakdown.disputedIds}
+          failedIds={breakdown.failedIds}
         />
 
         <ClientesShell customers={customersWithChurn} payments={payments} events={businessEvents} />

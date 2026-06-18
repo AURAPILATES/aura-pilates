@@ -253,31 +253,71 @@ export type PaymentsBreakdown = {
   refunded: number;
   disputed: number;
   failed: number;
+  refundedIds: string[];   // stripeIds de clientes con reembolso
+  disputedIds: string[];   // stripeIds de clientes con disputa
+  failedIds:   string[];   // stripeIds de clientes con charge fallido
 };
 
 export const loadPaymentsBreakdown30d = unstable_cache(
   async (): Promise<PaymentsBreakdown> => {
     const cutoff = Math.floor(Date.now() / 1000) - 30 * 86400;
 
-    // Reembolsos emitidos en el período
     let refunded = 0;
+    const refundedSet = new Set<string>();
     for await (const r of stripe.refunds.list({ limit: 100, created: { gte: cutoff } })) {
-      if (r.status === "succeeded") refunded += r.amount / 100;
+      if (r.status !== "succeeded") continue;
+      refunded += r.amount / 100;
+      const cid = typeof (r as { charge?: unknown }).charge === "string"
+        ? (r as { charge: string }).charge
+        : null;
+      // charge ID, not customer ID — we match via stripeIds later
+      if (cid) refundedSet.add(cid);
     }
 
-    // Disputas abiertas en el período (chargebacks)
     let disputed = 0;
+    const disputedSet = new Set<string>();
     for await (const d of stripe.disputes.list({ limit: 100, created: { gte: cutoff } })) {
       disputed += d.amount / 100;
+      const cid = typeof d.charge === "string" ? d.charge : (d.charge as { id: string } | null)?.id ?? null;
+      if (cid) disputedSet.add(cid);
     }
 
-    // Charges fallidos — misma fuente que Stripe usa en su dashboard
     let failed = 0;
+    const failedSet = new Set<string>();
     for await (const ch of stripe.charges.list({ limit: 100, created: { gte: cutoff } })) {
-      if (ch.status === "failed") failed += toEuros(ch.amount, ch.currency);
+      if (ch.status !== "failed") continue;
+      failed += toEuros(ch.amount, ch.currency);
+      const cid = typeof ch.customer === "string" ? ch.customer : (ch.customer as { id: string } | null)?.id ?? null;
+      if (cid) failedSet.add(cid);
     }
 
-    return { refunded, disputed, failed };
+    // Resolver charge IDs a customer IDs para reembolsos y disputas
+    // Necesitamos cargar los charges para obtener el customer
+    const chargeIds = [...refundedSet, ...disputedSet];
+    const chargeToCustomer = new Map<string, string>();
+    if (chargeIds.length > 0) {
+      await Promise.all(
+        chargeIds.map(async (chId) => {
+          try {
+            const ch = await stripe.charges.retrieve(chId);
+            const cid = typeof ch.customer === "string" ? ch.customer : null;
+            if (cid) chargeToCustomer.set(chId, cid);
+          } catch {
+            // charge no encontrado, ignorar
+          }
+        }),
+      );
+    }
+
+    const refundedCustomerIds = [...new Set([...refundedSet].map((id) => chargeToCustomer.get(id)).filter(Boolean) as string[])];
+    const disputedCustomerIds = [...new Set([...disputedSet].map((id) => chargeToCustomer.get(id)).filter(Boolean) as string[])];
+
+    return {
+      refunded, disputed, failed,
+      refundedIds: refundedCustomerIds,
+      disputedIds: disputedCustomerIds,
+      failedIds:   [...failedSet],
+    };
   },
   ["stripe-payments-breakdown-30d"],
   { revalidate: 600, tags: ["stripe"] },
