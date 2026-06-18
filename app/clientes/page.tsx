@@ -27,16 +27,42 @@ export default async function ClientesPage() {
   const activeIds  = activeCustomersLast30Days(payments);
   const newIds     = newCustomersLast30Days(payments);
 
+  // Métricas rolling 30d vs período anterior (días 31-60)
+  const day30ago = new Date(now.getTime() - 30 * 86400000).toISOString().split("T")[0];
+  const day60ago = new Date(now.getTime() - 60 * 86400000).toISOString().split("T")[0];
+
+  const p30d     = payments.filter((p) => p.date >= day30ago);
+  const pPrev30d = payments.filter((p) => p.date >= day60ago && p.date < day30ago);
+
+  const grossRevenue30d     = p30d.reduce((s, p) => s + p.amount, 0);
+  const grossRevenuePrev30d = pPrev30d.reduce((s, p) => s + p.amount, 0);
+
+  const activeSet30d     = new Set(p30d.filter((p) => p.customerId).map((p) => p.customerId!));
+  const activeSetPrev30d = new Set(pPrev30d.filter((p) => p.customerId).map((p) => p.customerId!));
+
+  // Clientes nuevos: primer pago dentro del período
+  const firstPaymentMap = new Map<string, string>(); // stripeId → fecha primer pago
+  for (const p of payments) {
+    if (!p.customerId) continue;
+    const ex = firstPaymentMap.get(p.customerId);
+    if (!ex || p.date < ex) firstPaymentMap.set(p.customerId, p.date);
+  }
+  let newCount30d = 0, newCountPrev30d = 0;
+  for (const firstDate of firstPaymentMap.values()) {
+    if (firstDate >= day30ago) newCount30d++;
+    else if (firstDate >= day60ago) newCountPrev30d++;
+  }
+
   // Último pago por tipo — suscripciones y packs tienen ventanas de caducidad distintas
   const lastSubById  = new Map<string, { date: string; product: string }>();
   const lastPackById = new Map<string, { date: string; product: string }>();
 
   for (const p of payments) {
     if (!p.customerId) continue;
-    if (p.category === "Suscripción") {
+    if (p.inferredType === "subscription") {
       const ex = lastSubById.get(p.customerId);
       if (!ex || p.date > ex.date) lastSubById.set(p.customerId, { date: p.date, product: p.inferredProduct });
-    } else if (p.inferredProduct !== "Clase suelta" && p.inferredProduct !== "Con cupón") {
+    } else if (p.inferredType === "pack" && p.inferredProduct !== "Clase suelta") {
       const ex = lastPackById.get(p.customerId);
       if (!ex || p.date > ex.date) lastPackById.set(p.customerId, { date: p.date, product: p.inferredProduct });
     }
@@ -85,6 +111,12 @@ export default async function ClientesPage() {
           mrr={mrr}
           prevMonthLabel={prevMonth.slice(5)}
           curMonthLabel={curMonth.slice(5)}
+          grossRevenue30d={grossRevenue30d}
+          grossRevenuePrev30d={grossRevenuePrev30d}
+          newCount30d={newCount30d}
+          newCountPrev30d={newCountPrev30d}
+          activeCount30d={activeSet30d.size}
+          activeCountPrev30d={activeSetPrev30d.size}
         />
 
         <ClientesShell customers={customersWithChurn} payments={payments} events={businessEvents} />
