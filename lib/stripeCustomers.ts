@@ -23,11 +23,27 @@ export type StripeCustomer = {
   isRecurring: boolean;
   discount: StripeDiscount | null;
   delinquent: boolean;
+  hasPaymentError: boolean; // delinquent OR invoice intentada y no cobrada
 };
 
 // ── Cached raw customer list from Stripe ──────────────────────────────────────
 
 type RawCustomer = Pick<Stripe.Customer, "id" | "name" | "email" | "created" | "discount" | "delinquent">;
+
+// IDs de clientes con facturas abiertas que Stripe ya intentó cobrar y no pudo
+const fetchFailedInvoiceCustomerIds = unstable_cache(
+  async (): Promise<string[]> => {
+    const ids: string[] = [];
+    for await (const inv of stripe.invoices.list({ status: "open", limit: 100 })) {
+      if (!inv.attempted) continue;
+      const cid = typeof inv.customer === "string" ? inv.customer : (inv.customer as Stripe.Customer | null)?.id ?? null;
+      if (cid) ids.push(cid);
+    }
+    return [...new Set(ids)];
+  },
+  ["stripe-failed-invoices"],
+  { revalidate: 600, tags: ["stripe"] },
+);
 
 const fetchStripeCustomerList = unstable_cache(
   async (): Promise<RawCustomer[]> => {
@@ -69,9 +85,13 @@ export async function loadStripeCustomers(
     stats: { total: number; count: number; last: string; first: string };
     isRecurring: boolean;
     delinquent: boolean;
+    hasPaymentError: boolean;
   };
 
-  const stripeCustomers = await fetchStripeCustomerList();
+  const [stripeCustomers, failedInvoiceIds] = await Promise.all([
+    fetchStripeCustomerList(),
+    fetchFailedInvoiceCustomerIds().then((ids) => new Set(ids)),
+  ]);
   const raw_customers: RawEntry[] = [];
 
   for (const c of stripeCustomers) {
@@ -93,6 +113,7 @@ export async function loadStripeCustomers(
       stats,
       isRecurring: recurring.has(c.id),
       delinquent: c.delinquent ?? false,
+      hasPaymentError: (c.delinquent ?? false) || failedInvoiceIds.has(c.id),
     });
   }
 
@@ -134,6 +155,7 @@ export async function loadStripeCustomers(
       isRecurring:     group.some((r) => r.isRecurring || recurring.has(r.id)),
       discount:        primary.discount,
       delinquent:      group.some((r) => r.delinquent),
+      hasPaymentError: group.some((r) => r.hasPaymentError),
     };
   }
 

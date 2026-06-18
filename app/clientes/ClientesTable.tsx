@@ -185,7 +185,7 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
   const hasDiscount = (c: CustomerRow) => !!c.discount || c.stripeIds.some((sid) => couponStripeIds.has(sid));
 
   const discountCount = customers.filter(hasDiscount).length;
-  const errorCount    = customers.filter((c) => c.delinquent).length;
+  const errorCount    = customers.filter((c) => c.hasPaymentError).length;
   const churnCount    = customers.filter((c) => clientStatus(c).status !== "ok").length;
 
   const activeMonthIds = useMemo(() => {
@@ -203,7 +203,7 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
         if (filter === "recurring"   && !c.isRecurring)   return false;
         if (filter === "occasional"  &&  c.isRecurring)   return false;
         if (filter === "discount"    && !hasDiscount(c))   return false;
-        if (filter === "error"       && !c.delinquent)    return false;
+        if (filter === "error"       && !c.hasPaymentError) return false;
         if (filter === "churn"       && clientStatus(c).status === "ok") return false;
         if (!q) return true;
         return (

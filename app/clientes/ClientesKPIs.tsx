@@ -68,7 +68,7 @@ export default function ClientesKPIs({ customers, mrr, prevMonthLabel, curMonthL
   const recurringList   = customers.filter((c) => c.isRecurring);
   const newList         = customers.filter((c) => c.isNew);
   const churnList       = customers.filter((c) => clientStatus(c).status !== "ok");
-  const delinquentList  = customers.filter((c) => c.delinquent);
+  const delinquentList  = customers.filter((c) => c.hasPaymentError);
 
   const drawerConfig: Record<NonNullable<DrawerKey>, { title: string; subtitle: string; customers: CustomerRow[] }> = {
     all: {
