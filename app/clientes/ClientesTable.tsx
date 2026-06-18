@@ -208,8 +208,10 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
     const rows = [
       ["Nombre", "Email", "Tipo", "Plan", "Total gastado (€)", "Pagos", "Fecha alta", "Último pago", "Estado", "Descuento"],
       ...filtered.map((c) => {
-        const isPack = !c.isRecurring && c.lastPackProduct && c.lastPackProduct !== "Otro";
-        const tipo = c.isRecurring ? "Suscripción" : isPack ? "Pack" : "Por sesión";
+        const dSub  = c.daysSinceLastSub  ?? Infinity;
+        const dPack = c.daysSinceLastPack ?? Infinity;
+        const ptCsv = dSub <= dPack && dSub < Infinity ? "sub" : dPack < Infinity ? "pack" : "session";
+        const tipo  = ptCsv === "sub" ? "Suscripción" : ptCsv === "pack" ? "Pack" : "Por sesión";
         const plan = c.isRecurring ? (c.lastSubProduct ?? "") : (c.lastPackProduct ?? "");
         const { status } = clientStatus(c);
         return [
@@ -355,6 +357,11 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
                   const crowns  = ["👑", "🥈", "🥉"];
 
                   const { status, days } = clientStatus(c);
+                  const dSub  = c.daysSinceLastSub  ?? Infinity;
+                  const dPack = c.daysSinceLastPack ?? Infinity;
+                  const planType = dSub <= dPack && dSub < Infinity ? "sub"
+                                 : dPack < Infinity                  ? "pack"
+                                 : "session";
                   return (
                     <tr
                       key={c.id}
@@ -378,14 +385,14 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
                         </div>
                       </td>
                       <td className="px-5 py-3">
-                        {c.isRecurring ? (
+                        {planType === "sub" ? (
                           <div>
                             <span className="text-xs bg-primary/[0.08] text-primary px-2 py-0.5 rounded-full font-medium">Suscripción</span>
                             {c.lastSubProduct && c.lastSubProduct !== "Con cupón" && (
                               <p className="text-[11px] text-navy/40 mt-1">{c.lastSubProduct}</p>
                             )}
                           </div>
-                        ) : c.lastPackProduct ? (
+                        ) : planType === "pack" ? (
                           <div>
                             <span className="text-xs bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full font-medium">Pack</span>
                             <p className="text-[11px] text-navy/40 mt-1">
@@ -463,13 +470,16 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
                 </div>
               </div>
               <div className="flex items-center gap-2 mt-3 flex-wrap">
-                {selected.isRecurring ? (
-                  <span className="text-xs bg-primary/[0.08] text-primary px-2.5 py-1 rounded-full font-medium">Suscripción</span>
-                ) : selected.lastPackProduct ? (
-                  <span className="text-xs bg-indigo-50 text-indigo-600 px-2.5 py-1 rounded-full font-medium">Pack</span>
-                ) : (
-                  <span className="text-xs bg-navy/[0.06] text-navy/55 px-2.5 py-1 rounded-full font-medium">Por sesión</span>
-                )}
+                {(() => {
+                  const dSub  = selected.daysSinceLastSub  ?? Infinity;
+                  const dPack = selected.daysSinceLastPack ?? Infinity;
+                  const pt = dSub <= dPack && dSub < Infinity ? "sub"
+                           : dPack < Infinity                  ? "pack"
+                           : "session";
+                  if (pt === "sub")  return <span className="text-xs bg-primary/[0.08] text-primary px-2.5 py-1 rounded-full font-medium">Suscripción</span>;
+                  if (pt === "pack") return <span className="text-xs bg-indigo-50 text-indigo-600 px-2.5 py-1 rounded-full font-medium">Pack</span>;
+                  return <span className="text-xs bg-navy/[0.06] text-navy/55 px-2.5 py-1 rounded-full font-medium">Por sesión</span>;
+                })()}
                 {(() => {
                   const { status, days } = clientStatus(selected);
                   if (status === "baja") return (
