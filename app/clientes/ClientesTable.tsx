@@ -130,7 +130,14 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
       .map((c) => c.id);
   }, [customers]);
 
-  const discountCount = customers.filter((c) => c.discount).length;
+  const couponStripeIds = useMemo(
+    () => new Set(payments.filter((p) => p.inferredType === "coupon" && p.customerId).map((p) => p.customerId!)),
+    [payments],
+  );
+
+  const hasDiscount = (c: CustomerRow) => !!c.discount || c.stripeIds.some((sid) => couponStripeIds.has(sid));
+
+  const discountCount = customers.filter(hasDiscount).length;
   const churnCount    = customers.filter((c) => c.possibleChurn).length;
 
   const activeMonthIds = useMemo(() => {
@@ -147,7 +154,7 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
         if (activeMonthIds && !c.stripeIds.some((sid) => activeMonthIds.has(sid))) return false;
         if (filter === "recurring"   && !c.isRecurring)   return false;
         if (filter === "occasional"  &&  c.isRecurring)   return false;
-        if (filter === "discount"    && !c.discount)       return false;
+        if (filter === "discount"    && !hasDiscount(c))   return false;
         if (filter === "churn"       && !c.possibleChurn) return false;
         if (!q) return true;
         return (
