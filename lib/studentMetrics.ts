@@ -67,9 +67,10 @@ export function computeAltasMes(
 }
 
 /**
- * Bajas = suscriptores que deberían haber renovado pero no lo hicieron:
- *   - Último pago tipo "Suscripción" entre 35 y 75 días atrás (ventana de ~un mes)
- *   - No tienen suscripción activa en Momence
+ * Bajas de suscripción = ex-suscriptores (Bàsic / Plus / Pro) que no han renovado:
+ *   - Al menos 2 pagos de tipo suscripción (confirma patrón recurrente, no alta única)
+ *   - Último pago entre 35 y 75 días atrás (ventana de ~un mes de ciclo perdido)
+ *   - Sin suscripción activa en Momence ahora mismo
  * El rango 35-75 días evita falsos positivos (cobro a día 28 cuando hoy es día 15)
  * y excluye bajas antiguas ya contabilizadas en meses anteriores.
  */
@@ -84,16 +85,29 @@ export function computeBasjasMes(
       .map((c) => c.email.toLowerCase()),
   );
 
-  const lastSubPayment = new Map<string, string>();
-  for (const p of payments) {
-    if (!p.customerEmail || p.category !== "Suscripción") continue;
-    const email = p.customerEmail.toLowerCase();
-    const prev  = lastSubPayment.get(email);
-    if (!prev || p.date > prev) lastSubPayment.set(email, p.date);
+  // Solo pagos de los tres planes de suscripción (Bàsic/Plus/Pro)
+  const subPayments = payments.filter(
+    (p) => p.customerEmail && p.inferredType === "subscription",
+  );
+
+  // Para cada email: fecha del último pago + conteo total (para confirmar recurrencia)
+  const byEmail = new Map<string, { lastDate: string; count: number }>();
+  for (const p of subPayments) {
+    const email = p.customerEmail!.toLowerCase();
+    const prev  = byEmail.get(email);
+    if (!prev) {
+      byEmail.set(email, { lastDate: p.date, count: 1 });
+    } else {
+      byEmail.set(email, {
+        lastDate: p.date > prev.lastDate ? p.date : prev.lastDate,
+        count: prev.count + 1,
+      });
+    }
   }
 
   let count = 0;
-  for (const [email, lastDate] of lastSubPayment) {
+  for (const [email, { lastDate, count: numPayments }] of byEmail) {
+    if (numPayments < 2) continue; // descarta altas únicas que no renovaron
     if (activeSubEmails.has(email)) continue;
     const days = Math.floor(
       (new Date(today).getTime() - new Date(lastDate).getTime()) / 86_400_000,
