@@ -3,11 +3,8 @@ export const dynamic = "force-dynamic";
 import { loadStripePaymentsCached } from "@/lib/stripePayments";
 import { loadStripeCustomers } from "@/lib/stripeCustomers";
 import { estimatedMRR, activeCustomersLast30Days, newCustomersLast30Days } from "@/lib/stripeRecurrence";
-import ClientesTable from "./ClientesTable";
+import ClientesShell from "./ClientesShell";
 import ClientesKPIs from "./ClientesKPIs";
-import ClientesEvolucionChart from "./ClientesEvolucionChart";
-import ClientesRetentionCohort from "./ClientesRetentionCohort";
-import ChurnAlert from "./ChurnAlert";
 
 function pad2(n: number) { return String(n).padStart(2, "0"); }
 
@@ -55,12 +52,11 @@ export default async function ClientesPage() {
         daysSinceLast !== null &&
         daysSinceLast > 30 &&
         lastPmt?.category === "Suscripción",
+      daysSinceLast,
       isActive: activeIds.has(c.id),
       isNew: newIds.has(c.id),
     };
   });
-
-  const churnCount = customersWithChurn.filter((c) => c.possibleChurn).length;
 
   return (
     <div>
@@ -82,18 +78,7 @@ export default async function ClientesPage() {
           curMonthLabel={curMonth.slice(5)}
         />
 
-        <ClientesEvolucionChart payments={payments} />
-
-        <ClientesRetentionCohort payments={payments} />
-
-        {churnCount > 0 && (
-          <ChurnAlert
-            count={churnCount}
-            names={customersWithChurn.filter((c) => c.possibleChurn).map((c) => c.name ?? c.email ?? c.id)}
-          />
-        )}
-
-        <ClientesTable customers={customersWithChurn} payments={payments} />
+        <ClientesShell customers={customersWithChurn} payments={payments} />
       </div>
     </div>
   );

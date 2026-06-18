@@ -18,7 +18,7 @@ const ML = 36;
 const CHART_W = SVG_W - ML - MR;
 const CHART_H = SVG_H - MT - MB;
 
-export default function ClientesEvolucionChart({ payments }: { payments: StripePayment[] }) {
+export default function ClientesEvolucionChart({ payments, onBarClick, activeMonth }: { payments: StripePayment[]; onBarClick?: (month: string) => void; activeMonth?: string | null }) {
   const months = useMemo(() => {
     // Last 12 months
     const now = new Date();
@@ -96,33 +96,33 @@ export default function ClientesEvolucionChart({ payments }: { payments: StripeP
             const h = barH(d.count);
             const y = barY(d.count);
             const isCurrent = d.key === currentMonth;
+            const isActive  = d.key === activeMonth;
+            const fill = isActive ? "#3B4B9E" : isCurrent ? "#6B7ED6" : "#C0C6E8";
             return (
-              <g key={d.key}>
+              <g
+                key={d.key}
+                onClick={() => onBarClick?.(d.key)}
+                style={{ cursor: onBarClick ? "pointer" : "default" }}
+              >
+                {/* Invisible hit area */}
+                <rect x={x} y={MT} width={barW} height={CHART_H} rx={4} fill="transparent" />
                 {/* Bar */}
                 {d.count > 0 && (
-                  <rect
-                    x={x} y={y} width={barW} height={h}
-                    rx={4} ry={4}
-                    fill={isCurrent ? "#6B7ED6" : "#C0C6E8"}
-                  />
+                  <rect x={x} y={y} width={barW} height={h} rx={4} ry={4} fill={fill} />
                 )}
                 {/* Value label on top */}
                 {d.count > 0 && (
                   <text
-                    x={x + barW / 2}
-                    y={y - 5}
-                    textAnchor="middle"
-                    style={{ fontSize: 11, fontWeight: isCurrent ? 600 : 400, fill: isCurrent ? "#6B7ED6" : "#7B84A8" }}
+                    x={x + barW / 2} y={y - 5} textAnchor="middle"
+                    style={{ fontSize: 11, fontWeight: isCurrent || isActive ? 600 : 400, fill: isActive ? "#3B4B9E" : isCurrent ? "#6B7ED6" : "#7B84A8" }}
                   >
                     {d.count}
                   </text>
                 )}
                 {/* Month label */}
                 <text
-                  x={x + barW / 2}
-                  y={SVG_H - 6}
-                  textAnchor="middle"
-                  style={{ fontSize: 11, fontWeight: isCurrent ? 600 : 400, fill: isCurrent ? "#1C1917" : "#94A3B8" }}
+                  x={x + barW / 2} y={SVG_H - 6} textAnchor="middle"
+                  style={{ fontSize: 11, fontWeight: isCurrent || isActive ? 600 : 400, fill: isActive ? "#3B4B9E" : isCurrent ? "#1C1917" : "#94A3B8" }}
                 >
                   {d.label}
                 </text>

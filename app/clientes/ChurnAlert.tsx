@@ -3,12 +3,13 @@
 import { useState } from "react";
 
 type Props = {
-  count: number;
-  names: string[];
+  customers: { name: string; id: string }[];
+  onSelect: (id: string) => void;
 };
 
-export default function ChurnAlert({ count, names }: Props) {
+export default function ChurnAlert({ customers, onSelect }: Props) {
   const [open, setOpen] = useState(false);
+  const count = customers.length;
 
   return (
     <div className="mb-6 border border-warning/30 bg-warning/[0.06] rounded-xl overflow-hidden">
@@ -32,10 +33,14 @@ export default function ChurnAlert({ count, names }: Props) {
 
       {open && (
         <div className="px-4 pb-4 flex flex-wrap gap-2 border-t border-warning/20 pt-3">
-          {names.map((name) => (
-            <span key={name} className="bg-white border border-warning/20 rounded-md px-3 py-1 text-sm font-medium text-navy">
-              {name}
-            </span>
+          {customers.map((c) => (
+            <button
+              key={c.id}
+              onClick={() => onSelect(c.id)}
+              className="bg-white border border-warning/20 rounded-md px-3 py-1 text-sm font-medium text-navy hover:border-warning/50 hover:bg-warning/[0.04] transition-colors"
+            >
+              {c.name}
+            </button>
           ))}
         </div>
       )}

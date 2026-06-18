@@ -21,7 +21,7 @@ function cellStyle(val: number): React.CSSProperties {
   return { backgroundColor: `rgba(107, 126, 214, ${opacity})` };
 }
 
-export default function ClientesRetentionCohort({ payments }: { payments: StripePayment[] }) {
+export default function ClientesRetentionCohort({ payments, onMonthClick }: { payments: StripePayment[]; onMonthClick?: (month: string) => void }) {
   const { rows, maxCols } = useMemo(() => {
     const monthsByCustomer = new Map<string, Set<string>>();
     for (const p of payments) {
@@ -57,7 +57,7 @@ export default function ClientesRetentionCohort({ payments }: { payments: Stripe
           cols.push(count / ids.length);
         }
 
-        return { label: monthLabel(cohortMonth), size: ids.length, cols };
+        return { label: monthLabel(cohortMonth), cohortMonth, size: ids.length, cols };
       });
 
     const maxCols = Math.max(...rows.map(r => r.cols.length), 1);
@@ -88,18 +88,25 @@ export default function ClientesRetentionCohort({ payments }: { payments: Stripe
           <tbody>
             {rows.map((row) => (
               <tr key={row.label} className="border-b border-navy/[0.04] last:border-0">
-                <td className="py-1.5 pr-5 font-medium text-navy whitespace-nowrap">{row.label}</td>
+                <td
+                  className={`py-1.5 pr-5 font-medium text-navy whitespace-nowrap ${onMonthClick ? "cursor-pointer hover:text-primary transition-colors" : ""}`}
+                  onClick={() => onMonthClick?.(row.cohortMonth)}
+                >
+                  {row.label}
+                </td>
                 <td className="py-1.5 px-3 text-right text-navy/40 tabular-nums">{row.size}</td>
                 {Array.from({ length: maxCols }, (_, i) => {
                   const val = row.cols[i] ?? null;
+                  const targetMonth = addMonths(row.cohortMonth, i);
                   if (val === null) {
                     return <td key={i} className="py-1.5 px-1" />;
                   }
                   return (
                     <td key={i} className="py-1.5 px-1">
                       <div
-                        className="rounded-md w-12 h-7 flex items-center justify-center font-semibold tabular-nums"
+                        className={`rounded-md w-12 h-7 flex items-center justify-center font-semibold tabular-nums transition-opacity ${onMonthClick ? "cursor-pointer hover:opacity-75" : ""}`}
                         style={val > 0 ? cellStyle(val) : undefined}
+                        onClick={() => val > 0 && onMonthClick?.(targetMonth)}
                       >
                         <span className={val > 0.55 ? "text-white" : val > 0 ? "text-navy" : "text-navy/20"}>
                           {val === 0 ? "–" : `${Math.round(val * 100)}%`}

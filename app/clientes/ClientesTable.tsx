@@ -162,7 +162,7 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
         }
         return sortDir === "desc" ? -diff : diff;
       });
-  }, [customers, search, filter, sortKey, sortDir]);
+  }, [customers, search, filter, sortKey, sortDir, activeMonthIds]);
 
   function ThSort({ col, label, className = "" }: { col: SortKey; label: string; className?: string }) {
     return (
@@ -212,8 +212,18 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
     { key: "churn",      label: "Sin pagar este mes", count: churnCount },
   ];
 
+  const MES: Record<string, string> = { "01":"Ene","02":"Feb","03":"Mar","04":"Abr","05":"May","06":"Jun","07":"Jul","08":"Ago","09":"Sep","10":"Oct","11":"Nov","12":"Dic" };
+
   return (
     <div>
+      {activeMonth && (
+        <div className="flex items-center justify-between mb-3 px-4 py-2 bg-primary/[0.06] border border-primary/20 rounded-xl text-sm">
+          <span className="text-primary font-medium">
+            Filtrando: {MES[activeMonth.slice(5)] ?? activeMonth.slice(5)} {activeMonth.slice(0, 4)} · {filtered.length} cliente{filtered.length !== 1 ? "s" : ""}
+          </span>
+          <button onClick={onClearMonth} className="text-primary/60 hover:text-primary text-xs font-medium">Limpiar ✕</button>
+        </div>
+      )}
       {/* Controls */}
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
         {/* Search */}
@@ -323,7 +333,7 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
                   return (
                     <tr
                       key={c.id}
-                      onClick={() => setSelected(c)}
+                      onClick={() => { setSelected(c); setStripeOpen(false); }}
                       className={`border-b border-navy/[0.04] last:border-0 transition-colors cursor-pointer hover:bg-primary/[0.025] ${
                         c.possibleChurn ? "bg-warning/[0.04]" : i % 2 === 0 ? "" : "bg-navy/[0.008]"
                       }`}
