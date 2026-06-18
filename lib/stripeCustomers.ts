@@ -30,19 +30,30 @@ export type StripeCustomer = {
 
 type RawCustomer = Pick<Stripe.Customer, "id" | "name" | "email" | "created" | "discount" | "delinquent">;
 
-// IDs de clientes con facturas abiertas que Stripe ya intentó cobrar y no pudo
-const fetchFailedInvoiceCustomerIds = unstable_cache(
+// IDs de clientes con pagos fallidos en los últimos 90 días
+// Cubre: (1) facturas de suscripción intentadas y no cobradas, (2) PaymentIntents fallidos directos
+const fetchFailedPaymentCustomerIds = unstable_cache(
   async (): Promise<string[]> => {
-    const cutoff = Math.floor(Date.now() / 1000) - 90 * 86400; // 90 días atrás
-    const ids: string[] = [];
+    const cutoff = Math.floor(Date.now() / 1000) - 90 * 86400;
+    const ids = new Set<string>();
+
+    // Facturas abiertas que Stripe ya intentó cobrar
     for await (const inv of stripe.invoices.list({ status: "open", limit: 100, created: { gte: cutoff } })) {
       if (!inv.attempted) continue;
       const cid = typeof inv.customer === "string" ? inv.customer : (inv.customer as Stripe.Customer | null)?.id ?? null;
-      if (cid) ids.push(cid);
+      if (cid) ids.add(cid);
     }
-    return [...new Set(ids)];
+
+    // PaymentIntents fallidos (requires_payment_method + last_payment_error)
+    for await (const pi of stripe.paymentIntents.list({ limit: 100, created: { gte: cutoff } })) {
+      if (pi.status !== "requires_payment_method" || !pi.last_payment_error) continue;
+      const cid = typeof pi.customer === "string" ? pi.customer : (pi.customer as Stripe.Customer | null)?.id ?? null;
+      if (cid) ids.add(cid);
+    }
+
+    return [...ids];
   },
-  ["stripe-failed-invoices"],
+  ["stripe-failed-payments"],
   { revalidate: 600, tags: ["stripe"] },
 );
 
@@ -91,7 +102,7 @@ export async function loadStripeCustomers(
 
   const [stripeCustomers, failedInvoiceIds] = await Promise.all([
     fetchStripeCustomerList(),
-    fetchFailedInvoiceCustomerIds().then((ids) => new Set(ids)),
+    fetchFailedPaymentCustomerIds().then((ids) => new Set(ids)),
   ]);
   const raw_customers: RawEntry[] = [];
 
