@@ -142,3 +142,10 @@ export async function loadStripeCustomers(
 
   return customers.sort((a, b) => b.totalSpent - a.totalSpent);
 }
+
+export async function loadDelinquentCustomers(): Promise<{ name: string | null; email: string | null }[]> {
+  const list = await fetchStripeCustomerList();
+  return list
+    .filter((c) => c.delinquent)
+    .map((c) => ({ name: (c as Stripe.Customer).name ?? null, email: (c as Stripe.Customer).email ?? null }));
+}
