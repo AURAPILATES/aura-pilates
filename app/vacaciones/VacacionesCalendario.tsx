@@ -967,7 +967,7 @@ function AnnualCalendar({
               })}
             </div>
             {monthVac.length > 0 && (
-              <div className="border-t border-navy/5 px-4 py-2 space-y-1">
+              <div className="border-t border-navy/5 px-4 pt-[6px] pb-2 space-y-1">
                 {monthVac.map((p) => (
                   <div key={p.name} className="flex items-center gap-1.5">
                     <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${p.colors.dot}`} />
