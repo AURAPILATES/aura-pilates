@@ -8,7 +8,7 @@ import type { StripePayment } from "@/lib/stripePayments";
 
 type CustomerRow = StripeCustomer & { possibleChurn?: boolean; isActive?: boolean; isNew?: boolean };
 
-type SortKey = "totalSpent" | "paymentCount" | "lastPaymentDate" | "name";
+type SortKey = "totalSpent" | "paymentCount" | "lastPaymentDate" | "firstPaymentDate" | "name";
 type SortDir = "asc" | "desc";
 type Filter  = "all" | "recurring" | "occasional" | "discount" | "churn";
 
@@ -38,6 +38,20 @@ function DiscountBadge({ discount }: { discount: NonNullable<StripeCustomer["dis
 
 function fmtDate(d: string) {
   return d.split("-").reverse().join("/");
+}
+
+function addDays(dateStr: string, n: number): string {
+  const d = new Date(dateStr + "T00:00:00");
+  d.setDate(d.getDate() + n);
+  return d.toISOString().split("T")[0];
+}
+
+function nextPaymentInfo(c: CustomerRow): { date: string; overdue: boolean; daysLate: number } | null {
+  if (!c.isRecurring || !c.lastPaymentDate) return null;
+  const nextDate = addDays(c.lastPaymentDate, 30);
+  const today = new Date().toISOString().split("T")[0];
+  const daysLate = Math.floor((new Date(today).getTime() - new Date(nextDate).getTime()) / 86400000);
+  return { date: nextDate, overdue: daysLate > 3, daysLate: Math.max(0, daysLate) };
 }
 
 function initials(name: string | null, email: string | null): string {
@@ -104,6 +118,8 @@ export default function ClientesTable({ customers, payments }: { customers: Cust
         else if (sortKey === "paymentCount")   diff = a.paymentCount - b.paymentCount;
         else if (sortKey === "lastPaymentDate") {
           diff = (a.lastPaymentDate ?? "").localeCompare(b.lastPaymentDate ?? "");
+        } else if (sortKey === "firstPaymentDate") {
+          diff = (a.firstPaymentDate ?? "").localeCompare(b.firstPaymentDate ?? "");
         } else {
           diff = (a.name ?? "").localeCompare(b.name ?? "", "es");
         }
@@ -125,17 +141,21 @@ export default function ClientesTable({ customers, payments }: { customers: Cust
 
   function downloadCsv() {
     const rows = [
-      ["Nombre", "Email", "Frecuencia", "Total gastado (€)", "Pagos", "Primer pago", "Último pago", "Descuento"],
-      ...filtered.map((c) => [
-        c.name ?? "",
-        c.email ?? "",
-        c.isRecurring ? "Recurrente" : "Ocasional",
-        c.totalSpent.toFixed(2),
-        c.paymentCount,
-        c.firstPaymentDate ?? "",
-        c.lastPaymentDate ?? "",
-        c.discount ? (c.discount.percentOff != null ? `-${c.discount.percentOff}%` : c.discount.name) : "",
-      ]),
+      ["Nombre", "Email", "Frecuencia", "Total gastado (€)", "Pagos", "Fecha alta", "Último pago", "Próximo pago", "Descuento"],
+      ...filtered.map((c) => {
+        const nxt = nextPaymentInfo(c);
+        return [
+          c.name ?? "",
+          c.email ?? "",
+          c.isRecurring ? "Recurrente" : "Ocasional",
+          c.totalSpent.toFixed(2),
+          c.paymentCount,
+          c.firstPaymentDate ?? "",
+          c.lastPaymentDate ?? "",
+          nxt ? nxt.date : "",
+          c.discount ? (c.discount.percentOff != null ? `-${c.discount.percentOff}%` : c.discount.name) : "",
+        ];
+      }),
     ];
     const csv  = rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
     const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
@@ -234,13 +254,17 @@ export default function ClientesTable({ customers, payments }: { customers: Cust
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-navy/[0.06]">
-                <ThSort col="name"            label="Cliente"       className="text-left" />
+                <ThSort col="name"             label="Cliente"       className="text-left" />
                 <th className="text-left px-5 py-3 text-[11px] font-semibold text-navy/50 uppercase tracking-wider">
                   Frecuencia
                 </th>
-                <ThSort col="totalSpent"      label="Total gastado" className="text-right" />
-                <ThSort col="paymentCount"    label="Pagos"         className="text-right hidden sm:table-cell" />
-                <ThSort col="lastPaymentDate" label="Último pago"   className="text-right hidden sm:table-cell" />
+                <ThSort col="totalSpent"       label="Total gastado" className="text-right" />
+                <ThSort col="paymentCount"     label="Pagos"         className="text-right hidden sm:table-cell" />
+                <ThSort col="firstPaymentDate" label="Fecha alta"    className="text-right hidden sm:table-cell" />
+                <ThSort col="lastPaymentDate"  label="Último pago"   className="text-right hidden sm:table-cell" />
+                <th className="text-right px-5 py-3 text-[11px] font-semibold text-navy/50 uppercase tracking-wider hidden sm:table-cell">
+                  Próximo pago
+                </th>
                 <th className="text-center px-5 py-3 text-[11px] font-semibold text-navy/50 uppercase tracking-wider">
                   Estado
                 </th>
@@ -249,7 +273,7 @@ export default function ClientesTable({ customers, payments }: { customers: Cust
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-5 py-12 text-center text-navy/45 text-sm">
+                  <td colSpan={8} className="px-5 py-12 text-center text-navy/45 text-sm">
                     No hay clientes que coincidan con tu búsqueda.
                   </td>
                 </tr>
@@ -293,7 +317,23 @@ export default function ClientesTable({ customers, payments }: { customers: Cust
                       <td className="px-5 py-3 text-right font-semibold text-navy tabular-nums">{fmt(c.totalSpent)}</td>
                       <td className="px-5 py-3 text-right text-navy/50 hidden sm:table-cell">{c.paymentCount}</td>
                       <td className="px-5 py-3 text-right text-navy/55 text-xs hidden sm:table-cell">
-                        {c.lastPaymentDate ? c.lastPaymentDate.split("-").reverse().join("/") : "—"}
+                        {c.firstPaymentDate ? fmtDate(c.firstPaymentDate) : "—"}
+                      </td>
+                      <td className="px-5 py-3 text-right text-navy/55 text-xs hidden sm:table-cell">
+                        {c.lastPaymentDate ? fmtDate(c.lastPaymentDate) : "—"}
+                      </td>
+                      <td className="px-5 py-3 text-right text-xs hidden sm:table-cell">
+                        {(() => {
+                          const nxt = nextPaymentInfo(c);
+                          if (!nxt) return <span className="text-navy/30">—</span>;
+                          if (nxt.overdue) return (
+                            <span className="inline-flex items-center gap-1 text-danger font-semibold">
+                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                              {nxt.daysLate}d tarde
+                            </span>
+                          );
+                          return <span className="text-navy/55">{fmtDate(nxt.date)}</span>;
+                        })()}
                       </td>
                       <td className="px-5 py-3 text-center">
                         {c.possibleChurn ? (

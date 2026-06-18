@@ -8,6 +8,8 @@ import FirstPurchaseCard from "./FirstPurchaseCard";
 import {
   loadStripePaymentsCached,
   stripeByMethod,
+  stripeByProduct,
+  detectChurn,
   totalRevenue as stripeTotalRevenue,
   revenueForMonth as stripeRevenueForMonth,
   totalFees as stripeTotalFees,
@@ -246,6 +248,10 @@ export default async function Finanzas(props: {
   // ── MRR/ARR por suscripción (suscriptores activos reales en Momence) ──────
   const subscriptionTiers = subscriptionTiersFromMemberships(membershipsAll);
   const mrrByTier = computeMrrByTier(customersAll, subscriptionTiers);
+
+  // ── Ingresos por producto inferido + bajas detectadas ────────────────────────
+  const productBreakdown = stripeByProduct(paymentsAll);
+  const churnedCustomers = detectChurn(paymentsAll);
 
   // ── Evolución de ingresos + altas/bajas/reactivaciones (histórico completo) ──
   const paymentsAllBounded = uscLastDate ? paymentsAll.filter((p) => p.date <= uscLastDate) : paymentsAll;
@@ -667,6 +673,72 @@ export default async function Finanzas(props: {
             <section id="q10">
               <QuestionHeader num={10} question="¿Cómo llegan los suscriptores?" />
               <FirstPurchaseCard summary={firstPurchaseSummary} />
+            </section>
+
+            {/* Q11 ¿Qué producto compra cada cliente? (inferido del importe) */}
+            <section id="q11" className="space-y-4">
+              <QuestionHeader num={11} question="¿Qué producto compra cada cliente? (inferido del importe)" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+                {/* Ingresos por producto */}
+                <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
+                  <p className="text-xs font-semibold text-navy/55 uppercase tracking-wider mb-4">Ingresos históricos por producto</p>
+                  <div className="space-y-3">
+                    {productBreakdown.filter((p) => p.product !== "Otro").map((p) => {
+                      const maxRev = productBreakdown[0]?.revenue ?? 1;
+                      return (
+                        <div key={p.product}>
+                          <div className="flex items-center justify-between mb-1">
+                            <div className="flex items-center gap-2">
+                              <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${p.type === "subscription" ? "bg-primary/10 text-primary" : "bg-warning/15 text-warning"}`}>
+                                {p.type === "subscription" ? "suscrip." : "pack"}
+                              </span>
+                              <span className="text-sm text-navy">{p.product}</span>
+                            </div>
+                            <div className="text-right">
+                              <span className="text-sm font-semibold text-navy tabular-nums">{fmt(p.revenue)}</span>
+                              <span className="text-xs text-navy/40 ml-2 tabular-nums">{p.count} pagos · {p.uniqueCustomers} clientes</span>
+                            </div>
+                          </div>
+                          <div className="h-1 bg-navy/[0.06] rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full ${p.type === "subscription" ? "bg-primary" : "bg-warning"}`}
+                              style={{ width: `${Math.round((p.revenue / maxRev) * 100)}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <p className="text-xs text-navy/35 mt-4">Inferido del importe del cobro en Stripe. Pagos con importe no reconocido → "Otro".</p>
+                </div>
+
+                {/* Posibles bajas */}
+                <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
+                  <p className="text-xs font-semibold text-navy/55 uppercase tracking-wider mb-1">Posibles bajas detectadas</p>
+                  <p className="text-xs text-navy/40 mb-4">Suscriptores sin pago en los últimos 45+ días</p>
+                  {churnedCustomers.length === 0 ? (
+                    <p className="text-sm text-navy/40 py-4 text-center">Sin bajas detectadas</p>
+                  ) : (
+                    <div className="space-y-2 max-h-72 overflow-y-auto">
+                      {churnedCustomers.map((c) => (
+                        <div key={c.email} className="flex items-center justify-between gap-3 py-2 border-b border-navy/[0.05] last:border-0">
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-navy truncate">{c.name ?? c.email}</p>
+                            <p className="text-xs text-navy/45 truncate">{c.lastProduct}</p>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className="text-xs text-danger font-semibold">{c.daysSilent}d sin pago</p>
+                            <p className="text-xs text-navy/35">último {c.lastPayment}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <p className="text-xs text-navy/35 mt-3">Las bajas se detectan cuando dejan de pagar, no antes.</p>
+                </div>
+
+              </div>
             </section>
 
         </div>

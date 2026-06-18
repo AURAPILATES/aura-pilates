@@ -14,7 +14,25 @@ export type StripePayment = {
   description: string | null;
   method: string;       // "card" | "sepa_debit" | ...
   category: "Suscripción" | "Pago único";
+  inferredProduct: string;  // nombre del producto inferido del importe
+  inferredType: "subscription" | "pack" | "unknown";
 };
+
+// Mapa de importes → producto (precios Momence a jun 2026)
+const PRODUCT_MAP: Array<{ amount: number; name: string; type: "subscription" | "pack" }> = [
+  { amount: 75,  name: "Bàsic",           type: "subscription" },
+  { amount: 140, name: "Plus",            type: "subscription" },
+  { amount: 180, name: "Pro",             type: "subscription" },
+  { amount: 90,  name: "Pack 4 clases",   type: "pack" },
+  { amount: 170, name: "Pack 8 clases",   type: "pack" },
+  { amount: 25,  name: "Pack Benvinguda", type: "pack" },
+  { amount: 20,  name: "Clase suelta",    type: "pack" },
+];
+
+function inferProduct(amount: number): { name: string; type: "subscription" | "pack" | "unknown" } {
+  const match = PRODUCT_MAP.find((p) => Math.abs(p.amount - amount) < 1);
+  return match ? { name: match.name, type: match.type } : { name: "Otro", type: "unknown" };
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -63,9 +81,11 @@ export async function loadStripePayments(
     const bt = charge.balance_transaction as Stripe.BalanceTransaction | null;
     const fee = bt ? bt.fee / 100 : 0;
     const net = bt ? bt.net / 100 : toEuros(charge.amount, charge.currency);
+    const amountEur = toEuros(charge.amount, charge.currency);
+    const inferred  = inferProduct(amountEur);
     payments.push({
       id: charge.id,
-      amount: toEuros(charge.amount, charge.currency),
+      amount: amountEur,
       fee,
       net,
       date: toDate(charge.created),
@@ -75,6 +95,8 @@ export async function loadStripePayments(
       description: charge.description,
       method: charge.payment_method_details?.type ?? "card",
       category: deriveCategory(charge),
+      inferredProduct: inferred.name,
+      inferredType: inferred.type,
     });
   }
 
@@ -129,6 +151,64 @@ export function stripeByMethod(payments: StripePayment[]): MethodRevenue[] {
       count,
     }))
     .sort((a, b) => b.revenue - a.revenue);
+}
+
+export type ProductRevenue = {
+  product: string;
+  type: "subscription" | "pack" | "unknown";
+  revenue: number;
+  count: number;
+  uniqueCustomers: number;
+};
+
+export function stripeByProduct(payments: StripePayment[]): ProductRevenue[] {
+  const map = new Map<string, { type: "subscription" | "pack" | "unknown"; revenue: number; count: number; emails: Set<string> }>();
+  for (const p of payments) {
+    const key = p.inferredProduct;
+    const ex  = map.get(key) ?? { type: p.inferredType, revenue: 0, count: 0, emails: new Set() };
+    ex.revenue += p.amount;
+    ex.count   += 1;
+    if (p.customerEmail) ex.emails.add(p.customerEmail.toLowerCase());
+    map.set(key, ex);
+  }
+  return [...map.entries()]
+    .map(([product, { type, revenue, count, emails }]) => ({
+      product, type, revenue, count, uniqueCustomers: emails.size,
+    }))
+    .sort((a, b) => b.revenue - a.revenue);
+}
+
+// Detect churned customers: paying monthly then silent for 45+ days
+export type ChurnedCustomer = {
+  email: string;
+  name: string | null;
+  lastPayment: string;
+  lastProduct: string;
+  daysSilent: number;
+};
+
+export function detectChurn(payments: StripePayment[], referenceDate?: string): ChurnedCustomer[] {
+  const ref  = new Date(referenceDate ?? new Date().toISOString().split("T")[0]);
+  const subs = payments.filter((p) => p.inferredType === "subscription");
+
+  // Group by email, find last payment date
+  const byEmail = new Map<string, { last: string; name: string | null; product: string }>();
+  for (const p of subs) {
+    if (!p.customerEmail) continue;
+    const key = p.customerEmail.toLowerCase();
+    const ex  = byEmail.get(key);
+    if (!ex || p.date > ex.last) {
+      byEmail.set(key, { last: p.date, name: p.customerName, product: p.inferredProduct });
+    }
+  }
+
+  return [...byEmail.entries()]
+    .map(([email, { last, name, product }]) => {
+      const daysSilent = Math.floor((ref.getTime() - new Date(last).getTime()) / 86400000);
+      return { email, name, lastPayment: last, lastProduct: product, daysSilent };
+    })
+    .filter((c) => c.daysSilent >= 45)
+    .sort((a, b) => b.daysSilent - a.daysSilent);
 }
 
 export function totalRevenue(payments: StripePayment[]): number {
