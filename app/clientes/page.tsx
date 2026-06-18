@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { loadStripePaymentsCached } from "@/lib/stripePayments";
 import { loadStripeCustomers } from "@/lib/stripeCustomers";
 import { estimatedMRR, activeCustomersLast30Days, newCustomersLast30Days } from "@/lib/stripeRecurrence";
+import { loadBusinessEvents } from "@/lib/businessEvents";
 import ClientesShell from "./ClientesShell";
 import ClientesKPIs from "./ClientesKPIs";
 
@@ -16,45 +17,53 @@ export default async function ClientesPage() {
     return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`;
   })();
 
-  const payments  = await loadStripePaymentsCached();
-  const customers = await loadStripeCustomers(payments, curMonth);
+  const payments = await loadStripePaymentsCached();
+  const [customers, businessEvents] = await Promise.all([
+    loadStripeCustomers(payments, curMonth),
+    loadBusinessEvents(),
+  ]);
 
   const total      = customers.length;
   const mrr        = estimatedMRR(payments, curMonth);
   const activeIds  = activeCustomersLast30Days(payments);
   const newIds     = newCustomersLast30Days(payments);
 
-  // Último pago por customerId (para saber tipo del pago más reciente por cliente)
-  const lastPmtById = new Map<string, { date: string; category: string }>();
+  // Último pago por tipo — suscripciones y packs tienen ventanas de caducidad distintas
+  const lastSubById  = new Map<string, { date: string }>();
+  const lastPackById = new Map<string, { date: string; product: string }>();
+
   for (const p of payments) {
     if (!p.customerId) continue;
-    const ex = lastPmtById.get(p.customerId);
-    if (!ex || p.date > ex.date) lastPmtById.set(p.customerId, { date: p.date, category: p.category });
+    if (p.category === "Suscripción") {
+      const ex = lastSubById.get(p.customerId);
+      if (!ex || p.date > ex.date) lastSubById.set(p.customerId, { date: p.date });
+    } else if (p.inferredProduct !== "Clase suelta" && p.inferredProduct !== "Con cupón") {
+      const ex = lastPackById.get(p.customerId);
+      if (!ex || p.date > ex.date) lastPackById.set(p.customerId, { date: p.date, product: p.inferredProduct });
+    }
   }
 
   const today = new Date();
+  function daysSince(dateStr: string): number {
+    return Math.floor((today.getTime() - new Date(dateStr + "T12:00:00").getTime()) / 86_400_000);
+  }
+
   const customersWithChurn = customers.map((c) => {
-    // Último pago real entre todos los IDs fusionados
-    let lastPmt: { date: string; category: string } | null = null;
+    let lastSub:  { date: string } | null = null;
+    let lastPack: { date: string; product: string } | null = null;
     for (const sid of c.stripeIds) {
-      const p = lastPmtById.get(sid);
-      if (p && (!lastPmt || p.date > lastPmt.date)) lastPmt = p;
+      const sub  = lastSubById.get(sid);
+      if (sub  && (!lastSub  || sub.date  > lastSub.date))  lastSub  = sub;
+      const pack = lastPackById.get(sid);
+      if (pack && (!lastPack || pack.date > lastPack.date)) lastPack = pack;
     }
-    const daysSinceLast = lastPmt
-      ? Math.floor((today.getTime() - new Date(lastPmt.date + "T12:00:00").getTime()) / 86_400_000)
-      : null;
     return {
       ...c,
-      // Posible baja: suscriptora cuyo ciclo mensual ya venció (>30 días sin renovar).
-      // Solo aplica si el último pago fue una suscripción — clientes de clases sueltas no cuentan.
-      possibleChurn:
-        c.isRecurring &&
-        daysSinceLast !== null &&
-        daysSinceLast > 30 &&
-        lastPmt?.category === "Suscripción",
-      daysSinceLast,
+      daysSinceLastSub:  lastSub  ? daysSince(lastSub.date)  : null,
+      daysSinceLastPack: lastPack ? daysSince(lastPack.date) : null,
+      lastPackProduct:   lastPack?.product ?? null,
       isActive: activeIds.has(c.id),
-      isNew: newIds.has(c.id),
+      isNew:    newIds.has(c.id),
     };
   });
 
@@ -78,7 +87,7 @@ export default async function ClientesPage() {
           curMonthLabel={curMonth.slice(5)}
         />
 
-        <ClientesShell customers={customersWithChurn} payments={payments} />
+        <ClientesShell customers={customersWithChurn} payments={payments} events={businessEvents} />
       </div>
     </div>
   );

@@ -6,13 +6,15 @@ import ClientesEvolucionChart from "./ClientesEvolucionChart";
 import ClientesRetentionCohort from "./ClientesRetentionCohort";
 import ChurnAlert from "./ChurnAlert";
 import type { StripePayment } from "@/lib/stripePayments";
+import type { BusinessEvent } from "@/lib/businessEvents";
 
 type Props = {
   customers: CustomerRow[];
   payments: StripePayment[];
+  events?: BusinessEvent[];
 };
 
-export default function ClientesShell({ customers, payments }: Props) {
+export default function ClientesShell({ customers, payments, events }: Props) {
   const [activeMonth, setActiveMonth] = useState<string | null>(null);
   const tableRef = useRef<ClientesTableHandle>(null);
 
@@ -35,6 +37,7 @@ export default function ClientesShell({ customers, payments }: Props) {
         payments={payments}
         onBarClick={handleBarClick}
         activeMonth={activeMonth}
+        events={events}
       />
       <ClientesRetentionCohort
         payments={payments}
