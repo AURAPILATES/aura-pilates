@@ -8,11 +8,11 @@ import { createBusinessEvent, updateBusinessEvent, deleteBusinessEvent } from ".
 // ── Config ────────────────────────────────────────────────────────────────────
 
 const CATEGORIAS: { value: EventCategoria; label: string; color: string; bg: string }[] = [
-  { value: "precios",     label: "Precios",     color: "text-amber-700",  bg: "bg-amber-50 border-amber-200"  },
-  { value: "horarios",    label: "Horarios",    color: "text-blue-700",   bg: "bg-blue-50 border-blue-200"    },
-  { value: "promociones", label: "Promociones", color: "text-emerald-700",bg: "bg-emerald-50 border-emerald-200"},
-  { value: "operativo",   label: "Operativo",   color: "text-purple-700", bg: "bg-purple-50 border-purple-200"},
-  { value: "otro",        label: "Otro",        color: "text-slate-600",  bg: "bg-slate-50 border-slate-200"  },
+  { value: "precios",     label: "Precios",     color: "text-amber-700",   bg: "bg-amber-50 border-amber-200"   },
+  { value: "horarios",    label: "Horarios",    color: "text-blue-700",    bg: "bg-blue-50 border-blue-200"     },
+  { value: "promociones", label: "Promociones", color: "text-emerald-700", bg: "bg-emerald-50 border-emerald-200" },
+  { value: "operativo",   label: "Operativo",   color: "text-purple-700",  bg: "bg-purple-50 border-purple-200" },
+  { value: "otro",        label: "Otro",        color: "text-slate-600",   bg: "bg-slate-50 border-slate-200"   },
 ];
 
 const DOT_COLOR: Record<EventCategoria, string> = {
@@ -33,28 +33,31 @@ function formatFecha(iso: string) {
   return date.toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" });
 }
 
-// ── Empty form state ───────────────────────────────────────────────────────────
+// ── Form state ────────────────────────────────────────────────────────────────
 
-function emptyForm() {
-  const today = new Date().toISOString().slice(0, 10);
-  return { fecha: today, categoria: "precios" as EventCategoria, titulo: "", descripcion: "" };
+type FormValues = { fecha: string; categoria: EventCategoria; titulo: string; descripcion: string };
+
+function emptyForm(): FormValues {
+  return { fecha: new Date().toISOString().slice(0, 10), categoria: "precios", titulo: "", descripcion: "" };
 }
 
-// ── Event form (add / edit) ────────────────────────────────────────────────────
+// ── Event form ────────────────────────────────────────────────────────────────
 
 function EventForm({
   initial,
   onSave,
   onCancel,
   isPending,
+  error,
 }: {
-  initial: ReturnType<typeof emptyForm>;
-  onSave: (v: ReturnType<typeof emptyForm>) => void;
+  initial: FormValues;
+  onSave: (v: FormValues) => void;
   onCancel: () => void;
   isPending: boolean;
+  error: string | null;
 }) {
   const [form, setForm] = useState(initial);
-  const set = (k: keyof typeof form, v: string) => setForm((f) => ({ ...f, [k]: v }));
+  const set = (k: keyof FormValues, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
   return (
     <div className="bg-white border border-navy/10 rounded-xl p-5 space-y-4 shadow-sm">
@@ -106,11 +109,18 @@ function EventForm({
         />
       </div>
 
+      {error && (
+        <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+          {error}
+        </p>
+      )}
+
       <div className="flex justify-end gap-2 pt-1">
         <button
           type="button"
           onClick={onCancel}
-          className="px-4 py-2 text-sm text-navy/55 hover:text-navy transition-colors"
+          disabled={isPending}
+          className="px-4 py-2 text-sm text-navy/55 hover:text-navy transition-colors disabled:opacity-40"
         >
           Cancelar
         </button>
@@ -127,19 +137,26 @@ function EventForm({
   );
 }
 
-// ── Main component ─────────────────────────────────────────────────────────────
+// ── Main component ────────────────────────────────────────────────────────────
 
 export default function HistorialTimeline({ events: initial }: { events: BusinessEvent[] }) {
   const router = useRouter();
-  const [events, setEvents] = useState<BusinessEvent[]>(initial);
+
+  // Optimistic delete: track removed IDs so the list updates instantly,
+  // then router.refresh() syncs the server state. For create/update we
+  // rely on router.refresh() alone (initial prop is updated by Next.js).
+  const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
+
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [filterCat, setFilterCat] = useState<EventCategoria | "todas">("todas");
+  const [formError, setFormError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
+  const events = initial.filter((e) => !deletedIds.has(e.id));
   const filtered = filterCat === "todas" ? events : events.filter((e) => e.categoria === filterCat);
 
-  // Group by year
   const byYear = filtered.reduce<Record<string, BusinessEvent[]>>((acc, ev) => {
     const year = ev.fecha.slice(0, 4);
     (acc[year] ??= []).push(ev);
@@ -147,34 +164,48 @@ export default function HistorialTimeline({ events: initial }: { events: Busines
   }, {});
   const years = Object.keys(byYear).sort((a, b) => Number(b) - Number(a));
 
-  function handleCreate(form: ReturnType<typeof emptyForm>) {
+  function handleCreate(form: FormValues) {
+    setFormError(null);
     startTransition(async () => {
-      await createBusinessEvent({ ...form, descripcion: form.descripcion || null });
-      setShowForm(false);
-      router.refresh();
+      try {
+        await createBusinessEvent({ ...form, descripcion: form.descripcion || null });
+        setShowForm(false);
+        router.refresh();
+      } catch {
+        setFormError("No se pudo guardar. Inténtalo de nuevo.");
+      }
     });
   }
 
-  function handleUpdate(id: string, form: ReturnType<typeof emptyForm>) {
+  function handleUpdate(id: string, form: FormValues) {
+    setFormError(null);
     startTransition(async () => {
-      await updateBusinessEvent(id, { ...form, descripcion: form.descripcion || null });
-      setEditing(null);
-      router.refresh();
+      try {
+        await updateBusinessEvent(id, { ...form, descripcion: form.descripcion || null });
+        setEditing(null);
+        router.refresh();
+      } catch {
+        setFormError("No se pudo guardar. Inténtalo de nuevo.");
+      }
     });
   }
 
   function handleDelete(id: string) {
-    if (!confirm("¿Eliminar este evento?")) return;
     startTransition(async () => {
-      await deleteBusinessEvent(id);
-      setEvents((prev) => prev.filter((e) => e.id !== id));
+      try {
+        await deleteBusinessEvent(id);
+        setDeletedIds((prev) => new Set([...prev, id]));
+        setConfirmDeleteId(null);
+      } catch {
+        setConfirmDeleteId(null);
+      }
     });
   }
 
   return (
     <div className="space-y-6">
       {/* Header row */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-start sm:items-center justify-between gap-3 flex-wrap">
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setFilterCat("todas")}
@@ -202,7 +233,7 @@ export default function HistorialTimeline({ events: initial }: { events: Busines
         </div>
 
         <button
-          onClick={() => { setShowForm(true); setEditing(null); }}
+          onClick={() => { setShowForm(true); setEditing(null); setFormError(null); }}
           className="flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors shrink-0"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -217,15 +248,18 @@ export default function HistorialTimeline({ events: initial }: { events: Busines
         <EventForm
           initial={emptyForm()}
           onSave={handleCreate}
-          onCancel={() => setShowForm(false)}
+          onCancel={() => { setShowForm(false); setFormError(null); }}
           isPending={isPending}
+          error={formError}
         />
       )}
 
       {/* Empty state */}
       {filtered.length === 0 && !showForm && (
         <div className="text-center py-20 text-navy/35 text-sm">
-          No hay eventos registrados todavía.
+          {filterCat === "todas"
+            ? "No hay eventos registrados todavía."
+            : `No hay eventos de tipo "${getCat(filterCat).label}".`}
         </div>
       )}
 
@@ -238,17 +272,16 @@ export default function HistorialTimeline({ events: initial }: { events: Busines
           </div>
 
           <div className="relative pl-6">
-            {/* vertical line */}
             <div className="absolute left-[7px] top-2 bottom-2 w-px bg-navy/[0.08]" />
 
             <div className="space-y-4">
               {byYear[year].map((ev) => {
                 const cat = getCat(ev.categoria);
                 const isEditing = editing === ev.id;
+                const isConfirming = confirmDeleteId === ev.id;
 
                 return (
                   <div key={ev.id} className="relative">
-                    {/* dot */}
                     <div className={`absolute -left-6 top-3 w-3 h-3 rounded-full border-2 border-white ${DOT_COLOR[ev.categoria]}`} />
 
                     {isEditing ? (
@@ -260,8 +293,9 @@ export default function HistorialTimeline({ events: initial }: { events: Busines
                           descripcion: ev.descripcion ?? "",
                         }}
                         onSave={(form) => handleUpdate(ev.id, form)}
-                        onCancel={() => setEditing(null)}
+                        onCancel={() => { setEditing(null); setFormError(null); }}
                         isPending={isPending}
+                        error={formError}
                       />
                     ) : (
                       <div className="group bg-white border border-navy/[0.08] rounded-xl px-4 py-3 hover:border-navy/20 transition-colors">
@@ -279,26 +313,47 @@ export default function HistorialTimeline({ events: initial }: { events: Busines
                             )}
                           </div>
 
-                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                            <button
-                              onClick={() => setEditing(ev.id)}
-                              className="p-1.5 rounded-md text-navy/40 hover:text-navy hover:bg-navy/[0.05] transition-colors"
-                              title="Editar"
-                            >
-                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                              </svg>
-                            </button>
-                            <button
-                              onClick={() => handleDelete(ev.id)}
-                              className="p-1.5 rounded-md text-navy/40 hover:text-red-500 hover:bg-red-50 transition-colors"
-                              title="Eliminar"
-                            >
-                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-                              </svg>
-                            </button>
-                          </div>
+                          {/* Actions */}
+                          {isConfirming ? (
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className="text-xs text-navy/55">¿Eliminar?</span>
+                              <button
+                                onClick={() => handleDelete(ev.id)}
+                                disabled={isPending}
+                                className="px-2.5 py-1 text-xs font-medium text-white bg-red-500 hover:bg-red-600 rounded-md transition-colors disabled:opacity-40"
+                              >
+                                Sí
+                              </button>
+                              <button
+                                onClick={() => setConfirmDeleteId(null)}
+                                disabled={isPending}
+                                className="px-2.5 py-1 text-xs font-medium text-navy/55 hover:text-navy rounded-md transition-colors"
+                              >
+                                No
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                              <button
+                                onClick={() => { setEditing(ev.id); setConfirmDeleteId(null); setFormError(null); }}
+                                className="p-1.5 rounded-md text-navy/40 hover:text-navy hover:bg-navy/[0.05] transition-colors"
+                                title="Editar"
+                              >
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                </svg>
+                              </button>
+                              <button
+                                onClick={() => setConfirmDeleteId(ev.id)}
+                                className="p-1.5 rounded-md text-navy/40 hover:text-red-500 hover:bg-red-50 transition-colors"
+                                title="Eliminar"
+                              >
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                                </svg>
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
