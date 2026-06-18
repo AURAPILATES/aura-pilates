@@ -62,7 +62,7 @@ export default memo(function HorarioList({
           <div key={dateKey}>
             {/* Day header */}
             <div className="flex items-center justify-between gap-4 pb-3 border-b border-navy/[0.09]">
-              <h2 className="text-2xl font-bold text-navy font-display capitalize leading-none">
+              <h2 className="text-2xl font-bold text-navy capitalize leading-none">
                 {dayName} <span className="font-light text-xl">{dayNum}</span>
               </h2>
               <div className="flex items-center gap-5 text-sm shrink-0">
