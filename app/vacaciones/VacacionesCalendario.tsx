@@ -252,24 +252,24 @@ function NuevoInstructorModal({
   }
 
   return (
-    <Drawer
-      title="Nuevo instructor"
-      onClose={onClose}
-      footer={
-        <div className="flex justify-end gap-3">
-          <button onClick={onClose} className="px-4 py-2.5 text-sm text-navy/55 hover:text-navy transition-colors">
-            Cancelar
-          </button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-navy/25 backdrop-blur-[2px]" onClick={onClose} />
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col">
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-navy/[0.07]">
+          <h2 className="text-base font-bold text-navy">Nuevo instructor</h2>
           <button
-            onClick={handleSubmit}
-            disabled={!nombre.trim() || saving}
-            className="px-6 py-2.5 bg-primary text-white text-sm font-semibold rounded-xl hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-navy/5 text-navy/40 hover:text-navy transition-colors"
           >
-            {saving ? "Creando…" : "Crear instructor"}
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
           </button>
         </div>
-      }
-    >
+
+        {/* Body */}
         <div className="px-6 py-5 space-y-4">
           <div>
             <label className="block text-xs text-navy/55 mb-1.5">Nombre</label>
@@ -282,7 +282,6 @@ function NuevoInstructorModal({
               className="w-full text-sm border border-navy/[0.12] rounded-lg px-4 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary/30 text-navy"
             />
           </div>
-
           <div>
             <label className="block text-xs text-navy/55 mb-1.5">Inicio de contrato</label>
             <input
@@ -292,29 +291,22 @@ function NuevoInstructorModal({
               className="w-full text-sm border border-navy/[0.12] rounded-lg px-4 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary/30 text-navy"
             />
           </div>
-
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs text-navy/55 mb-1.5">Días de jornada/semana</label>
+              <label className="block text-xs text-navy/55 mb-1.5">Días jornada/sem.</label>
               <input
-                type="number"
-                min={1}
-                max={7}
-                value={jornadaDias}
+                type="number" min={1} max={7} value={jornadaDias}
                 onChange={(e) => handleJornada(Number(e.target.value))}
                 className="w-full text-sm border border-navy/[0.12] rounded-lg px-4 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary/30 text-navy"
               />
             </div>
             <div>
               <label className="block text-xs text-navy/55 mb-1.5">
-                Días de vacaciones
-                {!userEdited && <span className="ml-1 text-[10px] text-primary/70 normal-case font-normal">calculado</span>}
+                Días vacaciones
+                {!userEdited && <span className="ml-1 text-[10px] text-primary/70 font-normal">· calculado</span>}
               </label>
               <input
-                type="number"
-                min={0}
-                max={365}
-                value={diasTotales}
+                type="number" min={0} max={365} value={diasTotales}
                 onChange={(e) => handleDias(Number(e.target.value))}
                 className="w-full text-sm border border-navy/[0.12] rounded-lg px-4 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary/30 text-navy"
               />
@@ -324,18 +316,30 @@ function NuevoInstructorModal({
             <p className="text-[11px] text-navy/40 leading-relaxed">
               ET art. 38 · {hint}
               {userEdited && (
-                <button
-                  type="button"
-                  onClick={() => { setDiasTotales(diasAuto); setUserEdited(false); }}
-                  className="ml-2 text-primary/70 hover:text-primary underline underline-offset-2 transition-colors"
-                >
+                <button type="button" onClick={() => { setDiasTotales(diasAuto); setUserEdited(false); }}
+                  className="ml-2 text-primary/70 hover:text-primary underline underline-offset-2 transition-colors">
                   restablecer
                 </button>
               )}
             </p>
           )}
         </div>
-    </Drawer>
+
+        {/* Footer */}
+        <div className="flex justify-end gap-3 px-6 py-4 border-t border-navy/[0.07]">
+          <button onClick={onClose} className="px-4 py-2.5 text-sm text-navy/55 hover:text-navy transition-colors">
+            Cancelar
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={!nombre.trim() || saving}
+            className="px-6 py-2.5 bg-primary text-white text-sm font-semibold rounded-xl hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            {saving ? "Creando…" : "Crear instructor"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
