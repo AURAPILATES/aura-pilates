@@ -1,7 +1,9 @@
 "use client";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { BookOpen } from "react-feather";
 import type { Sale } from "@/lib/sales";
+import type { MonthlyProductRevenue } from "@/lib/productRevenue";
+import type { BusinessEvent, EventCategoria } from "@/lib/businessEvents";
 
 type View        = "canal" | "producto";
 type ChartType   = "line" | "bar";
@@ -30,6 +32,31 @@ const PRODUCT_COLORS = [
   "#4A9870","#D46055","#C46890","#3AA09C",
 ];
 
+// ── Event annotation config ───────────────────────────────────────────────────
+
+const EVENT_COLORS: Record<EventCategoria, string> = {
+  precios:     "#F59E0B",
+  horarios:    "#3B82F6",
+  promociones: "#10B981",
+  operativo:   "#A855F7",
+  otro:        "#64748B",
+};
+
+const EVENT_LABELS: Record<EventCategoria, string> = {
+  precios:     "Precios",
+  horarios:    "Horarios",
+  promociones: "Promociones",
+  operativo:   "Operativo",
+  otro:        "Otro",
+};
+
+function fmtEventDate(iso: string) {
+  const [y, m, d] = iso.split("-");
+  return `${Number(d)} ${MONTH_NAMES[m]} ${y}`;
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
 function fmtTick(v: number) {
   return v >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${v}`;
 }
@@ -47,6 +74,17 @@ function buildSeries(sales: Sale[], getKey: (s: Sale) => string) {
     if (!data.has(m)) data.set(m, new Map());
     const row = data.get(m)!;
     row.set(k, (row.get(k) ?? 0) + s.amount);
+  }
+  return { months, data };
+}
+
+function buildSeriesFromMonthly(monthly: MonthlyProductRevenue[]) {
+  const months = monthly.map((m) => m.month);
+  const data   = new Map<string, Map<string, number>>();
+  for (const m of monthly) {
+    const row = new Map<string, number>();
+    for (const item of m.items) row.set(item.name, item.revenue);
+    data.set(m.month, row);
   }
   return { months, data };
 }
@@ -91,13 +129,19 @@ function RadioDot({ active }: { active: boolean }) {
   );
 }
 
-export default function EvolucionChart({ sales, salesAll }: { sales: Sale[]; salesAll?: Sale[] }) {
-  const [view,        setView]        = useState<View>("canal");
-  const [chartType,   setChartType]   = useState<ChartType>("line");
-  const [hoveredIdx,  setHoveredIdx]  = useState<number | null>(null);
-  const [compareMode, setCompareMode] = useState<CompareMode>("none");
-  const [compareN,    setCompareN]    = useState(1);
-  const [showPicker,  setShowPicker]  = useState(false);
+export default function EvolucionChart({ sales, salesAll, monthly, events }: {
+  sales: Sale[];
+  salesAll?: Sale[];
+  monthly?: MonthlyProductRevenue[];
+  events?: BusinessEvent[];
+}) {
+  const [view,          setView]          = useState<View>("canal");
+  const [chartType,     setChartType]     = useState<ChartType>("line");
+  const [hoveredIdx,    setHoveredIdx]    = useState<number | null>(null);
+  const [hoveredEventId,setHoveredEventId]= useState<string | null>(null);
+  const [compareMode,   setCompareMode]   = useState<CompareMode>("none");
+  const [compareN,      setCompareN]      = useState(1);
+  const [showPicker,    setShowPicker]    = useState(false);
   const pickerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -111,22 +155,30 @@ export default function EvolucionChart({ sales, salesAll }: { sales: Sale[]; sal
     return () => document.removeEventListener("mousedown", handler);
   }, [showPicker]);
 
-  const getKey = view === "canal" ? (s: Sale) => s.method : (s: Sale) => s.item;
-  const { months, data } = buildSeries(sales, getKey);
-  const { data: dataAll } = buildSeries(salesAll ?? [], getKey);
+  const getKey = (s: Sale) => s.method;
 
-  const rawKeys = [...new Set(sales.map(getKey))];
+  const useMonthly = view === "producto" && !!monthly && monthly.length > 0;
+  const { months, data } = useMonthly
+    ? buildSeriesFromMonthly(monthly!)
+    : buildSeries(sales, getKey);
+  const dataAll = useMonthly
+    ? buildSeriesFromMonthly(monthly!).data
+    : buildSeries(salesAll ?? [], getKey).data;
+
+  const rawKeys = useMonthly
+    ? [...new Set(monthly!.flatMap((m) => m.items.map((i) => i.name)))]
+    : [...new Set(sales.map(getKey))];
   const keysByRevenue = [...rawKeys].sort((a, b) => {
     const totA = months.reduce((s, m) => s + (data.get(m)?.get(a) ?? 0), 0);
     const totB = months.reduce((s, m) => s + (data.get(m)?.get(b) ?? 0), 0);
     return totB - totA;
   });
-  const keys = view === "producto" ? keysByRevenue.slice(0, 7) : keysByRevenue;
+  const keys = view === "producto" ? keysByRevenue.slice(0, 8) : keysByRevenue;
 
   const compareOffset = compareMode === "none" ? 0
     : compareMode === "prev" ? months.length
     : compareN;
-  const isComparing = compareOffset > 0 && !!salesAll && salesAll.length > 0;
+  const isComparing = compareOffset > 0 && (useMonthly || (!!salesAll && salesAll.length > 0));
 
   const allValues = months.flatMap((m) => {
     const curr = keys.map((k) => data.get(m)?.get(k) ?? 0);
@@ -160,7 +212,19 @@ export default function EvolucionChart({ sales, salesAll }: { sales: Sale[]; sal
 
   const showEvery = N > 8 ? 2 : 1;
 
+  // Group events by month for annotation
+  const eventsByMonth = useMemo(() => {
+    const map = new Map<string, BusinessEvent[]>();
+    for (const ev of (events ?? [])) {
+      const m = ev.fecha.slice(0, 7);
+      if (!map.has(m)) map.set(m, []);
+      map.get(m)!.push(ev);
+    }
+    return map;
+  }, [events]);
+
   function handleMouseMove(e: React.MouseEvent<SVGSVGElement>) {
+    if (hoveredEventId !== null) return;
     const svg  = e.currentTarget;
     const rect = svg.getBoundingClientRect();
     const scaleX = SVG_W / rect.width;
@@ -348,7 +412,7 @@ export default function EvolucionChart({ sales, salesAll }: { sales: Sale[]; sal
           viewBox={`0 0 ${SVG_W} ${SVG_H}`}
           overflow="visible"
           onMouseMove={handleMouseMove}
-          onMouseLeave={() => setHoveredIdx(null)}
+          onMouseLeave={() => { setHoveredIdx(null); setHoveredEventId(null); }}
           style={{ cursor: "crosshair" }}
         >
           <defs>
@@ -368,6 +432,26 @@ export default function EvolucionChart({ sales, salesAll }: { sales: Sale[]; sal
                 </text>
               </g>
             );
+          })}
+
+          {/* Event annotation lines — behind data */}
+          {months.map((m, mi) => {
+            const evs = eventsByMonth.get(m) ?? [];
+            return evs.map((ev, ei) => {
+              const baseX = chartType === "line" ? xOf(mi) : barCx(mi);
+              const evX = evs.length > 1 ? baseX + (ei - (evs.length - 1) / 2) * 7 : baseX;
+              return (
+                <line
+                  key={`evline-${ev.id}`}
+                  x1={evX} y1={MT} x2={evX} y2={MT + cH}
+                  stroke={EVENT_COLORS[ev.categoria]}
+                  strokeWidth="1"
+                  strokeDasharray="3 3"
+                  opacity="0.4"
+                  pointerEvents="none"
+                />
+              );
+            });
           })}
 
           {chartType === "line" ? (
@@ -463,8 +547,8 @@ export default function EvolucionChart({ sales, salesAll }: { sales: Sale[]; sal
             </>
           )}
 
-          {/* Hover crosshair */}
-          {hoverX !== null && (
+          {/* Hover crosshair — hidden when hovering an event */}
+          {hoverX !== null && hoveredEventId === null && (
             <line x1={hoverX} y1={MT} x2={hoverX} y2={MT + cH}
               stroke="#94A3B8" strokeWidth="1" strokeDasharray="4 3" pointerEvents="none" />
           )}
@@ -481,8 +565,8 @@ export default function EvolucionChart({ sales, salesAll }: { sales: Sale[]; sal
             );
           })}
 
-          {/* Tooltip */}
-          {hoveredIdx !== null && (() => {
+          {/* Data tooltip — hidden when hovering an event */}
+          {hoveredIdx !== null && hoveredEventId === null && (() => {
             const month   = months[hoveredIdx];
             const compM   = isComparing ? shiftMonth(month, -compareOffset) : null;
             const sx      = hoverX!;
@@ -568,6 +652,74 @@ export default function EvolucionChart({ sales, salesAll }: { sales: Sale[]; sal
 
           {/* Mouse capture overlay */}
           <rect x={ML} y={MT} width={cW} height={cH} fill="transparent" />
+
+          {/* Event markers + tooltips — rendered last (on top of everything) */}
+          {months.map((m, mi) => {
+            const evs = eventsByMonth.get(m) ?? [];
+            return evs.map((ev, ei) => {
+              const baseX = chartType === "line" ? xOf(mi) : barCx(mi);
+              const evX   = evs.length > 1 ? baseX + (ei - (evs.length - 1) / 2) * 7 : baseX;
+              const color = EVENT_COLORS[ev.categoria];
+              const isHov = hoveredEventId === ev.id;
+              const EV_TW = 200;
+              const EV_TH = ev.descripcion ? 60 : 46;
+              const flipL = evX + EV_TW + 10 > SVG_W - MR;
+              const tx    = flipL ? evX - EV_TW - 10 : evX + 10;
+
+              return (
+                <g
+                  key={`evmark-${ev.id}`}
+                  onMouseEnter={() => setHoveredEventId(ev.id)}
+                  onMouseLeave={() => setHoveredEventId(null)}
+                  style={{ cursor: "default" }}
+                >
+                  {/* Invisible hitbox for easier hover */}
+                  <rect x={evX - 8} y={MT - 10} width={16} height={cH + 20} fill="transparent" />
+                  {/* Marker dot at top of line */}
+                  <circle
+                    cx={evX} cy={MT - 2}
+                    r={isHov ? 5 : 3.5}
+                    fill={color}
+                    stroke="white"
+                    strokeWidth={isHov ? 1.5 : 1}
+                    opacity={isHov ? 1 : 0.8}
+                  />
+                  {/* Event tooltip */}
+                  {isHov && (
+                    <g pointerEvents="none">
+                      <rect
+                        x={tx} y={MT}
+                        width={EV_TW} height={EV_TH}
+                        rx="6"
+                        fill="white"
+                        stroke="#E2E8F0"
+                        strokeWidth="1"
+                        filter="url(#evol-shadow)"
+                      />
+                      {/* Row 1: category dot + label + date */}
+                      <circle cx={tx + 14} cy={MT + 13} r="3.5" fill={color} />
+                      <text x={tx + 24} y={MT + 17} fontSize="9" fontWeight="600" fill={color}>
+                        {EVENT_LABELS[ev.categoria]}
+                      </text>
+                      <text x={tx + EV_TW - 10} y={MT + 17} fontSize="8.5" fill="#94A3B8" textAnchor="end">
+                        {fmtEventDate(ev.fecha)}
+                      </text>
+                      {/* Row 2: title */}
+                      <text x={tx + 10} y={MT + 32} fontSize="9.5" fontWeight="600" fill="#0F172A">
+                        {ev.titulo.length > 28 ? ev.titulo.slice(0, 28) + "…" : ev.titulo}
+                      </text>
+                      {/* Row 3: description (optional) */}
+                      {ev.descripcion && (
+                        <text x={tx + 10} y={MT + 47} fontSize="8.5" fill="#64748B">
+                          {ev.descripcion.length > 34 ? ev.descripcion.slice(0, 34) + "…" : ev.descripcion}
+                        </text>
+                      )}
+                    </g>
+                  )}
+                </g>
+              );
+            });
+          })}
         </svg>
       )}
 

@@ -48,6 +48,7 @@ import { catalogFromMomence, revenueByProductFromStripe, revenueByProductByMonth
 import { computeSubscriptionCohorts } from "@/lib/subscriptionCohort";
 import SubscriptionEvolutionChart from "./SubscriptionEvolutionChart";
 import QuestionHeader from "@/app/components/QuestionHeader";
+import { loadBusinessEvents } from "@/lib/businessEvents";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -227,7 +228,9 @@ export default async function Finanzas(props: {
   const byMethodBounded = stripeByMethod(paymentsBounded);
 
   // ── Transactions (siempre datos completos — el banco solo exporta hasta fecha fija) ──
-  const [txnsAll, dbCategories, budgets] = await Promise.all([loadTransactionsCached(), loadCategoriesCached(), loadBudgetsCached()]);
+  const [txnsAll, dbCategories, budgets, businessEvents] = await Promise.all([
+    loadTransactionsCached(), loadCategoriesCached(), loadBudgetsCached(), loadBusinessEvents(),
+  ]);
   const dbCatByLabel = new Map(dbCategories.map((c) => [c.label, c]));
   const totalOpEx     = totalOperationalExpenses(txnsAll);
   const totalStartup  = totalStartupCosts(txnsAll);
@@ -607,7 +610,7 @@ export default async function Finanzas(props: {
                     })()}
                   </Block>
                 </div>
-                <EvolucionChart sales={toSales(payments)} salesAll={salesAll} monthly={monthlyRevenue} />
+                <EvolucionChart sales={toSales(payments)} salesAll={salesAll} monthly={monthlyRevenue} events={businessEvents} />
               </div>
             </section>
 
