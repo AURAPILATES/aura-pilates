@@ -16,6 +16,10 @@ export default async function ClientesPage() {
     const d = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`;
   })();
+  const prevPrevMonth = (() => {
+    const d = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+    return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`;
+  })();
 
   const payments = await loadStripePaymentsCached();
   const [customers, businessEvents] = await Promise.all([
@@ -29,17 +33,27 @@ export default async function ClientesPage() {
   const newIds     = newCustomersLast30Days(payments);
 
   // Último pago por tipo — suscripciones y packs tienen ventanas de caducidad distintas
-  const lastSubById  = new Map<string, { date: string }>();
+  const lastSubById  = new Map<string, { date: string; product: string }>();
   const lastPackById = new Map<string, { date: string; product: string }>();
+  const packMonthSets = new Map<string, Set<string>>();
+  const checkMonths = new Set([curMonth, prevMonth, prevPrevMonth]);
 
   for (const p of payments) {
     if (!p.customerId) continue;
     if (p.category === "Suscripción") {
       const ex = lastSubById.get(p.customerId);
-      if (!ex || p.date > ex.date) lastSubById.set(p.customerId, { date: p.date });
-    } else if (p.inferredProduct !== "Clase suelta" && p.inferredProduct !== "Con cupón") {
-      const ex = lastPackById.get(p.customerId);
-      if (!ex || p.date > ex.date) lastPackById.set(p.customerId, { date: p.date, product: p.inferredProduct });
+      if (!ex || p.date > ex.date) lastSubById.set(p.customerId, { date: p.date, product: p.inferredProduct });
+    } else {
+      const m = p.date.slice(0, 7);
+      if (checkMonths.has(m)) {
+        const s = packMonthSets.get(p.customerId) ?? new Set<string>();
+        s.add(m);
+        packMonthSets.set(p.customerId, s);
+      }
+      if (p.inferredProduct !== "Clase suelta" && p.inferredProduct !== "Con cupón") {
+        const ex = lastPackById.get(p.customerId);
+        if (!ex || p.date > ex.date) lastPackById.set(p.customerId, { date: p.date, product: p.inferredProduct });
+      }
     }
   }
 
@@ -49,7 +63,7 @@ export default async function ClientesPage() {
   }
 
   const customersWithChurn = customers.map((c) => {
-    let lastSub:  { date: string } | null = null;
+    let lastSub:  { date: string; product: string } | null = null;
     let lastPack: { date: string; product: string } | null = null;
     for (const sid of c.stripeIds) {
       const sub  = lastSubById.get(sid);
@@ -57,11 +71,20 @@ export default async function ClientesPage() {
       const pack = lastPackById.get(sid);
       if (pack && (!lastPack || pack.date > lastPack.date)) lastPack = pack;
     }
+    const isPackRecurring = !c.isRecurring && (() => {
+      const allMonths = new Set<string>();
+      for (const sid of c.stripeIds) {
+        packMonthSets.get(sid)?.forEach((m) => allMonths.add(m));
+      }
+      return allMonths.size >= 2;
+    })();
     return {
       ...c,
       daysSinceLastSub:  lastSub  ? daysSince(lastSub.date)  : null,
       daysSinceLastPack: lastPack ? daysSince(lastPack.date) : null,
       lastPackProduct:   lastPack?.product ?? null,
+      lastSubProduct:    lastSub?.product  ?? null,
+      isPackRecurring,
       isActive: activeIds.has(c.id),
       isNew:    newIds.has(c.id),
     };

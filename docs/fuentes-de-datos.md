@@ -12,12 +12,20 @@ Toda la actividad de cobros a clientes se obtiene en tiempo real desde **Stripe*
   - Posibles bajas: clientes que pagaron el mes pasado pero no este mes
   - Ingresos recurrentes vs. pagos únicos en la sección Finanzas
 - **Inferencia de producto por importe (implementado jun 2026):** como Momence no pasa metadatos de producto a Stripe, el dashboard infiere el producto de cada cobro comparando el importe con los precios conocidos de Momence (75 € Bàsic / 140 € Plus / 180 € Pro / 90 € Pack 4 / 170 € Pack 8 / 25 € Pack Benvinguda / 20 € Clase suelta). Pagos con descuento, prorrateo o precio distinto quedan como "Otro". Se trata de una **estimación**, no de datos exactos.
-- **Estados de actividad del cliente (implementado jun 2026):** la tabla de clientes clasifica cada suscriptor recurrente en función de los días transcurridos desde su último pago de tipo "Suscripción":
-  - **Al día:** último pago hace ≤ 30 días. Normal.
-  - **Sin pagar** (fondo amarillo): entre 31 y 45 días sin pagar. El ciclo mensual ha vencido — posible baja.
-  - **Baja** (fondo rojo): más de 45 días sin pagar (30 días de gracia + 15 días adicionales). Se considera baja definitiva.
-  - Si el cliente realiza cualquier nuevo pago, el contador se resetea y vuelve a "Al día".
-  - Los clientes ocasionales (packs, clases sueltas) no se evalúan con este criterio — solo aplica a los marcados como "Recurrentes".
+- **Estados de actividad del cliente (implementado jun 2026):** la tabla de clientes clasifica cada cliente en función del tipo de su último pago y los días transcurridos. Cada tipo de producto tiene su propia ventana de validez y un margen de 15 días antes de pasar a "Baja". El estado se evalúa por tipo de pago: las suscripciones se miran separadamente de los packs (una clase suelta extra no resetea el contador de la suscripción).
+
+  | Producto | Válido | "Por vencer" | "Caducado / Sin pagar" | "Baja" |
+  |---|---|---|---|---|
+  | Suscripción (renueva c/30d) | ≤ 30d | — | 31–45d | > 45d |
+  | Pack 4 u 8 clases (válido 90d) | ≤ 76d | 77–90d | 91–105d | > 105d |
+  | Pack Benvinguda (válido 15d) | ≤ 15d | — | > 15d | — |
+  | Clase suelta | No caduca | — | — | — |
+
+  - **Suscripciones:** "Recurrente" solo se asigna si ha habido pagos de suscripción en ≥ 2 de los últimos 3 meses. El estado es independiente de los pagos de pack que pueda tener.
+  - **"Por vencer"** (ámbar): solo para packs, avisa en los últimos 14 días de validez.
+  - **"Baja"** (rojo): 15 días después del vencimiento para cualquier tipo — mismo criterio para suscripciones y packs.
+  - Cualquier nuevo pago del tipo correspondiente resetea el contador a "Al día".
+  - Clase suelta nunca genera ningún estado de alerta.
 - **Confirmado por investigación directa en la API (jun 2026):** la cuenta de Stripe tiene **0 Products, 0 Prices y 0 Subscriptions configurados**. Esto es consecuencia de cómo funciona Momence: cuando un alumno compra una suscripción o pack en Momence, Momence genera un **Payment Link puntual en Stripe** (un cobro individual) en lugar de crear una Subscription object de Stripe. Momence gestiona internamente la lógica de renovación y acceso, pero no traspasa esa estructura a Stripe. El resultado es que desde Stripe solo vemos cobros individuales sin ningún metadato de producto, por lo que Stripe nunca podrá darnos un desglose de ingresos por producto ni un MRR/ARR real — solo importe y fecha. Cualquier intento de "adivinar" el producto por el importe del cobro es una heurística frágil (descuentos, prorrateos) y se ha descartado en favor de Momence (ver abajo).
 
 ---

@@ -25,7 +25,7 @@ function customerMonthSets(
   return map;
 }
 
-// Set of customerIds who paid in at least minMonths of the last checkMonths months
+// Set of customerIds who paid subscriptions in at least minMonths of the last checkMonths months
 export function recurringCustomerIds(
   payments: StripePayment[],
   curMonth: string,
@@ -34,7 +34,7 @@ export function recurringCustomerIds(
 ): Set<string> {
   const now = new Date(curMonth + "-01");
   const months = Array.from({ length: checkMonths }, (_, i) => monthOffset(now, -i));
-  const map = customerMonthSets(payments, months);
+  const map = customerMonthSets(payments.filter((p) => p.category === "Suscripción"), months);
   const result = new Set<string>();
   for (const [id, set] of map) {
     if (set.size >= minMonths) result.add(id);

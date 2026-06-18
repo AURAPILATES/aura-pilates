@@ -6,10 +6,10 @@ import { fmt } from "@/lib/analytics";
 import type { StripeCustomer } from "@/lib/stripeCustomers";
 import type { StripePayment } from "@/lib/stripePayments";
 
-export type CustomerRow = StripeCustomer & { daysSinceLastSub?: number | null; daysSinceLastPack?: number | null; lastPackProduct?: string | null; isActive?: boolean; isNew?: boolean };
+export type CustomerRow = StripeCustomer & { daysSinceLastSub?: number | null; daysSinceLastPack?: number | null; lastPackProduct?: string | null; lastSubProduct?: string | null; isPackRecurring?: boolean; isActive?: boolean; isNew?: boolean };
 export type ClientesTableHandle = { openCustomer: (id: string) => void };
 
-type SortKey = "totalSpent" | "paymentCount" | "lastPaymentDate" | "firstPaymentDate" | "name";
+type SortKey = "totalSpent" | "lastPaymentDate" | "name";
 type SortDir = "asc" | "desc";
 type Filter  = "all" | "recurring" | "occasional" | "discount" | "error" | "churn";
 
@@ -57,25 +57,6 @@ function addDays(dateStr: string, n: number): string {
   return d.toISOString().split("T")[0];
 }
 
-function nextPaymentInfo(c: CustomerRow): { date: string; overdue: boolean; daysLate: number } | null {
-  if (!c.isRecurring || !c.lastPaymentDate) return null;
-  const nextDate = addDays(c.lastPaymentDate, 30);
-  const today = new Date().toISOString().split("T")[0];
-  const daysLate = Math.floor((new Date(today).getTime() - new Date(nextDate).getTime()) / 86400000);
-  return { date: nextDate, overdue: daysLate > 3, daysLate: Math.max(0, daysLate) };
-}
-
-function packExpiryDate(c: CustomerRow): string | null {
-  const d = c.daysSinceLastPack;
-  const prod = c.lastPackProduct;
-  if (d == null || !prod) return null;
-  const duration = prod === "Pack Benvinguda" ? 15 : (prod === "Pack 4 clases" || prod === "Pack 8 clases") ? 90 : null;
-  if (!duration) return null;
-  const today = new Date();
-  const expiry = new Date(today);
-  expiry.setDate(today.getDate() - d + duration);
-  return expiry.toISOString().split("T")[0];
-}
 
 function paymentExpiry(p: { category: string; inferredProduct: string; date: string }): string | null {
   if (p.category === "Suscripción") return addDays(p.date, 30);
@@ -173,19 +154,10 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
     [payments],
   );
 
-  const lastSubProductMap = useMemo(() => {
-    const map = new Map<string, string>();
-    const subs = payments.filter((p) => p.category === "Suscripción" && p.customerId).sort((a, b) => b.date.localeCompare(a.date));
-    for (const p of subs) {
-      if (!map.has(p.customerId!)) map.set(p.customerId!, p.inferredProduct);
-    }
-    return map;
-  }, [payments]);
-
   const hasDiscount = (c: CustomerRow) => !!c.discount || c.stripeIds.some((sid) => couponStripeIds.has(sid));
 
   const discountCount = customers.filter(hasDiscount).length;
-  const errorCount    = customers.filter((c) => c.hasPaymentError).length;
+  const errorCount    = customers.filter((c) => c.delinquent).length;
   const churnCount    = customers.filter((c) => clientStatus(c).status !== "ok").length;
 
   const activeMonthIds = useMemo(() => {
@@ -203,7 +175,7 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
         if (filter === "recurring"   && !c.isRecurring)   return false;
         if (filter === "occasional"  &&  c.isRecurring)   return false;
         if (filter === "discount"    && !hasDiscount(c))   return false;
-        if (filter === "error"       && !c.hasPaymentError) return false;
+        if (filter === "error"       && !c.delinquent)      return false;
         if (filter === "churn"       && clientStatus(c).status === "ok") return false;
         if (!q) return true;
         return (
@@ -213,15 +185,9 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
       })
       .sort((a, b) => {
         let diff = 0;
-        if (sortKey === "totalSpent")          diff = a.totalSpent - b.totalSpent;
-        else if (sortKey === "paymentCount")   diff = a.paymentCount - b.paymentCount;
-        else if (sortKey === "lastPaymentDate") {
-          diff = (a.lastPaymentDate ?? "").localeCompare(b.lastPaymentDate ?? "");
-        } else if (sortKey === "firstPaymentDate") {
-          diff = (a.firstPaymentDate ?? "").localeCompare(b.firstPaymentDate ?? "");
-        } else {
-          diff = (a.name ?? "").localeCompare(b.name ?? "", "es");
-        }
+        if (sortKey === "totalSpent")           diff = a.totalSpent - b.totalSpent;
+        else if (sortKey === "lastPaymentDate") diff = (a.lastPaymentDate ?? "").localeCompare(b.lastPaymentDate ?? "");
+        else                                    diff = (a.name ?? "").localeCompare(b.name ?? "", "es");
         return sortDir === "desc" ? -diff : diff;
       });
   }, [customers, search, filter, sortKey, sortDir, activeMonthIds]);
@@ -240,18 +206,21 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
 
   function downloadCsv() {
     const rows = [
-      ["Nombre", "Email", "Frecuencia", "Total gastado (€)", "Pagos", "Fecha alta", "Último pago", "Próximo pago", "Descuento"],
+      ["Nombre", "Email", "Tipo", "Plan", "Total gastado (€)", "Pagos", "Fecha alta", "Último pago", "Estado", "Descuento"],
       ...filtered.map((c) => {
-        const nxt = nextPaymentInfo(c);
+        const tipo = c.isRecurring ? "Suscripción" : c.isPackRecurring ? "Recurrente sin subs" : "Ocasional";
+        const plan = c.isRecurring ? (c.lastSubProduct ?? "") : (c.lastPackProduct ?? "");
+        const { status } = clientStatus(c);
         return [
           c.name ?? "",
           c.email ?? "",
-          c.isRecurring ? "Recurrente" : "Ocasional",
+          tipo,
+          plan,
           c.totalSpent.toFixed(2),
           c.paymentCount,
           c.firstPaymentDate ?? "",
           c.lastPaymentDate ?? "",
-          nxt ? nxt.date : "",
+          status,
           c.discount ? (c.discount.percentOff != null ? `-${c.discount.percentOff}%` : c.discount.name) : "",
         ];
       }),
@@ -364,26 +333,17 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-navy/[0.06]">
-                <ThSort col="name"             label="Cliente"       className="text-left" />
-                <th className="text-left px-5 py-3 text-[11px] font-semibold text-navy/50 uppercase tracking-wider">
-                  Frecuencia
-                </th>
-                <ThSort col="totalSpent"       label="Total gastado" className="text-right" />
-                <ThSort col="paymentCount"     label="Pagos"         className="text-right hidden sm:table-cell" />
-                <ThSort col="firstPaymentDate" label="Fecha alta"    className="text-right hidden sm:table-cell" />
-                <ThSort col="lastPaymentDate"  label="Último pago"   className="text-right hidden sm:table-cell" />
-                <th className="text-right px-5 py-3 text-[11px] font-semibold text-navy/50 uppercase tracking-wider hidden sm:table-cell">
-                  Próx. / Vence
-                </th>
-                <th className="text-center px-5 py-3 text-[11px] font-semibold text-navy/50 uppercase tracking-wider">
-                  Estado
-                </th>
+                <ThSort col="name"            label="Cliente"      className="text-left" />
+                <th className="text-left px-5 py-3 text-[11px] font-semibold text-navy/50 uppercase tracking-wider">Plan</th>
+                <ThSort col="totalSpent"      label="Total"        className="text-right" />
+                <ThSort col="lastPaymentDate" label="Último pago"  className="text-right hidden sm:table-cell" />
+                <th className="text-center px-5 py-3 text-[11px] font-semibold text-navy/50 uppercase tracking-wider">Estado</th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-5 py-12 text-center text-navy/45 text-sm">
+                  <td colSpan={5} className="px-5 py-12 text-center text-navy/45 text-sm">
                     No hay clientes que coincidan con tu búsqueda.
                   </td>
                 </tr>
@@ -394,11 +354,9 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
                   const crowns  = ["👑", "🥈", "🥉"];
 
                   const { status, days } = clientStatus(c);
-                  const subProduct = c.isRecurring
-                    ? (c.stripeIds.map((sid) => lastSubProductMap.get(sid)).find((v) => v != null) ?? null)
-                    : null;
-                  const packExpiry = !c.isRecurring ? packExpiryDate(c) : null;
-                  const packExpired = packExpiry != null && packExpiry < new Date().toISOString().split("T")[0];
+                  const planName = c.isRecurring
+                    ? (c.lastSubProduct && c.lastSubProduct !== "Con cupón" ? c.lastSubProduct : null)
+                    : (c.lastPackProduct ?? null);
                   return (
                     <tr
                       key={c.id}
@@ -424,43 +382,27 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
                       <td className="px-5 py-3">
                         {c.isRecurring ? (
                           <div>
-                            <span className="text-xs bg-primary/[0.08] text-primary px-2 py-0.5 rounded-full font-medium">
-                              Recurrente
-                            </span>
-                            {subProduct && subProduct !== "Otro" && (
-                              <p className="text-[11px] text-navy/40 mt-1">{subProduct}</p>
-                            )}
+                            <span className="text-xs bg-primary/[0.08] text-primary px-2 py-0.5 rounded-full font-medium">Suscripción</span>
+                            {planName && <p className="text-[11px] text-navy/40 mt-1">{planName}</p>}
+                          </div>
+                        ) : c.isPackRecurring ? (
+                          <div>
+                            <span className="text-xs bg-violet-50 text-violet-600 px-2 py-0.5 rounded-full font-medium">Recurrente sin subs</span>
+                            {planName && <p className="text-[11px] text-navy/40 mt-1">{planName}</p>}
                           </div>
                         ) : (
                           <div>
                             <span className="text-xs text-navy/45">Ocasional</span>
-                            {c.lastPackProduct && (
-                              <p className="text-[11px] text-navy/40 mt-1">{c.lastPackProduct}</p>
-                            )}
+                            {planName && <p className="text-[11px] text-navy/40 mt-1">{planName}</p>}
                           </div>
                         )}
                       </td>
-                      <td className="px-5 py-3 text-right font-semibold text-navy tabular-nums">{fmt(c.totalSpent)}</td>
-                      <td className="px-5 py-3 text-right text-navy/50 hidden sm:table-cell">{c.paymentCount}</td>
-                      <td className="px-5 py-3 text-right text-navy/55 text-xs hidden sm:table-cell">
-                        {c.firstPaymentDate ? fmtDate(c.firstPaymentDate) : "—"}
+                      <td className="px-5 py-3 text-right">
+                        <p className="font-semibold text-navy tabular-nums">{fmt(c.totalSpent)}</p>
+                        <p className="text-[11px] text-navy/40 mt-0.5">{c.paymentCount} pagos</p>
                       </td>
                       <td className="px-5 py-3 text-right text-navy/55 text-xs hidden sm:table-cell">
                         {c.lastPaymentDate ? fmtDate(c.lastPaymentDate) : "—"}
-                      </td>
-                      <td className="px-5 py-3 text-right text-xs hidden sm:table-cell">
-                        {(() => {
-                          const nxt = nextPaymentInfo(c);
-                          if (nxt) return <span className="text-navy/55">{fmtDate(nxt.date)}</span>;
-                          if (packExpiry) {
-                            return (
-                              <span className={packExpired ? "text-danger/60" : "text-navy/55"}>
-                                {packExpired ? "Vencido" : fmtDate(packExpiry)}
-                              </span>
-                            );
-                          }
-                          return <span className="text-navy/30">—</span>;
-                        })()}
                       </td>
                       <td className="px-5 py-3 text-center">
                         {status === "baja" ? (
