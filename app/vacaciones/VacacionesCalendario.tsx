@@ -8,6 +8,8 @@ import {
   removeAusenciasAction,
   createPersonaAction,
   archivePersonaAction,
+  unarchivePersonaAction,
+  loadArchivedPersonasAction,
 } from "@/app/actions/vacaciones";
 
 const PERSON_COLORS = [
@@ -203,7 +205,7 @@ function calcVacaciones(startDate: string, jornadaDias: number): { dias: number;
   const yearEnd = new Date(year, 11, 31, 12, 0, 0);
   const totalDays    = 365 + (year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0) ? 1 : 0);
   const remainingDays = Math.round((yearEnd.getTime() - start.getTime()) / 86400000) + 1;
-  const baseAnual = Math.round(22 * (jornadaDias / 5));
+  const baseAnual = Math.round(23 * (jornadaDias / 5));
   const dias = Math.max(0, Math.round((remainingDays / totalDays) * baseAnual));
   const hint = `${baseAnual} días/año × ${remainingDays}/${totalDays} días = ${dias} días`;
   return { dias, hint };
@@ -1182,6 +1184,32 @@ export default function VacacionesCalendario({
   const [personas, setPersonas] = useState<Persona[]>(initialPersonas);
   const [filtro, setFiltro] = useState<string>("todas");
   const [showNuevoModal, setShowNuevoModal] = useState(false);
+  const [showArchivados, setShowArchivados] = useState(false);
+  const [archivados, setArchivados] = useState<{ id: string; nombre: string; inicio_contrato: string; dias_totales: number }[]>([]);
+  const [loadingArchivados, setLoadingArchivados] = useState(false);
+  const [unarchivingId, setUnarchivingId] = useState<string | null>(null);
+
+  async function openArchivados() {
+    setShowArchivados(true);
+    setLoadingArchivados(true);
+    try {
+      const data = await loadArchivedPersonasAction();
+      setArchivados(data);
+    } finally {
+      setLoadingArchivados(false);
+    }
+  }
+
+  async function handleUnarchive(id: string) {
+    setUnarchivingId(id);
+    try {
+      await unarchivePersonaAction(id);
+      setArchivados((prev) => prev.filter((p) => p.id !== id));
+      router.refresh();
+    } finally {
+      setUnarchivingId(null);
+    }
+  }
 
   const handleAdd = useCallback(async (personaId: string, typeKey: AbsenceKey, dates: string[]) => {
     setPersonas((prev) =>
@@ -1283,7 +1311,51 @@ export default function VacacionesCalendario({
           </svg>
           Nuevo instructor
         </button>
+        <button
+          onClick={openArchivados}
+          className="flex items-center gap-1.5 text-xs text-navy/45 hover:text-navy/70 border border-navy/[0.10] hover:bg-navy/[0.03] px-3 py-1.5 rounded-lg transition-colors"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/>
+          </svg>
+          Archivados
+        </button>
       </div>
+
+      {/* Drawer de archivados */}
+      {showArchivados && (
+        <Drawer
+          title="Instructores archivados"
+          subtitle="Puedes reactivarlos en cualquier momento"
+          onClose={() => setShowArchivados(false)}
+        >
+          {loadingArchivados ? (
+            <p className="px-6 py-8 text-sm text-navy/40 text-center">Cargando…</p>
+          ) : archivados.length === 0 ? (
+            <p className="px-6 py-8 text-sm text-navy/40 text-center">Sin instructores archivados</p>
+          ) : (
+            <div className="divide-y divide-navy/[0.05]">
+              {archivados.map((p) => (
+                <div key={p.id} className="px-6 py-4 flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-semibold text-navy">{p.nombre}</p>
+                    <p className="text-xs text-navy/45 mt-0.5">
+                      Contrato: {p.inicio_contrato?.split("-").reverse().join("/")} · {p.dias_totales} días/año
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleUnarchive(p.id)}
+                    disabled={unarchivingId === p.id}
+                    className="shrink-0 text-xs font-semibold text-primary border border-primary/30 hover:bg-primary/5 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40"
+                  >
+                    {unarchivingId === p.id ? "Reactivando…" : "Reactivar"}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </Drawer>
+      )}
 
       {/* Alertas de solapamiento */}
       {filtro === "todas" && <OverlapCalendar personas={personas} />}

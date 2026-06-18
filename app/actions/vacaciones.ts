@@ -51,3 +51,24 @@ export async function archivePersonaAction(id: string) {
   if (error) throw new Error(error.message);
   revalidatePath("/vacaciones");
 }
+
+export async function unarchivePersonaAction(id: string) {
+  const supabase = createServerClient();
+  const { error } = await supabase
+    .from("personas")
+    .update({ archived: false })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath("/vacaciones");
+}
+
+export async function loadArchivedPersonasAction(): Promise<{ id: string; nombre: string; inicio_contrato: string; dias_totales: number }[]> {
+  const supabase = createServerClient();
+  const { data, error } = await supabase
+    .from("personas")
+    .select("id, nombre, inicio_contrato, dias_totales")
+    .eq("archived", true)
+    .order("nombre");
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
