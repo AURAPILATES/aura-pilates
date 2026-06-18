@@ -65,6 +65,12 @@ function nextPaymentInfo(c: CustomerRow): { date: string; overdue: boolean; days
   return { date: nextDate, overdue: daysLate > 3, daysLate: Math.max(0, daysLate) };
 }
 
+function churnStatus(c: CustomerRow): "baja" | "sinpagar" | "ok" {
+  if (!c.possibleChurn) return "ok";
+  if (c.daysSinceLast != null && c.daysSinceLast > 45) return "baja";
+  return "sinpagar";
+}
+
 function initials(name: string | null, email: string | null): string {
   if (name) {
     const parts = name.trim().split(/\s+/);
@@ -330,12 +336,13 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
                   const isTop   = topRank !== -1;
                   const crowns  = ["👑", "🥈", "🥉"];
 
+                  const status = churnStatus(c);
                   return (
                     <tr
                       key={c.id}
                       onClick={() => { setSelected(c); setStripeOpen(false); }}
                       className={`border-b border-navy/[0.04] last:border-0 transition-colors cursor-pointer hover:bg-primary/[0.025] ${
-                        c.possibleChurn ? "bg-warning/[0.04]" : i % 2 === 0 ? "" : "bg-navy/[0.008]"
+                        status === "baja" ? "bg-danger/[0.04]" : status === "sinpagar" ? "bg-warning/[0.04]" : i % 2 === 0 ? "" : "bg-navy/[0.008]"
                       }`}
                     >
                       <td className="px-5 py-3">
@@ -377,10 +384,15 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
                         })()}
                       </td>
                       <td className="px-5 py-3 text-center">
-                        {c.possibleChurn ? (
+                        {status === "baja" ? (
+                          <span className="inline-flex items-center gap-1.5 text-xs text-danger font-medium whitespace-nowrap">
+                            <span className="w-1.5 h-1.5 rounded-full bg-danger shrink-0 inline-block" />
+                            Baja{c.daysSinceLast != null ? ` · ${c.daysSinceLast}d` : ""}
+                          </span>
+                        ) : status === "sinpagar" ? (
                           <span className="inline-flex items-center gap-1.5 text-xs text-warning font-medium whitespace-nowrap">
                             <span className="w-1.5 h-1.5 rounded-full bg-warning shrink-0 inline-block" />
-                            Posible baja{c.daysSinceLast != null ? ` · ${c.daysSinceLast - 30}d tarde` : ""}
+                            Sin pagar{c.daysSinceLast != null ? ` · ${c.daysSinceLast - 30}d tarde` : ""}
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1.5 text-xs text-success font-medium">
@@ -422,10 +434,15 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
                 ) : (
                   <span className="text-xs bg-navy/[0.06] text-navy/55 px-2.5 py-1 rounded-full font-medium">Ocasional</span>
                 )}
-                {selected.possibleChurn ? (
+                {churnStatus(selected) === "baja" ? (
+                  <span className="text-xs bg-danger/10 text-danger px-2.5 py-1 rounded-full font-medium flex items-center gap-1 whitespace-nowrap">
+                    <span className="w-1.5 h-1.5 rounded-full bg-danger inline-block shrink-0" />
+                    Baja{selected.daysSinceLast != null ? ` · ${selected.daysSinceLast}d sin pagar` : ""}
+                  </span>
+                ) : churnStatus(selected) === "sinpagar" ? (
                   <span className="text-xs bg-warning/10 text-warning px-2.5 py-1 rounded-full font-medium flex items-center gap-1 whitespace-nowrap">
                     <span className="w-1.5 h-1.5 rounded-full bg-warning inline-block shrink-0" />
-                    Posible baja{selected.daysSinceLast != null ? ` · ${selected.daysSinceLast - 30}d tarde` : ""}
+                    Sin pagar{selected.daysSinceLast != null ? ` · ${selected.daysSinceLast - 30}d tarde` : ""}
                   </span>
                 ) : (
                   <span className="text-xs bg-success/10 text-success px-2.5 py-1 rounded-full font-medium flex items-center gap-1">
