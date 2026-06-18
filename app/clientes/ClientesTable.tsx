@@ -6,7 +6,7 @@ import { fmt } from "@/lib/analytics";
 import type { StripeCustomer } from "@/lib/stripeCustomers";
 import type { StripePayment } from "@/lib/stripePayments";
 
-export type CustomerRow = StripeCustomer & { possibleChurn?: boolean; daysSinceLast?: number | null; isActive?: boolean; isNew?: boolean };
+export type CustomerRow = StripeCustomer & { daysSinceLastSub?: number | null; daysSinceLastPack?: number | null; lastPackProduct?: string | null; isActive?: boolean; isNew?: boolean };
 export type ClientesTableHandle = { openCustomer: (id: string) => void };
 
 type SortKey = "totalSpent" | "paymentCount" | "lastPaymentDate" | "firstPaymentDate" | "name";
@@ -65,10 +65,29 @@ function nextPaymentInfo(c: CustomerRow): { date: string; overdue: boolean; days
   return { date: nextDate, overdue: daysLate > 3, daysLate: Math.max(0, daysLate) };
 }
 
-function churnStatus(c: CustomerRow): "baja" | "sinpagar" | "ok" {
-  if (!c.possibleChurn) return "ok";
-  if (c.daysSinceLast != null && c.daysSinceLast > 45) return "baja";
-  return "sinpagar";
+type ClientStatus = "baja" | "sinpagar" | "caducado" | "porvencer" | "ok";
+
+function clientStatus(c: CustomerRow): { status: ClientStatus; days: number | null } {
+  if (c.isRecurring) {
+    const d = c.daysSinceLastSub ?? null;
+    if (d == null) return { status: "ok", days: null };
+    if (d > 45) return { status: "baja",     days: d };
+    if (d > 30) return { status: "sinpagar", days: d - 30 };
+    return { status: "ok", days: null };
+  }
+  const d    = c.daysSinceLastPack ?? null;
+  const prod = c.lastPackProduct   ?? null;
+  if (d != null && prod) {
+    if (prod === "Pack Benvinguda") {
+      return d > 15 ? { status: "caducado", days: d - 15 } : { status: "ok", days: null };
+    }
+    if (prod === "Pack 4 clases" || prod === "Pack 8 clases") {
+      if (d > 120) return { status: "baja",      days: d - 90 };
+      if (d > 90)  return { status: "caducado",  days: d - 90 };
+      if (d > 76)  return { status: "porvencer", days: 90 - d };
+    }
+  }
+  return { status: "ok", days: null };
 }
 
 function initials(name: string | null, email: string | null): string {
@@ -139,7 +158,7 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
 
   const discountCount = customers.filter(hasDiscount).length;
   const errorCount    = customers.filter((c) => c.delinquent).length;
-  const churnCount    = customers.filter((c) => c.possibleChurn).length;
+  const churnCount    = customers.filter((c) => clientStatus(c).status !== "ok").length;
 
   const activeMonthIds = useMemo(() => {
     if (!activeMonth) return null;
@@ -157,7 +176,7 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
         if (filter === "occasional"  &&  c.isRecurring)   return false;
         if (filter === "discount"    && !hasDiscount(c))   return false;
         if (filter === "error"       && !c.delinquent)    return false;
-        if (filter === "churn"       && !c.possibleChurn) return false;
+        if (filter === "churn"       && clientStatus(c).status === "ok") return false;
         if (!q) return true;
         return (
           c.name?.toLowerCase().includes(q) ||
@@ -346,13 +365,13 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
                   const isTop   = topRank !== -1;
                   const crowns  = ["👑", "🥈", "🥉"];
 
-                  const status = churnStatus(c);
+                  const { status, days } = clientStatus(c);
                   return (
                     <tr
                       key={c.id}
                       onClick={() => { setSelected(c); setStripeOpen(false); }}
                       className={`border-b border-navy/[0.04] last:border-0 transition-colors cursor-pointer hover:bg-primary/[0.025] ${
-                        status === "baja" ? "bg-danger/[0.04]" : status === "sinpagar" ? "bg-warning/[0.04]" : i % 2 === 0 ? "" : "bg-navy/[0.008]"
+                        status === "baja" ? "bg-danger/[0.04]" : status === "sinpagar" || status === "caducado" ? "bg-warning/[0.04]" : status === "porvencer" ? "bg-amber-50/60" : i % 2 === 0 ? "" : "bg-navy/[0.008]"
                       }`}
                     >
                       <td className="px-5 py-3">
@@ -397,12 +416,22 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
                         {status === "baja" ? (
                           <span className="inline-flex items-center gap-1.5 text-xs text-danger font-medium whitespace-nowrap">
                             <span className="w-1.5 h-1.5 rounded-full bg-danger shrink-0 inline-block" />
-                            Baja{c.daysSinceLast != null ? ` · ${c.daysSinceLast}d` : ""}
+                            {c.isRecurring ? `Baja · ${days}d` : `Pack vencido · ${days}d`}
                           </span>
                         ) : status === "sinpagar" ? (
                           <span className="inline-flex items-center gap-1.5 text-xs text-warning font-medium whitespace-nowrap">
                             <span className="w-1.5 h-1.5 rounded-full bg-warning shrink-0 inline-block" />
-                            Sin pagar{c.daysSinceLast != null ? ` · ${c.daysSinceLast - 30}d tarde` : ""}
+                            Sin pagar · {days}d tarde
+                          </span>
+                        ) : status === "caducado" ? (
+                          <span className="inline-flex items-center gap-1.5 text-xs text-warning font-medium whitespace-nowrap">
+                            <span className="w-1.5 h-1.5 rounded-full bg-warning shrink-0 inline-block" />
+                            Pack vencido · {days}d
+                          </span>
+                        ) : status === "porvencer" ? (
+                          <span className="inline-flex items-center gap-1.5 text-xs text-amber-500 font-medium whitespace-nowrap">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0 inline-block" />
+                            Vence en {days}d
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1.5 text-xs text-success font-medium">
@@ -444,22 +473,39 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
                 ) : (
                   <span className="text-xs bg-navy/[0.06] text-navy/55 px-2.5 py-1 rounded-full font-medium">Ocasional</span>
                 )}
-                {churnStatus(selected) === "baja" ? (
-                  <span className="text-xs bg-danger/10 text-danger px-2.5 py-1 rounded-full font-medium flex items-center gap-1 whitespace-nowrap">
-                    <span className="w-1.5 h-1.5 rounded-full bg-danger inline-block shrink-0" />
-                    Baja{selected.daysSinceLast != null ? ` · ${selected.daysSinceLast}d sin pagar` : ""}
-                  </span>
-                ) : churnStatus(selected) === "sinpagar" ? (
-                  <span className="text-xs bg-warning/10 text-warning px-2.5 py-1 rounded-full font-medium flex items-center gap-1 whitespace-nowrap">
-                    <span className="w-1.5 h-1.5 rounded-full bg-warning inline-block shrink-0" />
-                    Sin pagar{selected.daysSinceLast != null ? ` · ${selected.daysSinceLast - 30}d tarde` : ""}
-                  </span>
-                ) : (
-                  <span className="text-xs bg-success/10 text-success px-2.5 py-1 rounded-full font-medium flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-success inline-block" />
-                    Al día
-                  </span>
-                )}
+                {(() => {
+                  const { status, days } = clientStatus(selected);
+                  if (status === "baja") return (
+                    <span className="text-xs bg-danger/10 text-danger px-2.5 py-1 rounded-full font-medium flex items-center gap-1 whitespace-nowrap">
+                      <span className="w-1.5 h-1.5 rounded-full bg-danger inline-block shrink-0" />
+                      {selected.isRecurring ? `Baja · ${days}d sin pagar` : `Pack vencido · ${days}d`}
+                    </span>
+                  );
+                  if (status === "sinpagar") return (
+                    <span className="text-xs bg-warning/10 text-warning px-2.5 py-1 rounded-full font-medium flex items-center gap-1 whitespace-nowrap">
+                      <span className="w-1.5 h-1.5 rounded-full bg-warning inline-block shrink-0" />
+                      Sin pagar · {days}d tarde
+                    </span>
+                  );
+                  if (status === "caducado") return (
+                    <span className="text-xs bg-warning/10 text-warning px-2.5 py-1 rounded-full font-medium flex items-center gap-1 whitespace-nowrap">
+                      <span className="w-1.5 h-1.5 rounded-full bg-warning inline-block shrink-0" />
+                      Pack vencido · {days}d
+                    </span>
+                  );
+                  if (status === "porvencer") return (
+                    <span className="text-xs bg-amber-50 text-amber-600 px-2.5 py-1 rounded-full font-medium flex items-center gap-1 whitespace-nowrap border border-amber-200/60">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block shrink-0" />
+                      Vence en {days}d
+                    </span>
+                  );
+                  return (
+                    <span className="text-xs bg-success/10 text-success px-2.5 py-1 rounded-full font-medium flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-success inline-block" />
+                      Al día
+                    </span>
+                  );
+                })()}
                 {selected.discount && (
                   <span className="text-xs bg-warning/10 text-warning px-2.5 py-1 rounded-full font-medium">
                     {selected.discount.percentOff != null
@@ -470,43 +516,72 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
               </div>
             </div>
           }
-          footer={
-            selected.stripeIds.length > 1 ? (
-              <div className="flex flex-col gap-2">
-                <p className="text-[10px] text-navy/40 text-center">{selected.stripeIds.length} perfiles en Stripe</p>
+          footer={(() => {
+            const ids = selected.stripeIds;
+            const extIcon = (
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+              </svg>
+            );
+            if (ids.length === 1) {
+              return (
+                <a
+                  href={`https://dashboard.stripe.com/customers/${ids[0]}`}
+                  target="_blank" rel="noopener noreferrer"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-[#635bff] rounded-xl hover:bg-[#4f46e5] transition-colors"
+                >
+                  {extIcon} Ver en Stripe
+                </a>
+              );
+            }
+            if (ids.length === 2) {
+              return (
                 <div className="flex gap-2">
-                  {selected.stripeIds.map((sid, i) => (
-                    <a
-                      key={sid}
+                  {ids.map((sid, i) => (
+                    <a key={sid}
                       href={`https://dashboard.stripe.com/customers/${sid}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      target="_blank" rel="noopener noreferrer"
                       className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-sm font-semibold text-white bg-[#635bff] rounded-xl hover:bg-[#4f46e5] transition-colors"
                     >
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-                        <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
-                      </svg>
-                      Perfil {i + 1}
+                      {extIcon} Perfil {i + 1}
                     </a>
                   ))}
                 </div>
+              );
+            }
+            // 3+ perfiles → dropdown
+            return (
+              <div className="relative">
+                <button
+                  onClick={() => setStripeOpen((v) => !v)}
+                  className="w-full flex items-center justify-between gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-[#635bff] rounded-xl hover:bg-[#4f46e5] transition-colors"
+                >
+                  <span className="flex items-center gap-2">{extIcon} Ver en Stripe</span>
+                  <span className="flex items-center gap-1.5 text-white/70 text-xs font-medium">
+                    {ids.length} perfiles
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform ${stripeOpen ? "rotate-180" : ""}`}>
+                      <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                  </span>
+                </button>
+                {stripeOpen && (
+                  <div className="absolute bottom-full mb-2 left-0 right-0 bg-white border border-navy/[0.10] rounded-xl shadow-lg overflow-hidden z-10 max-h-52 overflow-y-auto">
+                    {ids.map((sid, i) => (
+                      <a key={sid}
+                        href={`https://dashboard.stripe.com/customers/${sid}`}
+                        target="_blank" rel="noopener noreferrer"
+                        className="flex items-center justify-between px-4 py-2.5 text-sm font-medium text-[#635bff] hover:bg-[#635bff]/[0.05] border-b border-navy/[0.05] last:border-0 transition-colors"
+                      >
+                        Perfil {i + 1}
+                        <span className="text-[10px] text-navy/30 font-mono">{sid.slice(-8)}</span>
+                      </a>
+                    ))}
+                  </div>
+                )}
               </div>
-            ) : (
-              <a
-                href={`https://dashboard.stripe.com/customers/${selected.stripeIds[0]}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-[#635bff] rounded-xl hover:bg-[#4f46e5] transition-colors"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-                  <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
-                </svg>
-                Ver en Stripe
-              </a>
-            )
-          }
+            );
+          })()}
           onClose={() => setSelected(null)}
         >
           {/* Stats */}
