@@ -498,20 +498,11 @@ export default function TransaccionesList({
   const totalOut = activeTxns.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
   const neto     = totalIn - totalOut;
 
-  // KPI bar — dependencias explícitas del estado para garantizar reactividad
-  const kpiStats = useMemo(() => {
-    let kIn = 0, kOut = 0, count = 0;
-    const q = search.toLowerCase();
-    for (const t of transactions) {
-      if (q && !t.contact?.toLowerCase().includes(q) && !t.concept?.toLowerCase().includes(q)) continue;
-      if (catFilters.length > 0 && !catFilters.includes(t.category ?? "__none__")) continue;
-      if (originFilter !== "all" && t.payment_method !== originFilter) continue;
-      count++;
-      if (t.amount > 0) kIn += t.amount;
-      else kOut += Math.abs(t.amount);
-    }
-    return { kpiIn: kIn, kpiOut: kOut, kpiNeto: kIn - kOut, count };
-  }, [transactions, search, catFilters, originFilter]);
+  // KPI bar — derivado de `filtered` que ya se recalcula en cada render
+  const kpiIn    = filtered.reduce((s, t) => t.amount > 0 ? s + t.amount : s, 0);
+  const kpiOut   = filtered.reduce((s, t) => t.amount < 0 ? s + Math.abs(t.amount) : s, 0);
+  const kpiNeto  = kpiIn - kpiOut;
+  const kpiStats = { kpiIn, kpiOut, kpiNeto, count: filtered.length };
 
   function toggleAll() {
     setSelected(allSelected ? new Set() : new Set(allFilteredIds));
