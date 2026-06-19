@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, forwardRef, useImperativeHandle } from "react";
+import { useState, useMemo, useEffect, forwardRef, useImperativeHandle } from "react";
 import Drawer from "@/app/components/Drawer";
 import { fmt } from "@/lib/analytics";
 import type { StripeCustomer } from "@/lib/stripeCustomers";
@@ -11,7 +11,8 @@ export type ClientesTableHandle = { openCustomer: (id: string) => void };
 
 type SortKey = "totalSpent" | "lastPaymentDate" | "name";
 type SortDir = "asc" | "desc";
-type Filter  = "all" | "recurring" | "occasional" | "discount" | "error" | "churn";
+type Filter  = "all" | "recurring" | "occasional" | "discount" | "error";
+const PAGE_SIZE = 25;
 
 function SortIcon({ active, dir }: { active: boolean; dir: SortDir }) {
   return (
@@ -136,6 +137,9 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
   const [sortDir,  setSortDir]  = useState<SortDir>("desc");
   const [selected, setSelected] = useState<CustomerRow | null>(null);
   const [stripeOpen, setStripeOpen] = useState(false);
+  const [page, setPage] = useState(0);
+
+  useEffect(() => { setPage(0); }, [search, filter, activeMonth]);
 
   useImperativeHandle(ref, () => ({
     openCustomer(id: string) {
@@ -176,7 +180,6 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
 
   const discountCount = customers.filter(hasDiscount).length;
   const errorCount    = customers.filter((c) => c.hasPaymentError).length;
-  const churnCount    = customers.filter((c) => clientStatus(c).status !== "ok").length;
 
   const activeMonthIds = useMemo(() => {
     if (!activeMonth) return null;
@@ -194,7 +197,6 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
         if (filter === "occasional"  &&  c.isRecurring)   return false;
         if (filter === "discount"    && !hasDiscount(c))   return false;
         if (filter === "error"       && !c.hasPaymentError)  return false;
-        if (filter === "churn"       && clientStatus(c).status === "ok") return false;
         if (!q) return true;
         return (
           c.name?.toLowerCase().includes(q) ||
@@ -262,7 +264,6 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
     { key: "occasional", label: "Ocasionales" },
     { key: "discount",   label: "Descuento", count: discountCount },
     { key: "error",      label: "Error de pago", count: errorCount },
-    { key: "churn",      label: "Posibles bajas", count: churnCount },
   ];
 
   const MES: Record<string, string> = { "01":"Ene","02":"Feb","03":"Mar","04":"Abr","05":"May","06":"Jun","07":"Jul","08":"Ago","09":"Sep","10":"Oct","11":"Nov","12":"Dic" };
@@ -270,11 +271,23 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
   return (
     <div>
       {activeMonth && (
-        <div className="flex items-center justify-between mb-3 px-4 py-2 bg-primary/[0.06] border border-primary/20 rounded-xl text-sm">
-          <span className="text-primary font-medium">
-            Filtrando: {MES[activeMonth.slice(5)] ?? activeMonth.slice(5)} {activeMonth.slice(0, 4)} · {filtered.length} cliente{filtered.length !== 1 ? "s" : ""}
-          </span>
-          <button onClick={onClearMonth} className="text-primary/60 hover:text-primary text-xs font-medium">Limpiar ✕</button>
+        <div className="flex items-center justify-between mb-4 px-4 py-3 bg-primary/10 border border-primary/30 rounded-xl">
+          <div className="flex items-center gap-2.5">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary shrink-0">
+              <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>
+            </svg>
+            <div>
+              <p className="text-[10px] font-semibold text-primary uppercase tracking-wider">Filtro activo · desde el gráfico</p>
+              <p className="text-sm font-bold text-navy">{MES[activeMonth.slice(5)] ?? activeMonth.slice(5)} {activeMonth.slice(0, 4)} · {filtered.length} cliente{filtered.length !== 1 ? "s" : ""}</p>
+            </div>
+          </div>
+          <button
+            onClick={onClearMonth}
+            className="flex items-center gap-1 text-xs font-semibold text-primary/70 hover:text-primary bg-white border border-primary/20 hover:border-primary/40 px-2.5 py-1.5 rounded-lg transition-colors"
+          >
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            Quitar filtro
+          </button>
         </div>
       )}
       {/* Top 5 clientes */}
@@ -302,43 +315,42 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
 
       {/* Controls */}
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
-        {/* Search */}
-        <div className="relative flex-1">
-          <svg
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-navy/45"
-            width="14" height="14" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-          >
-            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
-          <input
-            type="text"
-            placeholder="Buscar por nombre o email…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-sm border border-navy/15 rounded-lg bg-white text-navy placeholder:text-navy/45 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition"
-          />
-          {search && (
-            <button
-              onClick={() => setSearch("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-navy/45 hover:text-navy/60 transition-colors"
+        {/* Search + CSV */}
+        <div className="flex items-center gap-2 flex-1">
+          <div className="relative flex-1">
+            <svg
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-navy/45"
+              width="14" height="14" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
             >
-              ✕
-            </button>
-          )}
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input
+              type="text"
+              placeholder="Buscar por nombre o email…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 text-sm border border-navy/15 rounded-lg bg-white text-navy placeholder:text-navy/45 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition"
+            />
+            {search && (
+              <button
+                onClick={() => setSearch("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-navy/45 hover:text-navy/60 transition-colors"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+          <button
+            onClick={downloadCsv}
+            title="Exportar tabla actual a CSV"
+            className="shrink-0 flex items-center justify-center w-9 h-9 text-navy/50 hover:text-navy border border-navy/15 rounded-lg bg-white hover:bg-navy/[0.02] transition-colors"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+          </button>
         </div>
-
-        {/* Export */}
-        <button
-          onClick={downloadCsv}
-          title="Exportar tabla actual a CSV"
-          className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-navy/50 hover:text-navy border border-navy/15 rounded-lg bg-white hover:bg-navy/[0.02] transition-colors whitespace-nowrap"
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-          </svg>
-          CSV
-        </button>
 
         {/* Filter tabs */}
         <div className="flex items-center border border-navy/[0.12] rounded-lg bg-white p-1 gap-0.5 flex-wrap">
@@ -365,13 +377,18 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
         </div>
       </div>
 
-      {(search || filter !== "all") && (
+      {(search || filter !== "all" || activeMonth) && (
         <p className="text-xs text-navy/50 mb-3">
           {filtered.length} {filtered.length === 1 ? "cliente" : "clientes"} encontrados
         </p>
       )}
 
       {/* Table */}
+      {(() => {
+        const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+        const safePage = Math.min(page, Math.max(0, totalPages - 1));
+        const pageRows = filtered.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
+        return (
       <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -392,7 +409,7 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
                   </td>
                 </tr>
               ) : (
-                filtered.map((c, i) => {
+                pageRows.map((c, i) => {
                   const { status, days } = clientStatus(c);
                   const dSub  = c.daysSinceLastSub  ?? Infinity;
                   const dPack = c.daysSinceLastPack ?? Infinity;
@@ -478,7 +495,41 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
             </tbody>
           </table>
         </div>
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-5 py-3 border-t border-navy/[0.06]">
+            <p className="text-xs text-navy/45">
+              {safePage * PAGE_SIZE + 1}–{Math.min((safePage + 1) * PAGE_SIZE, filtered.length)} de {filtered.length}
+            </p>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setPage((p) => Math.max(0, p - 1))}
+                disabled={safePage === 0}
+                className="w-7 h-7 flex items-center justify-center rounded-md text-navy/50 hover:text-navy hover:bg-navy/[0.04] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setPage(i)}
+                  className={`w-7 h-7 flex items-center justify-center rounded-md text-xs font-medium transition-colors ${i === safePage ? "bg-navy text-white" : "text-navy/50 hover:text-navy hover:bg-navy/[0.04]"}`}
+                >
+                  {i + 1}
+                </button>
+              ))}
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                disabled={safePage === totalPages - 1}
+                className="w-7 h-7 flex items-center justify-center rounded-md text-navy/50 hover:text-navy hover:bg-navy/[0.04] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+              </button>
+            </div>
+          </div>
+        )}
       </div>
+        );
+      })()}
 
       {selected && (
         <Drawer

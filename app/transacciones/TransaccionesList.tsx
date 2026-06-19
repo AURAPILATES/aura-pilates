@@ -633,32 +633,10 @@ export default function TransaccionesList({
         </button>
       )}
 
-      {/* ── Mobile: Summary card ──────────────────────────────────────────────── */}
-      <div className="sm:hidden bg-white border border-navy/[0.07] rounded-2xl shadow-card px-4 py-4 mb-4">
-        <p className="text-[10px] text-navy/40 uppercase tracking-wider font-semibold mb-3">
-          Resumen · {RANGE_OPTIONS.find(o => o.key === currentRange)?.label ?? "Todo"}
-        </p>
-        <div className="grid grid-cols-3 gap-2 divide-x divide-navy/[0.06]">
-          <div className="text-center">
-            <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1">Ingresos</p>
-            <p className="text-sm font-bold text-success tabular-nums">+{fmtAmt(totalIn)}</p>
-          </div>
-          <div className="text-center">
-            <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1">Gastos</p>
-            <p className="text-sm font-bold text-navy/65 tabular-nums">−{fmtAmt(totalOut)}</p>
-          </div>
-          <div className="text-center">
-            <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1">Neto</p>
-            <p className={`text-sm font-bold tabular-nums ${neto >= 0 ? "text-primary" : "text-danger"}`}>
-              {neto >= 0 ? "+" : "−"}{fmtAmt(Math.abs(neto))}
-            </p>
-          </div>
-        </div>
-      </div>
 
-      {/* ── Desktop: fila 1 — Buscador ────────────────────────────────────── */}
-      <div className="hidden sm:block mb-3">
-        <div className="relative">
+      {/* ── Desktop: barra de filtros unificada ────────────────────────────── */}
+      <div className="hidden sm:flex items-center gap-2 mb-3">
+        <div className="relative flex-1">
           <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-navy/30" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
           </svg>
@@ -673,13 +651,9 @@ export default function TransaccionesList({
             <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-navy/30 hover:text-navy/60">✕</button>
           )}
         </div>
-      </div>
-
-      {/* ── Desktop: fila 2 — Filtros + Importar + Exportar ───────────────── */}
-      <div className="hidden sm:flex items-center gap-2 mb-6">
         <CategoryMultiFilter selected={catFilters} categories={categories} onChange={setCatFilters} />
         <SelectWrapper>
-          <select value={originFilter} onChange={(e) => setOriginFilter(e.target.value)} className={SELECT_CLS} style={{ width: "140px" }}>
+          <select value={originFilter} onChange={(e) => setOriginFilter(e.target.value)} className={SELECT_CLS} style={{ width: "130px" }}>
             <option value="all">Origen</option>
             <option value="banco">CaixaBank</option>
             <option value="efectivo">Efectivo Aura</option>
@@ -689,15 +663,6 @@ export default function TransaccionesList({
             <option value="carles">Carles</option>
           </select>
         </SelectWrapper>
-        {(catFilters.length > 0 || originFilter !== "all") && (
-          <button
-            onClick={() => { setCatFilters([]); setOriginFilter("all"); }}
-            className="text-xs text-navy/55 hover:text-navy underline self-center whitespace-nowrap"
-          >
-            Eliminar filtros
-          </button>
-        )}
-        <div className="flex-1" />
         <ImportButton onManual={() => setShowAddCash(true)} />
         <button
           onClick={exportCSV}
@@ -719,12 +684,11 @@ export default function TransaccionesList({
         </button>
       </div>
 
-
-      {/* ── Desktop: fila 3 — Recuento + sumatorios ───────────────────────── */}
-      <div className="hidden sm:flex items-center gap-4 mb-5">
-        <span className="text-sm text-navy/55">
+      {/* ── Desktop: recuento ─────────────────────────────────────────────────── */}
+      <div className="hidden sm:flex items-center gap-3 mb-5">
+        <span className="text-sm text-navy/45">
           {someSelected
-            ? <>{selected.size} seleccionada{selected.size !== 1 ? "s" : ""} <span className="text-navy/35">de {filtered.length}</span></>
+            ? <>{selected.size} seleccionada{selected.size !== 1 ? "s" : ""} <span className="text-navy/30">de {filtered.length}</span></>
             : <>{filtered.length} movimientos</>
           }
           {isPending && <span className="ml-2 text-xs text-primary/60">Guardando…</span>}
@@ -742,23 +706,14 @@ export default function TransaccionesList({
             <span>{uncategorizedCount} sin etiquetar</span>
           </button>
         )}
-        <div className="flex-1" />
-        <div className="flex items-center gap-6">
-          <div className="text-right">
-            <p className="text-[10px] text-navy/40 uppercase tracking-wider">Ingresos</p>
-            <p className="text-sm font-semibold text-success tabular-nums">+{fmtAmt(totalIn)}</p>
-          </div>
-          <div className="text-right">
-            <p className="text-[10px] text-navy/40 uppercase tracking-wider">Gastos</p>
-            <p className="text-sm font-semibold text-navy/65 tabular-nums">−{fmtAmt(totalOut)}</p>
-          </div>
-          <div className="text-right">
-            <p className="text-[10px] text-navy/40 uppercase tracking-wider">Resultado neto</p>
-            <p className={`text-sm font-semibold tabular-nums ${neto >= 0 ? "text-primary" : "text-danger"}`}>
-              {neto >= 0 ? "+" : "−"}{fmtAmt(Math.abs(neto))}
-            </p>
-          </div>
-        </div>
+        {(catFilters.length > 0 || originFilter !== "all") && (
+          <button
+            onClick={() => { setCatFilters([]); setOriginFilter("all"); }}
+            className="text-xs text-navy/45 hover:text-navy underline whitespace-nowrap"
+          >
+            Eliminar filtros
+          </button>
+        )}
       </div>
 
       {/* ── Mobile: toolbar ────────────────────────────────────────────────── */}

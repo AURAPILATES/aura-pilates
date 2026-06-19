@@ -10,7 +10,7 @@ const MONTH_LABELS: Record<string, string> = {
   "09":"Sep","10":"Oct","11":"Nov","12":"Dic",
 };
 
-const SVG_W = 900;
+const SVG_W = 680;
 const SVG_H = 180;
 const MT = 16;
 const MR = 16;
@@ -137,7 +137,7 @@ export default function ClientesEvolucionChart({
                 <line x1={ML} y1={y} x2={SVG_W - MR} y2={y}
                   stroke="#1c191714" strokeWidth="1" strokeDasharray={v === 0 ? "none" : "3 3"} />
                 <text x={ML - 6} y={y + 4} textAnchor="end"
-                  className="fill-navy/40" style={{ fontSize: 11 }}>
+                  className="fill-navy/40" style={{ fontSize: 12 }}>
                   {v}
                 </text>
               </g>
@@ -187,15 +187,15 @@ export default function ClientesEvolucionChart({
                 {d.count > 0 && (
                   <text
                     x={x + barW / 2} y={y - 5} textAnchor="middle"
-                    style={{ fontSize: 11, fontWeight: isCurrent || isActive ? 600 : 400, fill: isActive ? "#3B4B9E" : isCurrent ? "#6B7ED6" : "#7B84A8" }}
+                    style={{ fontSize: 14, fontWeight: isCurrent || isActive ? 700 : 500, fill: isActive ? "#3B4B9E" : isCurrent ? "#6B7ED6" : "#7B84A8" }}
                   >
                     {d.count}
                   </text>
                 )}
                 {/* Month label */}
                 <text
-                  x={x + barW / 2} y={SVG_H - 6} textAnchor="middle"
-                  style={{ fontSize: 11, fontWeight: isCurrent || isActive ? 600 : 400, fill: isActive ? "#3B4B9E" : isCurrent ? "#1C1917" : "#94A3B8" }}
+                  x={x + barW / 2} y={SVG_H - 5} textAnchor="middle"
+                  style={{ fontSize: 13, fontWeight: isCurrent || isActive ? 700 : 400, fill: isActive ? "#3B4B9E" : isCurrent ? "#1C1917" : "#94A3B8" }}
                 >
                   {d.label}
                 </text>

@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import ClientesTable, { type ClientesTableHandle, type CustomerRow } from "./ClientesTable";
 import ClientesEvolucionChart from "./ClientesEvolucionChart";
 import ClientesRetentionCohort from "./ClientesRetentionCohort";
+import ClientesMatrizCompras from "./ClientesMatrizCompras";
 import type { StripePayment } from "@/lib/stripePayments";
 import type { BusinessEvent } from "@/lib/businessEvents";
 
@@ -32,6 +33,10 @@ export default function ClientesShell({ customers, payments, events }: Props) {
       <ClientesRetentionCohort
         payments={payments}
         onMonthClick={handleBarClick}
+      />
+      <ClientesMatrizCompras
+        customers={customers}
+        payments={payments}
       />
       <ClientesTable
         ref={tableRef}

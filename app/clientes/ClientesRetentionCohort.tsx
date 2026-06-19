@@ -70,7 +70,10 @@ export default function ClientesRetentionCohort({ payments, onMonthClick }: { pa
     <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5 mb-6">
       <div className="mb-4">
         <h3 className="text-sm font-semibold text-navy">Retención por cohorte</h3>
-        <p className="text-xs text-navy/45 mt-0.5">% de clientes que volvieron a pagar · por mes desde su primera compra</p>
+        <p className="text-xs text-navy/45 mt-0.5">
+          Cada fila es un grupo de clientes que hicieron su primer pago el mismo mes (cohorte).
+          Las columnas muestran qué porcentaje de ese grupo volvió a pagar: <strong className="text-navy/60">M+0</strong> = mes de entrada, <strong className="text-navy/60">M+1</strong> = mes siguiente, y así sucesivamente.
+        </p>
       </div>
       <div className="overflow-x-auto">
         <table className="text-xs" style={{ tableLayout: "auto" }}>
@@ -79,8 +82,8 @@ export default function ClientesRetentionCohort({ payments, onMonthClick }: { pa
               <th className="text-left pb-2 pr-5 text-[11px] font-semibold text-navy/40 uppercase tracking-wider whitespace-nowrap">Cohorte</th>
               <th className="text-right pb-2 px-3 text-[11px] font-semibold text-navy/40 uppercase tracking-wider">N</th>
               {Array.from({ length: maxCols }, (_, i) => (
-                <th key={i} className="text-center pb-2 px-1 text-[11px] font-semibold text-navy/40 uppercase tracking-wider whitespace-nowrap min-w-[48px]">
-                  M+{i}
+                <th key={i} className="text-center pb-2 px-1 text-[11px] font-semibold text-navy/40 uppercase tracking-wider whitespace-nowrap min-w-[48px]" title={i === 0 ? "Mes de primer pago" : `${i} mes${i > 1 ? "es" : ""} después del primer pago`}>
+                  {i === 0 ? "Entrada" : `M+${i}`}
                 </th>
               ))}
             </tr>
