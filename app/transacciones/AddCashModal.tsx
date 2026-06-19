@@ -6,7 +6,7 @@ import { addCashTransaction } from "./actions";
 import Drawer from "@/app/components/Drawer";
 
 const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
-  { value: "efectivo", label: "Efectivo" },
+  { value: "efectivo", label: "Efectivo Aura" },
   { value: "victor", label: "Víctor" },
   { value: "celia", label: "Celia" },
   { value: "olga", label: "Olga" },
