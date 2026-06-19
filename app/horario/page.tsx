@@ -4,14 +4,12 @@ import { Suspense } from "react";
 import HorarioLoader from "./HorarioLoader";
 import HorarioSkeleton from "./HorarioSkeleton";
 
-function getMondayFromParam(week: string | null): Date {
-  if (week && /^\d{4}-\d{2}-\d{2}$/.test(week)) {
-    const d = new Date(week + "T00:00:00");
-    if (!isNaN(d.getTime())) return d;
-  }
+function getMondayFromParam(week: string | null): string {
+  if (week && /^\d{4}-\d{2}-\d{2}$/.test(week)) return week;
   const now = new Date();
   const dow = (now.getDay() + 6) % 7;
-  return new Date(now.getFullYear(), now.getMonth(), now.getDate() - dow);
+  const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dow);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 function addDays(dateStr: string, days: number): string {
@@ -37,8 +35,7 @@ export default async function Horario({
   searchParams: Promise<{ week?: string; view?: string; tab?: string; period?: string; from?: string; to?: string; compareWith?: string; compareFrom?: string; compareTo?: string }>;
 }) {
   const params = await searchParams;
-  const monday = getMondayFromParam(params.week ?? null);
-  const weekMonday = monday.toISOString().split("T")[0];
+  const weekMonday = getMondayFromParam(params.week ?? null);
 
   const now = new Date();
   const todayStr = now.toISOString().split("T")[0];
@@ -54,6 +51,8 @@ export default async function Horario({
   if (periodParam === "custom" && customFrom && customTo) {
     mainFrom = customFrom;
     mainTo   = customTo;
+  } else if (periodParam === "all") {
+    mainFrom = "2026-02-01";
   } else {
     const days = periodParam === "7" ? 7 : periodParam === "90" ? 90 : 30;
     mainFrom = addDays(todayStr, -days);
@@ -71,9 +70,10 @@ export default async function Horario({
   }
 
   const periodLabel =
-    periodParam === "7"  ? "7 días"  :
-    periodParam === "30" ? "30 días" :
-    periodParam === "90" ? "90 días" :
+    periodParam === "7"   ? "7 días"  :
+    periodParam === "30"  ? "30 días" :
+    periodParam === "90"  ? "90 días" :
+    periodParam === "all" ? "Desde el inicio" :
     `${fmtShort(mainFrom)}–${fmtShort(mainTo)}`;
 
   const initialView = params.view === "calendario" ? "calendario" : "lista";

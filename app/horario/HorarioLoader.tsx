@@ -1,7 +1,7 @@
 import { getEvents } from "@/lib/momence";
 import { saveHistoricalEvents, loadHistoricalEvents } from "@/lib/history";
 import { filterActive, filterUpcoming } from "@/lib/analytics";
-import { loadSales, salesByProduct, urbanBookingsByHour, urbanBookingsByWeekday } from "@/lib/sales";
+import { loadSales, salesByProduct, filterSalesByDate, urbanBookingsByHour, urbanBookingsByWeekday } from "@/lib/sales";
 import HorarioShell from "./HorarioShell";
 
 type Props = {
@@ -49,7 +49,7 @@ export default async function HorarioLoader({
   const upcoming7 = filterUpcoming(allEvents, 7);
 
   const sales = loadSales();
-  const topProducts = salesByProduct(sales)
+  const topProducts = salesByProduct(filterSalesByDate(sales, mainFrom, mainTo))
     .filter((p) => p.item !== "Urban")
     .slice(0, 5);
   const uscByHour    = urbanBookingsByHour();

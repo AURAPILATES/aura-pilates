@@ -15,7 +15,7 @@ type View = "lista" | "calendario";
 type Tab = "horario" | "analisis";
 
 function addDays(dateStr: string, n: number): string {
-  const d = new Date(dateStr + "T00:00:00");
+  const d = new Date(dateStr + "T12:00:00");
   d.setDate(d.getDate() + n);
   return d.toISOString().split("T")[0];
 }
@@ -230,7 +230,7 @@ export default function HorarioShell({
         <div className="sm:hidden">
           {tab === "analisis" ? (
             <>
-              <ClientesFilterBar defaultPeriod="" />
+              <ClientesFilterBar defaultPeriod="30" />
               <HorarioReporting data={reportingData} />
             </>
           ) : (
@@ -380,7 +380,7 @@ export default function HorarioShell({
 
           {tab === "analisis" && (
             <>
-              <ClientesFilterBar defaultPeriod="" />
+              <ClientesFilterBar defaultPeriod="30" />
               <HorarioReporting data={reportingData} />
             </>
           )}
@@ -514,7 +514,7 @@ function MobileClassCard({ event: e, onSelect }: { event: MomenceEvent; onSelect
 function DesktopStatCard({ label, value, valueClass = "text-navy" }: { label: string; value: string; valueClass?: string }) {
   return (
     <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card px-5 py-4">
-      <p className="text-[9px] text-navy/40 uppercase tracking-widest font-semibold mb-2">{label}</p>
+      <p className="text-[11px] text-navy/50 uppercase tracking-wider font-semibold mb-2">{label}</p>
       <p className={`text-3xl font-medium tabular-nums ${valueClass}`}>{value}</p>
     </div>
   );
