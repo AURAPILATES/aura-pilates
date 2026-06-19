@@ -30,8 +30,7 @@ import {
   operationalExpensesByCategory,
 } from "@/lib/transactions";
 import { loadCategoriesCached } from "@/lib/categories";
-import { getDateRange, getComparisonRangeKey } from "@/lib/dateRange";
-import DateFilter from "@/app/components/DateFilter";
+import ClientesFilterBar from "@/app/clientes/ClientesFilterBar";
 import HealthCards from "./HealthCards";
 import GastosBreakdown from "./GastosBreakdown";
 import FinanzasBarChart from "./FinanzasBarChart";
@@ -108,6 +107,24 @@ const BURN_CATS = new Set([
 ]);
 
 function pad2(n: number) { return String(n).padStart(2, "0"); }
+
+function addDays(dateStr: string, days: number): string {
+  const d = new Date(dateStr + "T12:00:00");
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split("T")[0];
+}
+
+function daysBetween(a: string, b: string): number {
+  return Math.round(
+    (new Date(b + "T12:00:00").getTime() - new Date(a + "T12:00:00").getTime()) / 86400000,
+  );
+}
+
+function fmtShort(d: string) {
+  const [y, m, day] = d.split("-");
+  return `${day}/${m}/${y.slice(2)}`;
+}
+
 const MES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 function monthLabel(ym: string) {
   const [y, m] = ym.split("-");
@@ -120,21 +137,57 @@ export default async function Finanzas(props: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const sp = await props.searchParams;
-  const { from, to, label: rangeLabel } = getDateRange(sp.range);
-  const compRangeKey = getComparisonRangeKey(sp.range);
-  const compRange    = compRangeKey ? getDateRange(compRangeKey) : null;
+
+  const periodParam  = typeof sp.period      === "string" ? sp.period      : "30";
+  const customFrom   = typeof sp.from        === "string" ? sp.from        : "";
+  const customTo     = typeof sp.to          === "string" ? sp.to          : "";
+  const compareParam = typeof sp.compareWith === "string" ? sp.compareWith : "previous";
+  const cpFrom       = typeof sp.compareFrom === "string" ? sp.compareFrom : "";
+  const cpTo         = typeof sp.compareTo   === "string" ? sp.compareTo   : "";
 
   // ── Stripe payments ──
   const now = new Date();
+  const todayStr = now.toISOString().split("T")[0];
   const curMonth  = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}`;
   const prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const prevMonth = `${prevMonthDate.getFullYear()}-${pad2(prevMonthDate.getMonth() + 1)}`;
 
-  const nowD = new Date();
-  const breakdownTo   = from && to ? to   : nowD.toISOString().split("T")[0];
-  const breakdownFrom = from       ? from : (() => {
-    const d = new Date(nowD); d.setDate(d.getDate() - 30); return d.toISOString().split("T")[0];
-  })();
+  let mainFrom: string;
+  let mainTo: string = todayStr;
+
+  if (periodParam === "custom" && customFrom && customTo) {
+    mainFrom = customFrom;
+    mainTo   = customTo;
+  } else if (periodParam === "all") {
+    mainFrom = "2026-02-01";
+  } else {
+    const days = periodParam === "7" ? 7 : periodParam === "90" ? 90 : 30;
+    mainFrom = addDays(todayStr, -days);
+  }
+
+  let compFrom: string;
+  let compTo: string;
+
+  if (compareParam === "custom" && cpFrom && cpTo) {
+    compFrom = cpFrom;
+    compTo   = cpTo;
+  } else {
+    const duration = daysBetween(mainFrom, mainTo);
+    compTo   = addDays(mainFrom, -1);
+    compFrom = addDays(compTo,   -duration);
+  }
+
+  const periodLabel =
+    periodParam === "7"   ? "7 días"  :
+    periodParam === "30"  ? "30 días" :
+    periodParam === "90"  ? "90 días" :
+    periodParam === "all" ? "Desde el inicio" :
+    `${fmtShort(mainFrom)}–${fmtShort(mainTo)}`;
+
+  const compDateRange = `${fmtShort(compFrom)}–${fmtShort(compTo)}`;
+
+  const breakdownFrom = mainFrom;
+  const breakdownTo   = mainTo;
 
   const [paymentsAll, membershipsAll, productsAll, customersAll, breakdown] = await Promise.all([
     loadStripePaymentsCached(),
@@ -143,13 +196,11 @@ export default async function Finanzas(props: {
     getCustomers(),
     loadPaymentsBreakdown(breakdownFrom, breakdownTo),
   ]);
-  const payments = (from || to)
-    ? paymentsAll.filter((p) => {
-        if (from && p.date < from) return false;
-        if (to   && p.date > to)   return false;
-        return true;
-      })
-    : paymentsAll;
+  const payments = paymentsAll.filter((p) => {
+    if (p.date < mainFrom) return false;
+    if (p.date > mainTo)   return false;
+    return true;
+  });
   const hasSales  = paymentsAll.length > 0;
   const totalRev  = stripeTotalRevenue(payments);
   const stripeFees = stripeTotalFees(payments);
@@ -182,13 +233,11 @@ export default async function Finanzas(props: {
   // Momence CSV: solo se usa para lo histórico (breakeven, conversión del pack) y para
   // Urban Sports Club, que paga por transferencia bancaria y no tiene fuente en vivo.
   const momenceSalesAll = loadSales();
-  const momenceSales    = (from || to)
-    ? momenceSalesAll.filter((s) => {
-        if (from && s.paymentDate < from) return false;
-        if (to   && s.paymentDate > to)   return false;
-        return true;
-      })
-    : momenceSalesAll;
+  const momenceSales    = momenceSalesAll.filter((s) => {
+    if (s.paymentDate < mainFrom) return false;
+    if (s.paymentDate > mainTo)   return false;
+    return true;
+  });
 
   // ── Urban Sports Club: ingresos desde Momence CSV (USC paga por transferencia, no Stripe) ──
   const uscSales   = momenceSales.filter((s) => s.method === "urban-sports-club");
@@ -198,25 +247,20 @@ export default async function Finanzas(props: {
   const uscPrev = momenceSalesAll.filter((s) => s.method === "urban-sports-club" && s.paymentDate.startsWith(prevMonth)).reduce((sum, s) => sum + s.amount, 0);
 
   // ── Comparativa por periodo ──
-  const usePeriodFilter = !!compRangeKey;
-  const paymentsComp = compRange?.from || compRange?.to
-    ? paymentsAll.filter((p) => {
-        if (compRange.from && p.date < compRange.from) return false;
-        if (compRange.to   && p.date > compRange.to)   return false;
-        return true;
-      })
-    : [];
-  const revComp    = usePeriodFilter ? stripeTotalRevenue(paymentsComp) : prev;
-  const uscRevComp = usePeriodFilter
-    ? momenceSalesAll.filter((s) =>
-        s.method === "urban-sports-club" &&
-        (!compRange?.from || s.paymentDate >= compRange.from) &&
-        (!compRange?.to   || s.paymentDate <= compRange.to)
-      ).reduce((sum, s) => sum + s.amount, 0)
-    : uscPrev;
-  const q1Revenue = usePeriodFilter ? (totalRev + uscRevenue) : (cur + uscCur);
-  const q1RevComp = usePeriodFilter ? (revComp + uscRevComp) : (prev + uscPrev);
-  const q1Label   = usePeriodFilter ? rangeLabel : monthLabel(curMonth);
+  const paymentsComp = paymentsAll.filter((p) => {
+    if (p.date < compFrom) return false;
+    if (p.date > compTo)   return false;
+    return true;
+  });
+  const revComp    = stripeTotalRevenue(paymentsComp);
+  const uscRevComp = momenceSalesAll.filter((s) =>
+    s.method === "urban-sports-club" &&
+    s.paymentDate >= compFrom &&
+    s.paymentDate <= compTo
+  ).reduce((sum, s) => sum + s.amount, 0);
+  const q1Revenue = totalRev + uscRevenue;
+  const q1RevComp = revComp + uscRevComp;
+  const q1Label   = periodLabel;
 
   // Última fecha con datos reales de Urban (el CSV no se actualiza solo) — se usa para
   // acotar "Por producto" / "Por canal de pago" y que Stripe y Urban cubran el mismo periodo.
@@ -372,18 +416,14 @@ export default async function Finanzas(props: {
     <div>
       {/* ── Sticky header ── */}
       <div className="sticky top-0 z-20 bg-app-bg/95 backdrop-blur-sm border-b border-navy/[0.06]">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-[45px] flex items-center justify-between gap-3">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-[45px] flex items-center">
           <h1 className="text-sm font-bold text-navy uppercase tracking-widest">Finanzas</h1>
-          <div className="flex items-center gap-3">
-            <Suspense fallback={null}>
-              <DateFilter />
-            </Suspense>
-          </div>
         </div>
       </div>
 
       {/* ── Main layout ── */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-8 pb-16">
+        <ClientesFilterBar />
 
         {!hasSales && (
           <div className="bg-warning/10 border border-warning/30 rounded p-4 text-sm text-warning mb-6">
@@ -455,9 +495,7 @@ export default async function Finanzas(props: {
                   <KpiCard
                     label={`Ingresos · ${q1Label}`}
                     value={fmt(q1Revenue)}
-                    sub={usePeriodFilter && compRange
-                      ? `vs ${fmt(q1RevComp)} ${compRange.label.toLowerCase()}`
-                      : (uscCur > 0 ? `Stripe ${fmt(cur)} + USC ${fmt(uscCur)}` : `${curCount} transacciones`)}
+                    sub={`vs ${fmt(q1RevComp)} (${compDateRange})`}
                     trend={trendPct(q1Revenue, q1RevComp)}
                   />
                   <KpiCard
@@ -595,7 +633,7 @@ export default async function Finanzas(props: {
                   refundedIds={breakdown.refundedIds}
                   disputedIds={breakdown.disputedIds}
                   failedIds={breakdown.failedIds}
-                  periodLabel={rangeLabel}
+                  periodLabel={periodLabel}
                   excludeSegments={["failed"]}
                 />
                 <p className="text-xs text-navy/45 flex items-center gap-1.5">

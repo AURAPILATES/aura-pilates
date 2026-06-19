@@ -75,15 +75,16 @@ export default function BottomNav() {
   return (
     <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-navy/[0.08]" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
       <div className="grid grid-cols-7 h-16">
-        {links.map(({ href, label, icon }) => {
+        {links.map(({ href, label, icon }, i) => {
           const active = pathname === href;
+          const hasDivider = i === 1 || i === 4;
           return (
             <Link
               key={href}
               href={href}
               className={`flex flex-col items-center justify-center gap-0.5 transition-colors ${
                 active ? "text-primary" : "text-navy/35"
-              }`}
+              } ${hasDivider ? "border-r border-navy/[0.08]" : ""}`}
             >
               <span className={`transition-transform ${active ? "scale-110" : ""}`}>
                 {icon}
