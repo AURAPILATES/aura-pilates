@@ -45,6 +45,14 @@ function FilterBarInner({ defaultPeriod = "30" }: { defaultPeriod?: string }) {
           </button>
         ))}
         <button
+          onClick={() => update({ period: "all", from: "", to: "" })}
+          className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+            period === "all" ? "bg-white shadow-sm text-navy" : "text-navy/50 hover:text-navy"
+          }`}
+        >
+          Inicio
+        </button>
+        <button
           onClick={() => update({ period: "custom" })}
           className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
             period === "custom" ? "bg-white shadow-sm text-navy" : "text-navy/50 hover:text-navy"

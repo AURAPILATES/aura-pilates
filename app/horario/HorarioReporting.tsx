@@ -141,12 +141,12 @@ export default function HorarioReporting({ data }: { data: ReportingData }) {
             },
           ].map((k) => (
             <Card key={k.label}>
-              <div className="flex items-start justify-between gap-2 mb-1">
-                <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider leading-tight">{k.label}</p>
+              <CardTitle>{k.label}</CardTitle>
+              <p className="text-[10px] text-navy/40 -mt-2 mb-2">{dateRange}</p>
+              <div className="flex items-baseline gap-2">
+                <p className={`text-2xl font-semibold tabular-nums ${k.valueColor ?? "text-navy"}`}>{k.value}</p>
                 <TrendBadge value={k.trendVal ?? null} />
               </div>
-              <p className="text-[10px] text-navy/40 mb-1">{dateRange}</p>
-              <p className={`text-2xl font-semibold tabular-nums ${k.valueColor ?? "text-navy"}`}>{k.value}</p>
               <p className="text-[10px] text-navy/40 mt-1.5">{k.sub}</p>
             </Card>
           ))}
@@ -255,8 +255,8 @@ export default function HorarioReporting({ data }: { data: ReportingData }) {
             )}
           </Card>
 
-          {/* Por clase + Por profesora + Por día de la semana */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          {/* Por clase + Por día de la semana */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Card>
               <CardTitle>Por clase</CardTitle>
               {topClasses.length === 0 ? (
@@ -275,27 +275,6 @@ export default function HorarioReporting({ data }: { data: ReportingData }) {
                   ))}
                 </div>
               )}
-            </Card>
-
-            <Card>
-              <CardTitle>Por profesora</CardTitle>
-              <div className="space-y-3">
-                {byTeacher.map((r) => {
-                  const w = maxTeacherOcc > 0 ? (r.avgOcc / maxTeacherOcc) * 100 : 0;
-                  const barColor = r.avgOcc >= 0.75 ? "bg-success" : r.avgOcc >= 0.5 ? "bg-warning" : "bg-danger";
-                  const textColor = r.avgOcc >= 0.75 ? "text-success" : r.avgOcc >= 0.5 ? "text-warning" : "text-danger";
-                  return (
-                    <div key={r.teacher} className="flex items-center gap-3">
-                      <span className="text-sm text-navy w-32 shrink-0 truncate">{r.teacher}</span>
-                      <div className="flex-1 h-2 bg-navy/5 rounded-full overflow-hidden">
-                        <div className={`h-full rounded-full ${barColor}`} style={{ width: `${w}%` }} />
-                      </div>
-                      <span className={`text-xs font-semibold w-10 text-right tabular-nums ${textColor}`}>{pct(r.avgOcc)}</span>
-                      <span className="text-xs text-navy/45 w-14 text-right tabular-nums shrink-0">{r.count} clases</span>
-                    </div>
-                  );
-                })}
-              </div>
             </Card>
 
             <Card>

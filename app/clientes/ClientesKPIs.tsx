@@ -163,16 +163,6 @@ function CustomerRow({ c }: { c: CustomerRow }) {
         </div>
       </div>
       <div className="shrink-0 flex items-center gap-1">
-        <a
-          href={`https://dashboard.stripe.com/customers/${latestId}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-[#635bff] rounded-lg hover:bg-[#4f46e5] transition-colors"
-          title="Ver perfil más reciente en Stripe"
-        >
-          {extIcon}
-          Stripe
-        </a>
         {ids.length > 1 && (
           <div className="relative">
             <button
@@ -200,6 +190,16 @@ function CustomerRow({ c }: { c: CustomerRow }) {
             )}
           </div>
         )}
+        <a
+          href={`https://dashboard.stripe.com/customers/${latestId}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-[#635bff] rounded-lg hover:bg-[#4f46e5] transition-colors"
+          title="Ver perfil más reciente en Stripe"
+        >
+          {extIcon}
+          Stripe
+        </a>
       </div>
     </div>
   );
@@ -350,7 +350,8 @@ export default function ClientesKPIs({ customers, mrr, prevMonthLabel, curMonthL
           label="Recurrentes"
           dateRange={range90}
           value={recurringList.length}
-          sub="2+ meses de 3"
+          sub="pagaron en 2+ de los últimos 3 meses"
+          tooltip="Clientes con al menos 2 pagos registrados en los 3 meses anteriores. Son tu base fiel activa."
           valueClass="text-primary"
           accent="primary"
           onClick={() => setDrawer("recurring")}

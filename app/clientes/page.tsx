@@ -46,6 +46,8 @@ export default async function ClientesPage({
   if (periodParam === "custom" && customFrom && customTo) {
     mainFrom = customFrom;
     mainTo   = customTo;
+  } else if (periodParam === "all") {
+    mainFrom = "2026-02-01";
   } else {
     const days = periodParam === "7" ? 7 : periodParam === "90" ? 90 : 30;
     mainFrom = addDays(todayStr, -days);
@@ -64,9 +66,10 @@ export default async function ClientesPage({
   }
 
   const periodLabel =
-    periodParam === "7"  ? "7 días"  :
-    periodParam === "30" ? "30 días" :
-    periodParam === "90" ? "90 días" :
+    periodParam === "7"   ? "7 días"  :
+    periodParam === "30"  ? "30 días" :
+    periodParam === "90"  ? "90 días" :
+    periodParam === "all" ? "Desde el inicio" :
     `${fmtShort(mainFrom)}–${fmtShort(mainTo)}`;
 
   const compDateRange = `${fmtShort(compFrom)}–${fmtShort(compTo)}`;
