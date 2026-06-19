@@ -110,7 +110,7 @@ export type HistoricalByCategory = Record<string, Record<string, number>>;
 export function historicalByCategory(txns: Transaction[]): HistoricalByCategory {
   const result: HistoricalByCategory = {};
   for (const t of txns) {
-    if (t.amount >= 0) continue;
+    if (t.amount >= 0 || !t.category) continue;
     const month = t.date.slice(0, 7);
     if (!result[t.category]) result[t.category] = {};
     result[t.category][month] = (result[t.category][month] ?? 0) + Math.abs(t.amount);
@@ -166,7 +166,7 @@ const SALARY_CATS = new Set(["Salarios"]);
 export function detectRecurringExpenses(txns: Transaction[]): RecurringExpense[] {
   const byCat = new Map<string, { months: Set<string>; total: number }>();
   for (const t of txns) {
-    if (t.amount >= 0) continue;
+    if (t.amount >= 0 || !t.category) continue;
     const month = t.date.slice(0, 7);
     if (!byCat.has(t.category)) byCat.set(t.category, { months: new Set(), total: 0 });
     const entry = byCat.get(t.category)!;

@@ -12,14 +12,14 @@ export type ImportRow = {
 };
 
 function buildAutoCategory(categories: { value: string; auto_keywords: string | null }[]) {
-  return function (row: ImportRow): string {
+  return function (row: ImportRow): string | null {
     const hay = `${row.concept ?? ""} ${row.contact ?? ""}`.toLowerCase();
     for (const cat of categories) {
       if (!cat.auto_keywords) continue;
       const kws = cat.auto_keywords.split(",").map((k: string) => k.trim().toLowerCase()).filter(Boolean);
       if (kws.some((kw: string) => hay.includes(kw))) return cat.value;
     }
-    return "Otros";
+    return null;
   };
 }
 
@@ -153,7 +153,7 @@ export async function addCashTransaction(input: {
   date: string;
   amount: number;
   concept: string;
-  category: string;
+  category: string | null;
   notes?: string;
   paymentMethod?: PaymentMethod;
 }): Promise<void> {
@@ -173,11 +173,11 @@ export async function addCashTransaction(input: {
   revalidateTag("transactions");
 }
 
-export async function updateTransactionCategory(id: string, category: string) {
+export async function updateTransactionCategory(id: string, category: string | null) {
   const supabase = createServerClient();
   const { error } = await supabase
     .from("transactions")
-    .update({ category })
+    .update({ category: category || null })
     .eq("id", id);
   if (error) throw new Error(error.message);
   revalidateTag("transactions");
@@ -231,7 +231,7 @@ export type DeletedTransaction = {
   amount: number;
   concept: string | null;
   contact: string | null;
-  category: string;
+  category: string | null;
   payment_method: string;
   deleted_at: string;
 };

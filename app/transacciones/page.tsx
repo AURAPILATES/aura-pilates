@@ -50,7 +50,7 @@ export default async function TransaccionesPage(props: {
     loadCategoriesCached(),
   ]);
 
-  const uncategorizedCount = transactions.filter((t) => t.category === "Otros").length;
+  const uncategorizedCount = transactions.filter((t) => !t.category).length;
   const recurringContacts  = detectRecurring(transactions);
 
   const latestBal = [...transactions]

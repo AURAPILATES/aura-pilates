@@ -12,7 +12,7 @@ export type Transaction = {
   concept: string | null;
   contact: string | null;
   labels: string | null;
-  category: string;
+  category: string | null;
   contact_type: ContactType;
   notes: string | null;
   source: string;
@@ -76,13 +76,13 @@ export const loadTransactionsCached = unstable_cache(
 
 export function totalOperationalExpenses(txns: Transaction[]): number {
   return txns
-    .filter((t) => t.amount < 0 && OPERATIONAL_CATS.has(t.category))
+    .filter((t) => t.amount < 0 && t.category !== null && OPERATIONAL_CATS.has(t.category))
     .reduce((s, t) => s + Math.abs(t.amount), 0);
 }
 
 export function totalStartupCosts(txns: Transaction[]): number {
   return txns
-    .filter((t) => t.amount < 0 && STARTUP_CATS.has(t.category))
+    .filter((t) => t.amount < 0 && t.category !== null && STARTUP_CATS.has(t.category))
     .reduce((s, t) => s + Math.abs(t.amount), 0);
 }
 
@@ -90,7 +90,7 @@ export function expensesByMonth(txns: Transaction[]): Map<string, number> {
   const map = new Map<string, number>();
   for (const t of txns) {
     if (t.amount >= 0) continue;
-    if (!OPERATIONAL_CATS.has(t.category) && !STARTUP_CATS.has(t.category)) continue;
+    if (!t.category || (!OPERATIONAL_CATS.has(t.category) && !STARTUP_CATS.has(t.category))) continue;
     const month = t.date.slice(0, 7);
     map.set(month, (map.get(month) ?? 0) + Math.abs(t.amount));
   }
@@ -100,7 +100,7 @@ export function expensesByMonth(txns: Transaction[]): Map<string, number> {
 export function operationalExpensesByCategory(txns: Transaction[]) {
   const map = new Map<string, { count: number; total: number }>();
   for (const t of txns) {
-    if (t.amount < 0 && OPERATIONAL_CATS.has(t.category)) {
+    if (t.amount < 0 && t.category !== null && OPERATIONAL_CATS.has(t.category)) {
       const d = map.get(t.category) ?? { count: 0, total: 0 };
       d.count++;
       d.total += Math.abs(t.amount);

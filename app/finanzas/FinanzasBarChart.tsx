@@ -77,7 +77,7 @@ function groupData(sales: Sale[], txns: Transaction[], period: Period) {
   }
 
   for (const t of txns) {
-    if (t.amount >= 0 || !EXPENSE_CATS.has(t.category)) continue;
+    if (t.amount >= 0 || !t.category || !EXPENSE_CATS.has(t.category)) continue;
     const key = getPeriodKey(t.date, period);
     const p = map.get(key) ?? { income: 0, expense: 0 };
     map.set(key, { ...p, expense: p.expense + Math.abs(t.amount) });

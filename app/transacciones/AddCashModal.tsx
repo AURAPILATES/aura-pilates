@@ -23,7 +23,7 @@ export default function AddCashModal({ categories, onClose }: { categories: Cate
   const [isIncome, setIsIncome] = useState(true);
   const [concept, setConcept] = useState("");
   const [notes, setNotes] = useState("");
-  const [category, setCategory] = useState(categories[0]?.value ?? "Otros");
+  const [category, setCategory] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("efectivo");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,7 +40,7 @@ export default function AddCashModal({ categories, onClose }: { categories: Cate
         date,
         amount: isIncome ? Math.abs(parsedAmount) : -Math.abs(parsedAmount),
         concept,
-        category,
+        category: category || null,
         notes,
         paymentMethod,
       });
@@ -132,6 +132,7 @@ export default function AddCashModal({ categories, onClose }: { categories: Cate
               onChange={(e) => setCategory(e.target.value)}
               className="w-full border border-navy/[0.12] rounded-lg px-3 py-2 text-sm text-navy focus:outline-none focus:border-primary/40 bg-white"
             >
+              <option value="">Sin categoría</option>
               {categories.map((c) => (
                 <option key={c.value} value={c.value}>{c.label}</option>
               ))}

@@ -74,13 +74,13 @@ function KpiCard({ label, value, sub, trend, valueColor = "text-navy" }: {
   label: string; value: string; sub?: string; trend?: number | null; valueColor?: string;
 }) {
   return (
-    <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
+    <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-4 sm:p-5">
       <div className="flex items-start justify-between gap-2 mb-1">
-        <p className="text-xs text-navy/55 uppercase tracking-wider leading-tight">{label}</p>
+        <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider leading-tight">{label}</p>
         {trend !== undefined && <TrendBadge value={trend ?? null} />}
       </div>
-      <p className={`text-2xl font-semibold ${valueColor}`}>{value}</p>
-      {sub && <p className="text-xs text-navy/55 mt-1">{sub}</p>}
+      <p className={`text-2xl font-semibold tabular-nums ${valueColor}`}>{value}</p>
+      {sub && <p className="text-[10px] text-navy/40 mt-1.5">{sub}</p>}
     </div>
   );
 }
@@ -301,6 +301,7 @@ export default async function Finanzas(props: {
 
   const transactionsByCategory: Record<string, { date: string; amount: number; concept: string; contact: string }[]> = {};
   for (const t of txnsAll) {
+    if (!t.category) continue;
     if (!transactionsByCategory[t.category]) transactionsByCategory[t.category] = [];
     transactionsByCategory[t.category].push({ date: t.date, amount: t.amount, concept: t.concept ?? "", contact: t.contact ?? "" });
   }
@@ -315,7 +316,7 @@ export default async function Finanzas(props: {
 
   const burnByMonth = new Map<string, number>();
   for (const t of txnsAll) {
-    if (t.amount >= 0 || !BURN_CATS.has(t.category)) continue;
+    if (t.amount >= 0 || !t.category || !BURN_CATS.has(t.category)) continue;
     const m = t.date.slice(0, 7);
     burnByMonth.set(m, (burnByMonth.get(m) ?? 0) + Math.abs(t.amount));
   }
@@ -400,19 +401,19 @@ export default async function Finanzas(props: {
         {/* ── KPIs principales ── */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
           {/* Alumnos activos */}
-          <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-4">
-            <p className="text-[11px] font-semibold text-navy/45 uppercase tracking-wider mb-1">Alumnos activos</p>
-            <p className="text-3xl font-bold text-navy tabular-nums">{alumnosActivos}</p>
-            <p className="text-[11px] text-navy/40 mt-1">con suscripción o pack vigente</p>
+          <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-4 sm:p-5">
+            <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider mb-1">Alumnos activos</p>
+            <p className="text-2xl font-semibold text-navy tabular-nums">{alumnosActivos}</p>
+            <p className="text-[10px] text-navy/40 mt-1.5">con suscripción o pack vigente</p>
           </div>
 
           {/* Altas del mes */}
-          <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-4">
-            <p className="text-[11px] font-semibold text-navy/45 uppercase tracking-wider mb-1">Altas · {monthLabel(curMonth)}</p>
-            <p className="text-3xl font-bold text-success tabular-nums">
+          <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-4 sm:p-5">
+            <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider mb-1">Altas · {monthLabel(curMonth)}</p>
+            <p className="text-2xl font-semibold text-success tabular-nums">
               +{altasMes.nuevos + altasMes.reactivados}
             </p>
-            <p className="text-[11px] text-navy/40 mt-1">
+            <p className="text-[10px] text-navy/40 mt-1.5">
               {altasMes.nuevos > 0 && `${altasMes.nuevos} nuevos`}
               {altasMes.nuevos > 0 && altasMes.reactivados > 0 && " · "}
               {altasMes.reactivados > 0 && `${altasMes.reactivados} reactivados`}
@@ -421,19 +422,19 @@ export default async function Finanzas(props: {
           </div>
 
           {/* Bajas del mes */}
-          <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-4">
-            <p className="text-[11px] font-semibold text-navy/45 uppercase tracking-wider mb-1">Bajas · {monthLabel(curMonth)}</p>
-            <p className={`text-3xl font-bold tabular-nums ${bajasMes > 0 ? "text-danger" : "text-navy/30"}`}>
+          <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-4 sm:p-5">
+            <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider mb-1">Bajas · {monthLabel(curMonth)}</p>
+            <p className={`text-2xl font-semibold tabular-nums ${bajasMes > 0 ? "text-danger" : "text-navy/30"}`}>
               {bajasMes > 0 ? `−${bajasMes}` : "−0"}
             </p>
-            <p className="text-[11px] text-navy/40 mt-1">suscripciones sin renovar</p>
+            <p className="text-[10px] text-navy/40 mt-1.5">suscripciones sin renovar</p>
           </div>
 
           {/* Facturación prevista */}
-          <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-4">
-            <p className="text-[11px] font-semibold text-navy/45 uppercase tracking-wider mb-1">Facturación prevista</p>
-            <p className="text-3xl font-bold text-navy tabular-nums">{fmt(facturacionPrev)}</p>
-            <p className="text-[11px] text-navy/40 mt-1">MRR · suscripciones activas</p>
+          <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-4 sm:p-5">
+            <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider mb-1">Facturación prevista</p>
+            <p className="text-2xl font-semibold text-navy tabular-nums">{fmt(facturacionPrev)}</p>
+            <p className="text-[10px] text-navy/40 mt-1.5">MRR · suscripciones activas</p>
           </div>
         </div>
 
