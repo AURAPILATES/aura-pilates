@@ -1,5 +1,6 @@
 "use client";
 import { useState, useTransition, useEffect, useRef, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import type { Transaction } from "@/lib/transactions";
 import type { Category } from "@/lib/categories";
@@ -127,16 +128,29 @@ function CatIcon({ iconKey, name, color }: { iconKey: string; name: string; colo
 
 function CategoryPill({ category, categories, onChange }: { category: string | null; categories: Category[]; onChange: (cat: string | null) => void }) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const [dropPos, setDropPos] = useState<{ top: number; left: number } | null>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const dropRef = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!open) return;
     function handle(e: MouseEvent) {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+      if (!wrapRef.current?.contains(e.target as Node) && !dropRef.current?.contains(e.target as Node)) {
+        setOpen(false);
+      }
     }
     document.addEventListener("mousedown", handle);
     return () => document.removeEventListener("mousedown", handle);
   }, [open]);
+
+  function handleToggle() {
+    if (!open && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setDropPos({ top: rect.bottom + 4, left: rect.left });
+    }
+    setOpen((v) => !v);
+  }
 
   const cat = category ? categories.find((c) => c.value === category) : undefined;
   const cfg = cat ? {
@@ -149,18 +163,22 @@ function CategoryPill({ category, categories, onChange }: { category: string | n
   const label = cat?.label ?? (category || "Sin categoría");
 
   return (
-    <div ref={ref} className="relative inline-block">
+    <div ref={wrapRef} className="relative inline-block">
       <button
-        onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1.5 pl-1.5 pr-3 py-1 rounded-full text-xs font-medium whitespace-nowrap hover:brightness-95 transition-all"
+        ref={btnRef}
+        onClick={handleToggle}
+        className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap hover:brightness-95 transition-all"
         style={{ backgroundColor: cfg.bg, color: cfg.color }}
       >
         <CatIcon iconKey={cfg.emoji} name={label} color={cfg.color} />
         <span>{label}</span>
       </button>
-      {open && (
-        <div className="absolute left-0 top-full mt-1 z-50 bg-white border border-navy/10 rounded-xl shadow-xl overflow-y-auto py-1"
-          style={{ minWidth: "11rem", maxHeight: "13rem" }}>
+      {open && dropPos && createPortal(
+        <div
+          ref={dropRef}
+          className="fixed z-[9999] bg-white border border-navy/10 rounded-xl shadow-xl overflow-y-auto py-1"
+          style={{ top: dropPos.top, left: dropPos.left, minWidth: "11rem", maxHeight: "13rem" }}
+        >
           <button
             onClick={() => { onChange(null); setOpen(false); }}
             className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-navy/[0.04] transition-colors ${!category ? "font-semibold" : ""}`}
@@ -179,7 +197,8 @@ function CategoryPill({ category, categories, onChange }: { category: string | n
               <span className="text-navy/70">{c.label}</span>
             </button>
           ))}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
@@ -371,7 +390,8 @@ export default function TransaccionesList({
   function applyBulkCategory() {
     if (!bulkCat) return;
     const ids = [...selected];
-    startTransition(async () => { await Promise.all(ids.map((id) => updateTransactionCategory(id, bulkCat))); });
+    const cat = bulkCat === "__null__" ? null : bulkCat;
+    startTransition(async () => { await Promise.all(ids.map((id) => updateTransactionCategory(id, cat))); });
     clearSelection();
   }
   function handleCategoryChange(id: string, category: string | null) {
@@ -679,6 +699,7 @@ export default function TransaccionesList({
                 className="text-sm rounded-lg px-3 py-1.5 bg-white/10 text-white border border-white/20 outline-none focus:border-white/40 min-w-48 cursor-pointer"
               >
                 <option value="" disabled>Cambiar categoría…</option>
+                <option value="__null__" className="text-navy bg-white">Sin categoría</option>
                 {categories.map((c) => (
                   <option key={c.value} value={c.value} className="text-navy bg-white">{c.label}</option>
                 ))}
