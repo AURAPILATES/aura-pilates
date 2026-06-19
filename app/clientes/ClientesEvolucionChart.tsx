@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import type { StripePayment } from "@/lib/stripePayments";
 import type { BusinessEvent, EventCategoria } from "@/lib/businessEvents";
 
@@ -56,6 +56,15 @@ export default function ClientesEvolucionChart({
   events?: BusinessEvent[];
 }) {
   const [hoveredEventId, setHoveredEventId] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 640);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+  const valueFontSize = isMobile ? 18 : 14;
+  const monthFontSize = isMobile ? 17 : 13;
 
   const months = useMemo(() => {
     const now = new Date();
@@ -187,7 +196,7 @@ export default function ClientesEvolucionChart({
                 {d.count > 0 && (
                   <text
                     x={x + barW / 2} y={y - 5} textAnchor="middle"
-                    style={{ fontSize: 14, fontWeight: isCurrent || isActive ? 700 : 500, fill: isActive ? "#3B4B9E" : isCurrent ? "#6B7ED6" : "#7B84A8" }}
+                    style={{ fontSize: valueFontSize, fontWeight: isCurrent || isActive ? 700 : 500, fill: isActive ? "#3B4B9E" : isCurrent ? "#6B7ED6" : "#7B84A8" }}
                   >
                     {d.count}
                   </text>
@@ -195,7 +204,7 @@ export default function ClientesEvolucionChart({
                 {/* Month label */}
                 <text
                   x={x + barW / 2} y={SVG_H - 5} textAnchor="middle"
-                  style={{ fontSize: 13, fontWeight: isCurrent || isActive ? 700 : 400, fill: isActive ? "#3B4B9E" : isCurrent ? "#1C1917" : "#94A3B8" }}
+                  style={{ fontSize: monthFontSize, fontWeight: isCurrent || isActive ? 700 : 400, fill: isActive ? "#3B4B9E" : isCurrent ? "#1C1917" : "#94A3B8" }}
                 >
                   {d.label}
                 </text>
