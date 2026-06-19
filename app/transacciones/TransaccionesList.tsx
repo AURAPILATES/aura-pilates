@@ -5,7 +5,6 @@ import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import type { Transaction } from "@/lib/transactions";
 import type { Category } from "@/lib/categories";
 import { updateTransactionCategory, updateTransactionConcept, updateTransactionContact, softDeleteTransactions } from "./actions";
-import { RANGE_OPTIONS } from "@/lib/dateRange";
 import ImportButton from "./ImportButton";
 import AddCashModal from "./AddCashModal";
 import PapeleraDrawer from "./PapeleraDrawer";
@@ -499,6 +498,11 @@ export default function TransaccionesList({
   const totalOut = activeTxns.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
   const neto     = totalIn - totalOut;
 
+  // KPI bar — siempre del total filtrado (no de la selección)
+  const kpiIn   = filtered.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0);
+  const kpiOut  = Math.abs(filtered.filter((t) => t.amount < 0).reduce((s, t) => s + t.amount, 0));
+  const kpiNeto = kpiIn - kpiOut;
+
   function toggleAll() {
     setSelected(allSelected ? new Set() : new Set(allFilteredIds));
   }
@@ -575,6 +579,50 @@ export default function TransaccionesList({
 
   return (
     <div>
+      {/* ── KPI bar sticky (reactiva a filtros) ────────────────────────────── */}
+      <div className="sm:sticky sm:top-[45px] sm:z-[15] -mx-2 sm:-mx-6 sm:bg-app-bg/95 sm:backdrop-blur-sm sm:border-b sm:border-navy/[0.06] mb-4 sm:mb-3">
+        <div className="flex items-center gap-4 sm:gap-7 px-3 sm:px-6 py-2.5">
+          <div>
+            <p className="text-[10px] text-navy/40 uppercase tracking-wider leading-none mb-0.5">Ingresos</p>
+            <p className="text-sm font-semibold text-success tabular-nums">+{fmtAmt(kpiIn)}</p>
+          </div>
+          <div className="hidden sm:block h-4 w-px bg-navy/[0.1] shrink-0" />
+          <div>
+            <p className="text-[10px] text-navy/40 uppercase tracking-wider leading-none mb-0.5">Gastos</p>
+            <p className="text-sm font-semibold text-[#B85C3A] tabular-nums">−{fmtAmt(kpiOut)}</p>
+          </div>
+          <div className="hidden sm:block h-4 w-px bg-navy/[0.1] shrink-0" />
+          <div>
+            <p className="text-[10px] text-navy/40 uppercase tracking-wider leading-none mb-0.5">Resultado neto</p>
+            <p className={`text-sm font-semibold tabular-nums ${kpiNeto >= 0 ? "text-navy" : "text-danger"}`}>
+              {kpiNeto >= 0 ? "+" : "−"}{fmtAmt(Math.abs(kpiNeto))}
+            </p>
+          </div>
+          {kpiIn > 0 && (
+            <>
+              <div className="hidden sm:block h-4 w-px bg-navy/[0.1] shrink-0" />
+              <span className="hidden sm:inline text-xs text-navy/35 tabular-nums">
+                margen {(kpiNeto / kpiIn * 100).toFixed(1).replace(".", ",")}%
+              </span>
+            </>
+          )}
+          <div className="flex-1" />
+          {uncategorizedCount > 0 && (
+            <button
+              onClick={() => setCatFilters(catFilters.includes("__none__") ? catFilters.filter((v) => v !== "__none__") : [...catFilters, "__none__"])}
+              className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                catFilters.includes("__none__")
+                  ? "bg-warning/20 text-warning"
+                  : "bg-warning/10 text-warning hover:bg-warning/15"
+              }`}
+            >
+              <span>⚠</span>
+              <span>{uncategorizedCount} sin etiquetar</span>
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* ── Mobile: Import + Filtros buttons ────────────────────────────────── */}
       <div className="sm:hidden flex gap-2 mb-3">
         <ImportButton className="flex-1" onManual={() => setShowAddCash(true)} />
@@ -693,19 +741,6 @@ export default function TransaccionesList({
           }
           {isPending && <span className="ml-2 text-xs text-primary/60">Guardando…</span>}
         </span>
-        {uncategorizedCount > 0 && (
-          <button
-            onClick={() => setCatFilters(catFilters.includes("__none__") ? catFilters.filter((v) => v !== "__none__") : [...catFilters, "__none__"])}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-              catFilters.includes("__none__")
-                ? "bg-warning/20 text-warning"
-                : "bg-warning/10 text-warning hover:bg-warning/15"
-            }`}
-          >
-            <span>⚠</span>
-            <span>{uncategorizedCount} sin etiquetar</span>
-          </button>
-        )}
         {(catFilters.length > 0 || originFilter !== "all") && (
           <button
             onClick={() => { setCatFilters([]); setOriginFilter("all"); }}
