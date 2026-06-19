@@ -849,7 +849,7 @@ export default function TransaccionesList({
                               autoFocus type="text" value={editValue}
                               onChange={(e) => setEditValue(e.target.value)}
                               onKeyDown={(e) => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") setEditingField(null); }}
-                              className="text-sm font-semibold border border-primary/30 rounded px-2 py-0.5 outline-none focus:border-primary/60 w-full"
+                              className="text-sm font-medium border border-primary/30 rounded px-2 py-0.5 outline-none focus:border-primary/60 w-full"
                             />
                             <button onClick={saveEdit} className="text-xs text-primary font-bold px-1 shrink-0">✓</button>
                             <button onClick={() => setEditingField(null)} className="text-xs text-navy/50 shrink-0">✕</button>
@@ -857,7 +857,7 @@ export default function TransaccionesList({
                         ) : (
                           <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
                             <span
-                              className="text-sm font-semibold text-navy truncate cursor-pointer hover:text-navy/70 transition-colors"
+                              className="text-sm font-medium text-navy truncate cursor-pointer hover:text-navy/70 transition-colors"
                               onClick={() => startEditing(t, "primary")}
                             >{primary}</span>
                             {isRecurring && (
