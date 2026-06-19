@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import type { StripePayment } from "@/lib/stripePayments";
 import type { BusinessEvent, EventCategoria } from "@/lib/businessEvents";
 
@@ -56,15 +56,20 @@ export default function ClientesEvolucionChart({
   events?: BusinessEvent[];
 }) {
   const [hoveredEventId, setHoveredEventId] = useState<string | null>(null);
-  const [isMobile, setIsMobile] = useState(false);
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState(SVG_W);
   useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 640);
-    check();
-    window.addEventListener("resize", check);
-    return () => window.removeEventListener("resize", check);
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([entry]) => setContainerWidth(entry.contentRect.width));
+    ro.observe(el);
+    return () => ro.disconnect();
   }, []);
-  const valueFontSize = isMobile ? 18 : 9;
-  const monthFontSize = isMobile ? 17 : 9;
+
+  const scale = containerWidth / SVG_W;
+  const valueFontSize = 12 / scale;
+  const monthFontSize = 11 / scale;
 
   const months = useMemo(() => {
     const now = new Date();
@@ -131,7 +136,7 @@ export default function ClientesEvolucionChart({
         </div>
       </div>
 
-      <div className="w-full overflow-x-auto">
+      <div ref={containerRef} className="w-full overflow-x-auto">
         <svg
           viewBox={`0 0 ${SVG_W} ${SVG_H}`}
           className="w-full"
