@@ -127,6 +127,124 @@ function CatIcon({ iconKey, name, color }: { iconKey: string; name: string; colo
 }
 
 
+function CategoryMultiFilter({
+  selected, categories, onChange,
+}: {
+  selected: string[]; categories: Category[]; onChange: (cats: string[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [dropPos, setDropPos] = useState<{ top: number; left: number } | null>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const dropRef = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function handle(e: MouseEvent) {
+      if (!wrapRef.current?.contains(e.target as Node) && !dropRef.current?.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, [open]);
+
+  function handleToggle() {
+    if (!open && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setDropPos({ top: rect.bottom + 4, left: rect.left });
+    }
+    setOpen((v) => !v);
+  }
+
+  function toggle(val: string) {
+    onChange(selected.includes(val) ? selected.filter((v) => v !== val) : [...selected, val]);
+  }
+
+  let label: React.ReactNode;
+  if (selected.length === 0) {
+    label = <span className="text-navy/55">Categoría</span>;
+  } else if (selected.length === 1) {
+    const val = selected[0];
+    if (val === "__none__") {
+      label = <span>Sin categoría</span>;
+    } else {
+      const cat = categories.find((c) => c.value === val);
+      label = cat ? (
+        <span className="flex items-center gap-1.5">
+          <CatIcon iconKey={cat.emoji} name={cat.label} color={cat.text_color} />
+          {cat.label}
+        </span>
+      ) : <span>{val}</span>;
+    }
+  } else {
+    label = <span>{selected.length} categorías</span>;
+  }
+
+  const MiniCheck = ({ on }: { on: boolean }) => (
+    <div className={`w-3 h-3 rounded-[2px] border flex items-center justify-center shrink-0 transition-colors ${on ? "bg-black border-black" : "border-navy/30"}`}>
+      {on && (
+        <svg width="8" height="6" viewBox="0 0 9 7" fill="none">
+          <polyline points="1,3.5 3.5,6 8,1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      )}
+    </div>
+  );
+
+  return (
+    <div ref={wrapRef} className="relative">
+      <button
+        ref={btnRef}
+        onClick={handleToggle}
+        className={`flex items-center gap-2 text-sm border rounded-xl px-3 py-2 bg-white outline-none transition-colors cursor-pointer whitespace-nowrap ${
+          selected.length > 0 ? "border-primary/40 text-navy font-medium" : "border-navy/[0.12] text-navy hover:border-navy/20"
+        }`}
+        style={{ minWidth: "130px" }}
+      >
+        <span className="flex-1 text-left text-sm">{label}</span>
+        {selected.length > 0 ? (
+          <span
+            onClick={(e) => { e.stopPropagation(); onChange([]); }}
+            className="text-navy/40 hover:text-navy/70 transition-colors shrink-0 leading-none"
+          >✕</span>
+        ) : (
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-navy/35 shrink-0">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        )}
+      </button>
+      {open && dropPos && createPortal(
+        <div
+          ref={dropRef}
+          className="fixed z-[9999] bg-white border border-navy/10 rounded-xl shadow-xl overflow-y-auto py-1"
+          style={{ top: dropPos.top, left: dropPos.left, minWidth: "13rem", maxHeight: "18rem" }}
+        >
+          <button
+            onClick={() => toggle("__none__")}
+            className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-navy/[0.04] transition-colors"
+          >
+            <MiniCheck on={selected.includes("__none__")} />
+            <span className="text-navy/40">—</span>
+            <span className="text-navy/50">Sin categoría</span>
+          </button>
+          {categories.map((c) => (
+            <button
+              key={c.value}
+              onClick={() => toggle(c.value)}
+              className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-navy/[0.04] transition-colors"
+            >
+              <MiniCheck on={selected.includes(c.value)} />
+              <CatIcon iconKey={c.emoji} name={c.label} color={c.text_color} />
+              <span className="text-navy/70">{c.label}</span>
+            </button>
+          ))}
+        </div>,
+        document.body
+      )}
+    </div>
+  );
+}
+
 function CategoryPill({ category, categories, onChange }: { category: string | null; categories: Category[]; onChange: (cat: string | null) => void }) {
   const [open, setOpen] = useState(false);
   const [dropPos, setDropPos] = useState<{ top: number; left: number } | null>(null);
@@ -277,7 +395,11 @@ export default function TransaccionesList({
   const customFrom   = searchParams.get("from") ?? "";
 
   const [search,      setSearch]      = useState("");
-  const [catFilter,   setCatFilter]   = useState(() => searchParams.get("categoria") ?? "all");
+  const [catFilters,  setCatFilters]  = useState<string[]>(() => {
+    const cat = searchParams.get("categoria");
+    if (!cat || cat === "all") return [];
+    return [cat];
+  });
   const [originFilter, setOriginFilter] = useState("all");
   const [showMobileFilters,  setShowMobileFilters]  = useState(false);
   const [mobileSelectMode,   setMobileSelectMode]   = useState(false);
@@ -335,14 +457,13 @@ export default function TransaccionesList({
 
   useEffect(() => {
     const cat = searchParams.get("categoria");
-    if (cat) setCatFilter(cat);
+    if (cat && cat !== "all") setCatFilters([cat]);
   }, [searchParams]);
 
   const filtered = transactions.filter((t) => {
     const q = search.toLowerCase();
     if (q && !t.contact?.toLowerCase().includes(q) && !t.concept?.toLowerCase().includes(q)) return false;
-    if (catFilter === "__none__") { if (t.category) return false; }
-    else if (catFilter !== "all" && t.category !== catFilter) return false;
+    if (catFilters.length > 0 && !catFilters.includes(t.category ?? "__none__")) return false;
     if (originFilter !== "all" && t.payment_method !== originFilter) return false;
     return true;
   });
@@ -486,13 +607,7 @@ export default function TransaccionesList({
               className="w-full pl-9 pr-4 py-2 text-sm border border-navy/[0.12] rounded-lg bg-white text-navy placeholder:text-navy/35 outline-none focus:ring-2 focus:ring-primary/20 transition"
             />
           </div>
-          <SelectWrapper>
-            <select value={catFilter} onChange={(e) => setCatFilter(e.target.value)} className={SELECT_CLS}>
-              <option value="all">Categoría</option>
-              <option value="__none__">Sin categoría</option>
-              {categories.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
-            </select>
-          </SelectWrapper>
+          <CategoryMultiFilter selected={catFilters} categories={categories} onChange={setCatFilters} />
           <SelectWrapper>
             <select value={originFilter} onChange={(e) => setOriginFilter(e.target.value)} className={SELECT_CLS}>
               <option value="all">Origen</option>
@@ -510,7 +625,7 @@ export default function TransaccionesList({
       {/* ── Mobile: Alert banner ─────────────────────────────────────────────── */}
       {uncategorizedCount > 0 && (
         <button
-          onClick={() => setCatFilter(catFilter === "__none__" ? "all" : "__none__")}
+          onClick={() => setCatFilters(catFilters.includes("__none__") ? catFilters.filter((v) => v !== "__none__") : [...catFilters, "__none__"])}
           className="sm:hidden w-full flex items-center gap-2 px-4 py-3 mb-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-sm font-medium text-left"
         >
           <span className="text-base">⚠</span>
@@ -562,13 +677,7 @@ export default function TransaccionesList({
 
       {/* ── Desktop: fila 2 — Filtros + Importar + Exportar ───────────────── */}
       <div className="hidden sm:flex items-center gap-2 mb-6">
-        <SelectWrapper>
-          <select value={catFilter} onChange={(e) => setCatFilter(e.target.value)} className={SELECT_CLS}>
-            <option value="all">Categoría</option>
-            <option value="__none__">Sin categoría</option>
-            {categories.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
-          </select>
-        </SelectWrapper>
+        <CategoryMultiFilter selected={catFilters} categories={categories} onChange={setCatFilters} />
         <SelectWrapper>
           <select value={originFilter} onChange={(e) => setOriginFilter(e.target.value)} className={SELECT_CLS} style={{ width: "140px" }}>
             <option value="all">Origen</option>
@@ -580,9 +689,9 @@ export default function TransaccionesList({
             <option value="carles">Carles</option>
           </select>
         </SelectWrapper>
-        {(catFilter !== "all" || originFilter !== "all") && (
+        {(catFilters.length > 0 || originFilter !== "all") && (
           <button
-            onClick={() => { setCatFilter("all"); setOriginFilter("all"); }}
+            onClick={() => { setCatFilters([]); setOriginFilter("all"); }}
             className="text-xs text-navy/55 hover:text-navy underline self-center whitespace-nowrap"
           >
             Eliminar filtros
@@ -622,9 +731,9 @@ export default function TransaccionesList({
         </span>
         {uncategorizedCount > 0 && (
           <button
-            onClick={() => setCatFilter(catFilter === "__none__" ? "all" : "__none__")}
+            onClick={() => setCatFilters(catFilters.includes("__none__") ? catFilters.filter((v) => v !== "__none__") : [...catFilters, "__none__"])}
             className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-              catFilter === "__none__"
+              catFilters.includes("__none__")
                 ? "bg-warning/20 text-warning"
                 : "bg-warning/10 text-warning hover:bg-warning/15"
             }`}
@@ -655,6 +764,18 @@ export default function TransaccionesList({
       {/* ── Mobile: toolbar ────────────────────────────────────────────────── */}
       <div className="sm:hidden flex flex-wrap items-center gap-x-4 gap-y-2 mb-5">
         <span className="text-sm text-navy/55">{filtered.length} movimientos</span>
+        {(catFilters.length > 0 || originFilter !== "all" || currentRange !== "all") && (
+          <button
+            onClick={() => {
+              setCatFilters([]);
+              setOriginFilter("all");
+              if (currentRange !== "all") router.push(pathname);
+            }}
+            className="text-xs text-navy/55 hover:text-navy underline"
+          >
+            Eliminar filtros
+          </button>
+        )}
         <button
           onClick={() => { setMobileSelectMode((v) => { if (v) clearSelection(); return !v; }); }}
           className={`text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors ${
@@ -741,7 +862,7 @@ export default function TransaccionesList({
       )}
 
       {/* ── Mobile: month strip (sticky) ────────────────────────────────────── */}
-      <div className="sm:hidden sticky top-14 z-20 -mx-2 px-2 pt-2 pb-3 bg-app-bg border-b border-navy/[0.06]">
+      <div className="sm:hidden sticky top-[45px] z-20 -mx-2 px-2 pt-2 pb-3 bg-app-bg border-b border-navy/[0.06]">
         <div className="flex gap-1 overflow-x-auto scrollbar-none">
           <button
             onClick={() => router.push(pathname)}
