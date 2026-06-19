@@ -125,7 +125,7 @@ function CatIcon({ iconKey, name, color }: { iconKey: string; name: string; colo
 }
 
 
-function CategoryPill({ category, categories, onChange }: { category: string; categories: Category[]; onChange: (cat: string) => void }) {
+function CategoryPill({ category, categories, onChange }: { category: string | null; categories: Category[]; onChange: (cat: string | null) => void }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -138,7 +138,7 @@ function CategoryPill({ category, categories, onChange }: { category: string; ca
     return () => document.removeEventListener("mousedown", handle);
   }, [open]);
 
-  const cat = categories.find((c) => c.value === category);
+  const cat = category ? categories.find((c) => c.value === category) : undefined;
   const cfg = cat ? {
     emoji: cat.emoji,
     bg: cat.bg_color === cat.text_color
@@ -146,7 +146,7 @@ function CategoryPill({ category, categories, onChange }: { category: string; ca
       : cat.bg_color,
     color: cat.text_color,
   } : CAT_FALLBACK;
-  const label = cat?.label ?? category;
+  const label = cat?.label ?? (category || "Sin categoría");
 
   return (
     <div ref={ref} className="relative inline-block">
@@ -161,6 +161,13 @@ function CategoryPill({ category, categories, onChange }: { category: string; ca
       {open && (
         <div className="absolute left-0 top-full mt-1 z-50 bg-white border border-navy/10 rounded-xl shadow-xl overflow-y-auto py-1"
           style={{ minWidth: "11rem", maxHeight: "13rem" }}>
+          <button
+            onClick={() => { onChange(null); setOpen(false); }}
+            className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-navy/[0.04] transition-colors ${!category ? "font-semibold" : ""}`}
+          >
+            <span className="text-navy/40">—</span>
+            <span className="text-navy/50">Sin categoría</span>
+          </button>
           {categories.map((c) => (
             <button
               key={c.value}
@@ -308,7 +315,8 @@ export default function TransaccionesList({
   const filtered = transactions.filter((t) => {
     const q = search.toLowerCase();
     if (q && !t.contact?.toLowerCase().includes(q) && !t.concept?.toLowerCase().includes(q)) return false;
-    if (catFilter !== "all" && t.category !== catFilter) return false;
+    if (catFilter === "__none__") { if (t.category) return false; }
+    else if (catFilter !== "all" && t.category !== catFilter) return false;
     if (originFilter !== "all" && t.payment_method !== originFilter) return false;
     return true;
   });
@@ -366,7 +374,7 @@ export default function TransaccionesList({
     startTransition(async () => { await Promise.all(ids.map((id) => updateTransactionCategory(id, bulkCat))); });
     clearSelection();
   }
-  function handleCategoryChange(id: string, category: string) {
+  function handleCategoryChange(id: string, category: string | null) {
     startTransition(() => updateTransactionCategory(id, category));
   }
   function startEditing(t: Transaction, which: "primary" | "secondary") {
@@ -454,6 +462,7 @@ export default function TransaccionesList({
           <SelectWrapper>
             <select value={catFilter} onChange={(e) => setCatFilter(e.target.value)} className={SELECT_CLS}>
               <option value="all">Categoría</option>
+              <option value="__none__">Sin categoría</option>
               {categories.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
             </select>
           </SelectWrapper>
@@ -474,7 +483,7 @@ export default function TransaccionesList({
       {/* ── Mobile: Alert banner ─────────────────────────────────────────────── */}
       {uncategorizedCount > 0 && (
         <button
-          onClick={() => setCatFilter(catFilter === "Otros" ? "all" : "Otros")}
+          onClick={() => setCatFilter(catFilter === "__none__" ? "all" : "__none__")}
           className="sm:hidden w-full flex items-center gap-2 px-4 py-3 mb-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-sm font-medium text-left"
         >
           <span className="text-base">⚠</span>
@@ -579,9 +588,9 @@ export default function TransaccionesList({
         </span>
         {uncategorizedCount > 0 && (
           <button
-            onClick={() => setCatFilter(catFilter === "Otros" ? "all" : "Otros")}
+            onClick={() => setCatFilter(catFilter === "__none__" ? "all" : "__none__")}
             className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-              catFilter === "Otros"
+              catFilter === "__none__"
                 ? "bg-warning/20 text-warning"
                 : "bg-warning/10 text-warning hover:bg-warning/15"
             }`}
@@ -792,7 +801,7 @@ export default function TransaccionesList({
         <table className="w-full" style={{ tableLayout: "fixed" }}>
           <colgroup>
             <col style={{ width: "44px" }} />
-            <col style={{ width: "280px" }} />
+            <col style={{ width: "380px" }} />
             <col />
             <col style={{ width: "172px" }} />
             <col style={{ width: "110px" }} />
