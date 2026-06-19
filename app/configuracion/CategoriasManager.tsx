@@ -97,7 +97,13 @@ function CategoryIcon({ iconKey, name, color, size = 40 }: { iconKey: string; na
 // ── Color derivation ──────────────────────────────────────────────────────────
 
 function deriveColors(accent: string): { bg_color: string; text_color: string } {
-  return { bg_color: accent, text_color: accent };
+  const r = parseInt(accent.slice(1, 3), 16);
+  const g = parseInt(accent.slice(3, 5), 16);
+  const b = parseInt(accent.slice(5, 7), 16);
+  return {
+    bg_color: `rgba(${r}, ${g}, ${b}, 0.12)`,
+    text_color: accent,
+  };
 }
 
 // ── Default form ──────────────────────────────────────────────────────────────

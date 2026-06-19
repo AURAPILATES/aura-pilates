@@ -139,7 +139,13 @@ function CategoryPill({ category, categories, onChange }: { category: string; ca
   }, [open]);
 
   const cat = categories.find((c) => c.value === category);
-  const cfg = cat ? { emoji: cat.emoji, bg: cat.bg_color, color: cat.text_color } : CAT_FALLBACK;
+  const cfg = cat ? {
+    emoji: cat.emoji,
+    bg: cat.bg_color === cat.text_color
+      ? (() => { const r = parseInt(cat.text_color.slice(1,3),16), g = parseInt(cat.text_color.slice(3,5),16), b = parseInt(cat.text_color.slice(5,7),16); return `rgba(${r},${g},${b},0.12)`; })()
+      : cat.bg_color,
+    color: cat.text_color,
+  } : CAT_FALLBACK;
   const label = cat?.label ?? category;
 
   return (
