@@ -35,14 +35,14 @@ function TrendBadge({ value }: { value: number | null }) {
 
 function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={`bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5 ${className}`}>
+    <div className={`bg-white border border-navy/[0.07] rounded-2xl shadow-card p-4 sm:p-5 ${className}`}>
       {children}
     </div>
   );
 }
 
 function CardTitle({ children }: { children: React.ReactNode }) {
-  return <p className="text-xs font-semibold text-navy/55 uppercase tracking-wider mb-3">{children}</p>;
+  return <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider mb-3">{children}</p>;
 }
 
 function OccBar({ value }: { value: number }) {
@@ -142,12 +142,12 @@ export default function HorarioReporting({ data }: { data: ReportingData }) {
           ].map((k) => (
             <Card key={k.label}>
               <div className="flex items-start justify-between gap-2 mb-1">
-                <p className="text-xs text-navy/55 uppercase tracking-wider leading-tight">{k.label}</p>
+                <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider leading-tight">{k.label}</p>
                 <TrendBadge value={k.trendVal ?? null} />
               </div>
-              <p className="text-[10px] text-navy/35 mb-1">{dateRange}</p>
-              <p className={`text-2xl font-semibold ${k.valueColor ?? "text-navy"}`}>{k.value}</p>
-              <p className="text-xs text-navy/55 mt-1">{k.sub}</p>
+              <p className="text-[10px] text-navy/40 mb-1">{dateRange}</p>
+              <p className={`text-2xl font-semibold tabular-nums ${k.valueColor ?? "text-navy"}`}>{k.value}</p>
+              <p className="text-[10px] text-navy/40 mt-1.5">{k.sub}</p>
             </Card>
           ))}
         </div>
@@ -348,7 +348,7 @@ export default function HorarioReporting({ data }: { data: ReportingData }) {
                 <CardTitle>Urban Sports Club · {uscTotal} reservas</CardTitle>
                 <div className="grid grid-cols-2 gap-6">
                   <div>
-                    <p className="text-[11px] text-navy/55 uppercase tracking-wider mb-2">Por franja</p>
+                    <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider mb-2">Por franja</p>
                     <div className="space-y-2">
                       {uscByHour.map((r) => (
                         <div key={r.hour} className="flex items-center gap-2">
@@ -362,7 +362,7 @@ export default function HorarioReporting({ data }: { data: ReportingData }) {
                     </div>
                   </div>
                   <div>
-                    <p className="text-[11px] text-navy/55 uppercase tracking-wider mb-2">Por día</p>
+                    <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider mb-2">Por día</p>
                     <div className="space-y-2">
                       {uscByWeekday.map((r) => (
                         <div key={r.weekday} className="flex items-center gap-2">

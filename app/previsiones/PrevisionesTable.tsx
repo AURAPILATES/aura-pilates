@@ -368,6 +368,9 @@ export default function PrevisionesTable({
 
       {/* ── Params bar + toggle ── */}
       <div className="flex flex-wrap items-center gap-2">
+        <InlineParam label="MRR suscripción" value={params.mrrBase} onChange={v => set("mrrBase", v)} suffix="€/mes" step={10} />
+        <InlineParam label="Packs histórico" value={params.packsBase} onChange={v => set("packsBase", v)} suffix="€/mes" step={10} />
+        <div className="w-px h-5 bg-navy/[0.12] mx-1" />
         <InlineParam label="Crecimiento" value={params.crecimientoPct} onChange={v => set("crecimientoPct", v)} suffix="% /mes" step={0.5} />
         <InlineParam label="Retenciones" value={params.retencionesPct} onChange={v => set("retencionesPct", v)} suffix="%" step={1} />
         <InlineParam label="Préstamo" value={params.prestamo} onChange={v => set("prestamo", v)} suffix="€/mes" step={50} />

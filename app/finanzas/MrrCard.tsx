@@ -17,17 +17,17 @@ export default function MrrCard({ tiers }: { tiers: TierMrr[] }) {
   const totalActive = tiers.reduce((s, t) => s + t.activeCount, 0);
 
   return (
-    <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
-      <p className="text-xs font-semibold text-navy/55 uppercase tracking-widest mb-4">MRR / ARR por suscripción</p>
+    <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-4 sm:p-5">
+      <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider mb-4">MRR / ARR por suscripción</p>
 
       <div className="grid grid-cols-2 gap-4 mb-5">
         <div>
-          <p className="text-xs text-navy/45 uppercase tracking-wide mb-1">MRR total</p>
-          <p className="text-2xl font-semibold text-navy">{fmtEur(totalMrr)}</p>
+          <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider mb-1">MRR total</p>
+          <p className="text-2xl font-semibold text-navy tabular-nums">{fmtEur(totalMrr)}</p>
         </div>
         <div>
-          <p className="text-xs text-navy/45 uppercase tracking-wide mb-1">ARR proyectado</p>
-          <p className="text-2xl font-semibold text-navy">{fmtEur(totalArr)}</p>
+          <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider mb-1">ARR proyectado</p>
+          <p className="text-2xl font-semibold text-navy tabular-nums">{fmtEur(totalArr)}</p>
         </div>
       </div>
 

@@ -5,8 +5,15 @@ export default async function ConfiguracionPage() {
   const categories = await loadCategories();
 
   return (
-    <main className="px-6 py-10 max-w-6xl mx-auto">
-      <CategoriasManager categories={categories} />
-    </main>
+    <div>
+      <div className="sticky top-0 z-20 bg-app-bg/95 backdrop-blur-sm border-b border-navy/[0.06]">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-[45px] flex items-center">
+          <h1 className="text-sm font-bold text-navy uppercase tracking-widest">Configuración</h1>
+        </div>
+      </div>
+      <main className="max-w-6xl mx-auto px-6 pt-8 pb-16">
+        <CategoriasManager categories={categories} />
+      </main>
+    </div>
   );
 }

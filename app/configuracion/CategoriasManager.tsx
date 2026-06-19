@@ -214,10 +214,7 @@ export default function CategoriasManager({ categories }: { categories: Category
       {/* ── Lista ── */}
       <div>
         <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-sm font-bold text-navy uppercase tracking-widest">Configuración</h1>
-            <p className="text-sm text-navy/55 mt-1">{categories.length} categorías</p>
-          </div>
+          <p className="text-sm text-navy/55">{categories.length} categorías</p>
           <button
             onClick={openNew}
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary/90 transition-colors shadow-sm"

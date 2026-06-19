@@ -24,6 +24,7 @@ const PERSON_COLORS = [
 const MONTH_SHORT = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 const MONTH_NAMES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 const TODAY = new Date().toISOString().split("T")[0];
+const YEAR = new Date().getFullYear();
 
 type AbsenceKey = "vacaciones" | "enfermedad" | "familiar" | "otros";
 
@@ -129,7 +130,9 @@ function generateSuggestions(personas: Persona[], festivos: string[]): Suggestio
       const period =
         r.start === r.end
           ? `el ${s.getDate()} de ${MONTH_NAMES[s.getMonth()].toLowerCase()}`
-          : `entre el ${s.getDate()} y el ${e.getDate()} de ${MONTH_NAMES[s.getMonth()].toLowerCase()}`;
+          : s.getMonth() === e.getMonth()
+          ? `entre el ${s.getDate()} y el ${e.getDate()} de ${MONTH_NAMES[s.getMonth()].toLowerCase()}`
+          : `entre el ${s.getDate()} de ${MONTH_NAMES[s.getMonth()].toLowerCase()} y el ${e.getDate()} de ${MONTH_NAMES[e.getMonth()].toLowerCase()}`;
       suggestions.push({ type: "warning", text: `Evita aprobar más ausencias ${period}: ${names.join(" y ")} ya ${names.length === 1 ? "está" : "están"} de vacaciones.` });
     });
   }
@@ -137,12 +140,12 @@ function generateSuggestions(personas: Persona[], festivos: string[]): Suggestio
   let freeWindows = 0;
   for (let mi = todayDate.getMonth(); mi < 12 && freeWindows < 4; mi++) {
     const month = mi + 1;
-    const daysInMonth = new Date(2026, month, 0).getDate();
+    const daysInMonth = new Date(YEAR, month, 0).getDate();
     const pad = (n: number) => String(n).padStart(2, "0");
-    const prefix = `2026-${pad(month)}-`;
+    const prefix = `${YEAR}-${pad(month)}-`;
 
     const isHalfFree = (startDay: number, endDay: number) => {
-      const halfStart = new Date(2026, mi, startDay);
+      const halfStart = new Date(YEAR, mi, startDay);
       if (halfStart <= todayDate) return false;
       const workDays = Array.from({ length: endDay - startDay + 1 }, (_, i) => {
         const ds = `${prefix}${pad(startDay + i)}`;
@@ -252,81 +255,12 @@ function NuevoInstructorModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-navy/25 backdrop-blur-[2px]" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col">
-
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-navy/[0.07]">
-          <h2 className="text-base font-bold text-navy">Nuevo instructor</h2>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-navy/5 text-navy/40 hover:text-navy transition-colors"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </button>
-        </div>
-
-        {/* Body */}
-        <div className="px-6 py-5 space-y-4">
-          <div>
-            <label className="block text-xs text-navy/55 mb-1.5">Nombre</label>
-            <input
-              type="text"
-              value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
-              placeholder="Nombre del instructor"
-              autoFocus
-              className="w-full text-sm border border-navy/[0.12] rounded-lg px-4 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary/30 text-navy"
-            />
-          </div>
-          <div>
-            <label className="block text-xs text-navy/55 mb-1.5">Inicio de contrato</label>
-            <input
-              type="date"
-              value={inicioContrato}
-              onChange={(e) => handleInicio(e.target.value)}
-              className="w-full text-sm border border-navy/[0.12] rounded-lg px-4 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary/30 text-navy"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs text-navy/55 mb-1.5">Días jornada/sem.</label>
-              <input
-                type="number" min={1} max={7} value={jornadaDias}
-                onChange={(e) => handleJornada(Number(e.target.value))}
-                className="w-full text-sm border border-navy/[0.12] rounded-lg px-4 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary/30 text-navy"
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-navy/55 mb-1.5">
-                Días vacaciones
-                {!userEdited && <span className="ml-1 text-[10px] text-primary/70 font-normal">· calculado</span>}
-              </label>
-              <input
-                type="number" min={0} max={365} value={diasTotales}
-                onChange={(e) => handleDias(Number(e.target.value))}
-                className="w-full text-sm border border-navy/[0.12] rounded-lg px-4 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary/30 text-navy"
-              />
-            </div>
-          </div>
-          {hint && (
-            <p className="text-[11px] text-navy/40 leading-relaxed">
-              ET art. 38 · {hint}
-              {userEdited && (
-                <button type="button" onClick={() => { setDiasTotales(diasAuto); setUserEdited(false); }}
-                  className="ml-2 text-primary/70 hover:text-primary underline underline-offset-2 transition-colors">
-                  restablecer
-                </button>
-              )}
-            </p>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="flex justify-end gap-3 px-6 py-4 border-t border-navy/[0.07]">
+    <Drawer
+      title="Nuevo instructor"
+      onClose={onClose}
+      maxWidth="max-w-sm"
+      footer={
+        <div className="flex justify-end gap-3">
           <button onClick={onClose} className="px-4 py-2.5 text-sm text-navy/55 hover:text-navy transition-colors">
             Cancelar
           </button>
@@ -338,8 +272,63 @@ function NuevoInstructorModal({
             {saving ? "Creando…" : "Crear instructor"}
           </button>
         </div>
+      }
+    >
+      <div className="px-6 py-5 space-y-4">
+        <div>
+          <label className="block text-xs text-navy/55 mb-1.5">Nombre</label>
+          <input
+            type="text"
+            value={nombre}
+            onChange={(e) => setNombre(e.target.value)}
+            placeholder="Nombre del instructor"
+            autoFocus
+            className="w-full text-sm border border-navy/[0.12] rounded-lg px-4 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary/30 text-navy"
+          />
+        </div>
+        <div>
+          <label className="block text-xs text-navy/55 mb-1.5">Inicio de contrato</label>
+          <input
+            type="date"
+            value={inicioContrato}
+            onChange={(e) => handleInicio(e.target.value)}
+            className="w-full text-sm border border-navy/[0.12] rounded-lg px-4 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary/30 text-navy"
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs text-navy/55 mb-1.5">Días jornada/sem.</label>
+            <input
+              type="number" min={1} max={7} value={jornadaDias}
+              onChange={(e) => handleJornada(Number(e.target.value))}
+              className="w-full text-sm border border-navy/[0.12] rounded-lg px-4 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary/30 text-navy"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-navy/55 mb-1.5">
+              Días vacaciones
+              {!userEdited && <span className="ml-1 text-[10px] text-primary/70 font-normal">· calculado</span>}
+            </label>
+            <input
+              type="number" min={0} max={365} value={diasTotales}
+              onChange={(e) => handleDias(Number(e.target.value))}
+              className="w-full text-sm border border-navy/[0.12] rounded-lg px-4 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary/30 text-navy"
+            />
+          </div>
+        </div>
+        {hint && (
+          <p className="text-[11px] text-navy/40 leading-relaxed">
+            ET art. 38 · {hint}
+            {userEdited && (
+              <button type="button" onClick={() => { setDiasTotales(diasAuto); setUserEdited(false); }}
+                className="ml-2 text-primary/70 hover:text-primary underline underline-offset-2 transition-colors">
+                restablecer
+              </button>
+            )}
+          </p>
+        )}
       </div>
-    </div>
+    </Drawer>
   );
 }
 
@@ -577,7 +566,7 @@ function AusenciasModal({ persona, idx, onClose }: { persona: Persona; idx: numb
   const vacUsadas = persona.vacaciones.length;
 
   return (
-    <Drawer title="Resumen de ausencias" subtitle={`${persona.nombre} · 2026`} onClose={onClose} maxWidth="max-w-sm">
+    <Drawer title="Resumen de ausencias" subtitle={`${persona.nombre} · ${YEAR}`} onClose={onClose} maxWidth="max-w-sm">
         <div className="px-6 py-4 space-y-4">
           <div>
             <div className="flex items-center justify-between">
@@ -947,11 +936,11 @@ function AnnualCalendar({
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
       {MONTH_NAMES.map((monthName, mi) => {
         const month = mi + 1;
-        const { daysInMonth, startOffset } = buildCalendar(2026, month);
+        const { daysInMonth, startOffset } = buildCalendar(YEAR, month);
         const cells = Array.from({ length: startOffset + daysInMonth }, (_, idx) => {
           if (idx < startOffset) return null;
           const day = idx - startOffset + 1;
-          const dateStr = `2026-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+          const dateStr = `${YEAR}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
           const isFestivo = festivosSet.has(dateStr);
           const personasVac = vacByDate.get(dateStr) ?? [];
           const isSolapamiento = personasVac.length >= 2;
@@ -964,7 +953,7 @@ function AnnualCalendar({
           return {
             name: p.nombre,
             days: p.vacaciones
-              .filter((d) => d.startsWith(`2026-${String(month).padStart(2, "0")}-`))
+              .filter((d) => d.startsWith(`${YEAR}-${String(month).padStart(2, "0")}-`))
               .map((d) => parseInt(d.split("-")[2])),
             colors: PERSON_COLORS[i % PERSON_COLORS.length],
           };
@@ -1066,14 +1055,14 @@ function GanttView({
 
   const months = Array.from({ length: 12 }, (_, mi) => {
     const month = mi + 1;
-    const daysInMonth = new Date(2026, month, 0).getDate();
+    const daysInMonth = new Date(YEAR, month, 0).getDate();
     let workingDays = 0;
     for (let d = 1; d <= daysInMonth; d++) {
-      const ds = `2026-${String(month).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+      const ds = `${YEAR}-${String(month).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
       const jsDay = new Date(ds + "T12:00:00").getDay();
       if (jsDay !== 0 && jsDay !== 6 && !festivosSet.has(ds)) workingDays++;
     }
-    const isCurrentMonth = TODAY.startsWith(`2026-${String(month).padStart(2, "0")}-`);
+    const isCurrentMonth = TODAY.startsWith(`${YEAR}-${String(month).padStart(2, "0")}-`);
     return { month, name: MONTH_SHORT[mi], daysInMonth, workingDays, isCurrentMonth };
   });
 
@@ -1105,7 +1094,7 @@ function GanttView({
               <span className="w-24 shrink-0 text-xs text-navy/60 pr-3 truncate">{p.nombre}</span>
               <div className="flex-1 grid grid-cols-12 gap-1">
                 {months.map((m) => {
-                  const prefix = `2026-${String(m.month).padStart(2, "0")}-`;
+                  const prefix = `${YEAR}-${String(m.month).padStart(2, "0")}-`;
                   const vacDays = p.vacaciones.filter((d) => d.startsWith(prefix));
                   const overlapDays = vacDays.filter((d) => (vacByDate.get(d)?.length ?? 0) >= 2);
                   const fillPct = m.workingDays > 0 ? (vacDays.length / m.workingDays) * 100 : 0;
@@ -1142,7 +1131,7 @@ function GanttView({
         <span className="w-24 shrink-0 text-[10px] text-navy/45 pr-3">Festivos</span>
         <div className="flex-1 grid grid-cols-12 gap-1">
           {months.map((m) => {
-            const prefix = `2026-${String(m.month).padStart(2, "0")}-`;
+            const prefix = `${YEAR}-${String(m.month).padStart(2, "0")}-`;
             const count = festivos.filter((d) => d.startsWith(prefix)).length;
             return (
               <div key={m.month} className="relative h-4 bg-navy/[0.03] rounded overflow-hidden">
@@ -1411,7 +1400,7 @@ export default function VacacionesCalendario({
 
       {/* Calendario mensual */}
       <section>
-        <h2 className="text-xs font-semibold text-navy/55 uppercase tracking-widest mb-4">Calendario 2026</h2>
+        <h2 className="text-xs font-semibold text-navy/55 uppercase tracking-widest mb-4">Calendario {YEAR}</h2>
         <AnnualCalendar personas={personasFiltradas} allPersonas={personas} festivos={festivos} />
       </section>
 

@@ -183,26 +183,6 @@ export async function updateTransactionCategory(id: string, category: string | n
   revalidateTag("transactions");
 }
 
-export async function updateTransactionContactType(id: string, contactType: string | null) {
-  const supabase = createServerClient();
-  const { error } = await supabase
-    .from("transactions")
-    .update({ contact_type: contactType || null })
-    .eq("id", id);
-  if (error) throw new Error(error.message);
-  revalidateTag("transactions");
-}
-
-export async function updateTransactionNotes(id: string, notes: string) {
-  const supabase = createServerClient();
-  const { error } = await supabase
-    .from("transactions")
-    .update({ notes: notes.trim() || null })
-    .eq("id", id);
-  if (error) throw new Error(error.message);
-  revalidateTag("transactions");
-}
-
 export async function softDeleteTransactions(ids: string[]): Promise<void> {
   if (!ids.length) return;
   const supabase = createServerClient();

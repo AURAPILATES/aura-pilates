@@ -204,6 +204,12 @@ function CategoryPill({ category, categories, onChange }: { category: string | n
   );
 }
 
+function originLabel(method: string): string {
+  if (method === "banco") return "CaixaBank";
+  if (method === "efectivo") return "Efectivo Aura";
+  return method.charAt(0).toUpperCase() + method.slice(1);
+}
+
 const SELECT_CLS = "appearance-none text-sm border border-navy/[0.12] rounded-xl px-3 pr-8 py-2 bg-white outline-none focus:border-primary/40 text-navy cursor-pointer hover:border-navy/20 transition-colors w-full";
 
 function SelectWrapper({ children, className = "" }: { children: React.ReactNode; className?: string }) {
@@ -558,6 +564,7 @@ export default function TransaccionesList({
         <SelectWrapper>
           <select value={catFilter} onChange={(e) => setCatFilter(e.target.value)} className={SELECT_CLS}>
             <option value="all">Categoría</option>
+            <option value="__none__">Sin categoría</option>
             {categories.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
           </select>
         </SelectWrapper>
@@ -565,13 +572,21 @@ export default function TransaccionesList({
           <select value={originFilter} onChange={(e) => setOriginFilter(e.target.value)} className={SELECT_CLS} style={{ width: "140px" }}>
             <option value="all">Origen</option>
             <option value="banco">CaixaBank</option>
-            <option value="efectivo">Efectivo</option>
+            <option value="efectivo">Efectivo Aura</option>
             <option value="victor">Víctor</option>
             <option value="celia">Celia</option>
             <option value="olga">Olga</option>
             <option value="carles">Carles</option>
           </select>
         </SelectWrapper>
+        {(catFilter !== "all" || originFilter !== "all") && (
+          <button
+            onClick={() => { setCatFilter("all"); setOriginFilter("all"); }}
+            className="text-xs text-navy/55 hover:text-navy underline self-center whitespace-nowrap"
+          >
+            Eliminar filtros
+          </button>
+        )}
         <div className="flex-1" />
         <ImportButton onManual={() => setShowAddCash(true)} />
         <button
@@ -823,6 +838,7 @@ export default function TransaccionesList({
           <colgroup>
             <col style={{ width: "44px" }} />
             <col style={{ width: "380px" }} />
+            <col style={{ width: "130px" }} />
             <col />
             <col style={{ width: "172px" }} />
             <col style={{ width: "110px" }} />
@@ -834,6 +850,7 @@ export default function TransaccionesList({
                 <Checkbox checked={allSelected} onChange={toggleAll} />
               </th>
               <SortableHeader label="Concepto" sortKey="concept" align="left" className="pl-2 pr-4" currentKey={sortKey} dir={sortDir} onClick={toggleSort} />
+              <th className="text-left px-4 py-3 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Origen</th>
               <th />
               <th className="text-left px-4 py-3 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Categoría</th>
               <SortableHeader label="Fecha" sortKey="date" align="right" className="px-4" currentKey={sortKey} dir={sortDir} onClick={toggleSort} />
@@ -843,7 +860,7 @@ export default function TransaccionesList({
           <tbody className={isPending ? "opacity-50 pointer-events-none" : ""}>
             {sortedFiltered.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-12 text-center text-sm text-navy/40">Sin resultados</td>
+                <td colSpan={7} className="px-4 py-12 text-center text-sm text-navy/40">Sin resultados</td>
               </tr>
             )}
             {sortedFiltered.map((t) => {
@@ -923,6 +940,12 @@ export default function TransaccionesList({
                     </div>
                   </td>
 
+                  <td className="px-4 py-3 align-middle">
+                    <div className="flex items-center gap-1.5">
+                      <SourceAvatar method={t.payment_method} />
+                      <span className="text-xs text-navy/55 whitespace-nowrap">{originLabel(t.payment_method)}</span>
+                    </div>
+                  </td>
                   <td />
                   <td className="px-4 py-3 align-middle">
                     <CategoryPill category={t.category} categories={categories} onChange={(cat) => handleCategoryChange(t.id, cat)} />

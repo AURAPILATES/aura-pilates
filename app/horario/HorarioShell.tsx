@@ -408,8 +408,6 @@ export default function HorarioShell({
                 </div>
               )}
 
-              {/* Alert banner */}
-
               {/* Filters */}
               <div className="flex flex-wrap items-center gap-3 mb-6">
                 <Select value={claseFilter}       onChange={setClaseFilter}       options={clases}       placeholder="Todas las clases" />

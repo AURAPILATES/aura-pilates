@@ -495,7 +495,7 @@ export default async function Finanzas(props: {
                   <KpiCard
                     label="Ticket medio"
                     value={fmt(ticketMedio)}
-                    sub={`${momenceSales.length} ventas totales`}
+                    sub={`${payments.length} pagos Stripe`}
                     trend={trendPct(ticketCur, ticketPrev)}
                   />
                 </div>

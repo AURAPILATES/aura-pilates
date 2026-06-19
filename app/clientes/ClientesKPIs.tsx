@@ -58,7 +58,7 @@ function KPICard({ label, value, sub, tooltip, dateRange, valueClass = "text-nav
 
   const labelEl = (
     <div className="flex items-center gap-1 mb-0.5">
-      <p className="text-[11px] text-navy/55 uppercase tracking-wider">{label}</p>
+      <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider">{label}</p>
       {tooltip && <InfoTooltip text={tooltip} />}
     </div>
   );
@@ -67,9 +67,9 @@ function KPICard({ label, value, sub, tooltip, dateRange, valueClass = "text-nav
     return (
       <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-4 sm:p-5">
         {labelEl}
-        {dateRange && <p className="text-[10px] text-navy/35 mb-1.5">{dateRange}</p>}
-        <p className={`text-2xl font-semibold ${valueClass}`}>{value}</p>
-        <p className="text-[10px] text-navy/35 mt-1.5">{sub}</p>
+        {dateRange && <p className="text-[10px] text-navy/40 mb-1.5">{dateRange}</p>}
+        <p className={`text-2xl font-semibold tabular-nums ${valueClass}`}>{value}</p>
+        <p className="text-[10px] text-navy/40 mt-1.5">{sub}</p>
       </div>
     );
   }
@@ -80,9 +80,9 @@ function KPICard({ label, value, sub, tooltip, dateRange, valueClass = "text-nav
       className={`bg-white border border-navy/[0.07] rounded-2xl shadow-card p-4 sm:p-5 text-left transition-all group ${hoverBorder} hover:shadow-md`}
     >
       {labelEl}
-      {dateRange && <p className="text-[10px] text-navy/35 mb-1.5">{dateRange}</p>}
-      <p className={`text-2xl font-semibold ${valueClass} group-hover:opacity-80 transition-opacity`}>{value}</p>
-      <p className="text-[10px] text-navy/35 mt-1.5 flex items-center gap-1">
+      {dateRange && <p className="text-[10px] text-navy/40 mb-1.5">{dateRange}</p>}
+      <p className={`text-2xl font-semibold tabular-nums ${valueClass} group-hover:opacity-80 transition-opacity`}>{value}</p>
+      <p className="text-[10px] text-navy/40 mt-1.5 flex items-center gap-1">
         <span>{sub}</span>
         <span className="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
       </p>
@@ -119,13 +119,13 @@ type TrendCardProps = {
 function TrendCard({ label, value, prevLabel, cur, prev, dateRange, compDateRange }: TrendCardProps) {
   return (
     <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-4 sm:p-5">
-      <p className="text-[11px] text-navy/55 uppercase tracking-wider mb-0.5">{label}</p>
-      <p className="text-[10px] text-navy/35 mb-1.5">{dateRange}</p>
+      <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider mb-0.5">{label}</p>
+      <p className="text-[10px] text-navy/40 mb-1.5">{dateRange}</p>
       <div className="flex items-baseline gap-2 flex-wrap">
-        <p className="text-2xl font-semibold text-navy">{value}</p>
+        <p className="text-2xl font-semibold tabular-nums text-navy">{value}</p>
         <TrendBadge cur={cur} prev={prev} />
       </div>
-      <p className="text-[10px] text-navy/35 mt-1.5">{compDateRange} · {prevLabel}</p>
+      <p className="text-[10px] text-navy/40 mt-1.5">{compDateRange} · {prevLabel}</p>
     </div>
   );
 }

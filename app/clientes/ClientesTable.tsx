@@ -355,7 +355,7 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
               {label}
               {count != null && count > 0 && (
                 <span className={`ml-1 text-[10px] px-1 rounded-full ${
-                  key === "churn" ? "bg-warning/20 text-warning" : "bg-warning/20 text-warning"
+                  key === "error" ? "bg-danger/15 text-danger" : "bg-warning/20 text-warning"
                 }`}>
                   {count}
                 </span>

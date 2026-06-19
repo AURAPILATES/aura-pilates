@@ -103,13 +103,13 @@ export default function HealthCards(props: Props) {
         {/* Desktop: 4 cajas separadas */}
         <div className="hidden sm:grid sm:grid-cols-4 gap-4">
 
-          <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
+          <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-4 sm:p-5">
             <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider mb-3">Saldo en cuenta</p>
             {currentBalance !== null ? (
               <>
                 <p className="text-2xl font-semibold text-navy tabular-nums">{fmt(currentBalance)}</p>
                 {balanceDate && (
-                  <p className="text-[10px] text-navy/45 mt-1.5">
+                  <p className="text-[10px] text-navy/40 mt-1.5">
                     Último mov. {balanceDate.split("-").reverse().join("/")}
                   </p>
                 )}
@@ -117,7 +117,7 @@ export default function HealthCards(props: Props) {
             ) : <p className="text-2xl font-semibold text-navy/50">—</p>}
           </div>
 
-          <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
+          <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-4 sm:p-5">
             <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider mb-3">Meses de caja</p>
             {runwayMonths !== null ? (
               <>
@@ -129,24 +129,24 @@ export default function HealthCards(props: Props) {
                     return <div key={i} className={`h-1.5 flex-1 rounded-sm ${filled ? bar : "bg-navy/5"}`} />;
                   })}
                 </div>
-                <p className="text-[10px] text-navy/55 mt-1.5">
+                <p className="text-[10px] text-navy/40 mt-1.5">
                   Coste fijo {fmt(avgMonthlyBurn)}/mes · media {completeBurnMonthsCount} m
                 </p>
               </>
             ) : <p className="text-2xl font-semibold text-navy/50">—</p>}
           </div>
 
-          <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
+          <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-4 sm:p-5">
             <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider mb-3">
               Resultado {curMonthLabel}
             </p>
             <p className={`text-2xl font-semibold tabular-nums ${resultadoMes >= 0 ? "text-success" : "text-danger"}`}>
               {resultadoMes >= 0 ? "+" : "−"}{fmt(Math.abs(resultadoMes))}
             </p>
-            <p className="text-[10px] text-navy/45 mt-1.5">ingresos − gastos</p>
+            <p className="text-[10px] text-navy/40 mt-1.5">ingresos − gastos</p>
           </div>
 
-          <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
+          <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-4 sm:p-5">
             <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider mb-3">¿Cubrimos gastos?</p>
             {avgMonthlyRevenue > 0 ? (
               breakEvenGap <= 0 ? (
@@ -157,7 +157,7 @@ export default function HealthCards(props: Props) {
               ) : (
                 <>
                   <p className="text-2xl font-semibold text-danger tabular-nums">−{fmt(breakEvenGap)}/mes</p>
-                  <p className="text-[10px] text-navy/45 mt-1.5">para cubrir los costes fijos</p>
+                  <p className="text-[10px] text-navy/40 mt-1.5">para cubrir los costes fijos</p>
                   {clientesNecesarios && (
                     <p className="text-[10px] text-warning font-medium mt-0.5">≈ {clientesNecesarios} clientes más</p>
                   )}
