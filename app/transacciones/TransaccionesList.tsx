@@ -498,11 +498,6 @@ export default function TransaccionesList({
   const totalOut = activeTxns.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
   const neto     = totalIn - totalOut;
 
-  // KPI bar — derivado de `filtered` que ya se recalcula en cada render
-  const kpiIn    = filtered.reduce((s, t) => t.amount > 0 ? s + t.amount : s, 0);
-  const kpiOut   = filtered.reduce((s, t) => t.amount < 0 ? s + Math.abs(t.amount) : s, 0);
-  const kpiNeto  = kpiIn - kpiOut;
-  const kpiStats = { kpiIn, kpiOut, kpiNeto, count: filtered.length };
 
   function toggleAll() {
     setSelected(allSelected ? new Set() : new Set(allFilteredIds));
@@ -585,25 +580,25 @@ export default function TransaccionesList({
         <div className="flex items-center gap-4 sm:gap-7 px-3 sm:px-6 py-2.5">
           <div>
             <p className="text-[10px] text-navy/40 uppercase tracking-wider leading-none mb-0.5">Ingresos</p>
-            <p className="text-sm font-semibold text-success tabular-nums">+{fmtAmt(kpiStats.kpiIn)}</p>
+            <p className="text-sm font-semibold text-success tabular-nums">+{fmtAmt(totalIn)}</p>
           </div>
           <div className="hidden sm:block h-4 w-px bg-navy/[0.1] shrink-0" />
           <div>
             <p className="text-[10px] text-navy/40 uppercase tracking-wider leading-none mb-0.5">Gastos</p>
-            <p className="text-sm font-semibold text-[#B85C3A] tabular-nums">−{fmtAmt(kpiStats.kpiOut)}</p>
+            <p className="text-sm font-semibold text-[#B85C3A] tabular-nums">−{fmtAmt(totalOut)}</p>
           </div>
           <div className="hidden sm:block h-4 w-px bg-navy/[0.1] shrink-0" />
           <div>
             <p className="text-[10px] text-navy/40 uppercase tracking-wider leading-none mb-0.5">Resultado neto</p>
-            <p className={`text-sm font-semibold tabular-nums ${kpiStats.kpiNeto >= 0 ? "text-navy" : "text-danger"}`}>
-              {kpiStats.kpiNeto >= 0 ? "+" : "−"}{fmtAmt(Math.abs(kpiStats.kpiNeto))}
+            <p className={`text-sm font-semibold tabular-nums ${neto >= 0 ? "text-navy" : "text-danger"}`}>
+              {neto >= 0 ? "+" : "−"}{fmtAmt(Math.abs(neto))}
             </p>
           </div>
-          {kpiStats.kpiIn > 0 && (
+          {totalIn > 0 && (
             <>
               <div className="hidden sm:block h-4 w-px bg-navy/[0.1] shrink-0" />
               <span className="hidden sm:inline text-xs text-navy/35 tabular-nums">
-                margen {(kpiStats.kpiNeto / kpiStats.kpiIn * 100).toFixed(1).replace(".", ",")}%
+                margen {(neto / totalIn * 100).toFixed(1).replace(".", ",")}%
               </span>
             </>
           )}
@@ -737,8 +732,8 @@ export default function TransaccionesList({
       <div className="hidden sm:flex items-center gap-3 mb-5">
         <span className="text-sm text-navy/45">
           {someSelected
-            ? <>{selected.size} seleccionada{selected.size !== 1 ? "s" : ""} <span className="text-navy/30">de {kpiStats.count}</span></>
-            : <>{kpiStats.count} movimientos</>
+            ? <>{selected.size} seleccionada{selected.size !== 1 ? "s" : ""} <span className="text-navy/30">de {filtered.length}</span></>
+            : <>{filtered.length} movimientos</>
           }
           {isPending && <span className="ml-2 text-xs text-primary/60">Guardando…</span>}
         </span>
