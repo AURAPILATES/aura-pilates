@@ -21,9 +21,10 @@ function fmtDayLabel(dateStr: string): string {
   return `${parseInt(d)} de ${MONTHS_ES[parseInt(m) - 1]}`;
 }
 
+const MONTHS_SHORT = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
 function fmtDate(d: string) {
   const [y, m, day] = d.split("-");
-  return `${day}/${m}/${y}`;
+  return `${parseInt(day)} ${MONTHS_SHORT[parseInt(m) - 1]} ${y}`;
 }
 
 function fmtAmt(n: number) {
@@ -592,22 +593,20 @@ export default function TransaccionesList({
         <button
           onClick={exportCSV}
           title="Exportar vista actual a CSV"
-          className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-navy/55 border border-navy/[0.12] rounded-xl bg-white hover:bg-navy/[0.02] hover:text-navy transition-colors whitespace-nowrap"
+          className="flex items-center justify-center p-2 text-navy/55 border border-navy/[0.12] rounded-xl bg-white hover:bg-navy/[0.02] hover:text-navy transition-colors"
         >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
           </svg>
-          Exportar CSV
         </button>
         <button
           onClick={() => setShowPapelera(true)}
           title="Papelera — transacciones eliminadas"
-          className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-navy/55 border border-navy/[0.12] rounded-xl bg-white hover:bg-navy/[0.02] hover:text-navy transition-colors whitespace-nowrap"
+          className="flex items-center justify-center p-2 text-navy/55 border border-navy/[0.12] rounded-xl bg-white hover:bg-navy/[0.02] hover:text-navy transition-colors"
         >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
           </svg>
-          Papelera
         </button>
       </div>
 
@@ -669,12 +668,11 @@ export default function TransaccionesList({
         <button
           onClick={exportCSV}
           title="Exportar vista actual a CSV"
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-navy/55 border border-navy/[0.12] rounded-lg bg-white hover:bg-navy/[0.02] hover:text-navy transition-colors"
+          className="flex items-center justify-center p-1.5 text-navy/55 border border-navy/[0.12] rounded-lg bg-white hover:bg-navy/[0.02] hover:text-navy transition-colors"
         >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
           </svg>
-          Exportar CSV
         </button>
         <button
           onClick={() => setShowPapelera(true)}
@@ -941,10 +939,7 @@ export default function TransaccionesList({
                   </td>
 
                   <td className="px-4 py-3 align-middle">
-                    <div className="flex items-center gap-1.5">
-                      <SourceAvatar method={t.payment_method} />
-                      <span className="text-xs text-navy/55 whitespace-nowrap">{originLabel(t.payment_method)}</span>
-                    </div>
+                    <span className="text-xs text-navy/55 whitespace-nowrap">{originLabel(t.payment_method)}</span>
                   </td>
                   <td />
                   <td className="px-4 py-3 align-middle">
