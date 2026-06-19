@@ -77,6 +77,8 @@ export default function HorarioSkeleton() {
             </div>
           ))}
         </div>
+
+        <p className="text-center text-[11px] text-navy/35 mt-6">Obteniendo datos de Momence…</p>
       </div>
     </div>
   );

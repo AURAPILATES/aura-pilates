@@ -63,6 +63,8 @@ export default function PrevisionesSkeleton() {
           </div>
         ))}
       </div>
+
+      <p className="text-center text-[11px] text-navy/35 mt-6">Obteniendo datos de Stripe y Momence…</p>
     </div>
   );
 }

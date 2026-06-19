@@ -52,6 +52,8 @@ export default function ClientesSkeleton() {
           </div>
         ))}
       </div>
+
+      <p className="text-center text-[11px] text-navy/35 mt-6">Obteniendo datos de Stripe…</p>
     </div>
   );
 }
