@@ -57,13 +57,15 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
 
     const matrix = sorted.map((c) => {
       const byMonth: Record<string, Array<{ product: string; amount: number }>> = {};
+      let totalPaid = 0;
       for (const p of payments) {
         if (!p.customerId || !c.stripeIds.includes(p.customerId)) continue;
         const m = p.date.slice(0, 7);
         if (!byMonth[m]) byMonth[m] = [];
         byMonth[m].push({ product: p.inferredProduct, amount: p.amount });
+        totalPaid += p.amount;
       }
-      return { customer: c, byMonth };
+      return { customer: c, byMonth, totalPaid };
     });
 
     return { months, matrix };
@@ -83,8 +85,11 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
         <table className="text-xs" style={{ tableLayout: "auto", borderCollapse: "separate", borderSpacing: 0 }}>
           <thead>
             <tr className="border-b border-navy/[0.06]">
-              <th className="sticky left-0 bg-white text-left pb-2 pr-5 text-[11px] font-semibold text-navy/40 uppercase tracking-wider whitespace-nowrap z-10 min-w-[130px]">
+              <th className="sticky left-0 bg-white text-left pb-2 pr-3 text-[11px] font-semibold text-navy/40 uppercase tracking-wider whitespace-nowrap z-10 min-w-[130px]">
                 Cliente
+              </th>
+              <th className="sticky left-[130px] bg-white text-right pb-2 pr-4 text-[11px] font-semibold text-navy/40 uppercase tracking-wider whitespace-nowrap z-10 min-w-[72px]">
+                Total
               </th>
               {months.map((m) => (
                 <th key={m} className="text-center pb-2 px-1 text-[11px] font-semibold text-navy/40 uppercase tracking-wider whitespace-nowrap min-w-[76px]">
@@ -94,10 +99,13 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
             </tr>
           </thead>
           <tbody>
-            {matrix.map(({ customer, byMonth }) => (
+            {matrix.map(({ customer, byMonth, totalPaid }) => (
               <tr key={customer.id} className="border-b border-navy/[0.04] last:border-0 hover:bg-navy/[0.015] transition-colors">
-                <td className="sticky left-0 bg-white py-2 pr-5 font-medium text-navy whitespace-nowrap z-10 max-w-[160px] truncate" title={customer.name ?? customer.email ?? undefined}>
+                <td className="sticky left-0 bg-white py-2 pr-3 font-medium text-navy whitespace-nowrap z-10 max-w-[130px] truncate" title={customer.name ?? customer.email ?? undefined}>
                   {customer.name ?? customer.email ?? "—"}
+                </td>
+                <td className="sticky left-[130px] bg-white py-2 pr-4 text-right whitespace-nowrap z-10">
+                  <span className="text-[11px] font-semibold text-navy tabular-nums">{fmt(totalPaid)}</span>
                 </td>
                 {months.map((m) => {
                   const purchases = byMonth[m];
