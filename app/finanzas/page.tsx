@@ -423,7 +423,9 @@ export default async function Finanzas(props: {
 
       {/* ── Main layout ── */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-8 pb-16">
-        <ClientesFilterBar />
+        <Suspense fallback={<div className="h-10 mb-4" />}>
+          <ClientesFilterBar />
+        </Suspense>
 
         {!hasSales && (
           <div className="bg-warning/10 border border-warning/30 rounded p-4 text-sm text-warning mb-6">
