@@ -498,10 +498,20 @@ export default function TransaccionesList({
   const totalOut = activeTxns.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
   const neto     = totalIn - totalOut;
 
-  // KPI bar — siempre del total filtrado (no de la selección)
-  const kpiIn   = filtered.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0);
-  const kpiOut  = Math.abs(filtered.filter((t) => t.amount < 0).reduce((s, t) => s + t.amount, 0));
-  const kpiNeto = kpiIn - kpiOut;
+  // KPI bar — dependencias explícitas del estado para garantizar reactividad
+  const kpiStats = useMemo(() => {
+    let kIn = 0, kOut = 0, count = 0;
+    const q = search.toLowerCase();
+    for (const t of transactions) {
+      if (q && !t.contact?.toLowerCase().includes(q) && !t.concept?.toLowerCase().includes(q)) continue;
+      if (catFilters.length > 0 && !catFilters.includes(t.category ?? "__none__")) continue;
+      if (originFilter !== "all" && t.payment_method !== originFilter) continue;
+      count++;
+      if (t.amount > 0) kIn += t.amount;
+      else kOut += Math.abs(t.amount);
+    }
+    return { kpiIn: kIn, kpiOut: kOut, kpiNeto: kIn - kOut, count };
+  }, [transactions, search, catFilters, originFilter]);
 
   function toggleAll() {
     setSelected(allSelected ? new Set() : new Set(allFilteredIds));
@@ -584,25 +594,25 @@ export default function TransaccionesList({
         <div className="flex items-center gap-4 sm:gap-7 px-3 sm:px-6 py-2.5">
           <div>
             <p className="text-[10px] text-navy/40 uppercase tracking-wider leading-none mb-0.5">Ingresos</p>
-            <p className="text-sm font-semibold text-success tabular-nums">+{fmtAmt(kpiIn)}</p>
+            <p className="text-sm font-semibold text-success tabular-nums">+{fmtAmt(kpiStats.kpiIn)}</p>
           </div>
           <div className="hidden sm:block h-4 w-px bg-navy/[0.1] shrink-0" />
           <div>
             <p className="text-[10px] text-navy/40 uppercase tracking-wider leading-none mb-0.5">Gastos</p>
-            <p className="text-sm font-semibold text-[#B85C3A] tabular-nums">−{fmtAmt(kpiOut)}</p>
+            <p className="text-sm font-semibold text-[#B85C3A] tabular-nums">−{fmtAmt(kpiStats.kpiOut)}</p>
           </div>
           <div className="hidden sm:block h-4 w-px bg-navy/[0.1] shrink-0" />
           <div>
             <p className="text-[10px] text-navy/40 uppercase tracking-wider leading-none mb-0.5">Resultado neto</p>
-            <p className={`text-sm font-semibold tabular-nums ${kpiNeto >= 0 ? "text-navy" : "text-danger"}`}>
-              {kpiNeto >= 0 ? "+" : "−"}{fmtAmt(Math.abs(kpiNeto))}
+            <p className={`text-sm font-semibold tabular-nums ${kpiStats.kpiNeto >= 0 ? "text-navy" : "text-danger"}`}>
+              {kpiStats.kpiNeto >= 0 ? "+" : "−"}{fmtAmt(Math.abs(kpiStats.kpiNeto))}
             </p>
           </div>
-          {kpiIn > 0 && (
+          {kpiStats.kpiIn > 0 && (
             <>
               <div className="hidden sm:block h-4 w-px bg-navy/[0.1] shrink-0" />
               <span className="hidden sm:inline text-xs text-navy/35 tabular-nums">
-                margen {(kpiNeto / kpiIn * 100).toFixed(1).replace(".", ",")}%
+                margen {(kpiStats.kpiNeto / kpiStats.kpiIn * 100).toFixed(1).replace(".", ",")}%
               </span>
             </>
           )}
@@ -736,8 +746,8 @@ export default function TransaccionesList({
       <div className="hidden sm:flex items-center gap-3 mb-5">
         <span className="text-sm text-navy/45">
           {someSelected
-            ? <>{selected.size} seleccionada{selected.size !== 1 ? "s" : ""} <span className="text-navy/30">de {filtered.length}</span></>
-            : <>{filtered.length} movimientos</>
+            ? <>{selected.size} seleccionada{selected.size !== 1 ? "s" : ""} <span className="text-navy/30">de {kpiStats.count}</span></>
+            : <>{kpiStats.count} movimientos</>
           }
           {isPending && <span className="ml-2 text-xs text-primary/60">Guardando…</span>}
         </span>
