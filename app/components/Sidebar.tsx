@@ -86,7 +86,7 @@ export default function Sidebar() {
   return (
     <aside className="hidden sm:flex fixed top-0 left-0 h-screen w-[220px] flex-col bg-white border-r border-navy/[0.07] z-30">
       {/* Logo */}
-      <div className="px-5 py-5 border-b border-navy/[0.06]">
+      <div className="px-5 py-5">
         <Link href="/">
           <Image
             src="/logotipo.png"
@@ -107,7 +107,7 @@ export default function Sidebar() {
             <Link
               key={href}
               href={href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+              className={`flex items-center gap-[9px] px-3 py-2.5 rounded-lg text-[13px] font-medium transition-colors ${
                 active
                   ? "bg-primary/[0.07] text-primary"
                   : "text-navy/55 hover:bg-navy/[0.04] hover:text-navy"
@@ -129,7 +129,7 @@ export default function Sidebar() {
       <div className="px-3 py-4 border-t border-navy/[0.06]">
         <Link
           href="/configuracion"
-          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+          className={`flex items-center gap-[9px] px-3 py-2.5 rounded-lg text-[13px] font-medium transition-colors ${
             pathname === "/configuracion"
               ? "bg-primary/[0.07] text-primary"
               : "text-navy/55 hover:bg-navy/[0.04] hover:text-navy"

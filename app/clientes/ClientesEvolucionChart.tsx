@@ -59,11 +59,13 @@ export default function ClientesEvolucionChart({
 
   const months = useMemo(() => {
     const now = new Date();
+    const start = new Date(2026, 1, 1); // Feb 2026 — apertura del centro
     const result: { key: string; label: string }[] = [];
-    for (let i = 11; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const cur = new Date(start);
+    while (cur <= now) {
+      const key = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, "0")}`;
       result.push({ key, label: MONTH_LABELS[key.slice(5)] ?? key.slice(5) });
+      cur.setMonth(cur.getMonth() + 1);
     }
     return result;
   }, []);
@@ -116,7 +118,7 @@ export default function ClientesEvolucionChart({
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="text-sm font-semibold text-navy">Evolución de inscritos</h3>
-          <p className="text-xs text-navy/45 mt-0.5">Clientes únicos con pago por mes · últimos 12 meses</p>
+          <p className="text-xs text-navy/45 mt-0.5">Clientes únicos con pago por mes · desde apertura</p>
         </div>
       </div>
 
