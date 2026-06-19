@@ -787,10 +787,10 @@ export default function TransaccionesList({
           <colgroup>
             <col style={{ width: "44px" }} />
             <col style={{ width: "280px" }} />
+            <col />
             <col style={{ width: "172px" }} />
             <col style={{ width: "110px" }} />
             <col style={{ width: "128px" }} />
-            <col />
           </colgroup>
           <thead>
             <tr className="border-b border-navy/[0.06] bg-navy/[0.012] group/head">
@@ -798,10 +798,10 @@ export default function TransaccionesList({
                 <Checkbox checked={allSelected} onChange={toggleAll} />
               </th>
               <SortableHeader label="Concepto" sortKey="concept" align="left" className="pl-2 pr-4" currentKey={sortKey} dir={sortDir} onClick={toggleSort} />
+              <th />
               <th className="text-left px-4 py-3 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Categoría</th>
               <SortableHeader label="Fecha" sortKey="date" align="right" className="px-4" currentKey={sortKey} dir={sortDir} onClick={toggleSort} />
               <SortableHeader label="Importe" sortKey="amount" align="right" className="pr-6" currentKey={sortKey} dir={sortDir} onClick={toggleSort} />
-              <th />
             </tr>
           </thead>
           <tbody className={isPending ? "opacity-50 pointer-events-none" : ""}>
@@ -887,6 +887,7 @@ export default function TransaccionesList({
                     </div>
                   </td>
 
+                  <td />
                   <td className="px-4 py-3 align-middle">
                     <CategoryPill category={t.category} categories={categories} onChange={(cat) => handleCategoryChange(t.id, cat)} />
                   </td>
@@ -905,7 +906,6 @@ export default function TransaccionesList({
                       <p className="text-[10px] text-navy/40 tabular-nums mt-0.5">{fmtAmt(t.balance)} €</p>
                     )}
                   </td>
-                  <td />
                 </tr>
               );
             })}
