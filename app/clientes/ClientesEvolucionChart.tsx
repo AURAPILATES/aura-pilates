@@ -63,8 +63,8 @@ export default function ClientesEvolucionChart({
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
   }, []);
-  const valueFontSize = isMobile ? 18 : 11;
-  const monthFontSize = isMobile ? 17 : 11;
+  const valueFontSize = isMobile ? 18 : 9;
+  const monthFontSize = isMobile ? 17 : 9;
 
   const months = useMemo(() => {
     const now = new Date();
