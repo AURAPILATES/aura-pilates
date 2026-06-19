@@ -1392,8 +1392,8 @@ export default function VacacionesCalendario({
         })}
       </div>
 
-      {/* Vista Gantt */}
-      <section>
+      {/* Vista Gantt — solo desktop */}
+      <section className="hidden sm:block">
         <h2 className="text-xs font-semibold text-navy/55 uppercase tracking-widest mb-4">Vista anual</h2>
         <GanttView personas={personasFiltradas} allPersonas={personas} festivos={festivos} />
       </section>
