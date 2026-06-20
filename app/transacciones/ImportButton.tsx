@@ -5,9 +5,11 @@ import ImportModal from "./ImportModal";
 export default function ImportButton({
   className = "",
   onManual,
+  compact = false,
 }: {
   className?: string;
   onManual?: () => void;
+  compact?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [showImport, setShowImport] = useState(false);
@@ -27,9 +29,13 @@ export default function ImportButton({
       <div ref={ref} className={`relative ${className}`}>
         <button
           onClick={() => setOpen((v) => !v)}
-          className="flex items-center justify-center gap-2 px-4 py-2 bg-navy text-white text-sm font-semibold rounded-xl hover:bg-navy/85 transition-colors shadow-sm w-full"
+          className={
+            compact
+              ? "flex items-center justify-center gap-1.5 px-3 py-1.5 bg-navy text-white text-xs font-medium rounded-lg hover:bg-navy/85 transition-colors w-full"
+              : "flex items-center justify-center gap-2 px-4 py-2 bg-navy text-white text-sm font-semibold rounded-xl hover:bg-navy/85 transition-colors shadow-sm w-full"
+          }
         >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <svg width={compact ? "11" : "13"} height={compact ? "11" : "13"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
           </svg>
           Añadir movimiento

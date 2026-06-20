@@ -127,9 +127,9 @@ function CatIcon({ iconKey, name, color }: { iconKey: string; name: string; colo
 
 
 function CategoryMultiFilter({
-  selected, categories, onChange,
+  selected, categories, onChange, className = "",
 }: {
-  selected: string[]; categories: Category[]; onChange: (cats: string[]) => void;
+  selected: string[]; categories: Category[]; onChange: (cats: string[]) => void; className?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [dropPos, setDropPos] = useState<{ top: number; left: number } | null>(null);
@@ -191,11 +191,11 @@ function CategoryMultiFilter({
   );
 
   return (
-    <div ref={wrapRef} className="relative">
+    <div ref={wrapRef} className={`relative ${className}`}>
       <button
         ref={btnRef}
         onClick={handleToggle}
-        className={`flex items-center gap-2 text-sm border rounded-xl px-3 py-2 bg-white outline-none transition-colors cursor-pointer whitespace-nowrap ${
+        className={`flex items-center gap-2 text-sm border rounded-xl px-3 py-2 bg-white outline-none transition-colors cursor-pointer whitespace-nowrap w-full ${
           selected.length > 0 ? "border-primary/40 text-navy font-medium" : "border-navy/[0.12] text-navy hover:border-navy/20"
         }`}
         style={{ minWidth: "130px" }}
@@ -619,36 +619,30 @@ export default function TransaccionesList({
         </div>
       </div>
 
-      {/* ── Mobile: Search bar ───────────────────────────────────────────────── */}
-      <div className="sm:hidden relative mb-2">
-        <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-navy/30" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-        </svg>
-        <input
-          type="text"
-          placeholder="Buscar concepto o contacto…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-9 pr-9 py-2.5 text-sm border border-navy/[0.12] rounded-lg bg-white text-navy placeholder:text-navy/35 outline-none focus:ring-2 focus:ring-primary/20 transition"
-        />
-        {search && (
-          <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-navy/30 hover:text-navy/60">✕</button>
-        )}
-      </div>
-
-      {/* ── Mobile: Import + Filtros buttons ────────────────────────────────── */}
+      {/* ── Mobile: Search bar + Filtros ─────────────────────────────────────── */}
       <div className="sm:hidden flex gap-2 mb-3">
-        <ImportButton className="flex-1" onManual={() => setShowAddCash(true)} />
+        <div className="relative flex-1">
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-navy/30" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input
+            type="text"
+            placeholder="Buscar concepto o contacto…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-9 pr-9 py-2.5 text-sm border border-navy/[0.12] rounded-lg bg-white text-navy placeholder:text-navy/35 outline-none focus:ring-2 focus:ring-primary/20 transition"
+          />
+          {search && (
+            <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-navy/30 hover:text-navy/60">✕</button>
+          )}
+        </div>
         <button
           onClick={() => setShowMobileFilters((v) => !v)}
-          className="relative flex items-center gap-1.5 px-4 py-2.5 bg-white border border-navy/[0.12] rounded-lg text-sm font-semibold text-navy"
+          title="Filtros"
+          className="relative shrink-0 flex items-center justify-center w-[42px] h-[42px] bg-white border border-navy/[0.12] rounded-lg text-navy"
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/>
-          </svg>
-          Filtros
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform ${showMobileFilters ? "rotate-180" : ""}`}>
-            <polyline points="6 9 12 15 18 9"/>
           </svg>
           {(catFilters.length > 0 || originFilter !== "all") && (
             <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-primary" />
@@ -659,7 +653,7 @@ export default function TransaccionesList({
       {/* ── Mobile: Filter drawer ────────────────────────────────────────────── */}
       {showMobileFilters && (
         <div className="sm:hidden bg-white border border-navy/[0.1] rounded-2xl p-4 mb-3 flex flex-col gap-3 shadow-card">
-          <CategoryMultiFilter selected={catFilters} categories={categories} onChange={setCatFilters} />
+          <CategoryMultiFilter selected={catFilters} categories={categories} onChange={setCatFilters} className="w-full" />
           <SelectWrapper>
             <select value={originFilter} onChange={(e) => setOriginFilter(e.target.value)} className={SELECT_CLS}>
               <option value="all">Origen</option>
@@ -770,6 +764,7 @@ export default function TransaccionesList({
             Eliminar filtros
           </button>
         )}
+        <ImportButton compact onManual={() => setShowAddCash(true)} />
         <button
           onClick={() => { setMobileSelectMode((v) => { if (v) clearSelection(); return !v; }); }}
           className={`text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors ${
@@ -802,29 +797,30 @@ export default function TransaccionesList({
 
       {/* ── Bulk selection bar ─────────────────────────────────────────────── */}
       {someSelected && (
-        <div className="fixed bottom-20 sm:bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 sm:gap-3 px-3 sm:px-5 py-3 bg-navy rounded-2xl shadow-2xl border border-white/10 max-w-[calc(100vw-1.5rem)] sm:max-w-none sm:min-w-max overflow-x-auto scrollbar-none">
-          <span className="text-sm font-semibold text-white shrink-0">
-            {selected.size} seleccionada{selected.size !== 1 ? "s" : ""}
+        <div className="fixed bottom-[10px] sm:bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1.5 sm:gap-3 px-2.5 sm:px-5 py-2.5 sm:py-3 bg-navy rounded-2xl shadow-2xl border border-white/10 max-w-[calc(100vw-1.5rem)] sm:max-w-none sm:min-w-max">
+          <span className="text-xs sm:text-sm font-semibold text-white shrink-0 whitespace-nowrap">
+            <span className="sm:hidden">{selected.size} sel.</span>
+            <span className="hidden sm:inline">{selected.size} seleccionada{selected.size !== 1 ? "s" : ""}</span>
           </span>
           <div className="w-px h-4 bg-white/20 shrink-0" />
           {deleteConfirm ? (
             <>
-              <span className="text-sm text-white/70 shrink-0">¿Eliminar {selected.size}?</span>
+              <span className="text-xs sm:text-sm text-white/70 shrink-0 whitespace-nowrap">¿Eliminar {selected.size}?</span>
               <button
                 onClick={applyBulkDelete}
                 disabled={isPending}
-                className="text-sm font-semibold px-4 py-1.5 rounded-lg bg-danger text-white disabled:opacity-40 hover:bg-danger/85 transition-colors shrink-0"
+                className="text-xs sm:text-sm font-semibold px-3 sm:px-4 py-1.5 rounded-lg bg-danger text-white disabled:opacity-40 hover:bg-danger/85 transition-colors shrink-0 whitespace-nowrap"
               >
                 Confirmar
               </button>
-              <button onClick={() => setDeleteConfirm(false)} className="text-sm text-white/50 hover:text-white/80 px-1 shrink-0">Cancelar</button>
+              <button onClick={() => setDeleteConfirm(false)} className="text-xs sm:text-sm text-white/50 hover:text-white/80 px-1 shrink-0 whitespace-nowrap">Cancelar</button>
             </>
           ) : (
             <>
               <select
                 value={bulkCat}
                 onChange={(e) => setBulkCat(e.target.value)}
-                className="text-sm rounded-lg px-3 py-1.5 bg-white/10 text-white border border-white/20 outline-none focus:border-white/40 min-w-32 sm:min-w-48 shrink-0 cursor-pointer"
+                className="text-xs sm:text-sm rounded-lg px-2 sm:px-3 py-1.5 bg-white/10 text-white border border-white/20 outline-none focus:border-white/40 w-24 sm:w-auto sm:min-w-48 shrink-0 cursor-pointer"
               >
                 <option value="" disabled>Cambiar categoría…</option>
                 <option value="__null__" className="text-navy bg-white">Sin categoría</option>
@@ -835,19 +831,20 @@ export default function TransaccionesList({
               <button
                 onClick={applyBulkCategory}
                 disabled={!bulkCat || isPending}
-                className="text-sm font-semibold px-4 py-1.5 rounded-lg bg-white text-navy disabled:opacity-40 hover:bg-white/90 transition-colors shrink-0"
+                className="text-xs sm:text-sm font-semibold px-2.5 sm:px-4 py-1.5 rounded-lg bg-white text-navy disabled:opacity-40 hover:bg-white/90 transition-colors shrink-0 whitespace-nowrap"
               >
                 Aplicar
               </button>
               <div className="w-px h-4 bg-white/20 shrink-0" />
               <button
                 onClick={() => setDeleteConfirm(true)}
-                className="flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-lg bg-danger text-white hover:bg-danger/85 transition-colors shrink-0"
+                title="Eliminar"
+                className="flex items-center gap-1.5 text-xs sm:text-sm font-semibold px-2.5 sm:px-3 py-1.5 rounded-lg bg-danger text-white hover:bg-danger/85 transition-colors shrink-0"
               >
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/>
                 </svg>
-                Eliminar
+                <span className="hidden sm:inline">Eliminar</span>
               </button>
               <button onClick={clearSelection} className="text-sm text-white/50 hover:text-white/80 px-1 shrink-0">✕</button>
             </>
