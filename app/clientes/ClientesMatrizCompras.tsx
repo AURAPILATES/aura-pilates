@@ -218,9 +218,7 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
                 onClick={() => toggleSort("total")}
                 className="sticky right-0 bg-white text-right pb-2 pr-4 text-[11px] font-semibold text-navy/40 uppercase tracking-wider whitespace-nowrap z-10 cursor-pointer select-none hover:text-navy/60"
               >
-                <span className="inline-block border-l border-navy/[0.06] pl-3">
-                  Total{sortArrow("total")}
-                </span>
+                Total{sortArrow("total")}
               </th>
             </tr>
           </thead>
@@ -264,7 +262,7 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
                   );
                 })}
                 <td className="sticky right-0 bg-white py-2 pr-4 text-right whitespace-nowrap z-10">
-                  <span className="inline-block border-l border-navy/[0.06] pl-3 text-[11px] font-semibold text-navy tabular-nums">{fmt(totalPaid)}</span>
+                  <span className="text-[11px] font-semibold text-navy tabular-nums">{fmt(totalPaid)}</span>
                 </td>
               </tr>
             ))}
