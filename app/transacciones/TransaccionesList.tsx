@@ -64,7 +64,41 @@ function SourceAvatar({ method }: { method: string }) {
     );
   }
   return (
-    <img src="/Caixabank logo.png" alt="CaixaBank" width={16} height={16} className="shrink-0 object-contain" />
+    <div
+      className="shrink-0 w-[22px] h-[22px] rounded-full bg-sky-50 flex items-center justify-center"
+      title="CaixaBank"
+    >
+      <img src="/Caixabank logo.png" alt="CaixaBank" width={13} height={13} className="object-contain" />
+    </div>
+  );
+}
+
+// ── Inline edit confirm/cancel ─────────────────────────────────────────────────
+function EditConfirmButtons({ onConfirm, onCancel, small = false }: { onConfirm: () => void; onCancel: () => void; small?: boolean }) {
+  const size = small ? 18 : 20;
+  return (
+    <div className="flex items-center gap-0.5 shrink-0">
+      <button
+        onClick={onConfirm}
+        title="Guardar"
+        className="flex items-center justify-center rounded-full text-success/70 hover:bg-success/10 hover:text-success transition-colors"
+        style={{ width: size, height: size }}
+      >
+        <svg width={small ? 11 : 12} height={small ? 11 : 12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+      </button>
+      <button
+        onClick={onCancel}
+        title="Cancelar"
+        className="flex items-center justify-center rounded-full text-navy/35 hover:bg-navy/[0.06] hover:text-navy/60 transition-colors"
+        style={{ width: size, height: size }}
+      >
+        <svg width={small ? 10 : 11} height={small ? 10 : 11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+      </button>
+    </div>
   );
 }
 
@@ -1050,10 +1084,9 @@ export default function TransaccionesList({
                               autoFocus type="text" value={editValue}
                               onChange={(e) => setEditValue(e.target.value)}
                               onKeyDown={(e) => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") setEditingField(null); }}
-                              className="text-sm font-medium border border-primary/30 rounded px-2 py-0.5 outline-none focus:border-primary/60 w-full"
+                              className="text-sm font-medium text-navy bg-navy/[0.04] rounded-md px-1.5 -mx-1.5 outline-none ring-1 ring-navy/10 focus:ring-navy/20 w-full"
                             />
-                            <button onClick={saveEdit} className="text-xs text-primary font-bold px-1 shrink-0">✓</button>
-                            <button onClick={() => setEditingField(null)} className="text-xs text-navy/50 shrink-0">✕</button>
+                            <EditConfirmButtons onConfirm={saveEdit} onCancel={() => setEditingField(null)} />
                           </div>
                         ) : (
                           <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
@@ -1078,10 +1111,9 @@ export default function TransaccionesList({
                                 autoFocus type="text" value={editValue}
                                 onChange={(e) => setEditValue(e.target.value)}
                                 onKeyDown={(e) => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") setEditingField(null); }}
-                                className="text-[11px] border border-primary/30 rounded px-2 py-0.5 outline-none focus:border-primary/60 w-full"
+                                className="text-[11px] text-navy/60 bg-navy/[0.04] rounded-md px-1.5 -mx-1.5 outline-none ring-1 ring-navy/10 focus:ring-navy/20 w-full"
                               />
-                              <button onClick={saveEdit} className="text-xs text-primary font-bold px-1 shrink-0">✓</button>
-                              <button onClick={() => setEditingField(null)} className="text-xs text-navy/50 shrink-0">✕</button>
+                              <EditConfirmButtons onConfirm={saveEdit} onCancel={() => setEditingField(null)} small />
                             </div>
                           ) : (
                             <p
