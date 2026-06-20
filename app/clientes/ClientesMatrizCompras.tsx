@@ -49,6 +49,7 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [productFilter, setProductFilter] = useState<string>("");
+  const [firstPurchaseFilter, setFirstPurchaseFilter] = useState<string>("");
   const [onlyInactive, setOnlyInactive] = useState(false);
 
   const { months, matrix } = useMemo(() => {
@@ -85,12 +86,13 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
 
   const visibleMatrix = useMemo(() => {
     const q = search.trim().toLowerCase();
-    let rows = matrix.filter(({ customer, products, byMonth }) => {
+    let rows = matrix.filter(({ customer, products, byMonth, firstPurchase }) => {
       if (q) {
         const label = (customer.name ?? customer.email ?? "").toLowerCase();
         if (!label.includes(q)) return false;
       }
       if (productFilter && !products.has(productFilter)) return false;
+      if (firstPurchaseFilter && firstPurchase?.slice(0, 7) !== firstPurchaseFilter) return false;
       if (onlyInactive && byMonth[lastMonth]?.length) return false;
       return true;
     });
@@ -116,7 +118,7 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
     });
 
     return rows;
-  }, [matrix, search, sortKey, sortDir, productFilter, onlyInactive, lastMonth]);
+  }, [matrix, search, sortKey, sortDir, productFilter, firstPurchaseFilter, onlyInactive, lastMonth]);
 
   if (matrix.length === 0) return null;
 
@@ -160,6 +162,16 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
               <option key={p} value={p}>{p}</option>
             ))}
           </select>
+          <select
+            value={firstPurchaseFilter}
+            onChange={(e) => setFirstPurchaseFilter(e.target.value)}
+            className="text-xs px-2.5 py-1.5 rounded-lg border border-navy/[0.1] bg-navy/[0.02] text-navy focus:outline-none focus:ring-1 focus:ring-navy/20"
+          >
+            <option value="">Primera compra: todas</option>
+            {months.map((m) => (
+              <option key={m} value={m}>{monthLabel(m)}</option>
+            ))}
+          </select>
           <button
             type="button"
             onClick={() => setOnlyInactive((v) => !v)}
@@ -174,7 +186,15 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
         </div>
       </div>
       <div className="overflow-x-auto">
-        <table className="text-xs" style={{ tableLayout: "auto", borderCollapse: "separate", borderSpacing: 0 }}>
+        <table className="text-xs w-full" style={{ tableLayout: "fixed", borderCollapse: "separate", borderSpacing: 0 }}>
+          <colgroup>
+            <col style={{ width: 130 }} />
+            <col style={{ width: 90 }} />
+            {months.map((m) => (
+              <col key={m} style={{ width: 76 }} />
+            ))}
+            <col />
+          </colgroup>
           <thead>
             <tr className="border-b border-navy/[0.06]">
               <th
