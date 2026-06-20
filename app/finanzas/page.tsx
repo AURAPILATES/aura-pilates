@@ -27,7 +27,7 @@ import {
   loadTransactionsCached,
   totalOperationalExpenses,
   totalStartupCosts,
-  operationalExpensesByCategory,
+  expensesByCategoryAll,
 } from "@/lib/transactions";
 import { loadCategoriesCached } from "@/lib/categories";
 import ClientesFilterBar from "@/app/clientes/ClientesFilterBar";
@@ -107,7 +107,7 @@ function Block({ title, legend, children }: {
 const PRODUCT_COLORS = ["#6B7ED6","#9260B8","#D4AA35","#4A7A9B","#4A9870","#D46055","#C46890","#3AA09C"];
 const EXPENSE_COLORS = ["#6B7ED6","#9260B8","#D4AA35","#4A7A9B","#4A9870","#D46055","#C46890","#3AA09C","#8878C0"];
 const BURN_CATS = new Set([
-  "Alquiler","Salarios","Electricidad","Agua","Software","Gestoría y legal",
+  "Alquiler","Salarios","Seguridad social","Electricidad","Agua","Software","Gestoría y legal",
   "Impuestos y tasas","Teléfono","Seguros","Comisiones bancarias","Merchandising","Local","Otros",
 ]);
 
@@ -290,7 +290,7 @@ export default async function Finanzas(props: {
   const dbCatByLabel = new Map(dbCategories.map((c) => [c.label, c]));
   const totalOpEx     = totalOperationalExpenses(txnsAll);
   const totalStartup  = totalStartupCosts(txnsAll);
-  const expByCategory = operationalExpensesByCategory(txnsAll);
+  const expByCategory = expensesByCategoryAll(txnsAll);
   const totalExpCat   = expByCategory.reduce((s, r) => s + r.total, 0);
 
   // ── Budgets / Financiación ────────────────────────────────────────────────

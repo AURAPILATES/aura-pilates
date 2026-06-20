@@ -1,3 +1,4 @@
+import type { EconomicGroup } from "@/lib/transactions";
 import { ChartCard } from "@/components/charts";
 import GastosBreakdown from "../GastosBreakdown";
 
@@ -5,6 +6,7 @@ type Category = {
   category: string;
   count: number;
   total: number;
+  group: EconomicGroup;
   color: string;
   iconKey?: string;
 };
@@ -29,10 +31,10 @@ export default function DesglosGastos({
 }) {
   return (
     <ChartCard
-      title="Desglose gastos operativos"
-      subtitle="Distribución de gastos por categoría en el período"
+      title="Desglose de gastos"
+      subtitle="Gasto operativo (OpEx) y de personal frente a inversión (CapEx) por categoría"
       dateRange={rangeLabel ?? undefined}
-      dataSource="Exportación bancaria CaixaBank · excluye aportaciones de socios, préstamo e inversión inicial"
+      dataSource="Exportación bancaria CaixaBank · excluye aportaciones de socios y préstamo"
       sources={["excel"]}
     >
       <GastosBreakdown

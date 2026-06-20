@@ -2,14 +2,24 @@
 import { useState } from "react";
 import Link from "next/link";
 import Drawer from "@/app/components/Drawer";
+import type { EconomicGroup } from "@/lib/transactions";
 
 type Category = {
   category: string;
   count: number;
   total: number;
+  group: EconomicGroup;
   color: string;
   iconKey?: string;
 };
+
+const GROUP_LABELS: Record<EconomicGroup, string> = {
+  personal: "Personal",
+  operational: "Gasto operativo (OpEx)",
+  capex: "Inversión (CapEx)",
+};
+
+const GROUP_ORDER: EconomicGroup[] = ["personal", "operational", "capex"];
 
 type Txn = {
   date: string;
@@ -170,29 +180,49 @@ export default function GastosBreakdown({
         </div>
       </div>
 
-      {/* ── Category list ─────────────────────────────────────────────────── */}
-      <div className="divide-y divide-navy/[0.05]">
-        {segments.map((seg) => (
-          <button
-            key={seg.category}
-            onClick={() => setSelected(seg.category === selected ? null : seg.category)}
-            className={`w-full flex items-center gap-2.5 py-2 text-left transition-colors rounded-xl px-2 -mx-2 ${
-              selected === seg.category ? "bg-navy/[0.03]" : "hover:bg-navy/[0.02]"
-            }`}
-          >
-            <CategoryIcon name={seg.category} color={seg.color} iconKey={seg.iconKey} />
-            <div className="flex-1 min-w-0">
-              <p className="text-[12px] font-semibold text-navy truncate">{seg.category}</p>
-              <p className="text-xs text-navy/50">{seg.count} transacciones</p>
+      {/* ── Category list, agrupada por naturaleza económica ────────────────── */}
+      <div className="space-y-5">
+        {GROUP_ORDER.map((group) => {
+          const groupSegs = segments.filter((s) => s.group === group);
+          if (groupSegs.length === 0) return null;
+          const groupTotal = groupSegs.reduce((s, seg) => s + seg.total, 0);
+          const groupShare = totalExpCat > 0 ? groupTotal / totalExpCat : 0;
+          return (
+            <div key={group}>
+              <div className="flex items-center justify-between mb-1 px-2">
+                <p className="text-[10px] font-semibold text-navy/45 uppercase tracking-wider">
+                  {GROUP_LABELS[group]}
+                </p>
+                <p className="text-[10px] text-navy/45 tabular-nums">
+                  −{fmtAmount(groupTotal)} · {pct(groupShare)}
+                </p>
+              </div>
+              <div className="divide-y divide-navy/[0.05]">
+                {groupSegs.map((seg) => (
+                  <button
+                    key={seg.category}
+                    onClick={() => setSelected(seg.category === selected ? null : seg.category)}
+                    className={`w-full flex items-center gap-2.5 py-2 text-left transition-colors rounded-xl px-2 -mx-2 ${
+                      selected === seg.category ? "bg-navy/[0.03]" : "hover:bg-navy/[0.02]"
+                    }`}
+                  >
+                    <CategoryIcon name={seg.category} color={seg.color} iconKey={seg.iconKey} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[12px] font-semibold text-navy truncate">{seg.category}</p>
+                      <p className="text-xs text-navy/50">{seg.count} transacciones</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-[12px] font-semibold text-navy tabular-nums">
+                        −{fmtAmount(seg.total)}
+                      </p>
+                      <p className="text-xs text-navy/50 tabular-nums">{pct(seg.share)}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="text-right shrink-0">
-              <p className="text-[12px] font-semibold text-navy tabular-nums">
-                −{fmtAmount(seg.total)}
-              </p>
-              <p className="text-xs text-navy/50 tabular-nums">{pct(seg.share)}</p>
-            </div>
-          </button>
-        ))}
+          );
+        })}
       </div>
 
       {selected && (

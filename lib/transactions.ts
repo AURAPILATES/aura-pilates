@@ -24,6 +24,7 @@ export type Transaction = {
 const OPERATIONAL_CATS = new Set([
   "Alquiler",
   "Salarios",
+  "Seguridad social",
   "Electricidad",
   "Agua",
   "Software",
@@ -43,6 +44,17 @@ const STARTUP_CATS = new Set([
   "Mobiliario",
   "Reforma",
 ]);
+
+const PERSONAL_CATS = new Set(["Salarios", "Seguridad social"]);
+
+/** Agrupación por naturaleza económica, para distinguir CapEx (inversión) de OpEx (gasto operativo/personal) */
+export type EconomicGroup = "capex" | "personal" | "operational";
+
+export function economicGroupOf(category: string): EconomicGroup {
+  if (STARTUP_CATS.has(category)) return "capex";
+  if (PERSONAL_CATS.has(category)) return "personal";
+  return "operational";
+}
 
 export async function getLatestImportDate(): Promise<string | null> {
   const supabase = createServerClient();
@@ -97,15 +109,16 @@ export function expensesByMonth(txns: Transaction[]): Map<string, number> {
   return map;
 }
 
-export function operationalExpensesByCategory(txns: Transaction[]) {
-  const map = new Map<string, { count: number; total: number }>();
+/** Gastos por categoría (operativos + CapEx), cada uno con su grupo económico. */
+export function expensesByCategoryAll(txns: Transaction[]) {
+  const map = new Map<string, { count: number; total: number; group: EconomicGroup }>();
   for (const t of txns) {
-    if (t.amount < 0 && t.category !== null && OPERATIONAL_CATS.has(t.category)) {
-      const d = map.get(t.category) ?? { count: 0, total: 0 };
-      d.count++;
-      d.total += Math.abs(t.amount);
-      map.set(t.category, d);
-    }
+    if (t.amount >= 0 || t.category === null) continue;
+    if (!OPERATIONAL_CATS.has(t.category) && !STARTUP_CATS.has(t.category)) continue;
+    const d = map.get(t.category) ?? { count: 0, total: 0, group: economicGroupOf(t.category) };
+    d.count++;
+    d.total += Math.abs(t.amount);
+    map.set(t.category, d);
   }
   return [...map.entries()]
     .map(([category, d]) => ({ category, ...d }))
