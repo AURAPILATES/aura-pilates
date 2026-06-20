@@ -189,7 +189,7 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
         <table className="text-xs w-full" style={{ tableLayout: "fixed", borderCollapse: "separate", borderSpacing: 0 }}>
           <colgroup>
             <col style={{ width: 130 }} />
-            <col style={{ width: 90 }} />
+            <col style={{ width: 110 }} />
             {months.map((m) => (
               <col key={m} style={{ width: 76 }} />
             ))}
@@ -205,9 +205,9 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
               </th>
               <th
                 onClick={() => toggleSort("first")}
-                className="sticky left-[130px] bg-white text-center pb-2 px-1 text-[11px] font-semibold text-navy/40 uppercase tracking-wider whitespace-nowrap z-10 min-w-[90px] cursor-pointer select-none hover:text-navy/60"
+                className="sticky left-[130px] bg-white text-center pb-2 px-1 text-[10px] leading-tight font-semibold text-navy/40 uppercase tracking-wide z-10 min-w-[110px] cursor-pointer select-none hover:text-navy/60"
               >
-                Primera compra{sortArrow("first")}
+                Primera<br />compra{sortArrow("first")}
               </th>
               {months.map((m) => (
                 <th key={m} className="text-center pb-2 px-1 text-[11px] font-semibold text-navy/40 uppercase tracking-wider whitespace-nowrap min-w-[76px]">
