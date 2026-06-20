@@ -831,9 +831,9 @@ export default function TransaccionesList({
         </div>
       </div>
 
-      {/* ── Mobile: tarjeta con KPIs + búsqueda/filtros ──────────────────────── */}
-      <div className="sm:hidden bg-white rounded-2xl border border-navy/[0.07] shadow-card mb-4 overflow-hidden">
-        <div className="grid grid-cols-3 divide-x divide-navy/[0.06] text-center px-1 py-3">
+      {/* ── Mobile: KPIs + búsqueda/filtros con líneas divisorias ────────────── */}
+      <div className="sm:hidden -mx-2 mb-4">
+        <div className="grid grid-cols-3 divide-x divide-navy/[0.08] border-b border-navy/[0.08] text-center px-1 py-3">
           <div className="px-2 min-w-0">
             <p className="text-[11px] text-navy/40 uppercase tracking-wider leading-none mb-1 whitespace-nowrap">Ingresos</p>
             <p className="text-[15px] font-semibold text-success tabular-nums truncate">{fmtAmt(totalIn)}</p>
@@ -849,7 +849,7 @@ export default function TransaccionesList({
             </p>
           </div>
         </div>
-        <div className="border-t border-navy/[0.06] flex gap-2 px-3 py-3">
+        <div className="flex gap-2 px-2 py-3">
           <div className="relative flex-1">
             <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-navy/30" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
