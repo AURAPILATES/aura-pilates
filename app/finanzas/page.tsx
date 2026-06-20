@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import { BookOpen } from "react-feather";
 import { fmt, pct } from "@/lib/analytics";
 import { loadSales, benvingudaConversion, subscriberFirstPurchase } from "@/lib/sales";
-import FirstPurchaseCard from "./FirstPurchaseCard";
+import PrimeraCompra from "./instances/PrimeraCompra";
 import {
   loadStripePaymentsCached,
   loadPaymentsBreakdown,
@@ -36,10 +36,10 @@ import ResumenFinanzas from "./instances/ResumenFinanzas";
 import VolumenBruto from "./instances/VolumenBruto";
 import FuentesIngreso from "./instances/FuentesIngreso";
 import IngresosPorProducto from "./instances/IngresosPorProducto";
-import EvolucionChart from "./EvolucionChart";
-import PresupuestosBlock from "./PresupuestosBlock";
+import EvolucionIngresos from "./instances/EvolucionIngresos";
+import Financiacion from "./instances/Financiacion";
 import { loadBudgetsCached, computeSpent } from "@/lib/budgets";
-import BreakevenChart from "./BreakevenChart";
+import Breakeven from "./instances/Breakeven";
 import { computeBreakeven } from "@/lib/breakeven";
 import ConversionPack from "./instances/ConversionPack";
 import MrrPorTier from "./instances/MrrPorTier";
@@ -647,7 +647,7 @@ export default async function Finanzas(props: {
                     })()}
                   </Block>
                 </div>
-                <EvolucionChart sales={toSales(payments)} monthly={monthlyRevenue} events={businessEvents} rawPayments={payments} />
+                <EvolucionIngresos sales={toSales(payments)} monthly={monthlyRevenue} events={businessEvents} rawPayments={payments} />
               </div>
             </section>
 
@@ -683,13 +683,13 @@ export default async function Finanzas(props: {
             {/* Q5 Financiación */}
             <section id="q5">
               <QuestionHeader num={5} question="¿Cómo va la financiación?" />
-              <PresupuestosBlock initialBudgets={budgets} spent={budgetSpent} />
+              <Financiacion initialBudgets={budgets} spent={budgetSpent} />
             </section>
 
             {/* Q6 ¿Cuándo llegamos al breakeven? */}
             <section id="q6">
               <QuestionHeader num={6} question="¿Cuándo llegamos al breakeven?" />
-              <BreakevenChart points={breakevenPoints} />
+              <Breakeven points={breakevenPoints} />
             </section>
 
             {/* Q7 ¿Convierte el pack de bienvenida? */}
@@ -716,7 +716,7 @@ export default async function Finanzas(props: {
             {/* Q10 ¿Cómo llegan los suscriptores? */}
             <section id="q10">
               <QuestionHeader num={10} question="¿Cómo llegan los suscriptores?" />
-              <FirstPurchaseCard summary={firstPurchaseSummary} />
+              <PrimeraCompra summary={firstPurchaseSummary} />
             </section>
 
         </div>

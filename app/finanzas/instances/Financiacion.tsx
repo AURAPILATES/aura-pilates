@@ -1,14 +1,16 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Edit2, Trash2, Plus } from "react-feather";
 import type { Budget } from "@/lib/budgets";
 import { saveBudgetsAction } from "@/app/actions/saveBudgets";
+import { ChartCard } from "@/components/charts";
 
 function fmtEur(n: number) {
   return n.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
 }
 
-export default function PresupuestosBlock({
+export default function Financiacion({
   initialBudgets,
   spent,
 }: {
@@ -49,23 +51,19 @@ export default function PresupuestosBlock({
   }
 
   return (
-    <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-5">
-        <p className="text-xs font-semibold text-navy/55 uppercase tracking-wider">Financiación</p>
-        {!editing ? (
+    <ChartCard
+      title="Financiación"
+      toolbar={
+        !editing ? (
           <button
             onClick={() => setEditing(true)}
-            className="flex items-center gap-1.5 text-xs text-navy/40 hover:text-navy/70 transition-colors"
+            className="flex items-center gap-1.5 text-xs text-navy/50 hover:text-navy transition-colors"
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-            </svg>
+            <Edit2 size={12} />
             Editar
           </button>
         ) : (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 ml-auto">
             <button
               onClick={handleCancel}
               className="text-xs text-navy/50 hover:text-navy px-3 py-1.5 rounded-lg border border-navy/10 transition-colors"
@@ -80,9 +78,9 @@ export default function PresupuestosBlock({
               {saving ? "Guardando…" : "Guardar"}
             </button>
           </div>
-        )}
-      </div>
-
+        )
+      }
+    >
       {/* ── Display mode ── */}
       {!editing && (
         <>
@@ -182,12 +180,7 @@ export default function PresupuestosBlock({
                 className="p-1.5 text-navy/25 hover:text-danger hover:bg-danger/5 rounded-lg transition-colors"
                 aria-label="Eliminar"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="3 6 5 6 21 6"/>
-                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-                  <path d="M10 11v6"/><path d="M14 11v6"/>
-                  <path d="M9 6V4h6v2"/>
-                </svg>
+                <Trash2 size={14} />
               </button>
             </div>
           ))}
@@ -196,9 +189,7 @@ export default function PresupuestosBlock({
             onClick={addBudget}
             className="flex items-center gap-2 text-sm text-primary/70 hover:text-primary transition-colors mt-1 font-medium"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-            </svg>
+            <Plus size={14} />
             Añadir fuente de financiación
           </button>
 
@@ -209,6 +200,6 @@ export default function PresupuestosBlock({
           )}
         </div>
       )}
-    </div>
+    </ChartCard>
   );
 }
