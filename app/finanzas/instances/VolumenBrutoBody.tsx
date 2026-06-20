@@ -55,8 +55,8 @@ export default function VolumenBrutoBody({ data, chartType }: { data: VolumenBru
             </>
           ) : (
             <>
-              <Line type="monotone" dataKey="income" stroke={INCOME_COLOR} strokeWidth={2} dot={{ r: 2.5 }} activeDot={{ r: 4.5 }} />
-              <Line type="monotone" dataKey="expense" stroke={EXPENSE_COLOR} strokeWidth={2} dot={{ r: 2.5 }} activeDot={{ r: 4.5 }} />
+              <Line type="monotone" dataKey="income" stroke={INCOME_COLOR} strokeWidth={2} dot={{ r: 3, fill: INCOME_COLOR, stroke: "white", strokeWidth: 1.5 }} activeDot={{ r: 4.5 }} />
+              <Line type="monotone" dataKey="expense" stroke={EXPENSE_COLOR} strokeWidth={2} dot={{ r: 3, fill: EXPENSE_COLOR, stroke: "white", strokeWidth: 1.5 }} activeDot={{ r: 4.5 }} />
             </>
           )}
         </ComposedChart>
