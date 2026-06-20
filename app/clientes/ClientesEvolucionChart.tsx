@@ -70,6 +70,7 @@ export default function ClientesEvolucionChart({
   const scale = containerWidth / SVG_W;
   const valueFontSize = 12 / scale;
   const monthFontSize = 11 / scale;
+  const tickFontSize  = 11 / scale;
 
   const months = useMemo(() => {
     const now = new Date();
@@ -136,11 +137,11 @@ export default function ClientesEvolucionChart({
         </div>
       </div>
 
-      <div ref={containerRef} className="w-full overflow-x-auto">
+      <div ref={containerRef} className="w-full">
         <svg
           viewBox={`0 0 ${SVG_W} ${SVG_H}`}
           className="w-full"
-          style={{ minWidth: "360px", height: "auto" }}
+          style={{ height: "auto" }}
           onMouseLeave={() => setHoveredEventId(null)}
         >
           {/* Y grid + ticks */}
@@ -151,7 +152,7 @@ export default function ClientesEvolucionChart({
                 <line x1={ML} y1={y} x2={SVG_W - MR} y2={y}
                   stroke="#1c191714" strokeWidth="1" strokeDasharray={v === 0 ? "none" : "3 3"} />
                 <text x={ML - 6} y={y + 4} textAnchor="end"
-                  className="fill-navy/40" style={{ fontSize: 12 }}>
+                  className="fill-navy/40" style={{ fontSize: tickFontSize }}>
                   {v}
                 </text>
               </g>
