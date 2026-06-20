@@ -137,6 +137,10 @@ function generateSuggestions(personas: Persona[], festivos: string[]): Suggestio
     });
   }
 
+  const fullMonths: string[] = [];
+  const firstHalfMonths: string[] = [];
+  const secondHalfMonths: string[] = [];
+
   let freeWindows = 0;
   for (let mi = todayDate.getMonth(); mi < 12 && freeWindows < 4; mi++) {
     const month = mi + 1;
@@ -157,18 +161,30 @@ function generateSuggestions(personas: Persona[], festivos: string[]): Suggestio
 
     const firstFree = isHalfFree(1, 15);
     const secondFree = isHalfFree(16, daysInMonth);
-    const monthName = MONTH_NAMES[mi].toLowerCase();
 
     if (firstFree && secondFree) {
-      suggestions.push({ type: "success", text: `${MONTH_NAMES[mi]} tiene disponibilidad completa.` });
+      fullMonths.push(MONTH_NAMES[mi]);
       freeWindows++;
     } else if (firstFree) {
-      suggestions.push({ type: "success", text: `Primera quincena de ${monthName} libre.` });
+      firstHalfMonths.push(MONTH_NAMES[mi].toLowerCase());
       freeWindows++;
     } else if (secondFree) {
-      suggestions.push({ type: "success", text: `Segunda quincena de ${monthName} libre.` });
+      secondHalfMonths.push(MONTH_NAMES[mi].toLowerCase());
       freeWindows++;
     }
+  }
+
+  const joinWithY = (items: string[]) =>
+    items.length <= 1 ? items.join("") : `${items.slice(0, -1).join(", ")} y ${items[items.length - 1]}`;
+
+  if (fullMonths.length > 0) {
+    suggestions.push({ type: "success", text: `Meses con disponibilidad completa: ${joinWithY(fullMonths)}.` });
+  }
+  if (firstHalfMonths.length > 0) {
+    suggestions.push({ type: "success", text: `Primera quincena libre en: ${joinWithY(firstHalfMonths)}.` });
+  }
+  if (secondHalfMonths.length > 0) {
+    suggestions.push({ type: "success", text: `Segunda quincena libre en: ${joinWithY(secondHalfMonths)}.` });
   }
 
   return suggestions;
