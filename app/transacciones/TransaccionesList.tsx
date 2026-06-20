@@ -880,9 +880,14 @@ export default function TransaccionesList({
           }
           {isPending && <span className="ml-2 text-xs text-primary/60">Guardando…</span>}
         </span>
-        {(catFilters.length > 0 || originFilter !== "all" || onlyRecurring) && (
+        {(catFilters.length > 0 || originFilter !== "all" || onlyRecurring || currentRange !== "all") && (
           <button
-            onClick={() => { setCatFilters([]); setOriginFilter("all"); setOnlyRecurring(false); }}
+            onClick={() => {
+              setCatFilters([]);
+              setOriginFilter("all");
+              setOnlyRecurring(false);
+              if (currentRange !== "all") router.push(pathname);
+            }}
             className="text-xs text-navy/45 hover:text-navy underline whitespace-nowrap"
           >
             Eliminar filtros
