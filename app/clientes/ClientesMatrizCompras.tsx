@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import type { StripePayment } from "@/lib/stripePayments";
 import type { CustomerRow } from "./ClientesTable";
+import CustomerDrawer from "./CustomerDrawer";
 import { fmt } from "@/lib/analytics";
 
 const PRODUCT_FILTERS = ["Bàsic", "Plus", "Pro", "Pack 4 clases", "Pack 8 clases", "Pack Benvinguda", "Clase suelta"];
@@ -51,6 +52,7 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
   const [productFilter, setProductFilter] = useState<string>("");
   const [firstPurchaseFilter, setFirstPurchaseFilter] = useState<string>("");
   const [onlyInactive, setOnlyInactive] = useState(false);
+  const [selected, setSelected] = useState<CustomerRow | null>(null);
 
   const { months, matrix } = useMemo(() => {
     const now = new Date();
@@ -231,7 +233,11 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
               </tr>
             )}
             {visibleMatrix.map(({ customer, byMonth, totalPaid, firstPurchase }) => (
-              <tr key={customer.id} className="border-b border-navy/[0.04] last:border-0 hover:bg-navy/[0.015] transition-colors">
+              <tr
+                key={customer.id}
+                onClick={() => setSelected(customer)}
+                className="border-b border-navy/[0.04] last:border-0 hover:bg-navy/[0.015] transition-colors cursor-pointer"
+              >
                 <td className="sticky left-0 bg-white py-2 pr-3 font-medium text-navy whitespace-nowrap z-10 max-w-[130px] truncate" title={customer.name ?? customer.email ?? undefined}>
                   {customer.name ?? customer.email ?? "—"}
                 </td>
@@ -269,6 +275,9 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
           </tbody>
         </table>
       </div>
+      {selected && (
+        <CustomerDrawer key={selected.id} customer={selected} payments={payments} onClose={() => setSelected(null)} />
+      )}
     </div>
   );
 }

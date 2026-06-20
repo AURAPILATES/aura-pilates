@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, forwardRef, useImperativeHandle } from "react";
-import Drawer from "@/app/components/Drawer";
+import CustomerDrawer from "./CustomerDrawer";
 import { fmt } from "@/lib/analytics";
 import type { StripeCustomer } from "@/lib/stripeCustomers";
 import type { StripePayment } from "@/lib/stripePayments";
@@ -38,11 +38,11 @@ function DiscountBadge({ discount }: { discount: NonNullable<StripeCustomer["dis
   );
 }
 
-function fmtDate(d: string) {
+export function fmtDate(d: string) {
   return d.split("-").reverse().join("/");
 }
 
-function timeAgo(dateStr: string): string {
+export function timeAgo(dateStr: string): string {
   const days = Math.floor((Date.now() - new Date(dateStr + "T00:00:00").getTime()) / 86400000);
   if (days < 7)   return `Hace ${days} día${days !== 1 ? "s" : ""}`;
   if (days < 30)  return `Hace ${Math.round(days / 7)} semana${Math.round(days / 7) !== 1 ? "s" : ""}`;
@@ -59,7 +59,7 @@ function addDays(dateStr: string, n: number): string {
 }
 
 
-function paymentExpiry(p: { category: string; inferredProduct: string; date: string }): string | null {
+export function paymentExpiry(p: { category: string; inferredProduct: string; date: string }): string | null {
   if (p.category === "Suscripción") return addDays(p.date, 30);
   if (p.inferredProduct === "Pack Benvinguda") return addDays(p.date, 15);
   if (p.inferredProduct === "Pack 4 clases" || p.inferredProduct === "Pack 8 clases") return addDays(p.date, 90);
@@ -93,8 +93,8 @@ export function clientStatus(c: CustomerRow): { status: ClientStatus; days: numb
   return { status: "ok", days: null };
 }
 
-type PlanBadgeCfg = { label: string; cls: string };
-function planBadgeCfg(planType: "sub" | "pack" | "session", lastSubProduct?: string | null, lastPackProduct?: string | null): PlanBadgeCfg {
+export type PlanBadgeCfg = { label: string; cls: string };
+export function planBadgeCfg(planType: "sub" | "pack" | "session", lastSubProduct?: string | null, lastPackProduct?: string | null): PlanBadgeCfg {
   if (planType === "sub") {
     if (lastSubProduct === "Bàsic") return { label: "Suscripción Bàsic", cls: "bg-violet-50 text-violet-600" };
     if (lastSubProduct === "Plus")  return { label: "Suscripción Plus",  cls: "bg-indigo-50 text-indigo-600" };
@@ -111,7 +111,7 @@ function planBadgeCfg(planType: "sub" | "pack" | "session", lastSubProduct?: str
   return { label: "Por sesión", cls: "bg-navy/[0.06] text-navy/55" };
 }
 
-function initials(name: string | null, email: string | null): string {
+export function initials(name: string | null, email: string | null): string {
   if (name) {
     const parts = name.trim().split(/\s+/);
     return (parts[0][0] + (parts[1]?.[0] ?? "")).toUpperCase();
@@ -136,7 +136,6 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
   const [sortKey,  setSortKey]  = useState<SortKey>("totalSpent");
   const [sortDir,  setSortDir]  = useState<SortDir>("desc");
   const [selected, setSelected] = useState<CustomerRow | null>(null);
-  const [stripeOpen, setStripeOpen] = useState(false);
   const [page, setPage] = useState(0);
 
   useEffect(() => { setPage(0); }, [search, filter, activeMonth]);
@@ -144,7 +143,7 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
   useImperativeHandle(ref, () => ({
     openCustomer(id: string) {
       const c = customers.find((c) => c.id === id);
-      if (c) { setSelected(c); setStripeOpen(false); }
+      if (c) setSelected(c);
     },
   }));
 
@@ -156,15 +155,6 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
       setSortDir("desc");
     }
   }
-
-  const selectedPayments = useMemo(
-    () => selected
-      ? payments
-          .filter((p) => selected.stripeIds.includes(p.customerId ?? ""))
-          .sort((a, b) => b.date.localeCompare(a.date))
-      : [],
-    [payments, selected],
-  );
 
   const topCustomers = useMemo(
     () => [...customers].sort((a, b) => b.totalSpent - a.totalSpent).slice(0, 5),
@@ -300,7 +290,7 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
           {topCustomers.map((c) => (
             <button
               key={c.id}
-              onClick={() => { setSelected(c); setStripeOpen(false); }}
+              onClick={() => setSelected(c)}
               className="w-full flex items-center justify-between gap-4 px-5 py-3 hover:bg-primary/[0.025] transition-colors text-left"
             >
               <div className="min-w-0">
@@ -419,7 +409,7 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
                   return (
                     <tr
                       key={c.id}
-                      onClick={() => { setSelected(c); setStripeOpen(false); }}
+                      onClick={() => setSelected(c)}
                       className={`border-b border-navy/[0.04] last:border-0 transition-colors cursor-pointer hover:bg-primary/[0.025] ${
                         status === "baja" ? "bg-danger/[0.04]" : status === "sinpagar" || status === "caducado" ? "bg-warning/[0.04]" : status === "porvencer" ? "bg-amber-50/60" : i % 2 === 0 ? "" : "bg-navy/[0.008]"
                       }`}
@@ -532,209 +522,7 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
       })()}
 
       {selected && (
-        <Drawer
-          maxWidth="max-w-[460px]"
-          header={
-            <div>
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                  <span className="text-base font-bold text-primary">{initials(selected.name, selected.email)}</span>
-                </div>
-                <div className="min-w-0">
-                  <h2 className="text-base font-bold text-navy leading-tight truncate">
-                    {selected.name ?? "Sin nombre"}
-                  </h2>
-                  {selected.email && (
-                    <p className="text-xs text-navy/50 truncate">{selected.email}</p>
-                  )}
-                </div>
-              </div>
-              <div className="flex items-center gap-2 mt-3 flex-wrap">
-                {(() => {
-                  const dSub  = selected.daysSinceLastSub  ?? Infinity;
-                  const dPack = selected.daysSinceLastPack ?? Infinity;
-                  const pt = dSub <= dPack && dSub < Infinity ? "sub"
-                           : dPack < Infinity                  ? "pack"
-                           : "session";
-                  const { label, cls } = planBadgeCfg(pt, selected.lastSubProduct, selected.lastPackProduct);
-                  return <span className={`text-xs ${cls} px-2.5 py-1 rounded-full font-medium`}>{label}</span>;
-                })()}
-                {(() => {
-                  const { status, days } = clientStatus(selected);
-                  if (status === "baja") return (
-                    <span className="text-xs bg-danger/10 text-danger px-2.5 py-1 rounded-full font-medium flex items-center gap-1 whitespace-nowrap">
-                      <span className="w-1.5 h-1.5 rounded-full bg-danger inline-block shrink-0" />
-                      {selected.isRecurring ? `Baja · ${days}d sin pagar` : `Pack vencido · ${days}d`}
-                    </span>
-                  );
-                  if (status === "sinpagar") return (
-                    <span className="text-xs bg-warning/10 text-warning px-2.5 py-1 rounded-full font-medium flex items-center gap-1 whitespace-nowrap">
-                      <span className="w-1.5 h-1.5 rounded-full bg-warning inline-block shrink-0" />
-                      Sin pagar · {days}d tarde
-                    </span>
-                  );
-                  if (status === "caducado") return (
-                    <span className="text-xs bg-warning/10 text-warning px-2.5 py-1 rounded-full font-medium flex items-center gap-1 whitespace-nowrap">
-                      <span className="w-1.5 h-1.5 rounded-full bg-warning inline-block shrink-0" />
-                      Pack vencido · {days}d
-                    </span>
-                  );
-                  if (status === "porvencer") return (
-                    <span className="text-xs bg-amber-50 text-amber-600 px-2.5 py-1 rounded-full font-medium flex items-center gap-1 whitespace-nowrap border border-amber-200/60">
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block shrink-0" />
-                      Vence en {days}d
-                    </span>
-                  );
-                  return (
-                    <span className="text-xs bg-success/10 text-success px-2.5 py-1 rounded-full font-medium flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-success inline-block" />
-                      Al día
-                    </span>
-                  );
-                })()}
-                {selected.discount && (
-                  <span className="text-xs bg-warning/10 text-warning px-2.5 py-1 rounded-full font-medium">
-                    {selected.discount.percentOff != null
-                      ? `-${selected.discount.percentOff}%`
-                      : selected.discount.name}
-                  </span>
-                )}
-              </div>
-            </div>
-          }
-          footer={(() => {
-            const ids = selected.stripeIds;
-            const extIcon = (
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-                <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
-              </svg>
-            );
-            if (ids.length === 1) {
-              return (
-                <a
-                  href={`https://dashboard.stripe.com/customers/${ids[0]}`}
-                  target="_blank" rel="noopener noreferrer"
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-[#635bff] rounded-xl hover:bg-[#4f46e5] transition-colors"
-                >
-                  {extIcon} Ver en Stripe
-                </a>
-              );
-            }
-            if (ids.length === 2) {
-              return (
-                <div className="flex gap-2">
-                  {ids.map((sid, i) => (
-                    <a key={sid}
-                      href={`https://dashboard.stripe.com/customers/${sid}`}
-                      target="_blank" rel="noopener noreferrer"
-                      className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 text-sm font-semibold text-white bg-[#635bff] rounded-xl hover:bg-[#4f46e5] transition-colors"
-                    >
-                      {extIcon} Perfil {i + 1}
-                    </a>
-                  ))}
-                </div>
-              );
-            }
-            // 3+ perfiles → dropdown
-            return (
-              <div className="relative">
-                <button
-                  onClick={() => setStripeOpen((v) => !v)}
-                  className="w-full flex items-center justify-between gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-[#635bff] rounded-xl hover:bg-[#4f46e5] transition-colors"
-                >
-                  <span className="flex items-center gap-2">{extIcon} Ver en Stripe</span>
-                  <span className="flex items-center gap-1.5 text-white/70 text-xs font-medium">
-                    {ids.length} perfiles
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform ${stripeOpen ? "rotate-180" : ""}`}>
-                      <polyline points="6 9 12 15 18 9"/>
-                    </svg>
-                  </span>
-                </button>
-                {stripeOpen && (
-                  <div className="absolute bottom-full mb-2 left-0 right-0 bg-white border border-navy/[0.10] rounded-xl shadow-lg overflow-hidden z-10 max-h-52 overflow-y-auto">
-                    {ids.map((sid, i) => (
-                      <a key={sid}
-                        href={`https://dashboard.stripe.com/customers/${sid}`}
-                        target="_blank" rel="noopener noreferrer"
-                        className="flex items-center justify-between px-4 py-2.5 text-sm font-medium text-[#635bff] hover:bg-[#635bff]/[0.05] border-b border-navy/[0.05] last:border-0 transition-colors"
-                      >
-                        Perfil {i + 1}
-                        <span className="text-[10px] text-navy/30 font-mono">{sid.slice(-8)}</span>
-                      </a>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })()}
-          onClose={() => setSelected(null)}
-        >
-          {/* Stats */}
-          <div className="grid grid-cols-3 divide-x divide-navy/[0.06] border-b border-navy/[0.07]">
-            <div className="px-5 py-4 text-center">
-              <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1">Total gastado</p>
-              <p className="text-lg font-bold text-navy tabular-nums">{fmt(selected.totalSpent)}</p>
-            </div>
-            <div className="px-5 py-4 text-center">
-              <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1">Pagos</p>
-              <p className="text-lg font-bold text-navy">{selected.paymentCount}</p>
-            </div>
-            <div className="px-5 py-4 text-center">
-              <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1">Primer pago</p>
-              <p className="text-sm font-semibold text-navy/70">
-                {selected.firstPaymentDate ? fmtDate(selected.firstPaymentDate) : "—"}
-              </p>
-              {selected.firstPaymentDate && (
-                <p className="text-[10px] text-navy/35 mt-0.5">{timeAgo(selected.firstPaymentDate)}</p>
-              )}
-            </div>
-          </div>
-
-          {/* Payment list */}
-          <p className="px-6 pt-4 pb-2 text-[11px] font-semibold text-navy/40 uppercase tracking-wider">
-            Historial de pagos
-          </p>
-          <div className="divide-y divide-navy/[0.05]">
-            {selectedPayments.length === 0 && (
-              <p className="px-6 py-8 text-sm text-center text-navy/40">Sin pagos registrados</p>
-            )}
-            {selectedPayments.map((p) => {
-              const expiry = paymentExpiry(p);
-              const today = new Date().toISOString().split("T")[0];
-              const isExpired = expiry != null && expiry < today;
-              const isCurrent = expiry != null && expiry >= today;
-              return (
-                <div key={p.id} className="px-6 py-3 flex items-center justify-between gap-4">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <p className="text-sm font-medium text-navy truncate">
-                        {p.inferredProduct !== "Otro" ? p.inferredProduct : (p.description ?? p.category)}
-                      </p>
-                      {p.inferredType === "coupon" && (
-                        <span className="shrink-0 text-[10px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200/80 px-1.5 py-0.5 rounded-full">
-                          cupón
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <p className="text-xs text-navy/45">{fmtDate(p.date)}</p>
-                      {expiry && (
-                        <p className={`text-[10px] ${isCurrent ? "text-success/70" : "text-navy/30"}`}>
-                          · hasta {fmtDate(expiry)}{isExpired ? " (vencido)" : ""}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <span className="shrink-0 text-sm font-semibold text-navy tabular-nums">
-                    {fmt(p.amount)}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-
-        </Drawer>
+        <CustomerDrawer key={selected.id} customer={selected} payments={payments} onClose={() => setSelected(null)} />
       )}
     </div>
   );
