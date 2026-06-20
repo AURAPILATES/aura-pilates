@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { StripePayment } from "@/lib/stripePayments";
 import type { CustomerRow } from "./ClientesTable";
 import CustomerDrawer from "./CustomerDrawer";
@@ -44,6 +44,7 @@ type Props = {
 };
 
 type SortKey = "name" | "total" | "first";
+const PAGE_SIZE = 30;
 
 export default function ClientesMatrizCompras({ customers, payments }: Props) {
   const [search, setSearch] = useState("");
@@ -53,6 +54,7 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
   const [firstPurchaseFilter, setFirstPurchaseFilter] = useState<string>("");
   const [onlyInactive, setOnlyInactive] = useState(false);
   const [selected, setSelected] = useState<CustomerRow | null>(null);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   const { months, matrix } = useMemo(() => {
     const now = new Date();
@@ -78,7 +80,10 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
         products.add(p.inferredProduct);
         if (!firstPurchase || p.date < firstPurchase) firstPurchase = p.date;
       }
-      return { customer: c, byMonth, totalPaid, products, firstPurchase };
+      const monthsPurchased = Object.keys(byMonth).length;
+      const isUpsellCandidate =
+        products.has("Bàsic") && !products.has("Plus") && !products.has("Pro") && monthsPurchased >= 3;
+      return { customer: c, byMonth, totalPaid, products, firstPurchase, isUpsellCandidate };
     });
 
     return { months, matrix };
@@ -121,6 +126,43 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
 
     return rows;
   }, [matrix, search, sortKey, sortDir, productFilter, firstPurchaseFilter, onlyInactive, lastMonth]);
+
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [search, sortKey, sortDir, productFilter, firstPurchaseFilter, onlyInactive]);
+
+  const pageRows = visibleMatrix.slice(0, visibleCount);
+
+  const monthTotals = useMemo(() => {
+    const totals: Record<string, number> = {};
+    for (const m of months) {
+      totals[m] = visibleMatrix.reduce((sum, row) => sum + (row.byMonth[m]?.reduce((s, p) => s + p.amount, 0) ?? 0), 0);
+    }
+    return totals;
+  }, [visibleMatrix, months]);
+
+  const grandTotal = useMemo(() => visibleMatrix.reduce((sum, row) => sum + row.totalPaid, 0), [visibleMatrix]);
+
+  function downloadCsv() {
+    const header = ["Cliente", "Email", "Primera compra", ...months.map(monthLabel), "Total"];
+    const rows = visibleMatrix.map(({ customer, byMonth, totalPaid, firstPurchase }) => [
+      customer.name ?? "",
+      customer.email ?? "",
+      firstPurchase ?? "",
+      ...months.map((m) => (byMonth[m]?.reduce((s, p) => s + p.amount, 0) ?? 0).toFixed(2)),
+      totalPaid.toFixed(2),
+    ]);
+    const csv = [header, ...rows]
+      .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `compras-por-cliente-${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 
   if (matrix.length === 0) return null;
 
@@ -185,6 +227,16 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
           >
             Sin compra en {lastMonth ? monthLabel(lastMonth) : "el último mes"}
           </button>
+          <button
+            type="button"
+            onClick={downloadCsv}
+            title="Exportar vista actual a CSV"
+            className="shrink-0 flex items-center justify-center w-8 h-8 text-navy/50 hover:text-navy border border-navy/[0.1] rounded-lg bg-navy/[0.02] hover:bg-navy/[0.05] transition-colors"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+          </button>
         </div>
       </div>
       <div className="overflow-x-auto">
@@ -232,49 +284,95 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
                 </td>
               </tr>
             )}
-            {visibleMatrix.map(({ customer, byMonth, totalPaid, firstPurchase }) => (
-              <tr
-                key={customer.id}
-                onClick={() => setSelected(customer)}
-                className="border-b border-navy/[0.04] last:border-0 hover:bg-navy/[0.015] transition-colors cursor-pointer"
-              >
-                <td className="sticky left-0 bg-white py-2 pr-3 font-medium text-navy whitespace-nowrap z-10 max-w-[130px] truncate" title={customer.name ?? customer.email ?? undefined}>
-                  {customer.name ?? customer.email ?? "—"}
-                </td>
-                <td className="sticky left-[130px] bg-white py-2 px-1 text-center text-navy/60 whitespace-nowrap z-10">
-                  {firstPurchase ? monthLabel(firstPurchase.slice(0, 7)) : "—"}
-                </td>
-                {months.map((m) => {
-                  const purchases = byMonth[m];
-                  if (!purchases || purchases.length === 0) {
-                    return <td key={m} className="py-1.5 px-1 text-center" />;
-                  }
-                  const products = [...new Map(purchases.map((p) => [p.product, p])).keys()];
-                  const total = purchases.reduce((s, p) => s + p.amount, 0);
-                  const colorCls = productColor(products[0]);
-                  return (
-                    <td key={m} className="py-1.5 px-1 text-center">
-                      <div className={`rounded-lg px-1.5 py-1 flex flex-col items-center gap-0.5 ${colorCls} min-w-[68px]`}>
-                        {products.map((prod) => (
-                          <span key={prod} className="text-[10px] font-semibold leading-tight">
-                            {productAbbr(prod)}
+            {pageRows.map(({ customer, byMonth, totalPaid, firstPurchase, isUpsellCandidate }) => {
+              const purchasedMonths = months.filter((m) => byMonth[m]?.length);
+              const firstPurchasedIdx = purchasedMonths.length ? months.indexOf(purchasedMonths[0]) : -1;
+              const lastPurchasedIdx = purchasedMonths.length ? months.indexOf(purchasedMonths[purchasedMonths.length - 1]) : -1;
+              return (
+                <tr
+                  key={customer.id}
+                  onClick={() => setSelected(customer)}
+                  className="border-b border-navy/[0.04] last:border-0 hover:bg-navy/[0.015] transition-colors cursor-pointer"
+                >
+                  <td className="sticky left-0 bg-white py-2 pr-3 font-medium text-navy whitespace-nowrap z-10 max-w-[130px]" title={customer.name ?? customer.email ?? undefined}>
+                    <span className="flex items-center gap-1 min-w-0">
+                      <span className="truncate">{customer.name ?? customer.email ?? "—"}</span>
+                      {isUpsellCandidate && (
+                        <span title="Lleva 3+ meses en Bàsic sin subir de plan" className="shrink-0 text-amber-500">↑</span>
+                      )}
+                    </span>
+                  </td>
+                  <td className="sticky left-[130px] bg-white py-2 px-1 text-center text-navy/60 whitespace-nowrap z-10">
+                    {firstPurchase ? monthLabel(firstPurchase.slice(0, 7)) : "—"}
+                  </td>
+                  {months.map((m, i) => {
+                    const purchases = byMonth[m];
+                    if (!purchases || purchases.length === 0) {
+                      const isGap = i > firstPurchasedIdx && i < lastPurchasedIdx;
+                      return (
+                        <td key={m} className="py-1.5 px-1 text-center">
+                          {isGap && (
+                            <span title="Hueco entre compras" className="inline-block w-1.5 h-1.5 rounded-full bg-warning/40" />
+                          )}
+                        </td>
+                      );
+                    }
+                    const products = [...new Map(purchases.map((p) => [p.product, p])).keys()];
+                    const total = purchases.reduce((s, p) => s + p.amount, 0);
+                    const colorCls = productColor(products[0]);
+                    return (
+                      <td key={m} className="py-1.5 px-1 text-center">
+                        <div className={`rounded-lg px-1.5 py-1 flex flex-col items-center gap-0.5 ${colorCls} min-w-[68px]`}>
+                          {products.map((prod) => (
+                            <span key={prod} className="text-[10px] font-semibold leading-tight">
+                              {productAbbr(prod)}
+                            </span>
+                          ))}
+                          <span className="text-[9px] opacity-60 leading-tight font-medium">
+                            {fmt(total)}
                           </span>
-                        ))}
-                        <span className="text-[9px] opacity-60 leading-tight font-medium">
-                          {fmt(total)}
-                        </span>
-                      </div>
-                    </td>
-                  );
-                })}
-                <td className="sticky right-0 bg-white py-2 pr-4 text-right whitespace-nowrap z-10">
-                  <span className="text-[11px] font-semibold text-navy tabular-nums">{fmt(totalPaid)}</span>
+                        </div>
+                      </td>
+                    );
+                  })}
+                  <td className="sticky right-0 bg-white py-2 pr-4 text-right whitespace-nowrap z-10">
+                    <span className="text-[11px] font-semibold text-navy tabular-nums">{fmt(totalPaid)}</span>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+          {visibleMatrix.length > 0 && (
+            <tfoot>
+              <tr className="border-t border-navy/[0.08]">
+                <td className="sticky left-0 bg-white py-2 pr-3 font-semibold text-navy/70 text-[11px] uppercase tracking-wider z-10">
+                  Total
+                </td>
+                <td className="sticky left-[130px] bg-white z-10" />
+                {months.map((m) => (
+                  <td key={m} className="py-2 px-1 text-center text-[11px] font-semibold text-navy/70 tabular-nums">
+                    {monthTotals[m] > 0 ? fmt(monthTotals[m]) : "—"}
+                  </td>
+                ))}
+                <td className="sticky right-0 bg-white py-2 pr-4 text-right z-10">
+                  <span className="text-[11px] font-bold text-navy tabular-nums">{fmt(grandTotal)}</span>
                 </td>
               </tr>
-            ))}
-          </tbody>
+            </tfoot>
+          )}
         </table>
       </div>
+      {visibleCount < visibleMatrix.length && (
+        <div className="flex justify-center mt-4">
+          <button
+            type="button"
+            onClick={() => setVisibleCount((v) => v + PAGE_SIZE)}
+            className="text-xs font-medium text-navy/60 hover:text-navy px-4 py-2 rounded-lg border border-navy/[0.1] bg-navy/[0.02] hover:bg-navy/[0.05] transition-colors"
+          >
+            Cargar más ({visibleMatrix.length - visibleCount} restantes)
+          </button>
+        </div>
+      )}
       {selected && (
         <CustomerDrawer key={selected.id} customer={selected} payments={payments} onClose={() => setSelected(null)} />
       )}
