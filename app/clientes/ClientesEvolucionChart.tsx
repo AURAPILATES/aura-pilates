@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import type { StripePayment } from "@/lib/stripePayments";
 import type { BusinessEvent, EventCategoria } from "@/lib/businessEvents";
 
@@ -55,6 +55,14 @@ export default function ClientesEvolucionChart({
 }) {
   const [hoveredEventId, setHoveredEventId] = useState<string | null>(null);
 
+  const [isNarrow, setIsNarrow] = useState(false);
+  useEffect(() => {
+    const check = () => setIsNarrow(window.innerWidth < 640);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
   const months = useMemo(() => {
     const now = new Date();
     const start = new Date(2026, 1, 1); // Feb 2026 — apertura del centro
@@ -98,7 +106,7 @@ export default function ClientesEvolucionChart({
 
   const maxVal = Math.max(...data.map((d) => d.count), 1);
   const yMax   = Math.ceil(maxVal / 5) * 5 || 5;
-  const tickCount = Math.min(yMax, 5);
+  const tickCount = isNarrow ? Math.min(yMax, 2) : Math.min(yMax, 5);
   const ticks = Array.from({ length: tickCount + 1 }, (_, i) => Math.round((yMax / tickCount) * i));
 
   const CHART_H = SVG_H - MT;
