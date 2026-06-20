@@ -1074,7 +1074,7 @@ export default function TransaccionesList({
                     <div className="min-w-0">
                       <div className="min-w-0">
                         {editingField?.id === t.id && editingField.field === (t.contact != null ? "contact" : "concept") ? (
-                          <div className="flex items-center gap-[3px]">
+                          <div className="flex items-center gap-2">
                             <input
                               autoFocus type="text" value={editValue}
                               onChange={(e) => setEditValue(e.target.value)}
@@ -1101,7 +1101,7 @@ export default function TransaccionesList({
                         )}
                         {secondary && (
                           editingField?.id === t.id && editingField.field === "concept" && t.contact != null ? (
-                            <div className="flex items-center gap-[3px] mt-0.5">
+                            <div className="flex items-center gap-2 mt-0.5">
                               <input
                                 autoFocus type="text" value={editValue}
                                 onChange={(e) => setEditValue(e.target.value)}
