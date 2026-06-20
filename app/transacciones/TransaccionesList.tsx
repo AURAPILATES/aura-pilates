@@ -578,17 +578,17 @@ export default function TransaccionesList({
       {/* ── KPI bar sticky (reactiva a filtros) ────────────────────────────── */}
       <div className="sm:sticky sm:top-[45px] sm:z-[15] -mx-2 sm:-mx-6 sm:bg-app-bg/95 sm:backdrop-blur-sm sm:border-b sm:border-navy/[0.06] mb-4 sm:mb-3">
         <div className="flex items-center gap-4 sm:gap-7 px-3 sm:px-6 py-2.5">
-          <div>
+          <div className="min-w-[90px] sm:min-w-[110px]">
             <p className="text-[10px] text-navy/40 uppercase tracking-wider leading-none mb-0.5">Ingresos</p>
             <p className="text-sm font-semibold text-success tabular-nums">+{fmtAmt(totalIn)}</p>
           </div>
           <div className="hidden sm:block h-4 w-px bg-navy/[0.1] shrink-0" />
-          <div>
+          <div className="min-w-[90px] sm:min-w-[110px]">
             <p className="text-[10px] text-navy/40 uppercase tracking-wider leading-none mb-0.5">Gastos</p>
             <p className="text-sm font-semibold text-[#B85C3A] tabular-nums">−{fmtAmt(totalOut)}</p>
           </div>
           <div className="hidden sm:block h-4 w-px bg-navy/[0.1] shrink-0" />
-          <div>
+          <div className="min-w-[90px] sm:min-w-[110px]">
             <p className="text-[10px] text-navy/40 uppercase tracking-wider leading-none mb-0.5">Resultado neto</p>
             <p className={`text-sm font-semibold tabular-nums ${neto >= 0 ? "text-navy" : "text-danger"}`}>
               {neto >= 0 ? "+" : "−"}{fmtAmt(Math.abs(neto))}
