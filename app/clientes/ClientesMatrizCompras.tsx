@@ -53,6 +53,7 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
   const [productFilter, setProductFilter] = useState<string>("");
   const [firstPurchaseFilter, setFirstPurchaseFilter] = useState<string>("");
   const [onlyInactive, setOnlyInactive] = useState(false);
+  const [onlyUpsell, setOnlyUpsell] = useState(false);
   const [selected, setSelected] = useState<CustomerRow | null>(null);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
@@ -93,7 +94,7 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
 
   const visibleMatrix = useMemo(() => {
     const q = search.trim().toLowerCase();
-    let rows = matrix.filter(({ customer, products, byMonth, firstPurchase }) => {
+    let rows = matrix.filter(({ customer, products, byMonth, firstPurchase, isUpsellCandidate }) => {
       if (q) {
         const label = (customer.name ?? customer.email ?? "").toLowerCase();
         if (!label.includes(q)) return false;
@@ -101,6 +102,7 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
       if (productFilter && !products.has(productFilter)) return false;
       if (firstPurchaseFilter && firstPurchase?.slice(0, 7) !== firstPurchaseFilter) return false;
       if (onlyInactive && byMonth[lastMonth]?.length) return false;
+      if (onlyUpsell && !isUpsellCandidate) return false;
       return true;
     });
 
@@ -125,11 +127,11 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
     });
 
     return rows;
-  }, [matrix, search, sortKey, sortDir, productFilter, firstPurchaseFilter, onlyInactive, lastMonth]);
+  }, [matrix, search, sortKey, sortDir, productFilter, firstPurchaseFilter, onlyInactive, onlyUpsell, lastMonth]);
 
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
-  }, [search, sortKey, sortDir, productFilter, firstPurchaseFilter, onlyInactive]);
+  }, [search, sortKey, sortDir, productFilter, firstPurchaseFilter, onlyInactive, onlyUpsell]);
 
   const pageRows = visibleMatrix.slice(0, visibleCount);
 
@@ -229,6 +231,18 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
           </button>
           <button
             type="button"
+            onClick={() => setOnlyUpsell((v) => !v)}
+            title="Clientes en Bàsic desde hace 3 meses o más que nunca han subido a Plus o Pro"
+            className={`text-xs px-2.5 py-1.5 rounded-lg border whitespace-nowrap transition-colors ${
+              onlyUpsell
+                ? "border-navy/20 bg-navy/[0.08] text-navy font-medium"
+                : "border-navy/[0.1] bg-navy/[0.02] text-navy/60"
+            }`}
+          >
+            Candidatos a upsell
+          </button>
+          <button
+            type="button"
             onClick={downloadCsv}
             title="Exportar vista actual a CSV"
             className="shrink-0 flex items-center justify-center w-8 h-8 text-navy/50 hover:text-navy border border-navy/[0.1] rounded-lg bg-navy/[0.02] hover:bg-navy/[0.05] transition-colors"
@@ -284,38 +298,23 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
                 </td>
               </tr>
             )}
-            {pageRows.map(({ customer, byMonth, totalPaid, firstPurchase, isUpsellCandidate }) => {
-              const purchasedMonths = months.filter((m) => byMonth[m]?.length);
-              const firstPurchasedIdx = purchasedMonths.length ? months.indexOf(purchasedMonths[0]) : -1;
-              const lastPurchasedIdx = purchasedMonths.length ? months.indexOf(purchasedMonths[purchasedMonths.length - 1]) : -1;
+            {pageRows.map(({ customer, byMonth, totalPaid, firstPurchase }) => {
               return (
                 <tr
                   key={customer.id}
                   onClick={() => setSelected(customer)}
                   className="border-b border-navy/[0.04] last:border-0 hover:bg-navy/[0.015] transition-colors cursor-pointer"
                 >
-                  <td className="sticky left-0 bg-white py-2 pr-3 font-medium text-navy whitespace-nowrap z-10 max-w-[130px]" title={customer.name ?? customer.email ?? undefined}>
-                    <span className="flex items-center gap-1 min-w-0">
-                      <span className="truncate">{customer.name ?? customer.email ?? "—"}</span>
-                      {isUpsellCandidate && (
-                        <span title="Lleva 3+ meses en Bàsic sin subir de plan" className="shrink-0 text-amber-500">↑</span>
-                      )}
-                    </span>
+                  <td className="sticky left-0 bg-white py-2 pr-3 font-medium text-navy whitespace-nowrap z-10 max-w-[130px] truncate" title={customer.name ?? customer.email ?? undefined}>
+                    {customer.name ?? customer.email ?? "—"}
                   </td>
                   <td className="sticky left-[130px] bg-white py-2 px-1 text-center text-navy/60 whitespace-nowrap z-10">
                     {firstPurchase ? monthLabel(firstPurchase.slice(0, 7)) : "—"}
                   </td>
-                  {months.map((m, i) => {
+                  {months.map((m) => {
                     const purchases = byMonth[m];
                     if (!purchases || purchases.length === 0) {
-                      const isGap = i > firstPurchasedIdx && i < lastPurchasedIdx;
-                      return (
-                        <td key={m} className="py-1.5 px-1 text-center">
-                          {isGap && (
-                            <span title="Hueco entre compras" className="inline-block w-1.5 h-1.5 rounded-full bg-warning/40" />
-                          )}
-                        </td>
-                      );
+                      return <td key={m} className="py-1.5 px-1 text-center" />;
                     }
                     const products = [...new Map(purchases.map((p) => [p.product, p])).keys()];
                     const total = purchases.reduce((s, p) => s + p.amount, 0);
