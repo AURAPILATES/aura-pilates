@@ -18,3 +18,15 @@
 
   --radius-md: 0.3125rem;
 }
+
+/* Recharts hace focusable el <svg> del gráfico para navegación por teclado
+   (tabIndex + role="application"). Sin esto, el navegador dibuja su contorno
+   de foco por defecto también al hacer clic con el ratón. */
+.recharts-surface:focus {
+  outline: none;
+}
+.recharts-surface:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
