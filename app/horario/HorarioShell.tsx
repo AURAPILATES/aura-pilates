@@ -300,9 +300,7 @@ export default function HorarioShell({
                       disabled={!day.hasEvents}
                       onClick={() => document.getElementById(`mday-${day.key}`)?.scrollIntoView({ behavior: "smooth", block: "start" })}
                       className={`shrink-0 flex flex-col items-center w-[52px] py-2.5 rounded-xl transition-colors ${
-                        day.isToday
-                          ? "bg-navy text-white"
-                          : day.hasEvents
+                        day.hasEvents
                           ? "bg-white border border-navy/[0.12] text-navy"
                           : "bg-navy/[0.03] border border-navy/[0.06] text-navy/25"
                       }`}
@@ -310,7 +308,7 @@ export default function HorarioShell({
                       <span className="text-[10px] font-semibold uppercase tracking-wide">{day.letter}</span>
                       <span className="text-lg font-medium leading-none mt-1">{day.num}</span>
                       <span className={`w-1.5 h-1.5 rounded-full mt-1.5 ${
-                        !day.hasEvents ? "opacity-0" : day.isToday ? "bg-white/50" : status!.dot
+                        !day.hasEvents ? "opacity-0" : status!.dot
                       }`} />
                     </button>
                   );
