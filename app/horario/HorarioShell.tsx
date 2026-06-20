@@ -292,22 +292,25 @@ export default function HorarioShell({
 
               {/* Day pills — tap to scroll to that day */}
               <div className="flex gap-2 overflow-x-auto pb-1 mb-3 scrollbar-none">
-                {weekDays.filter((day) => day.hasEvents).map((day) => {
-                  const status = getOccStatus(day.occ);
+                {weekDays.map((day) => {
+                  const status = day.hasEvents ? getOccStatus(day.occ) : null;
                   return (
                     <button
                       key={day.key}
+                      disabled={!day.hasEvents}
                       onClick={() => document.getElementById(`mday-${day.key}`)?.scrollIntoView({ behavior: "smooth", block: "start" })}
                       className={`shrink-0 flex flex-col items-center w-[52px] py-2.5 rounded-xl transition-colors ${
                         day.isToday
                           ? "bg-navy text-white"
-                          : "bg-white border border-navy/[0.12] text-navy"
+                          : day.hasEvents
+                          ? "bg-white border border-navy/[0.12] text-navy"
+                          : "bg-navy/[0.03] border border-navy/[0.06] text-navy/25"
                       }`}
                     >
                       <span className="text-[10px] font-semibold uppercase tracking-wide">{day.letter}</span>
-                      <span className="text-xl font-semibold leading-none mt-1">{day.num}</span>
+                      <span className="text-lg font-medium leading-none mt-1">{day.num}</span>
                       <span className={`w-1.5 h-1.5 rounded-full mt-1.5 ${
-                        day.isToday ? "bg-white/50" : status.dot
+                        !day.hasEvents ? "opacity-0" : day.isToday ? "bg-white/50" : status!.dot
                       }`} />
                     </button>
                   );
