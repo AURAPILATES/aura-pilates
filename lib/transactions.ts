@@ -1,5 +1,7 @@
 import { createServerClient } from "@/lib/supabase";
 import { unstable_cache } from "next/cache";
+import { STARTUP_CATS, economicGroupOf, type EconomicGroup } from "@/lib/economicGroups";
+export type { EconomicGroup };
 
 export type ContactType = "empleado" | "socio" | "proveedor" | "administracion" | "banco" | null;
 export type PaymentMethod = "banco" | "efectivo" | "victor" | "celia" | "olga" | "carles";
@@ -38,23 +40,6 @@ const OPERATIONAL_CATS = new Set([
   "Otros",
 ]);
 
-const STARTUP_CATS = new Set([
-  "Inversión",
-  "Material y maquinaria",
-  "Mobiliario",
-  "Reforma",
-]);
-
-const PERSONAL_CATS = new Set(["Salarios", "Seguridad social"]);
-
-/** Agrupación por naturaleza económica, para distinguir CapEx (inversión) de OpEx (gasto operativo/personal) */
-export type EconomicGroup = "capex" | "personal" | "operational";
-
-export function economicGroupOf(category: string): EconomicGroup {
-  if (STARTUP_CATS.has(category)) return "capex";
-  if (PERSONAL_CATS.has(category)) return "personal";
-  return "operational";
-}
 
 export async function getLatestImportDate(): Promise<string | null> {
   const supabase = createServerClient();

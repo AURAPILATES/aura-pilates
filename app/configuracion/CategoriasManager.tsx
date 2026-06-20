@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useTransition } from "react";
 import type { Category, GroupType } from "@/lib/categories";
+import { economicGroupOf, type EconomicGroup } from "@/lib/economicGroups";
 import { createCategory, updateCategory, deleteCategory } from "./actions";
 
 const GROUP_LABELS: Record<GroupType, string> = {
@@ -11,6 +12,15 @@ const GROUP_LABELS: Record<GroupType, string> = {
 };
 const GROUP_ORDER: GroupType[] = ["income", "operational", "transfer", "internal"];
 const KNOWN_GROUPS = new Set<string>(["income", "transfer", "operational", "internal"]);
+
+// Subdivisión por naturaleza económica, solo dentro de "Operacional" — derivada del nombre
+// de la categoría (ver lib/economicGroups.ts), no es un campo editable en BD.
+const ECONOMIC_LABELS: Record<EconomicGroup, string> = {
+  personal: "Personal",
+  operational: "Gasto operativo (OpEx)",
+  capex: "Inversión (CapEx)",
+};
+const ECONOMIC_ORDER: EconomicGroup[] = ["personal", "operational", "capex"];
 
 // ── Color palette ─────────────────────────────────────────────────────────────
 
@@ -233,36 +243,58 @@ export default function CategoriasManager({ categories }: { categories: Category
               (g === "operational" && !KNOWN_GROUPS.has(c.group_type))
             );
             if (items.length === 0) return null;
+
+            const renderItems = (list: Category[]) => (
+              <div className="bg-white border border-navy/[0.08] rounded-2xl shadow-card overflow-hidden">
+                {list.map((cat, i) => {
+                  const isActive = editor?.mode === "edit" && editor.cat.id === cat.id;
+                  return (
+                    <button
+                      key={cat.id}
+                      onClick={() => openEdit(cat)}
+                      className={`w-full flex items-center gap-4 px-5 py-3.5 transition-colors text-left ${
+                        i < list.length - 1 ? "border-b border-navy/[0.05]" : ""
+                      } ${isActive ? "bg-primary/[0.04]" : "hover:bg-navy/[0.015]"}`}
+                    >
+                      <CategoryIcon iconKey={cat.emoji} name={cat.label} color={cat.text_color} size={40} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-navy">{cat.label}</p>
+                        {cat.auto_keywords && (
+                          <p className="text-[11px] text-navy/40 mt-0.5 truncate">{cat.auto_keywords}</p>
+                        )}
+                      </div>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-navy/25 shrink-0">
+                        <polyline points="9 18 15 12 9 6"/>
+                      </svg>
+                    </button>
+                  );
+                })}
+              </div>
+            );
+
             return (
               <div key={g}>
                 <p className="text-[11px] font-semibold text-navy/45 uppercase tracking-wider mb-3 px-1">
                   {GROUP_LABELS[g]}
                 </p>
-                <div className="bg-white border border-navy/[0.08] rounded-2xl shadow-card overflow-hidden">
-                  {items.map((cat, i) => {
-                    const isActive = editor?.mode === "edit" && editor.cat.id === cat.id;
-                    return (
-                      <button
-                        key={cat.id}
-                        onClick={() => openEdit(cat)}
-                        className={`w-full flex items-center gap-4 px-5 py-3.5 transition-colors text-left ${
-                          i < items.length - 1 ? "border-b border-navy/[0.05]" : ""
-                        } ${isActive ? "bg-primary/[0.04]" : "hover:bg-navy/[0.015]"}`}
-                      >
-                        <CategoryIcon iconKey={cat.emoji} name={cat.label} color={cat.text_color} size={40} />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-navy">{cat.label}</p>
-                          {cat.auto_keywords && (
-                            <p className="text-[11px] text-navy/40 mt-0.5 truncate">{cat.auto_keywords}</p>
-                          )}
+                {g === "operational" ? (
+                  <div className="space-y-4">
+                    {ECONOMIC_ORDER.map((eg) => {
+                      const subItems = items.filter((c) => economicGroupOf(c.label) === eg);
+                      if (subItems.length === 0) return null;
+                      return (
+                        <div key={eg}>
+                          <p className="text-[10px] font-medium text-navy/40 mb-1.5 px-1">
+                            {ECONOMIC_LABELS[eg]}
+                          </p>
+                          {renderItems(subItems)}
                         </div>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-navy/25 shrink-0">
-                          <polyline points="9 18 15 12 9 6"/>
-                        </svg>
-                      </button>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  renderItems(items)
+                )}
               </div>
             );
           })}
