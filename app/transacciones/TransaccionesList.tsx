@@ -619,12 +619,29 @@ export default function TransaccionesList({
         </div>
       </div>
 
+      {/* ── Mobile: Search bar ───────────────────────────────────────────────── */}
+      <div className="sm:hidden relative mb-2">
+        <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-navy/30" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          type="text"
+          placeholder="Buscar concepto o contacto…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full pl-9 pr-9 py-2.5 text-sm border border-navy/[0.12] rounded-lg bg-white text-navy placeholder:text-navy/35 outline-none focus:ring-2 focus:ring-primary/20 transition"
+        />
+        {search && (
+          <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-navy/30 hover:text-navy/60">✕</button>
+        )}
+      </div>
+
       {/* ── Mobile: Import + Filtros buttons ────────────────────────────────── */}
       <div className="sm:hidden flex gap-2 mb-3">
         <ImportButton className="flex-1" onManual={() => setShowAddCash(true)} />
         <button
           onClick={() => setShowMobileFilters((v) => !v)}
-          className="flex items-center gap-1.5 px-4 py-2.5 bg-white border border-navy/[0.12] rounded-lg text-sm font-semibold text-navy"
+          className="relative flex items-center gap-1.5 px-4 py-2.5 bg-white border border-navy/[0.12] rounded-lg text-sm font-semibold text-navy"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/>
@@ -633,24 +650,15 @@ export default function TransaccionesList({
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={`transition-transform ${showMobileFilters ? "rotate-180" : ""}`}>
             <polyline points="6 9 12 15 18 9"/>
           </svg>
+          {(catFilters.length > 0 || originFilter !== "all") && (
+            <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-primary" />
+          )}
         </button>
       </div>
 
       {/* ── Mobile: Filter drawer ────────────────────────────────────────────── */}
       {showMobileFilters && (
         <div className="sm:hidden bg-white border border-navy/[0.1] rounded-2xl p-4 mb-3 flex flex-col gap-3 shadow-card">
-          <div className="relative">
-            <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-navy/30" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-            </svg>
-            <input
-              type="text"
-              placeholder="Buscar concepto o contacto…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 text-sm border border-navy/[0.12] rounded-lg bg-white text-navy placeholder:text-navy/35 outline-none focus:ring-2 focus:ring-primary/20 transition"
-            />
-          </div>
           <CategoryMultiFilter selected={catFilters} categories={categories} onChange={setCatFilters} />
           <SelectWrapper>
             <select value={originFilter} onChange={(e) => setOriginFilter(e.target.value)} className={SELECT_CLS}>
@@ -794,7 +802,7 @@ export default function TransaccionesList({
 
       {/* ── Bulk selection bar ─────────────────────────────────────────────── */}
       {someSelected && (
-        <div className="fixed bottom-20 sm:bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-3 bg-navy rounded-2xl shadow-2xl border border-white/10 min-w-max">
+        <div className="fixed bottom-20 sm:bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 sm:gap-3 px-3 sm:px-5 py-3 bg-navy rounded-2xl shadow-2xl border border-white/10 max-w-[calc(100vw-1.5rem)] sm:max-w-none sm:min-w-max overflow-x-auto scrollbar-none">
           <span className="text-sm font-semibold text-white shrink-0">
             {selected.size} seleccionada{selected.size !== 1 ? "s" : ""}
           </span>
@@ -816,7 +824,7 @@ export default function TransaccionesList({
               <select
                 value={bulkCat}
                 onChange={(e) => setBulkCat(e.target.value)}
-                className="text-sm rounded-lg px-3 py-1.5 bg-white/10 text-white border border-white/20 outline-none focus:border-white/40 min-w-48 cursor-pointer"
+                className="text-sm rounded-lg px-3 py-1.5 bg-white/10 text-white border border-white/20 outline-none focus:border-white/40 min-w-32 sm:min-w-48 shrink-0 cursor-pointer"
               >
                 <option value="" disabled>Cambiar categoría…</option>
                 <option value="__null__" className="text-navy bg-white">Sin categoría</option>
