@@ -4,7 +4,6 @@ import { loadCategoriesCached } from "@/lib/categories";
 import { getDateRange } from "@/lib/dateRange";
 import { detectRecurringTransactions } from "@/lib/recurring";
 import TransaccionesList from "./TransaccionesList";
-import DateFilter from "@/app/components/DateFilter";
 import MobileNav from "@/app/components/MobileNav";
 
 // ── Page ──────────────────────────────────────────────────────────────────────
@@ -35,7 +34,6 @@ export default async function TransaccionesPage(props: {
             <MobileNav />
             <h1 className="text-sm font-bold text-navy uppercase tracking-widest">Transacciones</h1>
           </div>
-          <div className="sm:hidden"><Suspense fallback={null}><DateFilter /></Suspense></div>
         </div>
       </div>
 
