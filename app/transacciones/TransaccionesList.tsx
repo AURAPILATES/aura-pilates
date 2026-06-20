@@ -64,12 +64,7 @@ function SourceAvatar({ method }: { method: string }) {
     );
   }
   return (
-    <div
-      className="shrink-0 w-[22px] h-[22px] rounded-full bg-sky-50 flex items-center justify-center"
-      title="CaixaBank"
-    >
-      <img src="/Caixabank logo.png" alt="CaixaBank" width={13} height={13} className="object-contain" />
-    </div>
+    <img src="/Caixabank logo.png" alt="CaixaBank" width={16} height={16} className="shrink-0 object-contain" />
   );
 }
 
@@ -1079,7 +1074,7 @@ export default function TransaccionesList({
                     <div className="min-w-0">
                       <div className="min-w-0">
                         {editingField?.id === t.id && editingField.field === (t.contact != null ? "contact" : "concept") ? (
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-[3px]">
                             <input
                               autoFocus type="text" value={editValue}
                               onChange={(e) => setEditValue(e.target.value)}
@@ -1106,7 +1101,7 @@ export default function TransaccionesList({
                         )}
                         {secondary && (
                           editingField?.id === t.id && editingField.field === "concept" && t.contact != null ? (
-                            <div className="flex items-center gap-1 mt-0.5">
+                            <div className="flex items-center gap-[3px] mt-0.5">
                               <input
                                 autoFocus type="text" value={editValue}
                                 onChange={(e) => setEditValue(e.target.value)}
