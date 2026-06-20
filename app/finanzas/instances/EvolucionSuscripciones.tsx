@@ -46,6 +46,7 @@ export default function EvolucionSuscripciones({
         { label: `Bajas ${last2Label}`, value: `−${bajasLast2}`, valueClassName: "text-danger" },
       ]}
       dataSource="Ingresos: Stripe + catálogo Momence en vivo (Urban Sports Club desde CSV) · Altas/bajas/reactivaciones identificadas por el patrón de pagos de suscripción en Stripe"
+      sources={["stripe", "momence"]}
     >
       <EvolucionSuscripcionesBody monthly={monthly} cohorts={cohorts} />
     </ChartCard>

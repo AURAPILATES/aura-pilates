@@ -33,6 +33,7 @@ export default function IngresosPorProducto({
       subtitle="Distribución de ingresos por producto o tarifa en el período"
       dateRange={rangeLabel ?? undefined}
       dataSource="Stripe + catálogo Momence en vivo · Urban Sports Club desde CSV"
+      sources={["stripe", "momence"]}
     >
       {segments.length === 0 ? (
         <p className="text-sm text-navy/45 text-center py-10">Sin datos de productos.</p>

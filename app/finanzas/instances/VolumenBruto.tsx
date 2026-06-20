@@ -128,6 +128,7 @@ export default function VolumenBruto({ sales, txns }: { sales: Sale[]; txns: Tra
       }
       chartDescription="Evolución de ingresos y gastos por período seleccionado"
       dataSource="Ingresos: Momence sales.csv · Gastos: exportación bancaria CaixaBank"
+      sources={["momence", "excel"]}
     >
       <VolumenBrutoBody data={data} chartType={chartType} />
     </ChartCard>

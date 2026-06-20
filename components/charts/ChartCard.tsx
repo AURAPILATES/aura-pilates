@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from "react";
 import { ChevronDown, Database, Zap } from "react-feather";
 import DeltaBadge, { type DeltaDirection } from "./DeltaBadge";
+import { SourceIcons, type SourceKey } from "../icons/SourceIcons";
 
 export interface SingleKpi {
   value: string;
@@ -33,6 +34,8 @@ export interface ChartCardProps {
   aiInsight?: ReactNode;
   aiInsightDefaultOpen?: boolean;
   dataSource?: ReactNode;
+  /** logos de marca a mostrar junto a la fuente, en vez del icono genérico de base de datos */
+  sources?: SourceKey[];
   className?: string;
 }
 
@@ -48,6 +51,7 @@ export default function ChartCard({
   aiInsight,
   aiInsightDefaultOpen = false,
   dataSource,
+  sources,
   className = "",
 }: ChartCardProps) {
   const [aiOpen, setAiOpen] = useState(aiInsightDefaultOpen);
@@ -139,7 +143,11 @@ export default function ChartCard({
       {/* SOURCE */}
       {dataSource && (
         <div className="flex items-start gap-1.5 text-[11px] text-navy/45 leading-relaxed px-4 sm:px-5 py-2.5 border-t border-navy/[0.07]">
-          <Database size={13} className="shrink-0 mt-px" />
+          {sources && sources.length > 0 ? (
+            <SourceIcons sources={sources} size={13} className="shrink-0 mt-px text-navy/45" />
+          ) : (
+            <Database size={13} className="shrink-0 mt-px" />
+          )}
           {dataSource}
         </div>
       )}

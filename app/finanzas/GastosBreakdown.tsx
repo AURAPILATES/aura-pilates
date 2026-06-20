@@ -68,10 +68,10 @@ function CategoryIcon({ name, color, iconKey }: { name: string; color: string; i
   const key = iconKey && ICON_BY_KEY[iconKey] ? iconKey : (NAME_TO_KEY[name] ?? "package");
   return (
     <div
-      className="w-12 h-12 rounded-full flex items-center justify-center shrink-0"
+      className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
       style={{ backgroundColor: color }}
     >
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         {ICON_BY_KEY[key] ?? ICON_BY_KEY["package"]}
       </svg>
     </div>
@@ -176,17 +176,17 @@ export default function GastosBreakdown({
           <button
             key={seg.category}
             onClick={() => setSelected(seg.category === selected ? null : seg.category)}
-            className={`w-full flex items-center gap-3 py-3 text-left transition-colors rounded-xl px-2 -mx-2 ${
+            className={`w-full flex items-center gap-2.5 py-2 text-left transition-colors rounded-xl px-2 -mx-2 ${
               selected === seg.category ? "bg-navy/[0.03]" : "hover:bg-navy/[0.02]"
             }`}
           >
             <CategoryIcon name={seg.category} color={seg.color} iconKey={seg.iconKey} />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-navy truncate">{seg.category}</p>
+              <p className="text-[12px] font-semibold text-navy truncate">{seg.category}</p>
               <p className="text-xs text-navy/50">{seg.count} transacciones</p>
             </div>
             <div className="text-right shrink-0">
-              <p className="text-sm font-semibold text-navy tabular-nums">
+              <p className="text-[12px] font-semibold text-navy tabular-nums">
                 −{fmtAmount(seg.total)}
               </p>
               <p className="text-xs text-navy/50 tabular-nums">{pct(seg.share)}</p>

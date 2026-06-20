@@ -26,6 +26,7 @@ export default function RetencionCohorte({ cohorts }: { cohorts: RetentionCohort
         { label: "Cohortes activas", value: String(cohorts.length) },
       ]}
       dataSource="Cohorte = mes del primer pago de suscripción · pagos Stripe en vivo"
+      sources={["stripe"]}
     >
       <CohortTable
         columns={["M+1", "M+2", "M+3", "M+4"]}

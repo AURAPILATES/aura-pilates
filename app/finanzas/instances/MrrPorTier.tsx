@@ -23,6 +23,7 @@ export default function MrrPorTier({ tiers }: { tiers: TierMrr[] }) {
         { label: "Suscriptores activos", value: String(totalActive) },
       ]}
       dataSource="MRR = suscriptores activos (no congelados) × precio del tier · Momence en vivo"
+      sources={["momence"]}
     >
       <div className="flex flex-col gap-3.5">
         {tiers.map((t) => {

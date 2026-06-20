@@ -54,6 +54,7 @@ export default function Breakeven({ points }: { points: BreakevenPoint[] }) {
         </>
       }
       dataSource="Ingresos: Stripe + Urban Sports Club · Gastos: operacionales + inversión inicial"
+      sources={["stripe"]}
     >
       <BreakevenBody points={points} view={view} />
     </ChartCard>

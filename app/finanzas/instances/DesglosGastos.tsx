@@ -33,6 +33,7 @@ export default function DesglosGastos({
       subtitle="Distribución de gastos por categoría en el período"
       dateRange={rangeLabel ?? undefined}
       dataSource="Exportación bancaria CaixaBank · excluye aportaciones de socios, préstamo e inversión inicial"
+      sources={["excel"]}
     >
       <GastosBreakdown
         categories={categories}

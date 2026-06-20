@@ -61,6 +61,7 @@ export default function EvolucionInscritos({ payments }: { payments: StripePayme
         },
       ]}
       dataSource="Clientes únicos con cobro registrado en Stripe por mes"
+      sources={["stripe"]}
     >
       <EvolucionInscritosBody data={data} />
     </ChartCard>

@@ -232,6 +232,16 @@ export default function EvolucionIngresos({ sales, monthly, events, rawPayments 
           </>
         }
         dataSource="Stripe · ingresos brutos por mes"
+        sources={["stripe"]}
+        aiInsight={
+          trendSummary.length > 0 && (
+            <div className="space-y-1">
+              {trendSummary.map((sentence, i) => (
+                <p key={i}>{sentence}</p>
+              ))}
+            </div>
+          )
+        }
       >
         <EvolucionIngresosBody
           rows={rows}
@@ -244,13 +254,6 @@ export default function EvolucionIngresos({ sales, monthly, events, rawPayments 
           eventsByMonth={eventsByMonth}
           onBarClick={(month, key) => setBarDrawer({ month, key })}
         />
-        {trendSummary.length > 0 && (
-          <div className="mt-3 border-t border-navy/[0.07] pt-3 space-y-1">
-            {trendSummary.map((sentence, i) => (
-              <p key={i} className="text-xs text-navy/55 leading-relaxed">{sentence}</p>
-            ))}
-          </div>
-        )}
       </ChartCard>
 
       {barDrawer && (

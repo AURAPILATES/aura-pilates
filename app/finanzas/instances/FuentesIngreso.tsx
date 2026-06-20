@@ -34,6 +34,7 @@ export default function FuentesIngreso({
         { label: "Neto banco", value: fmt(stripeNet) },
       ]}
       dataSource="Stripe payments export · Momence active subscriptions en vivo"
+      sources={["stripe", "momence"]}
     >
       {totalRev > 0 && (
         <ProportionBar
