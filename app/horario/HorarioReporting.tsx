@@ -1,4 +1,5 @@
 import { MomenceEvent } from "@/lib/momence";
+import type { BusinessEvent } from "@/lib/businessEvents";
 import {
   occupancyRate,
   occupancyByHour,
@@ -10,6 +11,7 @@ import {
   pct,
 } from "@/lib/analytics";
 import QuestionHeader from "@/app/components/QuestionHeader";
+import HorarioOcupacionEvolucion from "./HorarioOcupacionEvolucion";
 
 export type ReportingData = {
   main: MomenceEvent[];
@@ -21,6 +23,7 @@ export type ReportingData = {
   topProducts: Array<{ item: string; revenue: number; count: number }>;
   uscByHour: Array<{ hour: number; label: string; count: number }>;
   uscByWeekday: Array<{ weekday: number; label: string; count: number }>;
+  businessEvents: BusinessEvent[];
 };
 
 function TrendBadge({ value }: { value: number | null }) {
@@ -62,7 +65,7 @@ function fmtD(d: string) {
 }
 
 export default function HorarioReporting({ data }: { data: ReportingData }) {
-  const { main, compare, upcoming7, periodLabel, periodFrom, periodTo, topProducts, uscByHour, uscByWeekday } = data;
+  const { main, compare, upcoming7, periodLabel, periodFrom, periodTo, topProducts, uscByHour, uscByWeekday, businessEvents } = data;
   const dateRange = `${fmtD(periodFrom)} – ${fmtD(periodTo)}`;
 
   const occ     = occupancyRate(main);
@@ -207,6 +210,9 @@ export default function HorarioReporting({ data }: { data: ReportingData }) {
       <section id="q3">
         <QuestionHeader num={3} question="¿Cómo se reparte la ocupación?" />
         <div className="space-y-4">
+
+          {/* Evolución de la ocupación */}
+          <HorarioOcupacionEvolucion events={main} businessEvents={businessEvents} />
 
           {/* Mapa de calor */}
           <Card>

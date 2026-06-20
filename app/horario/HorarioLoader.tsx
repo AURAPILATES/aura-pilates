@@ -2,6 +2,7 @@ import { getEvents } from "@/lib/momence";
 import { saveHistoricalEvents, loadHistoricalEvents } from "@/lib/history";
 import { filterActive, filterUpcoming } from "@/lib/analytics";
 import { loadSales, salesByProduct, filterSalesByDate, urbanBookingsByHour, urbanBookingsByWeekday } from "@/lib/sales";
+import { loadBusinessEvents } from "@/lib/businessEvents";
 import HorarioShell from "./HorarioShell";
 
 type Props = {
@@ -22,9 +23,10 @@ export default async function HorarioLoader({
   const monday = new Date(weekMonday + "T00:00:00");
   const sunday = new Date(monday.getTime() + 7 * 86400000 - 1);
 
-  const [liveEvents, historicalEvents] = await Promise.all([
+  const [liveEvents, historicalEvents, businessEvents] = await Promise.all([
     getEvents(),
     loadHistoricalEvents(),
+    loadBusinessEvents(),
   ]);
   await saveHistoricalEvents(liveEvents);
 
@@ -71,6 +73,7 @@ export default async function HorarioLoader({
         topProducts,
         uscByHour,
         uscByWeekday,
+        businessEvents,
       }}
     />
   );

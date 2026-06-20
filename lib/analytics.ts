@@ -231,6 +231,34 @@ export function occupancyHeatmap(events: MomenceEvent[]) {
   });
 }
 
+export function occupancyByWeek(events: MomenceEvent[]) {
+  const map = new Map<string, { sold: number; capacity: number }>();
+  for (const e of filterActive(events)) {
+    const dateKey = new Date(e.dateTime).toLocaleDateString("sv-SE", {
+      timeZone: "Europe/Madrid",
+    });
+    const d = new Date(dateKey + "T12:00:00");
+    const dow = (d.getDay() + 6) % 7; // 0=Mon
+    d.setDate(d.getDate() - dow);
+    const weekKey = d.toISOString().split("T")[0];
+    const prev = map.get(weekKey) ?? { sold: 0, capacity: 0 };
+    map.set(weekKey, { sold: prev.sold + e.ticketsSold, capacity: prev.capacity + e.capacity });
+  }
+  return Array.from(map.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([weekStart, { sold, capacity }]) => {
+      const [, m, day] = weekStart.split("-");
+      return {
+        weekStart,
+        label: `${day}/${m}`,
+        sold,
+        capacity,
+        free: capacity - sold,
+        occ: capacity > 0 ? sold / capacity : 0,
+      };
+    });
+}
+
 export function fmt(amount: number) {
   return amount.toLocaleString("es-ES", {
     style: "currency",
