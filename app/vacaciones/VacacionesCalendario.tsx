@@ -178,20 +178,24 @@ function SugerenciasBlock({ personas, festivos }: { personas: Persona[]; festivo
   const suggestions = generateSuggestions(personas, festivos);
   if (suggestions.length === 0) return null;
 
-  const icon = { success: "✅", warning: "⚠️", info: "ℹ️" };
-  const styles = {
-    success: "bg-success/8 text-success border border-success/20",
-    warning: "bg-warning/8 text-warning border border-warning/20",
-    info: "bg-navy/5 text-navy/60 border border-navy/10",
+  const dot = {
+    success: "bg-success",
+    warning: "bg-warning",
+    info: "bg-navy/30",
+  };
+  const text = {
+    success: "text-navy/70",
+    warning: "text-warning",
+    info: "text-navy/55",
   };
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="bg-white border border-navy/[0.08] rounded-xl divide-y divide-navy/[0.06]">
       {suggestions.map((s, i) => (
-        <span key={i} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs leading-snug ${styles[s.type]}`}>
-          <span className="shrink-0">{icon[s.type]}</span>
-          {s.text}
-        </span>
+        <div key={i} className="flex items-start gap-2.5 px-4 py-2.5">
+          <span className={`shrink-0 mt-1.5 w-1.5 h-1.5 rounded-full ${dot[s.type]}`} />
+          <span className={`text-xs leading-relaxed ${text[s.type]}`}>{s.text}</span>
+        </div>
       ))}
     </div>
   );
@@ -1328,6 +1332,12 @@ export default function VacacionesCalendario({
         </button>
       </div>
 
+      {/* Sugerencias */}
+      <section>
+        <h2 className="text-xs font-semibold text-navy/55 uppercase tracking-widest mb-3">Sugerencias</h2>
+        <SugerenciasBlock personas={personas} festivos={festivos} />
+      </section>
+
       {/* Drawer de archivados */}
       {showArchivados && (
         <Drawer
@@ -1402,12 +1412,6 @@ export default function VacacionesCalendario({
       <section>
         <h2 className="text-xs font-semibold text-navy/55 uppercase tracking-widest mb-4">Calendario {YEAR}</h2>
         <AnnualCalendar personas={personasFiltradas} allPersonas={personas} festivos={festivos} />
-      </section>
-
-      {/* Sugerencias */}
-      <section>
-        <h2 className="text-xs font-semibold text-navy/55 uppercase tracking-widest mb-3">Sugerencias</h2>
-        <SugerenciasBlock personas={personas} festivos={festivos} />
       </section>
 
       <p className="text-[10px] text-navy/45">
