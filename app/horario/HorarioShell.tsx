@@ -259,29 +259,29 @@ export default function HorarioShell({
 
               {/* Stats card */}
               {events.length > 0 && (
-                <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card mb-5 overflow-hidden">
-                  <div className="px-5 pt-5 pb-4 flex items-end gap-3">
+                <div className="bg-white border border-navy/[0.07] rounded-xl shadow-card mb-4 overflow-hidden">
+                  <div className="px-4 pt-4 pb-3 flex items-end gap-2.5">
                     <div className="flex items-end gap-1">
-                      <span className="text-5xl font-medium text-navy leading-none">{Math.round(weekOcc * 100)}</span>
-                      <span className="text-2xl font-medium text-navy mb-0.5">%</span>
+                      <span className="text-4xl font-medium text-navy leading-none">{Math.round(weekOcc * 100)}</span>
+                      <span className="text-xl font-medium text-navy mb-0.5">%</span>
                     </div>
-                    <div className="mb-1">
+                    <div className="mb-0.5">
                       <p className="text-xs text-navy/45 leading-tight">ocupación</p>
                       <p className="text-xs text-navy/45 leading-tight">media semana</p>
                     </div>
                   </div>
                   <div className="border-t border-navy/[0.06] grid grid-cols-3 divide-x divide-navy/[0.06]">
-                    <div className="px-4 py-3">
+                    <div className="px-3 py-2.5">
                       <p className="text-[9px] text-navy/40 uppercase tracking-widest font-semibold">Vendidas</p>
-                      <p className="text-base font-medium text-navy mt-0.5 tabular-nums">{weekSoldSpots}</p>
+                      <p className="text-sm font-medium text-navy mt-0.5 tabular-nums">{weekSoldSpots}</p>
                     </div>
-                    <div className="px-4 py-3">
+                    <div className="px-3 py-2.5">
                       <p className="text-[9px] text-navy/40 uppercase tracking-widest font-semibold">Libres</p>
-                      <p className="text-base font-medium text-navy mt-0.5 tabular-nums">{weekFreeSpots}</p>
+                      <p className="text-sm font-medium text-navy mt-0.5 tabular-nums">{weekFreeSpots}</p>
                     </div>
-                    <div className="px-4 py-3">
+                    <div className="px-3 py-2.5">
                       <p className="text-[9px] text-navy/40 uppercase tracking-widest font-semibold">Por llenar</p>
-                      <p className={`text-base font-semibold mt-0.5 tabular-nums ${lowCount > 0 ? "text-danger" : "text-navy/30"}`}>
+                      <p className={`text-sm font-semibold mt-0.5 tabular-nums ${lowCount > 0 ? "text-danger" : "text-navy/30"}`}>
                         {lowCount}
                       </p>
                     </div>
@@ -291,7 +291,7 @@ export default function HorarioShell({
 
 
               {/* Day pills — tap to scroll to that day */}
-              <div className="flex gap-2 overflow-x-auto pb-1 mb-3 scrollbar-none">
+              <div className="flex gap-1.5 overflow-x-auto pb-1 mb-2.5 scrollbar-none">
                 {weekDays.map((day) => {
                   const status = day.hasEvents ? getOccStatus(day.occ) : null;
                   return (
@@ -299,15 +299,15 @@ export default function HorarioShell({
                       key={day.key}
                       disabled={!day.hasEvents}
                       onClick={() => document.getElementById(`mday-${day.key}`)?.scrollIntoView({ behavior: "smooth", block: "start" })}
-                      className={`shrink-0 flex flex-col items-center w-[52px] py-2.5 rounded-xl transition-colors ${
+                      className={`shrink-0 flex flex-col items-center w-[44px] py-2 rounded-lg transition-colors ${
                         day.hasEvents
                           ? "bg-white border border-navy/[0.12] text-navy"
                           : "bg-navy/[0.03] border border-navy/[0.06] text-navy/25"
                       }`}
                     >
-                      <span className="text-[10px] font-semibold uppercase tracking-wide">{day.letter}</span>
-                      <span className="text-lg font-medium leading-none mt-1">{day.num}</span>
-                      <span className={`w-1.5 h-1.5 rounded-full mt-1.5 ${
+                      <span className="text-[9px] font-semibold uppercase tracking-wide">{day.letter}</span>
+                      <span className="text-base font-medium leading-none mt-1">{day.num}</span>
+                      <span className={`w-1.5 h-1.5 rounded-full mt-1 ${
                         !day.hasEvents ? "opacity-0" : status!.dot
                       }`} />
                     </button>
@@ -316,7 +316,7 @@ export default function HorarioShell({
               </div>
 
               {/* Occ filter pills */}
-              <div className="flex gap-2 overflow-x-auto pb-1 mb-5 scrollbar-none">
+              <div className="flex gap-1.5 overflow-x-auto pb-1 mb-4 scrollbar-none">
                 {([
                   { value: "all",  label: "Todas",      dot: "bg-navy/25" },
                   { value: "low",  label: "Por llenar", dot: "bg-[#c03828]" },
@@ -326,7 +326,7 @@ export default function HorarioShell({
                   <button
                     key={value}
                     onClick={() => setOccFilter(value)}
-                    className={`shrink-0 flex items-center gap-1.5 px-4 py-1.5 text-sm rounded-full border transition-colors ${
+                    className={`shrink-0 flex items-center gap-1.5 px-3 py-1 text-xs rounded-full border transition-colors ${
                       occFilter === value
                         ? "bg-navy text-white border-navy"
                         : "bg-white text-navy/60 border-navy/[0.12] hover:text-navy"
@@ -342,7 +342,7 @@ export default function HorarioShell({
               {days.length === 0 ? (
                 <p className="text-sm text-navy/40 text-center py-10">Sin clases con estos filtros.</p>
               ) : (
-                <div className="space-y-8">
+                <div className="space-y-6">
                   {days.map(({ dateKey, events: dayEvs }) => {
                     const dayOcc  = occupancyRate(dayEvs);
                     const daySold = dayEvs.reduce((s, e) => s + e.ticketsSold, 0);
@@ -353,16 +353,16 @@ export default function HorarioShell({
                     const dNum = new Date(dateKey + "T12:00:00").getDate();
                     return (
                       <div key={dateKey} id={`mday-${dateKey}`}>
-                        <div className="flex items-baseline justify-between mb-3">
-                          <h2 className="text-2xl font-medium text-navy capitalize">
-                            {dName} <span className="font-medium text-xl">{dNum}</span>
+                        <div className="flex items-baseline justify-between mb-2.5">
+                          <h2 className="text-lg font-medium text-navy capitalize">
+                            {dName} <span className="font-medium text-base">{dNum}</span>
                           </h2>
-                          <span className="text-sm text-navy/50">
+                          <span className="text-xs text-navy/50">
                             <span className={`font-semibold ${occText(dayOcc)}`}>{pct(dayOcc)}</span>
                             {" · "}{daySold}/{dayTotal}
                           </span>
                         </div>
-                        <div className="space-y-3">
+                        <div className="space-y-2.5">
                           {dayEvs.map((e) => (
                             <MobileClassCard key={e.id} event={e} onSelect={handleSelect} />
                           ))}
@@ -485,25 +485,25 @@ function MobileClassCard({ event: e, onSelect }: { event: MomenceEvent; onSelect
   return (
     <button
       onClick={() => onSelect(e)}
-      className={`w-full text-left bg-white border border-navy/[0.07] border-l-4 rounded-xl shadow-card p-4 ${status.border}`}
+      className={`w-full text-left bg-white border border-navy/[0.07] border-l-4 rounded-lg shadow-card p-3.5 ${status.border}`}
     >
-      <div className="flex items-start justify-between mb-2">
-        <span className="font-mono text-sm text-navy/45">{time}</span>
-        <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${status.bg} ${status.text}`}>
+      <div className="flex items-start justify-between mb-1.5">
+        <span className="font-mono text-xs text-navy/45">{time}</span>
+        <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${status.bg} ${status.text}`}>
           {status.label}
         </span>
       </div>
-      <p className="text-base font-semibold text-navy leading-snug">{e.title}</p>
-      {e.teacher && <p className="text-sm text-navy/50 mt-0.5">{e.teacher}</p>}
-      <div className="mt-3">
-        <div className="h-1 bg-navy/[0.08] rounded-full overflow-hidden mb-2">
+      <p className="text-sm font-semibold text-navy leading-snug">{e.title}</p>
+      {e.teacher && <p className="text-xs text-navy/50 mt-0.5">{e.teacher}</p>}
+      <div className="mt-2.5">
+        <div className="h-1 bg-navy/[0.08] rounded-full overflow-hidden mb-1.5">
           <div className={`h-full rounded-full ${status.dot}`} style={{ width: `${Math.round(occ * 100)}%` }} />
         </div>
         <div className="flex items-center justify-between">
-          <span className="text-xs text-navy/45 tabular-nums">
+          <span className="text-[11px] text-navy/45 tabular-nums">
             {e.ticketsSold}/{e.capacity} · {e.spotsRemaining === 0 ? "completa" : `${e.spotsRemaining} libre${e.spotsRemaining !== 1 ? "s" : ""}`}
           </span>
-          <span className={`text-sm font-semibold tabular-nums ${status.text}`}>{Math.round(occ * 100)}%</span>
+          <span className={`text-xs font-semibold tabular-nums ${status.text}`}>{Math.round(occ * 100)}%</span>
         </div>
       </div>
     </button>
