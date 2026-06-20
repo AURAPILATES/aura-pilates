@@ -794,20 +794,23 @@ export default function TransaccionesList({
     <div>
       {/* ── KPI bar sticky (reactiva a filtros) ────────────────────────────── */}
       <div className="sm:sticky sm:top-[45px] sm:z-[15] -mx-2 sm:-mx-6 sm:bg-app-bg/95 sm:backdrop-blur-sm sm:border-b sm:border-navy/[0.06] mb-4 sm:mb-3">
-        <div className="flex items-center justify-between sm:justify-start gap-4 sm:gap-7 px-3 sm:px-6 py-2.5">
+        <div className="flex items-center justify-between sm:justify-start gap-2 sm:gap-7 px-2 sm:px-6 py-2.5">
           <div className="flex-1 sm:flex-initial min-w-0 text-center sm:text-left sm:min-w-[110px]">
-            <p className="text-[10px] text-navy/40 uppercase tracking-wider leading-none mb-0.5">Ingresos</p>
-            <p className="text-sm font-semibold text-success tabular-nums truncate">{fmtAmt(totalIn)}</p>
+            <p className="text-[10px] text-navy/40 uppercase tracking-wider leading-none mb-0.5 whitespace-nowrap">Ingresos</p>
+            <p className="text-[13px] sm:text-sm font-semibold text-success tabular-nums truncate">{fmtAmt(totalIn)}</p>
           </div>
           <div className="hidden sm:block h-4 w-px bg-navy/[0.1] shrink-0" />
           <div className="flex-1 sm:flex-initial min-w-0 text-center sm:text-left sm:min-w-[110px]">
-            <p className="text-[10px] text-navy/40 uppercase tracking-wider leading-none mb-0.5">Gastos</p>
-            <p className="text-sm font-semibold text-[#B85C3A] tabular-nums truncate">−{fmtAmt(totalOut)}</p>
+            <p className="text-[10px] text-navy/40 uppercase tracking-wider leading-none mb-0.5 whitespace-nowrap">Gastos</p>
+            <p className="text-[13px] sm:text-sm font-semibold text-[#B85C3A] tabular-nums truncate">−{fmtAmt(totalOut)}</p>
           </div>
           <div className="hidden sm:block h-4 w-px bg-navy/[0.1] shrink-0" />
           <div className="flex-1 sm:flex-initial min-w-0 text-center sm:text-left sm:min-w-[110px]">
-            <p className="text-[10px] text-navy/40 uppercase tracking-wider leading-none mb-0.5">Resultado neto</p>
-            <p className={`text-sm font-semibold tabular-nums truncate ${neto >= 0 ? "text-navy" : "text-danger"}`}>
+            <p className="text-[10px] text-navy/40 uppercase tracking-wider leading-none mb-0.5 whitespace-nowrap">
+              <span className="sm:hidden">Neto</span>
+              <span className="hidden sm:inline">Resultado neto</span>
+            </p>
+            <p className={`text-[13px] sm:text-sm font-semibold tabular-nums truncate ${neto >= 0 ? "text-navy" : "text-danger"}`}>
               {neto < 0 && "−"}{fmtAmt(Math.abs(neto))}
             </p>
           </div>
