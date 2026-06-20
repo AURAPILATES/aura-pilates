@@ -18,6 +18,7 @@ import EvolucionSuscripciones from "@/app/finanzas/instances/EvolucionSuscripcio
 import ResumenFinanzas from "@/app/finanzas/instances/ResumenFinanzas";
 import VolumenBruto from "@/app/finanzas/instances/VolumenBruto";
 import FuentesIngreso from "@/app/finanzas/instances/FuentesIngreso";
+import IngresosPorProducto from "@/app/finanzas/instances/IngresosPorProducto";
 import EvolucionInscritos from "@/app/finanzas/instances/EvolucionInscritos";
 import RetencionCohorte from "@/app/finanzas/instances/RetencionCohorte";
 import type { StripePayment } from "@/lib/stripePayments";
@@ -269,6 +270,21 @@ export default function PreviewChartsPage() {
 
       {/* RetencionCohorte (instancia real, con datos de ejemplo) */}
       <RetencionCohorte cohorts={computeRetentionCohorts(MOCK_PAYMENTS, [{ name: "Bàsic", price: 75 }])} />
+
+      {/* IngresosPorProducto (instancia real, con datos de ejemplo) */}
+      <IngresosPorProducto
+        segments={[
+          { item: "Bàsic", revenue: 11100, count: 148, share: 0.46, color: "#6B7ED6" },
+          { item: "Plus", revenue: 5600, count: 40, share: 0.23, color: "#9260B8" },
+          { item: "Urban", revenue: 2673, count: 243, share: 0.11, color: "#D4AA35" },
+          { item: "Pack Benvinguda", revenue: 1900, count: 76, share: 0.08, color: "#4A7A9B" },
+          { item: "Pro", revenue: 1080, count: 6, share: 0.04, color: "#4A9870" },
+          { item: "Clase suelta", revenue: 880, count: 44, share: 0.04, color: "#D46055" },
+          { item: "Otros", revenue: 403, count: 8, share: 0.02, color: "#C46890" },
+        ]}
+        total={11100 + 5600 + 2673 + 1900 + 1080 + 880 + 403}
+        rangeLabel="datos hasta 11/06/2026"
+      />
 
       {/* RunwayDots */}
       <div className="bg-white border border-navy/[0.07] rounded-2xl p-4 sm:p-5">

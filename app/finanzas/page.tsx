@@ -35,6 +35,7 @@ import DesglosGastos from "./instances/DesglosGastos";
 import ResumenFinanzas from "./instances/ResumenFinanzas";
 import VolumenBruto from "./instances/VolumenBruto";
 import FuentesIngreso from "./instances/FuentesIngreso";
+import IngresosPorProducto from "./instances/IngresosPorProducto";
 import EvolucionChart from "./EvolucionChart";
 import PresupuestosBlock from "./PresupuestosBlock";
 import { loadBudgetsCached, computeSpent } from "@/lib/budgets";
@@ -392,16 +393,9 @@ export default async function Finanzas(props: {
   const isGastosEst   = curMonthBurnFromData === 0;
   const resultadoMes  = (cur + uscCur) - estGastosMes;
 
-  // ── Donut ──
-  const R = 40; const CX = 50; const CY = 50;
-  const CIRC = 2 * Math.PI * R;
-  let offP = 0;
   const productSegments = byProduct.map((p, i) => {
     const share = byProductTotal > 0 ? p.revenue / byProductTotal : 0;
-    const dash = share * CIRC;
-    const offset = -offP;
-    offP += dash;
-    return { ...p, share, dash, offset, color: PRODUCT_COLORS[i % PRODUCT_COLORS.length] };
+    return { ...p, share, color: PRODUCT_COLORS[i % PRODUCT_COLORS.length] };
   });
 
   // ── Fiscal ──
@@ -607,37 +601,13 @@ export default async function Finanzas(props: {
                   Stripe · pagos en tiempo real.
                 </p>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <Block title="Por producto" legend={`Stripe + catálogo Momence en vivo${uscLastDateLabel ? ` · datos hasta ${uscLastDateLabel} (última fecha con datos de Urban Sports Club)` : ""}.`}>
-                    {productSegments.length > 0 ? (
-                      <div className="flex gap-5 items-start">
-                        <div className="shrink-0">
-                          <svg width="120" height="120" viewBox="0 0 100 100" style={{ transform: "rotate(-90deg)" }}>
-                            {productSegments.map((seg, i) => (
-                              <circle key={i} cx={CX} cy={CY} r={R} fill="none"
-                                stroke={seg.color} strokeWidth={20}
-                                strokeDasharray={`${seg.dash} ${CIRC - seg.dash}`}
-                                strokeDashoffset={seg.offset} />
-                            ))}
-                          </svg>
-                        </div>
-                        <div className="flex-1 space-y-3 min-w-0">
-                          {productSegments.map((seg, i) => (
-                            <div key={i} className="flex items-center gap-2">
-                              <span className="shrink-0 w-2 h-2 rounded-full" style={{ backgroundColor: seg.color }} />
-                              <div className="flex-1 min-w-0">
-                                <p className="text-xs font-medium text-navy truncate">{seg.item}</p>
-                                <p className="text-[10px] text-navy/55">{seg.count} ventas</p>
-                              </div>
-                              <div className="text-right shrink-0">
-                                <p className="text-xs font-medium text-navy tabular-nums">{fmt(seg.revenue)}</p>
-                                <p className="text-[10px] text-navy/55 tabular-nums">{pct(seg.share)}</p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ) : <p className="text-sm text-navy/45">Sin datos de productos.</p>}
-                  </Block>
+                  <IngresosPorProducto
+                    segments={productSegments.map((seg) => ({
+                      item: seg.item, revenue: seg.revenue, count: seg.count, share: seg.share, color: seg.color,
+                    }))}
+                    total={byProductTotal}
+                    rangeLabel={uscLastDateLabel ? `datos hasta ${uscLastDateLabel}` : undefined}
+                  />
                   <Block title="Por canal de pago" legend={`Stripe en vivo + Urban Sports Club (Momence CSV)${uscLastDateLabel ? ` · datos hasta ${uscLastDateLabel}` : ""}.`}>
                     {(() => {
                       const cardRevenueBounded = stripeTotalRevenue(paymentsBounded);
