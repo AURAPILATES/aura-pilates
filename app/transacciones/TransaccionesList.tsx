@@ -374,6 +374,75 @@ function SelectWrapper({ children, className = "" }: { children: React.ReactNode
   );
 }
 
+function MobileActionsMenu({ onExport, onPapelera }: { onExport: () => void; onPapelera: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [dropPos, setDropPos] = useState<{ top: number; left: number } | null>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const dropRef = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function handle(e: MouseEvent) {
+      if (!wrapRef.current?.contains(e.target as Node) && !dropRef.current?.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, [open]);
+
+  function handleToggle() {
+    if (!open && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setDropPos({ top: rect.bottom + 4, left: rect.right - 170 });
+    }
+    setOpen((v) => !v);
+  }
+
+  return (
+    <div ref={wrapRef} className="relative shrink-0">
+      <button
+        ref={btnRef}
+        onClick={handleToggle}
+        title="Más acciones"
+        className="shrink-0 flex items-center justify-center w-9 h-9 text-navy/55 border border-navy/[0.12] rounded-lg bg-white hover:bg-navy/[0.02] hover:text-navy transition-colors"
+      >
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/><circle cx="5" cy="12" r="1.5"/>
+        </svg>
+      </button>
+      {open && dropPos && createPortal(
+        <div
+          ref={dropRef}
+          className="fixed z-[9999] bg-white border border-navy/10 rounded-xl shadow-xl py-1"
+          style={{ top: dropPos.top, left: dropPos.left, width: "170px" }}
+        >
+          <button
+            onClick={() => { onExport(); setOpen(false); }}
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-navy/60 hover:bg-navy/[0.04] transition-colors"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Exportar CSV
+          </button>
+          <button
+            onClick={() => { onPapelera(); setOpen(false); }}
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-navy/60 hover:bg-navy/[0.04] transition-colors"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/>
+            </svg>
+            Papelera
+          </button>
+        </div>,
+        document.body
+      )}
+    </div>
+  );
+}
+
 function MoreOptionsMenu({
   originFilter, setOriginFilter, onlyRecurring, setOnlyRecurring, onExport, onPapelera,
 }: {
@@ -880,12 +949,13 @@ export default function TransaccionesList({
           }
           {isPending && <span className="ml-2 text-xs text-primary/60">Guardando…</span>}
         </span>
-        {(catFilters.length > 0 || originFilter !== "all" || onlyRecurring || currentRange !== "all") && (
+        {(catFilters.length > 0 || originFilter !== "all" || onlyRecurring || currentRange !== "all" || search !== "") && (
           <button
             onClick={() => {
               setCatFilters([]);
               setOriginFilter("all");
               setOnlyRecurring(false);
+              setSearch("");
               if (currentRange !== "all") router.push(pathname);
             }}
             className="text-xs text-navy/45 hover:text-navy underline whitespace-nowrap"
@@ -897,13 +967,14 @@ export default function TransaccionesList({
 
       {/* ── Mobile: toolbar ────────────────────────────────────────────────── */}
       <div className="sm:hidden mb-5">
-        {(catFilters.length > 0 || originFilter !== "all" || onlyRecurring || currentRange !== "all") && (
+        {(catFilters.length > 0 || originFilter !== "all" || onlyRecurring || currentRange !== "all" || search !== "") && (
           <div className="flex items-center mb-3">
             <button
               onClick={() => {
                 setCatFilters([]);
                 setOriginFilter("all");
                 setOnlyRecurring(false);
+                setSearch("");
                 if (currentRange !== "all") router.push(pathname);
               }}
               className="text-xs text-navy/55 hover:text-navy underline"
@@ -924,24 +995,7 @@ export default function TransaccionesList({
           >
             {mobileSelectMode ? "Cancelar" : "Seleccionar"}
           </button>
-          <button
-            onClick={exportCSV}
-            title="Exportar vista actual a CSV"
-            className="shrink-0 flex items-center justify-center w-9 h-9 text-navy/55 border border-navy/[0.12] rounded-lg bg-white hover:bg-navy/[0.02] hover:text-navy transition-colors"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
-          </button>
-          <button
-            onClick={() => setShowPapelera(true)}
-            title="Papelera"
-            className="shrink-0 flex items-center justify-center w-9 h-9 text-navy/55 border border-navy/[0.12] rounded-lg bg-white hover:bg-navy/[0.02] hover:text-navy transition-colors"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/>
-            </svg>
-          </button>
+          <MobileActionsMenu onExport={exportCSV} onPapelera={() => setShowPapelera(true)} />
         </div>
       </div>
 
