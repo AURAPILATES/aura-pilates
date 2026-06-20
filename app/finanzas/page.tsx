@@ -31,22 +31,22 @@ import {
 } from "@/lib/transactions";
 import { loadCategoriesCached } from "@/lib/categories";
 import ClientesFilterBar from "@/app/clientes/ClientesFilterBar";
-import HealthCards from "./HealthCards";
-import GastosBreakdown from "./GastosBreakdown";
+import DesglosGastos from "./instances/DesglosGastos";
+import ResumenFinanzas from "./instances/ResumenFinanzas";
 import FinanzasBarChart from "./FinanzasBarChart";
 import EvolucionChart from "./EvolucionChart";
 import PresupuestosBlock from "./PresupuestosBlock";
 import { loadBudgetsCached, computeSpent } from "@/lib/budgets";
 import BreakevenChart from "./BreakevenChart";
 import { computeBreakeven } from "@/lib/breakeven";
-import ConversionChart from "./ConversionChart";
+import ConversionPack from "./instances/ConversionPack";
 import MrrPorTier from "./instances/MrrPorTier";
 import { subscriptionTiersFromMemberships, computeMrrByTier } from "@/lib/mrr";
 import { getMemberships, getProducts, getCustomers } from "@/lib/momence";
 import { catalogFromMomence, revenueByProductFromStripe, revenueByProductByMonth, addUscToMonthlyRevenue } from "@/lib/productRevenue";
 import { countActiveStudents, computeAltasMes, computeBasjasMes } from "@/lib/studentMetrics";
 import { computeSubscriptionCohorts } from "@/lib/subscriptionCohort";
-import SubscriptionEvolutionChart from "./SubscriptionEvolutionChart";
+import EvolucionSuscripciones from "./instances/EvolucionSuscripciones";
 import QuestionHeader from "@/app/components/QuestionHeader";
 import { loadBusinessEvents } from "@/lib/businessEvents";
 import MobileNav from "@/app/components/MobileNav";
@@ -476,7 +476,7 @@ export default async function Finanzas(props: {
           </div>
         </div>
 
-        <HealthCards
+        <ResumenFinanzas
           currentBalance={currentBalance}
           balanceDate={balanceDate}
           runwayMonths={runwayMonths}
@@ -535,29 +535,19 @@ export default async function Finanzas(props: {
                     trend={trendPct(ticketCur, ticketPrev)}
                   />
                 </div>
-                <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
-                  <div className="flex items-start justify-between mb-5">
-                    <p className="text-xs font-semibold text-navy/55 uppercase tracking-wider">Desglose gastos operativos</p>
-                    {txnRangeLabel && <p className="text-xs text-navy/45">{txnRangeLabel}</p>}
-                  </div>
-                  <GastosBreakdown
-                    categories={expByCategory.map((e, i) => {
-                      const dbCat = dbCatByLabel.get(e.category);
-                      return {
-                        ...e,
-                        color: dbCat?.text_color ?? EXPENSE_COLORS[i % EXPENSE_COLORS.length],
-                        iconKey: dbCat?.emoji,
-                      };
-                    })}
-                    transactionsByCategory={transactionsByCategory}
-                    totalExpCat={totalExpCat}
-                    rangeLabel={txnRangeLabel}
-                  />
-                  <p className="text-xs text-navy/45 mt-4 pt-3 border-t border-navy/5 leading-relaxed flex items-start gap-1.5">
-                    <BookOpen size={12} className="shrink-0 mt-0.5" />
-                    exportación bancaria Caixabank · excluye aportaciones de socios, préstamo e inversión inicial.
-                  </p>
-                </div>
+                <DesglosGastos
+                  categories={expByCategory.map((e, i) => {
+                    const dbCat = dbCatByLabel.get(e.category);
+                    return {
+                      ...e,
+                      color: dbCat?.text_color ?? EXPENSE_COLORS[i % EXPENSE_COLORS.length],
+                      iconKey: dbCat?.emoji,
+                    };
+                  })}
+                  transactionsByCategory={transactionsByCategory}
+                  totalExpCat={totalExpCat}
+                  rangeLabel={txnRangeLabel}
+                />
               </div>
             </section>
 
@@ -763,7 +753,7 @@ export default async function Finanzas(props: {
             {/* Q7 ¿Convierte el pack de bienvenida? */}
             <section id="q7">
               <QuestionHeader num={7} question="¿Convierte el Pack Benvinguda 2x1?" />
-              <ConversionChart summary={conversionSummary} />
+              <ConversionPack summary={conversionSummary} />
             </section>
 
             {/* Q8 ¿Cuál es el MRR/ARR por suscripción? */}
@@ -775,7 +765,7 @@ export default async function Finanzas(props: {
             {/* Q9 ¿Cómo evolucionan los ingresos y las altas/bajas? */}
             <section id="q9">
               <QuestionHeader num={9} question="¿Cómo evolucionan los ingresos y las altas/bajas?" />
-              <SubscriptionEvolutionChart monthly={monthlyRevenue} cohorts={subscriptionCohorts} />
+              <EvolucionSuscripciones monthly={monthlyRevenue} cohorts={subscriptionCohorts} />
             </section>
 
             {/* Q10 ¿Cómo llegan los suscriptores? */}
