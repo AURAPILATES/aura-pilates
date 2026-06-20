@@ -67,10 +67,15 @@ export default function ClientesEvolucionChart({
     return () => ro.disconnect();
   }, []);
 
+  const isNarrow = containerWidth < 500;
+  const targetValuePx = isNarrow ? 15 : 12;
+  const targetMonthPx = isNarrow ? 14 : 11;
+  const targetTickPx  = isNarrow ? 13 : 11;
+
   const scale = containerWidth / SVG_W;
-  const valueFontSize = 12 / scale;
-  const monthFontSize = 11 / scale;
-  const tickFontSize  = 11 / scale;
+  const valueFontSize = targetValuePx / scale;
+  const monthFontSize = targetMonthPx / scale;
+  const tickFontSize  = targetTickPx / scale;
 
   const months = useMemo(() => {
     const now = new Date();
