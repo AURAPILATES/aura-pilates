@@ -1,8 +1,8 @@
 export default function PrevisionesSkeleton() {
   return (
     <div>
-      <div className="fixed top-[52px] right-4 sm:right-6 z-30 flex items-center gap-1.5 text-[11px] text-navy/35 pointer-events-none">
-        <span className="w-1.5 h-1.5 rounded-full bg-navy/30 animate-pulse" />
+      <div className="fixed top-[57px] left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5 px-3 py-1.5 bg-navy text-white text-[11px] rounded-full shadow-lg pointer-events-none">
+        <span className="w-1.5 h-1.5 rounded-full bg-white/60 animate-pulse" />
         Obteniendo datos de Stripe y Momence…
       </div>
 
