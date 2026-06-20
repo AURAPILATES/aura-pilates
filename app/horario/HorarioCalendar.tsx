@@ -26,7 +26,7 @@ function dayStats(events: MomenceEvent[]) {
   if (!events.length) return null;
   const totalCap = events.reduce((s, e) => s + e.capacity, 0);
   const totalSold = events.reduce((s, e) => s + e.ticketsSold, 0);
-  return { occ: totalCap > 0 ? totalSold / totalCap : 0 };
+  return { occ: totalCap > 0 ? totalSold / totalCap : 0, sold: totalSold, capacity: totalCap };
 }
 
 /** Groups consecutive integers into runs: [7,8,9,17,18] → [[7,8,9],[17,18]] */
@@ -126,8 +126,10 @@ export default memo(function HorarioCalendar({
                 {label} {day.getDate()}
               </p>
               {stats ? (
-                <p className={`text-xs mt-0.5 font-medium ${pctColor(stats.occ)}`}>
-                  {Math.round(stats.occ * 100)}%
+                <p className="text-xs mt-0.5">
+                  <span className="text-navy/45">{stats.sold}/{stats.capacity} plazas</span>
+                  <span className="text-navy/30"> · </span>
+                  <span className={`font-medium ${pctColor(stats.occ)}`}>{Math.round(stats.occ * 100)}%</span>
                 </p>
               ) : (
                 <p className="text-xs mt-0.5 text-navy/25">—</p>
