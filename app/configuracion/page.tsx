@@ -1,9 +1,12 @@
 import { loadCategories } from "@/lib/categories";
-import CategoriasManager from "./CategoriasManager";
+import { loadBusinessEvents } from "@/lib/businessEvents";
+import ConfiguracionTabs from "./ConfiguracionTabs";
 import MobileNav from "@/app/components/MobileNav";
 
+export const dynamic = "force-dynamic";
+
 export default async function ConfiguracionPage() {
-  const categories = await loadCategories();
+  const [categories, events] = await Promise.all([loadCategories(), loadBusinessEvents()]);
 
   return (
     <div>
@@ -14,7 +17,7 @@ export default async function ConfiguracionPage() {
         </div>
       </div>
       <main className="max-w-6xl mx-auto px-6 pt-8 pb-16">
-        <CategoriasManager categories={categories} />
+        <ConfiguracionTabs categories={categories} events={events} />
       </main>
     </div>
   );
