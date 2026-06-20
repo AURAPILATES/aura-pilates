@@ -227,7 +227,7 @@ export default function CategoriasManager({ categories }: { categories: Category
           <p className="text-sm text-navy/55">{categories.length} categorías</p>
           <button
             onClick={openNew}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary/90 transition-colors shadow-sm"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-navy text-white text-sm font-semibold hover:bg-navy/90 transition-colors shadow-sm"
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
@@ -254,7 +254,7 @@ export default function CategoriasManager({ categories }: { categories: Category
                       onClick={() => openEdit(cat)}
                       className={`w-full flex items-center gap-4 px-5 py-3.5 transition-colors text-left ${
                         i < list.length - 1 ? "border-b border-navy/[0.05]" : ""
-                      } ${isActive ? "bg-primary/[0.04]" : "hover:bg-navy/[0.015]"}`}
+                      } ${isActive ? "bg-navy/[0.04]" : "hover:bg-navy/[0.015]"}`}
                     >
                       <CategoryIcon iconKey={cat.emoji} name={cat.label} color={cat.text_color} size={40} />
                       <div className="flex-1 min-w-0">
@@ -339,7 +339,7 @@ export default function CategoriasManager({ categories }: { categories: Category
                   value={form.label}
                   onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))}
                   placeholder="Ej: Alquiler local"
-                  className="w-full text-sm border border-navy/[0.12] rounded-xl px-4 py-3 outline-none focus:border-primary/40 focus:ring-1 focus:ring-primary/20 text-navy placeholder:text-navy/30"
+                  className="w-full text-sm border border-navy/[0.12] rounded-xl px-4 py-3 outline-none focus:border-navy/40 focus:ring-1 focus:ring-navy/20 text-navy placeholder:text-navy/30"
                 />
               </div>
 
@@ -410,7 +410,7 @@ export default function CategoriasManager({ categories }: { categories: Category
                       onClick={() => setForm((f) => ({ ...f, group_type: g }))}
                       className={`text-sm px-3 py-2 rounded-xl border transition-colors ${
                         form.group_type === g
-                          ? "border-primary bg-primary/[0.06] text-primary font-semibold"
+                          ? "border-navy bg-navy/[0.06] text-navy font-semibold"
                           : "border-navy/[0.10] text-navy/50 hover:border-navy/20"
                       }`}
                     >
@@ -429,7 +429,7 @@ export default function CategoriasManager({ categories }: { categories: Category
                   value={form.auto_keywords ?? ""}
                   onChange={(e) => setForm((f) => ({ ...f, auto_keywords: e.target.value || null }))}
                   rows={2}
-                  className="w-full text-sm border border-navy/[0.12] rounded-xl px-4 py-3 outline-none focus:border-primary/40 focus:ring-1 focus:ring-primary/20 resize-none font-mono text-navy placeholder:text-navy/30"
+                  className="w-full text-sm border border-navy/[0.12] rounded-xl px-4 py-3 outline-none focus:border-navy/40 focus:ring-1 focus:ring-navy/20 resize-none font-mono text-navy placeholder:text-navy/30"
                   placeholder="endesa, iberdrola, naturgy"
                 />
                 <p className="text-[11px] text-navy/35 mt-1.5">
@@ -462,7 +462,7 @@ export default function CategoriasManager({ categories }: { categories: Category
               <button
                 onClick={handleSave}
                 disabled={isPending || !form.label.trim()}
-                className="text-sm font-semibold px-6 py-2.5 rounded-xl bg-primary text-white hover:bg-primary/90 transition-colors disabled:opacity-40 shadow-sm"
+                className="text-sm font-semibold px-6 py-2.5 rounded-xl bg-navy text-white hover:bg-navy/90 transition-colors disabled:opacity-40 shadow-sm"
               >
                 {isPending ? "Guardando…" : "Guardar"}
               </button>

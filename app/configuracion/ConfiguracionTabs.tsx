@@ -39,7 +39,7 @@ export default function ConfiguracionTabs({ categories, events }: Props) {
             onClick={() => selectTab(key)}
             className={`px-4 py-2.5 text-sm font-semibold transition-colors border-b-2 -mb-px ${
               tab === key
-                ? "border-primary text-primary"
+                ? "border-navy text-navy"
                 : "border-transparent text-navy/50 hover:text-navy"
             }`}
           >
