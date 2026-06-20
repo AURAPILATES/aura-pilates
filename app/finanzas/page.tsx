@@ -40,7 +40,7 @@ import { loadBudgetsCached, computeSpent } from "@/lib/budgets";
 import BreakevenChart from "./BreakevenChart";
 import { computeBreakeven } from "@/lib/breakeven";
 import ConversionChart from "./ConversionChart";
-import MrrCard from "./MrrCard";
+import MrrPorTier from "./instances/MrrPorTier";
 import { subscriptionTiersFromMemberships, computeMrrByTier } from "@/lib/mrr";
 import { getMemberships, getProducts, getCustomers } from "@/lib/momence";
 import { catalogFromMomence, revenueByProductFromStripe, revenueByProductByMonth, addUscToMonthlyRevenue } from "@/lib/productRevenue";
@@ -49,6 +49,7 @@ import { computeSubscriptionCohorts } from "@/lib/subscriptionCohort";
 import SubscriptionEvolutionChart from "./SubscriptionEvolutionChart";
 import QuestionHeader from "@/app/components/QuestionHeader";
 import { loadBusinessEvents } from "@/lib/businessEvents";
+import MobileNav from "@/app/components/MobileNav";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -416,7 +417,8 @@ export default async function Finanzas(props: {
     <div>
       {/* ── Sticky header ── */}
       <div className="sticky top-0 z-20 bg-app-bg/95 backdrop-blur-sm border-b border-navy/[0.06]">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-[45px] flex items-center">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-[45px] flex items-center gap-3">
+          <MobileNav />
           <h1 className="text-sm font-bold text-navy uppercase tracking-widest">Finanzas</h1>
         </div>
       </div>
@@ -767,7 +769,7 @@ export default async function Finanzas(props: {
             {/* Q8 ¿Cuál es el MRR/ARR por suscripción? */}
             <section id="q8">
               <QuestionHeader num={8} question="¿Cuál es el MRR/ARR por suscripción?" />
-              <MrrCard tiers={mrrByTier} />
+              <MrrPorTier tiers={mrrByTier} />
             </section>
 
             {/* Q9 ¿Cómo evolucionan los ingresos y las altas/bajas? */}

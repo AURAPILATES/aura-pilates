@@ -4,6 +4,7 @@ import { loadCategoriesCached } from "@/lib/categories";
 import { getDateRange } from "@/lib/dateRange";
 import TransaccionesList from "./TransaccionesList";
 import DateFilter from "@/app/components/DateFilter";
+import MobileNav from "@/app/components/MobileNav";
 
 // ── Analysis helpers ───────────────────────────────────────────────────────────
 
@@ -51,7 +52,10 @@ export default async function TransaccionesPage(props: {
       {/* ── Sticky header ── */}
       <div className="sticky top-0 z-20 bg-app-bg/95 backdrop-blur-sm border-b border-navy/[0.06]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-[45px] flex items-center justify-between gap-3">
-          <h1 className="text-sm font-bold text-navy uppercase tracking-widest">Transacciones</h1>
+          <div className="flex items-center gap-3">
+            <MobileNav />
+            <h1 className="text-sm font-bold text-navy uppercase tracking-widest">Transacciones</h1>
+          </div>
           <Suspense fallback={null}><DateFilter /></Suspense>
         </div>
       </div>

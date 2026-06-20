@@ -9,6 +9,7 @@ import HorarioCalendar from "./HorarioCalendar";
 import HorarioDrawer from "./HorarioDrawer";
 import HorarioReporting, { type ReportingData } from "./HorarioReporting";
 import ClientesFilterBar from "@/app/clientes/ClientesFilterBar";
+import MobileNav from "@/app/components/MobileNav";
 
 type OccFilter = "all" | "low" | "mid" | "high";
 type View = "lista" | "calendario";
@@ -137,8 +138,9 @@ export default function HorarioShell({
       ══════════════════════════════════════════════════════════════════════ */}
       <div className="sticky top-0 z-20 bg-app-bg/95 backdrop-blur-sm border-b border-navy/[0.06]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-[45px] flex items-center justify-between gap-3">
-          {/* Left: title + tabs (desktop) */}
-          <div className="flex items-center gap-4">
+          {/* Left: menu + title + tabs (desktop) */}
+          <div className="flex items-center gap-3">
+            <MobileNav />
             <span className="text-sm font-bold text-navy uppercase tracking-widest">Horario</span>
             <div className="hidden sm:flex items-center border border-navy/[0.12] rounded-lg bg-white p-0.5 gap-0.5">
               {([{ v: "horario", l: "Horario" }, { v: "analisis", l: "Análisis" }] as { v: Tab; l: string }[]).map(({ v, l }) => (

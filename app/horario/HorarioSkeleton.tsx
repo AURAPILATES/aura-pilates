@@ -1,3 +1,5 @@
+import MobileNav from "@/app/components/MobileNav";
+
 export default function HorarioSkeleton() {
   const chevLeft  = <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg>;
   const chevRight = <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>;
@@ -12,7 +14,8 @@ export default function HorarioSkeleton() {
       {/* Sticky header */}
       <div className="sticky top-0 z-20 bg-app-bg/95 backdrop-blur-sm border-b border-navy/[0.06]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-[45px] flex items-center justify-between gap-3">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            <MobileNav />
             <span className="text-sm font-bold text-navy uppercase tracking-widest">Horario</span>
             <div className="hidden sm:flex items-center border border-navy/[0.12] rounded-lg bg-white p-0.5 gap-0.5 animate-pulse">
               <div className="w-16 h-6 rounded-md bg-navy/10" />

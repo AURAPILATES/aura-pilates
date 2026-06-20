@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, DM_Mono, Playfair_Display } from "next/font/google";
 import Sidebar from "./components/Sidebar";
-import BottomNav from "./components/BottomNav";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
@@ -21,10 +20,7 @@ export default function RootLayout({
     <html lang="es" className={`${inter.variable} ${dmMono.variable} ${playfair.variable}`}>
       <body className="bg-app-bg text-navy antialiased">
         <Sidebar />
-        <div className="sm:pl-[220px]">
-          <div className="pb-20 sm:pb-0">{children}</div>
-          <BottomNav />
-        </div>
+        <div className="sm:pl-[220px]">{children}</div>
       </body>
     </html>
   );
