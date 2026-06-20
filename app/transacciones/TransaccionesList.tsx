@@ -868,6 +868,7 @@ export default function TransaccionesList({
             <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-primary" />
           )}
         </button>
+        <MobileActionsMenu onExport={exportCSV} onPapelera={() => setShowPapelera(true)} />
       </div>
 
       {/* ── Mobile: Filter drawer ────────────────────────────────────────────── */}
@@ -906,10 +907,10 @@ export default function TransaccionesList({
       {uncategorizedCount > 0 && (
         <button
           onClick={() => setCatFilters(catFilters.includes("__none__") ? catFilters.filter((v) => v !== "__none__") : [...catFilters, "__none__"])}
-          className="sm:hidden w-full flex items-center gap-2 px-4 py-3 mb-3 rounded-xl bg-navy/[0.03] border border-navy/[0.08] text-navy/55 text-sm font-medium text-left"
+          className="sm:hidden w-full flex items-center gap-2 px-4 py-2 mb-3 rounded-xl bg-navy/[0.03] border border-navy/[0.08] text-navy/55 text-sm font-medium text-left"
         >
           <span className="text-base text-warning/70">⚠</span>
-          <span className="flex-1">{uncategorizedCount} sin etiquetar</span>
+          <span className="flex-1">{uncategorizedCount} movimientos sin etiquetar</span>
         </button>
       )}
 
@@ -991,15 +992,21 @@ export default function TransaccionesList({
           <ImportButton compact className="flex-1" onManual={() => setShowAddCash(true)} />
           <button
             onClick={() => { setMobileSelectMode((v) => { if (v) clearSelection(); return !v; }); }}
-            className={`shrink-0 flex items-center h-9 text-xs font-medium px-3 rounded-lg border transition-colors ${
+            className={`shrink-0 flex items-center gap-1.5 h-9 text-xs font-medium px-3 rounded-lg border transition-colors ${
               mobileSelectMode
                 ? "bg-navy text-white border-navy"
                 : "bg-white text-navy/55 border-navy/[0.12] hover:text-navy"
             }`}
           >
+            <span className={`w-3.5 h-3.5 rounded-[3px] border flex items-center justify-center shrink-0 transition-colors ${
+              mobileSelectMode ? "bg-white border-white" : "border-navy/35"
+            }`}>
+              <svg width="9" height="7" viewBox="0 0 9 7" fill="none">
+                <polyline points="1,3.5 3.5,6 8,1" stroke={mobileSelectMode ? "#1c1917" : "currentColor"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={mobileSelectMode ? "" : "text-navy/35"}/>
+              </svg>
+            </span>
             {mobileSelectMode ? "Cancelar" : "Seleccionar"}
           </button>
-          <MobileActionsMenu onExport={exportCSV} onPapelera={() => setShowPapelera(true)} />
         </div>
       </div>
 
