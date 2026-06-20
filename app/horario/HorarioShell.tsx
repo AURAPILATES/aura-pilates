@@ -52,12 +52,14 @@ const DAY_LETTERS = ["L", "M", "M", "J", "V", "S", "D"];
 
 export default function HorarioShell({
   events,
+  hiddenEvents,
   weekMonday,
   initialView,
   initialTab,
   reportingData,
 }: {
   events: MomenceEvent[];
+  hiddenEvents: MomenceEvent[];
   weekMonday: string;
   initialView: View;
   initialTab: Tab;
@@ -227,6 +229,10 @@ export default function HorarioShell({
           CONTENT
       ══════════════════════════════════════════════════════════════════════ */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 pb-16">
+
+        {tab === "horario" && hiddenEvents.length > 0 && (
+          <HiddenEventsPanel events={hiddenEvents} />
+        )}
 
         {/* ── MOBILE ─────────────────────────────────────────────────────────── */}
         <div className="sm:hidden">
@@ -507,6 +513,60 @@ function MobileClassCard({ event: e, onSelect }: { event: MomenceEvent; onSelect
         </div>
       </div>
     </button>
+  );
+}
+
+// ── Panel temporal: clases ocultas (canceladas / sin publicar / eliminadas) ─────
+
+function HiddenEventsPanel({ events }: { events: MomenceEvent[] }) {
+  const [open, setOpen] = useState(false);
+  const sorted = [...events].sort((a, b) => a.dateTime.localeCompare(b.dateTime));
+
+  function reason(e: MomenceEvent) {
+    if (e.isDeleted) return { label: "Eliminada", cls: "bg-navy/10 text-navy/50" };
+    if (e.isCancelled) return { label: "Cancelada", cls: "bg-[#fdecea] text-[#c03828]" };
+    if (!e.published) return { label: "Sin publicar", cls: "bg-[#fdf0e5] text-[#c07030]" };
+    return { label: "—", cls: "bg-navy/10 text-navy/50" };
+  }
+
+  return (
+    <div className="bg-[#fdf6ec] border border-[#e8d9bb] rounded-xl mb-4 overflow-hidden">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="w-full flex items-center justify-between gap-2 px-4 py-2.5 text-left"
+      >
+        <span className="text-xs font-medium text-[#8a6a30]">
+          {events.length} clase{events.length !== 1 ? "s" : ""} oculta{events.length !== 1 ? "s" : ""} esta semana (canceladas / sin publicar / eliminadas)
+        </span>
+        <svg
+          width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+          className={`text-[#8a6a30] shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
+        >
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+      {open && (
+        <div className="border-t border-[#e8d9bb] divide-y divide-[#e8d9bb]/70">
+          {sorted.map((e) => {
+            const d = new Date(e.dateTime);
+            const r = reason(e);
+            return (
+              <div key={e.id} className="flex items-center gap-3 px-4 py-2 text-xs">
+                <span className="text-navy/50 font-mono w-28 shrink-0">
+                  {d.toLocaleDateString("es-ES", { weekday: "short", day: "numeric", month: "short", timeZone: "Europe/Madrid" })}
+                </span>
+                <span className="text-navy/50 font-mono w-12 shrink-0">
+                  {d.toLocaleTimeString("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit" })}
+                </span>
+                <span className="flex-1 min-w-0 truncate text-navy font-medium">{e.title}</span>
+                {e.teacher && <span className="text-navy/45 shrink-0">{e.teacher}</span>}
+                <span className={`px-2 py-0.5 rounded-full font-medium shrink-0 ${r.cls}`}>{r.label}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 

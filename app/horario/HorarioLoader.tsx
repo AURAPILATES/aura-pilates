@@ -39,6 +39,10 @@ export default async function HorarioLoader({
     const d = new Date(e.dateTime);
     return d >= monday && d <= sunday;
   });
+  const hiddenWeekEvents = allEvents.filter((e) => {
+    const d = new Date(e.dateTime);
+    return d >= monday && d <= sunday && (!e.published || e.isCancelled || e.isDeleted);
+  });
 
   const mainEvents = filterActive(allEvents).filter((e) => {
     const d = new Date(e.dateTime);
@@ -60,6 +64,7 @@ export default async function HorarioLoader({
   return (
     <HorarioShell
       events={weekEvents}
+      hiddenEvents={hiddenWeekEvents}
       weekMonday={weekMonday}
       initialView={initialView}
       initialTab={initialTab}
