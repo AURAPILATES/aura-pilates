@@ -6,11 +6,6 @@ export default function HorarioSkeleton() {
 
   return (
     <div>
-      <div className="fixed top-[57px] left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5 px-3 py-1.5 bg-navy text-white text-[11px] rounded-[6px] shadow-lg pointer-events-none">
-        <span className="w-1.5 h-1.5 rounded-full bg-white/60 animate-pulse" />
-        Obteniendo datos de Momence…
-      </div>
-
       {/* Sticky header */}
       <div className="sticky top-0 z-20 bg-app-bg/95 backdrop-blur-sm border-b border-navy/[0.06]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-[45px] flex items-center justify-between gap-3">
@@ -35,7 +30,16 @@ export default function HorarioSkeleton() {
       </div>
 
       {/* Content */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 pb-16 animate-pulse">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 pb-16">
+
+        <div className="flex justify-center mb-4">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-navy text-white text-[11px] whitespace-nowrap rounded-[6px] shadow-lg pointer-events-none">
+            <span className="w-1.5 h-1.5 rounded-full bg-white/60 animate-pulse shrink-0" />
+            Obteniendo datos de Momence…
+          </div>
+        </div>
+
+        <div className="animate-pulse">
 
         {/* Stat cards — desktop */}
         <div className="hidden sm:grid grid-cols-4 gap-3 mb-5">
@@ -86,6 +90,7 @@ export default function HorarioSkeleton() {
           ))}
         </div>
 
+        </div>
       </div>
     </div>
   );

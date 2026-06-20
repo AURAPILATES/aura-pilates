@@ -1,9 +1,11 @@
 export default function PrevisionesSkeleton() {
   return (
     <div>
-      <div className="fixed top-[57px] left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5 px-3 py-1.5 bg-navy text-white text-[11px] rounded-[6px] shadow-lg pointer-events-none">
-        <span className="w-1.5 h-1.5 rounded-full bg-white/60 animate-pulse" />
-        Obteniendo datos de Stripe y Momence…
+      <div className="flex justify-center mb-4">
+        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-navy text-white text-[11px] whitespace-nowrap rounded-[6px] shadow-lg pointer-events-none">
+          <span className="w-1.5 h-1.5 rounded-full bg-white/60 animate-pulse shrink-0" />
+          Obteniendo datos de Stripe y Momence…
+        </div>
       </div>
 
       <div className="animate-pulse">
