@@ -50,9 +50,7 @@ export default function ConfiguracionTabs({ categories, events }: Props) {
       {tab === "categorias" ? (
         <CategoriasManager categories={categories} />
       ) : (
-        <div className="max-w-3xl">
-          <HistorialTimeline events={events} />
-        </div>
+        <HistorialTimeline events={events} />
       )}
     </div>
   );
