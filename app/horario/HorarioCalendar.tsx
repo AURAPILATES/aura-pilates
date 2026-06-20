@@ -2,7 +2,6 @@
 
 import { useMemo, memo } from "react";
 import { MomenceEvent } from "@/lib/momence";
-import { fmt } from "@/lib/analytics";
 
 const SLOT_PX = 110;     // px per hour slot
 const SEP_PX = 28;       // px for the gap-separator row
@@ -27,10 +26,7 @@ function dayStats(events: MomenceEvent[]) {
   if (!events.length) return null;
   const totalCap = events.reduce((s, e) => s + e.capacity, 0);
   const totalSold = events.reduce((s, e) => s + e.ticketsSold, 0);
-  return {
-    occ: totalCap > 0 ? totalSold / totalCap : 0,
-    revenue: events.reduce((s, e) => s + e.ticketsSold * e.fixedPrice, 0),
-  };
+  return { occ: totalCap > 0 ? totalSold / totalCap : 0 };
 }
 
 /** Groups consecutive integers into runs: [7,8,9,17,18] → [[7,8,9],[17,18]] */
@@ -127,13 +123,11 @@ export default memo(function HorarioCalendar({
               className={`py-3 px-3 border-r border-navy/[0.07] last:border-r-0 ${isToday ? "bg-primary/[0.06]" : ""}`}
             >
               <p className={`text-sm font-semibold ${isToday ? "text-primary" : "text-navy"}`}>
-                {label}{" "}
-                <span className="font-normal text-navy/40 text-xs">{day.getDate()}</span>
+                {label} {day.getDate()}
               </p>
               {stats ? (
                 <p className={`text-xs mt-0.5 font-medium ${pctColor(stats.occ)}`}>
                   {Math.round(stats.occ * 100)}%
-                  <span className="text-navy/35 font-normal"> · {fmt(stats.revenue)}</span>
                 </p>
               ) : (
                 <p className="text-xs mt-0.5 text-navy/25">—</p>
