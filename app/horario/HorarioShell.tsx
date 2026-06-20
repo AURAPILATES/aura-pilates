@@ -281,7 +281,7 @@ export default function HorarioShell({
                     </div>
                     <div className="px-4 py-3">
                       <p className="text-[9px] text-navy/40 uppercase tracking-widest font-semibold">Por llenar</p>
-                      <p className={`text-base font-bold mt-0.5 tabular-nums ${lowCount > 0 ? "text-danger" : "text-navy/30"}`}>
+                      <p className={`text-base font-semibold mt-0.5 tabular-nums ${lowCount > 0 ? "text-danger" : "text-navy/30"}`}>
                         {lowCount}
                       </p>
                     </div>
@@ -307,7 +307,7 @@ export default function HorarioShell({
                       }`}
                     >
                       <span className="text-[10px] font-semibold uppercase tracking-wide">{day.letter}</span>
-                      <span className="text-xl font-bold leading-none mt-1">{day.num}</span>
+                      <span className="text-xl font-semibold leading-none mt-1">{day.num}</span>
                       <span className={`w-1.5 h-1.5 rounded-full mt-1.5 ${
                         !day.hasEvents ? "opacity-0" : day.isToday ? "bg-white/50" : status!.dot
                       }`} />
@@ -355,8 +355,8 @@ export default function HorarioShell({
                     return (
                       <div key={dateKey} id={`mday-${dateKey}`}>
                         <div className="flex items-baseline justify-between mb-3">
-                          <h2 className="text-2xl font-bold text-navy capitalize">
-                            {dName} <span className="font-light text-xl">{dNum}</span>
+                          <h2 className="text-2xl font-medium text-navy capitalize">
+                            {dName} <span className="font-medium text-xl">{dNum}</span>
                           </h2>
                           <span className="text-sm text-navy/50">
                             <span className={`font-semibold ${occText(dayOcc)}`}>{pct(dayOcc)}</span>
@@ -494,7 +494,7 @@ function MobileClassCard({ event: e, onSelect }: { event: MomenceEvent; onSelect
           {status.label}
         </span>
       </div>
-      <p className="text-base font-bold text-navy leading-snug">{e.title}</p>
+      <p className="text-base font-semibold text-navy leading-snug">{e.title}</p>
       {e.teacher && <p className="text-sm text-navy/50 mt-0.5">{e.teacher}</p>}
       <div className="mt-3">
         <div className="h-1 bg-navy/[0.08] rounded-full overflow-hidden mb-2">

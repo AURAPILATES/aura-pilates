@@ -21,7 +21,7 @@ function LoadingBadge({ text }: { text: string }) {
 export default function ClientesSkeleton() {
   return (
     <div>
-      <LoadingBadge text="Obteniendo datos de Stripe…" />
+      <LoadingBadge text="Obteniendo datos de las integraciones…" />
 
       {/* 3 trend cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4">
