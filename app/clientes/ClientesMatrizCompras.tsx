@@ -47,8 +47,8 @@ type SortKey = "name" | "total" | "first";
 
 export default function ClientesMatrizCompras({ customers, payments }: Props) {
   const [search, setSearch] = useState("");
-  const [sortKey, setSortKey] = useState<SortKey>("name");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [sortKey, setSortKey] = useState<SortKey>("total");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [productFilter, setProductFilter] = useState<string>("");
   const [firstPurchaseFilter, setFirstPurchaseFilter] = useState<string>("");
   const [onlyInactive, setOnlyInactive] = useState(false);
