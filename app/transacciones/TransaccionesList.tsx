@@ -794,16 +794,16 @@ export default function TransaccionesList({
     <div>
       {/* ── KPI bar sticky (reactiva a filtros) ────────────────────────────── */}
       <div className="sm:sticky sm:top-[45px] sm:z-[15] -mx-2 sm:-mx-6 sm:bg-app-bg/95 sm:backdrop-blur-sm sm:border-b sm:border-navy/[0.06] mb-4 sm:mb-3">
-        <div className="flex items-stretch justify-between sm:justify-start gap-1 sm:gap-3 px-2 sm:px-6 py-2.5">
-          <div className="flex-1 sm:flex-initial sm:min-w-[120px] min-w-0">
+        <div className="grid grid-cols-3 text-center sm:flex sm:text-left sm:items-stretch sm:justify-start gap-1 sm:gap-3 px-2 sm:px-6 py-2.5">
+          <div className="min-w-0 sm:flex-initial sm:min-w-[120px]">
             <p className="text-[10px] text-navy/40 uppercase tracking-wider leading-none mb-0.5 whitespace-nowrap">Ingresos</p>
             <p className="text-[12px] sm:text-sm font-semibold text-success tabular-nums truncate">{fmtAmt(totalIn)}</p>
           </div>
-          <div className="flex-1 sm:flex-initial sm:min-w-[120px] min-w-0">
+          <div className="min-w-0 sm:flex-initial sm:min-w-[120px]">
             <p className="text-[10px] text-navy/40 uppercase tracking-wider leading-none mb-0.5 whitespace-nowrap">Gastos</p>
             <p className="text-[12px] sm:text-sm font-semibold text-[#B85C3A] tabular-nums truncate">−{fmtAmt(totalOut)}</p>
           </div>
-          <div className="flex-1 sm:flex-initial sm:min-w-[120px] min-w-0">
+          <div className="min-w-0 sm:flex-initial sm:min-w-[120px]">
             <p className="text-[10px] text-navy/40 uppercase tracking-wider leading-none mb-0.5 whitespace-nowrap">
               <span className="sm:hidden">Neto</span>
               <span className="hidden sm:inline">Resultado neto</span>
