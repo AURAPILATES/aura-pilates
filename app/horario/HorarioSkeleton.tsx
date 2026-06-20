@@ -4,6 +4,11 @@ export default function HorarioSkeleton() {
 
   return (
     <div>
+      <div className="fixed top-[52px] right-4 sm:right-6 z-30 flex items-center gap-1.5 text-[11px] text-navy/35 pointer-events-none">
+        <span className="w-1.5 h-1.5 rounded-full bg-navy/30 animate-pulse" />
+        Obteniendo datos de Momence…
+      </div>
+
       {/* Sticky header */}
       <div className="sticky top-0 z-20 bg-app-bg/95 backdrop-blur-sm border-b border-navy/[0.06]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-[45px] flex items-center justify-between gap-3">
@@ -78,7 +83,6 @@ export default function HorarioSkeleton() {
           ))}
         </div>
 
-        <p className="text-center text-[11px] text-navy/35 mt-6">Obteniendo datos de Momence…</p>
       </div>
     </div>
   );

@@ -9,9 +9,20 @@ function CardSkeleton() {
   );
 }
 
+function LoadingBadge({ text }: { text: string }) {
+  return (
+    <div className="fixed top-[52px] right-4 sm:right-6 z-30 flex items-center gap-1.5 text-[11px] text-navy/35 pointer-events-none">
+      <span className="w-1.5 h-1.5 rounded-full bg-navy/30 animate-pulse" />
+      {text}
+    </div>
+  );
+}
+
 export default function ClientesSkeleton() {
   return (
     <div>
+      <LoadingBadge text="Obteniendo datos de Stripe…" />
+
       {/* 3 trend cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4">
         {[0, 1, 2].map((i) => <CardSkeleton key={i} />)}
@@ -52,8 +63,6 @@ export default function ClientesSkeleton() {
           </div>
         ))}
       </div>
-
-      <p className="text-center text-[11px] text-navy/35 mt-6">Obteniendo datos de Stripe…</p>
     </div>
   );
 }
