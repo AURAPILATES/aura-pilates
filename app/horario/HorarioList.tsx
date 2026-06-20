@@ -47,7 +47,7 @@ export default memo(function HorarioList({
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {days.map(({ dateKey, events: dayEvents }) => {
         const dayOcc      = occupancyRate(dayEvents);
         const dayStudents = dayEvents.reduce((s, e) => s + e.ticketsSold, 0);
@@ -61,11 +61,11 @@ export default memo(function HorarioList({
         return (
           <div key={dateKey}>
             {/* Day header */}
-            <div className="flex items-center justify-between gap-4 pb-3 border-b border-navy/[0.09]">
-              <h2 className="text-2xl font-bold text-navy capitalize leading-none">
-                {dayName} <span className="font-light text-xl">{dayNum}</span>
+            <div className="flex items-center justify-between gap-4 pb-2.5 border-b border-navy/[0.09]">
+              <h2 className="text-lg font-semibold text-navy capitalize leading-none">
+                {dayName} <span className="font-normal text-base">{dayNum}</span>
               </h2>
-              <div className="flex items-center gap-5 text-sm shrink-0">
+              <div className="flex items-center gap-4 text-xs shrink-0">
                 <span className="text-navy/45">
                   <span className="font-semibold text-navy">{dayEvents.length}</span> clases
                 </span>
@@ -75,12 +75,12 @@ export default memo(function HorarioList({
                 <span className="text-navy/45 tabular-nums">
                   <span className={`font-semibold ${dayFree === 0 ? "text-navy/30" : "text-navy"}`}>{dayFree}</span> libres
                 </span>
-                <span className={`font-bold tabular-nums ${occText(dayOcc)}`}>{pct(dayOcc)}</span>
+                <span className={`font-semibold tabular-nums ${occText(dayOcc)}`}>{pct(dayOcc)}</span>
               </div>
             </div>
 
             {/* Events */}
-            <div className="mt-3 space-y-2">
+            <div className="mt-2.5 space-y-1.5">
               {dayEvents.map((e) => {
                 const occ    = e.capacity > 0 ? e.ticketsSold / e.capacity : 0;
                 const pctVal = Math.round(occ * 100);
@@ -92,21 +92,21 @@ export default memo(function HorarioList({
                 return (
                   <div
                     key={e.id}
-                    className={`bg-white border border-navy/[0.07] border-l-4 ${occBorder(occ)} rounded-2xl shadow-card overflow-hidden`}
+                    className={`bg-white border border-navy/[0.07] border-l-4 ${occBorder(occ)} rounded-xl shadow-card overflow-hidden`}
                   >
                     <button
                       onClick={() => onSelect(e)}
-                      className="w-full flex items-center gap-4 px-4 py-3.5 text-left hover:bg-navy/[0.02] transition-colors"
+                      className="w-full flex items-center gap-3.5 px-3.5 py-2.5 text-left hover:bg-navy/[0.02] transition-colors"
                     >
-                      <span className="font-mono text-sm text-navy/45 w-11 shrink-0">{time}</span>
+                      <span className="font-mono text-xs text-navy/45 w-10 shrink-0">{time}</span>
 
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-navy truncate">{e.title}</p>
                         {e.teacher && <p className="text-xs text-navy/45 truncate">{e.teacher}</p>}
                       </div>
 
-                      <div className="flex items-center gap-3 shrink-0">
-                        <div className="w-28 shrink-0">
+                      <div className="flex items-center gap-2.5 shrink-0">
+                        <div className="w-24 shrink-0">
                           <div className="h-1 bg-navy/[0.08] rounded-full overflow-hidden">
                             <div
                               className={`h-full rounded-full ${occBarColor(occ)}`}
@@ -115,17 +115,17 @@ export default memo(function HorarioList({
                           </div>
                         </div>
                         <span className="text-xs text-navy/50 tabular-nums w-8 text-right shrink-0">{e.ticketsSold}/{e.capacity}</span>
-                        <span className="text-xs text-navy/40 tabular-nums w-14 text-right shrink-0">
+                        <span className="text-[11px] text-navy/40 tabular-nums w-14 text-right shrink-0">
                           {e.spotsRemaining} libres
                         </span>
-                        <span className={`text-sm font-bold tabular-nums w-10 text-right shrink-0 ${occText(occ)}`}>
+                        <span className={`text-xs font-bold tabular-nums w-9 text-right shrink-0 ${occText(occ)}`}>
                           {pctVal}%
                         </span>
-                        <span className={`text-xs py-1 rounded-full font-medium shrink-0 w-[88px] inline-flex items-center justify-center ${badge.bg} ${badge.text}`}>
+                        <span className={`text-[11px] py-0.5 rounded-full font-medium shrink-0 w-20 inline-flex items-center justify-center ${badge.bg} ${badge.text}`}>
                           {badge.label}
                         </span>
                         <svg
-                          width="14" height="14" viewBox="0 0 24 24"
+                          width="13" height="13" viewBox="0 0 24 24"
                           fill="none" stroke="currentColor" strokeWidth="2"
                           className="text-navy/25 shrink-0"
                         >

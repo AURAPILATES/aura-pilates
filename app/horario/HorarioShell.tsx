@@ -392,12 +392,12 @@ export default function HorarioShell({
               {events.length === 0 ? (
                 <p className="text-sm text-navy/40 mb-6">Sin clases esta semana.</p>
               ) : (
-                <div className="grid grid-cols-4 gap-3 mb-5">
-                  <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card px-5 py-4">
+                <div className="grid grid-cols-4 gap-2.5 mb-4">
+                  <div className="bg-white border border-navy/[0.07] rounded-xl shadow-card px-4 py-3.5">
                     <div className="flex items-end gap-2">
-                      <span className="text-5xl font-medium text-navy leading-none">{Math.round(weekOcc * 100)}</span>
-                      <span className="text-2xl font-medium text-navy mb-0.5">%</span>
-                      <div className="mb-1">
+                      <span className="text-4xl font-medium text-navy leading-none">{Math.round(weekOcc * 100)}</span>
+                      <span className="text-xl font-medium text-navy mb-0.5">%</span>
+                      <div className="mb-0.5">
                         <p className="text-xs text-navy/45 leading-tight">ocupación</p>
                         <p className="text-xs text-navy/45 leading-tight">media semana</p>
                       </div>
@@ -410,10 +410,10 @@ export default function HorarioShell({
               )}
 
               {/* Filters */}
-              <div className="flex flex-wrap items-center gap-3 mb-6">
+              <div className="flex flex-wrap items-center gap-2.5 mb-5">
                 <Select value={claseFilter}       onChange={setClaseFilter}       options={clases}       placeholder="Todas las clases" />
                 <Select value={instructoraFilter}  onChange={setInstructoraFilter}  options={instructoras}  placeholder="Todas las instructoras" />
-                <div className="flex items-center border border-navy/[0.12] rounded-lg bg-white p-1 gap-0.5">
+                <div className="flex items-center border border-navy/[0.12] rounded-lg bg-white p-0.5 gap-0.5">
                   {([
                     { value: "all",  label: "Todas",      dot: "bg-navy/25" },
                     { value: "low",  label: "Por llenar", dot: "bg-[#c03828]" },
@@ -423,7 +423,7 @@ export default function HorarioShell({
                     <button
                       key={value}
                       onClick={() => setOccFilter(value)}
-                      className={`flex items-center gap-1.5 px-4 py-1.5 text-sm rounded-md transition-colors ${
+                      className={`flex items-center gap-1.5 px-3 py-1 text-xs rounded-md transition-colors ${
                         occFilter === value ? "bg-navy text-white font-medium" : "text-navy/50 hover:text-navy"
                       }`}
                     >
@@ -514,9 +514,9 @@ function MobileClassCard({ event: e, onSelect }: { event: MomenceEvent; onSelect
 
 function DesktopStatCard({ label, value, valueClass = "text-navy" }: { label: string; value: string; valueClass?: string }) {
   return (
-    <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card px-5 py-4">
-      <p className="text-[11px] text-navy/50 uppercase tracking-wider font-semibold mb-2">{label}</p>
-      <p className={`text-3xl font-medium tabular-nums ${valueClass}`}>{value}</p>
+    <div className="bg-white border border-navy/[0.07] rounded-xl shadow-card px-4 py-3.5">
+      <p className="text-[10px] text-navy/50 uppercase tracking-wider font-semibold mb-1.5">{label}</p>
+      <p className={`text-2xl font-medium tabular-nums ${valueClass}`}>{value}</p>
     </div>
   );
 }
@@ -529,14 +529,14 @@ function Select({ value, onChange, options, placeholder }: {
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="appearance-none text-sm border border-navy/[0.12] rounded-lg bg-white text-navy pl-4 pr-8 py-2 focus:outline-none focus:ring-1 focus:ring-primary/20 cursor-pointer"
+        className="appearance-none text-xs border border-navy/[0.12] rounded-lg bg-white text-navy pl-3.5 pr-7 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary/20 cursor-pointer"
       >
         <option value="all">{placeholder}</option>
         {options.slice(1).map((o) => <option key={o} value={o}>{o}</option>)}
       </select>
       <svg
-        className="absolute right-3 top-1/2 -translate-y-1/2 text-navy/40 pointer-events-none"
-        width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-navy/40 pointer-events-none"
+        width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
       >
         <polyline points="6 9 12 15 18 9" />
       </svg>
