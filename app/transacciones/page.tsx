@@ -35,7 +35,7 @@ export default async function TransaccionesPage(props: {
             <MobileNav />
             <h1 className="text-sm font-bold text-navy uppercase tracking-widest">Transacciones</h1>
           </div>
-          <Suspense fallback={null}><DateFilter /></Suspense>
+          <div className="sm:hidden"><Suspense fallback={null}><DateFilter /></Suspense></div>
         </div>
       </div>
 

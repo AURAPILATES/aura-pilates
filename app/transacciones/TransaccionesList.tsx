@@ -5,6 +5,7 @@ import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import type { Transaction } from "@/lib/transactions";
 import type { Category } from "@/lib/categories";
 import { updateTransactionCategory, updateTransactionConcept, updateTransactionContact, softDeleteTransactions } from "./actions";
+import DateFilter from "@/app/components/DateFilter";
 import ImportButton from "./ImportButton";
 import AddCashModal from "./AddCashModal";
 import PapeleraDrawer from "./PapeleraDrawer";
@@ -373,6 +374,114 @@ function SelectWrapper({ children, className = "" }: { children: React.ReactNode
   );
 }
 
+function MoreOptionsMenu({
+  originFilter, setOriginFilter, onlyRecurring, setOnlyRecurring, onExport, onPapelera,
+}: {
+  originFilter: string;
+  setOriginFilter: (v: string) => void;
+  onlyRecurring: boolean;
+  setOnlyRecurring: (v: boolean | ((prev: boolean) => boolean)) => void;
+  onExport: () => void;
+  onPapelera: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [dropPos, setDropPos] = useState<{ top: number; left: number } | null>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const dropRef = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function handle(e: MouseEvent) {
+      if (!wrapRef.current?.contains(e.target as Node) && !dropRef.current?.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, [open]);
+
+  function handleToggle() {
+    if (!open && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setDropPos({ top: rect.bottom + 4, left: rect.right - 220 });
+    }
+    setOpen((v) => !v);
+  }
+
+  const hasActive = originFilter !== "all" || onlyRecurring;
+
+  return (
+    <div ref={wrapRef} className="relative">
+      <button
+        ref={btnRef}
+        onClick={handleToggle}
+        title="Más opciones"
+        className={`relative shrink-0 flex items-center justify-center w-9 h-9 border rounded-lg transition-colors ${
+          hasActive ? "border-primary/40 text-primary bg-primary/5" : "text-navy/50 hover:text-navy border-navy/15 bg-white hover:bg-navy/[0.02]"
+        }`}
+      >
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/><circle cx="5" cy="12" r="1.5"/>
+        </svg>
+        {hasActive && <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-primary" />}
+      </button>
+      {open && dropPos && createPortal(
+        <div
+          ref={dropRef}
+          className="fixed z-[9999] bg-white border border-navy/10 rounded-xl shadow-xl py-2"
+          style={{ top: dropPos.top, left: dropPos.left, width: "220px" }}
+        >
+          <div className="px-3 pb-2">
+            <SelectWrapper>
+              <select value={originFilter} onChange={(e) => setOriginFilter(e.target.value)} className={SELECT_CLS}>
+                <option value="all">Origen</option>
+                <option value="banco">CaixaBank</option>
+                <option value="efectivo">Efectivo Aura</option>
+                <option value="victor">Víctor</option>
+                <option value="celia">Celia</option>
+                <option value="olga">Olga</option>
+                <option value="carles">Carles</option>
+              </select>
+            </SelectWrapper>
+          </div>
+          <button
+            onClick={() => setOnlyRecurring((v) => !v)}
+            className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors ${
+              onlyRecurring ? "text-navy font-medium bg-navy/[0.04]" : "text-navy/60 hover:bg-navy/[0.04]"
+            }`}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15"/>
+            </svg>
+            Solo recurrentes
+          </button>
+          <div className="border-t border-navy/[0.06] my-1" />
+          <button
+            onClick={() => { onExport(); setOpen(false); }}
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-navy/60 hover:bg-navy/[0.04] transition-colors"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Exportar CSV
+          </button>
+          <button
+            onClick={() => { onPapelera(); setOpen(false); }}
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-navy/60 hover:bg-navy/[0.04] transition-colors"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/>
+            </svg>
+            Papelera
+          </button>
+        </div>,
+        document.body
+      )}
+    </div>
+  );
+}
+
 type SortKey = "date" | "amount" | "concept";
 
 function SortableHeader({
@@ -619,7 +728,7 @@ export default function TransaccionesList({
         <div className="flex items-center justify-between sm:justify-start gap-4 sm:gap-7 px-3 sm:px-6 py-2.5">
           <div className="text-center sm:text-left sm:min-w-[110px]">
             <p className="text-[10px] text-navy/40 uppercase tracking-wider leading-none mb-0.5">Ingresos</p>
-            <p className="text-sm font-semibold text-success tabular-nums">+{fmtAmt(totalIn)}</p>
+            <p className="text-sm font-semibold text-success tabular-nums">{fmtAmt(totalIn)}</p>
           </div>
           <div className="hidden sm:block h-4 w-px bg-navy/[0.1] shrink-0" />
           <div className="text-center sm:text-left sm:min-w-[110px]">
@@ -630,7 +739,7 @@ export default function TransaccionesList({
           <div className="text-center sm:text-left sm:min-w-[110px]">
             <p className="text-[10px] text-navy/40 uppercase tracking-wider leading-none mb-0.5">Resultado neto</p>
             <p className={`text-sm font-semibold tabular-nums ${neto >= 0 ? "text-navy" : "text-danger"}`}>
-              {neto >= 0 ? "+" : "−"}{fmtAmt(Math.abs(neto))}
+              {neto < 0 && "−"}{fmtAmt(Math.abs(neto))}
             </p>
           </div>
           {totalIn > 0 && (
@@ -647,8 +756,8 @@ export default function TransaccionesList({
               onClick={() => setCatFilters(catFilters.includes("__none__") ? catFilters.filter((v) => v !== "__none__") : [...catFilters, "__none__"])}
               className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
                 catFilters.includes("__none__")
-                  ? "bg-warning/20 text-warning"
-                  : "bg-warning/10 text-warning hover:bg-warning/15"
+                  ? "bg-warning/10 text-warning/80"
+                  : "bg-navy/[0.04] text-navy/45 hover:bg-navy/[0.06] hover:text-navy/60"
               }`}
             >
               <span>⚠</span>
@@ -724,9 +833,9 @@ export default function TransaccionesList({
       {uncategorizedCount > 0 && (
         <button
           onClick={() => setCatFilters(catFilters.includes("__none__") ? catFilters.filter((v) => v !== "__none__") : [...catFilters, "__none__"])}
-          className="sm:hidden w-full flex items-center gap-2 px-4 py-3 mb-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-sm font-medium text-left"
+          className="sm:hidden w-full flex items-center gap-2 px-4 py-3 mb-3 rounded-xl bg-navy/[0.03] border border-navy/[0.08] text-navy/55 text-sm font-medium text-left"
         >
-          <span className="text-base">⚠</span>
+          <span className="text-base text-warning/70">⚠</span>
           <span className="flex-1">{uncategorizedCount} sin etiquetar</span>
         </button>
       )}
@@ -749,51 +858,17 @@ export default function TransaccionesList({
             <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-navy/30 hover:text-navy/60">✕</button>
           )}
         </div>
+        <DateFilter />
         <CategoryMultiFilter selected={catFilters} categories={categories} onChange={setCatFilters} />
-        <SelectWrapper>
-          <select value={originFilter} onChange={(e) => setOriginFilter(e.target.value)} className={SELECT_CLS} style={{ width: "130px" }}>
-            <option value="all">Origen</option>
-            <option value="banco">CaixaBank</option>
-            <option value="efectivo">Efectivo Aura</option>
-            <option value="victor">Víctor</option>
-            <option value="celia">Celia</option>
-            <option value="olga">Olga</option>
-            <option value="carles">Carles</option>
-          </select>
-        </SelectWrapper>
-        <button
-          onClick={() => setOnlyRecurring((v) => !v)}
-          title="Mostrar solo movimientos recurrentes"
-          className={`shrink-0 flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-colors ${
-            onlyRecurring
-              ? "bg-navy text-white border-navy"
-              : "bg-white text-navy/55 border-navy/15 hover:text-navy"
-          }`}
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15"/>
-          </svg>
-          Recurrentes
-        </button>
+        <MoreOptionsMenu
+          originFilter={originFilter}
+          setOriginFilter={setOriginFilter}
+          onlyRecurring={onlyRecurring}
+          setOnlyRecurring={setOnlyRecurring}
+          onExport={exportCSV}
+          onPapelera={() => setShowPapelera(true)}
+        />
         <ImportButton onManual={() => setShowAddCash(true)} />
-        <button
-          onClick={exportCSV}
-          title="Exportar vista actual a CSV"
-          className="shrink-0 flex items-center justify-center w-9 h-9 text-navy/50 hover:text-navy border border-navy/15 rounded-lg bg-white hover:bg-navy/[0.02] transition-colors"
-        >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-          </svg>
-        </button>
-        <button
-          onClick={() => setShowPapelera(true)}
-          title="Papelera — transacciones eliminadas"
-          className="shrink-0 flex items-center justify-center w-9 h-9 text-navy/50 hover:text-navy border border-navy/15 rounded-lg bg-white hover:bg-navy/[0.02] transition-colors"
-        >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-          </svg>
-        </button>
       </div>
 
       {/* ── Desktop: recuento ─────────────────────────────────────────────────── */}
@@ -965,7 +1040,7 @@ export default function TransaccionesList({
               <div className="flex items-baseline justify-between mb-2 px-2">
                 <span className="text-sm font-semibold text-navy">{fmtDayLabel(date)}</span>
                 <span className="text-xs tabular-nums text-navy/40 pr-1">
-                  {dayNet >= 0 ? "+" : "−"}{fmtAmt(Math.abs(dayNet))}
+                  {dayNet < 0 && "−"}{fmtAmt(Math.abs(dayNet))}
                 </span>
               </div>
               {/* Day card */}
@@ -996,7 +1071,7 @@ export default function TransaccionesList({
                         </div>
                         <div className="shrink-0 text-right">
                           <span className={`text-sm font-semibold tabular-nums ${t.amount > 0 ? "text-success" : "text-navy/75"}`}>
-                            {t.amount > 0 ? "+" : "−"}{fmtAmt(t.amount)}
+                            {t.amount < 0 && "−"}{fmtAmt(t.amount)}
                           </span>
                           {t.balance != null && (
                             <p className="text-[10px] text-navy/40 tabular-nums mt-0.5">{fmtAmt(t.balance)} €</p>
