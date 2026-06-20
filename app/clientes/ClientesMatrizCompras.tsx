@@ -42,7 +42,7 @@ type Props = {
   payments: StripePayment[];
 };
 
-type SortKey = "name" | "total";
+type SortKey = "name" | "total" | "first";
 
 export default function ClientesMatrizCompras({ customers, payments }: Props) {
   const [search, setSearch] = useState("");
@@ -64,6 +64,7 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
     const matrix = customers.map((c) => {
       const byMonth: Record<string, Array<{ product: string; amount: number }>> = {};
       let totalPaid = 0;
+      let firstPurchase: string | null = null;
       const products = new Set<string>();
       for (const p of payments) {
         if (!p.customerId || !c.stripeIds.includes(p.customerId)) continue;
@@ -72,8 +73,9 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
         byMonth[m].push({ product: p.inferredProduct, amount: p.amount });
         totalPaid += p.amount;
         products.add(p.inferredProduct);
+        if (!firstPurchase || p.date < firstPurchase) firstPurchase = p.date;
       }
-      return { customer: c, byMonth, totalPaid, products };
+      return { customer: c, byMonth, totalPaid, products, firstPurchase };
     });
 
     return { months, matrix };
@@ -94,6 +96,13 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
     });
 
     rows = [...rows].sort((a, b) => {
+      if (sortKey === "first") {
+        if (!a.firstPurchase && !b.firstPurchase) return 0;
+        if (!a.firstPurchase) return 1;
+        if (!b.firstPurchase) return -1;
+        const cmp = a.firstPurchase.localeCompare(b.firstPurchase);
+        return sortDir === "asc" ? cmp : -cmp;
+      }
       let cmp = 0;
       if (sortKey === "name") {
         cmp = (a.customer.name ?? a.customer.email ?? "").localeCompare(
@@ -118,6 +127,10 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
       setSortKey(key);
       setSortDir(key === "total" ? "desc" : "asc");
     }
+  }
+
+  function sortArrow(key: SortKey) {
+    return sortKey === key ? (sortDir === "asc" ? " ▲" : " ▼") : "";
   }
 
   return (
@@ -168,36 +181,42 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
                 onClick={() => toggleSort("name")}
                 className="sticky left-0 bg-white text-left pb-2 pr-3 text-[11px] font-semibold text-navy/40 uppercase tracking-wider whitespace-nowrap z-10 min-w-[130px] cursor-pointer select-none hover:text-navy/60"
               >
-                Cliente{sortKey === "name" ? (sortDir === "asc" ? " ▲" : " ▼") : ""}
+                Cliente{sortArrow("name")}
               </th>
               <th
-                onClick={() => toggleSort("total")}
-                className="sticky left-[130px] bg-white text-right pb-2 pr-4 text-[11px] font-semibold text-navy/40 uppercase tracking-wider whitespace-nowrap z-10 min-w-[72px] cursor-pointer select-none hover:text-navy/60"
+                onClick={() => toggleSort("first")}
+                className="sticky left-[130px] bg-white text-center pb-2 px-1 text-[11px] font-semibold text-navy/40 uppercase tracking-wider whitespace-nowrap z-10 min-w-[90px] cursor-pointer select-none hover:text-navy/60"
               >
-                Total{sortKey === "total" ? (sortDir === "asc" ? " ▲" : " ▼") : ""}
+                Primera compra{sortArrow("first")}
               </th>
               {months.map((m) => (
                 <th key={m} className="text-center pb-2 px-1 text-[11px] font-semibold text-navy/40 uppercase tracking-wider whitespace-nowrap min-w-[76px]">
                   {monthLabel(m)}
                 </th>
               ))}
+              <th
+                onClick={() => toggleSort("total")}
+                className="sticky right-0 bg-white text-right pb-2 pl-4 pr-1 text-[11px] font-semibold text-navy/40 uppercase tracking-wider whitespace-nowrap z-20 min-w-[72px] cursor-pointer select-none hover:text-navy/60 border-l border-navy/[0.06]"
+              >
+                Total{sortArrow("total")}
+              </th>
             </tr>
           </thead>
           <tbody>
             {visibleMatrix.length === 0 && (
               <tr>
-                <td colSpan={months.length + 2} className="py-6 text-center text-navy/40">
+                <td colSpan={months.length + 3} className="py-6 text-center text-navy/40">
                   Sin resultados
                 </td>
               </tr>
             )}
-            {visibleMatrix.map(({ customer, byMonth, totalPaid }) => (
+            {visibleMatrix.map(({ customer, byMonth, totalPaid, firstPurchase }) => (
               <tr key={customer.id} className="border-b border-navy/[0.04] last:border-0 hover:bg-navy/[0.015] transition-colors">
                 <td className="sticky left-0 bg-white py-2 pr-3 font-medium text-navy whitespace-nowrap z-10 max-w-[130px] truncate" title={customer.name ?? customer.email ?? undefined}>
                   {customer.name ?? customer.email ?? "—"}
                 </td>
-                <td className="sticky left-[130px] bg-white py-2 pr-4 text-right whitespace-nowrap z-10">
-                  <span className="text-[11px] font-semibold text-navy tabular-nums">{fmt(totalPaid)}</span>
+                <td className="sticky left-[130px] bg-white py-2 px-1 text-center text-navy/60 whitespace-nowrap z-10">
+                  {firstPurchase ? monthLabel(firstPurchase.slice(0, 7)) : "—"}
                 </td>
                 {months.map((m) => {
                   const purchases = byMonth[m];
@@ -222,6 +241,9 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
                     </td>
                   );
                 })}
+                <td className="sticky right-0 bg-white py-2 pl-4 pr-1 text-right whitespace-nowrap z-20 border-l border-navy/[0.06]">
+                  <span className="text-[11px] font-semibold text-navy tabular-nums">{fmt(totalPaid)}</span>
+                </td>
               </tr>
             ))}
           </tbody>
