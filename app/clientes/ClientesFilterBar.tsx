@@ -84,7 +84,7 @@ function FilterBarInner({ defaultPeriod = "30" }: { defaultPeriod?: string }) {
       )}
 
       {/* Compare with */}
-      <div className="flex items-center gap-2 ml-auto flex-wrap justify-end">
+      <div className="flex items-center gap-2 flex-wrap justify-start sm:ml-auto sm:justify-end">
         <span className="text-[11px] text-navy/40">Comparar con</span>
         <div className="flex items-center gap-0.5 bg-navy/[0.04] rounded-xl p-1">
           <button
