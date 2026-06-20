@@ -186,14 +186,14 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
         </div>
       </div>
       <div className="overflow-x-auto">
-        <table className="text-xs" style={{ tableLayout: "fixed", borderCollapse: "separate", borderSpacing: 0 }}>
+        <table className="text-xs w-full" style={{ tableLayout: "fixed", borderCollapse: "separate", borderSpacing: 0 }}>
           <colgroup>
             <col style={{ width: 130 }} />
             <col style={{ width: 110 }} />
             {months.map((m) => (
               <col key={m} style={{ width: 76 }} />
             ))}
-            <col style={{ width: 90 }} />
+            <col />
           </colgroup>
           <thead>
             <tr className="border-b border-navy/[0.06]">
@@ -216,9 +216,11 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
               ))}
               <th
                 onClick={() => toggleSort("total")}
-                className="sticky right-0 bg-white text-right pb-2 pl-4 pr-1 text-[11px] font-semibold text-navy/40 uppercase tracking-wider whitespace-nowrap z-20 min-w-[72px] cursor-pointer select-none hover:text-navy/60 border-l border-navy/[0.06]"
+                className="sticky right-0 bg-white text-right pb-2 pr-4 text-[11px] font-semibold text-navy/40 uppercase tracking-wider whitespace-nowrap z-10 cursor-pointer select-none hover:text-navy/60"
               >
-                Total{sortArrow("total")}
+                <span className="inline-block border-l border-navy/[0.06] pl-3">
+                  Total{sortArrow("total")}
+                </span>
               </th>
             </tr>
           </thead>
@@ -261,8 +263,8 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
                     </td>
                   );
                 })}
-                <td className="sticky right-0 bg-white py-2 pl-4 pr-1 text-right whitespace-nowrap z-20 border-l border-navy/[0.06]">
-                  <span className="text-[11px] font-semibold text-navy tabular-nums">{fmt(totalPaid)}</span>
+                <td className="sticky right-0 bg-white py-2 pr-4 text-right whitespace-nowrap z-10">
+                  <span className="inline-block border-l border-navy/[0.06] pl-3 text-[11px] font-semibold text-navy tabular-nums">{fmt(totalPaid)}</span>
                 </td>
               </tr>
             ))}
