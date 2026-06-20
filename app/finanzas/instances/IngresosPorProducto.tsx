@@ -68,14 +68,14 @@ export default function IngresosPorProducto({
 
           <div className="divide-y divide-navy/[0.05]">
             {segments.map((seg) => (
-              <div key={seg.item} className="flex items-center gap-3 py-3">
+              <div key={seg.item} className="flex items-center gap-3 py-2">
                 <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: seg.color }} />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-navy truncate">{seg.item}</p>
+                  <p className="text-[13px] font-medium text-navy truncate">{seg.item}</p>
                   <p className="text-xs text-navy/50">{seg.count} ventas</p>
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="text-sm font-medium text-navy tabular-nums">{fmt(seg.revenue)}</p>
+                  <p className="text-[13px] font-medium text-navy tabular-nums">{fmt(seg.revenue)}</p>
                   <p className="text-xs text-navy/50 tabular-nums">{pct(seg.share)}</p>
                 </div>
               </div>
