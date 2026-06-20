@@ -399,7 +399,7 @@ export default function HorarioShell({
                 <p className="text-sm text-navy/40 mb-6">Sin clases esta semana.</p>
               ) : (
                 <div className="grid grid-cols-4 gap-3 mb-5">
-                  <KpiCard label="Ocupación media" value={`${Math.round(weekOcc * 100)}%`} sub="esta semana" valueColor={occText(weekOcc)} />
+                  <KpiCard label="Ocupación media esta semana" value={`${Math.round(weekOcc * 100)}%`} valueColor={occText(weekOcc)} />
                   <KpiCard label="Vendidas"   value={String(weekSoldSpots)} />
                   <KpiCard label="Libres"     value={String(weekFreeSpots)} />
                   <KpiCard label="Por llenar" value={String(lowCount)} valueColor={lowCount > 0 ? "text-danger" : "text-navy/30"} />
@@ -565,14 +565,13 @@ function HiddenEventsPanel({ events }: { events: MomenceEvent[] }) {
 
 // ── Desktop sub-components ─────────────────────────────────────────────────────
 
-function KpiCard({ label, value, sub, valueColor = "text-navy" }: {
-  label: string; value: string; sub?: string; valueColor?: string;
+function KpiCard({ label, value, valueColor = "text-navy" }: {
+  label: string; value: string; valueColor?: string;
 }) {
   return (
-    <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-4">
+    <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card px-4 py-3">
       <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider leading-tight mb-1">{label}</p>
       <p className={`text-2xl font-semibold tabular-nums ${valueColor}`}>{value}</p>
-      {sub && <p className="text-[10px] text-navy/40 mt-1.5">{sub}</p>}
     </div>
   );
 }
