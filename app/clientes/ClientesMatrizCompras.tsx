@@ -186,14 +186,14 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
         </div>
       </div>
       <div className="overflow-x-auto">
-        <table className="text-xs w-full" style={{ tableLayout: "fixed", borderCollapse: "separate", borderSpacing: 0 }}>
+        <table className="text-xs" style={{ tableLayout: "fixed", borderCollapse: "separate", borderSpacing: 0 }}>
           <colgroup>
             <col style={{ width: 130 }} />
             <col style={{ width: 110 }} />
             {months.map((m) => (
               <col key={m} style={{ width: 76 }} />
             ))}
-            <col />
+            <col style={{ width: 90 }} />
           </colgroup>
           <thead>
             <tr className="border-b border-navy/[0.06]">
