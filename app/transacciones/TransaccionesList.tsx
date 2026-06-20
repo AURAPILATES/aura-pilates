@@ -406,7 +406,7 @@ function MobileActionsMenu({ onExport, onPapelera }: { onExport: () => void; onP
         ref={btnRef}
         onClick={handleToggle}
         title="Más acciones"
-        className="shrink-0 flex items-center justify-center w-9 h-9 text-navy/55 border border-navy/[0.12] rounded-lg bg-white hover:bg-navy/[0.02] hover:text-navy transition-colors"
+        className="shrink-0 flex items-center justify-center w-[42px] h-[42px] text-navy/55 border border-navy/[0.12] rounded-lg bg-white hover:bg-navy/[0.02] hover:text-navy transition-colors"
       >
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/><circle cx="5" cy="12" r="1.5"/>
@@ -792,28 +792,25 @@ export default function TransaccionesList({
 
   return (
     <div>
-      {/* ── KPI bar sticky (reactiva a filtros) ────────────────────────────── */}
-      <div className="sm:sticky sm:top-[45px] sm:z-[15] -mx-2 sm:-mx-6 sm:bg-app-bg/95 sm:backdrop-blur-sm sm:border-b sm:border-navy/[0.06] mb-4 sm:mb-3">
-        <div className="grid grid-cols-3 text-center sm:flex sm:text-left sm:items-stretch sm:justify-start gap-1 sm:gap-3 px-2 sm:px-6 py-2.5">
-          <div className="min-w-0 sm:flex-initial sm:min-w-[120px]">
+      {/* ── Desktop: KPI bar sticky (reactiva a filtros) ────────────────────── */}
+      <div className="hidden sm:block sm:sticky sm:top-[45px] sm:z-[15] sm:-mx-6 sm:bg-app-bg/95 sm:backdrop-blur-sm sm:border-b sm:border-navy/[0.06] mb-3">
+        <div className="flex items-stretch justify-start gap-3 px-6 py-2.5">
+          <div className="flex-initial min-w-[120px]">
             <p className="text-[12px] text-navy/40 uppercase tracking-wider leading-none mb-0.5 whitespace-nowrap">Ingresos</p>
-            <p className="text-[14px] sm:text-sm font-semibold text-success tabular-nums truncate">{fmtAmt(totalIn)}</p>
+            <p className="text-sm font-semibold text-success tabular-nums truncate">{fmtAmt(totalIn)}</p>
           </div>
-          <div className="min-w-0 sm:flex-initial sm:min-w-[120px]">
+          <div className="flex-initial min-w-[120px]">
             <p className="text-[12px] text-navy/40 uppercase tracking-wider leading-none mb-0.5 whitespace-nowrap">Gastos</p>
-            <p className="text-[14px] sm:text-sm font-semibold text-[#B85C3A] tabular-nums truncate">−{fmtAmt(totalOut)}</p>
+            <p className="text-sm font-semibold text-[#B85C3A] tabular-nums truncate">−{fmtAmt(totalOut)}</p>
           </div>
-          <div className="min-w-0 sm:flex-initial sm:min-w-[120px]">
-            <p className="text-[12px] text-navy/40 uppercase tracking-wider leading-none mb-0.5 whitespace-nowrap">
-              <span className="sm:hidden">Neto</span>
-              <span className="hidden sm:inline">Resultado neto</span>
-            </p>
-            <p className={`text-[14px] sm:text-sm font-semibold tabular-nums truncate ${neto >= 0 ? "text-navy" : "text-danger"}`}>
+          <div className="flex-initial min-w-[120px]">
+            <p className="text-[12px] text-navy/40 uppercase tracking-wider leading-none mb-0.5 whitespace-nowrap">Resultado neto</p>
+            <p className={`text-sm font-semibold tabular-nums truncate ${neto >= 0 ? "text-navy" : "text-danger"}`}>
               {neto < 0 && "−"}{fmtAmt(Math.abs(neto))}
             </p>
           </div>
           {totalIn > 0 && (
-            <span className="hidden sm:flex items-center text-xs text-navy/35 tabular-nums">
+            <span className="flex items-center text-xs text-navy/35 tabular-nums">
               margen {(neto / totalIn * 100).toFixed(1).replace(".", ",")}%
             </span>
           )}
@@ -821,7 +818,7 @@ export default function TransaccionesList({
           {uncategorizedCount > 0 && (
             <button
               onClick={() => setCatFilters(catFilters.includes("__none__") ? catFilters.filter((v) => v !== "__none__") : [...catFilters, "__none__"])}
-              className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
                 catFilters.includes("__none__")
                   ? "bg-warning/10 text-warning/80"
                   : "bg-navy/[0.04] text-navy/45 hover:bg-navy/[0.06] hover:text-navy/60"
@@ -834,36 +831,54 @@ export default function TransaccionesList({
         </div>
       </div>
 
-      {/* ── Mobile: Search bar + Filtros ─────────────────────────────────────── */}
-      <div className="sm:hidden flex gap-2 mb-3">
-        <div className="relative flex-1">
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-navy/30" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
-          <input
-            type="text"
-            placeholder="Buscar concepto o contacto…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-9 py-2.5 text-sm border border-navy/[0.12] rounded-lg bg-white text-navy placeholder:text-navy/35 outline-none focus:ring-2 focus:ring-primary/20 transition"
-          />
-          {search && (
-            <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-navy/30 hover:text-navy/60">✕</button>
-          )}
+      {/* ── Mobile: tarjeta con KPIs + búsqueda/filtros ──────────────────────── */}
+      <div className="sm:hidden bg-white rounded-2xl border border-navy/[0.07] shadow-card mb-4 overflow-hidden">
+        <div className="grid grid-cols-3 divide-x divide-navy/[0.06] text-center px-1 py-3">
+          <div className="px-2 min-w-0">
+            <p className="text-[11px] text-navy/40 uppercase tracking-wider leading-none mb-1 whitespace-nowrap">Ingresos</p>
+            <p className="text-[15px] font-semibold text-success tabular-nums truncate">{fmtAmt(totalIn)}</p>
+          </div>
+          <div className="px-2 min-w-0">
+            <p className="text-[11px] text-navy/40 uppercase tracking-wider leading-none mb-1 whitespace-nowrap">Gastos</p>
+            <p className="text-[15px] font-semibold text-[#B85C3A] tabular-nums truncate">−{fmtAmt(totalOut)}</p>
+          </div>
+          <div className="px-2 min-w-0">
+            <p className="text-[11px] text-navy/40 uppercase tracking-wider leading-none mb-1 whitespace-nowrap">Neto</p>
+            <p className={`text-[15px] font-semibold tabular-nums truncate ${neto >= 0 ? "text-navy" : "text-danger"}`}>
+              {neto < 0 && "−"}{fmtAmt(Math.abs(neto))}
+            </p>
+          </div>
         </div>
-        <button
-          onClick={() => setShowMobileFilters((v) => !v)}
-          title="Filtros"
-          className="relative shrink-0 flex items-center justify-center w-[42px] h-[42px] bg-white border border-navy/[0.12] rounded-lg text-navy"
-        >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/>
-          </svg>
-          {(catFilters.length > 0 || originFilter !== "all" || onlyRecurring || currentRange !== "all") && (
-            <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-primary" />
-          )}
-        </button>
-        <MobileActionsMenu onExport={exportCSV} onPapelera={() => setShowPapelera(true)} />
+        <div className="border-t border-navy/[0.06] flex gap-2 px-3 py-3">
+          <div className="relative flex-1">
+            <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-navy/30" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input
+              type="text"
+              placeholder="Buscar concepto o contacto…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-9 pr-9 py-2.5 text-sm border border-navy/[0.12] rounded-lg bg-white text-navy placeholder:text-navy/35 outline-none focus:ring-2 focus:ring-primary/20 transition"
+            />
+            {search && (
+              <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-navy/30 hover:text-navy/60">✕</button>
+            )}
+          </div>
+          <button
+            onClick={() => setShowMobileFilters((v) => !v)}
+            title="Filtros"
+            className="relative shrink-0 flex items-center justify-center w-[42px] h-[42px] bg-white border border-navy/[0.12] rounded-lg text-navy"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/>
+            </svg>
+            {(catFilters.length > 0 || originFilter !== "all" || onlyRecurring || currentRange !== "all") && (
+              <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-primary" />
+            )}
+          </button>
+          <MobileActionsMenu onExport={exportCSV} onPapelera={() => setShowPapelera(true)} />
+        </div>
       </div>
 
       {/* ── Mobile: Filter drawer ────────────────────────────────────────────── */}
@@ -902,10 +917,16 @@ export default function TransaccionesList({
       {uncategorizedCount > 0 && (
         <button
           onClick={() => setCatFilters(catFilters.includes("__none__") ? catFilters.filter((v) => v !== "__none__") : [...catFilters, "__none__"])}
-          className="sm:hidden w-full flex items-center gap-2 px-4 py-2 mb-3 rounded-xl bg-navy/[0.03] border border-navy/[0.08] text-navy/55 text-sm font-medium text-left"
+          className="sm:hidden w-full flex items-center gap-2 px-4 py-2.5 mb-3 rounded-xl bg-amber-50 border border-amber-100 text-amber-800 text-sm font-medium text-left"
         >
-          <span className="text-base text-warning/70">⚠</span>
+          <span className="text-base text-amber-500">⚠</span>
           <span className="flex-1">{uncategorizedCount} movimientos sin etiquetar</span>
+          <span className="flex items-center gap-1 text-amber-700 font-semibold whitespace-nowrap">
+            Revisar
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+            </svg>
+          </span>
         </button>
       )}
 
@@ -987,7 +1008,7 @@ export default function TransaccionesList({
           <ImportButton compact className="flex-1" onManual={() => setShowAddCash(true)} />
           <button
             onClick={() => { setMobileSelectMode((v) => { if (v) clearSelection(); return !v; }); }}
-            className={`shrink-0 flex items-center gap-1.5 h-9 text-xs font-medium px-3 rounded-lg border transition-colors ${
+            className={`shrink-0 flex items-center gap-1.5 h-9 text-xs font-medium px-3 rounded-xl border transition-colors ${
               mobileSelectMode
                 ? "bg-navy text-white border-navy"
                 : "bg-white text-navy/55 border-navy/[0.12] hover:text-navy"
@@ -1067,8 +1088,8 @@ export default function TransaccionesList({
         <div className="flex gap-1 overflow-x-auto scrollbar-none">
           <button
             onClick={() => router.push(pathname)}
-            className={`shrink-0 px-3 py-1.5 rounded-full text-sm transition-colors ${
-              !activeMonth ? "bg-navy text-white font-medium" : "text-navy/50"
+            className={`shrink-0 px-3 py-1.5 rounded-full text-sm border transition-colors ${
+              !activeMonth ? "bg-navy text-white border-navy font-medium" : "text-navy/50 border-navy/[0.12]"
             }`}
           >
             Todo
@@ -1081,8 +1102,8 @@ export default function TransaccionesList({
                 key={key}
                 ref={isActive ? activeMonthRef : undefined}
                 onClick={() => goToMonth(key)}
-                className={`shrink-0 px-3 py-1.5 rounded-full text-sm transition-colors capitalize ${
-                  isActive ? "bg-navy text-white font-medium" : "text-navy/50 hover:text-navy"
+                className={`shrink-0 px-3 py-1.5 rounded-full text-sm border transition-colors capitalize ${
+                  isActive ? "bg-navy text-white border-navy font-medium" : "text-navy/50 border-navy/[0.12] hover:text-navy"
                 }`}
               >
                 {label}{showYear && <span className="text-[10px] ml-0.5 opacity-60">{year}</span>}
