@@ -1,32 +1,11 @@
 import { Suspense } from "react";
-import { loadTransactionsCached, type Transaction } from "@/lib/transactions";
+import { loadTransactionsCached } from "@/lib/transactions";
 import { loadCategoriesCached } from "@/lib/categories";
 import { getDateRange } from "@/lib/dateRange";
+import { detectRecurringTransactions } from "@/lib/recurring";
 import TransaccionesList from "./TransaccionesList";
 import DateFilter from "@/app/components/DateFilter";
 import MobileNav from "@/app/components/MobileNav";
-
-// ── Analysis helpers ───────────────────────────────────────────────────────────
-
-function detectRecurring(transactions: Transaction[]): string[] {
-  const byContact = new Map<string, { months: Set<string>; amounts: number[] }>();
-  for (const t of transactions) {
-    if (t.amount >= 0 || !t.contact) continue;
-    const key = t.contact.toLowerCase().trim();
-    if (!byContact.has(key)) byContact.set(key, { months: new Set(), amounts: [] });
-    const entry = byContact.get(key)!;
-    entry.months.add(t.date.slice(0, 7));
-    entry.amounts.push(Math.abs(t.amount));
-  }
-  const recurring: string[] = [];
-  for (const [contact, { months, amounts }] of byContact) {
-    if (months.size < 2) continue;
-    const avg = amounts.reduce((s, a) => s + a, 0) / amounts.length;
-    const consistent = amounts.every((a) => avg > 0 && Math.abs(a - avg) / avg < 0.30);
-    if (consistent) recurring.push(contact);
-  }
-  return recurring;
-}
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
@@ -45,7 +24,7 @@ export default async function TransaccionesPage(props: {
   ]);
 
   const uncategorizedCount = transactions.filter((t) => !t.category).length;
-  const recurringContacts  = detectRecurring(transactions);
+  const recurringPeriods   = Object.fromEntries(detectRecurringTransactions(transactions));
 
   return (
     <div>
@@ -67,7 +46,7 @@ export default async function TransaccionesPage(props: {
             transactions={transactions}
             categories={categories}
             uncategorizedCount={uncategorizedCount}
-            recurringContacts={recurringContacts}
+            recurringPeriods={recurringPeriods}
           />
         </Suspense>
       </div>

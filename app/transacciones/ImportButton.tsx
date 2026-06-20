@@ -31,7 +31,7 @@ export default function ImportButton({
           onClick={() => setOpen((v) => !v)}
           className={
             compact
-              ? "flex items-center justify-center gap-1.5 px-3 py-1.5 bg-navy text-white text-xs font-medium rounded-lg hover:bg-navy/85 transition-colors w-full"
+              ? "flex items-center justify-center gap-1.5 px-3 h-9 bg-navy text-white text-xs font-medium rounded-lg hover:bg-navy/85 transition-colors w-full"
               : "flex items-center justify-center gap-2 px-4 py-2 bg-navy text-white text-sm font-semibold rounded-xl hover:bg-navy/85 transition-colors shadow-sm w-full"
           }
         >

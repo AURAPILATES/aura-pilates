@@ -8,6 +8,7 @@ import { updateTransactionCategory, updateTransactionConcept, updateTransactionC
 import ImportButton from "./ImportButton";
 import AddCashModal from "./AddCashModal";
 import PapeleraDrawer from "./PapeleraDrawer";
+import TransactionDrawer from "./TransactionDrawer";
 
 const MONTHS_ES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
 
@@ -244,7 +245,7 @@ function CategoryMultiFilter({
   );
 }
 
-function CategoryPill({ category, categories, onChange }: { category: string | null; categories: Category[]; onChange: (cat: string | null) => void }) {
+export function CategoryPill({ category, categories, onChange }: { category: string | null; categories: Category[]; onChange: (cat: string | null) => void }) {
   const [open, setOpen] = useState(false);
   const [dropPos, setDropPos] = useState<{ top: number; left: number } | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -381,11 +382,11 @@ type Props = {
   transactions: Transaction[];
   categories: Category[];
   uncategorizedCount: number;
-  recurringContacts: string[];
+  recurringPeriods: Record<string, string>;
 };
 
 export default function TransaccionesList({
-  transactions, categories, uncategorizedCount, recurringContacts,
+  transactions, categories, uncategorizedCount, recurringPeriods,
 }: Props) {
   const router       = useRouter();
   const pathname     = usePathname();
@@ -412,6 +413,9 @@ export default function TransaccionesList({
   const [sortKey, setSortKey] = useState<"date" | "amount" | "concept" | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [showAddCash, setShowAddCash] = useState(false);
+  const [onlyRecurring, setOnlyRecurring] = useState(false);
+  const [drawerTxnId, setDrawerTxnId] = useState<string | null>(null);
+  const drawerTxn = drawerTxnId ? transactions.find((t) => t.id === drawerTxnId) ?? null : null;
 
   function toggleSort(key: "date" | "amount" | "concept") {
     if (sortKey === key) {
@@ -422,7 +426,6 @@ export default function TransaccionesList({
     }
   }
 
-  const recurringSet = new Set(recurringContacts);
 
   // ── Month strip — solo meses con datos ──────────────────────────────────────
   const monthStrip = useMemo(() => {
@@ -464,6 +467,7 @@ export default function TransaccionesList({
     if (q && !t.contact?.toLowerCase().includes(q) && !t.concept?.toLowerCase().includes(q)) return false;
     if (catFilters.length > 0 && !catFilters.includes(t.category ?? "__none__")) return false;
     if (originFilter !== "all" && t.payment_method !== originFilter) return false;
+    if (onlyRecurring && !recurringPeriods[t.id]) return false;
     return true;
   });
 
@@ -525,6 +529,12 @@ export default function TransaccionesList({
   function handleCategoryChange(id: string, category: string | null) {
     startTransition(() => updateTransactionCategory(id, category));
   }
+  function handleContactChange(id: string, value: string) {
+    startTransition(() => updateTransactionContact(id, value));
+  }
+  function handleConceptChange(id: string, value: string) {
+    startTransition(() => updateTransactionConcept(id, value));
+  }
   function startEditing(t: Transaction, which: "primary" | "secondary") {
     if (which === "primary") {
       if (t.contact != null) {
@@ -577,18 +587,18 @@ export default function TransaccionesList({
     <div>
       {/* ── KPI bar sticky (reactiva a filtros) ────────────────────────────── */}
       <div className="sm:sticky sm:top-[45px] sm:z-[15] -mx-2 sm:-mx-6 sm:bg-app-bg/95 sm:backdrop-blur-sm sm:border-b sm:border-navy/[0.06] mb-4 sm:mb-3">
-        <div className="flex items-center gap-4 sm:gap-7 px-3 sm:px-6 py-2.5">
-          <div className="min-w-[90px] sm:min-w-[110px]">
+        <div className="flex items-center justify-between sm:justify-start gap-4 sm:gap-7 px-3 sm:px-6 py-2.5">
+          <div className="text-center sm:text-left sm:min-w-[110px]">
             <p className="text-[10px] text-navy/40 uppercase tracking-wider leading-none mb-0.5">Ingresos</p>
             <p className="text-sm font-semibold text-success tabular-nums">+{fmtAmt(totalIn)}</p>
           </div>
           <div className="hidden sm:block h-4 w-px bg-navy/[0.1] shrink-0" />
-          <div className="min-w-[90px] sm:min-w-[110px]">
+          <div className="text-center sm:text-left sm:min-w-[110px]">
             <p className="text-[10px] text-navy/40 uppercase tracking-wider leading-none mb-0.5">Gastos</p>
             <p className="text-sm font-semibold text-[#B85C3A] tabular-nums">−{fmtAmt(totalOut)}</p>
           </div>
           <div className="hidden sm:block h-4 w-px bg-navy/[0.1] shrink-0" />
-          <div className="min-w-[90px] sm:min-w-[110px]">
+          <div className="text-center sm:text-left sm:min-w-[110px]">
             <p className="text-[10px] text-navy/40 uppercase tracking-wider leading-none mb-0.5">Resultado neto</p>
             <p className={`text-sm font-semibold tabular-nums ${neto >= 0 ? "text-navy" : "text-danger"}`}>
               {neto >= 0 ? "+" : "−"}{fmtAmt(Math.abs(neto))}
@@ -644,7 +654,7 @@ export default function TransaccionesList({
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/>
           </svg>
-          {(catFilters.length > 0 || originFilter !== "all") && (
+          {(catFilters.length > 0 || originFilter !== "all" || onlyRecurring) && (
             <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-primary" />
           )}
         </button>
@@ -665,6 +675,19 @@ export default function TransaccionesList({
               <option value="carles">Carles</option>
             </select>
           </SelectWrapper>
+          <button
+            onClick={() => setOnlyRecurring((v) => !v)}
+            className={`flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border transition-colors ${
+              onlyRecurring
+                ? "bg-navy text-white border-navy"
+                : "bg-white text-navy/55 border-navy/[0.12]"
+            }`}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15"/>
+            </svg>
+            Solo recurrentes
+          </button>
         </div>
       )}
 
@@ -709,6 +732,20 @@ export default function TransaccionesList({
             <option value="carles">Carles</option>
           </select>
         </SelectWrapper>
+        <button
+          onClick={() => setOnlyRecurring((v) => !v)}
+          title="Mostrar solo movimientos recurrentes"
+          className={`shrink-0 flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl border transition-colors ${
+            onlyRecurring
+              ? "bg-navy text-white border-navy"
+              : "bg-white text-navy/55 border-navy/[0.12] hover:text-navy"
+          }`}
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15"/>
+          </svg>
+          Recurrentes
+        </button>
         <ImportButton onManual={() => setShowAddCash(true)} />
         <button
           onClick={exportCSV}
@@ -739,9 +776,9 @@ export default function TransaccionesList({
           }
           {isPending && <span className="ml-2 text-xs text-primary/60">Guardando…</span>}
         </span>
-        {(catFilters.length > 0 || originFilter !== "all") && (
+        {(catFilters.length > 0 || originFilter !== "all" || onlyRecurring) && (
           <button
-            onClick={() => { setCatFilters([]); setOriginFilter("all"); }}
+            onClick={() => { setCatFilters([]); setOriginFilter("all"); setOnlyRecurring(false); }}
             className="text-xs text-navy/45 hover:text-navy underline whitespace-nowrap"
           >
             Eliminar filtros
@@ -750,49 +787,53 @@ export default function TransaccionesList({
       </div>
 
       {/* ── Mobile: toolbar ────────────────────────────────────────────────── */}
-      <div className="sm:hidden flex flex-wrap items-center gap-x-4 gap-y-2 mb-5">
-        <span className="text-sm text-navy/55">{filtered.length} movimientos</span>
-        {(catFilters.length > 0 || originFilter !== "all" || currentRange !== "all") && (
-          <button
-            onClick={() => {
-              setCatFilters([]);
-              setOriginFilter("all");
-              if (currentRange !== "all") router.push(pathname);
-            }}
-            className="text-xs text-navy/55 hover:text-navy underline"
-          >
-            Eliminar filtros
-          </button>
+      <div className="sm:hidden mb-5">
+        {(catFilters.length > 0 || originFilter !== "all" || onlyRecurring || currentRange !== "all") && (
+          <div className="flex items-center mb-3">
+            <button
+              onClick={() => {
+                setCatFilters([]);
+                setOriginFilter("all");
+                setOnlyRecurring(false);
+                if (currentRange !== "all") router.push(pathname);
+              }}
+              className="text-xs text-navy/55 hover:text-navy underline"
+            >
+              Eliminar filtros
+            </button>
+          </div>
         )}
-        <ImportButton compact onManual={() => setShowAddCash(true)} />
-        <button
-          onClick={() => { setMobileSelectMode((v) => { if (v) clearSelection(); return !v; }); }}
-          className={`text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors ${
-            mobileSelectMode
-              ? "bg-navy text-white border-navy"
-              : "bg-white text-navy/55 border-navy/[0.12] hover:text-navy"
-          }`}
-        >
-          {mobileSelectMode ? "Cancelar" : "Seleccionar"}
-        </button>
-        <button
-          onClick={exportCSV}
-          title="Exportar vista actual a CSV"
-          className="flex items-center justify-center p-1.5 text-navy/55 border border-navy/[0.12] rounded-lg bg-white hover:bg-navy/[0.02] hover:text-navy transition-colors"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-          </svg>
-        </button>
-        <button
-          onClick={() => setShowPapelera(true)}
-          title="Papelera"
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-navy/55 border border-navy/[0.12] rounded-lg bg-white hover:bg-navy/[0.02] hover:text-navy transition-colors"
-        >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/>
-          </svg>
-        </button>
+        <div className="flex items-stretch gap-2">
+          <ImportButton compact className="flex-1" onManual={() => setShowAddCash(true)} />
+          <button
+            onClick={() => { setMobileSelectMode((v) => { if (v) clearSelection(); return !v; }); }}
+            className={`shrink-0 flex items-center h-9 text-xs font-medium px-3 rounded-lg border transition-colors ${
+              mobileSelectMode
+                ? "bg-navy text-white border-navy"
+                : "bg-white text-navy/55 border-navy/[0.12] hover:text-navy"
+            }`}
+          >
+            {mobileSelectMode ? "Cancelar" : "Seleccionar"}
+          </button>
+          <button
+            onClick={exportCSV}
+            title="Exportar vista actual a CSV"
+            className="shrink-0 flex items-center justify-center w-9 h-9 text-navy/55 border border-navy/[0.12] rounded-lg bg-white hover:bg-navy/[0.02] hover:text-navy transition-colors"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+          </button>
+          <button
+            onClick={() => setShowPapelera(true)}
+            title="Papelera"
+            className="shrink-0 flex items-center justify-center w-9 h-9 text-navy/55 border border-navy/[0.12] rounded-lg bg-white hover:bg-navy/[0.02] hover:text-navy transition-colors"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/>
+            </svg>
+          </button>
+        </div>
       </div>
 
       {/* ── Bulk selection bar ─────────────────────────────────────────────── */}
@@ -901,13 +942,16 @@ export default function TransaccionesList({
               {/* Day card */}
               <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden divide-y divide-navy/[0.05]">
                 {dayTxns.map((t) => {
-                  const isRecurring = !!t.contact && recurringSet.has(t.contact.toLowerCase().trim());
+                  const recurringPeriod = recurringPeriods[t.id];
                   const isSelected  = selected.has(t.id);
                   const primary     = t.contact || t.concept || "—";
                   const secondary   = t.contact && t.concept && t.concept !== t.contact ? t.concept : null;
                   return (
                     <div key={t.id} className={`px-3 py-4 transition-colors ${isSelected ? "bg-primary/[0.035]" : ""}`}>
-                      <div className="flex items-center justify-between gap-3">
+                      <div
+                        className="flex items-center justify-between gap-3 cursor-pointer"
+                        onClick={() => { if (mobileSelectMode) toggleOne(t.id); else setDrawerTxnId(t.id); }}
+                      >
                         <div className="flex items-center gap-2.5 min-w-0">
                           {mobileSelectMode && (
                             <Checkbox checked={isSelected} onChange={() => toggleOne(t.id)} />
@@ -916,7 +960,7 @@ export default function TransaccionesList({
                           <div className="min-w-0">
                             <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
                               <span className="text-sm font-medium text-navy truncate">{primary}</span>
-                              {isRecurring && <span className="shrink-0 text-[10px] text-primary/50">↺</span>}
+                              {recurringPeriod && <span className="shrink-0 text-sm text-primary/50" title={recurringPeriod}>↺</span>}
                             </div>
                             {secondary && <p className="text-[11px] text-navy/40 truncate mt-0.5">{secondary}</p>}
                           </div>
@@ -930,7 +974,7 @@ export default function TransaccionesList({
                           )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 mt-2.5 flex-wrap">
+                      <div className="flex items-center gap-2 mt-2.5 flex-wrap" onClick={(e) => e.stopPropagation()}>
                         <CategoryPill category={t.category} categories={categories} onChange={(cat) => handleCategoryChange(t.id, cat)} />
                       </div>
                     </div>
@@ -974,7 +1018,7 @@ export default function TransaccionesList({
               </tr>
             )}
             {sortedFiltered.map((t) => {
-              const isRecurring = !!t.contact && recurringSet.has(t.contact.toLowerCase().trim());
+              const recurringPeriod = recurringPeriods[t.id];
               const isSelected  = selected.has(t.id);
               const primary     = t.contact || t.concept || "—";
               const secondary   = t.contact && t.concept && t.concept !== t.contact ? t.concept : null;
@@ -1017,12 +1061,12 @@ export default function TransaccionesList({
                               className="text-sm font-medium text-navy truncate cursor-pointer hover:text-navy/70 transition-colors"
                               onClick={() => startEditing(t, "primary")}
                             >{primary}</span>
-                            {isRecurring && (
-                              <span className="shrink-0 inline-flex items-center gap-0.5 text-[10px] text-primary/60 font-medium whitespace-nowrap">
-                                <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            {recurringPeriod && (
+                              <span className="shrink-0 inline-flex items-center gap-1 text-[11px] text-primary/60 font-medium whitespace-nowrap">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                   <path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15"/>
                                 </svg>
-                                mensual
+                                {recurringPeriod}
                               </span>
                             )}
                           </div>
@@ -1084,6 +1128,17 @@ export default function TransaccionesList({
       )}
       {showPapelera && (
         <PapeleraDrawer onClose={() => setShowPapelera(false)} />
+      )}
+      {drawerTxn && (
+        <TransactionDrawer
+          transaction={drawerTxn}
+          categories={categories}
+          recurringPeriod={recurringPeriods[drawerTxn.id]}
+          onClose={() => setDrawerTxnId(null)}
+          onUpdateContact={handleContactChange}
+          onUpdateConcept={handleConceptChange}
+          onUpdateCategory={handleCategoryChange}
+        />
       )}
     </div>
   );
