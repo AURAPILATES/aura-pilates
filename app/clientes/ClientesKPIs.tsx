@@ -161,6 +161,9 @@ function CustomerRow({ c }: { c: CustomerRow }) {
           </span>
           <span className="text-xs font-semibold text-navy">{fmt(c.totalSpent)}</span>
         </div>
+        {c.hasPaymentError && c.paymentErrorReason && (
+          <p className="text-xs text-danger mt-1">{c.paymentErrorReason}</p>
+        )}
       </div>
       <div className="shrink-0 flex items-center gap-1">
         {ids.length > 1 && (
