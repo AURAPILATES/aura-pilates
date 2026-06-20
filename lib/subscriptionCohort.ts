@@ -78,3 +78,67 @@ export function computeSubscriptionCohorts(payments: StripePayment[], tiers: Sub
     };
   });
 }
+
+export type RetentionCohortRow = {
+  month: string;   // "YYYY-MM" — mes de la primera suscripción de la cohorte
+  label: string;   // "Feb 2026"
+  n: number;       // tamaño de la cohorte
+  values: Array<number | null>; // % retención en M+1, M+2, ... (null = mes aún no transcurrido)
+};
+
+function addMonths(ym: string, k: number): string {
+  const [y, m] = ym.split("-").map(Number);
+  const d = new Date(y, m - 1 + k, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+// % de cada cohorte de nuevos suscriptores (agrupados por su primer mes de pago) que
+// sigue pagando en M+1, M+2... Usa el mismo histórico de Stripe que computeSubscriptionCohorts.
+export function computeRetentionCohorts(
+  payments: StripePayment[],
+  tiers: SubscriptionTier[],
+  maxOffset = 4,
+): RetentionCohortRow[] {
+  const subPayments = payments.filter((p) => p.customerId && isSubscriptionAmount(p.amount, tiers));
+  if (subPayments.length === 0) return [];
+
+  const monthsByCustomer = new Map<string, Set<string>>();
+  for (const p of subPayments) {
+    const m = p.date.slice(0, 7);
+    const set = monthsByCustomer.get(p.customerId!) ?? new Set<string>();
+    set.add(m);
+    monthsByCustomer.set(p.customerId!, set);
+  }
+
+  const firstMonthByCustomer = new Map<string, string>();
+  for (const [id, months] of monthsByCustomer) {
+    firstMonthByCustomer.set(id, Array.from(months).sort()[0]);
+  }
+
+  const cohortCustomers = new Map<string, string[]>();
+  for (const [id, firstMonth] of firstMonthByCustomer) {
+    const list = cohortCustomers.get(firstMonth) ?? [];
+    list.push(id);
+    cohortCustomers.set(firstMonth, list);
+  }
+
+  const lastDataMonth = Array.from(new Set(subPayments.map((p) => p.date.slice(0, 7)))).sort().slice(-1)[0];
+  const cohortMonths = Array.from(cohortCustomers.keys()).sort();
+
+  return cohortMonths.map((month) => {
+    const ids = cohortCustomers.get(month)!;
+    const n = ids.length;
+    const values: Array<number | null> = [];
+    for (let k = 1; k <= maxOffset; k++) {
+      const targetMonth = addMonths(month, k);
+      if (targetMonth > lastDataMonth) {
+        values.push(null);
+        continue;
+      }
+      const retained = ids.filter((id) => monthsByCustomer.get(id)!.has(targetMonth)).length;
+      values.push(n > 0 ? Math.round((retained / n) * 100) : 0);
+    }
+    const [y, mm] = month.split("-");
+    return { month, label: `${MONTH_LABELS[mm] ?? mm} ${y}`, n, values };
+  });
+}

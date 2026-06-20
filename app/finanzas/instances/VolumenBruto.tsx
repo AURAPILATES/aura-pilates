@@ -1,0 +1,135 @@
+"use client";
+
+import { useState } from "react";
+import dynamic from "next/dynamic";
+import { BarChart2, Activity } from "react-feather";
+import type { Sale } from "@/lib/sales";
+import type { Transaction } from "@/lib/transactions";
+import { ChartCard, ChartTypeToggle, ToggleGroup, Legend } from "@/components/charts";
+import type { VolumenBrutoRow } from "./VolumenBrutoBody";
+
+const VolumenBrutoBody = dynamic(() => import("./VolumenBrutoBody"), {
+  ssr: false,
+  loading: () => <div className="h-[220px] rounded-lg bg-navy/[0.04] animate-pulse" />,
+});
+
+type Period = "dia" | "semana" | "mes" | "trimestre" | "año";
+
+const PERIODS: { key: Period; label: string }[] = [
+  { key: "dia", label: "Día" },
+  { key: "semana", label: "Semana" },
+  { key: "mes", label: "Mes" },
+  { key: "trimestre", label: "Trimestre" },
+  { key: "año", label: "Año" },
+];
+
+const MONTH_NAMES: Record<string, string> = {
+  "01": "Ene", "02": "Feb", "03": "Mar", "04": "Abr",
+  "05": "May", "06": "Jun", "07": "Jul", "08": "Ago",
+  "09": "Sep", "10": "Oct", "11": "Nov", "12": "Dic",
+};
+
+const EXPENSE_CATS = new Set([
+  "Alquiler", "Salarios", "Electricidad", "Agua", "Software", "Gestoría y legal",
+  "Impuestos y tasas", "Teléfono", "Seguros", "Comisiones bancarias", "Merchandising",
+  "Local", "Otros", "Inversión", "Material y maquinaria", "Mobiliario", "Reforma",
+]);
+
+function isoWeek(dateStr: string): string {
+  const d = new Date(dateStr + "T00:00:00");
+  const dow = (d.getDay() + 6) % 7;
+  const thu = new Date(d);
+  thu.setDate(d.getDate() - dow + 3);
+  const jan1 = new Date(thu.getFullYear(), 0, 1);
+  const week = Math.ceil(((thu.getTime() - jan1.getTime()) / 86400000 + 1) / 7);
+  return `${thu.getFullYear()}-W${String(week).padStart(2, "0")}`;
+}
+
+function getPeriodKey(date: string, period: Period): string {
+  const [y, m] = date.split("-");
+  switch (period) {
+    case "dia": return date;
+    case "semana": return isoWeek(date);
+    case "mes": return `${y}-${m}`;
+    case "trimestre": return `${y}-Q${Math.ceil(parseInt(m) / 3)}`;
+    case "año": return y;
+  }
+}
+
+function formatLabel(key: string, period: Period): string {
+  switch (period) {
+    case "dia": {
+      const [, m, d] = key.split("-");
+      return `${d}/${m}`;
+    }
+    case "semana": {
+      const [y, w] = key.split("-");
+      return `${w}'${y.slice(2)}`;
+    }
+    case "mes": {
+      const [y, m] = key.split("-");
+      return `${MONTH_NAMES[m] ?? m}'${y.slice(2)}`;
+    }
+    case "trimestre": return key.replace("-", " ");
+    case "año": return key;
+  }
+}
+
+function groupData(sales: Sale[], txns: Transaction[], period: Period): VolumenBrutoRow[] {
+  const map = new Map<string, { income: number; expense: number }>();
+
+  for (const s of sales) {
+    const key = getPeriodKey(s.paymentDate, period);
+    const p = map.get(key) ?? { income: 0, expense: 0 };
+    map.set(key, { ...p, income: p.income + s.amount });
+  }
+
+  for (const t of txns) {
+    if (t.amount >= 0 || !t.category || !EXPENSE_CATS.has(t.category)) continue;
+    const key = getPeriodKey(t.date, period);
+    const p = map.get(key) ?? { income: 0, expense: 0 };
+    map.set(key, { ...p, expense: p.expense + Math.abs(t.amount) });
+  }
+
+  return Array.from(map.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([key, { income, expense }]) => ({ key, label: formatLabel(key, period), income, expense }));
+}
+
+export default function VolumenBruto({ sales, txns }: { sales: Sale[]; txns: Transaction[] }) {
+  const [period, setPeriod] = useState<Period>("mes");
+  const [chartType, setChartType] = useState<"bar" | "line">("bar");
+
+  const data = groupData(sales, txns, period);
+
+  return (
+    <ChartCard
+      title="Ingresos y gastos"
+      subtitle="Volumen bruto de ingresos (Momence) frente a gastos (exportación bancaria) por período"
+      toolbar={
+        <>
+          <div className="flex items-center gap-3 flex-wrap">
+            <ChartTypeToggle
+              value={chartType}
+              onChange={(v) => setChartType(v as "bar" | "line")}
+              options={[
+                { value: "bar", label: "Ver como barras", icon: <BarChart2 size={14} /> },
+                { value: "line", label: "Ver como línea", icon: <Activity size={14} /> },
+              ]}
+            />
+            <Legend items={[{ label: "Ingresos", color: "#818CF8" }, { label: "Gastos", color: "#FCA5A5" }]} />
+          </div>
+          <ToggleGroup
+            value={period}
+            onChange={(v) => setPeriod(v as Period)}
+            options={PERIODS.map((p) => ({ value: p.key, label: p.label }))}
+          />
+        </>
+      }
+      chartDescription="Evolución de ingresos y gastos por período seleccionado"
+      dataSource="Ingresos: Momence sales.csv · Gastos: exportación bancaria CaixaBank"
+    >
+      <VolumenBrutoBody data={data} chartType={chartType} />
+    </ChartCard>
+  );
+}

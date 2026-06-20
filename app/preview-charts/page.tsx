@@ -16,6 +16,40 @@ import DesglosGastos from "@/app/finanzas/instances/DesglosGastos";
 import ConversionPack from "@/app/finanzas/instances/ConversionPack";
 import EvolucionSuscripciones from "@/app/finanzas/instances/EvolucionSuscripciones";
 import ResumenFinanzas from "@/app/finanzas/instances/ResumenFinanzas";
+import VolumenBruto from "@/app/finanzas/instances/VolumenBruto";
+import FuentesIngreso from "@/app/finanzas/instances/FuentesIngreso";
+import EvolucionInscritos from "@/app/finanzas/instances/EvolucionInscritos";
+import RetencionCohorte from "@/app/finanzas/instances/RetencionCohorte";
+import type { StripePayment } from "@/lib/stripePayments";
+import { computeRetentionCohorts } from "@/lib/subscriptionCohort";
+
+function mockPayment(id: string, date: string, customerId: string): StripePayment {
+  return {
+    id, date, customerId, amount: 75, fee: 2, net: 73,
+    customerName: null, customerEmail: null, description: null,
+    method: "card", category: "Suscripción", inferredProduct: "Bàsic", inferredType: "subscription",
+  };
+}
+const MOCK_PAYMENTS: StripePayment[] = [
+  mockPayment("1", "2026-02-05", "c1"), mockPayment("2", "2026-02-08", "c2"),
+  mockPayment("3", "2026-03-05", "c1"), mockPayment("4", "2026-03-08", "c2"), mockPayment("5", "2026-03-12", "c3"),
+  mockPayment("6", "2026-04-05", "c1"), mockPayment("7", "2026-04-08", "c2"), mockPayment("8", "2026-04-12", "c3"), mockPayment("9", "2026-04-15", "c4"),
+  mockPayment("10", "2026-05-05", "c1"), mockPayment("11", "2026-05-12", "c3"), mockPayment("12", "2026-05-15", "c4"),
+  mockPayment("13", "2026-06-05", "c1"), mockPayment("14", "2026-06-15", "c4"),
+];
+import type { Sale } from "@/lib/sales";
+import type { Transaction } from "@/lib/transactions";
+
+const MOCK_SALES: Sale[] = [
+  { paymentDate: "2026-04-05", serviceDate: "2026-04-05", amount: 4000, tax: 0, item: "Bàsic", category: "Suscripción", email: "a@x.com", name: "A", method: "Tarjeta" },
+  { paymentDate: "2026-05-05", serviceDate: "2026-05-05", amount: 4200, tax: 0, item: "Bàsic", category: "Suscripción", email: "a@x.com", name: "A", method: "Tarjeta" },
+  { paymentDate: "2026-06-05", serviceDate: "2026-06-05", amount: 4500, tax: 0, item: "Bàsic", category: "Suscripción", email: "a@x.com", name: "A", method: "Tarjeta" },
+];
+const MOCK_TXNS: Transaction[] = [
+  { id: "1", date: "2026-04-10", amount: -1200, balance: null, concept: "Alquiler", contact: "Propietario", labels: null, category: "Alquiler", contact_type: "proveedor", notes: null, source: "manual", payment_method: "banco", created_at: "2026-04-10T00:00:00Z", deleted_at: null },
+  { id: "2", date: "2026-05-10", amount: -1200, balance: null, concept: "Alquiler", contact: "Propietario", labels: null, category: "Alquiler", contact_type: "proveedor", notes: null, source: "manual", payment_method: "banco", created_at: "2026-04-10T00:00:00Z", deleted_at: null },
+  { id: "3", date: "2026-06-10", amount: -1200, balance: null, concept: "Alquiler", contact: "Propietario", labels: null, category: "Alquiler", contact_type: "proveedor", notes: null, source: "manual", payment_method: "banco", created_at: "2026-04-10T00:00:00Z", deleted_at: null },
+];
 
 const MOCK_MONTHLY_REVENUE = [
   { month: "2026-02", label: "Feb 2026", total: 1250, items: [{ name: "Pack Benvinguda", revenue: 600 }, { name: "Bàsic", revenue: 400 }, { name: "Otros", revenue: 250 }] },
@@ -214,6 +248,27 @@ export default function PreviewChartsPage() {
         clientesNecesarios={null}
         curMonthLabel="Junio 2026"
       />
+
+      {/* VolumenBruto (instancia real, con datos de ejemplo) */}
+      <VolumenBruto sales={MOCK_SALES} txns={MOCK_TXNS} />
+
+      {/* FuentesIngreso (instancia real, con datos de ejemplo) */}
+      <FuentesIngreso
+        recurrente={5860}
+        puntual={2853}
+        totalRev={8713}
+        stripeFees={210}
+        stripeNet={8502}
+        paymentsCount={128}
+        activeSubsCount={60}
+        periodLabel="21 may – 20 jun 2026"
+      />
+
+      {/* EvolucionInscritos (instancia real, con datos de ejemplo) */}
+      <EvolucionInscritos payments={MOCK_PAYMENTS} />
+
+      {/* RetencionCohorte (instancia real, con datos de ejemplo) */}
+      <RetencionCohorte cohorts={computeRetentionCohorts(MOCK_PAYMENTS, [{ name: "Bàsic", price: 75 }])} />
 
       {/* RunwayDots */}
       <div className="bg-white border border-navy/[0.07] rounded-2xl p-4 sm:p-5">

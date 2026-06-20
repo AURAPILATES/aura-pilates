@@ -33,7 +33,8 @@ import { loadCategoriesCached } from "@/lib/categories";
 import ClientesFilterBar from "@/app/clientes/ClientesFilterBar";
 import DesglosGastos from "./instances/DesglosGastos";
 import ResumenFinanzas from "./instances/ResumenFinanzas";
-import FinanzasBarChart from "./FinanzasBarChart";
+import VolumenBruto from "./instances/VolumenBruto";
+import FuentesIngreso from "./instances/FuentesIngreso";
 import EvolucionChart from "./EvolucionChart";
 import PresupuestosBlock from "./PresupuestosBlock";
 import { loadBudgetsCached, computeSpent } from "@/lib/budgets";
@@ -45,8 +46,10 @@ import { subscriptionTiersFromMemberships, computeMrrByTier } from "@/lib/mrr";
 import { getMemberships, getProducts, getCustomers } from "@/lib/momence";
 import { catalogFromMomence, revenueByProductFromStripe, revenueByProductByMonth, addUscToMonthlyRevenue } from "@/lib/productRevenue";
 import { countActiveStudents, computeAltasMes, computeBasjasMes } from "@/lib/studentMetrics";
-import { computeSubscriptionCohorts } from "@/lib/subscriptionCohort";
+import { computeSubscriptionCohorts, computeRetentionCohorts } from "@/lib/subscriptionCohort";
 import EvolucionSuscripciones from "./instances/EvolucionSuscripciones";
+import EvolucionInscritos from "./instances/EvolucionInscritos";
+import RetencionCohorte from "./instances/RetencionCohorte";
 import QuestionHeader from "@/app/components/QuestionHeader";
 import { loadBusinessEvents } from "@/lib/businessEvents";
 import MobileNav from "@/app/components/MobileNav";
@@ -225,7 +228,6 @@ export default async function Finanzas(props: {
   const renewNext7      = activeCustomersInMonth(paymentsAll, curMonth);
 
   const recurrente    = payments.filter((p) => p.customerId && recurringIds.has(p.customerId)).reduce((s, p) => s + p.amount, 0);
-  const recurrentePct = totalRev > 0 ? recurrente / totalRev : 0;
   const puntual       = totalRev - recurrente;
 
   // Convert to Sale[] for Momence-compatible charts
@@ -324,6 +326,7 @@ export default async function Finanzas(props: {
   }
   const monthlyRevenue = addUscToMonthlyRevenue(monthlyStripeRevenue, uscByMonth);
   const subscriptionCohorts = computeSubscriptionCohorts(paymentsAllBounded, subscriptionTiers);
+  const retentionCohorts = computeRetentionCohorts(paymentsAllBounded, subscriptionTiers);
 
   // Rango real de transacciones para mostrarlo en el desglose
   const txnDates = txnsAll.map((t) => t.date).sort();
@@ -476,6 +479,10 @@ export default async function Finanzas(props: {
           </div>
         </div>
 
+        <div className="mb-8">
+          <EvolucionInscritos payments={paymentsAllBounded} />
+        </div>
+
         <ResumenFinanzas
           currentBalance={currentBalance}
           balanceDate={balanceDate}
@@ -515,7 +522,7 @@ export default async function Finanzas(props: {
                   />
                   <KpiCard label="Clientes recurrentes" value={String(activeSubsCount)} sub={`MRR estimado ${fmt(realMrr)}`} />
                 </div>
-                <FinanzasBarChart sales={salesAll} txns={txnsAll} />
+                <VolumenBruto sales={salesAll} txns={txnsAll} />
               </div>
             </section>
 
@@ -555,70 +562,35 @@ export default async function Finanzas(props: {
             <section id="q3">
               <QuestionHeader num={3} question="¿De dónde vienen los ingresos?" />
               <div className="space-y-4">
-                {/* Fuentes de ingresos */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
-                    <p className="text-xs text-navy/55 uppercase tracking-wider mb-1">Recurrentes</p>
-                    <p className="text-[10px] text-navy/55 mb-2">{activeSubsCount} clientes · 2+ meses de 3</p>
-                    <p className="text-3xl font-semibold text-primary">{fmt(recurrente)}</p>
-                    <p className="text-xs text-navy/55 mt-1">{pct(recurrentePct)} del total</p>
-                    <div className="mt-4 h-1.5 bg-navy/5 rounded-full overflow-hidden">
-                      <div className="h-full bg-primary rounded-full" style={{ width: pct(recurrentePct) }} />
-                    </div>
+                <FuentesIngreso
+                  recurrente={recurrente}
+                  puntual={puntual}
+                  totalRev={totalRev}
+                  stripeFees={stripeFees}
+                  stripeNet={stripeNet}
+                  paymentsCount={payments.length}
+                  activeSubsCount={activeSubsCount}
+                  periodLabel={periodLabel}
+                />
+                <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
+                  <p className="text-xs text-navy/55 uppercase tracking-wider mb-3">Retención</p>
+                  <div className="flex items-baseline gap-2">
+                    <p className={`text-3xl font-semibold ${churnIds.size > 0 ? "text-warning" : "text-success"}`}>
+                      {churnIds.size}
+                    </p>
+                    <p className="text-xs text-navy/55">sin pagar este mes</p>
                   </div>
-                  <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
-                    <p className="text-xs text-navy/55 uppercase tracking-wider mb-3">Pagos únicos</p>
-                    <p className="text-3xl font-semibold text-income">{fmt(puntual)}</p>
-                    <p className="text-xs text-navy/55 mt-1">{pct(totalRev > 0 ? puntual / totalRev : 0)} del total</p>
-                    <div className="mt-4 h-1.5 bg-navy/5 rounded-full overflow-hidden">
-                      <div className="h-full bg-income rounded-full"
-                        style={{ width: pct(totalRev > 0 ? puntual / totalRev : 0) }} />
+                  <div className="mt-3 pt-3 border-t border-navy/5 space-y-1">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-navy/55">Activos este mes</span>
+                      <span className="font-medium text-navy">{renewNext7}</span>
                     </div>
-                  </div>
-                  <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
-                    <p className="text-xs text-navy/55 uppercase tracking-wider mb-3">Retención</p>
-                    <div className="flex items-baseline gap-2">
-                      <p className={`text-3xl font-semibold ${churnIds.size > 0 ? "text-warning" : "text-success"}`}>
-                        {churnIds.size}
-                      </p>
-                      <p className="text-xs text-navy/55">sin pagar este mes</p>
-                    </div>
-                    <div className="mt-3 pt-3 border-t border-navy/5 space-y-1">
-                      <div className="flex justify-between text-xs">
-                        <span className="text-navy/55">Activos este mes</span>
-                        <span className="font-medium text-navy">{renewNext7}</span>
-                      </div>
-                      <div className="flex justify-between text-xs">
-                        <span className="text-navy/55">MRR estimado</span>
-                        <span className="font-medium text-navy">{fmt(realMrr)}</span>
-                      </div>
+                    <div className="flex justify-between text-xs">
+                      <span className="text-navy/55">MRR estimado</span>
+                      <span className="font-medium text-navy">{fmt(realMrr)}</span>
                     </div>
                   </div>
                 </div>
-                {stripeFees > 0 && (
-                  <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
-                    <p className="text-xs font-semibold text-navy/55 uppercase tracking-wider mb-4">Comisiones Stripe</p>
-                    <div className="grid grid-cols-3 gap-4 divide-x divide-navy/[0.06]">
-                      <div className="pr-4">
-                        <p className="text-[10px] text-navy/45 uppercase tracking-wider mb-1">Bruto cobrado</p>
-                        <p className="text-lg font-semibold text-navy tabular-nums">{fmt(totalRev)}</p>
-                        <p className="text-[10px] text-navy/45 mt-0.5">{payments.length} cobros</p>
-                      </div>
-                      <div className="px-4">
-                        <p className="text-[10px] text-navy/45 uppercase tracking-wider mb-1">Comisión Stripe</p>
-                        <p className="text-lg font-semibold text-danger tabular-nums">−{fmt(stripeFees)}</p>
-                        <p className="text-[10px] text-navy/45 mt-0.5">
-                          {totalRev > 0 ? `${((stripeFees / totalRev) * 100).toFixed(1)}% del bruto` : ""}
-                        </p>
-                      </div>
-                      <div className="pl-4">
-                        <p className="text-[10px] text-navy/45 uppercase tracking-wider mb-1">Neto recibido</p>
-                        <p className="text-lg font-semibold text-success tabular-nums">{fmt(stripeNet)}</p>
-                        <p className="text-[10px] text-navy/45 mt-0.5">lo que llega al banco</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
                 <ClientesPaymentsBreakdown
                   succeeded={totalRev}
                   refunded={breakdown.refunded}
@@ -765,7 +737,10 @@ export default async function Finanzas(props: {
             {/* Q9 ¿Cómo evolucionan los ingresos y las altas/bajas? */}
             <section id="q9">
               <QuestionHeader num={9} question="¿Cómo evolucionan los ingresos y las altas/bajas?" />
-              <EvolucionSuscripciones monthly={monthlyRevenue} cohorts={subscriptionCohorts} />
+              <div className="space-y-4">
+                <EvolucionSuscripciones monthly={monthlyRevenue} cohorts={subscriptionCohorts} />
+                <RetencionCohorte cohorts={retentionCohorts} />
+              </div>
             </section>
 
             {/* Q10 ¿Cómo llegan los suscriptores? */}
