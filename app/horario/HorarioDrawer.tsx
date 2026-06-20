@@ -1,7 +1,7 @@
 "use client";
 
 import { MomenceEvent } from "@/lib/momence";
-import { fmt, pct } from "@/lib/analytics";
+import { pct } from "@/lib/analytics";
 import Drawer from "@/app/components/Drawer";
 
 function occColors(occ: number) {
@@ -27,8 +27,6 @@ export default function HorarioDrawer({
 }) {
   const occ = e.capacity > 0 ? e.ticketsSold / e.capacity : 0;
   const colors = occColors(occ);
-  const revenue = e.ticketsSold * e.fixedPrice;
-  const potential = e.capacity * e.fixedPrice;
 
   const time = new Date(e.dateTime).toLocaleTimeString("es-ES", {
     timeZone: "Europe/Madrid",
@@ -96,8 +94,6 @@ export default function HorarioDrawer({
       <div className="grid grid-cols-2 gap-3 px-6 py-5 border-b border-navy/[0.07]">
         <StatCard label="Apuntadas" value={`${e.ticketsSold} / ${e.capacity}`} />
         <StatCard label="Plazas libres" value={String(e.spotsRemaining)} accent={e.spotsRemaining === 0 ? "text-danger" : "text-success"} />
-        <StatCard label="Ingresos" value={fmt(revenue)} />
-        <StatCard label="Potencial" value={fmt(potential)} accent="text-navy/45" />
       </div>
 
       {/* Slots */}

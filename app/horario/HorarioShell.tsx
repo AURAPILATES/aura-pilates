@@ -368,7 +368,7 @@ export default function HorarioShell({
                             {" · "}{daySold}/{dayTotal}
                           </span>
                         </div>
-                        <div className="space-y-2.5">
+                        <div className="border border-navy/[0.07] rounded-xl divide-y divide-navy/[0.06] overflow-hidden">
                           {dayEvs.map((e) => (
                             <MobileClassCard key={e.id} event={e} onSelect={handleSelect} />
                           ))}
@@ -477,6 +477,7 @@ export default function HorarioShell({
 function MobileClassCard({ event: e, onSelect }: { event: MomenceEvent; onSelect: (e: MomenceEvent) => void }) {
   const occ    = e.capacity > 0 ? e.ticketsSold / e.capacity : 0;
   const status = getOccStatus(occ);
+  const pctVal = Math.round(occ * 100);
   const time   = new Date(e.dateTime).toLocaleTimeString("es-ES", {
     timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit",
   });
@@ -484,27 +485,20 @@ function MobileClassCard({ event: e, onSelect }: { event: MomenceEvent; onSelect
   return (
     <button
       onClick={() => onSelect(e)}
-      className={`w-full text-left bg-white border border-navy/[0.07] border-l-4 rounded-lg shadow-card p-3.5 ${status.border}`}
+      className="w-full text-left bg-white p-3.5 flex items-center gap-3"
     >
-      <div className="flex items-start justify-between mb-1.5">
-        <span className="font-mono text-xs text-navy/45">{time}</span>
-        <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${status.bg} ${status.text}`}>
-          {status.label}
-        </span>
+      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${status.dot}`} />
+      <span className="font-mono text-xs text-navy/45 shrink-0">{time}</span>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-navy truncate">{e.title}</p>
+        {e.teacher && <p className="text-xs text-navy/50 truncate">{e.teacher}</p>}
       </div>
-      <p className="text-sm font-semibold text-navy leading-snug">{e.title}</p>
-      {e.teacher && <p className="text-xs text-navy/50 mt-0.5">{e.teacher}</p>}
-      <div className="mt-2.5">
-        <div className="h-1 bg-navy/[0.08] rounded-full overflow-hidden mb-1.5">
-          <div className={`h-full rounded-full ${status.dot}`} style={{ width: `${Math.round(occ * 100)}%` }} />
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-[11px] text-navy/45 tabular-nums">
-            {e.ticketsSold}/{e.capacity} · {e.spotsRemaining === 0 ? "completa" : `${e.spotsRemaining} libre${e.spotsRemaining !== 1 ? "s" : ""}`}
-          </span>
-          <span className={`text-xs font-semibold tabular-nums ${status.text}`}>{Math.round(occ * 100)}%</span>
+      <div className="w-16 shrink-0">
+        <div className="h-1 bg-navy/[0.08] rounded-full overflow-hidden">
+          <div className={`h-full rounded-full ${status.dot}`} style={{ width: `${pctVal}%` }} />
         </div>
       </div>
+      <span className={`text-xs font-semibold tabular-nums w-9 text-right shrink-0 ${status.text}`}>{pctVal}%</span>
     </button>
   );
 }
