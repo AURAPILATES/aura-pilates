@@ -4,7 +4,7 @@ export default function HorarioSkeleton() {
 
   return (
     <div>
-      <div className="fixed top-[57px] left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5 px-3 py-1.5 bg-navy text-white text-[11px] rounded-full shadow-lg pointer-events-none">
+      <div className="fixed top-[57px] left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5 px-3 py-1.5 bg-navy text-white text-[11px] rounded-[6px] shadow-lg pointer-events-none">
         <span className="w-1.5 h-1.5 rounded-full bg-white/60 animate-pulse" />
         Obteniendo datos de Momence…
       </div>
