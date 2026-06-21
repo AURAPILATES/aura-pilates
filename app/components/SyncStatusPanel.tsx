@@ -102,17 +102,17 @@ export default function SyncStatusPanel() {
   return (
     <div className="px-5 py-3 space-y-1.5">
       <div className="flex items-center justify-between mb-2">
-        <p className="text-[9px] font-semibold uppercase tracking-widest text-navy/25">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-navy/25">
           Última sync
         </p>
         <button
           onClick={handleSync}
           disabled={pending}
           title="Sincronizar Stripe y Momence"
-          className="flex items-center justify-center w-5 h-5 rounded text-navy/35 hover:text-navy hover:bg-navy/[0.06] transition-colors disabled:opacity-40"
+          className="flex items-center justify-center w-6 h-6 rounded-full bg-navy/[0.04] text-navy/40 hover:text-navy hover:bg-navy/[0.08] hover:rotate-90 transition-all duration-300 disabled:opacity-40 disabled:hover:rotate-0"
         >
           <svg
-            width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
             strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
             className={pending ? "animate-spin" : ""}
           >
