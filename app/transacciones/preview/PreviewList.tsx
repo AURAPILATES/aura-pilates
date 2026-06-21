@@ -174,7 +174,7 @@ export default function PreviewList({ transactions, categories, uncategorizedCou
       </div>
 
       {/* Toolbar */}
-      <div className="flex items-stretch gap-2 mb-6">
+      <div className="flex items-stretch gap-2 mb-2">
         <button className="flex-1 flex items-center justify-center gap-1.5 h-10 bg-white border border-navy/[0.18] rounded-lg text-sm font-medium text-navy">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
@@ -194,11 +194,11 @@ export default function PreviewList({ transactions, categories, uncategorizedCou
         {byDay.length === 0 && (
           <p className="py-10 text-center text-sm text-navy/45">Sin resultados</p>
         )}
-        {byDay.map(([date, dayTxns]) => {
+        {byDay.map(([date, dayTxns], i) => {
           const dayNet = dayTxns.reduce((s, t) => s + t.amount, 0);
           return (
             <div key={date}>
-              <div className="flex items-baseline justify-between pt-5 pb-2">
+              <div className={`flex items-baseline justify-between pb-2 ${i === 0 ? "pt-0" : "pt-5"}`}>
                 <span className="text-sm font-semibold text-navy">{fmtDayLabel(date)}</span>
                 <span className={`text-xs tabular-nums ${dayNet < 0 ? "text-danger" : "text-navy/40"}`}>
                   {dayNet < 0 ? "−" : "+"}{fmtAmt(Math.abs(dayNet))}
