@@ -919,7 +919,7 @@ export default function TransaccionesList({
           onClick={() => setCatFilters(catFilters.includes("__none__") ? catFilters.filter((v) => v !== "__none__") : [...catFilters, "__none__"])}
           className="sm:hidden w-full flex items-center gap-2 px-4 py-2.5 mb-3 rounded-xl bg-warning/10 border border-warning/20 text-navy/70 text-sm font-medium text-left"
         >
-          <span className="text-base text-warning">⚠</span>
+          <span className="shrink-0 w-2 h-2 rounded-full bg-warning" />
           <span className="flex-1">{uncategorizedCount} sin clasificar</span>
           <span className="flex items-center gap-1 text-warning font-semibold whitespace-nowrap">
             Revisar
@@ -1085,11 +1085,11 @@ export default function TransaccionesList({
 
       {/* ── Mobile: month strip (sticky) ────────────────────────────────────── */}
       <div className="sm:hidden sticky top-[45px] z-20 -mx-2 px-2 pt-2 pb-3 bg-app-bg border-b border-navy/[0.06]">
-        <div className="flex gap-1 overflow-x-auto scrollbar-none">
+        <div className="flex items-center gap-0.5 border border-navy/[0.12] rounded-lg bg-white p-0.5 overflow-x-auto scrollbar-none">
           <button
             onClick={() => router.push(pathname)}
-            className={`shrink-0 px-3 py-1.5 rounded-full text-sm border transition-colors ${
-              !activeMonth ? "bg-navy text-white border-navy font-medium" : "text-navy/50 border-navy/[0.12]"
+            className={`shrink-0 px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap ${
+              !activeMonth ? "bg-navy text-white" : "text-navy/50 hover:text-navy"
             }`}
           >
             Todo
@@ -1102,8 +1102,8 @@ export default function TransaccionesList({
                 key={key}
                 ref={isActive ? activeMonthRef : undefined}
                 onClick={() => goToMonth(key)}
-                className={`shrink-0 px-3 py-1.5 rounded-full text-sm border transition-colors capitalize ${
-                  isActive ? "bg-navy text-white border-navy font-medium" : "text-navy/50 border-navy/[0.12] hover:text-navy"
+                className={`shrink-0 px-3 py-1.5 text-xs font-medium rounded-md transition-colors capitalize whitespace-nowrap ${
+                  isActive ? "bg-navy text-white" : "text-navy/50 hover:text-navy"
                 }`}
               >
                 {label}{showYear && <span className="text-[10px] ml-0.5 opacity-60">{year}</span>}
@@ -1160,7 +1160,7 @@ export default function TransaccionesList({
                             {t.amount < 0 && "−"}{fmtAmt(t.amount)}
                           </span>
                           {t.balance != null && (
-                            <p className="text-[10px] text-navy/40 tabular-nums mt-0.5">{fmtAmt(t.balance)} €</p>
+                            <p className="text-[10px] text-navy/40 tabular-nums mt-0.5">{fmtAmt(t.balance)}</p>
                           )}
                         </div>
                       </div>
@@ -1301,7 +1301,7 @@ export default function TransaccionesList({
                       </span>
                     </div>
                     {t.balance != null && (
-                      <p className="text-[10px] text-navy/40 tabular-nums mt-0.5">{fmtAmt(t.balance)} €</p>
+                      <p className="text-[10px] text-navy/40 tabular-nums mt-0.5">{fmtAmt(t.balance)}</p>
                     )}
                   </td>
                 </tr>
