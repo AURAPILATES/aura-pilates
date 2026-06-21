@@ -1084,7 +1084,7 @@ export default function TransaccionesList({
       )}
 
       {/* ── Mobile: month strip (sticky) ────────────────────────────────────── */}
-      <div className="sm:hidden sticky top-[53px] z-20 -mx-2 px-2 pt-0 pb-3 bg-app-bg border-b border-navy/[0.06]">
+      <div className="sm:hidden sticky top-[45px] z-20 -mx-2 px-2 pt-2 pb-3 bg-app-bg border-b border-navy/[0.06]">
         <div className="flex gap-1 overflow-x-auto scrollbar-none">
           <button
             onClick={() => router.push(pathname)}
