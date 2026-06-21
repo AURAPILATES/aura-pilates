@@ -1,8 +1,8 @@
 "use client";
-import React, { useState, useTransition } from "react";
+import React, { useState, useTransition, useEffect } from "react";
 import type { Category, GroupType } from "@/lib/categories";
 import { economicGroupOf, type EconomicGroup } from "@/lib/economicGroups";
-import { createCategory, updateCategory, deleteCategory } from "./actions";
+import { createCategory, updateCategory, deleteCategory, reorderCategories } from "./actions";
 
 const GROUP_LABELS: Record<GroupType, string> = {
   operational: "Operacional",
@@ -21,6 +21,39 @@ const ECONOMIC_LABELS: Record<EconomicGroup, string> = {
   capex: "Inversión (CapEx)",
 };
 const ECONOMIC_ORDER: EconomicGroup[] = ["personal", "operational", "capex"];
+
+/** Cada padre presente en `list` va seguido de sus subcategorías presentes en `list`. */
+function byParentOrdered(list: Category[]): Category[] {
+  const byParent = new Map<string | null, Category[]>();
+  for (const c of list) {
+    const key = c.parent_id ?? null;
+    if (!byParent.has(key)) byParent.set(key, []);
+    byParent.get(key)!.push(c);
+  }
+  for (const l of byParent.values()) l.sort((a, b) => a.sort_order - b.sort_order);
+  const result: Category[] = [];
+  for (const parent of byParent.get(null) ?? []) {
+    result.push(parent);
+    result.push(...(byParent.get(parent.id) ?? []));
+  }
+  return result;
+}
+
+/** Orden canónico de todas las categorías tal como se muestran en esta pantalla (grupo → naturaleza económica → padre/hijos). */
+function flattenDisplayOrder(all: Category[]): Category[] {
+  const result: Category[] = [];
+  for (const g of GROUP_ORDER) {
+    const items = all.filter((c) => c.group_type === g || (g === "operational" && !KNOWN_GROUPS.has(c.group_type)));
+    if (g === "operational") {
+      for (const eg of ECONOMIC_ORDER) {
+        result.push(...byParentOrdered(items.filter((c) => economicGroupOf(c.label) === eg)));
+      }
+    } else {
+      result.push(...byParentOrdered(items));
+    }
+  }
+  return result;
+}
 
 // ── Color palette ─────────────────────────────────────────────────────────────
 
@@ -67,9 +100,10 @@ const NAME_TO_KEY: Record<string, string> = {
   "Salarios": "users",
   "Seguridad social": "shield",
   "Gestoría y legal": "file-text",
-  "Impuestos y tasas": "percent",
+  "Impuestos y tasas": "percent", "IVA": "percent", "IRPF": "percent", "IS": "percent",
   "Software": "monitor",
-  "Electricidad": "zap",
+  "Suministros": "zap",
+  "Electricidad": "zap", "Luz": "zap",
   "Agua": "droplet",
   "Teléfono": "phone",
   "Seguros": "briefcase",
@@ -129,16 +163,51 @@ const EMPTY: Omit<Category, "id" | "created_at"> = {
   group_type: "operational",
   auto_keywords: null,
   sort_order: 99,
+  parent_id: null,
 };
 
 type EditorState = { mode: "new" } | { mode: "edit"; cat: Category };
 
-export default function CategoriasManager({ categories }: { categories: Category[] }) {
+export default function CategoriasManager({ categories: categoriesProp }: { categories: Category[] }) {
+  const [categories, setCategories] = useState(categoriesProp);
+  useEffect(() => setCategories(categoriesProp), [categoriesProp]);
   const [editor, setEditor] = useState<EditorState | null>(null);
   const [form, setForm] = useState<Omit<Category, "id" | "created_at">>(EMPTY);
   const [selectedColor, setSelectedColor] = useState(DEFAULT_COLOR);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
+
+  function handleDrop(list: Category[], targetId: string) {
+    const dragId = draggedId;
+    setDraggedId(null);
+    setDragOverId(null);
+    if (!dragId || dragId === targetId) return;
+    const dragIdx = list.findIndex((c) => c.id === dragId);
+    const targetIdx = list.findIndex((c) => c.id === targetId);
+    if (dragIdx === -1 || targetIdx === -1) return;
+
+    const reordered = [...list];
+    const [moved] = reordered.splice(dragIdx, 1);
+    reordered.splice(targetIdx, 0, moved);
+
+    // Renumera localmente la sublista arrastrada y luego recalcula el sort_order
+    // global de TODAS las categorías a partir del orden de pantalla resultante,
+    // para que el orden se mantenga consistente en cualquier lista/selector de la app.
+    const localRank = new Map(reordered.map((c, i) => [c.id, i]));
+    const patched = categories.map((c) => (localRank.has(c.id) ? { ...c, sort_order: localRank.get(c.id)! } : c));
+    const renumbered = flattenDisplayOrder(patched).map((c, i) => ({ ...c, sort_order: i + 1 }));
+
+    setCategories(renumbered);
+    startTransition(async () => {
+      try {
+        await reorderCategories(renumbered.map((c) => ({ id: c.id, sort_order: c.sort_order })));
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Error al reordenar.");
+      }
+    });
+  }
 
   function handleColorSelect(hex: string) {
     setSelectedColor(hex);
@@ -168,6 +237,7 @@ export default function CategoriasManager({ categories }: { categories: Category
       group_type: KNOWN_GROUPS.has(cat.group_type) ? cat.group_type as GroupType : "operational",
       auto_keywords: cat.auto_keywords,
       sort_order: cat.sort_order,
+      parent_id: cat.parent_id,
     });
     setEditor({ mode: "edit", cat });
     setError(null);
@@ -244,33 +314,57 @@ export default function CategoriasManager({ categories }: { categories: Category
             );
             if (items.length === 0) return null;
 
-            const renderItems = (list: Category[]) => (
-              <div className="bg-white border border-navy/[0.08] rounded-2xl shadow-card overflow-hidden">
-                {list.map((cat, i) => {
-                  const isActive = editor?.mode === "edit" && editor.cat.id === cat.id;
-                  return (
-                    <button
-                      key={cat.id}
-                      onClick={() => openEdit(cat)}
-                      className={`w-full flex items-center gap-4 px-5 py-3.5 transition-colors text-left ${
-                        i < list.length - 1 ? "border-b border-navy/[0.05]" : ""
-                      } ${isActive ? "bg-navy/[0.04]" : "hover:bg-navy/[0.015]"}`}
-                    >
-                      <CategoryIcon iconKey={cat.emoji} name={cat.label} color={cat.text_color} size={40} />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-navy">{cat.label}</p>
-                        {cat.auto_keywords && (
-                          <p className="text-[11px] text-navy/40 mt-0.5 truncate">{cat.auto_keywords}</p>
-                        )}
+            const renderItems = (rawList: Category[]) => {
+              const ordered = byParentOrdered(rawList);
+
+              return (
+                <div className="bg-white border border-navy/[0.08] rounded-2xl shadow-card overflow-hidden">
+                  {ordered.map((cat, i) => {
+                    const isActive = editor?.mode === "edit" && editor.cat.id === cat.id;
+                    const isSub = !!cat.parent_id;
+                    const isDragging = draggedId === cat.id;
+                    const isDragOver = dragOverId === cat.id && draggedId !== null && draggedId !== cat.id;
+                    return (
+                      <div
+                        key={cat.id}
+                        draggable
+                        onDragStart={() => setDraggedId(cat.id)}
+                        onDragOver={(e) => { e.preventDefault(); setDragOverId(cat.id); }}
+                        onDragLeave={() => setDragOverId((id) => (id === cat.id ? null : id))}
+                        onDrop={(e) => { e.preventDefault(); handleDrop(ordered, cat.id); }}
+                        onDragEnd={() => { setDraggedId(null); setDragOverId(null); }}
+                        className={`flex items-center transition-colors ${
+                          i < ordered.length - 1 ? "border-b border-navy/[0.05]" : ""
+                        } ${isActive ? "bg-navy/[0.04]" : ""} ${isDragOver ? "bg-primary/[0.06]" : ""} ${isDragging ? "opacity-40" : ""}`}
+                      >
+                        <span className="pl-3 pr-0.5 text-navy/25 cursor-grab active:cursor-grabbing shrink-0" title="Arrastrar para reordenar">
+                          <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor">
+                            <circle cx="2.5" cy="2.5" r="1.4"/><circle cx="7.5" cy="2.5" r="1.4"/>
+                            <circle cx="2.5" cy="8" r="1.4"/><circle cx="7.5" cy="8" r="1.4"/>
+                            <circle cx="2.5" cy="13.5" r="1.4"/><circle cx="7.5" cy="13.5" r="1.4"/>
+                          </svg>
+                        </span>
+                        <button
+                          onClick={() => openEdit(cat)}
+                          className={`flex-1 flex items-center gap-4 pr-5 py-3.5 transition-colors text-left hover:bg-navy/[0.015] ${isSub ? "pl-6" : "pl-1"}`}
+                        >
+                          <CategoryIcon iconKey={cat.emoji} name={cat.label} color={cat.text_color} size={isSub ? 32 : 40} />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-navy">{cat.label}</p>
+                            {cat.auto_keywords && (
+                              <p className="text-[11px] text-navy/40 mt-0.5 truncate">{cat.auto_keywords}</p>
+                            )}
+                          </div>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-navy/25 shrink-0">
+                            <polyline points="9 18 15 12 9 6"/>
+                          </svg>
+                        </button>
                       </div>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-navy/25 shrink-0">
-                        <polyline points="9 18 15 12 9 6"/>
-                      </svg>
-                    </button>
-                  );
-                })}
-              </div>
-            );
+                    );
+                  })}
+                </div>
+              );
+            };
 
             return (
               <div key={g}>
@@ -418,6 +512,25 @@ export default function CategoriasManager({ categories }: { categories: Category
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* Categoría padre */}
+              <div>
+                <label className="block text-xs font-semibold text-navy/45 uppercase tracking-wider mb-2">
+                  Categoría padre <span className="font-normal normal-case text-navy/35">(opcional, para crear una subcategoría)</span>
+                </label>
+                <select
+                  value={form.parent_id ?? ""}
+                  onChange={(e) => setForm((f) => ({ ...f, parent_id: e.target.value || null }))}
+                  className="w-full text-sm border border-navy/[0.12] rounded-xl px-4 py-3 outline-none focus:border-navy/40 focus:ring-1 focus:ring-navy/20 bg-white text-navy"
+                >
+                  <option value="">— Sin categoría padre —</option>
+                  {categories
+                    .filter((c) => !c.parent_id && (editor.mode !== "edit" || c.id !== editor.cat.id))
+                    .map((c) => (
+                      <option key={c.id} value={c.id}>{c.label}</option>
+                    ))}
+                </select>
               </div>
 
               {/* Auto-keywords */}

@@ -14,7 +14,26 @@ export type Category = {
   auto_keywords: string | null;
   sort_order: number;
   created_at: string;
+  parent_id: string | null;
 };
+
+/** Categorías ordenadas para listas/selects: cada padre seguido inmediatamente de sus subcategorías. */
+export function sortCategoriesHierarchical(categories: Category[]): Category[] {
+  const byParent = new Map<string | null, Category[]>();
+  for (const c of categories) {
+    const key = c.parent_id ?? null;
+    if (!byParent.has(key)) byParent.set(key, []);
+    byParent.get(key)!.push(c);
+  }
+  for (const list of byParent.values()) list.sort((a, b) => a.sort_order - b.sort_order);
+
+  const result: Category[] = [];
+  for (const parent of byParent.get(null) ?? []) {
+    result.push(parent);
+    result.push(...(byParent.get(parent.id) ?? []));
+  }
+  return result;
+}
 
 export async function loadCategories(): Promise<Category[]> {
   const supabase = createServerClient();

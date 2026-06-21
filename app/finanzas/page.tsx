@@ -108,7 +108,7 @@ const PRODUCT_COLORS = ["#6B7ED6","#9260B8","#D4AA35","#4A7A9B","#4A9870","#D460
 const EXPENSE_COLORS = ["#6B7ED6","#9260B8","#D4AA35","#4A7A9B","#4A9870","#D46055","#C46890","#3AA09C","#8878C0"];
 const BURN_CATS = new Set([
   "Alquiler","Salarios","Seguridad social","Electricidad","Agua","Software","Gestoría y legal",
-  "Impuestos y tasas","Teléfono","Seguros","Comisiones bancarias","Merchandising","Local","Otros",
+  "Impuestos y tasas","IVA","IRPF","IS","Teléfono","Seguros","Comisiones bancarias","Merchandising","Local","Otros",
 ]);
 
 function pad2(n: number) { return String(n).padStart(2, "0"); }

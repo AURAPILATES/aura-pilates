@@ -31,7 +31,7 @@ const MONTH_NAMES: Record<string, string> = {
 
 const EXPENSE_CATS = new Set([
   "Alquiler", "Salarios", "Seguridad social", "Electricidad", "Agua", "Software", "Gestoría y legal",
-  "Impuestos y tasas", "Teléfono", "Seguros", "Comisiones bancarias", "Merchandising",
+  "Impuestos y tasas", "IVA", "IRPF", "IS", "Teléfono", "Seguros", "Comisiones bancarias", "Merchandising",
   "Local", "Otros", "Inversión", "Material y maquinaria", "Mobiliario", "Reforma",
 ]);
 

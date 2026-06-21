@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import type { Category } from "@/lib/categories";
+import { sortCategoriesHierarchical } from "@/lib/categories";
 import type { PaymentMethod } from "@/lib/transactions";
 import { addCashTransaction } from "./actions";
 import Drawer from "@/app/components/Drawer";
@@ -133,8 +134,8 @@ export default function AddCashModal({ categories, onClose }: { categories: Cate
               className="w-full border border-navy/[0.12] rounded-lg px-3 py-2 text-sm text-navy focus:outline-none focus:border-primary/40 bg-white"
             >
               <option value="">Sin categoría</option>
-              {categories.map((c) => (
-                <option key={c.value} value={c.value}>{c.label}</option>
+              {sortCategoriesHierarchical(categories).map((c) => (
+                <option key={c.value} value={c.value}>{c.parent_id ? `  ↳ ${c.label}` : c.label}</option>
               ))}
             </select>
           </div>
