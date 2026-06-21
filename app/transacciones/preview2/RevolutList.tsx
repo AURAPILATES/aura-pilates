@@ -23,6 +23,17 @@ function fmtAmt(n: number) {
 const FALLBACK_COLOR = { in: "#4e8c68", out: "#1c1917" };
 const FALLBACK_ICON = { in: "trending-up", out: "package" };
 
+function bankLabel(method: string) {
+  if (method === "banco") return "CaixaBank";
+  if (method === "efectivo") return "Efectivo";
+  return method.charAt(0).toUpperCase() + method.slice(1);
+}
+
+function rgba(hex: string, alpha: number) {
+  const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
 type Props = {
   transactions: Transaction[];
   categories: Category[];
@@ -171,15 +182,27 @@ export default function RevolutList({ transactions, categories, uncategorizedCou
                   const cat = t.category ? categories.find((c) => c.value === t.category) : undefined;
                   const accent = cat?.text_color ?? (t.amount > 0 ? FALLBACK_COLOR.in : FALLBACK_COLOR.out);
                   const iconKey = cat?.emoji ?? (t.amount > 0 ? FALLBACK_ICON.in : FALLBACK_ICON.out);
-                  const label = cat?.label ?? t.concept ?? "";
+                  const label = cat?.label ?? "Sin categoría";
+                  const badgeBg = cat
+                    ? (cat.bg_color === cat.text_color ? rgba(cat.text_color, 0.12) : cat.bg_color)
+                    : rgba(accent, 0.12);
+                  const primary = t.contact || t.concept || "—";
+                  const secondary = t.contact && t.concept && t.concept !== t.contact ? t.concept : null;
                   return (
-                    <div key={t.id} className={`flex items-center gap-3 px-3 py-2.5 ${i > 0 ? "border-t border-navy/[0.04]" : ""}`}>
-                      <div className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: accent }}>
+                    <div key={t.id} className={`flex items-start gap-3 px-3 py-3 ${i > 0 ? "border-t border-navy/[0.04]" : ""}`}>
+                      <div className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center mt-0.5" style={{ backgroundColor: accent }}>
                         <CatIcon iconKey={iconKey} name={label} color="#fff" size={17} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-[15px] font-semibold text-navy truncate">{t.contact || t.concept || "—"}</p>
-                        <p className="text-xs text-navy/40 truncate">{label || t.concept}</p>
+                        <p className="text-[15px] font-semibold text-navy truncate">{primary}</p>
+                        {secondary && <p className="text-xs text-navy/40 truncate">{secondary}</p>}
+                        <p className="text-xs text-navy/35 truncate">{bankLabel(t.payment_method)}</p>
+                        <span
+                          className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium mt-1"
+                          style={{ backgroundColor: badgeBg, color: accent }}
+                        >
+                          {label}
+                        </span>
                       </div>
                       <div className="shrink-0 text-right">
                         <p className={`text-sm font-semibold tabular-nums ${t.amount > 0 ? "text-success" : "text-navy"}`}>
