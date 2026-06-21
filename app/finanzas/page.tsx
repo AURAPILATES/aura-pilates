@@ -56,38 +56,10 @@ import RetencionCohorte from "./instances/RetencionCohorte";
 import QuestionHeader from "@/app/components/QuestionHeader";
 import { loadBusinessEvents } from "@/lib/businessEvents";
 import MobileNav from "@/app/components/MobileNav";
+import KpiTile from "@/components/charts/KpiTile";
+import { resolvePeriod, pad2 } from "@/lib/periodCalculation";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-function trendPct(current: number, prev: number): number | null {
-  if (prev === 0) return null;
-  return ((current - prev) / prev) * 100;
-}
-
-function TrendBadge({ value }: { value: number | null }) {
-  if (value === null) return null;
-  const up = value >= 0;
-  return (
-    <span className={`text-xs font-medium shrink-0 ${up ? "text-success" : "text-danger"}`}>
-      {up ? "▲" : "▼"} {Math.abs(Math.round(value))}%
-    </span>
-  );
-}
-
-function KpiCard({ label, value, sub, trend, valueColor = "text-navy" }: {
-  label: string; value: string; sub?: string; trend?: number | null; valueColor?: string;
-}) {
-  return (
-    <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-4 sm:p-5">
-      <div className="flex items-start justify-between gap-2 mb-1">
-        <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider leading-tight">{label}</p>
-        {trend !== undefined && <TrendBadge value={trend ?? null} />}
-      </div>
-      <p className={`text-2xl font-semibold tabular-nums ${valueColor}`}>{value}</p>
-      {sub && <p className="text-[10px] text-navy/40 mt-1.5">{sub}</p>}
-    </div>
-  );
-}
 
 function Block({ title, legend, children }: {
   title: string; legend?: string; children: React.ReactNode;
@@ -174,25 +146,6 @@ function groupExpensesByEconomicGroup(
   });
 }
 
-function pad2(n: number) { return String(n).padStart(2, "0"); }
-
-function addDays(dateStr: string, days: number): string {
-  const d = new Date(dateStr + "T12:00:00");
-  d.setDate(d.getDate() + days);
-  return d.toISOString().split("T")[0];
-}
-
-function daysBetween(a: string, b: string): number {
-  return Math.round(
-    (new Date(b + "T12:00:00").getTime() - new Date(a + "T12:00:00").getTime()) / 86400000,
-  );
-}
-
-function fmtShort(d: string) {
-  const [y, m, day] = d.split("-");
-  return `${day}/${m}/${y.slice(2)}`;
-}
-
 const MES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 function monthLabel(ym: string) {
   const [y, m] = ym.split("-");
@@ -206,53 +159,13 @@ export default async function Finanzas(props: {
 }) {
   const sp = await props.searchParams;
 
-  const periodParam  = typeof sp.period      === "string" ? sp.period      : "30";
-  const customFrom   = typeof sp.from        === "string" ? sp.from        : "";
-  const customTo     = typeof sp.to          === "string" ? sp.to          : "";
-  const compareParam = typeof sp.compareWith === "string" ? sp.compareWith : "previous";
-  const cpFrom       = typeof sp.compareFrom === "string" ? sp.compareFrom : "";
-  const cpTo         = typeof sp.compareTo   === "string" ? sp.compareTo   : "";
+  const { from: mainFrom, to: mainTo, compFrom, compTo, periodLabel, compDateRange } = resolvePeriod(sp);
 
   // ── Stripe payments ──
   const now = new Date();
-  const todayStr = now.toISOString().split("T")[0];
   const curMonth  = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}`;
   const prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const prevMonth = `${prevMonthDate.getFullYear()}-${pad2(prevMonthDate.getMonth() + 1)}`;
-
-  let mainFrom: string;
-  let mainTo: string = todayStr;
-
-  if (periodParam === "custom" && customFrom && customTo) {
-    mainFrom = customFrom;
-    mainTo   = customTo;
-  } else if (periodParam === "all") {
-    mainFrom = "2026-02-01";
-  } else {
-    const days = periodParam === "7" ? 7 : periodParam === "90" ? 90 : 30;
-    mainFrom = addDays(todayStr, -days);
-  }
-
-  let compFrom: string;
-  let compTo: string;
-
-  if (compareParam === "custom" && cpFrom && cpTo) {
-    compFrom = cpFrom;
-    compTo   = cpTo;
-  } else {
-    const duration = daysBetween(mainFrom, mainTo);
-    compTo   = addDays(mainFrom, -1);
-    compFrom = addDays(compTo,   -duration);
-  }
-
-  const periodLabel =
-    periodParam === "7"   ? "7 días"  :
-    periodParam === "30"  ? "30 días" :
-    periodParam === "90"  ? "90 días" :
-    periodParam === "all" ? "Desde el inicio" :
-    `${fmtShort(mainFrom)}–${fmtShort(mainTo)}`;
-
-  const compDateRange = `${fmtShort(compFrom)}–${fmtShort(compTo)}`;
 
   const breakdownFrom = mainFrom;
   const breakdownTo   = mainTo;
@@ -507,42 +420,27 @@ export default async function Finanzas(props: {
 
         {/* ── KPIs principales ── */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
-          {/* Alumnos activos */}
-          <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-4 sm:p-5">
-            <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider mb-1">Alumnos activos</p>
-            <p className="text-2xl font-semibold text-navy tabular-nums">{alumnosActivos}</p>
-            <p className="text-[10px] text-navy/40 mt-1.5">con suscripción o pack vigente</p>
-          </div>
-
-          {/* Altas del mes */}
-          <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-4 sm:p-5">
-            <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider mb-1">Altas · {monthLabel(curMonth)}</p>
-            <p className="text-2xl font-semibold text-success tabular-nums">
-              +{altasMes.nuevos + altasMes.reactivados}
-            </p>
-            <p className="text-[10px] text-navy/40 mt-1.5">
-              {altasMes.nuevos > 0 && `${altasMes.nuevos} nuevos`}
-              {altasMes.nuevos > 0 && altasMes.reactivados > 0 && " · "}
-              {altasMes.reactivados > 0 && `${altasMes.reactivados} reactivados`}
-              {altasMes.nuevos === 0 && altasMes.reactivados === 0 && "sin altas este mes"}
-            </p>
-          </div>
-
-          {/* Bajas del mes */}
-          <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-4 sm:p-5">
-            <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider mb-1">Bajas · {monthLabel(curMonth)}</p>
-            <p className={`text-2xl font-semibold tabular-nums ${bajasMes > 0 ? "text-danger" : "text-navy/30"}`}>
-              {bajasMes > 0 ? `−${bajasMes}` : "−0"}
-            </p>
-            <p className="text-[10px] text-navy/40 mt-1.5">suscripciones sin renovar</p>
-          </div>
-
-          {/* Facturación prevista */}
-          <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-4 sm:p-5">
-            <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider mb-1">Facturación prevista</p>
-            <p className="text-2xl font-semibold text-navy tabular-nums">{fmt(facturacionPrev)}</p>
-            <p className="text-[10px] text-navy/40 mt-1.5">MRR · suscripciones activas</p>
-          </div>
+          <KpiTile label="Alumnos activos" value={alumnosActivos} sub="con suscripción o pack vigente" />
+          <KpiTile
+            label={`Altas · ${monthLabel(curMonth)}`}
+            value={`+${altasMes.nuevos + altasMes.reactivados}`}
+            valueClassName="text-success"
+            sub={
+              altasMes.nuevos === 0 && altasMes.reactivados === 0
+                ? "sin altas este mes"
+                : [
+                    altasMes.nuevos > 0 ? `${altasMes.nuevos} nuevos` : null,
+                    altasMes.reactivados > 0 ? `${altasMes.reactivados} reactivados` : null,
+                  ].filter(Boolean).join(" · ")
+            }
+          />
+          <KpiTile
+            label={`Bajas · ${monthLabel(curMonth)}`}
+            value={bajasMes > 0 ? `−${bajasMes}` : "−0"}
+            valueClassName={bajasMes > 0 ? "text-danger" : "text-navy/30"}
+            sub="suscripciones sin renovar"
+          />
+          <KpiTile label="Facturación prevista" value={fmt(facturacionPrev)} sub="MRR · suscripciones activas" />
         </div>
 
         <div className="mb-8">
@@ -569,24 +467,24 @@ export default async function Finanzas(props: {
               <QuestionHeader num={1} question={`¿Cómo fue ${q1Label.toLowerCase()}?`} />
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                  <KpiCard
+                  <KpiTile
                     label={`Ingresos · ${q1Label}`}
                     value={fmt(q1Revenue)}
-                    sub={`vs ${fmt(q1RevComp)} (${compDateRange})`}
-                    trend={trendPct(q1Revenue, q1RevComp)}
+                    delta={{ cur: q1Revenue, prev: q1RevComp }}
+                    compLabel={`vs ${fmt(q1RevComp)} (${compDateRange})`}
                   />
-                  <KpiCard
+                  <KpiTile
                     label={`Gastos · ${monthLabel(curMonth)}`}
                     value={fmt(estGastosMes)}
                     sub={isGastosEst ? "estimado" : `${txnsAll.filter(t => t.amount < 0 && t.date.startsWith(curMonth)).length} transacciones`}
                   />
-                  <KpiCard
+                  <KpiTile
                     label="Resultado mes"
                     value={`${resultadoMes >= 0 ? "+" : "−"}${fmt(Math.abs(resultadoMes))}`}
                     sub="ingresos − gastos"
-                    valueColor={resultadoMes >= 0 ? "text-success" : "text-danger"}
+                    valueClassName={resultadoMes >= 0 ? "text-success" : "text-danger"}
                   />
-                  <KpiCard label="Clientes recurrentes" value={String(activeSubsCount)} sub={`MRR estimado ${fmt(realMrr)}`} />
+                  <KpiTile label="Clientes recurrentes" value={String(activeSubsCount)} sub={`MRR estimado ${fmt(realMrr)}`} />
                 </div>
                 <VolumenBruto sales={salesAll} txns={txnsAll} />
               </div>
@@ -597,15 +495,15 @@ export default async function Finanzas(props: {
               <QuestionHeader num={2} question="¿En qué se va el dinero?" />
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                  <KpiCard label="Gastos operativos" value={fmt(totalOpEx)} sub="costes recurrentes" />
-                  <KpiCard label="Inversión inicial" value={fmt(totalStartup)} sub="reforma, maquinaria, mobiliario" />
-                  <KpiCard label="Total acumulado" value={fmt(totalOpEx + totalStartup)}
+                  <KpiTile label="Gastos operativos" value={fmt(totalOpEx)} sub="costes recurrentes" />
+                  <KpiTile label="Inversión inicial" value={fmt(totalStartup)} sub="reforma, maquinaria, mobiliario" />
+                  <KpiTile label="Total acumulado" value={fmt(totalOpEx + totalStartup)}
                     sub={`${txnsAll.filter(t => t.amount < 0).length} transacciones`} />
-                  <KpiCard
+                  <KpiTile
                     label="Ticket medio"
                     value={fmt(ticketMedio)}
-                    sub={`${payments.length} pagos Stripe`}
-                    trend={trendPct(ticketCur, ticketPrev)}
+                    delta={{ cur: ticketCur, prev: ticketPrev }}
+                    compLabel={`${payments.length} pagos Stripe`}
                   />
                 </div>
                 <DesglosGastosGeneral

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { fmt } from "@/lib/analytics";
 import Drawer from "@/app/components/Drawer";
+import KpiTile from "@/components/charts/KpiTile";
 import { type CustomerRow, clientStatus } from "./ClientesTable";
 type DrawerKey = "all" | "active" | "recurring" | "new" | "churn" | "error" | null;
 
@@ -15,119 +16,6 @@ const MONTHS_ES = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","
 function fmtD(d: string): string {
   const [y, m, day] = d.split("-");
   return `${parseInt(day)} ${MONTHS_ES[parseInt(m) - 1]} ${y}`;
-}
-
-type KPICardProps = {
-  label: string;
-  value: number | string;
-  sub: string;
-  tooltip?: string;
-  dateRange?: string;
-  valueClass?: string;
-  onClick?: () => void;
-  accent?: "primary" | "success" | "warning" | "neutral";
-};
-
-function InfoTooltip({ text }: { text: string }) {
-  return (
-    <span className="relative group/tip inline-flex items-center">
-      <svg
-        width="12" height="12" viewBox="0 0 16 16" fill="none"
-        className="text-navy/30 hover:text-navy/55 transition-colors cursor-default shrink-0"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5"/>
-        <path d="M8 7v5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-        <circle cx="8" cy="4.5" r="0.75" fill="currentColor"/>
-      </svg>
-      <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[200px] rounded-lg bg-navy px-2.5 py-1.5 text-[11px] leading-snug text-white shadow-lg opacity-0 group-hover/tip:opacity-100 transition-opacity z-50 whitespace-normal text-center">
-        {text}
-        <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-navy" />
-      </span>
-    </span>
-  );
-}
-
-function KPICard({ label, value, sub, tooltip, dateRange, valueClass = "text-navy", onClick, accent }: KPICardProps) {
-  const hoverBorder = {
-    primary: "hover:border-primary/30",
-    success:  "hover:border-success/30",
-    warning:  "hover:border-warning/40",
-    neutral:  "hover:border-navy/20",
-  }[accent ?? "neutral"];
-
-  const labelEl = (
-    <div className="flex items-center gap-1 mb-0.5">
-      <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider">{label}</p>
-      {tooltip && <InfoTooltip text={tooltip} />}
-    </div>
-  );
-
-  if (!onClick) {
-    return (
-      <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-4 sm:p-5">
-        {labelEl}
-        {dateRange && <p className="text-[10px] text-navy/40 mb-1.5">{dateRange}</p>}
-        <p className={`text-2xl font-semibold tabular-nums ${valueClass}`}>{value}</p>
-        <p className="text-[10px] text-navy/40 mt-1.5">{sub}</p>
-      </div>
-    );
-  }
-
-  return (
-    <button
-      onClick={onClick}
-      className={`bg-white border border-navy/[0.07] rounded-2xl shadow-card p-4 sm:p-5 text-left transition-all group ${hoverBorder} hover:shadow-md`}
-    >
-      {labelEl}
-      {dateRange && <p className="text-[10px] text-navy/40 mb-1.5">{dateRange}</p>}
-      <p className={`text-2xl font-semibold tabular-nums ${valueClass} group-hover:opacity-80 transition-opacity`}>{value}</p>
-      <p className="text-[10px] text-navy/40 mt-1.5 flex items-center gap-1">
-        <span>{sub}</span>
-        <span className="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
-      </p>
-    </button>
-  );
-}
-
-function pct(cur: number, prev: number): number {
-  if (prev === 0) return 0;
-  return ((cur - prev) / prev) * 100;
-}
-
-function TrendBadge({ cur, prev }: { cur: number; prev: number }) {
-  const p = pct(cur, prev);
-  if (p === 0 || prev === 0) return null;
-  const pos = p > 0;
-  return (
-    <span className={`text-xs font-semibold ${pos ? "text-success" : "text-danger"}`}>
-      {pos ? "+" : ""}{p.toFixed(2).replace(".", ",")} %
-    </span>
-  );
-}
-
-type TrendCardProps = {
-  label: string;
-  value: string;
-  prevLabel: string;
-  cur: number;
-  prev: number;
-  dateRange: string;
-  compDateRange: string;
-};
-
-function TrendCard({ label, value, prevLabel, cur, prev, dateRange, compDateRange }: TrendCardProps) {
-  return (
-    <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-4 sm:p-5">
-      <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider mb-0.5">{label}</p>
-      <p className="text-[10px] text-navy/40 mb-1.5">{dateRange}</p>
-      <div className="flex items-baseline gap-2 flex-wrap">
-        <p className="text-2xl font-semibold tabular-nums text-navy">{value}</p>
-        <TrendBadge cur={cur} prev={prev} />
-      </div>
-      <p className="text-[10px] text-navy/40 mt-1.5">{compDateRange} · {prevLabel}</p>
-    </div>
-  );
 }
 
 type DrawerSection = { title: string; customers: CustomerRow[] };
@@ -309,87 +197,81 @@ export default function ClientesKPIs({ customers, mrr, prevMonthLabel, curMonthL
     <>
       {/* 3 KPIs de tendencia: período seleccionado vs comparación */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4">
-        <TrendCard
+        <KpiTile
           label="Volumen bruto"
           dateRange={dateRange}
-          compDateRange={compDateRange}
           value={fmt(grossRevenue)}
-          prevLabel={fmt(grossRevenueComp)}
-          cur={grossRevenue}
-          prev={grossRevenueComp}
+          delta={{ cur: grossRevenue, prev: grossRevenueComp }}
+          compLabel={`${compDateRange} · ${fmt(grossRevenueComp)}`}
         />
-        <TrendCard
+        <KpiTile
           label="Clientes nuevos"
           dateRange={dateRange}
-          compDateRange={compDateRange}
           value={String(newCount)}
-          prevLabel={String(newCountComp)}
-          cur={newCount}
-          prev={newCountComp}
+          delta={{ cur: newCount, prev: newCountComp }}
+          compLabel={`${compDateRange} · ${String(newCountComp)}`}
         />
-        <TrendCard
+        <KpiTile
           label="Gasto por cliente"
           dateRange={dateRange}
-          compDateRange={compDateRange}
           value={fmt(spendPerClient)}
-          prevLabel={fmt(spendPerClientComp)}
-          cur={spendPerClient}
-          prev={spendPerClientComp}
+          delta={{ cur: spendPerClient, prev: spendPerClientComp }}
+          compLabel={`${compDateRange} · ${fmt(spendPerClientComp)}`}
         />
       </div>
 
       {/* 6 KPIs: 2 cols móvil, 3 en sm, 6 en xl */}
       <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4 mb-6">
-        <KPICard
+        <KpiTile
           label="Activos"
           value={activeList.length}
           sub="suscripción o pack vigente"
           tooltip="Suscripción renovada hace ≤30 días, o pack con fecha de caducidad aún vigente (Benvinguda: 15d · Pack 4/8: 90d)"
-          valueClass="text-navy"
+          valueClassName="text-navy"
           accent="neutral"
           onClick={() => setDrawer("active")}
         />
-        <KPICard
+        <KpiTile
           label="Recurrentes"
           dateRange={range90}
           value={recurringList.length}
           sub="pagaron en 2+ de los últimos 3 meses"
           tooltip="Clientes con al menos 2 pagos registrados en los 3 meses anteriores. Son tu base fiel activa."
-          valueClass="text-primary"
+          valueClassName="text-primary"
           accent="primary"
           onClick={() => setDrawer("recurring")}
         />
-        <KPICard
+        <KpiTile
           label="Nuevos"
           dateRange={dateRange}
           value={newList.length}
           sub="primer pago en el período"
-          valueClass="text-success"
+          valueClassName="text-success"
           accent="success"
           onClick={newList.length > 0 ? () => setDrawer("new") : undefined}
         />
-        <KPICard
+        <KpiTile
           label="MRR estimado"
           dateRange={range90}
           value={fmt(mrr)}
           sub="media 3 meses"
-          valueClass="text-success"
+          valueClassName="text-success"
         />
-        <KPICard
+        <KpiTile
           label="Sin renovar"
           value={churnList.length}
           sub="entre 46 y 76 días sin pagar"
           tooltip="Suscriptoras que llevan entre 46 y 76 días sin renovar — periodo accionable para reactivación"
-          valueClass={churnList.length > 0 ? "text-danger" : "text-navy/50"}
+          valueClassName={churnList.length > 0 ? "text-danger" : "text-navy/50"}
           accent="warning"
           onClick={churnList.length > 0 ? () => setDrawer("churn") : undefined}
         />
-        <KPICard
+        <KpiTile
           label="Error de pago"
           dateRange={range30}
           value={delinquentList.length}
           sub="cobro fallido reciente"
-          valueClass={delinquentList.length > 0 ? "text-danger" : "text-navy/50"}
+          valueClassName={delinquentList.length > 0 ? "text-danger" : "text-navy/50"}
           accent="warning"
           onClick={delinquentList.length > 0 ? () => setDrawer("error") : undefined}
         />
