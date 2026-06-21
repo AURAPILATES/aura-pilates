@@ -97,7 +97,7 @@ export default function RevolutList({ transactions, categories, uncategorizedCou
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-3 text-center gap-1 mb-3">
+      <div className="grid grid-cols-3 text-center gap-1 mb-3 bg-white border border-navy/[0.08] rounded-xl py-3">
         <div className="min-w-0">
           <p className="text-[12px] text-navy/40 uppercase tracking-wider leading-none mb-0.5 whitespace-nowrap">Ingresos</p>
           <p className="text-[14px] font-semibold text-success tabular-nums truncate">{Math.round(totalIn).toLocaleString("es-ES")} €</p>
@@ -163,38 +163,36 @@ export default function RevolutList({ transactions, categories, uncategorizedCou
         </button>
       )}
 
-      {/* Tira de meses: segmented control */}
-      <div className="mb-5 pb-3 border-b border-navy/[0.06]">
-        <div className="flex items-center gap-0.5 border border-navy/[0.12] rounded-lg bg-white p-0.5 overflow-x-auto scrollbar-none">
-          <button
-            onClick={() => router.push(pathname)}
-            className={`shrink-0 px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap ${
-              !activeMonth ? "bg-navy text-white" : "text-navy/50 hover:text-navy"
-            }`}
-          >
-            Todo
-          </button>
-          {monthStrip.map(({ key, label, year }) => {
-            const isActive = key === activeMonth;
-            const showYear = year !== new Date().getFullYear();
-            return (
-              <button
-                key={key}
-                ref={isActive ? activeMonthRef : undefined}
-                onClick={() => goToMonth(key)}
-                className={`shrink-0 px-3 py-1.5 text-xs font-medium rounded-md transition-colors capitalize whitespace-nowrap ${
-                  isActive ? "bg-navy text-white" : "text-navy/50 hover:text-navy"
-                }`}
-              >
-                {label}{showYear && <span className="text-[10px] ml-0.5 opacity-60">{year}</span>}
-              </button>
-            );
-          })}
-        </div>
+      {/* Tira de meses: estilo Revolut, pills sueltas sin caja */}
+      <div className="flex gap-3 overflow-x-auto scrollbar-none mb-5">
+        <button
+          onClick={() => router.push(pathname)}
+          className={`shrink-0 px-3.5 py-1.5 rounded-full text-sm transition-colors whitespace-nowrap ${
+            !activeMonth ? "bg-navy text-white font-medium" : "text-navy/40 hover:text-navy/70"
+          }`}
+        >
+          Todo
+        </button>
+        {monthStrip.map(({ key, label, year }) => {
+          const isActive = key === activeMonth;
+          const showYear = year !== new Date().getFullYear();
+          return (
+            <button
+              key={key}
+              ref={isActive ? activeMonthRef : undefined}
+              onClick={() => goToMonth(key)}
+              className={`shrink-0 px-3.5 py-1.5 rounded-full text-sm transition-colors capitalize whitespace-nowrap ${
+                isActive ? "bg-navy text-white font-medium" : "text-navy/40 hover:text-navy/70"
+              }`}
+            >
+              {label}{showYear && <span className="text-[10px] ml-0.5 opacity-60">{year}</span>}
+            </button>
+          );
+        })}
       </div>
 
       {/* Toolbar */}
-      <div className="flex items-stretch gap-2 mb-3">
+      <div className="flex items-stretch gap-2 mb-4">
         <button className="flex-1 flex items-center justify-center gap-1.5 px-3 h-9 bg-white text-navy text-[13px] font-medium border border-navy/15 rounded-xl hover:bg-navy/[0.02] transition-colors">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
