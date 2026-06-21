@@ -35,6 +35,8 @@ function fmtAmt(n: number) {
 }
 
 const CAT_FALLBACK = { emoji: "package", bg: "#F8FAFC", color: "#94A3B8" };
+const FALLBACK_COLOR = { in: "#4e8c68", out: "#1c1917" };
+const FALLBACK_ICON = { in: "trending-up", out: "package" };
 
 // ── Source avatar ─────────────────────────────────────────────────────────────
 const SOCIO_INITIALS: Record<string, { initials: string; bg: string; color: string }> = {
@@ -794,7 +796,7 @@ export default function TransaccionesList({
       </div>
 
       {/* ── Mobile: KPIs ──────────────────────────────────────────────────────── */}
-      <div className="sm:hidden grid grid-cols-3 text-center gap-1 mb-3">
+      <div className="sm:hidden grid grid-cols-3 text-center gap-1 mb-3 bg-white border border-navy/[0.08] rounded-xl py-3">
         <div className="min-w-0">
           <p className="text-[12px] text-navy/40 uppercase tracking-wider leading-none mb-0.5 whitespace-nowrap">Ingresos</p>
           <p className="text-[14px] font-semibold text-success tabular-nums truncate">{fmtAmt(totalIn)}</p>
@@ -1045,13 +1047,13 @@ export default function TransaccionesList({
         </div>
       )}
 
-      {/* ── Mobile: month strip (sticky) ────────────────────────────────────── */}
-      <div className="sm:hidden sticky top-[45px] z-20 -mx-2 px-2 pt-2 pb-3 bg-app-bg border-b border-navy/[0.06]">
-        <div className="flex items-center gap-0.5 border border-navy/[0.12] rounded-lg bg-white p-0.5 overflow-x-auto scrollbar-none">
+      {/* ── Mobile: month strip (sticky), pills sueltas estilo Revolut ──────── */}
+      <div className="sm:hidden sticky top-[45px] z-20 -mx-2 px-2 pt-2 pb-3 bg-app-bg">
+        <div className="flex gap-3 overflow-x-auto scrollbar-none">
           <button
             onClick={() => router.push(pathname)}
-            className={`shrink-0 px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap ${
-              !activeMonth ? "bg-navy text-white" : "text-navy/50 hover:text-navy"
+            className={`shrink-0 px-3.5 py-1.5 rounded-full text-sm transition-colors whitespace-nowrap ${
+              !activeMonth ? "bg-navy text-white font-medium" : "text-navy/40 hover:text-navy/70"
             }`}
           >
             Todo
@@ -1064,8 +1066,8 @@ export default function TransaccionesList({
                 key={key}
                 ref={isActive ? activeMonthRef : undefined}
                 onClick={() => goToMonth(key)}
-                className={`shrink-0 px-3 py-1.5 text-xs font-medium rounded-md transition-colors capitalize whitespace-nowrap ${
-                  isActive ? "bg-navy text-white" : "text-navy/50 hover:text-navy"
+                className={`shrink-0 px-3.5 py-1.5 rounded-full text-sm transition-colors capitalize whitespace-nowrap ${
+                  isActive ? "bg-navy text-white font-medium" : "text-navy/40 hover:text-navy/70"
                 }`}
               >
                 {label}{showYear && <span className="text-[10px] ml-0.5 opacity-60">{year}</span>}
@@ -1075,8 +1077,8 @@ export default function TransaccionesList({
         </div>
       </div>
 
-      {/* ── Mobile: day-grouped cards ───────────────────────────────────────── */}
-      <div className="sm:hidden space-y-6 mt-3">
+      {/* ── Mobile: day-grouped list, estilo Revolut (icono circular de color) ── */}
+      <div className="sm:hidden space-y-5 mt-4">
         {filtered.length === 0 && (
           <p className="py-10 text-center text-sm text-navy/45">Sin resultados</p>
         )}
@@ -1091,43 +1093,53 @@ export default function TransaccionesList({
                   {dayNet < 0 ? "−" : "+"}{fmtAmt(Math.abs(dayNet))}
                 </span>
               </div>
-              {/* Day card */}
-              <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden divide-y divide-navy/[0.05]">
-                {dayTxns.map((t) => {
+              {/* Lista plana, icono circular de color estilo Revolut */}
+              <div>
+                {dayTxns.map((t, i) => {
                   const recurringPeriod = recurringPeriods[t.id];
                   const isSelected  = selected.has(t.id);
                   const primary     = t.contact || t.concept || "—";
                   const secondary   = t.contact && t.concept && t.concept !== t.contact ? t.concept : null;
+                  const cat         = t.category ? categories.find((c) => c.value === t.category) : undefined;
+                  const accent      = cat?.text_color ?? (t.amount > 0 ? FALLBACK_COLOR.in : FALLBACK_COLOR.out);
+                  const iconKey     = cat?.emoji ?? (t.amount > 0 ? FALLBACK_ICON.in : FALLBACK_ICON.out);
                   return (
-                    <div key={t.id} className={`px-3 py-4 transition-colors ${isSelected ? "bg-primary/[0.035]" : ""}`}>
+                    <div
+                      key={t.id}
+                      className={`flex items-start gap-3 px-1 py-3 transition-colors ${i > 0 ? "border-t border-navy/[0.04]" : ""} ${isSelected ? "bg-primary/[0.035]" : ""}`}
+                    >
                       <div
-                        className="flex items-center justify-between gap-3 cursor-pointer"
+                        className="flex items-center gap-2.5 shrink-0 cursor-pointer"
                         onClick={() => { if (mobileSelectMode) toggleOne(t.id); else setDrawerTxnId(t.id); }}
                       >
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          {mobileSelectMode && (
-                            <Checkbox checked={isSelected} onChange={() => toggleOne(t.id)} />
-                          )}
-                          <SourceAvatar method={t.payment_method} />
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
-                              <span className="text-sm font-medium text-navy truncate">{primary}</span>
-                              {recurringPeriod && <span className="shrink-0 text-sm text-primary/50" title={recurringPeriod}>↺</span>}
-                            </div>
-                            {secondary && <p className="text-[11px] text-navy/40 truncate mt-0.5">{secondary}</p>}
-                          </div>
-                        </div>
-                        <div className="shrink-0 text-right">
-                          <span className={`text-sm font-semibold tabular-nums ${t.amount > 0 ? "text-success" : "text-navy/75"}`}>
-                            {t.amount < 0 && "−"}{fmtAmt(t.amount)}
-                          </span>
-                          {t.balance != null && (
-                            <p className="text-[10px] text-navy/40 tabular-nums mt-0.5">{fmtAmt(t.balance)}</p>
-                          )}
+                        {mobileSelectMode && (
+                          <Checkbox checked={isSelected} onChange={() => toggleOne(t.id)} />
+                        )}
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: accent }}>
+                          <CatIcon iconKey={iconKey} name={cat?.label ?? primary} color="#fff" size={17} />
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 mt-2.5 flex-wrap" onClick={(e) => e.stopPropagation()}>
-                        <CategoryPill category={t.category} categories={categories} onChange={(cat) => handleCategoryChange(t.id, cat)} />
+                      <div
+                        className="flex-1 min-w-0 cursor-pointer"
+                        onClick={() => { if (mobileSelectMode) toggleOne(t.id); else setDrawerTxnId(t.id); }}
+                      >
+                        <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
+                          <span className="text-[15px] font-semibold text-navy truncate">{primary}</span>
+                          {recurringPeriod && <span className="shrink-0 text-sm text-primary/50" title={recurringPeriod}>↺</span>}
+                        </div>
+                        {secondary && <p className="text-xs text-navy/40 truncate">{secondary}</p>}
+                        <p className="text-xs text-navy/35 truncate">{originLabel(t.payment_method)}</p>
+                        <div className="mt-1" onClick={(e) => e.stopPropagation()}>
+                          <CategoryPill category={t.category} categories={categories} onChange={(cat) => handleCategoryChange(t.id, cat)} />
+                        </div>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <p className={`text-sm font-semibold tabular-nums ${t.amount > 0 ? "text-success" : "text-navy"}`}>
+                          {t.amount > 0 ? "+" : "−"}{fmtAmt(t.amount)}
+                        </p>
+                        {t.balance != null && (
+                          <p className="text-[11px] text-navy/35 tabular-nums mt-0.5">{fmtAmt(t.balance)}</p>
+                        )}
                       </div>
                     </div>
                   );
