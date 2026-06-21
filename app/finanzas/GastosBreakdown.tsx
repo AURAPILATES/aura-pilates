@@ -259,7 +259,7 @@ export default function GastosBreakdown({
                         </div>
                       </button>
                       {hasChildren && isOpen && (
-                        <div className="pl-7 pb-1 space-y-0.5">
+                        <div className="pl-9 pb-1 space-y-0.5">
                           {seg.children.map((ch) => {
                             const chShare = totalExpCat > 0 ? ch.total / totalExpCat : 0;
                             return (
