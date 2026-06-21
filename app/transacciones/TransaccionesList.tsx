@@ -370,7 +370,7 @@ function MobileActionsMenu({ onExport, onPapelera }: { onExport: () => void; onP
         ref={btnRef}
         onClick={handleToggle}
         title="Más acciones"
-        className="shrink-0 flex items-center justify-center w-[42px] h-[42px] text-navy/55 border border-navy/[0.12] rounded-md bg-white hover:bg-navy/[0.02] hover:text-navy transition-colors"
+        className="shrink-0 flex items-center justify-center w-[42px] h-[42px] text-navy/55 border border-navy/[0.12] rounded-lg bg-white hover:bg-navy/[0.02] hover:text-navy transition-colors"
       >
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/><circle cx="5" cy="12" r="1.5"/>
@@ -796,7 +796,7 @@ export default function TransaccionesList({
       </div>
 
       {/* ── Mobile: KPIs ──────────────────────────────────────────────────────── */}
-      <div className="sm:hidden grid grid-cols-3 text-center gap-1 mb-3 bg-white border border-navy/[0.08] rounded-lg py-3">
+      <div className="sm:hidden grid grid-cols-3 text-center gap-1 mb-3 bg-white border border-navy/[0.08] rounded-xl py-3">
         <div className="min-w-0">
           <p className="text-[12px] text-navy/40 uppercase tracking-wider leading-none mb-0.5 whitespace-nowrap">Ingresos</p>
           <p className="text-[14px] font-semibold text-success tabular-nums truncate">{fmtAmt(totalIn)}</p>
@@ -824,7 +824,7 @@ export default function TransaccionesList({
             placeholder="Buscar concepto o contacto…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-9 py-2.5 text-sm border border-navy/[0.12] rounded-md bg-white text-navy placeholder:text-navy/35 outline-none focus:ring-2 focus:ring-primary/20 transition"
+            className="w-full pl-9 pr-9 py-2.5 text-sm border border-navy/[0.12] rounded-lg bg-white text-navy placeholder:text-navy/35 outline-none focus:ring-2 focus:ring-primary/20 transition"
           />
           {search && (
             <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-navy/30 hover:text-navy/60">✕</button>
@@ -833,7 +833,7 @@ export default function TransaccionesList({
         <button
           onClick={() => setShowMobileFilters((v) => !v)}
           title="Filtros"
-          className="relative shrink-0 flex items-center justify-center w-[42px] h-[42px] bg-white border border-navy/[0.12] rounded-md text-navy"
+          className="relative shrink-0 flex items-center justify-center w-[42px] h-[42px] bg-white border border-navy/[0.12] rounded-lg text-navy"
         >
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/>
@@ -881,7 +881,7 @@ export default function TransaccionesList({
       {uncategorizedCount > 0 && (
         <button
           onClick={() => setCatFilters(catFilters.includes("__none__") ? catFilters.filter((v) => v !== "__none__") : [...catFilters, "__none__"])}
-          className="sm:hidden w-full flex items-center gap-2 px-4 py-2.5 mb-3 rounded-lg bg-warning/10 border border-warning/20 text-navy/70 text-sm font-medium text-left"
+          className="sm:hidden w-full flex items-center gap-2 px-4 py-2.5 mb-3 rounded-xl bg-warning/10 border border-warning/20 text-navy/70 text-sm font-medium text-left"
         >
           <span className="shrink-0 w-2 h-2 rounded-full bg-warning" />
           <span className="flex-1">{uncategorizedCount} sin clasificar</span>
@@ -972,7 +972,7 @@ export default function TransaccionesList({
           <ImportButton compact className="flex-1" onManual={() => setShowAddCash(true)} />
           <button
             onClick={() => { setMobileSelectMode((v) => { if (v) clearSelection(); return !v; }); }}
-            className={`shrink-0 flex items-center justify-center gap-1.5 w-[124px] h-9 text-[13px] font-medium px-4 rounded-lg border transition-colors ${
+            className={`shrink-0 flex items-center justify-center gap-1.5 w-[124px] h-9 text-[13px] font-medium px-4 rounded-xl border transition-colors ${
               mobileSelectMode
                 ? "bg-navy text-white border-navy"
                 : "bg-white text-navy border-navy/15 hover:bg-navy/[0.02]"
@@ -1078,7 +1078,7 @@ export default function TransaccionesList({
       </div>
 
       {/* ── Mobile: day-grouped list, estilo Revolut (icono circular de color) ── */}
-      <div className="sm:hidden space-y-5 mt-4">
+      <div className="sm:hidden space-y-5 mt-4 mx-1">
         {filtered.length === 0 && (
           <p className="py-10 text-center text-sm text-navy/45">Sin resultados</p>
         )}
@@ -1094,7 +1094,7 @@ export default function TransaccionesList({
                 </span>
               </div>
               {/* Caja blanca por día, icono circular de color por movimiento */}
-              <div className="bg-white rounded-lg overflow-hidden divide-y divide-navy/[0.05]">
+              <div className="bg-white rounded-2xl overflow-hidden divide-y divide-navy/[0.05]">
                 {dayTxns.map((t) => {
                   const recurringPeriod = recurringPeriods[t.id];
                   const isSelected  = selected.has(t.id);
@@ -1125,7 +1125,12 @@ export default function TransaccionesList({
                       >
                         <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
                           <span className="text-[15px] font-semibold text-navy truncate">{primary}</span>
-                          {recurringPeriod && <span className="shrink-0 text-sm text-primary/50" title={recurringPeriod}>↺</span>}
+                          {recurringPeriod && (
+                            <svg className="shrink-0 text-primary/55" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <title>{recurringPeriod}</title>
+                              <path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15"/>
+                            </svg>
+                          )}
                         </div>
                         {secondary && <p className="text-xs text-navy/40 truncate">{secondary}</p>}
                         <p className="text-xs text-navy/35 truncate">{originLabel(t.payment_method)}</p>
