@@ -3,6 +3,7 @@ import React, { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { Category, GroupType } from "@/lib/categories";
 import { economicGroupOf, type EconomicGroup } from "@/lib/economicGroups";
+import { siblingColor } from "@/lib/colorVariants";
 import { createCategory, updateCategory, deleteCategory, reorderCategories } from "./actions";
 
 const GROUP_LABELS: Record<GroupType, string> = {
@@ -220,6 +221,20 @@ export default function CategoriasManager({
   function handleColorSelect(hex: string) {
     setSelectedColor(hex);
     setForm((f) => ({ ...f, ...deriveColors(hex) }));
+  }
+
+  function handleParentSelect(parentId: string) {
+    if (!parentId) {
+      setForm((f) => ({ ...f, parent_id: null }));
+      return;
+    }
+    const parent = categories.find((c) => c.id === parentId);
+    const siblings = categories.filter(
+      (c) => c.parent_id === parentId && (editor?.mode !== "edit" || c.id !== editor.cat.id),
+    );
+    const hex = parent ? siblingColor(parent.text_color, siblings.length, siblings.length + 1) : DEFAULT_COLOR;
+    setSelectedColor(hex);
+    setForm((f) => ({ ...f, parent_id: parentId, ...deriveColors(hex) }));
   }
 
   function handleIconSelect(key: string) {
@@ -465,21 +480,30 @@ export default function CategoriasManager({
               {/* Color */}
               <div>
                 <label className="block text-xs font-semibold text-navy/45 uppercase tracking-wider mb-3">Color</label>
-                <div className="flex flex-wrap gap-3">
-                  {PALETTE.map((hex) => (
-                    <button
-                      key={hex}
-                      onClick={() => handleColorSelect(hex)}
-                      className="w-9 h-9 rounded-full transition-transform hover:scale-110 relative"
-                      style={{ backgroundColor: hex }}
-                      title={hex}
-                    >
-                      {selectedColor === hex && (
-                        <span className="absolute inset-0 rounded-full ring-2 ring-offset-2 ring-current" style={{ color: hex }} />
-                      )}
-                    </button>
-                  ))}
-                </div>
+                {form.parent_id ? (
+                  <div className="flex items-center gap-3">
+                    <span className="w-9 h-9 rounded-full shrink-0" style={{ backgroundColor: selectedColor }} />
+                    <p className="text-[11px] text-navy/45 leading-snug">
+                      Hereda el tono de su categoría padre, con un matiz distinto para diferenciarla de sus hermanas.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-3">
+                    {PALETTE.map((hex) => (
+                      <button
+                        key={hex}
+                        onClick={() => handleColorSelect(hex)}
+                        className="w-9 h-9 rounded-full transition-transform hover:scale-110 relative"
+                        style={{ backgroundColor: hex }}
+                        title={hex}
+                      >
+                        {selectedColor === hex && (
+                          <span className="absolute inset-0 rounded-full ring-2 ring-offset-2 ring-current" style={{ color: hex }} />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Icono */}
@@ -546,7 +570,7 @@ export default function CategoriasManager({
                 </label>
                 <select
                   value={form.parent_id ?? ""}
-                  onChange={(e) => setForm((f) => ({ ...f, parent_id: e.target.value || null }))}
+                  onChange={(e) => handleParentSelect(e.target.value)}
                   className="w-full text-sm border border-navy/[0.12] rounded-xl px-4 py-3 outline-none focus:border-navy/40 focus:ring-1 focus:ring-navy/20 bg-white text-navy"
                 >
                   <option value="">— Sin categoría padre —</option>
