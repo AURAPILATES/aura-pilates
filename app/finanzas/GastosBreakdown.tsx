@@ -4,14 +4,16 @@ import Link from "next/link";
 import Drawer from "@/app/components/Drawer";
 import type { EconomicGroup } from "@/lib/transactions";
 
-type Category = {
-  category: string;
+type LeafCategory = { value: string; label: string; count: number; total: number; color: string; iconKey?: string };
+type TopCategory = {
+  key: string;
   label: string;
   count: number;
   total: number;
   group: EconomicGroup;
   color: string;
   iconKey?: string;
+  children: LeafCategory[];
 };
 
 const GROUP_LABELS: Record<EconomicGroup, string> = {
@@ -76,14 +78,15 @@ const NAME_TO_KEY: Record<string, string> = {
   "Ingresos Stripe": "trending-up", "Ingresos USC": "trending-up",
 };
 
-function CategoryIcon({ name, color, iconKey }: { name: string; color: string; iconKey?: string }) {
+function CategoryIcon({ name, color, iconKey, small = false }: { name: string; color: string; iconKey?: string; small?: boolean }) {
   const key = iconKey && ICON_BY_KEY[iconKey] ? iconKey : (NAME_TO_KEY[name] ?? "package");
+  const size = small ? 24 : 40;
   return (
     <div
-      className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
-      style={{ backgroundColor: color }}
+      className="rounded-full flex items-center justify-center shrink-0"
+      style={{ width: size, height: size, backgroundColor: color }}
     >
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <svg width={small ? 11 : 16} height={small ? 11 : 16} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         {ICON_BY_KEY[key] ?? ICON_BY_KEY["package"]}
       </svg>
     </div>
@@ -116,27 +119,47 @@ export default function GastosBreakdown({
   totalExpCat,
   rangeLabel,
 }: {
-  categories: Category[];
+  categories: TopCategory[];
   transactionsByCategory: Record<string, Txn[]>;
   totalExpCat: number;
   rangeLabel?: string | null;
 }) {
   const [selected, setSelected] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+  function toggleExpanded(key: string) {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  }
+
+  // Orden por grupo económico (Personal → OpEx → CapEx) para que el donut no mezcle
+  // inversión con gasto operativo/personal: cada grupo ocupa un arco contiguo.
+  const topsOrdered = GROUP_ORDER.flatMap((g) => categories.filter((c) => c.group === g));
 
   let acc = 0;
-  const segments = categories.map((c) => {
+  const segments = topsOrdered.map((c) => {
     const share = totalExpCat > 0 ? c.total / totalExpCat : 0;
     const dash   = share * CIRC;
     const gap    = 2; // tiny gap between segments
-    const offset = -(acc + (categories.length > 1 ? gap / 2 : 0));
+    const offset = -(acc + (topsOrdered.length > 1 ? gap / 2 : 0));
     acc += dash + gap;
     return { ...c, share, dash: Math.max(dash - gap, 0), offset };
   });
 
-  const selectedSeg  = segments.find((s) => s.category === selected) ?? null;
-  const selectedTxns = selected
-    ? [...(transactionsByCategory[selected] ?? [])].sort((a, b) => b.date.localeCompare(a.date))
-    : [];
+  const selectedTop  = categories.find((c) => c.key === selected) ?? null;
+  const selectedLeaf = !selectedTop
+    ? categories.flatMap((c) => c.children).find((ch) => ch.value === selected) ?? null
+    : null;
+  const selectedInfo = selectedTop ?? selectedLeaf;
+  const selectedTxns = selectedTop
+    ? [...(transactionsByCategory[selectedTop.key] ?? []), ...selectedTop.children.flatMap((ch) => transactionsByCategory[ch.value] ?? [])]
+        .sort((a, b) => b.date.localeCompare(a.date))
+    : selectedLeaf
+      ? [...(transactionsByCategory[selectedLeaf.value] ?? [])].sort((a, b) => b.date.localeCompare(a.date))
+      : [];
 
   return (
     <>
@@ -160,8 +183,8 @@ export default function GastosBreakdown({
                   strokeDashoffset={seg.offset}
                   strokeLinecap="round"
                   className="cursor-pointer transition-opacity"
-                  style={{ opacity: selected && selected !== seg.category ? 0.35 : 1 }}
-                  onClick={() => setSelected(seg.category === selected ? null : seg.category)}
+                  style={{ opacity: selected && selected !== seg.key ? 0.35 : 1 }}
+                  onClick={() => setSelected(seg.key === selected ? null : seg.key)}
                 />
               ))}
             </g>
@@ -200,57 +223,98 @@ export default function GastosBreakdown({
                 </p>
               </div>
               <div className="divide-y divide-navy/[0.05]">
-                {groupSegs.map((seg) => (
-                  <button
-                    key={seg.category}
-                    onClick={() => setSelected(seg.category === selected ? null : seg.category)}
-                    className={`w-full flex items-center gap-2.5 py-2 text-left transition-colors rounded-xl px-2 -mx-2 ${
-                      selected === seg.category ? "bg-navy/[0.03]" : "hover:bg-navy/[0.02]"
-                    }`}
-                  >
-                    <CategoryIcon name={seg.label} color={seg.color} iconKey={seg.iconKey} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[12px] font-semibold text-navy truncate">{seg.label}</p>
-                      <p className="text-xs text-navy/50">{seg.count} transacciones</p>
+                {groupSegs.map((seg) => {
+                  const hasChildren = seg.children.length > 0;
+                  const isOpen = expanded.has(seg.key);
+                  return (
+                    <div key={seg.key}>
+                      <button
+                        onClick={() => setSelected(seg.key === selected ? null : seg.key)}
+                        className={`w-full flex items-center gap-2.5 py-2 text-left transition-colors rounded-xl px-2 -mx-2 ${
+                          selected === seg.key ? "bg-navy/[0.03]" : "hover:bg-navy/[0.02]"
+                        }`}
+                      >
+                        <CategoryIcon name={seg.label} color={seg.color} iconKey={seg.iconKey} />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[12px] font-semibold text-navy truncate">{seg.label}</p>
+                          <p className="text-xs text-navy/50">{seg.count} transacciones</p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="text-[12px] font-semibold text-navy tabular-nums">
+                            −{fmtAmount(seg.total)}
+                          </p>
+                          <p className="text-xs text-navy/50 tabular-nums">{pct(seg.share)}</p>
+                        </div>
+                        {hasChildren && (
+                          <span
+                            onClick={(e) => { e.stopPropagation(); toggleExpanded(seg.key); }}
+                            className="shrink-0 w-6 h-6 -mr-1 flex items-center justify-center text-navy/35 hover:text-navy/60 transition-colors"
+                          >
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: isOpen ? "rotate(180deg)" : undefined, transition: "transform .15s" }}>
+                              <polyline points="6 9 12 15 18 9"/>
+                            </svg>
+                          </span>
+                        )}
+                      </button>
+                      {hasChildren && isOpen && (
+                        <div className="pl-7 pb-1 space-y-0.5">
+                          {seg.children.map((ch) => {
+                            const chShare = totalExpCat > 0 ? ch.total / totalExpCat : 0;
+                            return (
+                              <button
+                                key={ch.value}
+                                onClick={() => setSelected(ch.value === selected ? null : ch.value)}
+                                className={`w-full flex items-center gap-2.5 py-1.5 text-left transition-colors rounded-lg px-2 -mx-2 ${
+                                  selected === ch.value ? "bg-navy/[0.03]" : "hover:bg-navy/[0.02]"
+                                }`}
+                              >
+                                <CategoryIcon name={ch.label} color={ch.color} iconKey={ch.iconKey} small />
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-[11.5px] font-medium text-navy/80 truncate">{ch.label}</p>
+                                </div>
+                                <p className="text-[11.5px] text-navy/55 tabular-nums shrink-0">
+                                  −{fmtAmount(ch.total)} · {pct(chShare)}
+                                </p>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
-                    <div className="text-right shrink-0">
-                      <p className="text-[12px] font-semibold text-navy tabular-nums">
-                        −{fmtAmount(seg.total)}
-                      </p>
-                      <p className="text-xs text-navy/50 tabular-nums">{pct(seg.share)}</p>
-                    </div>
-                  </button>
-                ))}
+                  );
+                })}
               </div>
             </div>
           );
         })}
       </div>
 
-      {selected && (
+      {selected && selectedInfo && (
         <Drawer
           maxWidth="max-w-[420px]"
           header={
             <div className="flex items-center gap-3">
-              <CategoryIcon name={selectedSeg?.label ?? selected} color={selectedSeg?.color ?? "#6B7ED6"} iconKey={selectedSeg?.iconKey} />
+              <CategoryIcon name={selectedInfo.label} color={selectedInfo.color} iconKey={selectedInfo.iconKey} />
               <div className="min-w-0">
-                <h2 className="text-base font-semibold text-navy">{selectedSeg?.label ?? selected}</h2>
+                <h2 className="text-base font-semibold text-navy">{selectedInfo.label}</h2>
                 <p className="text-xs text-navy/55 mt-0.5">
-                  −{fmtAmount(selectedSeg?.total ?? 0)} · {selectedSeg?.count ?? 0} transacciones
+                  −{fmtAmount(selectedInfo.total)} · {selectedInfo.count} transacciones
                 </p>
               </div>
             </div>
           }
           footer={
-            <Link
-              href={`/transacciones?categoria=${encodeURIComponent(selected)}`}
-              className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-navy/20 bg-white text-sm font-medium text-navy hover:border-navy/40 transition-colors"
-            >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-              </svg>
-              Ver transacciones
-            </Link>
+            !(selectedTop && selectedTop.children.length > 0) ? (
+              <Link
+                href={`/transacciones?categoria=${encodeURIComponent(selected)}`}
+                className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-navy/20 bg-white text-sm font-medium text-navy hover:border-navy/40 transition-colors"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                </svg>
+                Ver transacciones
+              </Link>
+            ) : undefined
           }
           onClose={() => setSelected(null)}
         >

@@ -28,8 +28,9 @@ import {
   totalOperationalExpenses,
   totalStartupCosts,
   expensesByCategoryAll,
+  type EconomicGroup,
 } from "@/lib/transactions";
-import { loadCategoriesCached } from "@/lib/categories";
+import { loadCategoriesCached, type Category } from "@/lib/categories";
 import ClientesFilterBar from "@/app/clientes/ClientesFilterBar";
 import DesglosGastos from "./instances/DesglosGastos";
 import ResumenFinanzas from "./instances/ResumenFinanzas";
@@ -110,6 +111,49 @@ const BURN_CATS = new Set([
   "Alquiler","Salarios","Seguridad social","Electricidad","Agua","Software","Gestoría y legal",
   "Impuestos y tasas","IVA","IRPF","IS","Teléfono","Seguros","Comisiones bancarias","Merchandising","Local","Otros",
 ]);
+
+type LeafExpenseSeg = { value: string; label: string; count: number; total: number; color: string; iconKey?: string };
+export type TopExpenseSeg = {
+  key: string; label: string; color: string; iconKey?: string; group: EconomicGroup;
+  count: number; total: number; children: LeafExpenseSeg[];
+};
+
+/** Agrupa el desglose de gastos (por categoría "hoja") bajo su categoría padre cuando tiene subcategorías. */
+function groupExpensesByTopCategory(
+  expByCategory: { category: string; count: number; total: number; group: EconomicGroup }[],
+  dbCatByValue: Map<string, Category>,
+  dbCatById: Map<string, Category>,
+  fallbackColors: string[],
+): TopExpenseSeg[] {
+  const topMap = new Map<string, TopExpenseSeg>();
+  expByCategory.forEach((e, i) => {
+    const dbCat = dbCatByValue.get(e.category);
+    const parent = dbCat?.parent_id ? dbCatById.get(dbCat.parent_id) : undefined;
+    const topKey = parent?.value ?? dbCat?.value ?? e.category;
+
+    if (!topMap.has(topKey)) {
+      topMap.set(topKey, {
+        key: topKey,
+        label: parent?.label ?? dbCat?.label ?? e.category,
+        color: parent?.text_color ?? dbCat?.text_color ?? fallbackColors[i % fallbackColors.length],
+        iconKey: parent?.emoji ?? dbCat?.emoji,
+        group: e.group,
+        count: 0,
+        total: 0,
+        children: [],
+      });
+    }
+    const top = topMap.get(topKey)!;
+    top.count += e.count;
+    top.total += e.total;
+    if (parent && dbCat) {
+      top.children.push({ value: e.category, label: dbCat.label, count: e.count, total: e.total, color: dbCat.text_color, iconKey: dbCat.emoji });
+    }
+  });
+  const result = [...topMap.values()];
+  for (const top of result) top.children.sort((a, b) => b.total - a.total);
+  return result.sort((a, b) => b.total - a.total);
+}
 
 function pad2(n: number) { return String(n).padStart(2, "0"); }
 
@@ -540,16 +584,7 @@ export default async function Finanzas(props: {
                   />
                 </div>
                 <DesglosGastos
-                  categories={expByCategory.map((e, i) => {
-                    const dbCat = dbCatByValue.get(e.category);
-                    const parent = dbCat?.parent_id ? dbCatById.get(dbCat.parent_id) : undefined;
-                    return {
-                      ...e,
-                      label: parent ? `${parent.label} > ${dbCat!.label}` : (dbCat?.label ?? e.category),
-                      color: dbCat?.text_color ?? EXPENSE_COLORS[i % EXPENSE_COLORS.length],
-                      iconKey: dbCat?.emoji,
-                    };
-                  })}
+                  categories={groupExpensesByTopCategory(expByCategory, dbCatByValue, dbCatById, EXPENSE_COLORS)}
                   transactionsByCategory={transactionsByCategory}
                   totalExpCat={totalExpCat}
                   rangeLabel={txnRangeLabel}

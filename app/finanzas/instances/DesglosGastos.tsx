@@ -2,14 +2,16 @@ import type { EconomicGroup } from "@/lib/transactions";
 import { ChartCard } from "@/components/charts";
 import GastosBreakdown from "../GastosBreakdown";
 
-type Category = {
-  category: string;
+type LeafCategory = { value: string; label: string; count: number; total: number; color: string; iconKey?: string };
+type TopCategory = {
+  key: string;
   label: string;
   count: number;
   total: number;
   group: EconomicGroup;
   color: string;
   iconKey?: string;
+  children: LeafCategory[];
 };
 
 type Txn = {
@@ -25,7 +27,7 @@ export default function DesglosGastos({
   totalExpCat,
   rangeLabel,
 }: {
-  categories: Category[];
+  categories: TopCategory[];
   transactionsByCategory: Record<string, Txn[]>;
   totalExpCat: number;
   rangeLabel?: string | null;
