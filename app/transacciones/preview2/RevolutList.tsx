@@ -97,69 +97,100 @@ export default function RevolutList({ transactions, categories, uncategorizedCou
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-3 gap-3 mb-5">
-        <div>
-          <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1">Ingresos</p>
-          <p className="text-base font-semibold text-success tabular-nums">{Math.round(totalIn).toLocaleString("es-ES")} €</p>
+      <div className="grid grid-cols-3 text-center gap-1 mb-3">
+        <div className="min-w-0">
+          <p className="text-[12px] text-navy/40 uppercase tracking-wider leading-none mb-0.5 whitespace-nowrap">Ingresos</p>
+          <p className="text-[14px] font-semibold text-success tabular-nums truncate">{Math.round(totalIn).toLocaleString("es-ES")} €</p>
         </div>
-        <div>
-          <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1">Gastos</p>
-          <p className="text-base font-semibold text-danger tabular-nums">−{Math.round(totalOut).toLocaleString("es-ES")} €</p>
+        <div className="min-w-0">
+          <p className="text-[12px] text-navy/40 uppercase tracking-wider leading-none mb-0.5 whitespace-nowrap">Gastos</p>
+          <p className="text-[14px] font-semibold text-[#B85C3A] tabular-nums truncate">−{Math.round(totalOut).toLocaleString("es-ES")} €</p>
         </div>
-        <div>
-          <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1">Neto</p>
-          <p className="text-base font-semibold text-navy tabular-nums">{Math.round(neto).toLocaleString("es-ES")} €</p>
+        <div className="min-w-0">
+          <p className="text-[12px] text-navy/40 uppercase tracking-wider leading-none mb-0.5 whitespace-nowrap">Neto</p>
+          <p className={`text-[14px] font-semibold tabular-nums truncate ${neto >= 0 ? "text-navy" : "text-danger"}`}>
+            {neto < 0 && "−"}{Math.round(Math.abs(neto)).toLocaleString("es-ES")} €
+          </p>
         </div>
       </div>
 
-      {/* Búsqueda */}
-      <div className="relative mb-4">
-        <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-navy/30" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-        </svg>
-        <input
-          type="text"
-          placeholder="Buscar"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-9 pr-4 py-2.5 text-sm rounded-full bg-navy/[0.04] text-navy placeholder:text-navy/35 outline-none focus:bg-navy/[0.06] transition"
-        />
+      {/* Búsqueda + filtros */}
+      <div className="flex gap-2 mb-3">
+        <div className="relative flex-1">
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-navy/30" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input
+            type="text"
+            placeholder="Buscar concepto o contacto…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-9 pr-9 py-2.5 text-sm border border-navy/[0.12] rounded-lg bg-white text-navy placeholder:text-navy/35 outline-none focus:ring-2 focus:ring-primary/20 transition"
+          />
+          {search && (
+            <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-navy/30 hover:text-navy/60">✕</button>
+          )}
+        </div>
+        <button
+          title="Filtros"
+          className="relative shrink-0 flex items-center justify-center w-[42px] h-[42px] bg-white border border-navy/[0.12] rounded-lg text-navy"
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/>
+          </svg>
+        </button>
+        <button
+          title="Más acciones"
+          className="shrink-0 flex items-center justify-center w-[42px] h-[42px] text-navy/55 border border-navy/[0.12] rounded-lg bg-white"
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/><circle cx="5" cy="12" r="1.5"/>
+          </svg>
+        </button>
       </div>
 
       {/* Banner */}
       {uncategorizedCount > 0 && (
-        <button className="w-full flex items-center gap-3 pl-3 pr-4 py-3 mb-4 rounded-xl bg-warning/[0.06] border-l-[3px] border-l-warning text-left">
-          <span className="flex-1 text-sm font-medium text-navy/80">{uncategorizedCount} movimientos sin clasificar</span>
-          <span className="text-sm text-warning font-semibold whitespace-nowrap">Revisar</span>
+        <button className="w-full flex items-center gap-2 px-4 py-2.5 mb-3 rounded-xl bg-warning/10 border border-warning/20 text-navy/70 text-sm font-medium text-left">
+          <span className="shrink-0 w-2 h-2 rounded-full bg-warning" />
+          <span className="flex-1">{uncategorizedCount} sin clasificar</span>
+          <span className="flex items-center gap-1 text-warning font-semibold whitespace-nowrap">
+            Revisar
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+            </svg>
+          </span>
         </button>
       )}
 
-      {/* Tira de meses: estilo Revolut, sin bordes en inactivos */}
-      <div className="flex gap-3 overflow-x-auto scrollbar-none mb-5">
-        <button
-          onClick={() => router.push(pathname)}
-          className={`shrink-0 px-3.5 py-1.5 rounded-full text-sm transition-colors whitespace-nowrap ${
-            !activeMonth ? "bg-navy text-white font-medium" : "text-navy/40 hover:text-navy/70"
-          }`}
-        >
-          Todo
-        </button>
-        {monthStrip.map(({ key, label, year }) => {
-          const isActive = key === activeMonth;
-          const showYear = year !== new Date().getFullYear();
-          return (
-            <button
-              key={key}
-              ref={isActive ? activeMonthRef : undefined}
-              onClick={() => goToMonth(key)}
-              className={`shrink-0 px-3.5 py-1.5 rounded-full text-sm transition-colors capitalize whitespace-nowrap ${
-                isActive ? "bg-navy text-white font-medium" : "text-navy/40 hover:text-navy/70"
-              }`}
-            >
-              {label}{showYear && <span className="text-[10px] ml-0.5 opacity-60">{year}</span>}
-            </button>
-          );
-        })}
+      {/* Tira de meses: segmented control */}
+      <div className="mb-5 pb-3 border-b border-navy/[0.06]">
+        <div className="flex items-center gap-0.5 border border-navy/[0.12] rounded-lg bg-white p-0.5 overflow-x-auto scrollbar-none">
+          <button
+            onClick={() => router.push(pathname)}
+            className={`shrink-0 px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap ${
+              !activeMonth ? "bg-navy text-white" : "text-navy/50 hover:text-navy"
+            }`}
+          >
+            Todo
+          </button>
+          {monthStrip.map(({ key, label, year }) => {
+            const isActive = key === activeMonth;
+            const showYear = year !== new Date().getFullYear();
+            return (
+              <button
+                key={key}
+                ref={isActive ? activeMonthRef : undefined}
+                onClick={() => goToMonth(key)}
+                className={`shrink-0 px-3 py-1.5 text-xs font-medium rounded-md transition-colors capitalize whitespace-nowrap ${
+                  isActive ? "bg-navy text-white" : "text-navy/50 hover:text-navy"
+                }`}
+              >
+                {label}{showYear && <span className="text-[10px] ml-0.5 opacity-60">{year}</span>}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Lista por día, icono circular sólido estilo Revolut */}
