@@ -193,6 +193,24 @@ export default function RevolutList({ transactions, categories, uncategorizedCou
         </div>
       </div>
 
+      {/* Toolbar */}
+      <div className="flex items-stretch gap-2 mb-3">
+        <button className="flex-1 flex items-center justify-center gap-1.5 px-3 h-9 bg-white text-navy text-[13px] font-medium border border-navy/15 rounded-xl hover:bg-navy/[0.02] transition-colors">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Añadir movimiento
+        </button>
+        <button className="shrink-0 flex items-center justify-center gap-1.5 w-[124px] h-9 text-[13px] font-medium px-4 rounded-xl border bg-white text-navy border-navy/15 hover:bg-navy/[0.02] transition-colors">
+          <span className="w-3.5 h-3.5 rounded-[3px] border border-navy/35 flex items-center justify-center shrink-0">
+            <svg width="9" height="7" viewBox="0 0 9 7" fill="none">
+              <polyline points="1,3.5 3.5,6 8,1" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-navy/35"/>
+            </svg>
+          </span>
+          Seleccionar
+        </button>
+      </div>
+
       {/* Lista por día, icono circular sólido estilo Revolut */}
       <div className="space-y-5">
         {byDay.length === 0 && (
