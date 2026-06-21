@@ -590,10 +590,11 @@ type Props = {
   categories: Category[];
   uncategorizedCount: number;
   recurringPeriods: Record<string, string>;
+  allMonthKeys: string[];
 };
 
 export default function TransaccionesList({
-  transactions, categories, uncategorizedCount, recurringPeriods,
+  transactions, categories, uncategorizedCount, recurringPeriods, allMonthKeys,
 }: Props) {
   const router       = useRouter();
   const pathname     = usePathname();
@@ -634,14 +635,13 @@ export default function TransaccionesList({
   }
 
 
-  // ── Month strip — solo meses con datos ──────────────────────────────────────
+  // ── Month strip — solo meses con datos (independiente del filtro activo) ────
   const monthStrip = useMemo(() => {
-    const keys = [...new Set(transactions.map((t) => t.date.slice(0, 7)))].sort().reverse();
-    return keys.map((key) => {
+    return allMonthKeys.map((key) => {
       const m = parseInt(key.slice(5)) - 1;
       return { key, label: MONTHS_ES[m], year: parseInt(key.slice(0, 4)) };
     });
-  }, [transactions]);
+  }, [allMonthKeys]);
 
   const activeMonth = useMemo(() => {
     if (currentRange === "custom" && customFrom) return customFrom.slice(0, 7);
@@ -1084,7 +1084,7 @@ export default function TransaccionesList({
       )}
 
       {/* ── Mobile: month strip (sticky) ────────────────────────────────────── */}
-      <div className="sm:hidden sticky top-[45px] z-20 -mx-2 px-2 pt-0 pb-3 bg-app-bg border-b border-navy/[0.06]">
+      <div className="sm:hidden sticky top-[53px] z-20 -mx-2 px-2 pt-0 pb-3 bg-app-bg border-b border-navy/[0.06]">
         <div className="flex gap-1 overflow-x-auto scrollbar-none">
           <button
             onClick={() => router.push(pathname)}

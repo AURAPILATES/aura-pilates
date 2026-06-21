@@ -17,13 +17,17 @@ export default async function TransaccionesPage(props: {
     ? { from: sp.from ?? null, to: sp.to ?? null }
     : getDateRange(sp.range);
 
-  const [transactions, categories] = await Promise.all([
+  const [transactions, categories, allTransactions] = await Promise.all([
     loadTransactionsCached(from, to),
     loadCategoriesCached(),
+    isCustom || sp.range ? loadTransactionsCached(null, null) : Promise.resolve(null),
   ]);
 
   const uncategorizedCount = transactions.filter((t) => !t.category).length;
   const recurringPeriods   = Object.fromEntries(detectRecurringTransactions(transactions));
+  const allMonthKeys = [...new Set((allTransactions ?? transactions).map((t) => t.date.slice(0, 7)))]
+    .sort()
+    .reverse();
 
   return (
     <div>
@@ -45,6 +49,7 @@ export default async function TransaccionesPage(props: {
             categories={categories}
             uncategorizedCount={uncategorizedCount}
             recurringPeriods={recurringPeriods}
+            allMonthKeys={allMonthKeys}
           />
         </Suspense>
       </div>
