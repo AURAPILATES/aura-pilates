@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useTransition, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import type { Category, GroupType } from "@/lib/categories";
 import { economicGroupOf, type EconomicGroup } from "@/lib/economicGroups";
 import { createCategory, updateCategory, deleteCategory, reorderCategories } from "./actions";
@@ -169,6 +170,7 @@ const EMPTY: Omit<Category, "id" | "created_at"> = {
 type EditorState = { mode: "new" } | { mode: "edit"; cat: Category };
 
 export default function CategoriasManager({ categories: categoriesProp }: { categories: Category[] }) {
+  const router = useRouter();
   const [categories, setCategories] = useState(categoriesProp);
   useEffect(() => setCategories(categoriesProp), [categoriesProp]);
   const [editor, setEditor] = useState<EditorState | null>(null);
@@ -346,7 +348,7 @@ export default function CategoriasManager({ categories: categoriesProp }: { cate
                         </span>
                         <button
                           onClick={() => openEdit(cat)}
-                          className={`flex-1 flex items-center gap-4 pr-5 py-3.5 transition-colors text-left hover:bg-navy/[0.015] ${isSub ? "pl-6" : "pl-1"}`}
+                          className={`flex-1 flex items-center gap-4 pr-2 py-3.5 transition-colors text-left hover:bg-navy/[0.015] min-w-0 ${isSub ? "pl-6" : "pl-1"}`}
                         >
                           <CategoryIcon iconKey={cat.emoji} name={cat.label} color={cat.text_color} size={isSub ? 32 : 40} />
                           <div className="flex-1 min-w-0">
@@ -357,6 +359,18 @@ export default function CategoriasManager({ categories: categoriesProp }: { cate
                           </div>
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-navy/25 shrink-0">
                             <polyline points="9 18 15 12 9 6"/>
+                          </svg>
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            router.push(`/transacciones?categoria=${encodeURIComponent(cat.value)}`);
+                          }}
+                          title={`Ver movimientos de "${cat.label}"`}
+                          className="shrink-0 w-8 h-8 mr-2 flex items-center justify-center rounded-full text-navy/35 hover:text-navy hover:bg-navy/[0.06] transition-colors"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
                           </svg>
                         </button>
                       </div>
