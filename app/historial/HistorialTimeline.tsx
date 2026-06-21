@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Drawer from "@/app/components/Drawer";
 import type { BusinessEvent, EventCategoria } from "@/lib/businessEvents";
 import { createBusinessEvent, updateBusinessEvent, deleteBusinessEvent } from "./actions";
 
@@ -49,91 +50,99 @@ function EventForm({
   onCancel,
   isPending,
   error,
+  title,
 }: {
   initial: FormValues;
   onSave: (v: FormValues) => void;
   onCancel: () => void;
   isPending: boolean;
   error: string | null;
+  title: string;
 }) {
   const [form, setForm] = useState(initial);
   const set = (k: keyof FormValues, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
   return (
-    <div className="bg-white border border-navy/10 rounded-xl p-5 space-y-4 shadow-sm">
-      <div className="grid grid-cols-2 gap-3">
+    <Drawer
+      title={title}
+      onClose={onCancel}
+      footer={
+        <div className="flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={isPending}
+            className="px-4 py-2 text-sm text-navy/55 hover:text-navy transition-colors disabled:opacity-40"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={() => onSave(form)}
+            disabled={!form.titulo.trim() || !form.fecha || isPending}
+            className="px-4 py-2 text-sm font-medium bg-navy text-white rounded-lg hover:bg-navy/90 disabled:opacity-40 transition-colors"
+          >
+            {isPending ? "Guardando…" : "Guardar"}
+          </button>
+        </div>
+      }
+    >
+      <div className="px-6 py-5 space-y-4">
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-navy/50 uppercase tracking-wide">Fecha</label>
+            <input
+              type="date"
+              value={form.fecha}
+              onChange={(e) => set("fecha", e.target.value)}
+              className="w-full border border-navy/15 rounded-lg px-3 py-2 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-navy/30"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-navy/50 uppercase tracking-wide">Categoría</label>
+            <select
+              value={form.categoria}
+              onChange={(e) => set("categoria", e.target.value as EventCategoria)}
+              className="w-full border border-navy/15 rounded-lg px-3 py-2 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-navy/30 bg-white"
+            >
+              {CATEGORIAS.map((c) => (
+                <option key={c.value} value={c.value}>{c.label}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
         <div className="space-y-1">
-          <label className="text-xs font-medium text-navy/50 uppercase tracking-wide">Fecha</label>
+          <label className="text-xs font-medium text-navy/50 uppercase tracking-wide">Título</label>
           <input
-            type="date"
-            value={form.fecha}
-            onChange={(e) => set("fecha", e.target.value)}
-            className="w-full border border-navy/15 rounded-lg px-3 py-2 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-primary/30"
+            type="text"
+            value={form.titulo}
+            onChange={(e) => set("titulo", e.target.value)}
+            placeholder="Ej. Subida de precio mensual a 85€"
+            className="w-full border border-navy/15 rounded-lg px-3 py-2 text-sm text-navy placeholder:text-navy/30 focus:outline-none focus:ring-2 focus:ring-navy/30"
           />
         </div>
+
         <div className="space-y-1">
-          <label className="text-xs font-medium text-navy/50 uppercase tracking-wide">Categoría</label>
-          <select
-            value={form.categoria}
-            onChange={(e) => set("categoria", e.target.value as EventCategoria)}
-            className="w-full border border-navy/15 rounded-lg px-3 py-2 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-primary/30 bg-white"
-          >
-            {CATEGORIAS.map((c) => (
-              <option key={c.value} value={c.value}>{c.label}</option>
-            ))}
-          </select>
+          <label className="text-xs font-medium text-navy/50 uppercase tracking-wide">
+            Descripción <span className="font-normal normal-case">(opcional)</span>
+          </label>
+          <textarea
+            value={form.descripcion}
+            onChange={(e) => set("descripcion", e.target.value)}
+            placeholder="Detalles adicionales..."
+            rows={3}
+            className="w-full border border-navy/15 rounded-lg px-3 py-2 text-sm text-navy placeholder:text-navy/30 focus:outline-none focus:ring-2 focus:ring-navy/30 resize-none"
+          />
         </div>
-      </div>
 
-      <div className="space-y-1">
-        <label className="text-xs font-medium text-navy/50 uppercase tracking-wide">Título</label>
-        <input
-          type="text"
-          value={form.titulo}
-          onChange={(e) => set("titulo", e.target.value)}
-          placeholder="Ej. Subida de precio mensual a 85€"
-          className="w-full border border-navy/15 rounded-lg px-3 py-2 text-sm text-navy placeholder:text-navy/30 focus:outline-none focus:ring-2 focus:ring-primary/30"
-        />
+        {error && (
+          <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+            {error}
+          </p>
+        )}
       </div>
-
-      <div className="space-y-1">
-        <label className="text-xs font-medium text-navy/50 uppercase tracking-wide">
-          Descripción <span className="font-normal normal-case">(opcional)</span>
-        </label>
-        <textarea
-          value={form.descripcion}
-          onChange={(e) => set("descripcion", e.target.value)}
-          placeholder="Detalles adicionales..."
-          rows={2}
-          className="w-full border border-navy/15 rounded-lg px-3 py-2 text-sm text-navy placeholder:text-navy/30 focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
-        />
-      </div>
-
-      {error && (
-        <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
-          {error}
-        </p>
-      )}
-
-      <div className="flex justify-end gap-2 pt-1">
-        <button
-          type="button"
-          onClick={onCancel}
-          disabled={isPending}
-          className="px-4 py-2 text-sm text-navy/55 hover:text-navy transition-colors disabled:opacity-40"
-        >
-          Cancelar
-        </button>
-        <button
-          type="button"
-          onClick={() => onSave(form)}
-          disabled={!form.titulo.trim() || !form.fecha || isPending}
-          className="px-4 py-2 text-sm font-medium bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-40 transition-colors"
-        >
-          {isPending ? "Guardando…" : "Guardar"}
-        </button>
-      </div>
-    </div>
+    </Drawer>
   );
 }
 
@@ -234,7 +243,7 @@ export default function HistorialTimeline({ events: initial }: { events: Busines
 
         <button
           onClick={() => { setShowForm(true); setEditing(null); setFormError(null); }}
-          className="flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90 transition-colors shrink-0"
+          className="flex items-center gap-1.5 px-4 py-2 bg-navy text-white text-sm font-medium rounded-lg hover:bg-navy/90 transition-colors shrink-0"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
@@ -246,6 +255,7 @@ export default function HistorialTimeline({ events: initial }: { events: Busines
       {/* Add form */}
       {showForm && (
         <EventForm
+          title="Registrar evento"
           initial={emptyForm()}
           onSave={handleCreate}
           onCancel={() => { setShowForm(false); setFormError(null); }}
@@ -286,6 +296,7 @@ export default function HistorialTimeline({ events: initial }: { events: Busines
 
                     {isEditing ? (
                       <EventForm
+                        title="Editar evento"
                         initial={{
                           fecha: ev.fecha,
                           categoria: ev.categoria,
