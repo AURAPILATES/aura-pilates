@@ -1049,7 +1049,7 @@ export default function TransaccionesList({
 
       {/* ── Mobile: month strip (sticky), pills sueltas estilo Revolut ──────── */}
       <div className="sm:hidden sticky top-[45px] z-20 -mx-2 px-2 pt-2 pb-3 bg-app-bg">
-        <div className="flex gap-3 overflow-x-auto scrollbar-none">
+        <div className="flex gap-1.5 overflow-x-auto scrollbar-none">
           <button
             onClick={() => router.push(pathname)}
             className={`shrink-0 px-3.5 py-1.5 rounded-full text-sm transition-colors whitespace-nowrap ${
