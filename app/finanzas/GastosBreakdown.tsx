@@ -230,10 +230,22 @@ export default function GastosBreakdown({
                     <div key={seg.key}>
                       <button
                         onClick={() => setSelected(seg.key === selected ? null : seg.key)}
-                        className={`w-full flex items-center gap-2.5 py-2 text-left transition-colors rounded-xl px-2 -mx-2 ${
+                        className={`w-full flex items-center gap-2 py-2 text-left transition-colors rounded-xl px-2 -mx-2 ${
                           selected === seg.key ? "bg-navy/[0.03]" : "hover:bg-navy/[0.02]"
                         }`}
                       >
+                        {hasChildren ? (
+                          <span
+                            onClick={(e) => { e.stopPropagation(); toggleExpanded(seg.key); }}
+                            className="shrink-0 w-5 h-5 flex items-center justify-center text-navy/35 hover:text-navy/60 transition-colors"
+                          >
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: isOpen ? "rotate(90deg)" : undefined, transition: "transform .15s" }}>
+                              <polyline points="9 18 15 12 9 6"/>
+                            </svg>
+                          </span>
+                        ) : (
+                          <span className="shrink-0 w-5 h-5" />
+                        )}
                         <CategoryIcon name={seg.label} color={seg.color} iconKey={seg.iconKey} />
                         <div className="flex-1 min-w-0">
                           <p className="text-[12px] font-semibold text-navy truncate">{seg.label}</p>
@@ -245,16 +257,6 @@ export default function GastosBreakdown({
                           </p>
                           <p className="text-xs text-navy/50 tabular-nums">{pct(seg.share)}</p>
                         </div>
-                        {hasChildren && (
-                          <span
-                            onClick={(e) => { e.stopPropagation(); toggleExpanded(seg.key); }}
-                            className="shrink-0 w-6 h-6 -mr-1 flex items-center justify-center text-navy/35 hover:text-navy/60 transition-colors"
-                          >
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: isOpen ? "rotate(180deg)" : undefined, transition: "transform .15s" }}>
-                              <polyline points="6 9 12 15 18 9"/>
-                            </svg>
-                          </span>
-                        )}
                       </button>
                       {hasChildren && isOpen && (
                         <div className="pl-7 pb-1 space-y-0.5">
