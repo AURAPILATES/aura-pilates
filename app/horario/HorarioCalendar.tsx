@@ -139,8 +139,8 @@ export default memo(function HorarioCalendar({
         })}
       </div>
 
-      {/* Scrollable time grid */}
-      <div className="overflow-y-auto" style={{ maxHeight: "680px" }}>
+      {/* Time grid */}
+      <div>
         <div className="grid" style={{ gridTemplateColumns: "52px repeat(7, 1fr)" }}>
 
           {/* Hour labels + separators column */}
