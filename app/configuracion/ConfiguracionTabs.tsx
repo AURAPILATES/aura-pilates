@@ -37,13 +37,13 @@ export default function ConfiguracionTabs({ categories, events }: Props) {
             key={key}
             type="button"
             onClick={() => selectTab(key)}
-            className={`px-4 py-2.5 text-sm font-semibold transition-colors border-b-2 -mb-px ${
-              tab === key
-                ? "border-navy text-navy"
-                : "border-transparent text-navy/50 hover:text-navy"
+            className={`px-4 py-2.5 text-sm font-semibold transition-colors ${
+              tab === key ? "text-navy" : "text-navy/50 hover:text-navy"
             }`}
           >
-            {label}
+            <span className={`pb-2.5 border-b-2 -mb-px ${tab === key ? "border-navy" : "border-transparent"}`}>
+              {label}
+            </span>
           </button>
         ))}
       </div>
