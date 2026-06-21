@@ -287,7 +287,10 @@ export default async function Finanzas(props: {
   const [txnsAll, dbCategories, budgets, businessEvents] = await Promise.all([
     loadTransactionsCached(), loadCategoriesCached(), loadBudgetsCached(), loadBusinessEvents(),
   ]);
-  const dbCatByLabel = new Map(dbCategories.map((c) => [c.label, c]));
+  // Las transacciones guardan el `value` de la categoría (no el `label`, que puede cambiar
+  // p.ej. al convertir "Electricidad" en la subcategoría "Luz"), así que el lookup va por value.
+  const dbCatByValue = new Map(dbCategories.map((c) => [c.value, c]));
+  const dbCatById = new Map(dbCategories.map((c) => [c.id, c]));
   const totalOpEx     = totalOperationalExpenses(txnsAll);
   const totalStartup  = totalStartupCosts(txnsAll);
   const expByCategory = expensesByCategoryAll(txnsAll);
@@ -538,9 +541,11 @@ export default async function Finanzas(props: {
                 </div>
                 <DesglosGastos
                   categories={expByCategory.map((e, i) => {
-                    const dbCat = dbCatByLabel.get(e.category);
+                    const dbCat = dbCatByValue.get(e.category);
+                    const parent = dbCat?.parent_id ? dbCatById.get(dbCat.parent_id) : undefined;
                     return {
                       ...e,
+                      label: parent ? `${parent.label} > ${dbCat!.label}` : (dbCat?.label ?? e.category),
                       color: dbCat?.text_color ?? EXPENSE_COLORS[i % EXPENSE_COLORS.length],
                       iconKey: dbCat?.emoji,
                     };

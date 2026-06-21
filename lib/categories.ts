@@ -17,6 +17,13 @@ export type Category = {
   parent_id: string | null;
 };
 
+/** "Suministros > Agua" si `cat` es una subcategoría, o solo "Agua" si no tiene padre. */
+export function categoryDisplayLabel(cat: Pick<Category, "label" | "parent_id">, all: Pick<Category, "id" | "label">[]): string {
+  if (!cat.parent_id) return cat.label;
+  const parent = all.find((c) => c.id === cat.parent_id);
+  return parent ? `${parent.label} > ${cat.label}` : cat.label;
+}
+
 /** Categorías ordenadas para listas/selects: cada padre seguido inmediatamente de sus subcategorías. */
 export function sortCategoriesHierarchical(categories: Category[]): Category[] {
   const byParent = new Map<string | null, Category[]>();

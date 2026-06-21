@@ -4,6 +4,7 @@ import GastosBreakdown from "../GastosBreakdown";
 
 type Category = {
   category: string;
+  label: string;
   count: number;
   total: number;
   group: EconomicGroup;

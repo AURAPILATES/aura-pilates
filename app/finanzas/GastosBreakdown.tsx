@@ -6,6 +6,7 @@ import type { EconomicGroup } from "@/lib/transactions";
 
 type Category = {
   category: string;
+  label: string;
   count: number;
   total: number;
   group: EconomicGroup;
@@ -207,9 +208,9 @@ export default function GastosBreakdown({
                       selected === seg.category ? "bg-navy/[0.03]" : "hover:bg-navy/[0.02]"
                     }`}
                   >
-                    <CategoryIcon name={seg.category} color={seg.color} iconKey={seg.iconKey} />
+                    <CategoryIcon name={seg.label} color={seg.color} iconKey={seg.iconKey} />
                     <div className="flex-1 min-w-0">
-                      <p className="text-[12px] font-semibold text-navy truncate">{seg.category}</p>
+                      <p className="text-[12px] font-semibold text-navy truncate">{seg.label}</p>
                       <p className="text-xs text-navy/50">{seg.count} transacciones</p>
                     </div>
                     <div className="text-right shrink-0">
@@ -231,9 +232,9 @@ export default function GastosBreakdown({
           maxWidth="max-w-[420px]"
           header={
             <div className="flex items-center gap-3">
-              <CategoryIcon name={selected} color={selectedSeg?.color ?? "#6B7ED6"} iconKey={selectedSeg?.iconKey} />
+              <CategoryIcon name={selectedSeg?.label ?? selected} color={selectedSeg?.color ?? "#6B7ED6"} iconKey={selectedSeg?.iconKey} />
               <div className="min-w-0">
-                <h2 className="text-base font-semibold text-navy">{selected}</h2>
+                <h2 className="text-base font-semibold text-navy">{selectedSeg?.label ?? selected}</h2>
                 <p className="text-xs text-navy/55 mt-0.5">
                   −{fmtAmount(selectedSeg?.total ?? 0)} · {selectedSeg?.count ?? 0} transacciones
                 </p>

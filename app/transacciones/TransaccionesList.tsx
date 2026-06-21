@@ -4,7 +4,7 @@ import { createPortal } from "react-dom";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import type { Transaction } from "@/lib/transactions";
 import type { Category } from "@/lib/categories";
-import { sortCategoriesHierarchical } from "@/lib/categories";
+import { sortCategoriesHierarchical, categoryDisplayLabel } from "@/lib/categories";
 import { updateTransactionCategory, updateTransactionConcept, updateTransactionContact, softDeleteTransactions } from "./actions";
 import DateFilter from "@/app/components/DateFilter";
 import ImportButton from "./ImportButton";
@@ -164,7 +164,7 @@ function CategoryMultiFilter({
       label = cat ? (
         <span className="flex items-center gap-1.5">
           <CatIcon iconKey={cat.emoji} name={cat.label} color={cat.text_color} />
-          {cat.label}
+          {categoryDisplayLabel(cat, categories)}
         </span>
       ) : <span>{val}</span>;
     }
@@ -270,7 +270,8 @@ export function CategoryPill({ category, categories, onChange }: { category: str
       : cat.bg_color,
     color: cat.text_color,
   } : CAT_FALLBACK;
-  const label = cat?.label ?? (category || "Sin categoría");
+  const label = cat ? categoryDisplayLabel(cat, categories) : (category || "Sin categoría");
+  const iconName = cat?.label ?? label;
 
   return (
     <div ref={wrapRef} className="relative inline-block">
@@ -280,7 +281,7 @@ export function CategoryPill({ category, categories, onChange }: { category: str
         className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap hover:brightness-95 transition-all"
         style={{ backgroundColor: cfg.bg, color: cfg.color }}
       >
-        <CatIcon iconKey={cfg.emoji} name={label} color={cfg.color} />
+        <CatIcon iconKey={cfg.emoji} name={iconName} color={cfg.color} />
         <span>{label}</span>
       </button>
       {open && dropPos && createPortal(
@@ -1016,8 +1017,8 @@ export default function TransaccionesList({
               >
                 <option value="" disabled>Cambiar categoría…</option>
                 <option value="__null__" className="text-navy bg-white">Sin categoría</option>
-                {categories.map((c) => (
-                  <option key={c.value} value={c.value} className="text-navy bg-white">{c.label}</option>
+                {sortCategoriesHierarchical(categories).map((c) => (
+                  <option key={c.value} value={c.value} className="text-navy bg-white">{categoryDisplayLabel(c, categories)}</option>
                 ))}
               </select>
               <button
