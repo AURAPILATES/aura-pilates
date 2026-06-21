@@ -44,6 +44,21 @@ const OPERATIONAL_CATS = new Set([
 ]);
 
 
+export async function loadCategoryCounts(): Promise<Record<string, number>> {
+  const supabase = createServerClient();
+  const { data, error } = await supabase
+    .from("transactions")
+    .select("category")
+    .is("deleted_at", null);
+  if (error) throw new Error(error.message);
+  const counts: Record<string, number> = {};
+  for (const row of data ?? []) {
+    if (!row.category) continue;
+    counts[row.category] = (counts[row.category] ?? 0) + 1;
+  }
+  return counts;
+}
+
 export async function getLatestImportDate(): Promise<string | null> {
   const supabase = createServerClient();
   const { data } = await supabase

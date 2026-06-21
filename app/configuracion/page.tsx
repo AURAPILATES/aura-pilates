@@ -1,12 +1,17 @@
 import { loadCategories } from "@/lib/categories";
 import { loadBusinessEvents } from "@/lib/businessEvents";
+import { loadCategoryCounts } from "@/lib/transactions";
 import ConfiguracionTabs from "./ConfiguracionTabs";
 import MobileNav from "@/app/components/MobileNav";
 
 export const dynamic = "force-dynamic";
 
 export default async function ConfiguracionPage() {
-  const [categories, events] = await Promise.all([loadCategories(), loadBusinessEvents()]);
+  const [categories, events, categoryCounts] = await Promise.all([
+    loadCategories(),
+    loadBusinessEvents(),
+    loadCategoryCounts(),
+  ]);
 
   return (
     <div>
@@ -17,7 +22,7 @@ export default async function ConfiguracionPage() {
         </div>
       </div>
       <main className="max-w-6xl mx-auto px-6 pt-3 pb-16">
-        <ConfiguracionTabs categories={categories} events={events} />
+        <ConfiguracionTabs categories={categories} events={events} categoryCounts={categoryCounts} />
       </main>
     </div>
   );

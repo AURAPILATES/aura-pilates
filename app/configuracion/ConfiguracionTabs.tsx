@@ -17,9 +17,10 @@ const TABS: { key: Tab; label: string }[] = [
 type Props = {
   categories: Category[];
   events: BusinessEvent[];
+  categoryCounts: Record<string, number>;
 };
 
-export default function ConfiguracionTabs({ categories, events }: Props) {
+export default function ConfiguracionTabs({ categories, events, categoryCounts }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [tab, setTab] = useState<Tab>(searchParams.get("tab") === "historial" ? "historial" : "categorias");
@@ -48,7 +49,7 @@ export default function ConfiguracionTabs({ categories, events }: Props) {
         ))}
       </div>
       {tab === "categorias" ? (
-        <CategoriasManager categories={categories} />
+        <CategoriasManager categories={categories} categoryCounts={categoryCounts} />
       ) : (
         <HistorialTimeline events={events} />
       )}

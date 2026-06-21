@@ -169,7 +169,13 @@ const EMPTY: Omit<Category, "id" | "created_at"> = {
 
 type EditorState = { mode: "new" } | { mode: "edit"; cat: Category };
 
-export default function CategoriasManager({ categories: categoriesProp }: { categories: Category[] }) {
+export default function CategoriasManager({
+  categories: categoriesProp,
+  categoryCounts,
+}: {
+  categories: Category[];
+  categoryCounts: Record<string, number>;
+}) {
   const router = useRouter();
   const [categories, setCategories] = useState(categoriesProp);
   useEffect(() => setCategories(categoriesProp), [categoriesProp]);
@@ -357,22 +363,27 @@ export default function CategoriasManager({ categories: categoriesProp }: { cate
                               <p className="text-[11px] text-navy/40 mt-0.5 truncate">{cat.auto_keywords}</p>
                             )}
                           </div>
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-navy/25 shrink-0">
-                            <polyline points="9 18 15 12 9 6"/>
-                          </svg>
                         </button>
+                        <span className="shrink-0 text-[11px] text-navy/40 tabular-nums whitespace-nowrap">
+                          {categoryCounts[cat.value] ?? 0} trx
+                        </span>
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             router.push(`/transacciones?categoria=${encodeURIComponent(cat.value)}`);
                           }}
                           title={`Ver movimientos de "${cat.label}"`}
-                          className="shrink-0 w-8 h-8 mr-2 flex items-center justify-center rounded-full text-navy/35 hover:text-navy hover:bg-navy/[0.06] transition-colors"
+                          className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-navy/35 hover:text-navy hover:bg-navy/[0.06] transition-colors"
                         >
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
                           </svg>
                         </button>
+                        <span className="shrink-0 w-8 h-8 mr-2 flex items-center justify-center text-navy/25">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="9 18 15 12 9 6"/>
+                          </svg>
+                        </span>
                       </div>
                     );
                   })}
