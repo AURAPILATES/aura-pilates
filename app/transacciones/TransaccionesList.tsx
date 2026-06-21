@@ -832,8 +832,8 @@ export default function TransaccionesList({
       </div>
 
       {/* ── Mobile: KPIs + búsqueda/filtros con líneas divisorias ────────────── */}
-      <div className="sm:hidden -mx-2 mb-3">
-        <div className="grid grid-cols-3 divide-x divide-navy/[0.08] border-b border-navy/[0.08] text-center px-1 py-3">
+      <div className="sm:hidden -mx-2 mb-1">
+        <div className="grid grid-cols-3 divide-x divide-navy/[0.08] border-b border-navy/[0.08] text-center px-1 pt-2 pb-3">
           <div className="px-2 min-w-0">
             <p className="text-[11px] text-navy/40 uppercase tracking-wider leading-none mb-1 whitespace-nowrap">Ingresos</p>
             <p className="text-[15px] font-semibold text-success tabular-nums truncate">{fmtAmt(totalIn)}</p>
@@ -917,11 +917,11 @@ export default function TransaccionesList({
       {uncategorizedCount > 0 && (
         <button
           onClick={() => setCatFilters(catFilters.includes("__none__") ? catFilters.filter((v) => v !== "__none__") : [...catFilters, "__none__"])}
-          className="sm:hidden w-full flex items-center gap-2 px-4 py-2.5 mb-3 rounded-xl bg-amber-100 border border-amber-200 text-amber-900 text-sm font-medium text-left"
+          className="sm:hidden w-full flex items-center gap-2 px-4 py-2.5 mb-3 rounded-xl bg-warning/10 border border-warning/20 text-navy/70 text-sm font-medium text-left"
         >
-          <span className="text-base text-amber-600">⚠</span>
+          <span className="text-base text-warning">⚠</span>
           <span className="flex-1">{uncategorizedCount} sin clasificar</span>
-          <span className="flex items-center gap-1 text-amber-800 font-semibold whitespace-nowrap">
+          <span className="flex items-center gap-1 text-warning font-semibold whitespace-nowrap">
             Revisar
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
@@ -1084,7 +1084,7 @@ export default function TransaccionesList({
       )}
 
       {/* ── Mobile: month strip (sticky) ────────────────────────────────────── */}
-      <div className="sm:hidden sticky top-[45px] z-20 -mx-2 px-2 pt-2 pb-3 bg-app-bg border-b border-navy/[0.06]">
+      <div className="sm:hidden sticky top-[45px] z-20 -mx-2 px-2 pt-0 pb-3 bg-app-bg border-b border-navy/[0.06]">
         <div className="flex gap-1 overflow-x-auto scrollbar-none">
           <button
             onClick={() => router.push(pathname)}
