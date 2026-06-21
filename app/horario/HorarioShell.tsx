@@ -278,11 +278,11 @@ export default function HorarioShell({
                   </div>
                   <div className="border-t border-navy/[0.06] grid grid-cols-3 divide-x divide-navy/[0.06]">
                     <div className="px-3 py-2.5">
-                      <p className="text-[9px] text-navy/40 uppercase tracking-widest font-semibold">Vendidas</p>
+                      <p className="text-[9px] text-navy/40 uppercase tracking-widest font-semibold">Plazas vendidas</p>
                       <p className="text-sm font-medium text-navy mt-0.5 tabular-nums">{weekSoldSpots}</p>
                     </div>
                     <div className="px-3 py-2.5">
-                      <p className="text-[9px] text-navy/40 uppercase tracking-widest font-semibold">Libres</p>
+                      <p className="text-[9px] text-navy/40 uppercase tracking-widest font-semibold">Plazas libres</p>
                       <p className="text-sm font-medium text-navy mt-0.5 tabular-nums">{weekFreeSpots}</p>
                     </div>
                     <div className="px-3 py-2.5">
