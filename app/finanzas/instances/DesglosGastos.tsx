@@ -34,8 +34,8 @@ export default function DesglosGastos({
 }) {
   return (
     <ChartCard
-      title="Desglose de gastos"
-      subtitle="Gasto operativo (OpEx) y de personal frente a inversión (CapEx) por categoría"
+      title="Desglose de gastos: personal y operativo"
+      subtitle="Gasto de personal y operativo (OpEx) por categoría y subcategoría, sin inversión (CapEx)"
       dateRange={rangeLabel ?? undefined}
       dataSource="Exportación bancaria CaixaBank · excluye aportaciones de socios y préstamo"
       sources={["excel"]}

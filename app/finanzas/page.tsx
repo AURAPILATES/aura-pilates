@@ -33,6 +33,7 @@ import {
 import { loadCategoriesCached, type Category } from "@/lib/categories";
 import ClientesFilterBar from "@/app/clientes/ClientesFilterBar";
 import DesglosGastos from "./instances/DesglosGastos";
+import DesglosGastosGeneral from "./instances/DesglosGastosGeneral";
 import ResumenFinanzas from "./instances/ResumenFinanzas";
 import VolumenBruto from "./instances/VolumenBruto";
 import FuentesIngreso from "./instances/FuentesIngreso";
@@ -153,6 +154,24 @@ function groupExpensesByTopCategory(
   const result = [...topMap.values()];
   for (const top of result) top.children.sort((a, b) => b.total - a.total);
   return result.sort((a, b) => b.total - a.total);
+}
+
+const ECON_GROUP_ORDER: EconomicGroup[] = ["personal", "operational", "capex"];
+
+/** Totales por bloque económico (Personal / OpEx / CapEx), con sus transacciones, para la visión general del desglose de gastos. */
+function groupExpensesByEconomicGroup(
+  expByCategory: { category: string; count: number; total: number; group: EconomicGroup }[],
+  transactionsByCategory: Record<string, { date: string; amount: number; concept: string; contact: string }[]>,
+) {
+  return ECON_GROUP_ORDER.map((group) => {
+    const entries = expByCategory.filter((e) => e.group === group);
+    return {
+      group,
+      total: entries.reduce((s, e) => s + e.total, 0),
+      count: entries.reduce((s, e) => s + e.count, 0),
+      txns: entries.flatMap((e) => transactionsByCategory[e.category] ?? []),
+    };
+  });
 }
 
 function pad2(n: number) { return String(n).padStart(2, "0"); }
@@ -396,6 +415,12 @@ export default async function Finanzas(props: {
     transactionsByCategory[t.category].push({ date: t.date, amount: t.amount, concept: t.concept ?? "", contact: t.contact ?? "" });
   }
 
+  // ── Desglose de gastos: visión general (Personal/OpEx/CapEx) vs. específico (Personal+OpEx) ──
+  const expGroupTotals = groupExpensesByEconomicGroup(expByCategory, transactionsByCategory);
+  const expByTopCategory = groupExpensesByTopCategory(expByCategory, dbCatByValue, dbCatById, EXPENSE_COLORS);
+  const expByTopCategoryNoCapex = expByTopCategory.filter((c) => c.group !== "capex");
+  const totalExpCatNoCapex = expGroupTotals.filter((g) => g.group !== "capex").reduce((s, g) => s + g.total, 0);
+
   // ── Salud financiera (datos completos) ──
   const today_ym = curMonth;
 
@@ -583,10 +608,15 @@ export default async function Finanzas(props: {
                     trend={trendPct(ticketCur, ticketPrev)}
                   />
                 </div>
-                <DesglosGastos
-                  categories={groupExpensesByTopCategory(expByCategory, dbCatByValue, dbCatById, EXPENSE_COLORS)}
-                  transactionsByCategory={transactionsByCategory}
+                <DesglosGastosGeneral
+                  groups={expGroupTotals}
                   totalExpCat={totalExpCat}
+                  rangeLabel={txnRangeLabel}
+                />
+                <DesglosGastos
+                  categories={expByTopCategoryNoCapex}
+                  transactionsByCategory={transactionsByCategory}
+                  totalExpCat={totalExpCatNoCapex}
                   rangeLabel={txnRangeLabel}
                 />
               </div>
