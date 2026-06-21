@@ -182,46 +182,50 @@ export default function PreviewList({ transactions, categories, uncategorizedCou
         </button>
       )}
 
-      {/* Tira de meses: pills sueltas con borde */}
-      <div className="flex gap-1.5 overflow-x-auto scrollbar-none mb-4">
-        <button
-          onClick={() => router.push(pathname)}
-          className={`shrink-0 px-3.5 py-1.5 rounded-full text-sm border transition-colors whitespace-nowrap ${
-            !activeMonth ? "bg-navy text-white border-navy font-medium" : "text-navy/60 border-navy/[0.18]"
-          }`}
-        >
-          Todo
-        </button>
-        {monthStrip.map(({ key, label, year }) => {
-          const isActive = key === activeMonth;
-          const showYear = year !== new Date().getFullYear();
-          return (
-            <button
-              key={key}
-              ref={isActive ? activeMonthRef : undefined}
-              onClick={() => goToMonth(key)}
-              className={`shrink-0 px-3.5 py-1.5 rounded-full text-sm border transition-colors capitalize whitespace-nowrap ${
-                isActive ? "bg-navy text-white border-navy font-medium" : "text-navy/60 border-navy/[0.18] hover:text-navy"
-              }`}
-            >
-              {label}{showYear && <span className="text-[10px] ml-0.5 opacity-60">{year}</span>}
-            </button>
-          );
-        })}
+      {/* Tira de meses: segmented control */}
+      <div className="mb-4">
+        <div className="flex items-center gap-0.5 border border-navy/[0.12] rounded-lg bg-white p-0.5 overflow-x-auto scrollbar-none">
+          <button
+            onClick={() => router.push(pathname)}
+            className={`shrink-0 px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap ${
+              !activeMonth ? "bg-navy text-white" : "text-navy/50 hover:text-navy"
+            }`}
+          >
+            Todo
+          </button>
+          {monthStrip.map(({ key, label, year }) => {
+            const isActive = key === activeMonth;
+            const showYear = year !== new Date().getFullYear();
+            return (
+              <button
+                key={key}
+                ref={isActive ? activeMonthRef : undefined}
+                onClick={() => goToMonth(key)}
+                className={`shrink-0 px-3 py-1.5 text-xs font-medium rounded-md transition-colors capitalize whitespace-nowrap ${
+                  isActive ? "bg-navy text-white" : "text-navy/50 hover:text-navy"
+                }`}
+              >
+                {label}{showYear && <span className="text-[10px] ml-0.5 opacity-60">{year}</span>}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Toolbar */}
       <div className="flex items-stretch gap-2 mb-2">
-        <button className="flex-1 flex items-center justify-center gap-1.5 h-10 bg-white border border-navy/[0.18] rounded-lg text-sm font-medium text-navy">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <button className="flex-1 flex items-center justify-center gap-1.5 px-3 h-9 bg-white text-navy text-[13px] font-medium border border-navy/15 rounded-xl hover:bg-navy/[0.02] transition-colors">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
           </svg>
-          Añadir
+          Añadir movimiento
         </button>
-        <button className="shrink-0 flex items-center justify-center gap-1.5 px-4 h-10 bg-white border border-navy/[0.18] rounded-lg text-sm font-medium text-navy">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
-          </svg>
+        <button className="shrink-0 flex items-center justify-center gap-1.5 w-[124px] h-9 text-[13px] font-medium px-4 rounded-xl border bg-white text-navy border-navy/15 hover:bg-navy/[0.02] transition-colors">
+          <span className="w-3.5 h-3.5 rounded-[3px] border border-navy/35 flex items-center justify-center shrink-0">
+            <svg width="9" height="7" viewBox="0 0 9 7" fill="none">
+              <polyline points="1,3.5 3.5,6 8,1" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-navy/35"/>
+            </svg>
+          </span>
           Seleccionar
         </button>
       </div>
