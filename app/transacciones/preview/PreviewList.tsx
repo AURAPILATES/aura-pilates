@@ -3,6 +3,7 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import type { Transaction } from "@/lib/transactions";
 import type { Category } from "@/lib/categories";
+import { CatIcon } from "../catIcons";
 
 const MONTHS_ES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
 
@@ -20,21 +21,11 @@ function fmtAmt(n: number) {
 }
 
 const FALLBACK_COLOR = { in: "#4e8c68", out: "#1c1917" };
+const FALLBACK_ICON = { in: "trending-up", out: "package" };
 
-function PaymentIcon({ income }: { income: boolean }) {
-  return (
-    <div className="shrink-0 w-9 h-9 rounded-lg bg-navy/[0.05] flex items-center justify-center text-navy/45">
-      {income ? (
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>
-        </svg>
-      ) : (
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 9h1M14 9h1M9 13h1M14 13h1"/>
-        </svg>
-      )}
-    </div>
-  );
+function rgba(hex: string, alpha: number) {
+  const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
 }
 
 type Props = {
@@ -218,10 +209,13 @@ export default function PreviewList({ transactions, categories, uncategorizedCou
                   const cat = t.category ? categories.find((c) => c.value === t.category) : undefined;
                   const accent = cat?.text_color ?? (t.amount > 0 ? FALLBACK_COLOR.in : FALLBACK_COLOR.out);
                   const label = cat?.label ?? t.concept ?? "—";
+                  const iconKey = cat?.emoji ?? (t.amount > 0 ? FALLBACK_ICON.in : FALLBACK_ICON.out);
                   return (
                     <div key={t.id} className="flex items-stretch gap-3 py-3">
                       <div className="shrink-0 w-[3px] rounded-full" style={{ backgroundColor: accent }} />
-                      <PaymentIcon income={t.amount > 0} />
+                      <div className="shrink-0 w-9 h-9 rounded-lg flex items-center justify-center" style={{ backgroundColor: rgba(accent, 0.12) }}>
+                        <CatIcon iconKey={iconKey} name={label} color={accent} size={16} />
+                      </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-[15px] font-semibold text-navy truncate">{t.contact || t.concept || "—"}</p>
                         <p className="text-xs text-navy/40 truncate">{t.concept}</p>
