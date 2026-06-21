@@ -177,7 +177,7 @@ export default function RevolutList({ transactions, categories, uncategorizedCou
                   {dayNet < 0 ? "−" : "+"}{fmtAmt(Math.abs(dayNet))}
                 </span>
               </div>
-              <div className="bg-white border border-navy/[0.06] rounded-2xl shadow-sm">
+              <div className="bg-white border border-navy/[0.06] rounded-2xl">
                 {dayTxns.map((t, i) => {
                   const cat = t.category ? categories.find((c) => c.value === t.category) : undefined;
                   const accent = cat?.text_color ?? (t.amount > 0 ? FALLBACK_COLOR.in : FALLBACK_COLOR.out);
