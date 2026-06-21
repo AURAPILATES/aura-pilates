@@ -793,54 +793,54 @@ export default function TransaccionesList({
         </div>
       </div>
 
-      {/* ── Mobile: KPIs + búsqueda/filtros con líneas divisorias ────────────── */}
-      <div className="sm:hidden -mx-2 mb-1">
-        <div className="grid grid-cols-3 divide-x divide-navy/[0.08] border-b border-navy/[0.08] text-center px-1 pt-2 pb-3">
-          <div className="px-2 min-w-0">
-            <p className="text-[11px] text-navy/40 uppercase tracking-wider leading-none mb-1 whitespace-nowrap">Ingresos</p>
-            <p className="text-[15px] font-semibold text-success tabular-nums truncate">{fmtAmt(totalIn)}</p>
-          </div>
-          <div className="px-2 min-w-0">
-            <p className="text-[11px] text-navy/40 uppercase tracking-wider leading-none mb-1 whitespace-nowrap">Gastos</p>
-            <p className="text-[15px] font-semibold text-[#B85C3A] tabular-nums truncate">−{fmtAmt(totalOut)}</p>
-          </div>
-          <div className="px-2 min-w-0">
-            <p className="text-[11px] text-navy/40 uppercase tracking-wider leading-none mb-1 whitespace-nowrap">Neto</p>
-            <p className={`text-[15px] font-semibold tabular-nums truncate ${neto >= 0 ? "text-navy" : "text-danger"}`}>
-              {neto < 0 && "−"}{fmtAmt(Math.abs(neto))}
-            </p>
-          </div>
+      {/* ── Mobile: KPIs ──────────────────────────────────────────────────────── */}
+      <div className="sm:hidden grid grid-cols-3 text-center gap-1 mb-3">
+        <div className="min-w-0">
+          <p className="text-[12px] text-navy/40 uppercase tracking-wider leading-none mb-0.5 whitespace-nowrap">Ingresos</p>
+          <p className="text-[14px] font-semibold text-success tabular-nums truncate">{fmtAmt(totalIn)}</p>
         </div>
-        <div className="flex gap-2 px-2 py-2">
-          <div className="relative flex-1">
-            <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-navy/30" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-            </svg>
-            <input
-              type="text"
-              placeholder="Buscar concepto o contacto…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-9 py-2.5 text-sm border border-navy/[0.12] rounded-lg bg-white text-navy placeholder:text-navy/35 outline-none focus:ring-2 focus:ring-primary/20 transition"
-            />
-            {search && (
-              <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-navy/30 hover:text-navy/60">✕</button>
-            )}
-          </div>
-          <button
-            onClick={() => setShowMobileFilters((v) => !v)}
-            title="Filtros"
-            className="relative shrink-0 flex items-center justify-center w-[42px] h-[42px] bg-white border border-navy/[0.12] rounded-lg text-navy"
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/>
-            </svg>
-            {(catFilters.length > 0 || originFilter !== "all" || onlyRecurring || currentRange !== "all") && (
-              <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-primary" />
-            )}
-          </button>
-          <MobileActionsMenu onExport={exportCSV} onPapelera={() => setShowPapelera(true)} />
+        <div className="min-w-0">
+          <p className="text-[12px] text-navy/40 uppercase tracking-wider leading-none mb-0.5 whitespace-nowrap">Gastos</p>
+          <p className="text-[14px] font-semibold text-[#B85C3A] tabular-nums truncate">−{fmtAmt(totalOut)}</p>
         </div>
+        <div className="min-w-0">
+          <p className="text-[12px] text-navy/40 uppercase tracking-wider leading-none mb-0.5 whitespace-nowrap">Neto</p>
+          <p className={`text-[14px] font-semibold tabular-nums truncate ${neto >= 0 ? "text-navy" : "text-danger"}`}>
+            {neto < 0 && "−"}{fmtAmt(Math.abs(neto))}
+          </p>
+        </div>
+      </div>
+
+      {/* ── Mobile: Search bar + Filtros ─────────────────────────────────────── */}
+      <div className="sm:hidden flex gap-2 mb-3">
+        <div className="relative flex-1">
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-navy/30" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input
+            type="text"
+            placeholder="Buscar concepto o contacto…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-9 pr-9 py-2.5 text-sm border border-navy/[0.12] rounded-lg bg-white text-navy placeholder:text-navy/35 outline-none focus:ring-2 focus:ring-primary/20 transition"
+          />
+          {search && (
+            <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-navy/30 hover:text-navy/60">✕</button>
+          )}
+        </div>
+        <button
+          onClick={() => setShowMobileFilters((v) => !v)}
+          title="Filtros"
+          className="relative shrink-0 flex items-center justify-center w-[42px] h-[42px] bg-white border border-navy/[0.12] rounded-lg text-navy"
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/>
+          </svg>
+          {(catFilters.length > 0 || originFilter !== "all" || onlyRecurring || currentRange !== "all") && (
+            <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-primary" />
+          )}
+        </button>
+        <MobileActionsMenu onExport={exportCSV} onPapelera={() => setShowPapelera(true)} />
       </div>
 
       {/* ── Mobile: Filter drawer ────────────────────────────────────────────── */}
