@@ -123,7 +123,7 @@ export default function HorarioShell({
   const weekFreeSpots  = events.reduce((s, e) => s + e.spotsRemaining, 0);
   const weekTotalSpots = events.reduce((s, e) => s + e.capacity, 0);
   const weekSoldSpots  = events.reduce((s, e) => s + e.ticketsSold, 0);
-  const lowCount       = events.filter((e) => e.capacity > 0 && e.ticketsSold / e.capacity < 0.5).length;
+  const almostEmptyCount = events.filter((e) => e.ticketsSold <= 2).length;
 
   const prevWeek  = addDays(weekMonday, -7);
   const nextWeek  = addDays(weekMonday, 7);
@@ -286,9 +286,9 @@ export default function HorarioShell({
                       <p className="text-sm font-medium text-navy mt-0.5 tabular-nums">{weekFreeSpots}</p>
                     </div>
                     <div className="px-3 py-2.5">
-                      <p className="text-[9px] text-navy/40 uppercase tracking-widest font-semibold">Por llenar</p>
-                      <p className={`text-sm font-semibold mt-0.5 tabular-nums ${lowCount > 0 ? "text-danger" : "text-navy/30"}`}>
-                        {lowCount}
+                      <p className="text-[9px] text-navy/40 uppercase tracking-widest font-semibold" title="Clases con 2 o menos plazas vendidas">Casi vacías</p>
+                      <p className={`text-sm font-semibold mt-0.5 tabular-nums ${almostEmptyCount > 0 ? "text-danger" : "text-navy/30"}`}>
+                        {almostEmptyCount}
                       </p>
                     </div>
                   </div>
@@ -400,9 +400,14 @@ export default function HorarioShell({
               ) : (
                 <div className="grid grid-cols-4 gap-3 mb-5">
                   <KpiCard label="Ocupación media esta semana" value={`${Math.round(weekOcc * 100)}%`} valueColor={occText(weekOcc)} />
-                  <KpiCard label="Vendidas"   value={String(weekSoldSpots)} />
-                  <KpiCard label="Libres"     value={String(weekFreeSpots)} />
-                  <KpiCard label="Por llenar" value={String(lowCount)} valueColor={lowCount > 0 ? "text-danger" : "text-navy/30"} />
+                  <KpiCard label="Plazas vendidas" value={String(weekSoldSpots)} />
+                  <KpiCard label="Plazas libres"   value={String(weekFreeSpots)} />
+                  <KpiCard
+                    label="Clases casi vacías"
+                    value={String(almostEmptyCount)}
+                    valueColor={almostEmptyCount > 0 ? "text-danger" : "text-navy/30"}
+                    tooltip="Clases con 2 o menos plazas vendidas"
+                  />
                 </div>
               )}
 
@@ -559,12 +564,31 @@ function HiddenEventsPanel({ events }: { events: MomenceEvent[] }) {
 
 // ── Desktop sub-components ─────────────────────────────────────────────────────
 
-function KpiCard({ label, value, valueColor = "text-navy" }: {
-  label: string; value: string; valueColor?: string;
+function KpiCard({ label, value, valueColor = "text-navy", tooltip }: {
+  label: string; value: string; valueColor?: string; tooltip?: string;
 }) {
   return (
     <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card px-4 py-3">
-      <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider leading-tight mb-1">{label}</p>
+      <div className="flex items-center gap-1 mb-1">
+        <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider leading-tight">{label}</p>
+        {tooltip && (
+          <span className="relative group/tip inline-flex items-center">
+            <svg
+              width="12" height="12" viewBox="0 0 16 16" fill="none"
+              className="text-navy/30 hover:text-navy/55 transition-colors cursor-default shrink-0"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5"/>
+              <path d="M8 7v5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+              <circle cx="8" cy="4.5" r="0.75" fill="currentColor"/>
+            </svg>
+            <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[200px] rounded-lg bg-navy px-2.5 py-1.5 text-[11px] leading-snug text-white shadow-lg opacity-0 group-hover/tip:opacity-100 transition-opacity z-50 whitespace-normal text-center">
+              {tooltip}
+              <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-navy" />
+            </span>
+          </span>
+        )}
+      </div>
       <p className={`text-2xl font-semibold tabular-nums ${valueColor}`}>{value}</p>
     </div>
   );

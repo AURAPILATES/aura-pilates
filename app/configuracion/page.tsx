@@ -16,7 +16,7 @@ export default async function ConfiguracionPage() {
           <h1 className="text-sm font-bold text-navy uppercase tracking-widest">Configuración</h1>
         </div>
       </div>
-      <main className="max-w-6xl mx-auto px-6 pt-8 pb-16">
+      <main className="max-w-6xl mx-auto px-6 pt-3 pb-16">
         <ConfiguracionTabs categories={categories} events={events} />
       </main>
     </div>
