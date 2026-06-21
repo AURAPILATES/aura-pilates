@@ -832,7 +832,7 @@ export default function TransaccionesList({
       </div>
 
       {/* ── Mobile: KPIs + búsqueda/filtros con líneas divisorias ────────────── */}
-      <div className="sm:hidden -mx-2 mb-2">
+      <div className="sm:hidden -mx-2 mb-3">
         <div className="grid grid-cols-3 divide-x divide-navy/[0.08] border-b border-navy/[0.08] text-center px-1 py-3">
           <div className="px-2 min-w-0">
             <p className="text-[11px] text-navy/40 uppercase tracking-wider leading-none mb-1 whitespace-nowrap">Ingresos</p>
@@ -917,11 +917,11 @@ export default function TransaccionesList({
       {uncategorizedCount > 0 && (
         <button
           onClick={() => setCatFilters(catFilters.includes("__none__") ? catFilters.filter((v) => v !== "__none__") : [...catFilters, "__none__"])}
-          className="sm:hidden w-full flex items-center gap-2 px-4 py-2.5 mb-3 rounded-xl bg-amber-50 border border-amber-100 text-amber-800 text-sm font-medium text-left"
+          className="sm:hidden w-full flex items-center gap-2 px-4 py-2.5 mb-3 rounded-xl bg-amber-100 border border-amber-200 text-amber-900 text-sm font-medium text-left"
         >
-          <span className="text-base text-amber-500">⚠</span>
-          <span className="flex-1">{uncategorizedCount} movimientos sin etiquetar</span>
-          <span className="flex items-center gap-1 text-amber-700 font-semibold whitespace-nowrap">
+          <span className="text-base text-amber-600">⚠</span>
+          <span className="flex-1">{uncategorizedCount} sin clasificar</span>
+          <span className="flex items-center gap-1 text-amber-800 font-semibold whitespace-nowrap">
             Revisar
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
@@ -987,7 +987,7 @@ export default function TransaccionesList({
       </div>
 
       {/* ── Mobile: toolbar ────────────────────────────────────────────────── */}
-      <div className="sm:hidden mb-5">
+      <div className="sm:hidden mb-3">
         {(catFilters.length > 0 || originFilter !== "all" || onlyRecurring || currentRange !== "all" || search !== "") && (
           <div className="flex items-center mb-3">
             <button
@@ -1008,7 +1008,7 @@ export default function TransaccionesList({
           <ImportButton compact className="flex-1" onManual={() => setShowAddCash(true)} />
           <button
             onClick={() => { setMobileSelectMode((v) => { if (v) clearSelection(); return !v; }); }}
-            className={`shrink-0 flex items-center justify-center gap-1.5 w-[112px] h-9 text-[13px] font-medium px-3 rounded-xl border transition-colors ${
+            className={`shrink-0 flex items-center justify-center gap-1.5 w-[124px] h-9 text-[13px] font-medium px-4 rounded-xl border transition-colors ${
               mobileSelectMode
                 ? "bg-navy text-white border-navy"
                 : "bg-white text-navy border-navy/15 hover:bg-navy/[0.02]"
