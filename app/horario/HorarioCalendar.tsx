@@ -4,7 +4,7 @@ import { useMemo, memo } from "react";
 import { MomenceEvent } from "@/lib/momence";
 
 const SLOT_PX = 110;     // px per hour slot
-const SEP_PX = 28;       // px for the gap-separator row
+const SEP_PX = 36;       // px for the gap-separator row
 const DAY_LABELS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 
 type OccStyle = { card: string; pct: string; bar: string };
@@ -147,6 +147,8 @@ export default memo(function HorarioCalendar({
           <div className="relative border-r border-navy/[0.07]" style={{ height: `${totalH}px` }}>
             {clusters.map((cluster, ci) => {
               const clusterStartY = hourMap.get(cluster[0]) ?? 0;
+              const gapStart = ci > 0 ? clusters[ci - 1][clusters[ci - 1].length - 1] + 1 : null;
+              const gapEnd = ci > 0 ? cluster[0] : null;
 
               return (
                 <div key={ci}>
@@ -156,8 +158,8 @@ export default memo(function HorarioCalendar({
                       className="absolute left-0 right-0 flex items-center justify-end pr-2"
                       style={{ top: `${clusterStartY - SEP_PX}px`, height: `${SEP_PX}px` }}
                     >
-                      <span className="text-[9px] text-navy/20 font-mono">
-                        {String(cluster[0]).padStart(2, "0")}:00
+                      <span className="text-[8px] text-navy/25 font-mono leading-tight text-right">
+                        sin clases<br/>{gapStart}h–{gapEnd}h
                       </span>
                     </div>
                   )}
@@ -197,7 +199,7 @@ export default memo(function HorarioCalendar({
                       {/* Separator row */}
                       {ci > 0 && (
                         <div
-                          className="absolute left-0 right-0 bg-navy/[0.025] border-y border-navy/[0.05]"
+                          className="absolute left-0 right-0 bg-navy/[0.025] border-y border-navy/[0.05] [background-image:repeating-linear-gradient(135deg,transparent,transparent_5px,rgba(0,0,0,0.025)_5px,rgba(0,0,0,0.025)_6px)]"
                           style={{ top: `${clusterStartY - SEP_PX}px`, height: `${SEP_PX}px` }}
                         />
                       )}

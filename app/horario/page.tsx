@@ -76,7 +76,7 @@ export default async function Horario({
     periodParam === "all" ? "Desde el inicio" :
     `${fmtShort(mainFrom)}–${fmtShort(mainTo)}`;
 
-  const initialView = params.view === "calendario" ? "calendario" : "lista";
+  const initialView = params.view === "lista" ? "lista" : "calendario";
   const initialTab  = params.tab === "analisis" ? "analisis" : "horario";
 
   return (

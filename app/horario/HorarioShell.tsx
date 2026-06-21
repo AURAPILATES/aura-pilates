@@ -200,6 +200,15 @@ export default function HorarioShell({
               <div className="w-px h-5 bg-navy/[0.12]" />
               <div className="flex border border-navy/[0.08] rounded-lg overflow-hidden bg-white text-xs">
                 <button
+                  onClick={() => setView("calendario")}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 transition-colors ${view === "calendario" ? "bg-navy text-white font-medium" : "text-navy/50 hover:text-navy"}`}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                  </svg>
+                  Calendario
+                </button>
+                <button
                   onClick={() => setView("lista")}
                   className={`flex items-center gap-1.5 px-3 py-1.5 transition-colors ${view === "lista" ? "bg-navy text-white font-medium" : "text-navy/50 hover:text-navy"}`}
                 >
@@ -208,15 +217,6 @@ export default function HorarioShell({
                     <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
                   </svg>
                   Lista
-                </button>
-                <button
-                  onClick={() => setView("calendario")}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 transition-colors ${view === "calendario" ? "bg-navy text-white font-medium" : "text-navy/50 hover:text-navy"}`}
-                >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-                  </svg>
-                  Calendario
                 </button>
               </div>
             </div>
