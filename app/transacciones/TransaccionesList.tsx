@@ -1093,8 +1093,8 @@ export default function TransaccionesList({
                   {dayNet < 0 ? "−" : "+"}{fmtAmt(Math.abs(dayNet))}
                 </span>
               </div>
-              {/* Lista de movimientos, cada uno en su caja blanca, icono circular de color */}
-              <div className="space-y-2">
+              {/* Caja blanca por día, icono circular de color por movimiento */}
+              <div className="bg-white rounded-lg overflow-hidden divide-y divide-navy/[0.05]">
                 {dayTxns.map((t) => {
                   const recurringPeriod = recurringPeriods[t.id];
                   const isSelected  = selected.has(t.id);
@@ -1106,7 +1106,7 @@ export default function TransaccionesList({
                   return (
                     <div
                       key={t.id}
-                      className={`flex items-start gap-3 p-3 rounded-lg border border-navy/[0.07] shadow-card transition-colors ${isSelected ? "bg-primary/[0.035]" : "bg-white"}`}
+                      className={`flex items-start gap-3 p-3 transition-colors ${isSelected ? "bg-primary/[0.035]" : ""}`}
                     >
                       <div
                         className="flex items-center gap-2.5 shrink-0 cursor-pointer"
