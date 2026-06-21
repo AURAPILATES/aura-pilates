@@ -32,13 +32,13 @@ export default async function TransaccionesPage(props: {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-[45px] flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <MobileNav />
-            <h1 className="text-sm font-bold text-navy uppercase tracking-widest">Transacciones</h1>
+            <h1 className="text-sm font-bold text-navy uppercase tracking-widest">Movimientos</h1>
           </div>
         </div>
       </div>
 
       {/* ── Content ── */}
-      <div className="px-2 sm:px-6 pt-4 pb-16 max-w-6xl mx-auto">
+      <div className="px-2 sm:px-6 pt-1.5 sm:pt-4 pb-16 max-w-6xl mx-auto">
         <Suspense fallback={null}>
           <TransaccionesList
             transactions={transactions}

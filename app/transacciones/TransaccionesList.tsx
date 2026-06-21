@@ -832,7 +832,7 @@ export default function TransaccionesList({
       </div>
 
       {/* ── Mobile: KPIs + búsqueda/filtros con líneas divisorias ────────────── */}
-      <div className="sm:hidden -mx-2 mb-4">
+      <div className="sm:hidden -mx-2 mb-2">
         <div className="grid grid-cols-3 divide-x divide-navy/[0.08] border-b border-navy/[0.08] text-center px-1 py-3">
           <div className="px-2 min-w-0">
             <p className="text-[11px] text-navy/40 uppercase tracking-wider leading-none mb-1 whitespace-nowrap">Ingresos</p>
@@ -849,7 +849,7 @@ export default function TransaccionesList({
             </p>
           </div>
         </div>
-        <div className="flex gap-2 px-2 py-3">
+        <div className="flex gap-2 px-2 py-2">
           <div className="relative flex-1">
             <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-navy/30" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
@@ -1008,10 +1008,10 @@ export default function TransaccionesList({
           <ImportButton compact className="flex-1" onManual={() => setShowAddCash(true)} />
           <button
             onClick={() => { setMobileSelectMode((v) => { if (v) clearSelection(); return !v; }); }}
-            className={`shrink-0 flex items-center gap-1.5 h-9 text-xs font-medium px-3 rounded-xl border transition-colors ${
+            className={`shrink-0 flex items-center justify-center gap-1.5 w-[112px] h-9 text-[13px] font-medium px-3 rounded-xl border transition-colors ${
               mobileSelectMode
                 ? "bg-navy text-white border-navy"
-                : "bg-white text-navy/55 border-navy/[0.12] hover:text-navy"
+                : "bg-white text-navy border-navy/15 hover:bg-navy/[0.02]"
             }`}
           >
             <span className={`w-3.5 h-3.5 rounded-[3px] border flex items-center justify-center shrink-0 transition-colors ${
@@ -1126,7 +1126,7 @@ export default function TransaccionesList({
               <div className="flex items-baseline justify-between mb-2 px-2">
                 <span className="text-sm font-semibold text-navy">{fmtDayLabel(date)}</span>
                 <span className="text-xs tabular-nums text-navy/40 pr-1">
-                  {dayNet < 0 && "−"}{fmtAmt(Math.abs(dayNet))}
+                  {dayNet < 0 ? "−" : "+"}{fmtAmt(Math.abs(dayNet))}
                 </span>
               </div>
               {/* Day card */}
