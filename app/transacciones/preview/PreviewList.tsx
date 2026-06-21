@@ -15,8 +15,8 @@ function SourceLogo({ method }: { method: string }) {
   if (method === "efectivo") {
     return (
       <div className="shrink-0 w-10 flex flex-col items-center gap-1">
-        <div className="w-9 h-9 rounded-lg bg-amber-100 flex items-center justify-center">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#92400E" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <div className="w-6 h-6 rounded-md bg-amber-100 flex items-center justify-center">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#92400E" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
             <rect x="2" y="6" width="20" height="14" rx="2"/><circle cx="12" cy="13" r="3"/><path d="M6 10h.01M18 10h.01"/>
           </svg>
         </div>
@@ -28,8 +28,8 @@ function SourceLogo({ method }: { method: string }) {
   if (socio) {
     return (
       <div className="shrink-0 w-10 flex flex-col items-center gap-1">
-        <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: socio.bg, color: socio.color }}>
-          <span style={{ fontSize: "13px", fontWeight: 700 }}>{socio.initials}</span>
+        <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ background: socio.bg, color: socio.color }}>
+          <span style={{ fontSize: "10px", fontWeight: 700 }}>{socio.initials}</span>
         </div>
         <span className="text-[9px] text-navy/40 font-medium leading-none capitalize text-center">{method}</span>
       </div>
@@ -37,9 +37,7 @@ function SourceLogo({ method }: { method: string }) {
   }
   return (
     <div className="shrink-0 w-10 flex flex-col items-center gap-1">
-      <div className="w-9 h-9 rounded-lg flex items-center justify-center overflow-hidden">
-        <img src="/Caixabank logo.png" alt="CaixaBank" width={36} height={36} className="object-contain" />
-      </div>
+      <img src="/Caixabank logo.png" alt="CaixaBank" width={16} height={16} className="object-contain" />
       <span className="text-[9px] text-navy/40 font-medium leading-none text-center">CaixaBank</span>
     </div>
   );
