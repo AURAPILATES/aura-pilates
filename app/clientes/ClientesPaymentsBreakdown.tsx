@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { fmt } from "@/lib/analytics";
 import Drawer from "@/app/components/Drawer";
+import { ChartCard } from "@/components/charts";
 import type { PaymentsBreakdown } from "@/lib/stripePayments";
 import type { CustomerRow } from "./ClientesTable";
 
@@ -56,12 +57,13 @@ export default function ClientesPaymentsBreakdown({
 
   return (
     <>
-      <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5 mb-4">
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-sm font-semibold text-navy">Resumen de pagos</p>
-          <p className="text-[11px] text-navy/40">{periodLabel}</p>
-        </div>
-
+      <ChartCard
+        title="Resumen de pagos"
+        subtitle="Pagos efectuados y reembolsados en el período"
+        dateRange={periodLabel}
+        dataSource="Stripe · pagos en tiempo real"
+        sources={["stripe"]}
+      >
         {/* Barra proporcional */}
         <div className="flex rounded-full overflow-hidden h-2 mb-4 gap-[2px]">
           {total === 0
@@ -100,7 +102,7 @@ export default function ClientesPaymentsBreakdown({
             </div>
           ))}
         </div>
-      </div>
+      </ChartCard>
 
       {open && drawerItem && hasCustomers && (
         <Drawer

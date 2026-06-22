@@ -4,6 +4,7 @@ import { useState } from "react";
 import { fmt } from "@/lib/analytics";
 import Drawer from "@/app/components/Drawer";
 import KpiTile from "@/components/charts/KpiTile";
+import { ChartCard, ProportionBar } from "@/components/charts";
 import { hasActiveSub, hasActivePack, isChurned, type EnrichedCustomer } from "@/lib/customerEnrichment";
 
 type DrawerKey = "active" | "new" | "altas" | "churn" | "error" | "convert" | null;
@@ -62,7 +63,6 @@ type Props = {
   periodFrom: string;
   periodTo: string;
   compDateRange: string;
-  grossRevenue: number;
   spendPerClient: number;
   spendPerClientComp: number;
   newCustomers: EnrichedCustomer[];
@@ -71,22 +71,18 @@ type Props = {
 };
 
 export default function AnaliticaKPIs({
-  customers, periodLabel, periodFrom, periodTo, compDateRange, grossRevenue, spendPerClient, spendPerClientComp,
+  customers, periodLabel, periodFrom, periodTo, compDateRange, spendPerClient, spendPerClientComp,
   newCustomers, reactivatedCustomers, convertCandidates,
 }: Props) {
   const [drawer, setDrawer] = useState<DrawerKey>(null);
 
   const dateRange = `${fmtD(periodFrom)} – ${fmtD(periodTo)}`;
-  const now = new Date();
-  const todayStr = now.toISOString().split("T")[0];
-  const d30ago = new Date(now); d30ago.setDate(d30ago.getDate() - 30);
-  const range30 = `${fmtD(d30ago.toISOString().split("T")[0])} – ${fmtD(todayStr)}`;
 
   const activeSubList  = customers.filter(hasActiveSub);
   const activePackList = customers.filter((c) => !hasActiveSub(c) && hasActivePack(c));
   const churnList       = customers.filter(isChurned);
   const delinquentList  = customers.filter((c) => c.hasPaymentError);
-  const altasList        = [...newCustomers, ...reactivatedCustomers];
+  const altasList       = [...newCustomers, ...reactivatedCustomers];
 
   const drawerConfig: Record<NonNullable<DrawerKey>, DrawerEntry> = {
     active: {
@@ -131,93 +127,116 @@ export default function AnaliticaKPIs({
   const subPct  = activeTotal > 0 ? (activeSubList.length  / activeTotal) * 100 : 0;
   const packPct = activeTotal > 0 ? (activePackList.length / activeTotal) * 100 : 0;
 
+  const spendDeltaPct = spendPerClientComp > 0
+    ? Math.round(((spendPerClient - spendPerClientComp) / spendPerClientComp) * 100)
+    : null;
+
   return (
     <>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4">
+      <div className="max-w-xs">
         <KpiTile
           label="Ingreso medio por clase"
           value="—"
           sub="próximamente"
           valueClassName="text-navy/30"
         />
-        <KpiTile
-          label="Activos"
-          value={activeTotal}
-          sub={
-            <span className="flex flex-col gap-1.5 w-full">
-              <span className="flex w-full h-1.5 rounded-full overflow-hidden bg-navy/[0.06]">
-                {subPct > 0 && <span style={{ width: `${subPct}%`, background: "#7F77DD" }} />}
-                {packPct > 0 && <span style={{ width: `${packPct}%`, background: "#AFA9EC" }} />}
-              </span>
-              <span>{activeSubList.length} suscritos · {activePackList.length} packs</span>
-            </span>
-          }
-          tooltip="Suscripción renovada hace ≤30 días, o pack con fecha de caducidad aún vigente (Benvinguda: 15d · Pack 4/8: 90d)"
-          valueClassName="text-navy"
-          accent="neutral"
-          onClick={() => setDrawer("active")}
-        />
-        <KpiTile
-          label="Gasto medio por cliente"
-          dateRange={dateRange}
-          value={fmt(spendPerClient)}
-          delta={{ cur: spendPerClient, prev: spendPerClientComp }}
-          compLabel={`${compDateRange} · ${fmt(spendPerClientComp)}`}
-          sub={`sobre ${fmt(grossRevenue)} del período`}
-        />
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4 mb-6">
-        <KpiTile
-          label="Clientes nuevos"
-          dateRange={dateRange}
-          value={newCustomers.length}
-          sub="primer pago en el período"
-          valueClassName="text-success"
-          accent="success"
-          onClick={newCustomers.length > 0 ? () => setDrawer("new") : undefined}
-        />
-        <KpiTile
-          label="Altas"
-          dateRange={dateRange}
-          value={`+${altasList.length}`}
-          sub={
-            newCustomers.length === 0 && reactivatedCustomers.length === 0
-              ? "sin altas en el período"
-              : `${newCustomers.length} nuevos · ${reactivatedCustomers.length} reactivados`
-          }
-          valueClassName="text-success"
-          accent="success"
-          onClick={altasList.length > 0 ? () => setDrawer("altas") : undefined}
-        />
-        <KpiTile
-          label="Sin renovar"
-          value={churnList.length}
-          sub="entre 46 y 76 días sin pagar"
-          tooltip="Suscriptoras que llevan entre 46 y 76 días sin renovar — periodo accionable para reactivación"
-          valueClassName={churnList.length > 0 ? "text-danger" : "text-navy/50"}
-          accent="warning"
-          onClick={churnList.length > 0 ? () => setDrawer("churn") : undefined}
-        />
-        <KpiTile
-          label="Error de pago"
-          dateRange={range30}
-          value={delinquentList.length}
-          sub="cobro fallido reciente"
-          valueClassName={delinquentList.length > 0 ? "text-danger" : "text-navy/50"}
-          accent="warning"
-          onClick={delinquentList.length > 0 ? () => setDrawer("error") : undefined}
-        />
-        <KpiTile
-          label="Por convertir"
-          value={convertCandidates.length}
-          sub="2+ packs, sin suscripción"
-          tooltip="Clientes con 2 o más compras de pack (sin contar el Pack Benvinguda) que aún no tienen una suscripción activa"
-          valueClassName="text-navy"
-          accent="primary"
-          onClick={convertCandidates.length > 0 ? () => setDrawer("convert") : undefined}
-        />
-      </div>
+      {/* ── Clientes activos: composición de la base activa + gasto + conversión ── */}
+      <ChartCard
+        title="Clientes activos"
+        subtitle="Composición de la base activa, gasto medio y candidatos a suscripción"
+        dateRange={dateRange}
+        kpiItems={[
+          {
+            label: "Activos",
+            value: activeTotal,
+            onClick: () => setDrawer("active"),
+          },
+          { label: "Suscritos", value: activeSubList.length },
+          { label: "Packs", value: activePackList.length },
+          {
+            label: "Gasto medio",
+            value: fmt(spendPerClient),
+            helper: spendDeltaPct !== null
+              ? `${spendDeltaPct >= 0 ? "+" : ""}${spendDeltaPct}% vs ${compDateRange}`
+              : undefined,
+          },
+          {
+            label: "Por convertir",
+            value: convertCandidates.length,
+            valueClassName: convertCandidates.length > 0 ? "text-primary" : "text-navy/50",
+            helper: "2+ packs, sin sub.",
+            onClick: convertCandidates.length > 0 ? () => setDrawer("convert") : undefined,
+          },
+        ]}
+        dataSource="Suscripción renovada hace ≤30 días, o pack vigente (Benvinguda: 15d · Pack 4/8: 90d)"
+        sources={["stripe"]}
+      >
+        {activeTotal > 0 && (
+          <ProportionBar
+            segments={[
+              { label: "Suscritos", color: "#7F77DD", percentage: Math.round(subPct) },
+              { label: "Packs", color: "#AFA9EC", percentage: Math.round(packPct) },
+            ]}
+          />
+        )}
+      </ChartCard>
+
+      {/* ── Altas: nuevos vs reactivados ── */}
+      <ChartCard
+        title="Altas"
+        subtitle="Nuevos y reactivados en el período"
+        dateRange={dateRange}
+        kpiItems={[
+          {
+            label: "Nuevos",
+            value: newCustomers.length,
+            valueClassName: "text-success",
+            helper: "primer pago",
+            onClick: newCustomers.length > 0 ? () => setDrawer("new") : undefined,
+          },
+          {
+            label: "Reactivados",
+            value: reactivatedCustomers.length,
+            valueClassName: "text-success",
+            helper: "volvieron tras un hueco",
+            onClick: reactivatedCustomers.length > 0 ? () => setDrawer("altas") : undefined,
+          },
+          {
+            label: "Total altas",
+            value: `+${altasList.length}`,
+            valueClassName: "text-success",
+            onClick: altasList.length > 0 ? () => setDrawer("altas") : undefined,
+          },
+        ]}
+        dataSource="Nuevo = primer pago en el período · Reactivado = pagó pero no es ni nuevo ni recurrente"
+        sources={["stripe"]}
+      />
+
+      {/* ── Riesgo de baja ── */}
+      <ChartCard
+        title="Riesgo de baja"
+        subtitle="Suscriptoras sin renovar y cobros fallidos recientes"
+        kpiItems={[
+          {
+            label: "Sin renovar",
+            value: churnList.length,
+            valueClassName: churnList.length > 0 ? "text-danger" : "text-navy/50",
+            helper: "46-76 días sin pagar",
+            onClick: churnList.length > 0 ? () => setDrawer("churn") : undefined,
+          },
+          {
+            label: "Error de pago",
+            value: delinquentList.length,
+            valueClassName: delinquentList.length > 0 ? "text-danger" : "text-navy/50",
+            helper: "últimos 30 días",
+            onClick: delinquentList.length > 0 ? () => setDrawer("error") : undefined,
+          },
+        ]}
+        dataSource="Stripe · suscripciones Bàsic / Plus / Pro"
+        sources={["stripe"]}
+      />
 
       {drawer && (() => {
         const cfg = drawerConfig[drawer];

@@ -17,6 +17,7 @@ export interface MultiKpiItem {
   value: ReactNode;
   valueClassName?: string;
   helper?: ReactNode;
+  onClick?: () => void;
 }
 
 export interface ChartCardProps {
@@ -90,18 +91,24 @@ export default function ChartCard({
           className="grid border-b border-navy/[0.07]"
           style={{ gridTemplateColumns: `repeat(auto-fit, minmax(110px, 1fr))` }}
         >
-          {kpiItems.map((item, i) => (
-            <div
-              key={item.label}
-              className={`px-4 sm:px-5 py-3 ${i < kpiItems.length - 1 ? "border-r border-navy/[0.07]" : ""}`}
-            >
-              <div className="text-[10px] uppercase tracking-wide text-navy/50 mb-1">{item.label}</div>
-              <div className={`text-[22px] font-medium leading-tight text-navy ${item.valueClassName ?? ""}`}>
-                {item.value}
-              </div>
-              {item.helper && <div className="text-[11px] text-navy/50 mt-0.5">{item.helper}</div>}
-            </div>
-          ))}
+          {kpiItems.map((item, i) => {
+            const Cell = item.onClick ? "button" : "div";
+            return (
+              <Cell
+                key={item.label}
+                onClick={item.onClick}
+                className={`px-4 sm:px-5 py-3 text-left ${i < kpiItems.length - 1 ? "border-r border-navy/[0.07]" : ""} ${
+                  item.onClick ? "hover:bg-navy/[0.02] transition-colors cursor-pointer" : ""
+                }`}
+              >
+                <div className="text-[10px] uppercase tracking-wide text-navy/50 mb-1">{item.label}</div>
+                <div className={`text-[22px] font-medium leading-tight text-navy ${item.valueClassName ?? ""}`}>
+                  {item.value}
+                </div>
+                {item.helper && <div className="text-[11px] text-navy/50 mt-0.5">{item.helper}</div>}
+              </Cell>
+            );
+          })}
         </div>
       )}
 

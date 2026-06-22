@@ -85,37 +85,32 @@ export default async function AnaliticaLoader({
   const activeCustomersData = activeCustomersByMonth(payments);
 
   return (
-    <>
+    <div className="space-y-4">
       <AnaliticaKPIs
         customers={customers}
         periodLabel={periodLabel}
         periodFrom={mainFrom}
         periodTo={mainTo}
         compDateRange={compDateRange}
-        grossRevenue={grossRevenue}
         spendPerClient={spendPerClient}
         spendPerClientComp={spendPerClientComp}
         newCustomers={newCustomers}
         reactivatedCustomers={reactivatedCustomers}
         convertCandidates={convertCandidates}
       />
-      <div className="sm:w-1/2">
-        <ClientesPaymentsBreakdown
-          succeeded={stripeTotalRevenue(pMain)}
-          refunded={breakdown.refunded}
-          disputed={breakdown.disputed}
-          failed={breakdown.failed}
-          refundedIds={breakdown.refundedIds}
-          disputedIds={breakdown.disputedIds}
-          failedIds={breakdown.failedIds}
-          customers={customers}
-          periodLabel={periodLabel}
-          excludeSegments={["disputed", "failed"]}
-        />
-      </div>
-      <div className="mb-8">
-        <EvolucionInscritos data={activeCustomersData} />
-      </div>
-    </>
+      <ClientesPaymentsBreakdown
+        succeeded={stripeTotalRevenue(pMain)}
+        refunded={breakdown.refunded}
+        disputed={breakdown.disputed}
+        failed={breakdown.failed}
+        refundedIds={breakdown.refundedIds}
+        disputedIds={breakdown.disputedIds}
+        failedIds={breakdown.failedIds}
+        customers={customers}
+        periodLabel={periodLabel}
+        excludeSegments={["disputed", "failed"]}
+      />
+      <EvolucionInscritos data={activeCustomersData} />
+    </div>
   );
 }
