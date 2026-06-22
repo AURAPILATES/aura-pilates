@@ -91,18 +91,20 @@ export default async function AnaliticaLoader({
         reactivatedCustomers={reactivatedCustomers}
         convertCandidates={convertCandidates}
       />
-      <ClientesPaymentsBreakdown
-        succeeded={stripeTotalRevenue(pMain)}
-        refunded={breakdown.refunded}
-        disputed={breakdown.disputed}
-        failed={breakdown.failed}
-        refundedIds={breakdown.refundedIds}
-        disputedIds={breakdown.disputedIds}
-        failedIds={breakdown.failedIds}
-        customers={customers}
-        periodLabel={periodLabel}
-        excludeSegments={["disputed", "failed"]}
-      />
+      <div className="sm:w-1/2">
+        <ClientesPaymentsBreakdown
+          succeeded={stripeTotalRevenue(pMain)}
+          refunded={breakdown.refunded}
+          disputed={breakdown.disputed}
+          failed={breakdown.failed}
+          refundedIds={breakdown.refundedIds}
+          disputedIds={breakdown.disputedIds}
+          failedIds={breakdown.failedIds}
+          customers={customers}
+          periodLabel={periodLabel}
+          excludeSegments={["disputed", "failed"]}
+        />
+      </div>
       <ClientesRetentionCohort payments={payments} />
     </>
   );
