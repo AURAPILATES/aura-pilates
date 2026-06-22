@@ -4,9 +4,8 @@ import { useState } from "react";
 import { fmt } from "@/lib/analytics";
 import Drawer from "@/app/components/Drawer";
 import KpiTile from "@/components/charts/KpiTile";
-import { hasActiveSub, hasActivePack, isChurned } from "@/lib/customerEnrichment";
 import { type CustomerRow, clientStatus } from "./ClientesTable";
-type DrawerKey = "all" | "active" | "recurring" | "new" | "churn" | "error" | null;
+type DrawerKey = "all" | "new" | null;
 
 function fmtDate(d: string | null) {
   if (!d) return "—";
@@ -120,23 +119,10 @@ export default function ClientesKPIs({ customers, mrr, prevMonthLabel, curMonthL
   // Date range strings for each card
   const dateRange = `${fmtD(periodFrom)} – ${fmtD(periodTo)}`;
   const now = new Date();
-  const todayStr = now.toISOString().split("T")[0];
-  const d30ago = new Date(now); d30ago.setDate(d30ago.getDate() - 30);
   const d90ago = new Date(now); d90ago.setDate(d90ago.getDate() - 90);
-  const range30 = `${fmtD(d30ago.toISOString().split("T")[0])} – ${fmtD(todayStr)}`;
-  const range90 = `${fmtD(d90ago.toISOString().split("T")[0])} – ${fmtD(todayStr)}`;
-  const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const prevMonthEnd   = new Date(now.getFullYear(), now.getMonth(), 0);
-  const rangePrevMonth = `${fmtD(prevMonthStart.toISOString().split("T")[0])} – ${fmtD(prevMonthEnd.toISOString().split("T")[0])}`;
+  const range90 = `${fmtD(d90ago.toISOString().split("T")[0])} – ${fmtD(now.toISOString().split("T")[0])}`;
 
-  const activeSubList  = customers.filter(hasActiveSub);
-  const activePackList = customers.filter((c) => !hasActiveSub(c) && hasActivePack(c));
-  const activeList     = customers.filter((c) => hasActiveSub(c) || hasActivePack(c));
-
-  const recurringList   = customers.filter((c) => c.isRecurring);
-  const newList         = customers.filter((c) => c.isNew);
-  const churnList       = customers.filter(isChurned);
-  const delinquentList  = customers.filter((c) => c.hasPaymentError);
+  const newList = customers.filter((c) => c.isNew);
 
   const drawerConfig: Record<NonNullable<DrawerKey>, DrawerEntry> = {
     all: {
@@ -144,38 +130,12 @@ export default function ClientesKPIs({ customers, mrr, prevMonthLabel, curMonthL
       subtitle: `${customers.length} clientes en Stripe`,
       customers,
     },
-    active: {
-      title: "Activos",
-      subtitle: "Con suscripción vigente o pack en plazo",
-      sections: [
-        { title: `Suscripción · ${activeSubList.length}`, customers: activeSubList },
-        { title: `Pack vigente · ${activePackList.length}`, customers: activePackList },
-      ],
-    },
-    recurring: {
-      title: "Clientes recurrentes",
-      subtitle: "Pagaron en 2 o más de los últimos 3 meses",
-      customers: recurringList,
-    },
     new: {
       title: "Clientes nuevos",
       subtitle: `Primer pago en el período · ${periodLabel}`,
       customers: newList,
     },
-    churn: {
-      title: "Bajas de suscripción",
-      subtitle: "Sin renovar entre 46 y 76 días (Bàsic / Plus / Pro)",
-      customers: churnList,
-    },
-    error: {
-      title: "Error de pago",
-      subtitle: "Stripe no pudo cobrar en los últimos 30 días",
-      customers: delinquentList,
-    },
   };
-
-  const spendPerClient     = activeCount     > 0 ? grossRevenue     / activeCount     : 0;
-  const spendPerClientComp = activeCountComp > 0 ? grossRevenueComp / activeCountComp : 0;
 
   return (
     <>
@@ -195,36 +155,9 @@ export default function ClientesKPIs({ customers, mrr, prevMonthLabel, curMonthL
           delta={{ cur: newCount, prev: newCountComp }}
           compLabel={`${compDateRange} · ${String(newCountComp)}`}
         />
-        <KpiTile
-          label="Gasto por cliente"
-          dateRange={dateRange}
-          value={fmt(spendPerClient)}
-          delta={{ cur: spendPerClient, prev: spendPerClientComp }}
-          compLabel={`${compDateRange} · ${fmt(spendPerClientComp)}`}
-        />
       </div>
 
-      {/* 6 KPIs: 2 cols móvil, 3 en sm, 6 en xl */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4 mb-6">
-        <KpiTile
-          label="Activos"
-          value={activeList.length}
-          sub="suscripción o pack vigente"
-          tooltip="Suscripción renovada hace ≤30 días, o pack con fecha de caducidad aún vigente (Benvinguda: 15d · Pack 4/8: 90d)"
-          valueClassName="text-navy"
-          accent="neutral"
-          onClick={() => setDrawer("active")}
-        />
-        <KpiTile
-          label="Recurrentes"
-          dateRange={range90}
-          value={recurringList.length}
-          sub="pagaron en 2+ de los últimos 3 meses"
-          tooltip="Clientes con al menos 2 pagos registrados en los 3 meses anteriores. Son tu base fiel activa."
-          valueClassName="text-primary"
-          accent="primary"
-          onClick={() => setDrawer("recurring")}
-        />
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-6">
         <KpiTile
           label="Nuevos"
           dateRange={dateRange}
@@ -240,24 +173,6 @@ export default function ClientesKPIs({ customers, mrr, prevMonthLabel, curMonthL
           value={fmt(mrr)}
           sub="media 3 meses"
           valueClassName="text-success"
-        />
-        <KpiTile
-          label="Sin renovar"
-          value={churnList.length}
-          sub="entre 46 y 76 días sin pagar"
-          tooltip="Suscriptoras que llevan entre 46 y 76 días sin renovar — periodo accionable para reactivación"
-          valueClassName={churnList.length > 0 ? "text-danger" : "text-navy/50"}
-          accent="warning"
-          onClick={churnList.length > 0 ? () => setDrawer("churn") : undefined}
-        />
-        <KpiTile
-          label="Error de pago"
-          dateRange={range30}
-          value={delinquentList.length}
-          sub="cobro fallido reciente"
-          valueClassName={delinquentList.length > 0 ? "text-danger" : "text-navy/50"}
-          accent="warning"
-          onClick={delinquentList.length > 0 ? () => setDrawer("error") : undefined}
         />
       </div>
 

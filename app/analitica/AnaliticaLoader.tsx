@@ -1,8 +1,9 @@
-import { loadStripePaymentsCached, loadPaymentsBreakdown, totalRevenue as stripeTotalRevenue } from "@/lib/stripePayments";
+import { loadStripePaymentsCached, loadPaymentsBreakdown, totalRevenue as stripeTotalRevenue, activeCustomersByMonth } from "@/lib/stripePayments";
 import { loadStripeCustomers } from "@/lib/stripeCustomers";
 import { enrichCustomers, hasActiveSub } from "@/lib/customerEnrichment";
 import ClientesPaymentsBreakdown from "@/app/clientes/ClientesPaymentsBreakdown";
 import ClientesRetentionCohort from "@/app/clientes/ClientesRetentionCohort";
+import EvolucionInscritos from "@/app/finanzas/instances/EvolucionInscritos";
 import AnaliticaKPIs from "./AnaliticaKPIs";
 import { pad2 } from "@/lib/periodCalculation";
 
@@ -76,6 +77,8 @@ export default async function AnaliticaLoader({
     (c) => packCountForCustomer(c) >= 2 && !hasActiveSub(c),
   );
 
+  const activeCustomersData = activeCustomersByMonth(payments);
+
   return (
     <>
       <AnaliticaKPIs
@@ -106,6 +109,9 @@ export default async function AnaliticaLoader({
         />
       </div>
       <ClientesRetentionCohort payments={payments} />
+      <div className="mb-8">
+        <EvolucionInscritos data={activeCustomersData} />
+      </div>
     </>
   );
 }

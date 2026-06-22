@@ -42,16 +42,20 @@ export default async function ClientesLoader({
   }
 
   const mainNewSet = new Set<string>();
-  let newCountMain = 0, newCountComp = 0;
+  const compNewSet = new Set<string>();
   for (const [cid, firstDate] of firstPaymentMap) {
-    if (firstDate >= mainFrom && firstDate <= mainTo) { mainNewSet.add(cid); newCountMain++; }
-    else if (firstDate >= compFrom && firstDate <= compTo) { newCountComp++; }
+    if (firstDate >= mainFrom && firstDate <= mainTo) mainNewSet.add(cid);
+    else if (firstDate >= compFrom && firstDate <= compTo) compNewSet.add(cid);
   }
 
   const customersWithChurn = enrichCustomers(customers, payments, {
     activeIds: mainActiveSet,
     newIds: mainNewSet,
   });
+
+  // Conteo deduplicado por cliente fusionado (no por ID de Stripe en bruto), igual que en Analítica
+  const newCountMain = customersWithChurn.filter((c) => c.isNew).length;
+  const newCountComp = customers.filter((c) => c.stripeIds.some((sid) => compNewSet.has(sid))).length;
 
   return (
     <>

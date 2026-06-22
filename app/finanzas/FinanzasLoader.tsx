@@ -11,7 +11,6 @@ import {
   totalFees as stripeTotalFees,
   totalNet as stripeTotalNet,
   toSales,
-  activeCustomersByMonth,
 } from "@/lib/stripePayments";
 import ClientesPaymentsBreakdown from "@/app/clientes/ClientesPaymentsBreakdown";
 import {
@@ -45,10 +44,8 @@ import MrrPorTier from "./instances/MrrPorTier";
 import { subscriptionTiersFromMemberships, computeMrrByTier } from "@/lib/mrr";
 import { getMemberships, getProducts, getCustomers } from "@/lib/momence";
 import { catalogFromMomence, revenueByProductFromStripe, revenueByProductByMonth, addUscToMonthlyRevenue } from "@/lib/productRevenue";
-import { countActiveStudents, computeAltasMes, computeBasjasMes } from "@/lib/studentMetrics";
 import { computeSubscriptionCohorts, computeRetentionCohorts } from "@/lib/subscriptionCohort";
 import EvolucionSuscripciones from "./instances/EvolucionSuscripciones";
-import EvolucionInscritos from "./instances/EvolucionInscritos";
 import RetencionCohorte from "./instances/RetencionCohorte";
 import QuestionHeader from "@/app/components/QuestionHeader";
 import { loadBusinessEvents } from "@/lib/businessEvents";
@@ -294,10 +291,6 @@ export default async function FinanzasLoader({
   const mrrByTier = computeMrrByTier(customersAll, subscriptionTiers);
 
   // ── KPIs de alumnos ──────────────────────────────────────────────────────
-  const todayIso        = now.toISOString().slice(0, 10);
-  const alumnosActivos  = countActiveStudents(customersAll, todayIso);
-  const altasMes        = computeAltasMes(paymentsAll, customersAll, curMonth);
-  const bajasMes        = computeBasjasMes(paymentsAll, customersAll, todayIso);
   const facturacionPrev = mrrByTier.reduce((s, t) => s + t.mrr, 0);
 
   // ── Evolución de ingresos + altas/bajas/reactivaciones (histórico completo) ──
@@ -312,7 +305,6 @@ export default async function FinanzasLoader({
   const monthlyRevenue = addUscToMonthlyRevenue(monthlyStripeRevenue, uscByMonth);
   const subscriptionCohorts = computeSubscriptionCohorts(paymentsAllBounded, subscriptionTiers);
   const retentionCohorts = computeRetentionCohorts(paymentsAllBounded, subscriptionTiers);
-  const activeCustomersData = activeCustomersByMonth(paymentsAllBounded);
 
   // Rango real de transacciones para mostrarlo en el desglose
   const txnDates = txnsAll.map((t) => t.date).sort();
@@ -411,32 +403,8 @@ export default async function FinanzasLoader({
       )}
 
       {/* ── KPIs principales ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
-        <KpiTile label="Alumnos activos" value={alumnosActivos} sub="con suscripción o pack vigente" />
-        <KpiTile
-          label={`Altas · ${monthLabel(curMonth)}`}
-          value={`+${altasMes.nuevos + altasMes.reactivados}`}
-          valueClassName="text-success"
-          sub={
-            altasMes.nuevos === 0 && altasMes.reactivados === 0
-              ? "sin altas este mes"
-              : [
-                  altasMes.nuevos > 0 ? `${altasMes.nuevos} nuevos` : null,
-                  altasMes.reactivados > 0 ? `${altasMes.reactivados} reactivados` : null,
-                ].filter(Boolean).join(" · ")
-          }
-        />
-        <KpiTile
-          label={`Bajas · ${monthLabel(curMonth)}`}
-          value={bajasMes > 0 ? `−${bajasMes}` : "−0"}
-          valueClassName={bajasMes > 0 ? "text-danger" : "text-navy/30"}
-          sub="suscripciones sin renovar"
-        />
+      <div className="max-w-xs mb-8">
         <KpiTile label="Facturación prevista" value={fmt(facturacionPrev)} sub="MRR · suscripciones activas" />
-      </div>
-
-      <div className="mb-8">
-        <EvolucionInscritos data={activeCustomersData} />
       </div>
 
       <ResumenFinanzas
