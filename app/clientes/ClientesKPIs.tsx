@@ -154,6 +154,7 @@ export default function ClientesKPIs({ customers, mrr, prevMonthLabel, curMonthL
           value={String(newCount)}
           delta={{ cur: newCount, prev: newCountComp }}
           compLabel={`${compDateRange} · ${String(newCountComp)}`}
+          tooltip="Clientes (deduplicados por email) cuyo primer pago, en cualquiera de sus perfiles de Stripe, cae en el período"
         />
       </div>
 
