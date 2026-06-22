@@ -66,12 +66,12 @@ export default function HorarioReporting({ data }: { data: ReportingData }) {
   const heatDayAvg = (wd: number) => {
     const cells = heatmap.filter((c) => c.weekday === wd);
     const count = cells.reduce((s, c) => s + c.count, 0);
-    return count > 0 ? cells.reduce((s, c) => s + c.avgOcc * c.count, 0) / count : null;
+    return count > 0 ? { avgOcc: cells.reduce((s, c) => s + c.avgOcc * c.count, 0) / count, count } : null;
   };
   const heatHourAvg = (hour: number) => {
     const cells = heatmap.filter((c) => c.hour === hour);
     const count = cells.reduce((s, c) => s + c.count, 0);
-    return count > 0 ? cells.reduce((s, c) => s + c.avgOcc * c.count, 0) / count : null;
+    return count > 0 ? { avgOcc: cells.reduce((s, c) => s + c.avgOcc * c.count, 0) / count, count } : null;
   };
 
   const maxTeacherOcc = Math.max(...byTeacher.map((r) => r.avgOcc), 0.01);
@@ -151,7 +151,17 @@ export default function HorarioReporting({ data }: { data: ReportingData }) {
                         const hourAvg = heatHourAvg(h);
                         return (
                           <th key={h} className="text-[11px] font-medium text-navy/55 text-center pb-2 px-1 min-w-[56px]">
-                            {String(h).padStart(2, "0")}h{hourAvg !== null && <span className="block text-navy/40">{pct(hourAvg)}</span>}
+                            <div className="flex flex-col items-center gap-1">
+                              <span>{String(h).padStart(2, "0")}h</span>
+                              {hourAvg !== null && (
+                                <span
+                                  className="inline-block rounded-full bg-navy/[0.06] text-navy/55 text-[10px] font-semibold px-1.5 py-0.5 tabular-nums cursor-default"
+                                  title={`Media ${String(h).padStart(2, "0")}h: ${hourAvg.count} clases impartidas`}
+                                >
+                                  {pct(hourAvg.avgOcc)}
+                                </span>
+                              )}
+                            </div>
                           </th>
                         );
                       })}
@@ -163,7 +173,17 @@ export default function HorarioReporting({ data }: { data: ReportingData }) {
                       return (
                       <tr key={wd}>
                         <td className="text-xs text-navy/50 pr-3 py-1 whitespace-nowrap">
-                          {WEEKDAY_SHORT[wd]}{dayAvg !== null && <span className="ml-1 text-navy/40">{pct(dayAvg)}</span>}
+                          <div className="flex items-center gap-1.5">
+                            <span>{WEEKDAY_SHORT[wd]}</span>
+                            {dayAvg !== null && (
+                              <span
+                                className="inline-block rounded-full bg-navy/[0.06] text-navy/55 text-[10px] font-semibold px-1.5 py-0.5 tabular-nums cursor-default"
+                                title={`Media ${WEEKDAY_SHORT[wd]}: ${dayAvg.count} clases impartidas`}
+                              >
+                                {pct(dayAvg.avgOcc)}
+                              </span>
+                            )}
+                          </div>
                         </td>
                         {heatmapHours.map((h) => {
                           const cell = heatCell(wd, h);
@@ -176,7 +196,7 @@ export default function HorarioReporting({ data }: { data: ReportingData }) {
                           return (
                             <td key={h} className="px-1 py-1">
                               <div className={`rounded text-center text-[11px] font-semibold py-2 px-2 text-white ${bg}`}
-                                title={`${cell.count} clases`}>
+                                title={`${WEEKDAY_SHORT[wd]} ${String(h).padStart(2, "0")}h: ${cell.count} clases impartidas`}>
                                 {pct(cell.avgOcc)}
                               </div>
                             </td>
