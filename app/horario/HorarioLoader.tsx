@@ -1,7 +1,7 @@
 import { getEvents } from "@/lib/momence";
 import { saveHistoricalEvents, loadHistoricalEvents } from "@/lib/history";
-import { filterActive, filterUpcoming } from "@/lib/analytics";
-import { loadSales, salesByProduct, filterSalesByDate, urbanBookingsByHour, urbanBookingsByWeekday } from "@/lib/sales";
+import { filterActive } from "@/lib/analytics";
+import { urbanBookingsByHour, urbanBookingsByWeekday } from "@/lib/sales";
 import { loadBusinessEvents } from "@/lib/businessEvents";
 import HorarioShell from "./HorarioShell";
 
@@ -52,12 +52,7 @@ export default async function HorarioLoader({
     const d = new Date(e.dateTime);
     return d >= new Date(compFrom + "T00:00:00") && d <= new Date(compTo + "T23:59:59");
   });
-  const upcoming7 = filterUpcoming(allEvents, 7);
 
-  const sales = loadSales();
-  const topProducts = salesByProduct(filterSalesByDate(sales, mainFrom, mainTo))
-    .filter((p) => p.item !== "Urban")
-    .slice(0, 5);
   const uscByHour    = urbanBookingsByHour();
   const uscByWeekday = urbanBookingsByWeekday();
 
@@ -71,11 +66,9 @@ export default async function HorarioLoader({
       reportingData={{
         main: mainEvents,
         compare: compareEvents,
-        upcoming7,
         periodLabel,
         periodFrom: mainFrom,
         periodTo: mainTo,
-        topProducts,
         uscByHour,
         uscByWeekday,
         businessEvents,

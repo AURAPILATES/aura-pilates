@@ -1,6 +1,6 @@
 import { BookOpen } from "react-feather";
 import { fmt, pct } from "@/lib/analytics";
-import { loadSales, benvingudaConversion, subscriberFirstPurchase } from "@/lib/sales";
+import { loadSales, benvingudaConversion, subscriberFirstPurchase, salesByProduct } from "@/lib/sales";
 import PrimeraCompra from "./instances/PrimeraCompra";
 import {
   loadStripePaymentsCached,
@@ -218,6 +218,10 @@ export default async function FinanzasLoader({
     if (s.paymentDate > mainTo)   return false;
     return true;
   });
+
+  // ── Productos más vendidos (período, datos Momence CSV) ──
+  const topProducts = salesByProduct(momenceSales).filter((p) => p.item !== "Urban").slice(0, 5);
+  const topProductsTotal = topProducts.reduce((s, p) => s + p.revenue, 0);
 
   // ── Urban Sports Club: ingresos desde Momence CSV (USC paga por transferencia, no Stripe) ──
   const uscSales   = momenceSales.filter((s) => s.method === "urban-sports-club");
@@ -599,6 +603,29 @@ export default async function FinanzasLoader({
                       </>
                     );
                   })()}
+                </Block>
+                <Block title="Productos más vendidos" legend="Momence CSV · top 5 por ingresos del período.">
+                  {topProducts.length === 0 ? (
+                    <p className="text-sm text-navy/45">Sin datos de ventas</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {topProducts.map((p) => {
+                        const share = topProductsTotal > 0 ? p.revenue / topProductsTotal : 0;
+                        return (
+                          <div key={p.item}>
+                            <div className="flex items-center justify-between mb-1">
+                              <p className="text-xs font-medium text-navy truncate max-w-[160px]">{p.item}</p>
+                              <span className="text-xs font-semibold text-navy/60 tabular-nums">{p.count} ventas</span>
+                            </div>
+                            <div className="h-1.5 bg-navy/5 rounded-full overflow-hidden">
+                              <div className="h-full bg-primary/60 rounded-full" style={{ width: `${Math.round(share * 100)}%` }} />
+                            </div>
+                            <p className="text-[11px] text-navy/50 mt-0.5">{pct(share)} del total</p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </Block>
               </div>
               <EvolucionIngresos sales={toSales(payments)} monthly={monthlyRevenue} events={businessEvents} rawPayments={payments} />
