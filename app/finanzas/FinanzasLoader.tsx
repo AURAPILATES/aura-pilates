@@ -526,12 +526,11 @@ export default async function FinanzasLoader({
                           <div key={p.item}>
                             <div className="flex items-center justify-between mb-1">
                               <p className="text-xs font-medium text-navy truncate max-w-[160px]">{p.item}</p>
-                              <span className="text-xs font-semibold text-navy/60 tabular-nums">{p.count} ventas</span>
+                              <span className="text-xs font-semibold text-navy/60 tabular-nums">{fmt(p.revenue)} · {pct(share)}</span>
                             </div>
                             <div className="h-1.5 bg-navy/5 rounded-full overflow-hidden">
                               <div className="h-full bg-primary/60 rounded-full" style={{ width: `${Math.round(share * 100)}%` }} />
                             </div>
-                            <p className="text-[11px] text-navy/50 mt-0.5">{pct(share)} del total</p>
                           </div>
                         );
                       })}
