@@ -77,6 +77,10 @@ export default function AnaliticaKPIs({
   const [drawer, setDrawer] = useState<DrawerKey>(null);
 
   const dateRange = `${fmtD(periodFrom)} – ${fmtD(periodTo)}`;
+  const now = new Date();
+  const todayStr = now.toISOString().split("T")[0];
+  const d30ago = new Date(now); d30ago.setDate(d30ago.getDate() - 30);
+  const range30 = `${fmtD(d30ago.toISOString().split("T")[0])} – ${fmtD(todayStr)}`;
 
   const activeSubList  = customers.filter(hasActiveSub);
   const activePackList = customers.filter((c) => !hasActiveSub(c) && hasActivePack(c));
@@ -190,12 +194,14 @@ export default function AnaliticaKPIs({
           label="Sin renovar"
           value={churnList.length}
           sub="entre 46 y 76 días sin pagar"
+          tooltip="Suscriptoras que llevan entre 46 y 76 días sin renovar — periodo accionable para reactivación"
           valueClassName={churnList.length > 0 ? "text-danger" : "text-navy/50"}
           accent="warning"
           onClick={churnList.length > 0 ? () => setDrawer("churn") : undefined}
         />
         <KpiTile
           label="Error de pago"
+          dateRange={range30}
           value={delinquentList.length}
           sub="cobro fallido reciente"
           valueClassName={delinquentList.length > 0 ? "text-danger" : "text-navy/50"}
