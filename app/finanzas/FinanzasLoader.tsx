@@ -4,7 +4,6 @@ import { loadSales, benvingudaConversion, subscriberFirstPurchase, salesByProduc
 import PrimeraCompra from "./instances/PrimeraCompra";
 import {
   loadStripePaymentsCached,
-  loadPaymentsBreakdown,
   stripeByMethod,
   totalRevenue as stripeTotalRevenue,
   revenueForMonth as stripeRevenueForMonth,
@@ -12,14 +11,11 @@ import {
   totalNet as stripeTotalNet,
   toSales,
 } from "@/lib/stripePayments";
-import ClientesPaymentsBreakdown from "@/app/clientes/ClientesPaymentsBreakdown";
 import { loadStripeCustomers } from "@/lib/stripeCustomers";
 import { buildPrimaryIdMap } from "@/lib/customerEnrichment";
 import {
   estimatedMRR,
-  activeCustomersInMonth,
   recurringCustomerIds,
-  possibleChurnIds,
 } from "@/lib/stripeRecurrence";
 
 import {
@@ -167,15 +163,11 @@ export default async function FinanzasLoader({
   const prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const prevMonth = `${prevMonthDate.getFullYear()}-${pad2(prevMonthDate.getMonth() + 1)}`;
 
-  const breakdownFrom = mainFrom;
-  const breakdownTo   = mainTo;
-
-  const [paymentsAll, membershipsAll, productsAll, customersAll, breakdown] = await Promise.all([
+  const [paymentsAll, membershipsAll, productsAll, customersAll] = await Promise.all([
     loadStripePaymentsCached(),
     getMemberships(),
     getProducts(),
     getCustomers(),
-    loadPaymentsBreakdown(breakdownFrom, breakdownTo),
   ]);
   // Mapa stripeId → cliente fusionado por email, para agrupar cohortes por persona real
   const stripeCustomersAll = await loadStripeCustomers(paymentsAll, curMonth);
@@ -191,21 +183,13 @@ export default async function FinanzasLoader({
   const stripeNet  = stripeTotalNet(payments);
 
   const cur       = stripeRevenueForMonth(paymentsAll, curMonth);
-  const prev      = stripeRevenueForMonth(paymentsAll, prevMonth);
-  const curCount  = paymentsAll.filter((p) => p.date.startsWith(curMonth)).length;
-  const prevCount = paymentsAll.filter((p) => p.date.startsWith(prevMonth)).length;
-
 
   const ticketMedio = payments.length > 0 ? totalRev / payments.length : 0;
-  const ticketPrev  = prevCount > 0 ? prev / prevCount : 0;
-  const ticketCur   = curCount > 0 ? cur / curCount : 0;
 
   // ── Recurrencia (derivada de pagos, no de suscripciones Stripe) ──
   const recurringIds    = recurringCustomerIds(paymentsAll, curMonth);
   const activeSubsCount = recurringIds.size;
   const realMrr         = estimatedMRR(paymentsAll, curMonth);
-  const churnIds        = possibleChurnIds(paymentsAll, curMonth);
-  const renewNext7      = activeCustomersInMonth(paymentsAll, curMonth);
 
   const recurrente    = payments.filter((p) => p.customerId && recurringIds.has(p.customerId)).reduce((s, p) => s + p.amount, 0);
   const puntual       = totalRev - recurrente;
@@ -294,9 +278,6 @@ export default async function FinanzasLoader({
   // ── MRR/ARR por suscripción (suscriptores activos reales en Momence) ──────
   const subscriptionTiers = subscriptionTiersFromMemberships(membershipsAll);
   const mrrByTier = computeMrrByTier(customersAll, subscriptionTiers);
-
-  // ── KPIs de alumnos ──────────────────────────────────────────────────────
-  const facturacionPrev = mrrByTier.reduce((s, t) => s + t.mrr, 0);
 
   // ── Evolución de ingresos + altas/bajas/reactivaciones (histórico completo) ──
   const paymentsAllBounded = uscLastDate ? paymentsAll.filter((p) => p.date <= uscLastDate) : paymentsAll;
@@ -407,11 +388,6 @@ export default async function FinanzasLoader({
         </div>
       )}
 
-      {/* ── KPIs principales ── */}
-      <div className="max-w-xs mb-8">
-        <KpiTile label="Facturación prevista" value={fmt(facturacionPrev)} sub="MRR · suscripciones activas" />
-      </div>
-
       <ResumenFinanzas
         currentBalance={currentBalance}
         balanceDate={balanceDate}
@@ -459,17 +435,11 @@ export default async function FinanzasLoader({
           <section id="q2">
             <QuestionHeader num={2} question="¿En qué se va el dinero?" />
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
                 <KpiTile label="Gastos operativos" value={fmt(totalOpEx)} sub="costes recurrentes" />
                 <KpiTile label="Inversión inicial" value={fmt(totalStartup)} sub="reforma, maquinaria, mobiliario" />
                 <KpiTile label="Total acumulado" value={fmt(totalOpEx + totalStartup)}
                   sub={`${txnsAll.filter(t => t.amount < 0).length} transacciones`} />
-                <KpiTile
-                  label="Ticket medio"
-                  value={fmt(ticketMedio)}
-                  delta={{ cur: ticketCur, prev: ticketPrev }}
-                  compLabel={`${payments.length} pagos Stripe`}
-                />
               </div>
               <DesglosGastosGeneral
                 groups={expGroupTotals}
@@ -499,40 +469,6 @@ export default async function FinanzasLoader({
                 activeSubsCount={activeSubsCount}
                 periodLabel={periodLabel}
               />
-              <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
-                <p className="text-xs text-navy/55 uppercase tracking-wider mb-3">Retención</p>
-                <div className="flex items-baseline gap-2">
-                  <p className={`text-3xl font-semibold ${churnIds.size > 0 ? "text-warning" : "text-success"}`}>
-                    {churnIds.size}
-                  </p>
-                  <p className="text-xs text-navy/55">sin pagar este mes</p>
-                </div>
-                <div className="mt-3 pt-3 border-t border-navy/5 space-y-1">
-                  <div className="flex justify-between text-xs">
-                    <span className="text-navy/55">Activos este mes</span>
-                    <span className="font-medium text-navy">{renewNext7}</span>
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="text-navy/55">MRR estimado</span>
-                    <span className="font-medium text-navy">{fmt(realMrr)}</span>
-                  </div>
-                </div>
-              </div>
-              <ClientesPaymentsBreakdown
-                succeeded={totalRev}
-                refunded={breakdown.refunded}
-                disputed={breakdown.disputed}
-                failed={breakdown.failed}
-                refundedIds={breakdown.refundedIds}
-                disputedIds={breakdown.disputedIds}
-                failedIds={breakdown.failedIds}
-                periodLabel={periodLabel}
-                excludeSegments={["failed"]}
-              />
-              <p className="text-xs text-navy/45 flex items-center gap-1.5">
-                <BookOpen size={12} className="shrink-0" />
-                Stripe · pagos en tiempo real.
-              </p>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <IngresosPorProducto
                   segments={productSegments.map((seg) => ({
