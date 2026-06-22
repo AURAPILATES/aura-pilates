@@ -1,9 +1,17 @@
 "use client";
 import { useState } from "react";
 import Drawer from "@/app/components/Drawer";
-import type { Transaction } from "@/lib/transactions";
+import type { Transaction, PaymentMethod } from "@/lib/transactions";
 import type { Category } from "@/lib/categories";
-import { CategoryPill } from "./TransaccionesList";
+import { CategoryPill, SourceAvatar } from "./TransaccionesList";
+
+const PAYMENT_METHOD_OPTIONS: { value: PaymentMethod; label: string }[] = [
+  { value: "efectivo", label: "Efectivo Aura" },
+  { value: "victor", label: "Víctor" },
+  { value: "celia", label: "Celia" },
+  { value: "olga", label: "Olga" },
+  { value: "carles", label: "Carles" },
+];
 
 function fmtAmt(n: number) {
   return Math.abs(n).toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
@@ -66,6 +74,8 @@ export default function TransactionDrawer({
   onUpdateConcept,
   onUpdateCategory,
   onUpdateNotes,
+  onUpdateDate,
+  onUpdatePaymentMethod,
   onDelete,
 }: {
   transaction: Transaction;
@@ -76,14 +86,16 @@ export default function TransactionDrawer({
   onUpdateConcept: (id: string, value: string) => void;
   onUpdateCategory: (id: string, value: string | null) => void;
   onUpdateNotes: (id: string, value: string) => void;
+  onUpdateDate: (id: string, value: string) => void;
+  onUpdatePaymentMethod: (id: string, value: PaymentMethod) => void;
   onDelete: (id: string) => void;
 }) {
   const t = transaction;
+  const editableOrigin = t.payment_method !== "banco";
 
   return (
     <Drawer
       title="Detalle del movimiento"
-      subtitle={fmtDate(t.date)}
       onClose={onClose}
       footer={
         <div className="flex gap-3">
@@ -112,7 +124,7 @@ export default function TransactionDrawer({
               {t.amount > 0 ? "+" : "−"}{fmtAmt(t.amount)}
             </span>
             {t.balance != null && (
-              <p className="text-xs text-navy/40 mt-0.5">Saldo tras operación: {fmtAmt(t.balance)}</p>
+              <p className="text-sm text-navy/40 mt-0.5">Saldo tras operación: {fmtAmt(t.balance)}</p>
             )}
           </div>
           {recurringPeriod && (
@@ -136,11 +148,38 @@ export default function TransactionDrawer({
         <div className="grid grid-cols-2 gap-4 pt-2 border-t border-navy/[0.06]">
           <div>
             <p className="text-[11px] text-navy/40 uppercase tracking-wider mb-1">Fecha</p>
-            <p className="text-sm text-navy">{fmtDate(t.date)}</p>
+            {editableOrigin ? (
+              <input
+                type="date"
+                value={t.date}
+                onChange={(e) => onUpdateDate(t.id, e.target.value)}
+                className="text-sm text-navy border border-navy/[0.12] rounded-lg px-2 py-1 outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15 transition"
+              />
+            ) : (
+              <p className="text-sm text-navy">{fmtDate(t.date)}</p>
+            )}
           </div>
           <div>
             <p className="text-[11px] text-navy/40 uppercase tracking-wider mb-1">Origen</p>
-            <p className="text-sm text-navy">{originLabel(t.payment_method)}</p>
+            {editableOrigin ? (
+              <div className="flex items-center gap-2">
+                <SourceAvatar method={t.payment_method} size={18} />
+                <select
+                  value={t.payment_method}
+                  onChange={(e) => onUpdatePaymentMethod(t.id, e.target.value as PaymentMethod)}
+                  className="text-sm text-navy border border-navy/[0.12] rounded-lg px-2 py-1 outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15 transition"
+                >
+                  {PAYMENT_METHOD_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <SourceAvatar method={t.payment_method} size={18} />
+                <span className="text-sm text-navy">{originLabel(t.payment_method)}</span>
+              </div>
+            )}
           </div>
         </div>
 

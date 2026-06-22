@@ -2,10 +2,10 @@
 import { useState, useTransition, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import type { Transaction } from "@/lib/transactions";
+import type { Transaction, PaymentMethod } from "@/lib/transactions";
 import type { Category } from "@/lib/categories";
 import { sortCategoriesHierarchical, categoryDisplayLabel } from "@/lib/categories";
-import { updateTransactionCategory, updateTransactionConcept, updateTransactionContact, updateTransactionNotes, softDeleteTransactions } from "./actions";
+import { updateTransactionCategory, updateTransactionConcept, updateTransactionContact, updateTransactionNotes, updateTransactionDate, updateTransactionPaymentMethod, softDeleteTransactions } from "./actions";
 import DateFilter from "@/app/components/DateFilter";
 import ImportButton from "./ImportButton";
 import AddCashModal from "./AddCashModal";
@@ -46,11 +46,12 @@ const SOCIO_INITIALS: Record<string, { initials: string; bg: string; color: stri
   carles: { initials: "Ca", bg: "#DBEAFE", color: "#1D4ED8" },
 };
 
-function SourceAvatar({ method }: { method: string }) {
+export function SourceAvatar({ method, size = 22 }: { method: string; size?: number }) {
   if (method === "efectivo") {
+    const icon = Math.round(size * 0.5);
     return (
-      <div className="shrink-0 w-[22px] h-[22px] rounded-full bg-amber-100 flex items-center justify-center" title="Efectivo Aura">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#92400E" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <div className="shrink-0 rounded-full bg-amber-100 flex items-center justify-center" style={{ width: size, height: size }} title="Efectivo Aura">
+        <svg width={icon} height={icon} viewBox="0 0 24 24" fill="none" stroke="#92400E" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
           <rect x="2" y="6" width="20" height="14" rx="2"/><circle cx="12" cy="13" r="3"/><path d="M6 10h.01M18 10h.01"/>
         </svg>
       </div>
@@ -60,16 +61,17 @@ function SourceAvatar({ method }: { method: string }) {
   if (socio) {
     return (
       <div
-        className="shrink-0 w-[22px] h-[22px] rounded-full flex items-center justify-center"
-        style={{ background: socio.bg, color: socio.color }}
+        className="shrink-0 rounded-full flex items-center justify-center"
+        style={{ background: socio.bg, color: socio.color, width: size, height: size }}
         title={method.charAt(0).toUpperCase() + method.slice(1)}
       >
-        <span style={{ fontSize: "9px", fontWeight: 700, lineHeight: 1 }}>{socio.initials}</span>
+        <span style={{ fontSize: Math.round(size * 9 / 22), fontWeight: 700, lineHeight: 1 }}>{socio.initials}</span>
       </div>
     );
   }
+  const imgSize = Math.round(size * 16 / 22);
   return (
-    <img src="/Caixabank logo.png" alt="CaixaBank" width={16} height={16} className="shrink-0 object-contain" />
+    <img src="/Caixabank logo.png" alt="CaixaBank" width={imgSize} height={imgSize} className="shrink-0 object-contain" />
   );
 }
 
@@ -709,6 +711,12 @@ export default function TransaccionesList({
   function handleNotesChange(id: string, value: string) {
     startTransition(() => updateTransactionNotes(id, value));
   }
+  function handleDateChange(id: string, value: string) {
+    startTransition(() => updateTransactionDate(id, value));
+  }
+  function handlePaymentMethodChange(id: string, value: PaymentMethod) {
+    startTransition(() => updateTransactionPaymentMethod(id, value));
+  }
   function handleDeleteOne(id: string) {
     startTransition(async () => { await softDeleteTransactions([id]); });
   }
@@ -1313,6 +1321,8 @@ export default function TransaccionesList({
           onUpdateConcept={handleConceptChange}
           onUpdateCategory={handleCategoryChange}
           onUpdateNotes={handleNotesChange}
+          onUpdateDate={handleDateChange}
+          onUpdatePaymentMethod={handlePaymentMethodChange}
           onDelete={handleDeleteOne}
         />
       )}

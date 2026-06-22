@@ -255,3 +255,23 @@ export async function updateTransactionNotes(id: string, notes: string) {
   if (error) throw new Error(error.message);
   revalidateTag("transactions");
 }
+
+export async function updateTransactionDate(id: string, date: string) {
+  const supabase = createServerClient();
+  const { error } = await supabase
+    .from("transactions")
+    .update({ date })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidateTag("transactions");
+}
+
+export async function updateTransactionPaymentMethod(id: string, paymentMethod: PaymentMethod) {
+  const supabase = createServerClient();
+  const { error } = await supabase
+    .from("transactions")
+    .update({ payment_method: paymentMethod })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidateTag("transactions");
+}
