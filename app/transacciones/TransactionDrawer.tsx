@@ -106,10 +106,15 @@ export default function TransactionDrawer({
       }
     >
       <div className="px-6 py-5 flex flex-col gap-5">
-        <div className="flex items-center justify-between">
-          <span className={`text-2xl font-bold tabular-nums ${t.amount > 0 ? "text-success" : "text-navy"}`}>
-            {t.amount > 0 ? "+" : "−"}{fmtAmt(t.amount)}
-          </span>
+        <div className="flex items-start justify-between">
+          <div>
+            <span className={`text-2xl font-bold tabular-nums ${t.amount > 0 ? "text-success" : "text-navy"}`}>
+              {t.amount > 0 ? "+" : "−"}{fmtAmt(t.amount)}
+            </span>
+            {t.balance != null && (
+              <p className="text-xs text-navy/40 mt-0.5">Saldo tras operación: {fmtAmt(t.balance)}</p>
+            )}
+          </div>
           {recurringPeriod && (
             <span className="inline-flex items-center gap-1 text-xs text-primary/60 font-medium">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -130,18 +135,12 @@ export default function TransactionDrawer({
 
         <div className="grid grid-cols-2 gap-4 pt-2 border-t border-navy/[0.06]">
           <div>
+            <p className="text-[11px] text-navy/40 uppercase tracking-wider mb-1">Fecha</p>
+            <p className="text-sm text-navy">{fmtDate(t.date)}</p>
+          </div>
+          <div>
             <p className="text-[11px] text-navy/40 uppercase tracking-wider mb-1">Origen</p>
             <p className="text-sm text-navy">{originLabel(t.payment_method)}</p>
-          </div>
-          {t.balance != null && (
-            <div>
-              <p className="text-[11px] text-navy/40 uppercase tracking-wider mb-1">Saldo tras movimiento</p>
-              <p className="text-sm text-navy tabular-nums">{fmtAmt(t.balance)} €</p>
-            </div>
-          )}
-          <div>
-            <p className="text-[11px] text-navy/40 uppercase tracking-wider mb-1">Recurrencia</p>
-            <p className="text-sm text-navy">{recurringPeriod ? `Recurrente (${recurringPeriod})` : "No recurrente"}</p>
           </div>
         </div>
 
