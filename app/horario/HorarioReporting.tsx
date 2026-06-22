@@ -120,9 +120,12 @@ export default function HorarioReporting({ data }: { data: ReportingData }) {
       {/* ── KPIs ── */}
       <section id="q1" className="space-y-4">
         <QuestionHeader num={1} question={`¿Cómo fue el rendimiento de los últimos ${periodLabel}?`} />
-        <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden">
-          <div className="px-4 sm:px-5 pt-4 sm:pt-5 pb-3 flex items-end justify-between gap-3 flex-wrap">
-            <div className="flex items-end gap-2.5">
+        <div className="relative bg-white border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden">
+          <p className="absolute top-3 right-4 text-[10px] text-navy/40">{dateRange}</p>
+
+          <div className="flex flex-col sm:flex-row sm:items-stretch">
+            {/* Hero: Ocupación media */}
+            <div className="px-4 sm:px-5 pt-4 sm:pt-5 pb-3 sm:pb-5 flex items-end gap-2.5 sm:flex-1 sm:border-r border-navy/[0.06]">
               <div className="flex items-end gap-1">
                 <span className={`text-4xl font-medium leading-none ${occ >= 0.7 ? "text-success" : occ >= 0.4 ? "text-warning" : "text-danger"}`}>
                   {Math.round(occ * 100)}
@@ -133,32 +136,31 @@ export default function HorarioReporting({ data }: { data: ReportingData }) {
                 <p className="text-xs text-navy/45 leading-tight">ocupación</p>
                 <p className="text-xs text-navy/45 leading-tight">media período</p>
               </div>
+              {delta(occ, occPrev) && <DeltaBadge className="ml-1.5 mb-1" {...delta(occ, occPrev)!} />}
             </div>
-            <div className="flex flex-col items-end gap-1 mb-0.5">
-              {delta(occ, occPrev) && <DeltaBadge {...delta(occ, occPrev)!} />}
-              <p className="text-[10px] text-navy/40">{dateRange}</p>
-            </div>
-          </div>
-          <div className="border-t border-navy/[0.06] grid grid-cols-3 divide-x divide-navy/[0.06]">
-            <div className="px-3 py-2.5">
-              <p className="text-[9px] text-navy/40 uppercase tracking-widest font-semibold">Media alumnos/clase</p>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <p className="text-sm font-medium text-navy tabular-nums">{avgPerClass.toFixed(1)}</p>
-                {delta(avgPerClass, avgPerClassPrev) && <DeltaBadge className="!px-1.5 !py-0 !text-[10px]" {...delta(avgPerClass, avgPerClassPrev)!} />}
+
+            {/* Sub-stats */}
+            <div className="border-t sm:border-t-0 border-navy/[0.06] grid grid-cols-3 divide-x divide-navy/[0.06] sm:flex sm:flex-[1.4]">
+              <div className="px-3 py-2.5 sm:flex-1 sm:px-4 sm:flex sm:flex-col sm:justify-center">
+                <p className="text-[9px] text-navy/40 uppercase tracking-widest font-semibold">Media alumnos/clase</p>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <p className="text-sm font-medium text-navy tabular-nums">{avgPerClass.toFixed(1)}</p>
+                  {delta(avgPerClass, avgPerClassPrev) && <DeltaBadge className="!px-1.5 !py-0 !text-[10px]" {...delta(avgPerClass, avgPerClassPrev)!} />}
+                </div>
               </div>
-            </div>
-            <div className="px-3 py-2.5">
-              <p className="text-[9px] text-navy/40 uppercase tracking-widest font-semibold">Plazas vendidas</p>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <p className="text-sm font-medium text-navy tabular-nums">{studentsTotal}</p>
-                {delta(studentsTotal, studentsTotalPrev) && <DeltaBadge className="!px-1.5 !py-0 !text-[10px]" {...delta(studentsTotal, studentsTotalPrev)!} />}
+              <div className="px-3 py-2.5 sm:flex-1 sm:px-4 sm:flex sm:flex-col sm:justify-center">
+                <p className="text-[9px] text-navy/40 uppercase tracking-widest font-semibold">Plazas vendidas</p>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <p className="text-sm font-medium text-navy tabular-nums">{studentsTotal}</p>
+                  {delta(studentsTotal, studentsTotalPrev) && <DeltaBadge className="!px-1.5 !py-0 !text-[10px]" {...delta(studentsTotal, studentsTotalPrev)!} />}
+                </div>
               </div>
-            </div>
-            <div className="px-3 py-2.5">
-              <p className="text-[9px] text-navy/40 uppercase tracking-widest font-semibold">Plazas no vendidas</p>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <p className={`text-sm font-semibold tabular-nums ${unsoldTotal > 0 ? "text-warning" : "text-navy/30"}`}>{unsoldTotal}</p>
-                {delta(unsoldTotal, unsoldTotalPrev, true) && <DeltaBadge className="!px-1.5 !py-0 !text-[10px]" {...delta(unsoldTotal, unsoldTotalPrev, true)!} />}
+              <div className="px-3 py-2.5 sm:flex-1 sm:px-4 sm:flex sm:flex-col sm:justify-center">
+                <p className="text-[9px] text-navy/40 uppercase tracking-widest font-semibold">Plazas no vendidas</p>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <p className={`text-sm font-semibold tabular-nums ${unsoldTotal > 0 ? "text-warning" : "text-navy/30"}`}>{unsoldTotal}</p>
+                  {delta(unsoldTotal, unsoldTotalPrev, true) && <DeltaBadge className="!px-1.5 !py-0 !text-[10px]" {...delta(unsoldTotal, unsoldTotalPrev, true)!} />}
+                </div>
               </div>
             </div>
           </div>
