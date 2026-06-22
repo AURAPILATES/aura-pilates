@@ -2,7 +2,6 @@ import { MomenceEvent } from "@/lib/momence";
 import type { BusinessEvent } from "@/lib/businessEvents";
 import {
   occupancyRate,
-  occupancyByHour,
   occupancyByTeacher,
   occupancyHeatmap,
   totalStudents,
@@ -78,7 +77,6 @@ export default function HorarioReporting({ data }: { data: ReportingData }) {
   const occ     = occupancyRate(main);
   const occPrev = occupancyRate(compare);
   const byTeacher  = occupancyByTeacher(main);
-  const byHour     = occupancyByHour(main);
   const heatmap    = occupancyHeatmap(main);
   const heatmapHours = [...new Set(heatmap.map((c) => c.hour))].sort((a, b) => a - b);
   const heatCell = (wd: number, hour: number) => heatmap.find((c) => c.weekday === wd && c.hour === hour);
@@ -94,7 +92,6 @@ export default function HorarioReporting({ data }: { data: ReportingData }) {
   };
 
   const maxTeacherOcc = Math.max(...byTeacher.map((r) => r.avgOcc), 0.01);
-  const maxHourOcc    = Math.max(...byHour.map((r) => r.avgOcc), 0.01);
   const uscTotal      = uscByHour.reduce((s, r) => s + r.count, 0);
   const maxUscHour    = Math.max(...uscByHour.map((r) => r.count), 1);
   const maxUscWeekday = Math.max(...uscByWeekday.map((r) => r.count), 1);
@@ -232,65 +229,42 @@ export default function HorarioReporting({ data }: { data: ReportingData }) {
             )}
           </Card>
 
-          {/* Franja horaria + Urban Sports Club */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {/* Urban Sports Club */}
+          {uscTotal > 0 && (
             <Card>
-              <CardTitle>Por franja horaria</CardTitle>
-              <div className="space-y-3">
-                {byHour.map((r) => {
-                  const w = maxHourOcc > 0 ? (r.avgOcc / maxHourOcc) * 100 : 0;
-                  const barColor = r.avgOcc >= 0.75 ? "bg-success" : r.avgOcc >= 0.5 ? "bg-warning" : "bg-danger";
-                  const textColor = r.avgOcc >= 0.75 ? "text-success" : r.avgOcc >= 0.5 ? "text-warning" : "text-danger";
-                  return (
-                    <div key={r.hour} className="flex items-center gap-3">
-                      <span className="text-sm text-navy/60 font-mono w-12 shrink-0">{r.label}</span>
-                      <div className="flex-1 h-2 bg-navy/5 rounded-full overflow-hidden">
-                        <div className={`h-full rounded-full ${barColor}`} style={{ width: `${w}%` }} />
+              <CardTitle>Urban Sports Club · {uscTotal} reservas</CardTitle>
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider mb-2">Por franja</p>
+                  <div className="space-y-2">
+                    {uscByHour.map((r) => (
+                      <div key={r.hour} className="flex items-center gap-2">
+                        <span className="text-xs text-navy/50 font-mono w-10 shrink-0">{r.label}</span>
+                        <div className="flex-1 h-1.5 bg-navy/5 rounded-full overflow-hidden">
+                          <div className="h-full rounded-full bg-primary" style={{ width: `${(r.count / maxUscHour) * 100}%` }} />
+                        </div>
+                        <span className="text-xs tabular-nums text-navy/50 w-6 text-right">{r.count}</span>
                       </div>
-                      <span className={`text-xs font-semibold w-10 text-right tabular-nums ${textColor}`}>{pct(r.avgOcc)}</span>
-                      <span className="text-xs text-navy/45 w-14 text-right tabular-nums shrink-0">{r.count} clases</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </Card>
-
-            {uscTotal > 0 && (
-              <Card>
-                <CardTitle>Urban Sports Club · {uscTotal} reservas</CardTitle>
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider mb-2">Por franja</p>
-                    <div className="space-y-2">
-                      {uscByHour.map((r) => (
-                        <div key={r.hour} className="flex items-center gap-2">
-                          <span className="text-xs text-navy/50 font-mono w-10 shrink-0">{r.label}</span>
-                          <div className="flex-1 h-1.5 bg-navy/5 rounded-full overflow-hidden">
-                            <div className="h-full rounded-full bg-primary" style={{ width: `${(r.count / maxUscHour) * 100}%` }} />
-                          </div>
-                          <span className="text-xs tabular-nums text-navy/50 w-6 text-right">{r.count}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider mb-2">Por día</p>
-                    <div className="space-y-2">
-                      {uscByWeekday.map((r) => (
-                        <div key={r.weekday} className="flex items-center gap-2">
-                          <span className="text-xs text-navy/50 w-14 shrink-0">{r.label}</span>
-                          <div className="flex-1 h-1.5 bg-navy/5 rounded-full overflow-hidden">
-                            <div className="h-full rounded-full bg-primary" style={{ width: `${(r.count / maxUscWeekday) * 100}%` }} />
-                          </div>
-                          <span className="text-xs tabular-nums text-navy/50 w-6 text-right">{r.count}</span>
-                        </div>
-                      ))}
-                    </div>
+                    ))}
                   </div>
                 </div>
-              </Card>
-            )}
-          </div>
+                <div>
+                  <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider mb-2">Por día</p>
+                  <div className="space-y-2">
+                    {uscByWeekday.map((r) => (
+                      <div key={r.weekday} className="flex items-center gap-2">
+                        <span className="text-xs text-navy/50 w-14 shrink-0">{r.label}</span>
+                        <div className="flex-1 h-1.5 bg-navy/5 rounded-full overflow-hidden">
+                          <div className="h-full rounded-full bg-primary" style={{ width: `${(r.count / maxUscWeekday) * 100}%` }} />
+                        </div>
+                        <span className="text-xs tabular-nums text-navy/50 w-6 text-right">{r.count}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </Card>
+          )}
 
         </div>
       </section>

@@ -33,6 +33,7 @@ export default function GraficosDescartados({
   const byHour    = occupancyByHour(events);
   const byWeekday = occupancyByWeekday(events);
   const maxWeekdayOcc = Math.max(...byWeekday.map((r) => r.avgOcc), 0.01);
+  const maxHourOcc = Math.max(...byHour.map((r) => r.avgOcc), 0.01);
   const topHours = [...byHour].sort((a, b) => b.avgOcc - a.avgOcc).slice(0, 4);
 
   const classByTitle = new Map<string, { total: number; count: number }>();
@@ -102,6 +103,27 @@ export default function GraficosDescartados({
               return (
                 <div key={r.weekday} className="flex items-center gap-3">
                   <span className="text-sm text-navy w-20 shrink-0">{r.label}</span>
+                  <div className="flex-1 h-2 bg-navy/5 rounded-full overflow-hidden">
+                    <div className={`h-full rounded-full ${barColor}`} style={{ width: `${w}%` }} />
+                  </div>
+                  <span className={`text-xs font-semibold w-10 text-right tabular-nums ${textColor}`}>{pct(r.avgOcc)}</span>
+                  <span className="text-xs text-navy/45 w-14 text-right tabular-nums shrink-0">{r.count} clases</span>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+
+        <Card>
+          <CardTitle>Por franja horaria</CardTitle>
+          <div className="space-y-3">
+            {byHour.map((r) => {
+              const w = maxHourOcc > 0 ? (r.avgOcc / maxHourOcc) * 100 : 0;
+              const barColor = r.avgOcc >= 0.75 ? "bg-success" : r.avgOcc >= 0.5 ? "bg-warning" : "bg-danger";
+              const textColor = r.avgOcc >= 0.75 ? "text-success" : r.avgOcc >= 0.5 ? "text-warning" : "text-danger";
+              return (
+                <div key={r.hour} className="flex items-center gap-3">
+                  <span className="text-sm text-navy/60 font-mono w-12 shrink-0">{r.label}</span>
                   <div className="flex-1 h-2 bg-navy/5 rounded-full overflow-hidden">
                     <div className={`h-full rounded-full ${barColor}`} style={{ width: `${w}%` }} />
                   </div>
