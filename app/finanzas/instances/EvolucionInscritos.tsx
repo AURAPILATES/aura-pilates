@@ -14,7 +14,7 @@ export default function EvolucionInscritos({ payments }: { payments: StripePayme
   const data = activeCustomersByMonth(payments);
 
   if (data.length === 0) {
-    return <ChartCard title="Evolución de clientes activos" subtitle="Sin datos suficientes" />;
+    return <ChartCard title="Evolución de clientes activos" subtitle="Clientes con suscripción o pack vigente al cierre de cada mes." />;
   }
 
   const last = data[data.length - 1];
@@ -25,7 +25,7 @@ export default function EvolucionInscritos({ payments }: { payments: StripePayme
   return (
     <ChartCard
       title="Evolución de clientes activos"
-      subtitle="Suscripción o pack vigente a cierre de cada mes"
+      subtitle="Clientes con suscripción o pack vigente al cierre de cada mes."
       dateRange="Desde apertura"
       kpiItems={[
         { label: `Activos ${last.label.split(" ")[0].toLowerCase()}`, value: String(last.count), valueClassName: "text-primary" },

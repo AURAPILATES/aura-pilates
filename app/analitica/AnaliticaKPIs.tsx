@@ -123,25 +123,31 @@ export default function AnaliticaKPIs({
     },
   };
 
+  const activeTotal = activeSubList.length + activePackList.length;
+  const subPct  = activeTotal > 0 ? (activeSubList.length  / activeTotal) * 100 : 0;
+  const packPct = activeTotal > 0 ? (activePackList.length / activeTotal) * 100 : 0;
+
   return (
     <>
-      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4">
         <KpiTile
-          label="Precio medio por alumno"
-          value="—"
-          sub="próximamente"
-          valueClassName="text-navy/30"
-        />
-        <KpiTile
-          label="Precio medio por clase"
+          label="Ingreso medio por clase"
           value="—"
           sub="próximamente"
           valueClassName="text-navy/30"
         />
         <KpiTile
           label="Activos"
-          value={activeSubList.length + activePackList.length}
-          sub={`${activeSubList.length} suscritos · ${activePackList.length} packs`}
+          value={activeTotal}
+          sub={
+            <span className="flex flex-col gap-1.5 w-full">
+              <span className="flex w-full h-1.5 rounded-full overflow-hidden bg-navy/[0.06]">
+                {subPct > 0 && <span style={{ width: `${subPct}%`, background: "#7F77DD" }} />}
+                {packPct > 0 && <span style={{ width: `${packPct}%`, background: "#AFA9EC" }} />}
+              </span>
+              <span>{activeSubList.length} suscritos · {activePackList.length} packs</span>
+            </span>
+          }
           tooltip="Suscripción renovada hace ≤30 días, o pack con fecha de caducidad aún vigente (Benvinguda: 15d · Pack 4/8: 90d)"
           valueClassName="text-navy"
           accent="neutral"
