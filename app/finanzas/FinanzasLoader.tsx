@@ -47,7 +47,7 @@ import EvolucionSuscripciones from "./instances/EvolucionSuscripciones";
 import RetencionCohorte from "./instances/RetencionCohorte";
 import QuestionHeader from "@/app/components/QuestionHeader";
 import { loadBusinessEvents } from "@/lib/businessEvents";
-import KpiTile from "@/components/charts/KpiTile";
+import { ChartCard } from "@/components/charts";
 import { pad2 } from "@/lib/periodCalculation";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -407,27 +407,37 @@ export default async function FinanzasLoader({
           <section id="q1">
             <QuestionHeader num={1} question={`¿Cómo fue ${q1Label.toLowerCase()}?`} />
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-                <KpiTile
-                  label={`Ingresos · ${q1Label}`}
-                  value={fmt(q1Revenue)}
-                  delta={{ cur: q1Revenue, prev: q1RevComp }}
-                  compLabel={`vs ${fmt(q1RevComp)} (${compDateRange})`}
-                />
-                <KpiTile
-                  label={`Gastos · ${monthLabel(curMonth)}`}
-                  value={fmt(estGastosMes)}
-                  sub={isGastosEst ? "estimado" : `${txnsAll.filter(t => t.amount < 0 && t.date.startsWith(curMonth)).length} transacciones`}
-                />
-                <KpiTile
-                  label="Resultado mes"
-                  value={`${resultadoMes >= 0 ? "+" : "−"}${fmt(Math.abs(resultadoMes))}`}
-                  sub="ingresos − gastos"
-                  valueClassName={resultadoMes >= 0 ? "text-success" : "text-danger"}
-                />
-                <KpiTile label="Clientes recurrentes" value={String(activeSubsCount)} sub={`MRR estimado ${fmt(realMrr)}`} />
-              </div>
-              <VolumenBruto sales={salesAll} txns={txnsAll} />
+              <ChartCard
+                title="Ingresos, gastos y resultado"
+                dateRange={q1Label}
+                kpiItems={[
+                  {
+                    label: "Ingresos",
+                    value: fmt(q1Revenue),
+                    helper: `vs ${fmt(q1RevComp)} (${compDateRange})`,
+                  },
+                  {
+                    label: `Gastos · ${monthLabel(curMonth)}`,
+                    value: fmt(estGastosMes),
+                    helper: isGastosEst ? "estimado" : `${txnsAll.filter(t => t.amount < 0 && t.date.startsWith(curMonth)).length} transacciones`,
+                  },
+                  {
+                    label: "Resultado mes",
+                    value: `${resultadoMes >= 0 ? "+" : "−"}${fmt(Math.abs(resultadoMes))}`,
+                    valueClassName: resultadoMes >= 0 ? "text-success" : "text-danger",
+                    helper: "ingresos − gastos",
+                  },
+                  {
+                    label: "Clientes recurrentes",
+                    value: String(activeSubsCount),
+                    helper: `MRR estimado ${fmt(realMrr)}`,
+                  },
+                ]}
+                dataSource="Stripe en vivo + Urban Sports Club (Momence CSV)"
+                sources={["stripe", "momence"]}
+              >
+                <VolumenBruto sales={salesAll} txns={txnsAll} />
+              </ChartCard>
             </div>
           </section>
 
@@ -435,12 +445,19 @@ export default async function FinanzasLoader({
           <section id="q2">
             <QuestionHeader num={2} question="¿En qué se va el dinero?" />
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-                <KpiTile label="Gastos operativos" value={fmt(totalOpEx)} sub="costes recurrentes" />
-                <KpiTile label="Inversión inicial" value={fmt(totalStartup)} sub="reforma, maquinaria, mobiliario" />
-                <KpiTile label="Total acumulado" value={fmt(totalOpEx + totalStartup)}
-                  sub={`${txnsAll.filter(t => t.amount < 0).length} transacciones`} />
-              </div>
+              <ChartCard
+                title="Gastos acumulados"
+                kpiItems={[
+                  { label: "Gastos operativos", value: fmt(totalOpEx), helper: "costes recurrentes" },
+                  { label: "Inversión inicial", value: fmt(totalStartup), helper: "reforma, maquinaria, mobiliario" },
+                  {
+                    label: "Total acumulado",
+                    value: fmt(totalOpEx + totalStartup),
+                    helper: `${txnsAll.filter(t => t.amount < 0).length} transacciones`,
+                  },
+                ]}
+                dataSource="Movimientos bancarios registrados"
+              />
               <DesglosGastosGeneral
                 groups={expGroupTotals}
                 totalExpCat={totalExpCat}
