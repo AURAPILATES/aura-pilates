@@ -2,7 +2,6 @@ import { loadStripePaymentsCached, loadPaymentsBreakdown, totalRevenue as stripe
 import { loadStripeCustomers } from "@/lib/stripeCustomers";
 import { enrichCustomers, hasActiveSub } from "@/lib/customerEnrichment";
 import ClientesPaymentsBreakdown from "@/app/clientes/ClientesPaymentsBreakdown";
-import ClientesRetentionCohort from "@/app/clientes/ClientesRetentionCohort";
 import EvolucionInscritos from "@/app/finanzas/instances/EvolucionInscritos";
 import AnaliticaKPIs from "./AnaliticaKPIs";
 import { pad2 } from "@/lib/periodCalculation";
@@ -114,7 +113,6 @@ export default async function AnaliticaLoader({
           excludeSegments={["disputed", "failed"]}
         />
       </div>
-      <ClientesRetentionCohort payments={payments} customers={customers} />
       <div className="mb-8">
         <EvolucionInscritos data={activeCustomersData} />
       </div>
