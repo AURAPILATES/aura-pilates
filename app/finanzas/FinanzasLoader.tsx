@@ -11,6 +11,7 @@ import {
   totalFees as stripeTotalFees,
   totalNet as stripeTotalNet,
   toSales,
+  activeCustomersByMonth,
 } from "@/lib/stripePayments";
 import ClientesPaymentsBreakdown from "@/app/clientes/ClientesPaymentsBreakdown";
 import {
@@ -311,6 +312,7 @@ export default async function FinanzasLoader({
   const monthlyRevenue = addUscToMonthlyRevenue(monthlyStripeRevenue, uscByMonth);
   const subscriptionCohorts = computeSubscriptionCohorts(paymentsAllBounded, subscriptionTiers);
   const retentionCohorts = computeRetentionCohorts(paymentsAllBounded, subscriptionTiers);
+  const activeCustomersData = activeCustomersByMonth(paymentsAllBounded);
 
   // Rango real de transacciones para mostrarlo en el desglose
   const txnDates = txnsAll.map((t) => t.date).sort();
@@ -434,7 +436,7 @@ export default async function FinanzasLoader({
       </div>
 
       <div className="mb-8">
-        <EvolucionInscritos payments={paymentsAllBounded} />
+        <EvolucionInscritos data={activeCustomersData} />
       </div>
 
       <ResumenFinanzas

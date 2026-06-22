@@ -1,8 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import type { StripePayment } from "@/lib/stripePayments";
-import { activeCustomersByMonth } from "@/lib/stripePayments";
+import type { ActiveCustomersRow } from "@/lib/stripePayments";
 import { ChartCard } from "@/components/charts";
 
 const EvolucionInscritosBody = dynamic(() => import("./EvolucionInscritosBody"), {
@@ -10,9 +9,7 @@ const EvolucionInscritosBody = dynamic(() => import("./EvolucionInscritosBody"),
   loading: () => <div className="h-[200px] rounded-lg bg-navy/[0.04] animate-pulse" />,
 });
 
-export default function EvolucionInscritos({ payments }: { payments: StripePayment[] }) {
-  const data = activeCustomersByMonth(payments);
-
+export default function EvolucionInscritos({ data }: { data: ActiveCustomersRow[] }) {
   if (data.length === 0) {
     return <ChartCard title="Evolución de clientes activos" subtitle="Clientes con suscripción o pack vigente al cierre de cada mes." />;
   }
