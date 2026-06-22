@@ -40,6 +40,23 @@ function Field({ label, value, onSave }: { label: string; value: string; onSave:
   );
 }
 
+function NotesField({ value, onSave }: { value: string; onSave: (v: string) => void }) {
+  const [draft, setDraft] = useState(value);
+  return (
+    <div>
+      <p className="text-[11px] text-navy/40 uppercase tracking-wider mb-1">Notas</p>
+      <textarea
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={() => { if (draft !== value) onSave(draft); }}
+        placeholder="Añade una nota…"
+        rows={3}
+        className="w-full text-sm text-navy border border-navy/[0.12] rounded-lg px-3 py-2 outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15 transition resize-none"
+      />
+    </div>
+  );
+}
+
 export default function TransactionDrawer({
   transaction,
   categories,
@@ -48,6 +65,8 @@ export default function TransactionDrawer({
   onUpdateContact,
   onUpdateConcept,
   onUpdateCategory,
+  onUpdateNotes,
+  onDelete,
 }: {
   transaction: Transaction;
   categories: Category[];
@@ -56,11 +75,36 @@ export default function TransactionDrawer({
   onUpdateContact: (id: string, value: string) => void;
   onUpdateConcept: (id: string, value: string) => void;
   onUpdateCategory: (id: string, value: string | null) => void;
+  onUpdateNotes: (id: string, value: string) => void;
+  onDelete: (id: string) => void;
 }) {
   const t = transaction;
 
   return (
-    <Drawer title="Movimiento" subtitle={fmtDate(t.date)} onClose={onClose}>
+    <Drawer
+      title="Detalle del movimiento"
+      subtitle={fmtDate(t.date)}
+      onClose={onClose}
+      footer={
+        <div className="flex gap-3">
+          <button
+            onClick={() => { onDelete(t.id); onClose(); }}
+            className="flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-danger border border-danger/20 rounded-lg hover:bg-danger/5 transition-colors"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+            </svg>
+            Eliminar
+          </button>
+          <button
+            onClick={onClose}
+            className="flex-1 py-2.5 text-sm font-semibold bg-navy text-white rounded-lg hover:bg-navy/85 transition-colors"
+          >
+            Guardar
+          </button>
+        </div>
+      }
+    >
       <div className="px-6 py-5 flex flex-col gap-5">
         <div className="flex items-center justify-between">
           <span className={`text-2xl font-bold tabular-nums ${t.amount > 0 ? "text-success" : "text-navy"}`}>
@@ -95,7 +139,13 @@ export default function TransactionDrawer({
               <p className="text-sm text-navy tabular-nums">{fmtAmt(t.balance)} €</p>
             </div>
           )}
+          <div>
+            <p className="text-[11px] text-navy/40 uppercase tracking-wider mb-1">Recurrencia</p>
+            <p className="text-sm text-navy">{recurringPeriod ? `Recurrente (${recurringPeriod})` : "No recurrente"}</p>
+          </div>
         </div>
+
+        <NotesField value={t.notes ?? ""} onSave={(v) => onUpdateNotes(t.id, v)} />
       </div>
     </Drawer>
   );

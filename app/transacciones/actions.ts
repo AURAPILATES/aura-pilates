@@ -245,3 +245,13 @@ export async function updateTransactionContact(id: string, contact: string) {
   if (error) throw new Error(error.message);
   revalidateTag("transactions");
 }
+
+export async function updateTransactionNotes(id: string, notes: string) {
+  const supabase = createServerClient();
+  const { error } = await supabase
+    .from("transactions")
+    .update({ notes: notes.trim() || null })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidateTag("transactions");
+}

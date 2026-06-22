@@ -5,7 +5,7 @@ import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import type { Transaction } from "@/lib/transactions";
 import type { Category } from "@/lib/categories";
 import { sortCategoriesHierarchical, categoryDisplayLabel } from "@/lib/categories";
-import { updateTransactionCategory, updateTransactionConcept, updateTransactionContact, softDeleteTransactions } from "./actions";
+import { updateTransactionCategory, updateTransactionConcept, updateTransactionContact, updateTransactionNotes, softDeleteTransactions } from "./actions";
 import DateFilter from "@/app/components/DateFilter";
 import ImportButton from "./ImportButton";
 import AddCashModal from "./AddCashModal";
@@ -706,6 +706,12 @@ export default function TransaccionesList({
   function handleConceptChange(id: string, value: string) {
     startTransition(() => updateTransactionConcept(id, value));
   }
+  function handleNotesChange(id: string, value: string) {
+    startTransition(() => updateTransactionNotes(id, value));
+  }
+  function handleDeleteOne(id: string) {
+    startTransition(async () => { await softDeleteTransactions([id]); });
+  }
   function startEditing(t: Transaction, which: "primary" | "secondary") {
     if (which === "primary") {
       if (t.contact != null) {
@@ -1195,7 +1201,8 @@ export default function TransaccionesList({
               return (
                 <tr
                   key={t.id}
-                  className={`border-b border-navy/[0.04] last:border-0 group transition-colors ${
+                  onClick={() => setDrawerTxnId(t.id)}
+                  className={`border-b border-navy/[0.04] last:border-0 group transition-colors cursor-pointer ${
                     isSelected ? "bg-primary/[0.03]" : "hover:bg-navy/[0.01]"
                   }`}
                 >
@@ -1210,7 +1217,7 @@ export default function TransaccionesList({
                     </div>
                   </td>
 
-                  <td className="pl-2 pr-4 py-2.5 align-middle overflow-hidden">
+                  <td className="pl-2 pr-4 py-2.5 align-middle overflow-hidden" onClick={(e) => e.stopPropagation()}>
                     <div className="min-w-0">
                       <div className="min-w-0">
                         {editingField?.id === t.id && editingField.field === (t.contact != null ? "contact" : "concept") ? (
@@ -1265,7 +1272,7 @@ export default function TransaccionesList({
                     <span className="text-xs text-navy/55 whitespace-nowrap">{originLabel(t.payment_method)}</span>
                   </td>
                   <td />
-                  <td className="px-4 py-3 align-middle">
+                  <td className="px-4 py-3 align-middle" onClick={(e) => e.stopPropagation()}>
                     <CategoryPill category={t.category} categories={categories} onChange={(cat) => handleCategoryChange(t.id, cat)} />
                   </td>
 
@@ -1305,6 +1312,8 @@ export default function TransaccionesList({
           onUpdateContact={handleContactChange}
           onUpdateConcept={handleConceptChange}
           onUpdateCategory={handleCategoryChange}
+          onUpdateNotes={handleNotesChange}
+          onDelete={handleDeleteOne}
         />
       )}
     </div>
