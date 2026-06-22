@@ -58,6 +58,18 @@ Como `Customers` solo da el estado actual, se monta un cron diario que guarda un
 
 ---
 
+### Histórico de clases (ocupación, mapa de calor) — Momence `Events` + Supabase
+
+La sección Horario › Análisis (KPIs, mapa de calor, evolución de ocupación) necesita ver clases **pasadas**, pero la API en vivo de Momence no las conserva indefinidamente.
+
+- **Qué se usa:** `GET /Events` vía `lib/momence.ts` (`getEvents()`, cacheado 300s con `unstable_cache`). Este endpoint **no es un histórico completo**: solo devuelve eventos recientes/próximos dentro de una ventana móvil, no todo lo que ha pasado desde siempre.
+- **Por eso existe un histórico propio:** cada vez que se carga una página que llama a `getEvents()`, el resultado se vuelca también a la tabla Supabase `momence_history` (`lib/history.ts`: `saveHistoricalEvents` / `loadHistoricalEvents`). Horario combina ambas fuentes: histórico guardado + lo que la API devuelve ahora, deduplicado por `id`.
+- **Problema descubierto (jun 2026):** este volcado solo pasaba **cuando alguien visitaba el dashboard**. Si nadie entraba a Horario durante varios días, esos días no quedaban guardados y, al salir de la ventana móvil de la API, esas clases se perdían para siempre — visible como huecos en el mapa de calor y en "Evolución de la ocupación" (tooltips mostrando solo 5-6 clases en días que tuvieron más). No era un fallo de la API de Momence, sino de cobertura: dependía de visitas humanas en el momento justo.
+- **Fix implementado:** cron diario `/api/cron/snapshot-events` (`app/api/cron/snapshot-events/route.ts`), programado en `vercel.json` a las 22:00 cada día, protegido con `CRON_SECRET`. Llama a `getEvents()` y `saveHistoricalEvents()` igual que haría una visita al dashboard, así el histórico no depende de que alguien navegue a Horario ese día.
+- **Huecos previos al cron:** el histórico hasta el 12 jun 2026 se rellenó a mano con `scripts/seed-history.mjs` (datos transcritos de capturas de pantalla del panel de Momence). Las semanas del 15/06 y 22/06 quedaron con huecos porque el cron aún no existía; pendiente de backfill manual con el mismo patrón en cuanto se disponga de los datos de esos días.
+
+---
+
 ### Productos y ventas históricas — Momence (CSV)
 El desglose de ingresos por producto a lo largo del tiempo (breakeven, conversión del pack de bienvenida) usa el export manual, porque la API no tiene un endpoint de ventas/pedidos histórico.
 
@@ -97,7 +109,7 @@ Al importar, cada movimiento se categoriza automáticamente buscando las **palab
 ### Base de datos — Supabase
 Todo lo que necesita persistir entre despliegues se guarda en **Supabase** (el filesystem de Vercel es de solo lectura, así que nada se puede guardar en archivos locales en producción).
 
-- **Tablas:** `transactions` (movimientos bancarios importados), `categories`, `budgets` (financiación/préstamos), `momence_history` (histórico de ocupación de clases), `subscriber_snapshots` (snapshot diario de suscriptores activos)
+- **Tablas:** `transactions` (movimientos bancarios importados), `categories`, `budgets` (financiación/préstamos), `momence_history` (histórico de clases/ocupación, alimentado por visitas al dashboard + cron diario `snapshot-events`), `subscriber_snapshots` (snapshot diario de suscriptores activos)
 - Las transacciones de Stripe y el catálogo/clientes de Momence se leen en tiempo real vía API; no se guardan en Supabase salvo `momence_history` y `subscriber_snapshots`, que son históricos que la propia API no expone retroactivamente.
 - Las transacciones bancarias, presupuestos y categorías sí se guardan: una vez importados/creados, permanecen aunque no vuelvas a subir nada.
 
@@ -121,5 +133,6 @@ Los datos de vacaciones se leen del archivo `data/vacaciones.json`. Para modific
 | Transacciones | CaixaBank CSV/Excel → Supabase | Manual (importar desde la app) |
 | Horario | Momence (API, tiempo real) | Automáticamente |
 | Horario – alumnos activos por membresía | Momence `Customers` (tiempo real) | Automáticamente |
+| Horario – histórico de clases / mapa de calor | Momence `Events` + Supabase `momence_history` | Automáticamente (visitas + cron diario 22h) |
 | Bajas / reactivaciones de suscriptores | Supabase `subscriber_snapshots` | Automáticamente (cron diario 3 AM) |
 | Vacaciones | `data/vacaciones.json` | Manual (editar archivo) |
