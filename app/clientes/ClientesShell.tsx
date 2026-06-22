@@ -2,19 +2,16 @@
 
 import { useState, useRef } from "react";
 import ClientesTable, { type ClientesTableHandle, type CustomerRow } from "./ClientesTable";
-import ClientesEvolucionChart from "./ClientesEvolucionChart";
 import ClientesRetentionCohort from "./ClientesRetentionCohort";
 import ClientesMatrizCompras from "./ClientesMatrizCompras";
 import type { StripePayment } from "@/lib/stripePayments";
-import type { BusinessEvent } from "@/lib/businessEvents";
 
 type Props = {
   customers: CustomerRow[];
   payments: StripePayment[];
-  events?: BusinessEvent[];
 };
 
-export default function ClientesShell({ customers, payments, events }: Props) {
+export default function ClientesShell({ customers, payments }: Props) {
   const [activeMonth, setActiveMonth] = useState<string | null>(null);
   const tableRef = useRef<ClientesTableHandle>(null);
 
@@ -24,12 +21,6 @@ export default function ClientesShell({ customers, payments, events }: Props) {
 
   return (
     <>
-      <ClientesEvolucionChart
-        payments={payments}
-        onBarClick={handleBarClick}
-        activeMonth={activeMonth}
-        events={events}
-      />
       <ClientesRetentionCohort
         payments={payments}
         onMonthClick={handleBarClick}

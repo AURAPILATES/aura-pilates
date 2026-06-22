@@ -1,7 +1,7 @@
 import { loadStripePaymentsCached } from "@/lib/stripePayments";
 import { loadStripeCustomers } from "@/lib/stripeCustomers";
 import { estimatedMRR } from "@/lib/stripeRecurrence";
-import { loadBusinessEvents } from "@/lib/businessEvents";
+import { enrichCustomers } from "@/lib/customerEnrichment";
 import ClientesShell from "./ClientesShell";
 import ClientesKPIs from "./ClientesKPIs";
 
@@ -21,10 +21,7 @@ export default async function ClientesLoader({
   periodLabel, compDateRange, curMonth, prevMonth,
 }: Props) {
   const payments = await loadStripePaymentsCached();
-  const [customers, businessEvents] = await Promise.all([
-    loadStripeCustomers(payments, curMonth),
-    loadBusinessEvents(),
-  ]);
+  const customers = await loadStripeCustomers(payments, curMonth);
 
   const mrr = estimatedMRR(payments, curMonth);
 
@@ -51,43 +48,9 @@ export default async function ClientesLoader({
     else if (firstDate >= compFrom && firstDate <= compTo) { newCountComp++; }
   }
 
-  const lastSubById  = new Map<string, { date: string; product: string }>();
-  const lastPackById = new Map<string, { date: string; product: string }>();
-
-  for (const p of payments) {
-    if (!p.customerId) continue;
-    if (p.inferredType === "subscription") {
-      const ex = lastSubById.get(p.customerId);
-      if (!ex || p.date > ex.date) lastSubById.set(p.customerId, { date: p.date, product: p.inferredProduct });
-    } else if (p.inferredType === "pack") {
-      const ex = lastPackById.get(p.customerId);
-      if (!ex || p.date > ex.date) lastPackById.set(p.customerId, { date: p.date, product: p.inferredProduct });
-    }
-  }
-
-  const today = new Date();
-  function daysSince(dateStr: string): number {
-    return Math.floor((today.getTime() - new Date(dateStr + "T12:00:00").getTime()) / 86_400_000);
-  }
-
-  const customersWithChurn = customers.map((c) => {
-    let lastSub:  { date: string; product: string } | null = null;
-    let lastPack: { date: string; product: string } | null = null;
-    for (const sid of c.stripeIds) {
-      const sub  = lastSubById.get(sid);
-      if (sub  && (!lastSub  || sub.date  > lastSub.date))  lastSub  = sub;
-      const pack = lastPackById.get(sid);
-      if (pack && (!lastPack || pack.date > lastPack.date)) lastPack = pack;
-    }
-    return {
-      ...c,
-      daysSinceLastSub:  lastSub  ? daysSince(lastSub.date)  : null,
-      daysSinceLastPack: lastPack ? daysSince(lastPack.date) : null,
-      lastPackProduct:   lastPack?.product ?? null,
-      lastSubProduct:    lastSub?.product  ?? null,
-      isActive: c.stripeIds.some((sid) => mainActiveSet.has(sid)),
-      isNew:    c.stripeIds.some((sid) => mainNewSet.has(sid)),
-    };
+  const customersWithChurn = enrichCustomers(customers, payments, {
+    activeIds: mainActiveSet,
+    newIds: mainNewSet,
   });
 
   return (
@@ -108,7 +71,7 @@ export default async function ClientesLoader({
         activeCount={mainActiveSet.size}
         activeCountComp={compActiveSet.size}
       />
-      <ClientesShell customers={customersWithChurn} payments={payments} events={businessEvents} />
+      <ClientesShell customers={customersWithChurn} payments={payments} />
     </>
   );
 }

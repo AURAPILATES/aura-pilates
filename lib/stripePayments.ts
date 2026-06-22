@@ -211,6 +211,78 @@ export function detectChurn(payments: StripePayment[], referenceDate?: string): 
     .sort((a, b) => b.daysSilent - a.daysSilent);
 }
 
+// Días de vigencia tras el pago, por producto, para considerar al cliente "activo"
+const ACTIVE_WINDOW_DAYS: Record<string, number> = {
+  "Bàsic": 45,
+  "Plus": 45,
+  "Pro": 45,
+  "Pack Benvinguda": 15,
+  "Pack 4 clases": 90,
+  "Pack 8 clases": 90,
+  "Clase suelta": 30,
+};
+
+export type ActiveCustomersRow = {
+  month: string;
+  label: string;
+  count: number;
+  subscriptions: number;
+  packs: number;
+};
+
+/**
+ * Clientes activos a cierre de cada mes: el último pago de cada cliente sigue
+ * vigente en la fecha de cierre del mes según la ventana de caducidad de su producto
+ * (suscripciones 45 días, packs 15–90 días según tipo). Los cupones/importes no
+ * reconocidos no cuentan al no tener ventana de vigencia definida.
+ *
+ * Un cliente con suscripción Y pack vigentes a la vez se cuenta solo en
+ * "subscriptions" (categoría prioritaria), para que subscriptions + packs = count.
+ */
+export function activeCustomersByMonth(payments: StripePayment[]): ActiveCustomersRow[] {
+  const dated = payments.filter((p) => (p.customerId ?? p.customerEmail) && ACTIVE_WINDOW_DAYS[p.inferredProduct]);
+  if (dated.length === 0) return [];
+
+  const months = Array.from(new Set(dated.map((p) => p.date.slice(0, 7)))).sort();
+  const [firstYear, firstMonth] = months[0].split("-").map(Number);
+  const now = new Date();
+  const lastMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+
+  const allMonths: string[] = [];
+  let y = firstYear, m = firstMonth;
+  while (`${y}-${String(m).padStart(2, "0")}` <= lastMonth) {
+    allMonths.push(`${y}-${String(m).padStart(2, "0")}`);
+    m++;
+    if (m > 12) { m = 1; y++; }
+  }
+
+  return allMonths.map((month) => {
+    const closeDate = new Date(monthEnd(month) + "T23:59:59");
+    const activeTypeById = new Map<string, "subscription" | "pack">();
+    for (const p of dated) {
+      if (p.inferredType !== "subscription" && p.inferredType !== "pack") continue;
+      const id = p.customerId ?? p.customerEmail!;
+      const windowDays = ACTIVE_WINDOW_DAYS[p.inferredProduct];
+      const paidAt = new Date(p.date);
+      if (paidAt > closeDate) continue;
+      const daysSincePaid = (closeDate.getTime() - paidAt.getTime()) / 86_400_000;
+      if (daysSincePaid > windowDays) continue;
+      if (p.inferredType === "subscription" || activeTypeById.get(id) !== "subscription") {
+        activeTypeById.set(id, p.inferredType);
+      }
+    }
+    const subscriptions = [...activeTypeById.values()].filter((t) => t === "subscription").length;
+    const packs = [...activeTypeById.values()].filter((t) => t === "pack").length;
+    const [year, mm] = month.split("-");
+    return { month, label: `${MONTH_LABELS[mm] ?? mm} ${year}`, count: subscriptions + packs, subscriptions, packs };
+  });
+}
+
+function monthEnd(month: string): string {
+  const [y, m] = month.split("-").map(Number);
+  return new Date(y, m, 0).toISOString().slice(0, 10);
+}
+
 export function totalRevenue(payments: StripePayment[]): number {
   return payments.reduce((s, p) => s + p.amount, 0);
 }

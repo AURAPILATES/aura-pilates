@@ -1,43 +1,57 @@
 "use client";
 
-import { ResponsiveContainer, BarChart, Bar, Cell, CartesianGrid, XAxis, YAxis, Tooltip, LabelList, type TooltipContentProps } from "recharts";
-
-export type InscritosRow = { month: string; label: string; count: number };
+import { ResponsiveContainer, BarChart, Bar, CartesianGrid, XAxis, YAxis, Tooltip, LabelList, type TooltipContentProps } from "recharts";
+import type { ActiveCustomersRow } from "@/lib/stripePayments";
 
 function ChartTooltip({ active, payload }: TooltipContentProps) {
   if (!active || !payload?.length) return null;
-  const row = payload[0].payload as InscritosRow;
+  const row = payload[0].payload as ActiveCustomersRow;
   return (
-    <div className="bg-white border border-navy/[0.07] rounded-lg shadow-card px-3 py-2 text-xs">
-      <p className="font-semibold text-navy">{row.label}</p>
-      <p className="text-navy/55">{row.count} clientes activos</p>
+    <div className="bg-white border border-navy/[0.07] rounded-lg shadow-card px-3 py-2 text-xs max-w-[220px]">
+      <p className="font-semibold text-navy mb-1">{row.label}</p>
+      <p className="text-navy/70">Suscripciones: {row.subscriptions}</p>
+      <p className="text-navy/70">Packs: {row.packs}</p>
+      <p className="text-navy font-medium mt-1">{row.count} clientes activos</p>
+      <p className="text-navy/45 mt-2 leading-snug">
+        Cliente con pago vigente al cierre de mes: suscripción (Bàsic/Plus/Pro) en los últimos 45 días,
+        o pack en su ventana de validez (Benvinguda 15d, clase suelta 30d, packs de clases 90d).
+        Con suscripción y pack a la vez, cuenta como suscripción.
+      </p>
     </div>
   );
 }
 
-export default function EvolucionInscritosBody({ data }: { data: InscritosRow[] }) {
+export default function EvolucionInscritosBody({ data }: { data: ActiveCustomersRow[] }) {
   if (data.length === 0) {
     return <p className="text-sm text-navy/45 text-center py-10">Sin datos suficientes</p>;
   }
 
-  const lastMonth = data[data.length - 1].month;
-
   return (
-    <div style={{ width: "100%", height: 200 }}>
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 16, right: 8, bottom: 0, left: 0 }}>
-          <CartesianGrid strokeDasharray="4 3" stroke="rgba(28,25,23,0.07)" vertical={false} />
-          <XAxis dataKey="label" tick={{ fontSize: 10, fill: "rgba(28,25,23,0.45)" }} tickLine={false} axisLine={false} />
-          <YAxis tick={{ fontSize: 10, fill: "rgba(28,25,23,0.45)" }} tickLine={false} axisLine={false} width={28} />
-          <Tooltip content={ChartTooltip} cursor={{ fill: "rgba(28,25,23,0.04)" }} />
-          <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-            <LabelList dataKey="count" position="top" style={{ fontSize: 11, fontWeight: 500, fill: "#1c1917" }} />
-            {data.map((d) => (
-              <Cell key={d.month} fill={d.month === lastMonth ? "#7F77DD" : "#AFA9EC"} />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
+    <div>
+      <div style={{ width: "100%", height: 200 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={data} margin={{ top: 16, right: 8, bottom: 0, left: 0 }}>
+            <CartesianGrid strokeDasharray="4 3" stroke="rgba(28,25,23,0.07)" vertical={false} />
+            <XAxis dataKey="label" tick={{ fontSize: 10, fill: "rgba(28,25,23,0.45)" }} tickLine={false} axisLine={false} />
+            <YAxis tick={{ fontSize: 10, fill: "rgba(28,25,23,0.45)" }} tickLine={false} axisLine={false} width={28} />
+            <Tooltip content={ChartTooltip} cursor={{ fill: "rgba(28,25,23,0.04)" }} />
+            <Bar dataKey="subscriptions" stackId="active" fill="#7F77DD" />
+            <Bar dataKey="packs" stackId="active" fill="#AFA9EC" radius={[4, 4, 0, 0]}>
+              <LabelList dataKey="count" position="top" style={{ fontSize: 11, fontWeight: 500, fill: "#1c1917" }} />
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+      <div className="flex items-center gap-4 justify-center mt-2 text-[11px] text-navy/55">
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block w-2.5 h-2.5 rounded-sm" style={{ background: "#7F77DD" }} />
+          Suscripciones
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block w-2.5 h-2.5 rounded-sm" style={{ background: "#AFA9EC" }} />
+          Packs
+        </span>
+      </div>
     </div>
   );
 }

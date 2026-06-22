@@ -26,6 +26,15 @@ const groups = [
           </svg>
         ),
       },
+      {
+        href: "/analitica",
+        label: "Analítica",
+        icon: (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="3 17 9 11 13 15 21 7"/><polyline points="14 7 21 7 21 14"/>
+          </svg>
+        ),
+      },
     ],
   },
   {

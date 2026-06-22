@@ -2,40 +2,19 @@
 
 import dynamic from "next/dynamic";
 import type { StripePayment } from "@/lib/stripePayments";
+import { activeCustomersByMonth } from "@/lib/stripePayments";
 import { ChartCard } from "@/components/charts";
-import type { InscritosRow } from "./EvolucionInscritosBody";
 
 const EvolucionInscritosBody = dynamic(() => import("./EvolucionInscritosBody"), {
   ssr: false,
   loading: () => <div className="h-[200px] rounded-lg bg-navy/[0.04] animate-pulse" />,
 });
 
-const MES = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
-function monthLabel(ym: string) {
-  const [y, m] = ym.split("-");
-  return `${MES[parseInt(m, 10) - 1]} ${y.slice(2)}`;
-}
-
-function uniqueActiveCustomersByMonth(payments: StripePayment[]): InscritosRow[] {
-  const byMonth = new Map<string, Set<string>>();
-  for (const p of payments) {
-    const id = p.customerId ?? p.customerEmail;
-    if (!id) continue;
-    const m = p.date.slice(0, 7);
-    const set = byMonth.get(m) ?? new Set<string>();
-    set.add(id);
-    byMonth.set(m, set);
-  }
-  return Array.from(byMonth.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([month, ids]) => ({ month, label: monthLabel(month), count: ids.size }));
-}
-
 export default function EvolucionInscritos({ payments }: { payments: StripePayment[] }) {
-  const data = uniqueActiveCustomersByMonth(payments);
+  const data = activeCustomersByMonth(payments);
 
   if (data.length === 0) {
-    return <ChartCard title="Evolución de inscritos" subtitle="Sin datos suficientes" />;
+    return <ChartCard title="Evolución de clientes activos" subtitle="Sin datos suficientes" />;
   }
 
   const last = data[data.length - 1];
@@ -45,8 +24,8 @@ export default function EvolucionInscritos({ payments }: { payments: StripePayme
 
   return (
     <ChartCard
-      title="Evolución de inscritos"
-      subtitle="Clientes únicos con al menos un pago por mes"
+      title="Evolución de clientes activos"
+      subtitle="Suscripción o pack vigente a cierre de cada mes"
       dateRange="Desde apertura"
       kpiItems={[
         { label: `Activos ${last.label.split(" ")[0].toLowerCase()}`, value: String(last.count), valueClassName: "text-primary" },
@@ -60,7 +39,7 @@ export default function EvolucionInscritos({ payments }: { payments: StripePayme
           valueClassName: vsPrevPct === null ? "text-navy/50" : vsPrevPct >= 0 ? "text-success" : "text-danger",
         },
       ]}
-      dataSource="Clientes únicos con cobro registrado en Stripe por mes"
+      dataSource="Suscripción (vigencia 45 días) o pack (15–90 días según tipo) según último pago en Stripe"
       sources={["stripe"]}
     >
       <EvolucionInscritosBody data={data} />

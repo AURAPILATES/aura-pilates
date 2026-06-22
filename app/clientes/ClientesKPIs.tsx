@@ -4,6 +4,7 @@ import { useState } from "react";
 import { fmt } from "@/lib/analytics";
 import Drawer from "@/app/components/Drawer";
 import KpiTile from "@/components/charts/KpiTile";
+import { hasActiveSub, hasActivePack, isChurned } from "@/lib/customerEnrichment";
 import { type CustomerRow, clientStatus } from "./ClientesTable";
 type DrawerKey = "all" | "active" | "recurring" | "new" | "churn" | "error" | null;
 
@@ -128,30 +129,13 @@ export default function ClientesKPIs({ customers, mrr, prevMonthLabel, curMonthL
   const prevMonthEnd   = new Date(now.getFullYear(), now.getMonth(), 0);
   const rangePrevMonth = `${fmtD(prevMonthStart.toISOString().split("T")[0])} – ${fmtD(prevMonthEnd.toISOString().split("T")[0])}`;
 
-  // Activos: suscripción vigente (≤30d) o pack dentro de plazo
-  function hasActiveSub(c: CustomerRow): boolean {
-    return !!c.isRecurring && c.daysSinceLastSub != null && c.daysSinceLastSub <= 30;
-  }
-  function hasActivePack(c: CustomerRow): boolean {
-    const d = c.daysSinceLastPack;
-    if (d == null) return false;
-    const prod = c.lastPackProduct;
-    if (prod === "Pack Benvinguda") return d <= 15;
-    if (prod === "Pack 4 clases" || prod === "Pack 8 clases") return d <= 90;
-    return false;
-  }
   const activeSubList  = customers.filter(hasActiveSub);
   const activePackList = customers.filter((c) => !hasActiveSub(c) && hasActivePack(c));
   const activeList     = customers.filter((c) => hasActiveSub(c) || hasActivePack(c));
 
   const recurringList   = customers.filter((c) => c.isRecurring);
   const newList         = customers.filter((c) => c.isNew);
-  // Bajas de suscripción: 46-76 días sin pagar (31 días de gracia + 15 de confirmación)
-  // Solo suscripciones (daysSinceLastSub), no packs. Tope 76d para no recoger meses anteriores.
-  const churnList       = customers.filter((c) => {
-    const d = c.daysSinceLastSub;
-    return d != null && d >= 46 && d <= 76;
-  });
+  const churnList       = customers.filter(isChurned);
   const delinquentList  = customers.filter((c) => c.hasPaymentError);
 
   const drawerConfig: Record<NonNullable<DrawerKey>, DrawerEntry> = {
