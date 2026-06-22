@@ -114,7 +114,7 @@ export default async function AnaliticaLoader({
           excludeSegments={["disputed", "failed"]}
         />
       </div>
-      <ClientesRetentionCohort payments={payments} />
+      <ClientesRetentionCohort payments={payments} customers={customers} />
       <div className="mb-8">
         <EvolucionInscritos data={activeCustomersData} />
       </div>

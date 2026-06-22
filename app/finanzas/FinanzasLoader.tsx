@@ -13,6 +13,8 @@ import {
   toSales,
 } from "@/lib/stripePayments";
 import ClientesPaymentsBreakdown from "@/app/clientes/ClientesPaymentsBreakdown";
+import { loadStripeCustomers } from "@/lib/stripeCustomers";
+import { buildPrimaryIdMap } from "@/lib/customerEnrichment";
 import {
   estimatedMRR,
   activeCustomersInMonth,
@@ -175,6 +177,9 @@ export default async function FinanzasLoader({
     getCustomers(),
     loadPaymentsBreakdown(breakdownFrom, breakdownTo),
   ]);
+  // Mapa stripeId → cliente fusionado por email, para agrupar cohortes por persona real
+  const stripeCustomersAll = await loadStripeCustomers(paymentsAll, curMonth);
+  const primaryIdMap = buildPrimaryIdMap(stripeCustomersAll);
   const payments = paymentsAll.filter((p) => {
     if (p.date < mainFrom) return false;
     if (p.date > mainTo)   return false;
@@ -303,8 +308,8 @@ export default async function FinanzasLoader({
     uscByMonth.set(m, (uscByMonth.get(m) ?? 0) + s.amount);
   }
   const monthlyRevenue = addUscToMonthlyRevenue(monthlyStripeRevenue, uscByMonth);
-  const subscriptionCohorts = computeSubscriptionCohorts(paymentsAllBounded, subscriptionTiers);
-  const retentionCohorts = computeRetentionCohorts(paymentsAllBounded, subscriptionTiers);
+  const subscriptionCohorts = computeSubscriptionCohorts(paymentsAllBounded, subscriptionTiers, primaryIdMap);
+  const retentionCohorts = computeRetentionCohorts(paymentsAllBounded, subscriptionTiers, 4, primaryIdMap);
 
   // Rango real de transacciones para mostrarlo en el desglose
   const txnDates = txnsAll.map((t) => t.date).sort();

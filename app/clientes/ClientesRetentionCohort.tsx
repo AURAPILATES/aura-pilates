@@ -2,6 +2,8 @@
 
 import { useMemo } from "react";
 import type { StripePayment } from "@/lib/stripePayments";
+import type { StripeCustomer } from "@/lib/stripeCustomers";
+import { buildPrimaryIdMap } from "@/lib/customerEnrichment";
 
 const MES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 
@@ -21,15 +23,23 @@ function cellStyle(val: number): React.CSSProperties {
   return { backgroundColor: `rgba(107, 126, 214, ${opacity})` };
 }
 
-export default function ClientesRetentionCohort({ payments, onMonthClick }: { payments: StripePayment[]; onMonthClick?: (month: string) => void }) {
+type Props = {
+  payments: StripePayment[];
+  customers: StripeCustomer[];
+  onMonthClick?: (month: string) => void;
+};
+
+export default function ClientesRetentionCohort({ payments, customers, onMonthClick }: Props) {
   const { rows, maxCols } = useMemo(() => {
+    const primaryIdMap = buildPrimaryIdMap(customers);
     const monthsByCustomer = new Map<string, Set<string>>();
     for (const p of payments) {
       if (!p.customerId) continue;
+      const id = primaryIdMap.get(p.customerId) ?? p.customerId;
       const m = p.date.slice(0, 7);
-      const set = monthsByCustomer.get(p.customerId) ?? new Set<string>();
+      const set = monthsByCustomer.get(id) ?? new Set<string>();
       set.add(m);
-      monthsByCustomer.set(p.customerId, set);
+      monthsByCustomer.set(id, set);
     }
 
     const cohorts = new Map<string, string[]>();
@@ -62,7 +72,7 @@ export default function ClientesRetentionCohort({ payments, onMonthClick }: { pa
 
     const maxCols = Math.max(...rows.map(r => r.cols.length), 1);
     return { rows, maxCols };
-  }, [payments]);
+  }, [payments, customers]);
 
   if (rows.length === 0) return null;
 

@@ -23,6 +23,7 @@ export default function ClientesShell({ customers, payments }: Props) {
     <>
       <ClientesRetentionCohort
         payments={payments}
+        customers={customers}
         onMonthClick={handleBarClick}
       />
       <ClientesMatrizCompras

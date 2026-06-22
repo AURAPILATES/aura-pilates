@@ -27,16 +27,24 @@ function isSubscriptionAmount(amount: number, tiers: SubscriptionTier[]): boolea
 // de cobros de Stripe (con customerId), identificando qué cobros son de suscripción
 // por su importe contra el catálogo de Momence. No depende de CSV ni de snapshots:
 // Stripe ya tiene el histórico completo desde el inicio.
-export function computeSubscriptionCohorts(payments: StripePayment[], tiers: SubscriptionTier[]): MonthlySubStats[] {
+//
+// `primaryIdMap` (stripeId en bruto → id de cliente fusionado por email) agrupa los pagos
+// por persona real en vez de por perfil de Stripe; si se omite, agrupa por stripeId en bruto.
+export function computeSubscriptionCohorts(
+  payments: StripePayment[],
+  tiers: SubscriptionTier[],
+  primaryIdMap?: Map<string, string>,
+): MonthlySubStats[] {
   const subPayments = payments.filter((p) => p.customerId && isSubscriptionAmount(p.amount, tiers));
 
   const monthsByCustomer = new Map<string, Set<string>>();
   const revenueByMonth = new Map<string, number>();
   for (const p of subPayments) {
+    const id = primaryIdMap?.get(p.customerId!) ?? p.customerId!;
     const m = p.date.slice(0, 7);
-    const set = monthsByCustomer.get(p.customerId!) ?? new Set<string>();
+    const set = monthsByCustomer.get(id) ?? new Set<string>();
     set.add(m);
-    monthsByCustomer.set(p.customerId!, set);
+    monthsByCustomer.set(id, set);
     revenueByMonth.set(m, (revenueByMonth.get(m) ?? 0) + p.amount);
   }
 
@@ -94,20 +102,23 @@ function addMonths(ym: string, k: number): string {
 
 // % de cada cohorte de nuevos suscriptores (agrupados por su primer mes de pago) que
 // sigue pagando en M+1, M+2... Usa el mismo histórico de Stripe que computeSubscriptionCohorts.
+// `primaryIdMap`: ver computeSubscriptionCohorts.
 export function computeRetentionCohorts(
   payments: StripePayment[],
   tiers: SubscriptionTier[],
   maxOffset = 4,
+  primaryIdMap?: Map<string, string>,
 ): RetentionCohortRow[] {
   const subPayments = payments.filter((p) => p.customerId && isSubscriptionAmount(p.amount, tiers));
   if (subPayments.length === 0) return [];
 
   const monthsByCustomer = new Map<string, Set<string>>();
   for (const p of subPayments) {
+    const id = primaryIdMap?.get(p.customerId!) ?? p.customerId!;
     const m = p.date.slice(0, 7);
-    const set = monthsByCustomer.get(p.customerId!) ?? new Set<string>();
+    const set = monthsByCustomer.get(id) ?? new Set<string>();
     set.add(m);
-    monthsByCustomer.set(p.customerId!, set);
+    monthsByCustomer.set(id, set);
   }
 
   const firstMonthByCustomer = new Map<string, string>();

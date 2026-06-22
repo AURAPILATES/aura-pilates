@@ -80,3 +80,16 @@ export function isChurned(c: ChurnFields): boolean {
   const d = c.daysSinceLastSub;
   return d != null && d >= 46 && d <= 76;
 }
+
+/**
+ * Mapa stripeId (en bruto) → id del cliente fusionado por email. Para agrupar pagos por
+ * persona real en lugar de por perfil de Stripe (alguien puede tener varios stripeIds
+ * bajo el mismo email).
+ */
+export function buildPrimaryIdMap(customers: StripeCustomer[]): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const c of customers) {
+    for (const sid of c.stripeIds) map.set(sid, c.id);
+  }
+  return map;
+}
