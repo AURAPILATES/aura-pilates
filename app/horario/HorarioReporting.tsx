@@ -9,7 +9,7 @@ import {
 } from "@/lib/analytics";
 import QuestionHeader from "@/app/components/QuestionHeader";
 import HorarioOcupacionEvolucion from "./HorarioOcupacionEvolucion";
-import KpiTile from "@/components/charts/KpiTile";
+import DeltaBadge, { type DeltaDirection } from "@/components/charts/DeltaBadge";
 
 export type ReportingData = {
   main: MomenceEvent[];
@@ -53,13 +53,14 @@ function Tooltip({ text, children, as: As = "span", className = "" }: {
   );
 }
 
-function unsoldDelta(cur: number, prev: number): { value: string; direction: "pos" | "neg" } | undefined {
+function delta(cur: number, prev: number, invert = false): { value: string; direction: DeltaDirection } | undefined {
   if (prev === 0) return undefined;
   const p = ((cur - prev) / prev) * 100;
   if (p === 0) return undefined;
+  const up = invert ? p < 0 : p > 0;
   return {
     value: `${p > 0 ? "+" : ""}${p.toFixed(1).replace(".", ",")} %`,
-    direction: p > 0 ? "neg" : "pos",
+    direction: up ? "pos" : "neg",
   };
 }
 
@@ -119,33 +120,48 @@ export default function HorarioReporting({ data }: { data: ReportingData }) {
       {/* ── KPIs ── */}
       <section id="q1" className="space-y-4">
         <QuestionHeader num={1} question={`¿Cómo fue el rendimiento de los últimos ${periodLabel}?`} />
-        <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-4">
-          <KpiTile
-            label="Media alumnos/clase"
-            dateRange={dateRange}
-            value={avgPerClass.toFixed(1)}
-            delta={{ cur: avgPerClass, prev: avgPerClassPrev }}
-          />
-          <KpiTile
-            label="Ocupación media"
-            dateRange={dateRange}
-            value={pct(occ)}
-            delta={{ cur: occ, prev: occPrev }}
-            valueClassName={occ >= 0.7 ? "text-success" : occ >= 0.4 ? "text-warning" : "text-danger"}
-          />
-          <KpiTile
-            label="Plazas vendidas"
-            dateRange={dateRange}
-            value={studentsTotal.toString()}
-            delta={{ cur: studentsTotal, prev: studentsTotalPrev }}
-          />
-          <KpiTile
-            label="Plazas no vendidas"
-            dateRange={dateRange}
-            value={unsoldTotal.toString()}
-            delta={unsoldDelta(unsoldTotal, unsoldTotalPrev)}
-            valueClassName={unsoldTotal === 0 ? "text-navy" : "text-warning"}
-          />
+        <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden">
+          <div className="px-4 sm:px-5 pt-4 sm:pt-5 pb-3 flex items-end justify-between gap-3 flex-wrap">
+            <div className="flex items-end gap-2.5">
+              <div className="flex items-end gap-1">
+                <span className={`text-4xl font-medium leading-none ${occ >= 0.7 ? "text-success" : occ >= 0.4 ? "text-warning" : "text-danger"}`}>
+                  {Math.round(occ * 100)}
+                </span>
+                <span className={`text-xl font-medium mb-0.5 ${occ >= 0.7 ? "text-success" : occ >= 0.4 ? "text-warning" : "text-danger"}`}>%</span>
+              </div>
+              <div className="mb-0.5">
+                <p className="text-xs text-navy/45 leading-tight">ocupación</p>
+                <p className="text-xs text-navy/45 leading-tight">media período</p>
+              </div>
+            </div>
+            <div className="flex flex-col items-end gap-1 mb-0.5">
+              {delta(occ, occPrev) && <DeltaBadge {...delta(occ, occPrev)!} />}
+              <p className="text-[10px] text-navy/40">{dateRange}</p>
+            </div>
+          </div>
+          <div className="border-t border-navy/[0.06] grid grid-cols-3 divide-x divide-navy/[0.06]">
+            <div className="px-3 py-2.5">
+              <p className="text-[9px] text-navy/40 uppercase tracking-widest font-semibold">Media alumnos/clase</p>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <p className="text-sm font-medium text-navy tabular-nums">{avgPerClass.toFixed(1)}</p>
+                {delta(avgPerClass, avgPerClassPrev) && <DeltaBadge className="!px-1.5 !py-0 !text-[10px]" {...delta(avgPerClass, avgPerClassPrev)!} />}
+              </div>
+            </div>
+            <div className="px-3 py-2.5">
+              <p className="text-[9px] text-navy/40 uppercase tracking-widest font-semibold">Plazas vendidas</p>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <p className="text-sm font-medium text-navy tabular-nums">{studentsTotal}</p>
+                {delta(studentsTotal, studentsTotalPrev) && <DeltaBadge className="!px-1.5 !py-0 !text-[10px]" {...delta(studentsTotal, studentsTotalPrev)!} />}
+              </div>
+            </div>
+            <div className="px-3 py-2.5">
+              <p className="text-[9px] text-navy/40 uppercase tracking-widest font-semibold">Plazas no vendidas</p>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <p className={`text-sm font-semibold tabular-nums ${unsoldTotal > 0 ? "text-warning" : "text-navy/30"}`}>{unsoldTotal}</p>
+                {delta(unsoldTotal, unsoldTotalPrev, true) && <DeltaBadge className="!px-1.5 !py-0 !text-[10px]" {...delta(unsoldTotal, unsoldTotalPrev, true)!} />}
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
