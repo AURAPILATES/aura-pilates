@@ -41,21 +41,22 @@ export default async function ClientesLoader({
     if (!ex || p.date < ex) firstPaymentMap.set(p.customerId, p.date);
   }
 
-  const mainNewSet = new Set<string>();
-  const compNewSet = new Set<string>();
-  for (const [cid, firstDate] of firstPaymentMap) {
-    if (firstDate >= mainFrom && firstDate <= mainTo) mainNewSet.add(cid);
-    else if (firstDate >= compFrom && firstDate <= compTo) compNewSet.add(cid);
+  // Solo cuenta como "nuevo" si tiene un único perfil de Stripe bajo su email
+  function isNewInRange(c: { id: string; stripeIds: string[] }, from: string, to: string): boolean {
+    if (c.stripeIds.length !== 1) return false;
+    const firstDate = firstPaymentMap.get(c.stripeIds[0]);
+    return !!firstDate && firstDate >= from && firstDate <= to;
   }
+  const mainNewCustomerIds = new Set(customers.filter((c) => isNewInRange(c, mainFrom, mainTo)).map((c) => c.id));
 
   const customersWithChurn = enrichCustomers(customers, payments, {
     activeIds: mainActiveSet,
-    newIds: mainNewSet,
+    newCustomerIds: mainNewCustomerIds,
   });
 
   // Conteo deduplicado por cliente fusionado (no por ID de Stripe en bruto), igual que en Analítica
   const newCountMain = customersWithChurn.filter((c) => c.isNew).length;
-  const newCountComp = customers.filter((c) => c.stripeIds.some((sid) => compNewSet.has(sid))).length;
+  const newCountComp = customers.filter((c) => isNewInRange(c, compFrom, compTo)).length;
 
   return (
     <>

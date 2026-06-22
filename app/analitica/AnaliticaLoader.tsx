@@ -40,17 +40,23 @@ export default async function AnaliticaLoader({
     const ex = firstPaymentMap.get(p.customerId);
     if (!ex || p.date < ex) firstPaymentMap.set(p.customerId, p.date);
   }
-  const mainNewSet = new Set<string>();
-  for (const [cid, firstDate] of firstPaymentMap) {
-    if (firstDate >= mainFrom && firstDate <= mainTo) mainNewSet.add(cid);
-  }
+  // Solo cuenta como "nuevo" si tiene un único perfil de Stripe bajo su email
+  const mainNewCustomerIds = new Set(
+    customersRaw
+      .filter((c) => {
+        if (c.stripeIds.length !== 1) return false;
+        const firstDate = firstPaymentMap.get(c.stripeIds[0]);
+        return !!firstDate && firstDate >= mainFrom && firstDate <= mainTo;
+      })
+      .map((c) => c.id),
+  );
 
   const mainPayerIds = new Set(pMain.filter((p) => p.customerId).map((p) => p.customerId!));
   const compPayerIds = new Set(pComp.filter((p) => p.customerId).map((p) => p.customerId!));
 
   const customers = enrichCustomers(customersRaw, payments, {
     activeIds: mainPayerIds,
-    newIds: mainNewSet,
+    newCustomerIds: mainNewCustomerIds,
   });
 
   // ── Activos por email, deduplicados ──
