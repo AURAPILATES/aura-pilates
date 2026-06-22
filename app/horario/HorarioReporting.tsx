@@ -45,6 +45,25 @@ function CardTitle({ children }: { children: React.ReactNode }) {
   return <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider mb-3">{children}</p>;
 }
 
+function occTone(value: number) {
+  if (value >= 0.75) return { soft: "bg-success/15 text-success", solid: "bg-success" };
+  if (value >= 0.5)  return { soft: "bg-warning/15 text-warning", solid: "bg-warning" };
+  return { soft: "bg-danger/15 text-danger", solid: "bg-danger" };
+}
+
+function Tooltip({ text, children, as: As = "span", className = "" }: {
+  text: string; children: React.ReactNode; as?: "span" | "div"; className?: string;
+}) {
+  return (
+    <As className={`relative inline-flex group ${className}`}>
+      {children}
+      <span className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-full mt-1.5 z-20 hidden group-hover:block whitespace-nowrap rounded bg-navy text-white text-[11px] px-2 py-1 shadow-lg">
+        {text}
+      </span>
+    </As>
+  );
+}
+
 const WEEKDAY_SHORT = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
 
 function fmtD(d: string) {
@@ -154,12 +173,11 @@ export default function HorarioReporting({ data }: { data: ReportingData }) {
                             <div className="flex flex-col items-center gap-1">
                               <span>{String(h).padStart(2, "0")}h</span>
                               {hourAvg !== null && (
-                                <span
-                                  className="inline-block rounded-full bg-navy/[0.06] text-navy/55 text-[10px] font-semibold px-1.5 py-0.5 tabular-nums cursor-default"
-                                  title={`Media ${String(h).padStart(2, "0")}h: ${hourAvg.count} clases impartidas`}
-                                >
-                                  {pct(hourAvg.avgOcc)}
-                                </span>
+                                <Tooltip text={`Media ${String(h).padStart(2, "0")}h: ${hourAvg.count} clases impartidas`}>
+                                  <span className={`inline-block rounded-full text-[10px] font-semibold px-1.5 py-0.5 tabular-nums cursor-default ${occTone(hourAvg.avgOcc).soft}`}>
+                                    {pct(hourAvg.avgOcc)}
+                                  </span>
+                                </Tooltip>
                               )}
                             </div>
                           </th>
@@ -176,12 +194,11 @@ export default function HorarioReporting({ data }: { data: ReportingData }) {
                           <div className="flex items-center gap-1.5">
                             <span>{WEEKDAY_SHORT[wd]}</span>
                             {dayAvg !== null && (
-                              <span
-                                className="inline-block rounded-full bg-navy/[0.06] text-navy/55 text-[10px] font-semibold px-1.5 py-0.5 tabular-nums cursor-default"
-                                title={`Media ${WEEKDAY_SHORT[wd]}: ${dayAvg.count} clases impartidas`}
-                              >
-                                {pct(dayAvg.avgOcc)}
-                              </span>
+                              <Tooltip text={`Media ${WEEKDAY_SHORT[wd]}: ${dayAvg.count} clases impartidas`}>
+                                <span className={`inline-block rounded-full text-[10px] font-semibold px-1.5 py-0.5 tabular-nums cursor-default ${occTone(dayAvg.avgOcc).soft}`}>
+                                  {pct(dayAvg.avgOcc)}
+                                </span>
+                              </Tooltip>
                             )}
                           </div>
                         </td>
@@ -192,13 +209,17 @@ export default function HorarioReporting({ data }: { data: ReportingData }) {
                               <div className="text-center text-[11px] text-navy/50 py-2 px-2">—</div>
                             </td>
                           );
-                          const bg = cell.avgOcc >= 0.75 ? "bg-success" : cell.avgOcc >= 0.5 ? "bg-warning" : "bg-danger";
                           return (
                             <td key={h} className="px-1 py-1">
-                              <div className={`rounded text-center text-[11px] font-semibold py-2 px-2 text-white ${bg}`}
-                                title={`${WEEKDAY_SHORT[wd]} ${String(h).padStart(2, "0")}h: ${cell.count} clases impartidas`}>
-                                {pct(cell.avgOcc)}
-                              </div>
+                              <Tooltip
+                                as="div"
+                                className="!flex w-full"
+                                text={`${WEEKDAY_SHORT[wd]} ${String(h).padStart(2, "0")}h: ${cell.count} clases impartidas`}
+                              >
+                                <div className={`w-full rounded text-center text-[11px] font-semibold py-2 px-2 text-white ${occTone(cell.avgOcc).solid}`}>
+                                  {pct(cell.avgOcc)}
+                                </div>
+                              </Tooltip>
                             </td>
                           );
                         })}
