@@ -5,11 +5,11 @@ import {
   occupancyByTeacher,
   occupancyHeatmap,
   totalStudents,
-  trend,
   pct,
 } from "@/lib/analytics";
 import QuestionHeader from "@/app/components/QuestionHeader";
 import HorarioOcupacionEvolucion from "./HorarioOcupacionEvolucion";
+import KpiTile from "@/components/charts/KpiTile";
 
 export type ReportingData = {
   main: MomenceEvent[];
@@ -21,16 +21,6 @@ export type ReportingData = {
   uscByWeekday: Array<{ weekday: number; label: string; count: number }>;
   businessEvents: BusinessEvent[];
 };
-
-function TrendBadge({ value }: { value: number | null }) {
-  if (value === null) return null;
-  const up = value >= 0;
-  return (
-    <span className={`text-xs font-medium shrink-0 ${up ? "text-success" : "text-danger"}`}>
-      {up ? "▲" : "▼"} {Math.abs(Math.round(value))}%
-    </span>
-  );
-}
 
 function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
@@ -63,6 +53,16 @@ function Tooltip({ text, children, as: As = "span", className = "" }: {
   );
 }
 
+function unsoldDelta(cur: number, prev: number): { value: string; direction: "pos" | "neg" } | undefined {
+  if (prev === 0) return undefined;
+  const p = ((cur - prev) / prev) * 100;
+  if (p === 0) return undefined;
+  return {
+    value: `${p > 0 ? "+" : ""}${p.toFixed(1).replace(".", ",")} %`,
+    direction: p > 0 ? "neg" : "pos",
+  };
+}
+
 const WEEKDAY_SHORT = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
 
 function fmtD(d: string) {
@@ -76,6 +76,16 @@ export default function HorarioReporting({ data }: { data: ReportingData }) {
 
   const occ     = occupancyRate(main);
   const occPrev = occupancyRate(compare);
+
+  const studentsTotal     = totalStudents(main);
+  const studentsTotalPrev = totalStudents(compare);
+  const capacityTotal     = main.reduce((s, e) => s + e.capacity, 0);
+  const capacityTotalPrev = compare.reduce((s, e) => s + e.capacity, 0);
+  const avgPerClass     = main.length > 0 ? studentsTotal / main.length : 0;
+  const avgPerClassPrev = compare.length > 0 ? studentsTotalPrev / compare.length : 0;
+  const unsoldTotal     = capacityTotal - studentsTotal;
+  const unsoldTotalPrev = capacityTotalPrev - studentsTotalPrev;
+
   const byTeacher  = occupancyByTeacher(main);
   const heatmap    = occupancyHeatmap(main);
   const heatmapHours = [...new Set(heatmap.map((c) => c.hour))].sort((a, b) => a - b);
@@ -109,38 +119,33 @@ export default function HorarioReporting({ data }: { data: ReportingData }) {
       {/* ── KPIs ── */}
       <section id="q1" className="space-y-4">
         <QuestionHeader num={1} question={`¿Cómo fue el rendimiento de los últimos ${periodLabel}?`} />
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-          {[
-            {
-              label: "Clases impartidas",
-              value: main.length.toString(),
-              sub: `${totalStudents(main)} alumnos en total`,
-              trendVal: trend(main.length, compare.length),
-            },
-            {
-              label: "Alumnos",
-              value: totalStudents(main).toString(),
-              sub: `Media ${main.length > 0 ? (totalStudents(main) / main.length).toFixed(1) : 0} por clase`,
-              trendVal: trend(totalStudents(main), totalStudents(compare)),
-            },
-            {
-              label: "Ocupación media",
-              value: pct(occ),
-              sub: `${main.reduce((s, e) => s + e.capacity, 0)} plazas totales`,
-              trendVal: trend(occ, occPrev),
-              valueColor: occ >= 0.7 ? "text-success" : occ >= 0.4 ? "text-warning" : "text-danger",
-            },
-          ].map((k) => (
-            <Card key={k.label}>
-              <CardTitle>{k.label}</CardTitle>
-              <p className="text-[10px] text-navy/40 -mt-2 mb-2">{dateRange}</p>
-              <div className="flex items-baseline gap-2">
-                <p className={`text-2xl font-semibold tabular-nums ${k.valueColor ?? "text-navy"}`}>{k.value}</p>
-                <TrendBadge value={k.trendVal ?? null} />
-              </div>
-              <p className="text-[10px] text-navy/40 mt-1.5">{k.sub}</p>
-            </Card>
-          ))}
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-4">
+          <KpiTile
+            label="Media alumnos/clase"
+            dateRange={dateRange}
+            value={avgPerClass.toFixed(1)}
+            delta={{ cur: avgPerClass, prev: avgPerClassPrev }}
+          />
+          <KpiTile
+            label="Ocupación media"
+            dateRange={dateRange}
+            value={pct(occ)}
+            delta={{ cur: occ, prev: occPrev }}
+            valueClassName={occ >= 0.7 ? "text-success" : occ >= 0.4 ? "text-warning" : "text-danger"}
+          />
+          <KpiTile
+            label="Plazas vendidas"
+            dateRange={dateRange}
+            value={studentsTotal.toString()}
+            delta={{ cur: studentsTotal, prev: studentsTotalPrev }}
+          />
+          <KpiTile
+            label="Plazas no vendidas"
+            dateRange={dateRange}
+            value={unsoldTotal.toString()}
+            delta={unsoldDelta(unsoldTotal, unsoldTotalPrev)}
+            valueClassName={unsoldTotal === 0 ? "text-navy" : "text-warning"}
+          />
         </div>
       </section>
 
