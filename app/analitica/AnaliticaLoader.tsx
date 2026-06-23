@@ -1,9 +1,13 @@
 import { loadStripePaymentsCached, loadPaymentsBreakdown, totalRevenue as stripeTotalRevenue, activeCustomersByMonth } from "@/lib/stripePayments";
 import { loadStripeCustomers } from "@/lib/stripeCustomers";
 import { enrichCustomers, hasActiveSub } from "@/lib/customerEnrichment";
+import { loadTransactionsCached } from "@/lib/transactions";
+import { loadCategoriesCached } from "@/lib/categories";
+import { forecastRecurringExpenses } from "@/lib/recurring";
 import ClientesPaymentsBreakdown from "@/app/clientes/ClientesPaymentsBreakdown";
 import EvolucionInscritos from "@/app/finanzas/instances/EvolucionInscritos";
 import AnaliticaKPIs from "./AnaliticaKPIs";
+import PrevisionGastos from "./PrevisionGastos";
 import { pad2 } from "@/lib/periodCalculation";
 
 type Props = {
@@ -21,11 +25,14 @@ export default async function AnaliticaLoader({
   const now = new Date();
   const curMonth = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}`;
 
-  const [payments, breakdown] = await Promise.all([
+  const [payments, breakdown, transactions, categories] = await Promise.all([
     loadStripePaymentsCached(),
     loadPaymentsBreakdown(mainFrom, mainTo),
+    loadTransactionsCached(null, null),
+    loadCategoriesCached(),
   ]);
   const customersRaw = await loadStripeCustomers(payments, curMonth);
+  const recurringForecasts = forecastRecurringExpenses(transactions);
 
   const pMain = payments.filter((p) => p.date >= mainFrom && p.date <= mainTo);
   const pComp = payments.filter((p) => p.date >= compFrom && p.date <= compTo);
@@ -111,6 +118,7 @@ export default async function AnaliticaLoader({
         excludeSegments={["disputed", "failed"]}
       />
       <EvolucionInscritos data={activeCustomersData} />
+      <PrevisionGastos forecasts={recurringForecasts} categories={categories} />
     </div>
   );
 }

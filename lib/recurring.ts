@@ -20,6 +20,10 @@ function groupKey(t: Transaction): string | null {
   return concept ? `n:${concept}` : null;
 }
 
+function displayLabel(t: Transaction): string {
+  return t.contact?.trim() || t.concept?.trim() || "Sin nombre";
+}
+
 // período → {días esperados, tolerancia en días}
 const PERIOD_BUCKETS: { label: string; days: number; tolerance: number }[] = [
   { label: "semanal",    days: 7,   tolerance: 2 },
@@ -38,13 +42,23 @@ function matchPeriod(days: number): string | null {
   return null;
 }
 
+type RecurringSeries = {
+  key: string;
+  label: string;
+  category: string | null;
+  period: string;
+  periodDays: number;
+  amount: number; // negativo
+  transactions: Transaction[]; // orden ascendente por fecha
+};
+
 /**
- * Un movimiento es recurrente si existe otro con el mismo importe, el mismo
- * contacto (o concepto igual/parecido si no hay contacto) y una separación
- * temporal que se repite siempre con el mismo período (semanal, mensual...).
- * Devuelve un mapa id de transacción → período detectado.
+ * Agrupa los movimientos de gasto (importe negativo) por contacto (o concepto si no hay
+ * contacto) + importe exacto, y se queda con los grupos cuya separación temporal entre
+ * pagos se repite siempre con el mismo período (semanal, mensual...). Es la base tanto del
+ * badge "recurrente" en Movimientos como de la previsión de gastos en Analítica.
  */
-export function detectRecurringTransactions(transactions: Transaction[]): Map<string, string> {
+function findRecurringSeries(transactions: Transaction[]): RecurringSeries[] {
   const groups = new Map<string, Map<number, Transaction[]>>(); // groupKey → amountCents → txns
 
   for (const t of transactions) {
@@ -58,9 +72,9 @@ export function detectRecurringTransactions(transactions: Transaction[]): Map<st
     byAmount.get(amountCents)!.push(t);
   }
 
-  const result = new Map<string, string>();
+  const series: RecurringSeries[] = [];
   for (const byAmount of groups.values()) {
-    for (const txns of byAmount.values()) {
+    for (const [amountCents, txns] of byAmount) {
       if (txns.length < 2) continue;
       const sorted = [...txns].sort((a, b) => a.date.localeCompare(b.date));
       const gaps: number[] = [];
@@ -73,8 +87,86 @@ export function detectRecurringTransactions(transactions: Transaction[]): Map<st
       if (periods.some((p) => p === null)) continue;
       const period = periods[0]!;
       if (!periods.every((p) => p === period)) continue;
-      for (const t of sorted) result.set(t.id, period);
+      const bucket = PERIOD_BUCKETS.find((b) => b.label === period)!;
+      const last = sorted[sorted.length - 1];
+      series.push({
+        key: `${groupKey(last)}:${amountCents}`,
+        label: displayLabel(last),
+        category: last.category,
+        period,
+        periodDays: bucket.days,
+        amount: -(amountCents / 100),
+        transactions: sorted,
+      });
     }
   }
+  return series;
+}
+
+/**
+ * Un movimiento es recurrente si existe otro con el mismo importe, el mismo
+ * contacto (o concepto igual/parecido si no hay contacto) y una separación
+ * temporal que se repite siempre con el mismo período (semanal, mensual...).
+ * Devuelve un mapa id de transacción → período detectado.
+ */
+export function detectRecurringTransactions(transactions: Transaction[]): Map<string, string> {
+  const result = new Map<string, string>();
+  for (const s of findRecurringSeries(transactions)) {
+    for (const t of s.transactions) result.set(t.id, s.period);
+  }
   return result;
+}
+
+export type RecurringForecast = {
+  key: string;
+  label: string;
+  category: string | null;
+  period: string;
+  amount: number; // negativo
+  lastDate: string;
+  nextDate: string;
+  daysUntil: number; // negativo = vencido
+  occurrences: number;
+};
+
+/**
+ * Proyecta la próxima fecha de pago de cada gasto recurrente detectado (última fecha de
+ * pago + período), para previsión de cashflow. Si un gasto lleva más de un período y medio
+ * sin volver a aparecer, se asume dado de baja (ej. servicio cancelado) y se excluye en vez
+ * de seguir proyectando fechas hacia el futuro indefinidamente.
+ */
+export function forecastRecurringExpenses(
+  transactions: Transaction[],
+  referenceDate?: string,
+): RecurringForecast[] {
+  // Ancla a mediodía local: evita que toISOString() (UTC) recorte un día en zonas con offset
+  // positivo (ej. Madrid en verano), donde la medianoche local cae en el día anterior en UTC.
+  const today = referenceDate
+    ? new Date(referenceDate + "T12:00:00")
+    : (() => { const n = new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate(), 12); })();
+  const result: RecurringForecast[] = [];
+
+  for (const s of findRecurringSeries(transactions)) {
+    const last = s.transactions[s.transactions.length - 1];
+    const lastDate = new Date(last.date + "T12:00:00");
+    const nextDate = new Date(lastDate);
+    nextDate.setDate(nextDate.getDate() + s.periodDays);
+
+    const daysUntil = Math.round((nextDate.getTime() - today.getTime()) / 86_400_000);
+    if (daysUntil < -s.periodDays * 1.5) continue; // probable baja: lleva +1.5 períodos sin pagar
+
+    result.push({
+      key: s.key,
+      label: s.label,
+      category: s.category,
+      period: s.period,
+      amount: s.amount,
+      lastDate: last.date,
+      nextDate: nextDate.toISOString().slice(0, 10),
+      daysUntil,
+      occurrences: s.transactions.length,
+    });
+  }
+
+  return result.sort((a, b) => a.daysUntil - b.daysUntil);
 }
