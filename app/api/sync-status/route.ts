@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getLatestImportDate } from "@/lib/transactions";
+import { getLatestSyncRuns } from "@/lib/syncRuns";
 
 export const dynamic = "force-dynamic";
 
@@ -33,15 +34,32 @@ async function checkStripe() {
 }
 
 export async function GET() {
-  const [momence, stripe, bancoLastImport] = await Promise.all([
+  const [momence, stripe, bancoLastImport, syncRuns] = await Promise.all([
     checkMomence(),
     checkStripe(),
     getLatestImportDate(),
+    getLatestSyncRuns().catch(() => null),
   ]);
 
+  // El ping de Momence solo confirma que la API responde ahora; si el cron
+  // nocturno falló (p.ej. token caducado a las 3am), eso no se vería con el
+  // ping en horario de oficina. Si el último snapshot falló, se marca como error.
+  const eventsRun = syncRuns?.momence_events ?? null;
+  const subscribersRun = syncRuns?.momence_subscribers ?? null;
+  const failedRun = [eventsRun, subscribersRun].find((r) => r && !r.ok) ?? null;
+
+  const momenceCombined = failedRun
+    ? {
+        ok: false,
+        checkedAt: failedRun.ranAt,
+        error: `Último snapshot falló: ${failedRun.error}`,
+      }
+    : momence;
+
   return NextResponse.json({
-    momence,
+    momence: momenceCombined,
     stripe,
     banco: { lastImport: bancoLastImport },
+    momenceSyncRuns: { events: eventsRun, subscribers: subscribersRun },
   });
 }

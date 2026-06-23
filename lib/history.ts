@@ -20,10 +20,11 @@ export async function saveHistoricalEvents(events: MomenceEvent[]) {
     byDay.get(key)!.push(e);
   }
 
-  const { data: existing } = await db
+  const { data: existing, error: readError } = await db
     .from("momence_history")
     .select("date")
     .in("date", Array.from(byDay.keys()));
+  if (readError) throw new Error(`saveHistoricalEvents (lectura): ${readError.message}`);
   const savedDates = new Set((existing ?? []).map((r) => r.date));
 
   const toInsert = Array.from(byDay.entries())
@@ -31,7 +32,8 @@ export async function saveHistoricalEvents(events: MomenceEvent[]) {
     .map(([date, dayEvents]) => ({ date, events: dayEvents }));
 
   if (toInsert.length > 0) {
-    await db.from("momence_history").insert(toInsert);
+    const { error } = await db.from("momence_history").insert(toInsert);
+    if (error) throw new Error(`saveHistoricalEvents: ${error.message}`);
   }
 }
 
