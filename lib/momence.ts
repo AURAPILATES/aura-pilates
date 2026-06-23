@@ -2,9 +2,42 @@ import { unstable_cache } from "next/cache";
 
 const BASE_URL = "https://momence.com/_api/primary/api/v1";
 
+class MomenceHttpError extends Error {
+  constructor(message: string, public status: number) {
+    super(message);
+  }
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// Reintenta fallos transitorios (red, 429, 5xx) con backoff. No reintenta
+// errores 4xx (token/host inválido, etc.) porque insistir no los arregla y
+// solo retrasa el error real.
+async function withRetry<T>(fn: () => Promise<T>, label: string, attempts = 3): Promise<T> {
+  let lastError: unknown;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fn();
+    } catch (e) {
+      lastError = e;
+      const retryable = !(e instanceof MomenceHttpError) || e.status === 429 || e.status >= 500;
+      if (!retryable || i === attempts - 1) break;
+      await sleep(1000 * 2 ** i); // 1s, 2s, 4s...
+      console.warn(`${label}: intento ${i + 1}/${attempts} falló, reintentando — ${e instanceof Error ? e.message : e}`);
+    }
+  }
+  throw lastError;
+}
+
 // Nunca devuelve [] en caso de error: un fallo silencioso aquí se confunde con
 // "no hay datos" y provoca pérdida de histórico en los cron de snapshot.
 async function fetchMomence<T>(endpoint: string): Promise<T> {
+  return withRetry(() => fetchMomenceOnce<T>(endpoint), `Momence (${endpoint})`);
+}
+
+async function fetchMomenceOnce<T>(endpoint: string): Promise<T> {
   const params = new URLSearchParams({
     hostId: process.env.MOMENCE_HOST_ID ?? "",
     token: process.env.MOMENCE_TOKEN ?? "",
@@ -19,7 +52,7 @@ async function fetchMomence<T>(endpoint: string): Promise<T> {
   }
   if (!res.ok) {
     const body = await res.text().catch(() => "");
-    throw new Error(`Momence (${endpoint}): HTTP ${res.status} ${body.slice(0, 200)}`);
+    throw new MomenceHttpError(`Momence (${endpoint}): HTTP ${res.status} ${body.slice(0, 200)}`, res.status);
   }
   return res.json();
 }
@@ -141,6 +174,10 @@ type CustomersPage = {
 };
 
 async function fetchCustomersPage(page: number, pageSize: number): Promise<CustomersPage> {
+  return withRetry(() => fetchCustomersPageOnce(page, pageSize), `Momence (Customers p${page})`);
+}
+
+async function fetchCustomersPageOnce(page: number, pageSize: number): Promise<CustomersPage> {
   const params = new URLSearchParams({
     hostId: process.env.MOMENCE_HOST_ID ?? "",
     token: process.env.MOMENCE_TOKEN ?? "",
@@ -155,7 +192,7 @@ async function fetchCustomersPage(page: number, pageSize: number): Promise<Custo
   }
   if (!res.ok) {
     const body = await res.text().catch(() => "");
-    throw new Error(`Momence (Customers p${page}): HTTP ${res.status} ${body.slice(0, 200)}`);
+    throw new MomenceHttpError(`Momence (Customers p${page}): HTTP ${res.status} ${body.slice(0, 200)}`, res.status);
   }
   return res.json();
 }

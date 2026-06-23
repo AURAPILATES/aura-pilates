@@ -5,8 +5,16 @@
       "schedule": "0 3 * * *"
     },
     {
+      "path": "/api/cron/snapshot-subscribers",
+      "schedule": "0 6 * * *"
+    },
+    {
       "path": "/api/cron/snapshot-events",
       "schedule": "0 22 * * *"
+    },
+    {
+      "path": "/api/cron/snapshot-events",
+      "schedule": "0 1 * * *"
     }
   ]
 }

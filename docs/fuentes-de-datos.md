@@ -70,6 +70,26 @@ La sección Horario › Análisis (KPIs, mapa de calor, evolución de ocupación
 
 ---
 
+### Fiabilidad de la sincronización con Momence (jun 2026)
+
+**Problema detectado:** `lib/momence.ts` devolvía `[]` ante cualquier fallo de red o HTTP, indistinguible de "no hay datos". Esto alimentaba directamente los cron de snapshot (`snapshot-events`, `snapshot-subscribers`), que escriben histórico **permanente** en Supabase. Si Momence fallaba justo durante la ejecución del cron, este respondía `200 OK` con "0 elementos" y ese día se perdía para siempre — sin error visible en ningún sitio, porque la API de Momence no expone retroactivamente el estado de días pasados.
+
+**Capas de protección implementadas:**
+
+1. **Errores explícitos, nunca silenciosos.** `fetchMomence` y `fetchCustomersPage` (`lib/momence.ts`) lanzan un error con el mensaje exacto (status HTTP, cuerpo de la respuesta, o "sin conexión") en vez de devolver `[]`. Esto significa que un fallo real ya no se puede confundir con "no había datos ese día".
+2. **Reintentos automáticos dentro de la misma ejecución.** Cada llamada a Momence se reintenta hasta 3 veces con backoff (1s, 2s, 4s) si el fallo es de red, HTTP 429 o 5xx. Los errores 4xx (token/host inválido) no se reintentan porque insistir no los arregla. Cubre caídas puntuales de segundos.
+3. **Reintento programado a las pocas horas.** Cada cron tiene una segunda ejecución diaria en `vercel.json` por si la primera falla del todo (Momence caída varios minutos/horas):
+   - `snapshot-subscribers`: 3:00 y 6:00
+   - `snapshot-events`: 22:00 y 1:00
+   Ambas rutas son **idempotentes** (suscriptores hace `upsert`; eventos salta los días ya guardados), así que repetir la llamada cuando ya tuvo éxito no causa duplicados ni efectos secundarios — solo gasta una llamada extra a la API.
+4. **Registro de cada ejecución.** Tabla Supabase `sync_runs` (migración `migrations/007_sync_runs.sql`, hay que ejecutarla manualmente en el SQL Editor de Supabase — este repo no tiene runner de migraciones automático). Cada cron, en éxito o fallo, inserta una fila con `source`, `ok`, `items` y `error` (`lib/syncRuns.ts`).
+5. **Visibilidad en el dashboard.** `/api/sync-status` combina el ping en vivo a Momence con la última fila de `sync_runs`: si el snapshot nocturno falló, el panel de sincronización (esquina del sidebar) se marca en rojo con el error exacto, aunque la API responda bien horas después cuando entras a la app. El panel hace `fetch` sin caché en cada carga y se refresca cada 5 minutos si dejas la pestaña abierta — no es instantáneo respecto al momento del fallo, pero sí respecto a la última vez que se comprobó.
+6. **Páginas de error con mensaje exacto.** `app/error.tsx` y `app/global-error.tsx` (no existían antes) muestran el error real en pantalla si algo falla al cargar una página, en vez de una pantalla genérica de Next.js.
+
+**Pendiente / fuera de alcance:** esto no cubre una caída de Momence de varias horas que coincida con ambos intentos del día (poco probable, pero posible). En ese caso el snapshot de ese día se perdería igual, y solo se sabría por el error en `sync_runs` / el panel rojo — no hay alerta proactiva (email, Slack) todavía.
+
+---
+
 ### Productos y ventas históricas — Momence (CSV)
 El desglose de ingresos por producto a lo largo del tiempo (breakeven, conversión del pack de bienvenida) usa el export manual, porque la API no tiene un endpoint de ventas/pedidos histórico.
 
