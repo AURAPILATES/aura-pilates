@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import SyncStatusPanel from "./SyncStatusPanel";
+import { usePendingRecurringCount } from "./usePendingRecurringCount";
 
 const groups = [
   {
@@ -103,6 +104,7 @@ function IconSettings() {
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const pendingRecurringCount = usePendingRecurringCount();
 
   return (
     <aside className="hidden sm:flex fixed top-0 left-0 h-screen w-[220px] flex-col bg-white border-r border-navy/[0.07] z-30">
@@ -139,7 +141,12 @@ export default function Sidebar() {
                     }`}
                   >
                     <span className={active ? "text-primary" : "text-navy/40"}>{icon}</span>
-                    {label}
+                    <span className="flex-1">{label}</span>
+                    {href === "/gastos-recurrentes" && pendingRecurringCount > 0 && (
+                      <span className="shrink-0 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-warning text-white text-[10px] font-bold px-1">
+                        {pendingRecurringCount}
+                      </span>
+                    )}
                   </Link>
                 );
               })}
