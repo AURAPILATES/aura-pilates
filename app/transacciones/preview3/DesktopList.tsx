@@ -666,6 +666,17 @@ export default function TransaccionesList({
     return [...map.entries()].sort((a, b) => b[0].localeCompare(a[0]));
   }, [filtered]);
 
+  // ── Month grouping for desktop ─────────────────────────────────────────────
+  const byMonth = useMemo(() => {
+    const map = new Map<string, Transaction[]>();
+    for (const t of filtered) {
+      const key = t.date.slice(0, 7);
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(t);
+    }
+    return [...map.entries()].sort((a, b) => b[0].localeCompare(a[0]));
+  }, [filtered]);
+
   const allFilteredIds = filtered.map((t) => t.id);
   const allSelected    = allFilteredIds.length > 0 && allFilteredIds.every((id) => selected.has(id));
   const someSelected   = selected.size > 0;
@@ -1326,20 +1337,24 @@ export default function TransaccionesList({
                 {sortedFiltered.map(renderRow)}
               </div>
             ) : (
-              /* Agrupado por día, igual que en mobile */
-              <div className={`space-y-4 ${isPending ? "opacity-50 pointer-events-none" : ""}`}>
-                {byDay.map(([date, dayTxns]) => {
-                  const dayNet = dayTxns.reduce((s, t) => s + t.amount, 0);
+              /* Agrupado por mes — más continuo que por día para una pantalla ancha */
+              <div className={`space-y-5 ${isPending ? "opacity-50 pointer-events-none" : ""}`}>
+                {byMonth.map(([monthKey, monthTxns]) => {
+                  const monthNet = monthTxns.reduce((s, t) => s + t.amount, 0);
+                  const [y, m] = monthKey.split("-");
+                  const monthName = MONTHS_ES[parseInt(m) - 1];
+                  const label = monthName.charAt(0).toUpperCase() + monthName.slice(1)
+                    + (parseInt(y) !== new Date().getFullYear() ? ` ${y}` : "");
                   return (
-                    <div key={date}>
+                    <div key={monthKey}>
                       <div className="flex items-baseline justify-between px-4 mb-1.5">
-                        <span className="text-[13px] font-semibold text-navy">{fmtDayLabel(date)}</span>
+                        <span className="text-[13px] font-semibold text-navy">{label}</span>
                         <span className="text-xs tabular-nums text-navy/40">
-                          {dayNet < 0 ? "−" : "+"}{fmtAmt(Math.abs(dayNet))}
+                          {monthNet < 0 ? "−" : "+"}{fmtAmt(Math.abs(monthNet))}
                         </span>
                       </div>
                       <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden">
-                        {dayTxns.map(renderRow)}
+                        {monthTxns.map(renderRow)}
                       </div>
                     </div>
                   );
