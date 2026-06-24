@@ -772,18 +772,18 @@ export default function TransaccionesList({
     <div>
       {/* ── Desktop: KPI bar sticky (reactiva a filtros) ────────────────────── */}
       <div className="hidden sm:block sm:sticky sm:top-[45px] sm:z-[15] sm:-mx-6 sm:bg-app-bg/95 sm:backdrop-blur-sm sm:border-b sm:border-navy/[0.06] mb-3">
-        <div className="flex items-stretch justify-start gap-3 px-6 py-2.5">
+        <div className="flex items-stretch justify-start gap-5 px-6 py-4">
           <div className="flex-initial min-w-[120px]">
-            <p className="text-[12px] text-navy/40 uppercase tracking-wider leading-none mb-0.5 whitespace-nowrap">Entradas</p>
-            <p className="text-sm font-semibold text-success tabular-nums truncate">{fmtAmt(totalIn)}</p>
+            <p className="text-[12px] text-navy/40 uppercase tracking-wider leading-none mb-1 whitespace-nowrap">Entradas</p>
+            <p className="text-[13px] font-semibold text-success tabular-nums truncate">{fmtAmt(totalIn)}</p>
           </div>
           <div className="flex-initial min-w-[120px]">
-            <p className="text-[12px] text-navy/40 uppercase tracking-wider leading-none mb-0.5 whitespace-nowrap">Salidas</p>
-            <p className="text-sm font-semibold text-[#B85C3A] tabular-nums truncate">−{fmtAmt(totalOut)}</p>
+            <p className="text-[12px] text-navy/40 uppercase tracking-wider leading-none mb-1 whitespace-nowrap">Salidas</p>
+            <p className="text-[13px] font-semibold text-[#B85C3A] tabular-nums truncate">−{fmtAmt(totalOut)}</p>
           </div>
           <div className="flex-initial min-w-[120px]">
-            <p className="text-[12px] text-navy/40 uppercase tracking-wider leading-none mb-0.5 whitespace-nowrap">Diferencia</p>
-            <p className={`text-sm font-semibold tabular-nums truncate ${neto >= 0 ? "text-navy" : "text-danger"}`}>
+            <p className="text-[12px] text-navy/40 uppercase tracking-wider leading-none mb-1 whitespace-nowrap">Diferencia</p>
+            <p className={`text-[13px] font-semibold tabular-nums truncate ${neto >= 0 ? "text-navy" : "text-danger"}`}>
               {neto < 0 && "−"}{fmtAmt(Math.abs(neto))}
             </p>
           </div>
@@ -813,15 +813,15 @@ export default function TransaccionesList({
       <div className="sm:hidden grid grid-cols-3 text-center gap-1 mb-3 bg-white border border-navy/[0.08] rounded-xl py-3">
         <div className="min-w-0">
           <p className="text-[12px] text-navy/40 uppercase tracking-wider leading-none mb-0.5 whitespace-nowrap">Entradas</p>
-          <p className="text-[14px] font-semibold text-success tabular-nums truncate">{fmtAmt(totalIn)}</p>
+          <p className="text-[13px] font-semibold text-success tabular-nums truncate">{fmtAmt(totalIn)}</p>
         </div>
         <div className="min-w-0">
           <p className="text-[12px] text-navy/40 uppercase tracking-wider leading-none mb-0.5 whitespace-nowrap">Salidas</p>
-          <p className="text-[14px] font-semibold text-[#B85C3A] tabular-nums truncate">−{fmtAmt(totalOut)}</p>
+          <p className="text-[13px] font-semibold text-[#B85C3A] tabular-nums truncate">−{fmtAmt(totalOut)}</p>
         </div>
         <div className="min-w-0">
           <p className="text-[12px] text-navy/40 uppercase tracking-wider leading-none mb-0.5 whitespace-nowrap">Dif.</p>
-          <p className={`text-[14px] font-semibold tabular-nums truncate ${neto >= 0 ? "text-navy" : "text-danger"}`}>
+          <p className={`text-[13px] font-semibold tabular-nums truncate ${neto >= 0 ? "text-navy" : "text-danger"}`}>
             {neto < 0 && "−"}{fmtAmt(Math.abs(neto))}
           </p>
         </div>
