@@ -1249,14 +1249,14 @@ export default function TransaccionesList({
                       autoFocus type="text" value={editValue}
                       onChange={(e) => setEditValue(e.target.value)}
                       onKeyDown={(e) => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") setEditingField(null); }}
-                      className="text-[15px] font-semibold text-navy bg-navy/[0.04] rounded-md px-1.5 -mx-1.5 outline-none ring-1 ring-navy/10 focus:ring-navy/20 w-full"
+                      className="text-[13px] font-medium text-navy bg-navy/[0.04] rounded-md px-1.5 -mx-1.5 outline-none ring-1 ring-navy/10 focus:ring-navy/20 w-full"
                     />
                     <EditConfirmButtons onConfirm={saveEdit} onCancel={() => setEditingField(null)} />
                   </div>
                 ) : (
                   <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
                     <span
-                      className="text-[15px] font-semibold text-navy truncate cursor-pointer hover:text-navy/70 transition-colors"
+                      className="text-[13px] font-medium text-navy truncate cursor-pointer hover:text-navy/70 transition-colors"
                       onClick={() => startEditing(t, "primary")}
                     >{primary}</span>
                     {recurringPeriod && (
