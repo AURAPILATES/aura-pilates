@@ -1,14 +1,148 @@
-import { loadStripePaymentsCached, loadPaymentsBreakdown, totalRevenue as stripeTotalRevenue, activeCustomersByMonth } from "@/lib/stripePayments";
+import { BookOpen } from "react-feather";
+import { fmt, pct } from "@/lib/analytics";
+import { loadSales, benvingudaConversion, subscriberFirstPurchase } from "@/lib/sales";
+import PrimeraCompra from "./instances/PrimeraCompra";
+import {
+  loadStripePaymentsCached,
+  loadPaymentsBreakdown,
+  stripeByMethod,
+  totalRevenue as stripeTotalRevenue,
+  revenueForMonth as stripeRevenueForMonth,
+  totalFees as stripeTotalFees,
+  totalNet as stripeTotalNet,
+  toSales,
+  activeCustomersByMonth,
+} from "@/lib/stripePayments";
 import { loadStripeCustomers } from "@/lib/stripeCustomers";
-import { enrichCustomers, hasActiveSub } from "@/lib/customerEnrichment";
-import { loadTransactionsCached } from "@/lib/transactions";
-import { loadCategoriesCached } from "@/lib/categories";
+import { buildPrimaryIdMap, enrichCustomers, hasActiveSub } from "@/lib/customerEnrichment";
+import { estimatedMRR, recurringCustomerIds } from "@/lib/stripeRecurrence";
+
+import { loadTransactionsCached, expensesByCategoryAll, type EconomicGroup } from "@/lib/transactions";
+import { loadCategoriesCached, type Category } from "@/lib/categories";
 import { loadRecurringExpensesCached, forecastConfirmedExpenses } from "@/lib/recurringExpenses";
-import ClientesPaymentsBreakdown from "@/app/clientes/ClientesPaymentsBreakdown";
-import EvolucionInscritos from "@/app/finanzas/instances/EvolucionInscritos";
-import AnaliticaKPIs from "./AnaliticaKPIs";
-import PrevisionGastos from "./PrevisionGastos";
+import DesglosGastos from "./instances/DesglosGastos";
+import DesglosGastosGeneral from "./instances/DesglosGastosGeneral";
+import ResumenFinanzas from "./instances/ResumenFinanzas";
+import VolumenBruto from "./instances/VolumenBruto";
+import FuentesIngreso from "./instances/FuentesIngreso";
+import IngresosPorProducto from "./instances/IngresosPorProducto";
+import EvolucionIngresos from "./instances/EvolucionIngresos";
+import EvolucionInscritos from "./instances/EvolucionInscritos";
+import Financiacion from "./instances/Financiacion";
+import { loadBudgetsCached, computeSpent } from "@/lib/budgets";
+import Breakeven from "./instances/Breakeven";
+import { computeBreakeven } from "@/lib/breakeven";
+import ConversionPack from "./instances/ConversionPack";
+import MrrPorTier from "./instances/MrrPorTier";
+import { subscriptionTiersFromMemberships, computeMrrByTier } from "@/lib/mrr";
+import { getMemberships, getProducts, getCustomers } from "@/lib/momence";
+import { catalogFromMomence, revenueByProductFromStripe, revenueByProductByMonth, addUscToMonthlyRevenue } from "@/lib/productRevenue";
+import { computeSubscriptionCohorts, computeRetentionCohorts } from "@/lib/subscriptionCohort";
+import EvolucionSuscripciones from "./instances/EvolucionSuscripciones";
+import RetencionCohorte from "./instances/RetencionCohorte";
+import { loadBusinessEvents } from "@/lib/businessEvents";
+import { ChartCard } from "@/components/charts";
 import { pad2 } from "@/lib/periodCalculation";
+import AnaliticaKPIs from "./AnaliticaKPIs";
+import ClientesPaymentsBreakdown from "@/app/clientes/ClientesPaymentsBreakdown";
+import PrevisionGastos from "./PrevisionGastos";
+import SectionNav from "./SectionNav";
+import SectionHeader from "./SectionHeader";
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function Block({ title, legend, children }: {
+  title: string; legend?: string; children: React.ReactNode;
+}) {
+  return (
+    <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
+      <p className="text-xs font-semibold text-navy/55 uppercase tracking-wider mb-4">{title}</p>
+      {children}
+      {legend && (
+        <p className="text-xs text-navy/45 mt-4 pt-3 border-t border-navy/5 leading-relaxed flex items-start gap-1.5">
+          <BookOpen size={12} className="shrink-0 mt-0.5" />
+          {legend}
+        </p>
+      )}
+    </div>
+  );
+}
+
+const PRODUCT_COLORS = ["#6B7ED6","#9260B8","#D4AA35","#4A7A9B","#4A9870","#D46055","#C46890","#3AA09C"];
+const EXPENSE_COLORS = ["#6B7ED6","#9260B8","#D4AA35","#4A7A9B","#4A9870","#D46055","#C46890","#3AA09C","#8878C0"];
+const BURN_CATS = new Set([
+  "Alquiler","Salarios","Seguridad social","Electricidad","Agua","Software","Gestoría y legal",
+  "Impuestos y tasas","IVA","IRPF","IS","Teléfono","Seguros","Comisiones bancarias","Merchandising","Local","Otros",
+]);
+
+type LeafExpenseSeg = { value: string; label: string; count: number; total: number; color: string; iconKey?: string };
+export type TopExpenseSeg = {
+  key: string; label: string; color: string; iconKey?: string; group: EconomicGroup;
+  count: number; total: number; children: LeafExpenseSeg[];
+};
+
+/** Agrupa el desglose de gastos (por categoría "hoja") bajo su categoría padre cuando tiene subcategorías. */
+function groupExpensesByTopCategory(
+  expByCategory: { category: string; count: number; total: number; group: EconomicGroup }[],
+  dbCatByValue: Map<string, Category>,
+  dbCatById: Map<string, Category>,
+  fallbackColors: string[],
+): TopExpenseSeg[] {
+  const topMap = new Map<string, TopExpenseSeg>();
+  expByCategory.forEach((e, i) => {
+    const dbCat = dbCatByValue.get(e.category);
+    const parent = dbCat?.parent_id ? dbCatById.get(dbCat.parent_id) : undefined;
+    const topKey = parent?.value ?? dbCat?.value ?? e.category;
+
+    if (!topMap.has(topKey)) {
+      topMap.set(topKey, {
+        key: topKey,
+        label: parent?.label ?? dbCat?.label ?? e.category,
+        color: parent?.text_color ?? dbCat?.text_color ?? fallbackColors[i % fallbackColors.length],
+        iconKey: parent?.emoji ?? dbCat?.emoji,
+        group: e.group,
+        count: 0,
+        total: 0,
+        children: [],
+      });
+    }
+    const top = topMap.get(topKey)!;
+    top.count += e.count;
+    top.total += e.total;
+    if (parent && dbCat) {
+      top.children.push({ value: e.category, label: dbCat.label, count: e.count, total: e.total, color: dbCat.text_color, iconKey: dbCat.emoji });
+    }
+  });
+  const result = [...topMap.values()];
+  for (const top of result) top.children.sort((a, b) => b.total - a.total);
+  return result.sort((a, b) => b.total - a.total);
+}
+
+const ECON_GROUP_ORDER: EconomicGroup[] = ["personal", "operational", "capex"];
+
+/** Totales por bloque económico (Personal / OpEx / CapEx), con sus transacciones, para la visión general del desglose de gastos. */
+function groupExpensesByEconomicGroup(
+  expByCategory: { category: string; count: number; total: number; group: EconomicGroup }[],
+  transactionsByCategory: Record<string, { date: string; amount: number; concept: string; contact: string }[]>,
+) {
+  return ECON_GROUP_ORDER.map((group) => {
+    const entries = expByCategory.filter((e) => e.group === group);
+    return {
+      group,
+      total: entries.reduce((s, e) => s + e.total, 0),
+      count: entries.reduce((s, e) => s + e.count, 0),
+      txns: entries.flatMap((e) => transactionsByCategory[e.category] ?? []),
+    };
+  });
+}
+
+const MES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+function monthLabel(ym: string) {
+  const [y, m] = ym.split("-");
+  return `${MES[parseInt(m, 10) - 1]} ${y}`;
+}
+
+// ── Loader ────────────────────────────────────────────────────────────────────
 
 type Props = {
   mainFrom: string;
@@ -23,33 +157,222 @@ export default async function AnaliticaLoader({
   mainFrom, mainTo, compFrom, compTo, periodLabel, compDateRange,
 }: Props) {
   const now = new Date();
-  const curMonth = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}`;
+  const curMonth  = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}`;
 
-  const [payments, breakdown, transactions, categories, recurringExpenses] = await Promise.all([
+  const [
+    paymentsAll, membershipsAll, productsAll, customersAll,
+    txnsAll, dbCategories, budgets, businessEvents, recurringExpenses, breakdown,
+  ] = await Promise.all([
     loadStripePaymentsCached(),
-    loadPaymentsBreakdown(mainFrom, mainTo),
+    getMemberships(),
+    getProducts(),
+    getCustomers(),
     loadTransactionsCached(null, null),
     loadCategoriesCached(),
+    loadBudgetsCached(),
+    loadBusinessEvents(),
     loadRecurringExpensesCached(),
+    loadPaymentsBreakdown(mainFrom, mainTo),
   ]);
-  const customersRaw = await loadStripeCustomers(payments, curMonth);
-  const recurringForecasts = forecastConfirmedExpenses(recurringExpenses, transactions);
 
-  const pMain = payments.filter((p) => p.date >= mainFrom && p.date <= mainTo);
-  const pComp = payments.filter((p) => p.date >= compFrom && p.date <= compTo);
+  // Mapa stripeId → cliente fusionado por email, para agrupar cohortes/clientes por persona real
+  const stripeCustomersAll = await loadStripeCustomers(paymentsAll, curMonth);
+  const primaryIdMap = buildPrimaryIdMap(stripeCustomersAll);
 
-  const grossRevenue     = pMain.reduce((s, p) => s + p.amount, 0);
-  const grossRevenueComp = pComp.reduce((s, p) => s + p.amount, 0);
+  const pMain = paymentsAll.filter((p) => p.date >= mainFrom && p.date <= mainTo);
+  const pComp = paymentsAll.filter((p) => p.date >= compFrom && p.date <= compTo);
+
+  const hasSales  = paymentsAll.length > 0;
+  const totalRev  = stripeTotalRevenue(pMain);
+  const stripeFees = stripeTotalFees(pMain);
+  const stripeNet  = stripeTotalNet(pMain);
+
+  const cur = stripeRevenueForMonth(paymentsAll, curMonth);
+
+  const ticketMedio = pMain.length > 0 ? totalRev / pMain.length : 0;
+
+  // ── Recurrencia (derivada de pagos, no de suscripciones Stripe) ──
+  const recurringIds    = recurringCustomerIds(paymentsAll, curMonth);
+  const activeSubsCount = recurringIds.size;
+  const realMrr         = estimatedMRR(paymentsAll, curMonth);
+
+  const recurrente = pMain.filter((p) => p.customerId && recurringIds.has(p.customerId)).reduce((s, p) => s + p.amount, 0);
+  const puntual    = totalRev - recurrente;
+
+  const salesAll = toSales(paymentsAll);
+
+  // Momence CSV: solo se usa para lo histórico (breakeven, conversión del pack) y para
+  // Urban Sports Club, que paga por transferencia bancaria y no tiene fuente en vivo.
+  const momenceSalesAll = loadSales();
+
+  // ── Urban Sports Club: ingresos desde Momence CSV (USC paga por transferencia, no Stripe) ──
+  const uscSales   = momenceSalesAll.filter((s) => s.method === "urban-sports-club" && s.paymentDate >= mainFrom && s.paymentDate <= mainTo);
+  const uscRevenue = uscSales.reduce((sum, s) => sum + s.amount, 0);
+  const uscCount   = uscSales.length;
+  const uscCur  = momenceSalesAll.filter((s) => s.method === "urban-sports-club" && s.paymentDate.startsWith(curMonth)).reduce((sum, s) => sum + s.amount, 0);
+
+  const revComp    = stripeTotalRevenue(pComp);
+  const uscRevComp = momenceSalesAll.filter((s) =>
+    s.method === "urban-sports-club" &&
+    s.paymentDate >= compFrom &&
+    s.paymentDate <= compTo
+  ).reduce((sum, s) => sum + s.amount, 0);
+  const q1Revenue = totalRev + uscRevenue;
+  const q1RevComp = revComp + uscRevComp;
+  const q1Label   = periodLabel;
+
+  // Última fecha con datos reales de Urban (el CSV no se actualiza solo) — se usa para
+  // acotar "Por producto" / "Por canal de pago" y que Stripe y Urban cubran el mismo periodo.
+  const uscDates = momenceSalesAll.filter((s) => s.method === "urban-sports-club").map((s) => s.paymentDate);
+  const uscLastDate = uscDates.length > 0 ? uscDates.sort().reverse()[0] : null;
+  const uscLastDateLabel = uscLastDate ? uscLastDate.split("-").reverse().join("/") : null;
+
+  const paymentsBounded = uscLastDate ? pMain.filter((p) => p.date <= uscLastDate) : pMain;
+  const productCatalog = catalogFromMomence(membershipsAll, productsAll);
+  const liveProductRevenue = revenueByProductFromStripe(paymentsBounded, productCatalog);
+  const byProduct = [
+    ...liveProductRevenue,
+    ...(uscRevenue > 0 ? [{ item: "Urban", category: "Urban Sports Club", revenue: uscRevenue, count: uscCount }] : []),
+  ].sort((a, b) => b.revenue - a.revenue);
+  const byProductTotal = byProduct.reduce((s, p) => s + p.revenue, 0);
+
+  const byMethodBounded = stripeByMethod(paymentsBounded);
+
+  // Las transacciones guardan el `value` de la categoría (no el `label`, que puede cambiar
+  // p.ej. al convertir "Electricidad" en la subcategoría "Luz"), así que el lookup va por value.
+  const dbCatByValue = new Map(dbCategories.map((c) => [c.value, c]));
+  const dbCatById = new Map(dbCategories.map((c) => [c.id, c]));
+  const expByCategory = expensesByCategoryAll(txnsAll);
+  const totalExpCat   = expByCategory.reduce((s, r) => s + r.total, 0);
+
+  // ── Budgets / Financiación ────────────────────────────────────────────────
+  const budgetSpent = computeSpent(budgets, txnsAll);
+
+  // ── Breakeven desde el inicio ────────────────────────────────────────────
+  const breakevenPoints = computeBreakeven(paymentsAll, momenceSalesAll, txnsAll);
+
+  // ── Conversión Pack Benvinguda 2x1 → Suscripción ──────────────────────────
+  const conversionSummary = benvingudaConversion(momenceSalesAll);
+
+  // ── ¿De dónde vienen los suscriptores? (primera compra) ───────────────────
+  const firstPurchaseSummary = subscriberFirstPurchase(momenceSalesAll);
+
+  // ── MRR/ARR por suscripción (suscriptores activos reales en Momence) ──────
+  const subscriptionTiers = subscriptionTiersFromMemberships(membershipsAll);
+  const mrrByTier = computeMrrByTier(customersAll, subscriptionTiers);
+
+  // ── Evolución de ingresos + altas/bajas/reactivaciones (histórico completo) ──
+  const paymentsAllBounded = uscLastDate ? paymentsAll.filter((p) => p.date <= uscLastDate) : paymentsAll;
+  const monthlyStripeRevenue = revenueByProductByMonth(paymentsAllBounded, productCatalog);
+  const uscByMonth = new Map<string, number>();
+  for (const s of momenceSalesAll) {
+    if (s.method !== "urban-sports-club") continue;
+    const m = s.paymentDate.slice(0, 7);
+    uscByMonth.set(m, (uscByMonth.get(m) ?? 0) + s.amount);
+  }
+  const monthlyRevenue = addUscToMonthlyRevenue(monthlyStripeRevenue, uscByMonth);
+  const subscriptionCohorts = computeSubscriptionCohorts(paymentsAllBounded, subscriptionTiers, primaryIdMap);
+  const retentionCohorts = computeRetentionCohorts(paymentsAllBounded, subscriptionTiers, 4, primaryIdMap);
+
+  // Rango real de transacciones para mostrarlo en el desglose
+  const txnDates = txnsAll.map((t) => t.date).sort();
+  const txnRangeLabel = (() => {
+    if (txnDates.length === 0) return null;
+    const fmt3 = (d: string) => {
+      const [y, m] = d.split("-");
+      return `${MES[parseInt(m, 10) - 1].toLowerCase()} ${y}`;
+    };
+    const from3 = fmt3(txnDates[0]);
+    const to3   = fmt3(txnDates[txnDates.length - 1]);
+    return from3 === to3 ? from3 : `${from3} – ${to3}`;
+  })();
+
+  const transactionsByCategory: Record<string, { date: string; amount: number; concept: string; contact: string }[]> = {};
+  for (const t of txnsAll) {
+    if (!t.category) continue;
+    if (!transactionsByCategory[t.category]) transactionsByCategory[t.category] = [];
+    transactionsByCategory[t.category].push({ date: t.date, amount: t.amount, concept: t.concept ?? "", contact: t.contact ?? "" });
+  }
+
+  // ── Desglose de gastos: visión general (Personal/OpEx/CapEx) vs. específico (Personal+OpEx) ──
+  const expGroupTotals = groupExpensesByEconomicGroup(expByCategory, transactionsByCategory);
+  const expByTopCategory = groupExpensesByTopCategory(expByCategory, dbCatByValue, dbCatById, EXPENSE_COLORS);
+  const expByTopCategoryNoCapex = expByTopCategory.filter((c) => c.group !== "capex");
+  const totalExpCatNoCapex = expGroupTotals.filter((g) => g.group !== "capex").reduce((s, g) => s + g.total, 0);
+
+  // ── Salud financiera (datos completos) ──
+  const today_ym = curMonth;
+
+  const currentBalance = [...txnsAll].sort((a, b) => b.date.localeCompare(a.date))
+    .find((t) => t.balance !== null)?.balance ?? null;
+  const balanceDate = [...txnsAll].sort((a, b) => b.date.localeCompare(a.date))
+    .find((t) => t.balance !== null)?.date ?? null;
+
+  const burnByMonth = new Map<string, number>();
+  for (const t of txnsAll) {
+    if (t.amount >= 0 || !t.category || !BURN_CATS.has(t.category)) continue;
+    const m = t.date.slice(0, 7);
+    burnByMonth.set(m, (burnByMonth.get(m) ?? 0) + Math.abs(t.amount));
+  }
+  const completeBurnMonths = [...burnByMonth.keys()].filter((m) => m < today_ym).sort().reverse().slice(0, 3);
+  const avgMonthlyBurn = completeBurnMonths.length > 0
+    ? completeBurnMonths.reduce((s, m) => s + burnByMonth.get(m)!, 0) / completeBurnMonths.length
+    : 0;
+
+  const runwayMonths = currentBalance !== null && avgMonthlyBurn > 0
+    ? currentBalance / avgMonthlyBurn : null;
+
+  const revMonths = [...new Set([
+    ...salesAll.map((s) => s.paymentDate.slice(0, 7)),
+    ...momenceSalesAll.filter((s) => s.method === "urban-sports-club").map((s) => s.paymentDate.slice(0, 7)),
+  ])].filter((m) => m < today_ym).sort().reverse().slice(0, 3);
+  const avgMonthlyRevenue = revMonths.length > 0
+    ? revMonths.reduce((s, m) => {
+        const stripeRev = stripeRevenueForMonth(paymentsAll, m);
+        const uscRev = momenceSalesAll.filter((sa) => sa.method === "urban-sports-club" && sa.paymentDate.startsWith(m)).reduce((sum, sa) => sum + sa.amount, 0);
+        return s + stripeRev + uscRev;
+      }, 0) / revMonths.length
+    : 0;
+
+  const breakEvenGap = avgMonthlyBurn - avgMonthlyRevenue;
+  const clientesNecesarios = breakEvenGap > 0 && ticketMedio > 0
+    ? Math.ceil(breakEvenGap / ticketMedio) : null;
+
+  // Resultado mes estimado
+  const curMonthBurnFromData = burnByMonth.get(curMonth) ?? 0;
+  const estGastosMes  = curMonthBurnFromData > 0 ? curMonthBurnFromData : avgMonthlyBurn;
+  const isGastosEst   = curMonthBurnFromData === 0;
+  const resultadoMes  = (cur + uscCur) - estGastosMes;
+
+  const productSegments = byProduct.map((p, i) => {
+    const share = byProductTotal > 0 ? p.revenue / byProductTotal : 0;
+    return { ...p, share, color: PRODUCT_COLORS[i % PRODUCT_COLORS.length] };
+  });
+
+  // ── Fiscal ──
+  const today = new Date();
+  const daysUntil = (d: string) =>
+    Math.ceil((new Date(d).getTime() - today.getTime()) / 86_400_000);
+  const obligations = [
+    { label: "IVA T2",         date: "20 jul", deadline: "2026-07-20" },
+    { label: "IRPF T2",        date: "20 jul", deadline: "2026-07-20" },
+    { label: "IVA T3",         date: "20 oct", deadline: "2026-10-20" },
+    { label: "IRPF T3",        date: "20 oct", deadline: "2026-10-20" },
+    { label: "IVA T4 / Anual", date: "20 ene", deadline: "2027-01-20" },
+  ];
+
+  // ── Clientela (composición, altas, riesgo de baja) ───────────────────────
+  const recurringForecasts = forecastConfirmedExpenses(recurringExpenses, txnsAll);
 
   const firstPaymentMap = new Map<string, string>();
-  for (const p of payments) {
+  for (const p of paymentsAll) {
     if (!p.customerId) continue;
     const ex = firstPaymentMap.get(p.customerId);
     if (!ex || p.date < ex) firstPaymentMap.set(p.customerId, p.date);
   }
   // Solo cuenta como "nuevo" si tiene un único perfil de Stripe bajo su email
   const mainNewCustomerIds = new Set(
-    customersRaw
+    stripeCustomersAll
       .filter((c) => {
         if (c.stripeIds.length !== 1) return false;
         const firstDate = firstPaymentMap.get(c.stripeIds[0]);
@@ -61,7 +384,7 @@ export default async function AnaliticaLoader({
   const mainPayerIds = new Set(pMain.filter((p) => p.customerId).map((p) => p.customerId!));
   const compPayerIds = new Set(pComp.filter((p) => p.customerId).map((p) => p.customerId!));
 
-  const customers = enrichCustomers(customersRaw, payments, {
+  const customers = enrichCustomers(stripeCustomersAll, paymentsAll, {
     activeIds: mainPayerIds,
     newCustomerIds: mainNewCustomerIds,
   });
@@ -74,12 +397,12 @@ export default async function AnaliticaLoader({
 
   const activeCount     = payingCustomers.length;
   const activeCountComp = payingCustomersComp.length;
-  const spendPerClient     = activeCount     > 0 ? grossRevenue     / activeCount     : 0;
-  const spendPerClientComp = activeCountComp > 0 ? grossRevenueComp / activeCountComp : 0;
+  const spendPerClient     = activeCount     > 0 ? totalRev     / activeCount     : 0;
+  const spendPerClientComp = activeCountComp > 0 ? revComp / activeCountComp : 0;
 
   // ── Clientes por convertir a suscripción: 2+ packs (sin contar Benvinguda), sin sub activa ──
   const packCounts = new Map<string, number>();
-  for (const p of payments) {
+  for (const p of paymentsAll) {
     if (p.inferredType !== "pack" || p.inferredProduct === "Pack Benvinguda" || !p.customerId) continue;
     packCounts.set(p.customerId, (packCounts.get(p.customerId) ?? 0) + 1);
   }
@@ -90,36 +413,226 @@ export default async function AnaliticaLoader({
     (c) => packCountForCustomer(c) >= 2 && !hasActiveSub(c),
   );
 
-  const activeCustomersData = activeCustomersByMonth(payments);
+  const activeCustomersData = activeCustomersByMonth(paymentsAll);
 
   return (
-    <div className="space-y-4">
-      <AnaliticaKPIs
-        customers={customers}
-        periodLabel={periodLabel}
-        periodFrom={mainFrom}
-        periodTo={mainTo}
-        compDateRange={compDateRange}
-        spendPerClient={spendPerClient}
-        spendPerClientComp={spendPerClientComp}
-        newCustomers={newCustomers}
-        reactivatedCustomers={reactivatedCustomers}
-        convertCandidates={convertCandidates}
-      />
-      <ClientesPaymentsBreakdown
-        succeeded={stripeTotalRevenue(pMain)}
-        refunded={breakdown.refunded}
-        disputed={breakdown.disputed}
-        failed={breakdown.failed}
-        refundedIds={breakdown.refundedIds}
-        disputedIds={breakdown.disputedIds}
-        failedIds={breakdown.failedIds}
-        customers={customers}
-        periodLabel={periodLabel}
-        excludeSegments={["disputed", "failed"]}
-      />
-      <EvolucionInscritos data={activeCustomersData} />
-      <PrevisionGastos forecasts={recurringForecasts} categories={categories} />
-    </div>
+    <>
+      {!hasSales && (
+        <div className="bg-warning/10 border border-warning/30 rounded p-4 text-sm text-warning mb-6">
+          Sin datos de ventas. Copia el CSV de Momence a{" "}
+          <code className="font-mono bg-warning/10 px-1 rounded text-xs">data/sales.csv</code>.
+        </div>
+      )}
+
+      <SectionNav />
+
+      <div className="space-y-14">
+
+        {/* ── Caja y resultado ── */}
+        <section>
+          <SectionHeader id="caja" title="Caja y resultado" />
+          <div className="space-y-4">
+            <ResumenFinanzas
+              currentBalance={currentBalance}
+              balanceDate={balanceDate}
+              runwayMonths={runwayMonths}
+              avgMonthlyBurn={avgMonthlyBurn}
+              completeBurnMonthsCount={completeBurnMonths.length}
+              resultadoMes={resultadoMes}
+              breakEvenGap={breakEvenGap}
+              avgMonthlyRevenue={avgMonthlyRevenue}
+              clientesNecesarios={clientesNecesarios}
+              curMonthLabel={monthLabel(curMonth)}
+            />
+            <ChartCard
+              title="Ingresos, gastos y resultado"
+              dateRange={q1Label}
+              kpiItems={[
+                {
+                  label: "Ingresos",
+                  value: fmt(q1Revenue),
+                  helper: `vs ${fmt(q1RevComp)} (${compDateRange})`,
+                },
+                {
+                  label: `Gastos · ${monthLabel(curMonth)}`,
+                  value: fmt(estGastosMes),
+                  helper: isGastosEst ? "estimado" : `${txnsAll.filter(t => t.amount < 0 && t.date.startsWith(curMonth)).length} transacciones`,
+                },
+                {
+                  label: "Resultado mes",
+                  value: `${resultadoMes >= 0 ? "+" : "−"}${fmt(Math.abs(resultadoMes))}`,
+                  valueClassName: resultadoMes >= 0 ? "text-success" : "text-danger",
+                  helper: "ingresos − gastos",
+                },
+                {
+                  label: "Clientes recurrentes",
+                  value: String(activeSubsCount),
+                  helper: `MRR estimado ${fmt(realMrr)}`,
+                },
+              ]}
+              dataSource="Stripe en vivo + Urban Sports Club (Momence CSV)"
+              sources={["stripe", "momence"]}
+            >
+              <VolumenBruto sales={salesAll} txns={txnsAll} />
+            </ChartCard>
+            <Breakeven points={breakevenPoints} />
+          </div>
+        </section>
+
+        {/* ── Gastos ── */}
+        <section>
+          <SectionHeader id="gastos" title="Gastos" />
+          <div className="space-y-4">
+            <DesglosGastosGeneral
+              groups={expGroupTotals}
+              totalExpCat={totalExpCat}
+              rangeLabel={txnRangeLabel}
+            />
+            <DesglosGastos
+              categories={expByTopCategoryNoCapex}
+              transactionsByCategory={transactionsByCategory}
+              totalExpCat={totalExpCatNoCapex}
+              rangeLabel={txnRangeLabel}
+            />
+            <PrevisionGastos forecasts={recurringForecasts} categories={dbCategories} />
+          </div>
+        </section>
+
+        {/* ── Ingresos ── */}
+        <section>
+          <SectionHeader id="ingresos" title="Ingresos" />
+          <div className="space-y-4">
+            <FuentesIngreso
+              recurrente={recurrente}
+              puntual={puntual}
+              totalRev={totalRev}
+              stripeFees={stripeFees}
+              stripeNet={stripeNet}
+              paymentsCount={pMain.length}
+              activeSubsCount={activeSubsCount}
+              periodLabel={periodLabel}
+            />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <IngresosPorProducto
+                segments={productSegments.map((seg) => ({
+                  item: seg.item, revenue: seg.revenue, count: seg.count, share: seg.share, color: seg.color,
+                }))}
+                total={byProductTotal}
+                rangeLabel={uscLastDateLabel ? `datos hasta ${uscLastDateLabel}` : undefined}
+              />
+              <Block title="Por canal de pago" legend={`Stripe en vivo + Urban Sports Club (Momence CSV)${uscLastDateLabel ? ` · datos hasta ${uscLastDateLabel}` : ""}.`}>
+                {(() => {
+                  const cardRevenueBounded = stripeTotalRevenue(paymentsBounded);
+                  const combinedTotal = cardRevenueBounded + uscRevenue;
+                  const allRows = [
+                    ...byMethodBounded.map((r) => ({ key: r.method, label: r.label, revenue: r.revenue, count: r.count, bar: "bg-primary" })),
+                    ...(uscRevenue > 0 ? [{ key: "usc", label: "Urban Sports Club", revenue: uscRevenue, count: uscCount, bar: "bg-warning" }] : []),
+                  ];
+                  return (
+                    <>
+                      <div className="space-y-4">
+                        {allRows.map((row) => {
+                          const share = combinedTotal > 0 ? row.revenue / combinedTotal : 0;
+                          return (
+                            <div key={row.key}>
+                              <div className="flex items-center justify-between mb-1.5">
+                                <span className="text-xs text-navy">{row.label}</span>
+                                <div className="flex items-center gap-3">
+                                  <span className="text-xs text-navy/55 tabular-nums">{row.count} cobros</span>
+                                  <span className="text-xs font-medium text-navy tabular-nums w-16 text-right">{fmt(row.revenue)}</span>
+                                  <span className="text-xs text-navy/55 w-8 text-right tabular-nums">{pct(share)}</span>
+                                </div>
+                              </div>
+                              <div className="h-1.5 bg-navy/5 rounded-full overflow-hidden">
+                                <div className={`h-full rounded-full ${row.bar}`} style={{ width: pct(share) }} />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div className="mt-4 pt-3 border-t border-navy/5 flex justify-between">
+                        <span className="text-xs text-navy/55">Total período</span>
+                        <span className="text-xs font-semibold text-navy">{fmt(combinedTotal)}</span>
+                      </div>
+                    </>
+                  );
+                })()}
+              </Block>
+            </div>
+            <EvolucionIngresos sales={toSales(pMain)} monthly={monthlyRevenue} events={businessEvents} rawPayments={pMain} />
+            <MrrPorTier tiers={mrrByTier} />
+          </div>
+        </section>
+
+        {/* ── Clientes ── */}
+        <section>
+          <SectionHeader id="clientes" title="Clientes" />
+          <div className="space-y-4">
+            <AnaliticaKPIs
+              customers={customers}
+              periodLabel={periodLabel}
+              periodFrom={mainFrom}
+              periodTo={mainTo}
+              compDateRange={compDateRange}
+              spendPerClient={spendPerClient}
+              spendPerClientComp={spendPerClientComp}
+              newCustomers={newCustomers}
+              reactivatedCustomers={reactivatedCustomers}
+              convertCandidates={convertCandidates}
+            />
+            <ClientesPaymentsBreakdown
+              succeeded={totalRev}
+              refunded={breakdown.refunded}
+              disputed={breakdown.disputed}
+              failed={breakdown.failed}
+              refundedIds={breakdown.refundedIds}
+              disputedIds={breakdown.disputedIds}
+              failedIds={breakdown.failedIds}
+              customers={customers}
+              periodLabel={periodLabel}
+              excludeSegments={["disputed", "failed"]}
+            />
+            <EvolucionInscritos data={activeCustomersData} />
+            <EvolucionSuscripciones monthly={monthlyRevenue} cohorts={subscriptionCohorts} />
+            <RetencionCohorte cohorts={retentionCohorts} />
+            <ConversionPack summary={conversionSummary} />
+            <PrimeraCompra summary={firstPurchaseSummary} />
+          </div>
+        </section>
+
+        {/* ── Fiscal y financiación ── */}
+        <section>
+          <SectionHeader id="fiscal" title="Fiscal y financiación" />
+          <div className="space-y-4">
+            <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
+              <p className="text-xs font-semibold text-navy/55 uppercase tracking-wider mb-4">Próximas obligaciones</p>
+              <div className="space-y-3">
+                {obligations.map(({ label, date, deadline }) => {
+                  const days = daysUntil(deadline);
+                  const badgeClass = days <= 30
+                    ? "bg-danger/10 text-danger"
+                    : days <= 60
+                    ? "bg-warning/10 text-warning"
+                    : "bg-navy/5 text-navy/55";
+                  return (
+                    <div key={label} className="flex items-center justify-between">
+                      <span className="text-sm text-navy">{label}</span>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-navy/45 tabular-nums">
+                          {daysUntil(deadline) <= 0 ? "vence hoy" : `${daysUntil(deadline)} días`}
+                        </span>
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded ${badgeClass}`}>{date}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            <Financiacion initialBudgets={budgets} spent={budgetSpent} />
+          </div>
+        </section>
+
+      </div>
+    </>
   );
 }

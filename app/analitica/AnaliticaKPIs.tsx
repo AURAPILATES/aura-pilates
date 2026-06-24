@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { fmt } from "@/lib/analytics";
 import Drawer from "@/app/components/Drawer";
-import KpiTile from "@/components/charts/KpiTile";
 import { ChartCard, ProportionBar } from "@/components/charts";
 import { hasActiveSub, hasActivePack, isChurned, type EnrichedCustomer } from "@/lib/customerEnrichment";
 
@@ -136,15 +135,6 @@ export default function AnaliticaKPIs({
 
   return (
     <>
-      <div className="max-w-xs">
-        <KpiTile
-          label="Ingreso medio por clase"
-          value="—"
-          sub="próximamente"
-          valueClassName="text-navy/30"
-        />
-      </div>
-
       {/* ── Clientes activos: composición de la base activa + gasto + conversión ── */}
       <ChartCard
         title="Clientes activos"
