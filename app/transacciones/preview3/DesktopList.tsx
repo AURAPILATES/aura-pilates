@@ -282,8 +282,10 @@ export function CategoryPill({ category, categories, onChange, hideIcon = false 
       <button
         ref={btnRef}
         onClick={handleToggle}
-        className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap hover:brightness-95 transition-all"
-        style={{ backgroundColor: cfg.bg, color: cfg.color }}
+        className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-all ${
+          cat ? "hover:brightness-95" : "border border-dashed border-navy/20 hover:border-navy/35"
+        }`}
+        style={{ backgroundColor: cat ? cfg.bg : "transparent", color: cfg.color }}
       >
         {!hideIcon && <CatIcon iconKey={cfg.emoji} name={iconName} color={cfg.color} />}
         <span>{label}</span>
@@ -410,10 +412,8 @@ function MobileActionsMenu({ onExport, onPapelera }: { onExport: () => void; onP
 }
 
 function MoreOptionsMenu({
-  originFilter, setOriginFilter, onlyRecurring, setOnlyRecurring, onExport, onPapelera,
+  onlyRecurring, setOnlyRecurring, onExport, onPapelera,
 }: {
-  originFilter: string;
-  setOriginFilter: (v: string) => void;
   onlyRecurring: boolean;
   setOnlyRecurring: (v: boolean | ((prev: boolean) => boolean)) => void;
   onExport: () => void;
@@ -444,7 +444,7 @@ function MoreOptionsMenu({
     setOpen((v) => !v);
   }
 
-  const hasActive = originFilter !== "all" || onlyRecurring;
+  const hasActive = onlyRecurring;
 
   return (
     <div ref={wrapRef} className="relative">
@@ -467,19 +467,6 @@ function MoreOptionsMenu({
           className="fixed z-[9999] bg-white border border-navy/10 rounded-xl shadow-xl py-2"
           style={{ top: dropPos.top, left: dropPos.left, width: "220px" }}
         >
-          <div className="px-3 pb-2">
-            <SelectWrapper>
-              <select value={originFilter} onChange={(e) => setOriginFilter(e.target.value)} className={SELECT_CLS}>
-                <option value="all">Origen</option>
-                <option value="banco">CaixaBank</option>
-                <option value="efectivo">Efectivo Aura</option>
-                <option value="victor">Víctor</option>
-                <option value="celia">Celia</option>
-                <option value="olga">Olga</option>
-                <option value="carles">Carles</option>
-              </select>
-            </SelectWrapper>
-          </div>
           <button
             onClick={() => setOnlyRecurring((v) => !v)}
             className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors ${
@@ -677,6 +664,12 @@ export default function TransaccionesList({
     return [...map.entries()].sort((a, b) => b[0].localeCompare(a[0]));
   }, [filtered]);
 
+  const originsPresent = useMemo(() => {
+    const set = new Set<string>();
+    for (const t of filtered) set.add(t.payment_method === "banco" ? "banco" : t.payment_method === "efectivo" ? "efectivo" : "socios");
+    return ["banco", "efectivo", "socios"].filter((o) => set.has(o));
+  }, [filtered]);
+
   const allFilteredIds = filtered.map((t) => t.id);
   const allSelected    = allFilteredIds.length > 0 && allFilteredIds.every((id) => selected.has(id));
   const someSelected   = selected.size > 0;
@@ -779,22 +772,32 @@ export default function TransaccionesList({
     URL.revokeObjectURL(url);
   }
 
+  const originLabels: Record<string, string> = { banco: "banco", efectivo: "efectivo", socios: "socios" };
+
   return (
     <div>
-      {/* ── Desktop: KPI bar sticky (reactiva a filtros) ────────────────────── */}
-      <div className="hidden sm:block sm:sticky sm:top-[45px] sm:z-[15] sm:-mx-6 sm:bg-app-bg/95 sm:backdrop-blur-sm sm:border-b sm:border-navy/[0.06] mb-3">
+      {/* ── Desktop: título grande + recuento ────────────────────────────────── */}
+      <div className="hidden sm:flex sm:items-baseline sm:gap-3 sm:mb-4">
+        <h2 className="text-[28px] font-bold text-navy tracking-tight">Movimientos</h2>
+        <span className="text-sm text-navy/40">
+          {filtered.length} movimientos{originsPresent.length > 0 && <> · {originsPresent.map((o) => originLabels[o]).join(" + ")}</>}
+        </span>
+      </div>
+
+      {/* ── Desktop: KPI card ─────────────────────────────────────────────────── */}
+      <div className="hidden sm:block bg-white border border-navy/[0.07] rounded-2xl shadow-card mb-4">
         <div className="flex items-stretch justify-start gap-5 px-6 py-4">
           <div className="flex-initial min-w-[120px]">
             <p className="text-[12px] text-navy/40 uppercase tracking-wider leading-none mb-1 whitespace-nowrap">Entradas</p>
-            <p className="text-[13px] font-semibold text-success tabular-nums truncate">{fmtAmt(totalIn)}</p>
+            <p className="text-[15px] font-semibold text-success tabular-nums truncate">{fmtAmt(totalIn)}</p>
           </div>
           <div className="flex-initial min-w-[120px]">
             <p className="text-[12px] text-navy/40 uppercase tracking-wider leading-none mb-1 whitespace-nowrap">Salidas</p>
-            <p className="text-[13px] font-semibold text-[#B85C3A] tabular-nums truncate">−{fmtAmt(totalOut)}</p>
+            <p className="text-[15px] font-semibold text-[#B85C3A] tabular-nums truncate">−{fmtAmt(totalOut)}</p>
           </div>
           <div className="flex-initial min-w-[120px]">
             <p className="text-[12px] text-navy/40 uppercase tracking-wider leading-none mb-1 whitespace-nowrap">Diferencia</p>
-            <p className={`text-[13px] font-semibold tabular-nums truncate ${neto >= 0 ? "text-navy" : "text-danger"}`}>
+            <p className={`text-[15px] font-semibold tabular-nums truncate ${neto >= 0 ? "text-navy" : "text-danger"}`}>
               {neto < 0 && "−"}{fmtAmt(Math.abs(neto))}
             </p>
           </div>
@@ -807,10 +810,10 @@ export default function TransaccionesList({
           {uncategorizedCount > 0 && (
             <button
               onClick={() => setCatFilters(catFilters.includes("__none__") ? catFilters.filter((v) => v !== "__none__") : [...catFilters, "__none__"])}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors self-center ${
                 catFilters.includes("__none__")
                   ? "bg-warning/10 text-warning/80"
-                  : "bg-navy/[0.04] text-navy/45 hover:bg-navy/[0.06] hover:text-navy/60"
+                  : "bg-warning/10 text-warning/80 hover:bg-warning/15"
               }`}
             >
               <span>⚠</span>
@@ -939,9 +942,18 @@ export default function TransaccionesList({
         </div>
         <DateFilter />
         <CategoryMultiFilter selected={catFilters} categories={categories} onChange={setCatFilters} />
+        <SelectWrapper>
+          <select value={originFilter} onChange={(e) => setOriginFilter(e.target.value)} className={SELECT_CLS}>
+            <option value="all">Origen</option>
+            <option value="banco">CaixaBank</option>
+            <option value="efectivo">Efectivo Aura</option>
+            <option value="victor">Víctor</option>
+            <option value="celia">Celia</option>
+            <option value="olga">Olga</option>
+            <option value="carles">Carles</option>
+          </select>
+        </SelectWrapper>
         <MoreOptionsMenu
-          originFilter={originFilter}
-          setOriginFilter={setOriginFilter}
           onlyRecurring={onlyRecurring}
           setOnlyRecurring={setOnlyRecurring}
           onExport={exportCSV}
@@ -952,13 +964,12 @@ export default function TransaccionesList({
 
       {/* ── Desktop: recuento ─────────────────────────────────────────────────── */}
       <div className="hidden sm:flex items-center gap-3 mb-5">
-        <span className="text-sm text-navy/45">
-          {someSelected
-            ? <>{selected.size} seleccionada{selected.size !== 1 ? "s" : ""} <span className="text-navy/30">de {filtered.length}</span></>
-            : <>{filtered.length} movimientos</>
-          }
-          {isPending && <span className="ml-2 text-xs text-primary/60">Guardando…</span>}
-        </span>
+        {(someSelected || isPending) && (
+          <span className="text-sm text-navy/45">
+            {someSelected && <>{selected.size} seleccionada{selected.size !== 1 ? "s" : ""} <span className="text-navy/30">de {filtered.length}</span></>}
+            {isPending && <span className="ml-2 text-xs text-primary/60">Guardando…</span>}
+          </span>
+        )}
         {(catFilters.length > 0 || originFilter !== "all" || onlyRecurring || currentRange !== "all" || search !== "") && (
           <button
             onClick={() => {
@@ -1265,6 +1276,12 @@ export default function TransaccionesList({
                         <path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15"/>
                       </svg>
                     )}
+                    {t.notes && (
+                      <svg className="shrink-0 text-navy/30" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <title>{t.notes}</title>
+                        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+                      </svg>
+                    )}
                   </div>
                 )}
                 {secondary && (
@@ -1288,8 +1305,21 @@ export default function TransaccionesList({
               </div>
 
               {/* origen */}
-              <div className="w-[120px] shrink-0">
-                <span className="text-xs text-navy/45 whitespace-nowrap">{originLabel(t.payment_method)}</span>
+              <div className="w-[120px] shrink-0 flex items-center gap-1.5 text-navy/40">
+                {t.payment_method === "efectivo" ? (
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                    <rect x="2" y="6" width="20" height="14" rx="2"/><circle cx="12" cy="13" r="3"/><path d="M6 10h.01M18 10h.01"/>
+                  </svg>
+                ) : t.payment_method === "banco" ? (
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                    <path d="M3 21h18M4 21V10l8-6 8 6v11M9 21v-6h6v6"/>
+                  </svg>
+                ) : (
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                    <circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"/>
+                  </svg>
+                )}
+                <span className="text-xs whitespace-nowrap truncate">{originLabel(t.payment_method)}</span>
               </div>
 
               {/* categoría */}
@@ -1326,7 +1356,7 @@ export default function TransaccionesList({
               <div className="w-[120px] shrink-0 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Origen</div>
               <div className="w-[180px] shrink-0 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Categoría</div>
               <SortableHeader label="Fecha" sortKey="date" align="right" className="w-[90px]" currentKey={sortKey} dir={sortDir} onClick={toggleSort} />
-              <SortableHeader label="Importe" sortKey="amount" align="right" className="w-[120px]" currentKey={sortKey} dir={sortDir} onClick={toggleSort} />
+              <SortableHeader label="Importe / Saldo" sortKey="amount" align="right" className="w-[120px]" currentKey={sortKey} dir={sortDir} onClick={toggleSort} />
             </div>
 
             {sortedFiltered.length === 0 ? (
@@ -1337,8 +1367,8 @@ export default function TransaccionesList({
                 {sortedFiltered.map(renderRow)}
               </div>
             ) : (
-              /* Agrupado por mes — más continuo que por día para una pantalla ancha */
-              <div className={`space-y-5 ${isPending ? "opacity-50 pointer-events-none" : ""}`}>
+              /* Agrupado por mes, lista continua (igual que el mockup) */
+              <div className={`bg-white border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden ${isPending ? "opacity-50 pointer-events-none" : ""}`}>
                 {byMonth.map(([monthKey, monthTxns]) => {
                   const monthNet = monthTxns.reduce((s, t) => s + t.amount, 0);
                   const [y, m] = monthKey.split("-");
@@ -1347,15 +1377,13 @@ export default function TransaccionesList({
                     + (parseInt(y) !== new Date().getFullYear() ? ` ${y}` : "");
                   return (
                     <div key={monthKey}>
-                      <div className="flex items-baseline justify-between px-4 mb-1.5">
-                        <span className="text-[13px] font-semibold text-navy">{label}</span>
+                      <div className="flex items-baseline justify-between px-4 py-2 bg-navy/[0.012] border-b border-navy/[0.05]">
+                        <span className="text-sm font-semibold text-navy">{label}</span>
                         <span className="text-xs tabular-nums text-navy/40">
                           {monthNet < 0 ? "−" : "+"}{fmtAmt(Math.abs(monthNet))}
                         </span>
                       </div>
-                      <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden">
-                        {monthTxns.map(renderRow)}
-                      </div>
+                      {monthTxns.map(renderRow)}
                     </div>
                   );
                 })}
