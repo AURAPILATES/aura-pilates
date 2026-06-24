@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { fmt } from "@/lib/analytics";
 import { ChartCard } from "@/components/charts";
 import type { RecurringForecast } from "@/lib/recurring";
@@ -32,18 +33,21 @@ export default function PrevisionGastos({ forecasts, categories }: Props) {
   return (
     <ChartCard
       title="Previsión de gastos recurrentes"
-      subtitle="Próximos pagos detectados automáticamente por importe, contacto y periodicidad"
+      subtitle="Próximos pagos de los gastos recurrentes confirmados en Gastos recurrentes"
       kpiItems={[
         { label: "Próximos 30 días", value: fmt(totalNext30), helper: `${next30.length} pagos previstos` },
-        { label: "Gastos detectados", value: String(forecasts.length), helper: "series recurrentes activas" },
+        { label: "Gastos confirmados", value: String(forecasts.length), helper: "series activas" },
         ...(overdueCount > 0
           ? [{ label: "Vencidos", value: String(overdueCount), valueClassName: "text-warning", helper: "sin registrar aún" }]
           : []),
       ]}
-      dataSource="Detectado por importe, contacto/concepto y periodicidad repetida en los movimientos bancarios"
+      dataSource="Gastos recurrentes confirmados manualmente en /gastos-recurrentes, proyectados por última fecha de pago + periodicidad"
     >
       {forecasts.length === 0 ? (
-        <p className="text-sm text-navy/45 text-center py-6">Sin gastos recurrentes detectados todavía.</p>
+        <p className="text-sm text-navy/45 text-center py-6">
+          Sin gastos recurrentes confirmados todavía.{" "}
+          <Link href="/gastos-recurrentes" className="text-primary hover:underline">Gestionarlos →</Link>
+        </p>
       ) : (
         <div className="divide-y divide-navy/[0.05]">
           {forecasts.map((f) => {
@@ -66,6 +70,9 @@ export default function PrevisionGastos({ forecasts, categories }: Props) {
           })}
         </div>
       )}
+      <div className="pt-3 text-right">
+        <Link href="/gastos-recurrentes" className="text-xs text-primary hover:underline">Gestionar gastos recurrentes →</Link>
+      </div>
     </ChartCard>
   );
 }

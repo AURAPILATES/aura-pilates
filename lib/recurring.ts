@@ -42,7 +42,7 @@ function matchPeriod(days: number): string | null {
   return null;
 }
 
-type RecurringSeries = {
+export type RecurringSeries = {
   key: string;
   label: string;
   category: string | null;
@@ -58,7 +58,7 @@ type RecurringSeries = {
  * pagos se repite siempre con el mismo período (semanal, mensual...). Es la base tanto del
  * badge "recurrente" en Movimientos como de la previsión de gastos en Analítica.
  */
-function findRecurringSeries(transactions: Transaction[]): RecurringSeries[] {
+export function findRecurringSeries(transactions: Transaction[]): RecurringSeries[] {
   const groups = new Map<string, Map<number, Transaction[]>>(); // groupKey → amountCents → txns
 
   for (const t of transactions) {
@@ -129,44 +129,24 @@ export type RecurringForecast = {
   occurrences: number;
 };
 
-/**
- * Proyecta la próxima fecha de pago de cada gasto recurrente detectado (última fecha de
- * pago + período), para previsión de cashflow. Si un gasto lleva más de un período y medio
- * sin volver a aparecer, se asume dado de baja (ej. servicio cancelado) y se excluye en vez
- * de seguir proyectando fechas hacia el futuro indefinidamente.
- */
-export function forecastRecurringExpenses(
-  transactions: Transaction[],
-  referenceDate?: string,
-): RecurringForecast[] {
-  // Ancla a mediodía local: evita que toISOString() (UTC) recorte un día en zonas con offset
-  // positivo (ej. Madrid en verano), donde la medianoche local cae en el día anterior en UTC.
-  const today = referenceDate
+/** Ancla a mediodía local: evita que toISOString() (UTC) recorte un día en zonas con offset
+ * positivo (ej. Madrid en verano), donde la medianoche local cae en el día anterior en UTC. */
+function referenceToday(referenceDate?: string): Date {
+  return referenceDate
     ? new Date(referenceDate + "T12:00:00")
     : (() => { const n = new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate(), 12); })();
-  const result: RecurringForecast[] = [];
-
-  for (const s of findRecurringSeries(transactions)) {
-    const last = s.transactions[s.transactions.length - 1];
-    const lastDate = new Date(last.date + "T12:00:00");
-    const nextDate = new Date(lastDate);
-    nextDate.setDate(nextDate.getDate() + s.periodDays);
-
-    const daysUntil = Math.round((nextDate.getTime() - today.getTime()) / 86_400_000);
-    if (daysUntil < -s.periodDays * 1.5) continue; // probable baja: lleva +1.5 períodos sin pagar
-
-    result.push({
-      key: s.key,
-      label: s.label,
-      category: s.category,
-      period: s.period,
-      amount: s.amount,
-      lastDate: last.date,
-      nextDate: nextDate.toISOString().slice(0, 10),
-      daysUntil,
-      occurrences: s.transactions.length,
-    });
-  }
-
-  return result.sort((a, b) => a.daysUntil - b.daysUntil);
 }
+
+/** Proyecta la próxima fecha de pago a partir de la última fecha conocida + período. */
+export function projectNextDate(
+  lastDate: string,
+  periodDays: number,
+  referenceDate?: string,
+): { nextDate: string; daysUntil: number } {
+  const today = referenceToday(referenceDate);
+  const next = new Date(lastDate + "T12:00:00");
+  next.setDate(next.getDate() + periodDays);
+  const daysUntil = Math.round((next.getTime() - today.getTime()) / 86_400_000);
+  return { nextDate: next.toISOString().slice(0, 10), daysUntil };
+}
+
