@@ -1,5 +1,4 @@
-import { BookOpen } from "react-feather";
-import { fmt, pct } from "@/lib/analytics";
+import { fmt } from "@/lib/analytics";
 import { loadSales, benvingudaConversion, subscriberFirstPurchase } from "@/lib/sales";
 import PrimeraCompra from "./instances/PrimeraCompra";
 import {
@@ -26,7 +25,7 @@ import ResumenFinanzas from "./instances/ResumenFinanzas";
 import VolumenBruto from "./instances/VolumenBruto";
 import FuentesIngreso from "./instances/FuentesIngreso";
 import IngresosPorProducto from "./instances/IngresosPorProducto";
-import EvolucionIngresos from "./instances/EvolucionIngresos";
+import IngresosPorCanal from "./instances/IngresosPorCanal";
 import EvolucionInscritos from "./instances/EvolucionInscritos";
 import Financiacion from "./instances/Financiacion";
 import { loadBudgetsCached, computeSpent } from "@/lib/budgets";
@@ -50,23 +49,6 @@ import SectionNav from "./SectionNav";
 import SectionHeader from "./SectionHeader";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-function Block({ title, legend, children }: {
-  title: string; legend?: string; children: React.ReactNode;
-}) {
-  return (
-    <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
-      <p className="text-xs font-semibold text-navy/55 uppercase tracking-wider mb-4">{title}</p>
-      {children}
-      {legend && (
-        <p className="text-xs text-navy/45 mt-4 pt-3 border-t border-navy/5 leading-relaxed flex items-start gap-1.5">
-          <BookOpen size={12} className="shrink-0 mt-0.5" />
-          {legend}
-        </p>
-      )}
-    </div>
-  );
-}
 
 const PRODUCT_COLORS = ["#6B7ED6","#9260B8","#D4AA35","#4A7A9B","#4A9870","#D46055","#C46890","#3AA09C"];
 const EXPENSE_COLORS = ["#6B7ED6","#9260B8","#D4AA35","#4A7A9B","#4A9870","#D46055","#C46890","#3AA09C","#8878C0"];
@@ -229,11 +211,8 @@ export default async function AnaliticaLoader({
 
   const paymentsBounded = uscLastDate ? pMain.filter((p) => p.date <= uscLastDate) : pMain;
   const productCatalog = catalogFromMomence(membershipsAll, productsAll);
-  const liveProductRevenue = revenueByProductFromStripe(paymentsBounded, productCatalog);
-  const byProduct = [
-    ...liveProductRevenue,
-    ...(uscRevenue > 0 ? [{ item: "Urban", category: "Urban Sports Club", revenue: uscRevenue, count: uscCount }] : []),
-  ].sort((a, b) => b.revenue - a.revenue);
+  const liveProductRevenue = revenueByProductFromStripe(pMain, productCatalog);
+  const byProduct = [...liveProductRevenue].sort((a, b) => b.revenue - a.revenue);
   const byProductTotal = byProduct.reduce((s, p) => s + p.revenue, 0);
 
   const byMethodBounded = stripeByMethod(paymentsBounded);
@@ -512,54 +491,25 @@ export default async function AnaliticaLoader({
               activeSubsCount={activeSubsCount}
               periodLabel={periodLabel}
             />
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <IngresosPorProducto
-                segments={productSegments.map((seg) => ({
-                  item: seg.item, revenue: seg.revenue, count: seg.count, share: seg.share, color: seg.color,
-                }))}
-                total={byProductTotal}
-                rangeLabel={uscLastDateLabel ? `datos hasta ${uscLastDateLabel}` : undefined}
-              />
-              <Block title="Por canal de pago" legend={`Stripe en vivo + Urban Sports Club (Momence CSV)${uscLastDateLabel ? ` · datos hasta ${uscLastDateLabel}` : ""}.`}>
-                {(() => {
-                  const cardRevenueBounded = stripeTotalRevenue(paymentsBounded);
-                  const combinedTotal = cardRevenueBounded + uscRevenue;
-                  const allRows = [
-                    ...byMethodBounded.map((r) => ({ key: r.method, label: r.label, revenue: r.revenue, count: r.count, bar: "bg-primary" })),
-                    ...(uscRevenue > 0 ? [{ key: "usc", label: "Urban Sports Club", revenue: uscRevenue, count: uscCount, bar: "bg-warning" }] : []),
-                  ];
-                  return (
-                    <>
-                      <div className="space-y-4">
-                        {allRows.map((row) => {
-                          const share = combinedTotal > 0 ? row.revenue / combinedTotal : 0;
-                          return (
-                            <div key={row.key}>
-                              <div className="flex items-center justify-between mb-1.5">
-                                <span className="text-xs text-navy">{row.label}</span>
-                                <div className="flex items-center gap-3">
-                                  <span className="text-xs text-navy/55 tabular-nums">{row.count} cobros</span>
-                                  <span className="text-xs font-medium text-navy tabular-nums w-16 text-right">{fmt(row.revenue)}</span>
-                                  <span className="text-xs text-navy/55 w-8 text-right tabular-nums">{pct(share)}</span>
-                                </div>
-                              </div>
-                              <div className="h-1.5 bg-navy/5 rounded-full overflow-hidden">
-                                <div className={`h-full rounded-full ${row.bar}`} style={{ width: pct(share) }} />
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                      <div className="mt-4 pt-3 border-t border-navy/5 flex justify-between">
-                        <span className="text-xs text-navy/55">Total período</span>
-                        <span className="text-xs font-semibold text-navy">{fmt(combinedTotal)}</span>
-                      </div>
-                    </>
-                  );
-                })()}
-              </Block>
-            </div>
-            <EvolucionIngresos sales={toSales(pMain)} monthly={monthlyRevenue} events={businessEvents} rawPayments={pMain} />
+            <IngresosPorProducto
+              segments={productSegments.map((seg) => ({
+                item: seg.item, revenue: seg.revenue, count: seg.count, share: seg.share, color: seg.color,
+              }))}
+              total={byProductTotal}
+              monthly={monthlyRevenue}
+              events={businessEvents}
+              rawPayments={pMain}
+            />
+            <IngresosPorCanal
+              rows={[
+                ...byMethodBounded.map((r) => ({ key: r.method, label: r.label, revenue: r.revenue, count: r.count, bar: "bg-primary" })),
+                ...(uscRevenue > 0 ? [{ key: "usc", label: "Urban Sports Club", revenue: uscRevenue, count: uscCount, bar: "bg-warning" }] : []),
+              ]}
+              combinedTotal={stripeTotalRevenue(paymentsBounded) + uscRevenue}
+              rangeLabel={uscLastDateLabel}
+              monthly={monthlyRevenue}
+              events={businessEvents}
+            />
             <MrrPorTier tiers={mrrByTier} />
           </div>
         </section>

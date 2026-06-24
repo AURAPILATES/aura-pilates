@@ -131,7 +131,7 @@ export function stripeByMonth(payments: StripePayment[]): MonthlyRevenue[] {
 export type MethodRevenue = { method: string; label: string; revenue: number; count: number };
 
 const METHOD_LABELS: Record<string, string> = {
-  card: "Tarjeta",
+  card: "Stripe",
   sepa_debit: "SEPA",
   paypal: "PayPal",
   link: "Link",
