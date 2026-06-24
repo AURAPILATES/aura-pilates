@@ -136,7 +136,7 @@ export default function EvolucionIngresosBody({
   }
 
   return (
-    <div style={{ width: "100%", height: 220 }}>
+    <div style={{ width: "100%", height: 340 }}>
       <ResponsiveContainer width="100%" height="100%">
         <ComposedChart data={rows} margin={{ top: 16, right: 8, bottom: 0, left: 0 }} barGap={2}>
           <CartesianGrid strokeDasharray="4 3" stroke="rgba(28,25,23,0.07)" vertical={false} />
