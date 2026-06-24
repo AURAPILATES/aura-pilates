@@ -776,14 +776,6 @@ export default function TransaccionesList({
 
   return (
     <div>
-      {/* ── Desktop: título grande + recuento ────────────────────────────────── */}
-      <div className="hidden sm:flex sm:items-baseline sm:gap-3 sm:mb-4">
-        <h2 className="text-[28px] font-bold text-navy tracking-tight">Movimientos</h2>
-        <span className="text-sm text-navy/40">
-          {filtered.length} movimientos{originsPresent.length > 0 && <> · {originsPresent.map((o) => originLabels[o]).join(" + ")}</>}
-        </span>
-      </div>
-
       {/* ── Desktop: KPI card ─────────────────────────────────────────────────── */}
       <div className="hidden sm:block bg-white border border-navy/[0.07] rounded-2xl shadow-card mb-4">
         <div className="flex items-stretch justify-start gap-5 px-6 py-4">
@@ -964,12 +956,13 @@ export default function TransaccionesList({
 
       {/* ── Desktop: recuento ─────────────────────────────────────────────────── */}
       <div className="hidden sm:flex items-center gap-3 mb-5">
-        {(someSelected || isPending) && (
-          <span className="text-sm text-navy/45">
-            {someSelected && <>{selected.size} seleccionada{selected.size !== 1 ? "s" : ""} <span className="text-navy/30">de {filtered.length}</span></>}
-            {isPending && <span className="ml-2 text-xs text-primary/60">Guardando…</span>}
-          </span>
-        )}
+        <span className="text-sm text-navy/45">
+          {someSelected
+            ? <>{selected.size} seleccionada{selected.size !== 1 ? "s" : ""} <span className="text-navy/30">de {filtered.length}</span></>
+            : <>{filtered.length} movimientos{originsPresent.length > 0 && <> · {originsPresent.map((o) => originLabels[o]).join(" + ")}</>}</>
+          }
+          {isPending && <span className="ml-2 text-xs text-primary/60">Guardando…</span>}
+        </span>
         {(catFilters.length > 0 || originFilter !== "all" || onlyRecurring || currentRange !== "all" || search !== "") && (
           <button
             onClick={() => {
@@ -1319,7 +1312,7 @@ export default function TransaccionesList({
                     <circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"/>
                   </svg>
                 )}
-                <span className="text-xs whitespace-nowrap truncate">{originLabel(t.payment_method)}</span>
+                <span className="text-xs leading-none whitespace-nowrap truncate">{originLabel(t.payment_method)}</span>
               </div>
 
               {/* categoría */}
