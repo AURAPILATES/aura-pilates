@@ -30,7 +30,7 @@ const extIcon = (
   </svg>
 );
 
-function CustomerRowItem({ c }: { c: EnrichedCustomer }) {
+function CustomerRowItem({ c, showError }: { c: EnrichedCustomer; showError?: boolean }) {
   const latestId = c.stripeIds[c.stripeIds.length - 1];
   return (
     <div className="px-6 py-4 flex items-center justify-between gap-4 hover:bg-navy/[0.015] transition-colors">
@@ -43,6 +43,9 @@ function CustomerRowItem({ c }: { c: EnrichedCustomer }) {
           </span>
           <span className="text-xs font-semibold text-navy">{fmt(c.totalSpent)}</span>
         </div>
+        {showError && c.paymentErrorReason && (
+          <p className="text-xs text-danger mt-1">{c.paymentErrorReason}</p>
+        )}
       </div>
       <a
         href={`https://dashboard.stripe.com/customers/${latestId}`}
@@ -280,7 +283,7 @@ export default function AnaliticaKPIs({
                 {allCustomers.length === 0 && (
                   <p className="px-6 py-12 text-center text-sm text-navy/40">Sin clientes en este grupo.</p>
                 )}
-                {allCustomers.map((c) => <CustomerRowItem key={c.id} c={c} />)}
+                {allCustomers.map((c) => <CustomerRowItem key={c.id} c={c} showError={drawer === "error"} />)}
               </div>
             )}
           </Drawer>
