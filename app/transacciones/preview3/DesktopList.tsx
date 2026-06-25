@@ -974,33 +974,6 @@ export default function TransaccionesList({
         )}
       </div>
 
-      {/* ── Desktop: month strip, estilo Revolut (igual que mobile) ─────────── */}
-      <div className="hidden sm:flex gap-1.5 overflow-x-auto scrollbar-none mb-4">
-        <button
-          onClick={() => router.push(pathname)}
-          className={`shrink-0 px-3.5 py-1.5 rounded-full text-sm transition-colors whitespace-nowrap ${
-            !activeMonth ? "bg-navy text-white font-medium" : "text-navy/40 hover:text-navy/70"
-          }`}
-        >
-          Todo
-        </button>
-        {monthStrip.map(({ key, label, year }) => {
-          const isActive = key === activeMonth;
-          const showYear = year !== new Date().getFullYear();
-          return (
-            <button
-              key={key}
-              onClick={() => goToMonth(key)}
-              className={`shrink-0 px-3.5 py-1.5 rounded-full text-sm transition-colors capitalize whitespace-nowrap ${
-                isActive ? "bg-navy text-white font-medium" : "text-navy/40 hover:text-navy/70"
-              }`}
-            >
-              {label}{showYear && <span className="text-[10px] ml-0.5 opacity-60">{year}</span>}
-            </button>
-          );
-        })}
-      </div>
-
       {/* ── Mobile: toolbar ────────────────────────────────────────────────── */}
       <div className="sm:hidden mb-3">
         {(catFilters.length > 0 || originFilter !== "all" || onlyRecurring || currentRange !== "all" || search !== "") && (
