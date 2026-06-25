@@ -776,7 +776,7 @@ export default function TransaccionesList({
 
   return (
     <div>
-      {/* ── Desktop: KPI card ─────────────────────────────────────────────────── */}
+      {/* ── Desktop: KPI card (doble función: stats globales o de la selección) ── */}
       <div className="hidden sm:block bg-white border border-navy/[0.07] rounded-2xl shadow-card mb-4">
         <div className="flex items-stretch justify-start gap-5 px-6 py-4">
           <div className="flex-initial min-w-[120px]">
@@ -788,18 +788,24 @@ export default function TransaccionesList({
             <p className="text-[15px] font-semibold text-[#B85C3A] tabular-nums truncate">−{fmtAmt(totalOut)}</p>
           </div>
           <div className="flex-initial min-w-[120px]">
-            <p className="text-[12px] text-navy/40 uppercase tracking-wider leading-none mb-1 whitespace-nowrap">Diferencia</p>
+            <p className="text-[12px] text-navy/40 uppercase tracking-wider leading-none mb-1 whitespace-nowrap">{someSelected ? "Neto selección" : "Diferencia"}</p>
             <p className={`text-[15px] font-semibold tabular-nums truncate ${neto >= 0 ? "text-navy" : "text-danger"}`}>
               {neto < 0 && "−"}{fmtAmt(Math.abs(neto))}
             </p>
           </div>
-          {totalIn > 0 && (
+          <div className="flex-initial min-w-[120px]">
+            <p className="text-[12px] text-navy/40 uppercase tracking-wider leading-none mb-1 whitespace-nowrap">{someSelected ? "Seleccionados" : "Movimientos"}</p>
+            <p className={`text-[15px] font-semibold tabular-nums truncate ${someSelected ? "text-primary" : "text-navy"}`}>
+              {someSelected ? `${selected.size} mov.` : filtered.length}
+            </p>
+          </div>
+          {!someSelected && totalIn > 0 && (
             <span className="flex items-center text-xs text-navy/35 tabular-nums">
               margen {(neto / totalIn * 100).toFixed(1).replace(".", ",")}%
             </span>
           )}
           <div className="flex-1" />
-          {uncategorizedCount > 0 && (
+          {!someSelected && uncategorizedCount > 0 && (
             <button
               onClick={() => setCatFilters(catFilters.includes("__none__") ? catFilters.filter((v) => v !== "__none__") : [...catFilters, "__none__"])}
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors self-center ${
@@ -956,13 +962,10 @@ export default function TransaccionesList({
 
       {/* ── Desktop: recuento ─────────────────────────────────────────────────── */}
       <div className="hidden sm:flex items-center gap-3 mb-5">
-        <span className="text-sm text-navy/45">
-          {someSelected
-            ? <>{selected.size} seleccionada{selected.size !== 1 ? "s" : ""} <span className="text-navy/30">de {filtered.length}</span></>
-            : <>{filtered.length} movimientos{originsPresent.length > 0 && <> · {originsPresent.map((o) => originLabels[o]).join(" + ")}</>}</>
-          }
-          {isPending && <span className="ml-2 text-xs text-primary/60">Guardando…</span>}
-        </span>
+        {!someSelected && originsPresent.length > 0 && (
+          <span className="text-sm text-navy/45">{originsPresent.map((o) => originLabels[o]).join(" + ")}</span>
+        )}
+        {isPending && <span className="text-xs text-primary/60">Guardando…</span>}
         {(catFilters.length > 0 || originFilter !== "all" || onlyRecurring || currentRange !== "all" || search !== "") && (
           <button
             onClick={() => {
