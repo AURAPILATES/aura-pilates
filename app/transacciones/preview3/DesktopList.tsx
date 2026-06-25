@@ -664,12 +664,6 @@ export default function TransaccionesList({
     return [...map.entries()].sort((a, b) => b[0].localeCompare(a[0]));
   }, [filtered]);
 
-  const originsPresent = useMemo(() => {
-    const set = new Set<string>();
-    for (const t of filtered) set.add(t.payment_method === "banco" ? "banco" : t.payment_method === "efectivo" ? "efectivo" : "socios");
-    return ["banco", "efectivo", "socios"].filter((o) => set.has(o));
-  }, [filtered]);
-
   const allFilteredIds = filtered.map((t) => t.id);
   const allSelected    = allFilteredIds.length > 0 && allFilteredIds.every((id) => selected.has(id));
   const someSelected   = selected.size > 0;
@@ -772,8 +766,6 @@ export default function TransaccionesList({
     URL.revokeObjectURL(url);
   }
 
-  const originLabels: Record<string, string> = { banco: "banco", efectivo: "efectivo", socios: "socios" };
-
   return (
     <div>
       {/* ── Desktop: KPI card (doble función: stats globales o de la selección) ── */}
@@ -793,12 +785,12 @@ export default function TransaccionesList({
               {neto < 0 && "−"}{fmtAmt(Math.abs(neto))}
             </p>
           </div>
-          <div className="flex-initial min-w-[120px]">
-            <p className="text-[12px] text-navy/40 uppercase tracking-wider leading-none mb-1 whitespace-nowrap">{someSelected ? "Seleccionados" : "Movimientos"}</p>
-            <p className={`text-[15px] font-semibold tabular-nums truncate ${someSelected ? "text-primary" : "text-navy"}`}>
-              {someSelected ? `${selected.size} mov.` : filtered.length}
-            </p>
-          </div>
+          {someSelected && (
+            <div className="flex-initial min-w-[120px]">
+              <p className="text-[12px] text-navy/40 uppercase tracking-wider leading-none mb-1 whitespace-nowrap">Seleccionados</p>
+              <p className="text-[15px] font-semibold text-primary tabular-nums truncate">{selected.size} mov.</p>
+            </div>
+          )}
           {!someSelected && totalIn > 0 && (
             <span className="flex items-center text-xs text-navy/35 tabular-nums">
               margen {(neto / totalIn * 100).toFixed(1).replace(".", ",")}%
@@ -962,8 +954,8 @@ export default function TransaccionesList({
 
       {/* ── Desktop: recuento ─────────────────────────────────────────────────── */}
       <div className="hidden sm:flex items-center gap-3 mb-5">
-        {!someSelected && originsPresent.length > 0 && (
-          <span className="text-sm text-navy/45">{originsPresent.map((o) => originLabels[o]).join(" + ")}</span>
+        {!someSelected && (
+          <span className="text-sm text-navy/45">{filtered.length} movimientos</span>
         )}
         {isPending && <span className="text-xs text-primary/60">Guardando…</span>}
         {(catFilters.length > 0 || originFilter !== "all" || onlyRecurring || currentRange !== "all" || search !== "") && (
