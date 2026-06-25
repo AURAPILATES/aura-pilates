@@ -1213,8 +1213,8 @@ export default function TransaccionesList({
           const primary    = t.contact || t.concept || "—";
           const secondary  = t.contact && t.concept && t.concept !== t.contact ? t.concept : null;
           const cat        = t.category ? categories.find((c) => c.value === t.category) : undefined;
-          const accent     = cat?.text_color ?? (t.amount > 0 ? FALLBACK_COLOR.in : FALLBACK_COLOR.out);
-          const iconKey    = cat?.emoji ?? (t.amount > 0 ? FALLBACK_ICON.in : FALLBACK_ICON.out);
+          const accent     = cat ? cat.text_color : CAT_FALLBACK.color;
+          const iconKey    = cat ? cat.emoji : CAT_FALLBACK.emoji;
 
           return (
             <div
