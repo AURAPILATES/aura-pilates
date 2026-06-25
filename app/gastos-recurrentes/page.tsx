@@ -17,6 +17,15 @@ export default async function GastosRecurrentesPage() {
   const seriesByKey = new Map(series.map((s) => [s.key, s]));
   const expenseByKey = new Map(expenses.map((e) => [e.key, e]));
 
+  // Filtra gastos ya confirmados/ignorados antes de este fix cuya categoría sea de
+  // ingreso (p. ej. "Ingresos Stripe"), para que no sigan apareciendo aunque ya
+  // estuvieran guardados en recurring_expenses.
+  const nonOperationalLabels = new Set(
+    categories.filter((c) => c.group_type !== "operational").map((c) => c.label),
+  );
+  const isExpenseRow = (e: { category: string | null }) =>
+    !e.category || !nonOperationalLabels.has(e.category);
+
   const pending: PendingSeriesRow[] = series
     .filter((s) => !expenseByKey.has(s.key))
     .map((s) => ({
@@ -31,7 +40,7 @@ export default async function GastosRecurrentesPage() {
     }));
 
   const confirmed: ConfirmedExpenseRow[] = expenses
-    .filter((e) => e.status === "confirmed")
+    .filter((e) => e.status === "confirmed" && isExpenseRow(e))
     .map((e) => {
       const s = seriesByKey.get(e.key);
       const lastDate = s ? s.transactions[s.transactions.length - 1].date : null;
@@ -46,7 +55,7 @@ export default async function GastosRecurrentesPage() {
     })
     .sort((a, b) => (a.daysUntil ?? Infinity) - (b.daysUntil ?? Infinity));
 
-  const archived = expenses.filter((e) => e.status !== "confirmed");
+  const archived = expenses.filter((e) => e.status !== "confirmed" && isExpenseRow(e));
 
   return (
     <div>
