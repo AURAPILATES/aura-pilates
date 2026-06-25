@@ -1,9 +1,10 @@
 "use server";
 import { createServerClient } from "@/lib/supabase";
-import { revalidateTag } from "next/cache";
-import type { PaymentMethod } from "@/lib/transactions";
+import { revalidatePath, revalidateTag } from "next/cache";
+import type { PaymentMethod, Transaction } from "@/lib/transactions";
 import { loadCategories, type Category } from "@/lib/categories";
 import { contactKeyFor } from "@/lib/contactRules";
+import { PERIOD_BUCKETS, displayLabel, seriesKeyFor } from "@/lib/recurring";
 
 export type ImportRow = {
   date: string;
@@ -451,4 +452,50 @@ export async function updateTransactionPaymentMethod(id: string, paymentMethod: 
     .eq("id", id);
   if (error) throw new Error(error.message);
   revalidateTag("transactions");
+}
+
+/** Da de alta un gasto recurrente a partir de un único movimiento, sin esperar a que el
+ * heurístico detecte 2+ pagos. Usa la misma "key" (contacto/concepto + importe) que
+ * `findRecurringSeries`, así que si más adelante aparecen más pagos coincidentes se
+ * enlazan con esta misma fila en vez de crear un pendiente duplicado. */
+export async function createRecurringExpenseFromTransaction(
+  transactionId: string,
+  period: string,
+  ivaRate: number,
+  retencionRate: number,
+): Promise<void> {
+  const bucket = PERIOD_BUCKETS.find((b) => b.label === period);
+  if (!bucket) throw new Error("Periodo inválido");
+
+  const supabase = createServerClient();
+  const { data: t, error } = await supabase
+    .from("transactions")
+    .select("*")
+    .eq("id", transactionId)
+    .single();
+  if (error || !t) throw new Error(error?.message ?? "Movimiento no encontrado");
+
+  const key = seriesKeyFor(t as Transaction);
+  if (!key) throw new Error("El movimiento no tiene contacto ni concepto para agruparlo");
+
+  const { error: upsertError } = await supabase.from("recurring_expenses").upsert(
+    {
+      key,
+      label: displayLabel(t as Transaction),
+      category: t.category,
+      period,
+      period_days: bucket.days,
+      amount: t.amount,
+      iva_rate: ivaRate,
+      retencion_rate: retencionRate,
+      status: "confirmed",
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "key" },
+  );
+  if (upsertError) throw new Error(upsertError.message);
+
+  revalidateTag("recurring_expenses");
+  revalidatePath("/gastos-recurrentes");
+  revalidatePath("/analitica");
 }

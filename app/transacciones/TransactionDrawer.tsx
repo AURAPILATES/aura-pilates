@@ -1,9 +1,12 @@
 "use client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Drawer from "@/app/components/Drawer";
 import type { Transaction, PaymentMethod } from "@/lib/transactions";
 import type { Category } from "@/lib/categories";
+import { PERIOD_BUCKETS } from "@/lib/recurring";
 import { CategoryPill, SourceAvatar } from "./TransaccionesList";
+import { createRecurringExpenseFromTransaction } from "./actions";
 
 const PAYMENT_METHOD_OPTIONS: { value: PaymentMethod; label: string }[] = [
   { value: "efectivo", label: "Efectivo Aura" },
@@ -61,6 +64,65 @@ function NotesField({ value, onSave }: { value: string; onSave: (v: string) => v
         rows={3}
         className="w-full text-sm text-navy border border-navy/[0.12] rounded-lg px-3 py-2 outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15 transition resize-none"
       />
+    </div>
+  );
+}
+
+function MarkRecurringControl({ transactionId }: { transactionId: string }) {
+  const [open, setOpen] = useState(false);
+  const [period, setPeriod] = useState("mensual");
+  const [saving, setSaving] = useState(false);
+  const [done, setDone] = useState(false);
+  const router = useRouter();
+
+  async function confirm() {
+    setSaving(true);
+    try {
+      await createRecurringExpenseFromTransaction(transactionId, period, 21, 0);
+      setDone(true);
+      router.refresh();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (done) {
+    return <p className="text-xs text-primary/70">Dado de alta como gasto recurrente {period}. Ajusta IVA/retención en Gastos recurrentes.</p>;
+  }
+
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        className="text-xs font-medium text-primary/70 hover:text-primary transition-colors self-start"
+      >
+        + Marcar como gasto recurrente
+      </button>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2 flex-wrap">
+      <label className="text-xs text-navy/45">Periodicidad</label>
+      <select
+        value={period}
+        onChange={(e) => setPeriod(e.target.value)}
+        className="text-sm border border-navy/[0.12] rounded-lg px-2 py-1.5 outline-none focus:border-primary/50"
+      >
+        {PERIOD_BUCKETS.map((b) => (
+          <option key={b.label} value={b.label}>{b.label}</option>
+        ))}
+      </select>
+      <button
+        onClick={confirm}
+        disabled={saving}
+        className="px-3 py-1.5 text-xs font-semibold text-white bg-navy rounded-lg hover:bg-navy/85 transition-colors disabled:opacity-40"
+      >
+        Confirmar
+      </button>
+      <button onClick={() => setOpen(false)} className="text-xs text-navy/45 hover:text-navy transition-colors">
+        Cancelar
+      </button>
     </div>
   );
 }
@@ -144,6 +206,8 @@ export default function TransactionDrawer({
           <p className="text-[11px] text-navy/40 uppercase tracking-wider mb-1.5">Categoría</p>
           <CategoryPill category={t.category} categories={categories} onChange={(cat) => onUpdateCategory(t.id, cat)} />
         </div>
+
+        {t.amount < 0 && !recurringPeriod && <MarkRecurringControl transactionId={t.id} />}
 
         <div className="grid grid-cols-2 gap-4 pt-2 border-t border-navy/[0.06]">
           <div>

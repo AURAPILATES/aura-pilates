@@ -21,12 +21,22 @@ function groupKey(t: Transaction): string | null {
   return concept ? `n:${concept}` : null;
 }
 
-function displayLabel(t: Transaction): string {
+export function displayLabel(t: Transaction): string {
   return t.contact?.trim() || t.concept?.trim() || "Sin nombre";
 }
 
+/** Misma clave que agrupa series en `findRecurringSeries`, para poder dar de alta
+ * manualmente un gasto recurrente desde un único movimiento (sin esperar a que el
+ * heurístico detecte 2+ pagos). Null si el movimiento no tiene contacto ni concepto. */
+export function seriesKeyFor(t: Transaction): string | null {
+  const key = groupKey(t);
+  if (!key) return null;
+  const amountCents = Math.round(Math.abs(t.amount) * 100);
+  return `${key}:${amountCents}`;
+}
+
 // período → {días esperados, tolerancia en días}
-const PERIOD_BUCKETS: { label: string; days: number; tolerance: number }[] = [
+export const PERIOD_BUCKETS: { label: string; days: number; tolerance: number }[] = [
   { label: "semanal",    days: 7,   tolerance: 2 },
   { label: "quincenal",  days: 14,  tolerance: 3 },
   { label: "mensual",    days: 30,  tolerance: 4 },

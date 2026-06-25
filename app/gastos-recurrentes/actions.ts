@@ -29,7 +29,7 @@ export async function recordRecurringExpense(
 
 export async function updateRecurringExpense(
   id: number,
-  data: { amount?: number; iva_rate?: number; retencion_rate?: number; notes?: string | null },
+  data: { amount?: number; iva_rate?: number; retencion_rate?: number; notes?: string | null; period?: string; period_days?: number },
 ) {
   const supabase = createServerClient();
   const { error } = await supabase

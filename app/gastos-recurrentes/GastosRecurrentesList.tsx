@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ChartCard } from "@/components/charts";
 import type { Category } from "@/lib/categories";
 import { categoryDisplayLabel } from "@/lib/categories";
+import { PERIOD_BUCKETS } from "@/lib/recurring";
 import type { RecurringExpense } from "@/lib/recurringExpenses";
 import { recordRecurringExpense, updateRecurringExpense, setRecurringExpenseStatus, deleteRecurringExpense } from "./actions";
 
@@ -73,11 +74,13 @@ function RateInput({ value, onSave }: { value: number; onSave: (v: number) => vo
 }
 
 function PendingRow({ row, categories }: { row: PendingSeriesRow; categories: Category[] }) {
+  const [period, setPeriod] = useState(row.period);
   const [ivaRate, setIvaRate] = useState("21");
   const [retencionRate, setRetencionRate] = useState("0");
   const [saving, setSaving] = useState(false);
   const router = useRouter();
   const catLabel = row.category ? categories.find((c) => c.value === row.category) : null;
+  const periodDays = PERIOD_BUCKETS.find((b) => b.label === period)?.days ?? row.periodDays;
 
   async function handle(status: "confirmed" | "ignored") {
     setSaving(true);
@@ -87,8 +90,8 @@ function PendingRow({ row, categories }: { row: PendingSeriesRow; categories: Ca
           key: row.key,
           label: row.label,
           category: row.category,
-          period: row.period,
-          period_days: row.periodDays,
+          period,
+          period_days: periodDays,
           amount: row.amount,
           iva_rate: status === "confirmed" ? parseFloat(ivaRate.replace(",", ".")) || 0 : 0,
           retencion_rate: status === "confirmed" ? parseFloat(retencionRate.replace(",", ".")) || 0 : 0,
@@ -106,10 +109,19 @@ function PendingRow({ row, categories }: { row: PendingSeriesRow; categories: Ca
       <div className="min-w-0">
         <p className="text-sm font-medium text-navy truncate">{row.label}</p>
         <p className="text-xs text-navy/45 truncate">
-          {row.period}{catLabel ? ` · ${categoryDisplayLabel(catLabel, categories)}` : ""} · {row.occurrences} pagos · último {fmtDate(row.lastDate)} · {fmtEUR(Math.abs(row.amount))}
+          detectado {row.period}{catLabel ? ` · ${categoryDisplayLabel(catLabel, categories)}` : ""} · {row.occurrences} pagos · último {fmtDate(row.lastDate)} · {fmtEUR(Math.abs(row.amount))}
         </p>
       </div>
       <div className="flex items-center gap-2 shrink-0">
+        <select
+          value={period}
+          onChange={(e) => setPeriod(e.target.value)}
+          className="text-sm border border-navy/[0.12] rounded-md px-1.5 py-1 focus:outline-none focus:border-primary/40"
+        >
+          {PERIOD_BUCKETS.map((b) => (
+            <option key={b.label} value={b.label}>{b.label}</option>
+          ))}
+        </select>
         <label className="text-xs text-navy/45">IVA %</label>
         <input
           type="text" inputMode="decimal" value={ivaRate} onChange={(e) => setIvaRate(e.target.value)}
@@ -160,11 +172,23 @@ function ConfirmedRow({ row, categories }: { row: ConfirmedExpenseRow; categorie
       <div className="min-w-0">
         <p className="text-sm font-medium text-navy truncate">{e.label}</p>
         <p className="text-xs text-navy/45 truncate">
-          {e.period}{catLabel ? ` · ${categoryDisplayLabel(catLabel, categories)}` : ""} · {row.occurrences} pagos
+          {catLabel ? categoryDisplayLabel(catLabel, categories) : "Sin categoría"} · {row.occurrences} pagos
           {row.lastDate ? ` · último ${fmtDate(row.lastDate)}` : ""}
         </p>
       </div>
       <div className="flex items-center gap-3 shrink-0">
+        <select
+          value={e.period}
+          onChange={(ev) => {
+            const days = PERIOD_BUCKETS.find((b) => b.label === ev.target.value)?.days ?? e.period_days;
+            save({ period: ev.target.value, period_days: days });
+          }}
+          className="text-sm border border-navy/[0.12] rounded-md px-1.5 py-1 focus:outline-none focus:border-primary/40"
+        >
+          {PERIOD_BUCKETS.map((b) => (
+            <option key={b.label} value={b.label}>{b.label}</option>
+          ))}
+        </select>
         <div className="flex items-center gap-1.5">
           <span className="text-xs text-navy/45">IVA</span>
           <RateInput value={e.iva_rate} onSave={(v) => save({ iva_rate: v })} />
