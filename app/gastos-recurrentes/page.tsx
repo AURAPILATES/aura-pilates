@@ -13,7 +13,7 @@ export default async function GastosRecurrentesPage() {
     loadRecurringExpensesCached(),
   ]);
 
-  const series = findRecurringSeries(transactions);
+  const series = findRecurringSeries(transactions, categories);
   const seriesByKey = new Map(series.map((s) => [s.key, s]));
   const expenseByKey = new Map(expenses.map((e) => [e.key, e]));
 

@@ -341,7 +341,7 @@ export default async function AnaliticaLoader({
   ];
 
   // ── Clientela (composición, altas, riesgo de baja) ───────────────────────
-  const recurringForecasts = forecastConfirmedExpenses(recurringExpenses, txnsAll);
+  const recurringForecasts = forecastConfirmedExpenses(recurringExpenses, txnsAll, undefined, dbCategories);
 
   const firstPaymentMap = new Map<string, string>();
   for (const p of paymentsAll) {

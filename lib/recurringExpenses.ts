@@ -2,6 +2,7 @@ import { createServerClient } from "@/lib/supabase";
 import { unstable_cache } from "next/cache";
 import { findRecurringSeries, projectNextDate, type RecurringForecast } from "@/lib/recurring";
 import type { Transaction } from "@/lib/transactions";
+import type { Category } from "@/lib/categories";
 
 export type RecurringExpenseStatus = "confirmed" | "ignored" | "cancelled";
 
@@ -46,8 +47,9 @@ export function forecastConfirmedExpenses(
   expenses: RecurringExpense[],
   transactions: Transaction[],
   referenceDate?: string,
+  categories?: Category[],
 ): RecurringForecast[] {
-  const seriesByKey = new Map(findRecurringSeries(transactions).map((s) => [s.key, s]));
+  const seriesByKey = new Map(findRecurringSeries(transactions, categories).map((s) => [s.key, s]));
   const result: RecurringForecast[] = [];
 
   for (const e of expenses) {

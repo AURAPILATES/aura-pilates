@@ -1,4 +1,5 @@
 import type { Transaction } from "./transactions";
+import type { Category } from "./categories";
 
 const MONTH_NAMES_RE = /\b(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)\b/g;
 
@@ -57,12 +58,20 @@ export type RecurringSeries = {
  * contacto) + importe exacto, y se queda con los grupos cuya separación temporal entre
  * pagos se repite siempre con el mismo período (semanal, mensual...). Es la base tanto del
  * badge "recurrente" en Movimientos como de la previsión de gastos en Analítica.
+ *
+ * Si se pasan `categories`, se excluyen los movimientos cuya categoría no sea de tipo
+ * "operational" (p. ej. "Ingresos Stripe" es income, no un gasto, aunque a veces tenga
+ * importe negativo por cómo se registra el cobro/comisión).
  */
-export function findRecurringSeries(transactions: Transaction[]): RecurringSeries[] {
+export function findRecurringSeries(transactions: Transaction[], categories?: Category[]): RecurringSeries[] {
   const groups = new Map<string, Map<number, Transaction[]>>(); // groupKey → amountCents → txns
+  const nonOperationalLabels = categories
+    ? new Set(categories.filter((c) => c.group_type !== "operational").map((c) => c.label))
+    : null;
 
   for (const t of transactions) {
     if (t.amount >= 0) continue;
+    if (t.category && nonOperationalLabels?.has(t.category)) continue;
     const key = groupKey(t);
     if (!key) continue;
     const amountCents = Math.round(Math.abs(t.amount) * 100);
@@ -109,9 +118,9 @@ export function findRecurringSeries(transactions: Transaction[]): RecurringSerie
  * temporal que se repite siempre con el mismo período (semanal, mensual...).
  * Devuelve un mapa id de transacción → período detectado.
  */
-export function detectRecurringTransactions(transactions: Transaction[]): Map<string, string> {
+export function detectRecurringTransactions(transactions: Transaction[], categories?: Category[]): Map<string, string> {
   const result = new Map<string, string>();
-  for (const s of findRecurringSeries(transactions)) {
+  for (const s of findRecurringSeries(transactions, categories)) {
     for (const t of s.transactions) result.set(t.id, s.period);
   }
   return result;
