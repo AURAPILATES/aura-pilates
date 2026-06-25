@@ -98,6 +98,40 @@ export async function getContactRules(): Promise<ContactRule[]> {
   }));
 }
 
+export async function createContactRule(input: {
+  contactKey: string;
+  label: string;
+  category: string | null;
+  ivaRate: number;
+  retencionRate: number;
+}): Promise<ContactRule> {
+  const supabase = createServerClient();
+  const { data, error } = await supabase
+    .from("contact_rules")
+    .upsert(
+      {
+        contact_key: input.contactKey,
+        label: input.label,
+        category: input.category,
+        iva_rate: input.ivaRate,
+        retencion_rate: input.retencionRate,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "contact_key" },
+    )
+    .select("id, contact_key, label, category, iva_rate, retencion_rate")
+    .single();
+  if (error) throw new Error(error.message);
+  return {
+    id: data.id,
+    contactKey: data.contact_key,
+    label: data.label,
+    category: data.category,
+    ivaRate: data.iva_rate,
+    retencionRate: data.retencion_rate,
+  };
+}
+
 export async function updateContactRule(
   id: number,
   patch: { label?: string; category?: string | null; ivaRate?: number; retencionRate?: number },
