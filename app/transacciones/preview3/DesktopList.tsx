@@ -1300,28 +1300,17 @@ export default function TransaccionesList({
               </div>
 
               {/* origen */}
-              <div className="w-[120px] shrink-0 flex items-center gap-1 text-navy/40">
+              <div className="w-[120px] shrink-0 flex items-center gap-1.5 text-navy/40">
                 {t.payment_method === "efectivo" ? (
-                  /* ti-wallet */
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                    <path d="M17 8v-3a1 1 0 0 0 -1 -1h-11a2 2 0 0 0 0 4h12a1 1 0 0 1 1 1v3"/>
-                    <path d="M20 12v4h-4a2 2 0 0 1 0 -4h4"/>
-                    <path d="M5 8v10a2 2 0 0 0 2 2h12a1 1 0 0 0 1 -1v-3"/>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                    <rect x="2" y="6" width="20" height="14" rx="2"/><circle cx="12" cy="13" r="3"/><path d="M6 10h.01M18 10h.01"/>
                   </svg>
                 ) : t.payment_method === "banco" ? (
-                  /* ti-building-bank */
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                    <path d="M3 21l18 0"/>
-                    <path d="M3 10l18 0"/>
-                    <path d="M5 6l7 -3l7 3"/>
-                    <path d="M4 10l0 11"/>
-                    <path d="M20 10l0 11"/>
-                    <path d="M8 14l0 3"/>
-                    <path d="M12 14l0 3"/>
-                    <path d="M16 14l0 3"/>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                    <path d="M3 21h18M4 21V10l8-6 8 6v11M9 21v-6h6v6"/>
                   </svg>
                 ) : (
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
                     <circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"/>
                   </svg>
                 )}
