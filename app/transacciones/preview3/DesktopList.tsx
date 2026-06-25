@@ -1217,7 +1217,6 @@ export default function TransaccionesList({
       {/* ── Desktop: lista estilo Revolut (misma identidad visual que mobile) ── */}
       {(() => {
         const renderRow = (t: Transaction) => {
-          const recurringPeriod = recurringPeriods[t.id];
           const isSelected = selected.has(t.id);
           const primary    = t.contact || t.concept || "—";
           const secondary  = t.contact && t.concept && t.concept !== t.contact ? t.concept : null;
@@ -1266,11 +1265,6 @@ export default function TransaccionesList({
                       className="text-[13px] font-medium text-navy truncate cursor-pointer hover:text-navy/70 transition-colors"
                       onClick={() => startEditing(t, "primary")}
                     >{primary}</span>
-                    {recurringPeriod && (
-                      <span className="shrink-0 px-1.5 py-0.5 rounded-full bg-navy/[0.05] text-[10px] font-medium text-navy/40 whitespace-nowrap">
-                        {recurringPeriod}
-                      </span>
-                    )}
                     {t.notes && (
                       <svg className="shrink-0 text-navy/30" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                         <title>{t.notes}</title>
