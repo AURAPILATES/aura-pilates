@@ -1,4 +1,5 @@
 import { createServerClient } from "./supabase";
+import { sendSyncFailureAlert } from "./alertEmail";
 
 export type SyncSource = "momence_events" | "momence_subscribers";
 
@@ -20,6 +21,10 @@ export async function logSyncRun(
     });
   } catch (e) {
     console.error(`logSyncRun(${source}) failed:`, e);
+  }
+
+  if (!result.ok) {
+    await sendSyncFailureAlert(source, result.error);
   }
 }
 
