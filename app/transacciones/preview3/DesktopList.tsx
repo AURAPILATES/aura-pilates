@@ -1261,16 +1261,15 @@ export default function TransaccionesList({
                     <EditConfirmButtons onConfirm={saveEdit} onCancel={() => setEditingField(null)} />
                   </div>
                 ) : (
-                  <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
+                  <div className="flex items-center gap-1 min-w-0 overflow-hidden">
                     <span
                       className="text-[13px] font-medium text-navy truncate cursor-pointer hover:text-navy/70 transition-colors"
                       onClick={() => startEditing(t, "primary")}
                     >{primary}</span>
                     {recurringPeriod && (
-                      <svg className="shrink-0 text-primary/55" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                        <title>{recurringPeriod}</title>
-                        <path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15"/>
-                      </svg>
+                      <span className="shrink-0 px-1.5 py-0.5 rounded-full bg-navy/[0.05] text-[10px] font-medium text-navy/40 whitespace-nowrap">
+                        {recurringPeriod}
+                      </span>
                     )}
                     {t.notes && (
                       <svg className="shrink-0 text-navy/30" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -1301,17 +1300,28 @@ export default function TransaccionesList({
               </div>
 
               {/* origen */}
-              <div className="w-[120px] shrink-0 flex items-center gap-1.5 text-navy/40">
+              <div className="w-[120px] shrink-0 flex items-center gap-1 text-navy/40">
                 {t.payment_method === "efectivo" ? (
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                    <rect x="2" y="6" width="20" height="14" rx="2"/><circle cx="12" cy="13" r="3"/><path d="M6 10h.01M18 10h.01"/>
+                  /* ti-wallet */
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                    <path d="M17 8v-3a1 1 0 0 0 -1 -1h-11a2 2 0 0 0 0 4h12a1 1 0 0 1 1 1v3"/>
+                    <path d="M20 12v4h-4a2 2 0 0 1 0 -4h4"/>
+                    <path d="M5 8v10a2 2 0 0 0 2 2h12a1 1 0 0 0 1 -1v-3"/>
                   </svg>
                 ) : t.payment_method === "banco" ? (
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                    <path d="M3 21h18M4 21V10l8-6 8 6v11M9 21v-6h6v6"/>
+                  /* ti-building-bank */
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                    <path d="M3 21l18 0"/>
+                    <path d="M3 10l18 0"/>
+                    <path d="M5 6l7 -3l7 3"/>
+                    <path d="M4 10l0 11"/>
+                    <path d="M20 10l0 11"/>
+                    <path d="M8 14l0 3"/>
+                    <path d="M12 14l0 3"/>
+                    <path d="M16 14l0 3"/>
                   </svg>
                 ) : (
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
                     <circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"/>
                   </svg>
                 )}
