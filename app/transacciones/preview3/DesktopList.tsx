@@ -768,9 +768,9 @@ export default function TransaccionesList({
 
   return (
     <div>
-      {/* ── Desktop: KPI card (doble función: stats globales o de la selección) ── */}
-      <div className="hidden sm:block bg-white border border-navy/[0.07] rounded-2xl shadow-card mb-4">
-        <div className="flex items-stretch justify-start gap-5 px-6 py-4">
+      {/* ── Desktop: KPIs, directamente sobre el fondo (sin caja, estilo Apple) ── */}
+      <div className="hidden sm:block mb-4">
+        <div className="flex items-stretch justify-start gap-5 px-1 py-1">
           <div className="flex-initial min-w-[120px]">
             <p className="text-[12px] text-navy/40 uppercase tracking-wider leading-none mb-1 whitespace-nowrap">Entradas</p>
             <p className="text-[15px] font-semibold text-success tabular-nums truncate">{fmtAmt(totalIn)}</p>
