@@ -95,6 +95,16 @@ La sección Horario › Análisis (KPIs, mapa de calor, evolución de ocupación
 
 ---
 
+### Pendiente: frecuencia de asistencia por cliente (sin datos hoy, jun 2026)
+
+Idea para más adelante: responder preguntas como "¿cuántos clientes vienen 2 veces por semana?", "¿cuántos vienen solo 1 vez?" o "¿a cuántos les ha bajado la asistencia?".
+
+- **Por qué no se puede hoy:** como ya está documentado arriba, la API de Momence no expone quién asistió a cada clase — todos los endpoints de bookings/attendances probados devuelven 404 (ver sección "Sin datos de asistentes por clase"). Tampoco hay tabla en Supabase con asistencia por cliente y fecha; `momence_history` solo guarda el evento agregado (`ticketsSold`), no quién fue.
+- **Qué haría falta si Momence llega a exponer este dato** (revisar endpoints periódicamente, a veces añaden cosas): tabla nueva `customer_attendances` (`customer_id`, `event_id`, `class_date`, `status`), sincronizada por cron igual que `momence_history`. Con eso: agrupar por cliente y semana ISO y contar asistencias para la frecuencia semanal; comparar semana a semana o mes a mes para detectar bajadas de asistencia por cliente.
+- **Alternativa manual mientras no haya API:** exportar desde el panel de Momence un informe de asistentes por clase, igual que se hace con `data/sales.csv` para ventas.
+
+---
+
 ### Productos y ventas históricas — Momence (CSV)
 El desglose de ingresos por producto a lo largo del tiempo (breakeven, conversión del pack de bienvenida) usa el export manual, porque la API no tiene un endpoint de ventas/pedidos histórico.
 
