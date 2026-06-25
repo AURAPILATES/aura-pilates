@@ -2,6 +2,8 @@
 import { createServerClient } from "@/lib/supabase";
 import { revalidateTag } from "next/cache";
 import type { PaymentMethod } from "@/lib/transactions";
+import { loadCategories, type Category } from "@/lib/categories";
+import { contactKeyFor } from "@/lib/contactRules";
 
 export type ImportRow = {
   date: string;
@@ -9,6 +11,14 @@ export type ImportRow = {
   balance: number | null;
   concept: string | null;
   contact: string | null;
+};
+
+type ContactRuleRow = {
+  contact_key: string;
+  label: string;
+  category: string | null;
+  iva_rate: number;
+  retencion_rate: number;
 };
 
 function buildAutoCategory(categories: { value: string; auto_keywords: string | null }[]) {
@@ -23,6 +33,141 @@ function buildAutoCategory(categories: { value: string; auto_keywords: string | 
   };
 }
 
+/** Aplica la regla del contacto (si existe): categoría y etiqueta tienen prioridad sobre el
+ * auto-categorizado por palabra clave, y copia iva_rate/retencion_rate al movimiento. */
+function buildRowInsert(
+  rulesByKey: Map<string, ContactRuleRow>,
+  autoCategory: (row: ImportRow) => string | null,
+) {
+  return function (row: ImportRow) {
+    const rule = rulesByKey.get(contactKeyFor(row.concept, row.contact));
+    return {
+      date: row.date,
+      amount: row.amount,
+      balance: row.balance,
+      concept: row.concept,
+      contact: row.contact?.trim() || rule?.label || null,
+      category: rule?.category ?? autoCategory(row),
+      iva_rate: rule ? rule.iva_rate : null,
+      retencion_rate: rule ? rule.retencion_rate : null,
+    };
+  };
+}
+
+async function loadContactRulesMap(
+  supabase: ReturnType<typeof createServerClient>,
+): Promise<Map<string, ContactRuleRow>> {
+  const { data } = await supabase
+    .from("contact_rules")
+    .select("contact_key, label, category, iva_rate, retencion_rate");
+  return new Map((data ?? []).map((r: ContactRuleRow) => [r.contact_key, r]));
+}
+
+export async function getKnownContactKeys(): Promise<string[]> {
+  const supabase = createServerClient();
+  const { data } = await supabase.from("contact_rules").select("contact_key");
+  return (data ?? []).map((r: { contact_key: string }) => r.contact_key);
+}
+
+export async function getCategoriesForImport(): Promise<Category[]> {
+  return loadCategories();
+}
+
+export type ContactRule = {
+  id: number;
+  contactKey: string;
+  label: string;
+  category: string | null;
+  ivaRate: number;
+  retencionRate: number;
+};
+
+export async function getContactRules(): Promise<ContactRule[]> {
+  const supabase = createServerClient();
+  const { data } = await supabase
+    .from("contact_rules")
+    .select("id, contact_key, label, category, iva_rate, retencion_rate")
+    .order("label", { ascending: true });
+  return (data ?? []).map((r: { id: number; contact_key: string; label: string; category: string | null; iva_rate: number; retencion_rate: number }) => ({
+    id: r.id,
+    contactKey: r.contact_key,
+    label: r.label,
+    category: r.category,
+    ivaRate: r.iva_rate,
+    retencionRate: r.retencion_rate,
+  }));
+}
+
+export async function updateContactRule(
+  id: number,
+  patch: { label?: string; category?: string | null; ivaRate?: number; retencionRate?: number },
+): Promise<void> {
+  const supabase = createServerClient();
+  const update: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  if (patch.label !== undefined) update.label = patch.label;
+  if (patch.category !== undefined) update.category = patch.category;
+  if (patch.ivaRate !== undefined) update.iva_rate = patch.ivaRate;
+  if (patch.retencionRate !== undefined) update.retencion_rate = patch.retencionRate;
+  const { error } = await supabase.from("contact_rules").update(update).eq("id", id);
+  if (error) throw new Error(error.message);
+}
+
+export async function deleteContactRule(id: number): Promise<void> {
+  const supabase = createServerClient();
+  const { error } = await supabase.from("contact_rules").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+}
+
+/** Aplica retroactivamente una regla de contacto a los movimientos ya importados que
+ * coincidan con su clave, por si la regla se creó o cambió después de importarlos. */
+export async function applyContactRuleToExisting(contactKey: string): Promise<{ updated: number }> {
+  const supabase = createServerClient();
+  const { data: rule } = await supabase
+    .from("contact_rules")
+    .select("label, category, iva_rate, retencion_rate")
+    .eq("contact_key", contactKey)
+    .single();
+  if (!rule) return { updated: 0 };
+
+  const { data: txns } = await supabase
+    .from("transactions")
+    .select("id, concept, contact")
+    .is("deleted_at", null);
+
+  const matchingIds = (txns ?? [])
+    .filter((t: { id: string; concept: string | null; contact: string | null }) => contactKeyFor(t.concept, t.contact) === contactKey)
+    .map((t: { id: string }) => t.id);
+  if (matchingIds.length === 0) return { updated: 0 };
+
+  const { error } = await supabase
+    .from("transactions")
+    .update({ category: rule.category, iva_rate: rule.iva_rate, retencion_rate: rule.retencion_rate })
+    .in("id", matchingIds);
+  if (error) throw new Error(error.message);
+
+  revalidateTag("transactions");
+  return { updated: matchingIds.length };
+}
+
+export async function saveContactRules(
+  rules: { contactKey: string; label: string; category: string | null; ivaRate: number; retencionRate: number }[],
+): Promise<void> {
+  if (!rules.length) return;
+  const supabase = createServerClient();
+  const { error } = await supabase.from("contact_rules").upsert(
+    rules.map((r) => ({
+      contact_key: r.contactKey,
+      label: r.label,
+      category: r.category,
+      iva_rate: r.ivaRate,
+      retencion_rate: r.retencionRate,
+      updated_at: new Date().toISOString(),
+    })),
+    { onConflict: "contact_key" },
+  );
+  if (error) throw new Error(error.message);
+}
+
 export async function importTransactions(
   rows: ImportRow[],
   paymentMethod: PaymentMethod = "banco",
@@ -31,8 +176,12 @@ export async function importTransactions(
   const batchId = crypto.randomUUID();
   const supabase = createServerClient();
 
-  const { data: cats } = await supabase.from("categories").select("value, auto_keywords");
+  const [{ data: cats }, rulesByKey] = await Promise.all([
+    supabase.from("categories").select("value, auto_keywords"),
+    loadContactRulesMap(supabase),
+  ]);
   const autoCategory = buildAutoCategory(cats ?? []);
+  const buildRow = buildRowInsert(rulesByKey, autoCategory);
 
   // Deduplicate: load existing in same date range
   const dates = rows.map((r) => r.date).sort();
@@ -56,12 +205,7 @@ export async function importTransactions(
     return true;
   });
   const toInsert = filteredRows.map((r) => ({
-    date: r.date,
-    amount: r.amount,
-    balance: r.balance,
-    concept: r.concept,
-    contact: r.contact,
-    category: autoCategory(r),
+    ...buildRow(r),
     source: "csv-import",
     payment_method: paymentMethod,
     import_batch_id: batchId,
@@ -83,16 +227,15 @@ export async function forceImportTransactions(
 ): Promise<void> {
   if (!rows.length) return;
   const supabase = createServerClient();
-  const { data: cats } = await supabase.from("categories").select("value, auto_keywords");
+  const [{ data: cats }, rulesByKey] = await Promise.all([
+    supabase.from("categories").select("value, auto_keywords"),
+    loadContactRulesMap(supabase),
+  ]);
   const autoCategory = buildAutoCategory(cats ?? []);
+  const buildRow = buildRowInsert(rulesByKey, autoCategory);
 
   const toInsert = rows.map((r) => ({
-    date: r.date,
-    amount: r.amount,
-    balance: r.balance,
-    concept: r.concept,
-    contact: r.contact,
-    category: autoCategory(r),
+    ...buildRow(r),
     source: "csv-import",
     payment_method: paymentMethod,
     import_batch_id: batchId,

@@ -1,7 +1,13 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import * as XLSX from "xlsx";
-import { importTransactions, undoImport, getRecentImports, forceImportTransactions, type ImportRow, type ImportBatch } from "./actions";
+import {
+  importTransactions, undoImport, getRecentImports, forceImportTransactions,
+  getKnownContactKeys, getCategoriesForImport, saveContactRules,
+  type ImportRow, type ImportBatch,
+} from "./actions";
+import { contactKeyFor } from "@/lib/contactRules";
+import { sortCategoriesHierarchical, categoryDisplayLabel, type Category } from "@/lib/categories";
 import Drawer from "@/app/components/Drawer";
 
 // ── CSV parser ────────────────────────────────────────────────────────────────
@@ -168,12 +174,35 @@ function fmtDateShort(d: string) {
   return `${parseInt(day)} ${months[parseInt(m) - 1]}`;
 }
 
+type ContactDraft = {
+  key: string;
+  sample: string;
+  label: string;
+  category: string | null;
+  ivaRate: number;
+  retencionRate: number;
+};
+
 type State =
   | { kind: "idle" }
+  | { kind: "review-contacts"; drafts: ContactDraft[]; rows: ImportRow[]; filename: string }
   | { kind: "preview"; rows: ImportRow[]; filename: string }
   | { kind: "importing" }
   | { kind: "done"; imported: number; skipped: number; skippedRows: ImportRow[]; batchId: string }
   | { kind: "error"; message: string };
+
+/** Sugerencia de categoría por palabra clave para prerellenar el formulario de revisión —
+ * mismo criterio que el auto-categorizador del servidor (app/transacciones/actions.ts),
+ * pero solo entre categorías ya existentes: nunca propone crear una nueva. */
+function suggestCategory(row: ImportRow, categories: Category[]): string | null {
+  const hay = `${row.concept ?? ""} ${row.contact ?? ""}`.toLowerCase();
+  for (const cat of categories) {
+    if (!cat.auto_keywords) continue;
+    const kws = cat.auto_keywords.split(",").map((k) => k.trim().toLowerCase()).filter(Boolean);
+    if (kws.some((kw) => hay.includes(kw))) return cat.value;
+  }
+  return null;
+}
 
 function fmtAmt(n: number) {
   return Math.abs(n).toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -187,9 +216,15 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
   const [confirmUndo, setConfirmUndo] = useState<string | null>(null);
   const [undoingId, setUndoingId] = useState<string | null>(null);
   const [forcingDuplicates, setForcingDuplicates] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [knownKeys, setKnownKeys] = useState<Set<string>>(new Set());
+  const [savingContacts, setSavingContacts] = useState(false);
 
   useEffect(() => {
     getRecentImports().then(setHistorial).catch(() => {});
+    Promise.all([getCategoriesForImport(), getKnownContactKeys()])
+      .then(([cats, keys]) => { setCategories(cats); setKnownKeys(new Set(keys)); })
+      .catch(() => {});
   }, []);
 
   async function handleUndo(batchId: string) {
@@ -218,13 +253,56 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
         const rows = isExcel
           ? parseExcel(e.target?.result as ArrayBuffer)
           : parseCSV(e.target?.result as string);
-        setState({ kind: "preview", rows, filename: file.name });
+
+        const newContacts = new Map<string, ImportRow>();
+        for (const row of rows) {
+          const key = contactKeyFor(row.concept, row.contact);
+          if (!knownKeys.has(key) && !newContacts.has(key)) newContacts.set(key, row);
+        }
+
+        if (newContacts.size === 0) {
+          setState({ kind: "preview", rows, filename: file.name });
+        } else {
+          const drafts: ContactDraft[] = [...newContacts.entries()].map(([key, row]) => {
+            const sample = row.contact?.trim() || row.concept?.trim() || "(sin concepto)";
+            return { key, sample, label: sample, category: suggestCategory(row, categories), ivaRate: 0, retencionRate: 0 };
+          });
+          setState({ kind: "review-contacts", drafts, rows, filename: file.name });
+        }
       } catch (err) {
         setState({ kind: "error", message: err instanceof Error ? err.message : "Error al leer el archivo." });
       }
     };
     if (isExcel) reader.readAsArrayBuffer(file);
     else reader.readAsText(file, "utf-8");
+  }
+
+  function updateDraft(key: string, patch: Partial<ContactDraft>) {
+    setState((prev) => {
+      if (prev.kind !== "review-contacts") return prev;
+      return { ...prev, drafts: prev.drafts.map((d) => (d.key === key ? { ...d, ...patch } : d)) };
+    });
+  }
+
+  async function handleConfirmContacts(drafts: ContactDraft[], rows: ImportRow[], filename: string) {
+    setSavingContacts(true);
+    try {
+      await saveContactRules(drafts.map((d) => ({
+        contactKey: d.key,
+        label: d.label.trim() || d.sample,
+        category: d.category,
+        ivaRate: d.ivaRate,
+        retencionRate: d.retencionRate,
+      })));
+      setKnownKeys((prev) => {
+        const next = new Set(prev);
+        for (const d of drafts) next.add(d.key);
+        return next;
+      });
+      setState({ kind: "preview", rows, filename });
+    } finally {
+      setSavingContacts(false);
+    }
   }
 
   async function handleForceImport(rows: ImportRow[], batchId: string) {
@@ -323,6 +401,79 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* ── Review contacts: contactos nuevos detectados en el archivo ── */}
+          {state.kind === "review-contacts" && (
+            <div>
+              <p className="text-sm text-navy/55 mb-1">
+                <strong className="text-navy">{state.drafts.length}</strong> {state.drafts.length === 1 ? "contacto nuevo" : "contactos nuevos"} en este archivo
+              </p>
+              <p className="text-xs text-navy/45 mb-4">
+                Indica etiqueta, categoría, IVA y retención para cada uno. Se guardará y se aplicará automáticamente la próxima vez que aparezcan.
+              </p>
+              <div className="space-y-3 mb-4 max-h-[50vh] overflow-y-auto pr-1">
+                {state.drafts.map((d) => (
+                  <div key={d.key} className="border border-navy/[0.08] rounded-xl p-3">
+                    <p className="text-xs text-navy/40 mb-2 truncate" title={d.sample}>{d.sample}</p>
+                    <input
+                      type="text"
+                      value={d.label}
+                      onChange={(e) => updateDraft(d.key, { label: e.target.value })}
+                      placeholder="Etiqueta"
+                      className="w-full mb-2 px-2.5 py-1.5 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40"
+                    />
+                    <select
+                      value={d.category ?? ""}
+                      onChange={(e) => updateDraft(d.key, { category: e.target.value || null })}
+                      className="w-full mb-2 px-2.5 py-1.5 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40 bg-white"
+                    >
+                      <option value="">Sin categoría</option>
+                      {sortCategoriesHierarchical(categories).map((c) => (
+                        <option key={c.id} value={c.value}>{categoryDisplayLabel(c, categories)}</option>
+                      ))}
+                    </select>
+                    <div className="flex gap-2">
+                      <label className="flex-1 flex items-center gap-1.5 text-xs text-navy/50">
+                        IVA
+                        <input
+                          type="number" min={0} max={100} step={0.5}
+                          value={d.ivaRate}
+                          onChange={(e) => updateDraft(d.key, { ivaRate: parseFloat(e.target.value) || 0 })}
+                          className="w-full px-2 py-1.5 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40"
+                        />
+                        %
+                      </label>
+                      <label className="flex-1 flex items-center gap-1.5 text-xs text-navy/50">
+                        Ret.
+                        <input
+                          type="number" min={0} max={100} step={0.5}
+                          value={d.retencionRate}
+                          onChange={(e) => updateDraft(d.key, { retencionRate: parseFloat(e.target.value) || 0 })}
+                          className="w-full px-2 py-1.5 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40"
+                        />
+                        %
+                      </label>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setState({ kind: "idle" })}
+                  className="flex-1 py-2.5 text-sm text-navy/60 border border-navy/15 rounded-lg hover:bg-navy/[0.03] transition-colors"
+                >
+                  Cambiar archivo
+                </button>
+                <button
+                  onClick={() => handleConfirmContacts(state.drafts, state.rows, state.filename)}
+                  disabled={savingContacts}
+                  className="flex-1 py-2.5 text-sm font-semibold bg-navy text-white rounded-lg hover:bg-navy/85 transition-colors disabled:opacity-50"
+                >
+                  {savingContacts ? "Guardando…" : "Continuar"}
+                </button>
+              </div>
             </div>
           )}
 

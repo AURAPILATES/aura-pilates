@@ -4,13 +4,16 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { Category } from "@/lib/categories";
 import type { BusinessEvent } from "@/lib/businessEvents";
+import type { ContactRule } from "@/app/transacciones/actions";
 import CategoriasManager from "./CategoriasManager";
+import ContactosManager from "./ContactosManager";
 import HistorialTimeline from "@/app/historial/HistorialTimeline";
 
-type Tab = "categorias" | "historial";
+type Tab = "categorias" | "contactos" | "historial";
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "categorias", label: "Categorías" },
+  { key: "contactos", label: "Contactos" },
   { key: "historial", label: "Historial" },
 ];
 
@@ -18,16 +21,18 @@ type Props = {
   categories: Category[];
   events: BusinessEvent[];
   categoryCounts: Record<string, number>;
+  contactRules: ContactRule[];
 };
 
-export default function ConfiguracionTabs({ categories, events, categoryCounts }: Props) {
+export default function ConfiguracionTabs({ categories, events, categoryCounts, contactRules }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [tab, setTab] = useState<Tab>(searchParams.get("tab") === "historial" ? "historial" : "categorias");
+  const initialTab = (["contactos", "historial"] as const).find((t) => t === searchParams.get("tab")) ?? "categorias";
+  const [tab, setTab] = useState<Tab>(initialTab);
 
   function selectTab(next: Tab) {
     setTab(next);
-    router.replace(next === "categorias" ? "/configuracion" : "/configuracion?tab=historial", { scroll: false });
+    router.replace(next === "categorias" ? "/configuracion" : `/configuracion?tab=${next}`, { scroll: false });
   }
 
   return (
@@ -50,6 +55,8 @@ export default function ConfiguracionTabs({ categories, events, categoryCounts }
       </div>
       {tab === "categorias" ? (
         <CategoriasManager categories={categories} categoryCounts={categoryCounts} />
+      ) : tab === "contactos" ? (
+        <ContactosManager rules={contactRules} categories={categories} />
       ) : (
         <HistorialTimeline events={events} />
       )}

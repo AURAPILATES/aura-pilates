@@ -21,6 +21,8 @@ export type Transaction = {
   payment_method: PaymentMethod;
   created_at: string;
   deleted_at: string | null;
+  iva_rate: number | null;
+  retencion_rate: number | null;
 };
 
 const OPERATIONAL_CATS = new Set([

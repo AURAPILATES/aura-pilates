@@ -1,4 +1,5 @@
 import { fmt } from "@/lib/analytics";
+import { taxBreakdown, fiscalQuarterOf } from "@/lib/taxCalc";
 import { loadSales, benvingudaConversion, subscriberFirstPurchase } from "@/lib/sales";
 import PrimeraCompra from "./instances/PrimeraCompra";
 import {
@@ -340,6 +341,24 @@ export default async function AnaliticaLoader({
     { label: "IVA T4 / Anual", date: "20 ene", deadline: "2027-01-20" },
   ];
 
+  // ── IVA soportado / retenciones practicadas por trimestre, a partir de las reglas de
+  // contacto (Configuración → Contactos) aplicadas en cada movimiento al importarlo ──
+  const fiscalByQuarter = new Map<string, { iva: number; retencion: number; count: number }>();
+  for (const t of txnsAll) {
+    if (!t.iva_rate && !t.retencion_rate) continue;
+    const { ivaAmount, retencionAmount } = taxBreakdown(t.amount, t.iva_rate ?? 0, t.retencion_rate ?? 0);
+    const q = fiscalQuarterOf(t.date);
+    const acc = fiscalByQuarter.get(q) ?? { iva: 0, retencion: 0, count: 0 };
+    acc.iva += ivaAmount;
+    acc.retencion += retencionAmount;
+    acc.count += 1;
+    fiscalByQuarter.set(q, acc);
+  }
+  const fiscalRows = [...fiscalByQuarter.entries()]
+    .map(([quarter, v]) => ({ quarter, ...v }))
+    .sort((a, b) => b.quarter.localeCompare(a.quarter))
+    .slice(0, 6);
+
   // ── Clientela (composición, altas, riesgo de baja) ───────────────────────
   const recurringForecasts = forecastConfirmedExpenses(recurringExpenses, txnsAll, undefined, dbCategories);
 
@@ -577,6 +596,27 @@ export default async function AnaliticaLoader({
                   );
                 })}
               </div>
+            </div>
+            <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
+              <p className="text-xs font-semibold text-navy/55 uppercase tracking-wider mb-1">IVA soportado y retenciones practicadas</p>
+              <p className="text-xs text-navy/40 mb-4">
+                Según el IVA/retención asignado por contacto al importar (Configuración → Contactos)
+              </p>
+              {fiscalRows.length === 0 ? (
+                <p className="text-sm text-navy/40">Todavía no hay movimientos con IVA o retención asignados.</p>
+              ) : (
+                <div className="space-y-3">
+                  {fiscalRows.map((r) => (
+                    <div key={r.quarter} className="flex items-center justify-between">
+                      <span className="text-sm text-navy">{r.quarter}</span>
+                      <div className="flex items-center gap-4 text-xs text-navy/55">
+                        <span>IVA soportado <strong className="text-navy tabular-nums">{fmt(r.iva)}</strong></span>
+                        <span>Retenciones <strong className="text-navy tabular-nums">{fmt(r.retencion)}</strong></span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
             <Financiacion initialBudgets={budgets} spent={budgetSpent} />
           </div>
