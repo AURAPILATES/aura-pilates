@@ -1364,9 +1364,9 @@ export default function TransaccionesList({
                     + (parseInt(y) !== new Date().getFullYear() ? ` ${y}` : "");
                   return (
                     <div key={monthKey}>
-                      <div className="flex items-baseline justify-between px-4 py-3 bg-navy">
-                        <span className="text-[15px] font-bold text-white">{label}</span>
-                        <span className={`text-sm font-semibold tabular-nums ${monthNet < 0 ? "text-[#E8A0AC]" : "text-[#8FCBA6]"}`}>
+                      <div className="flex items-baseline justify-between px-4 py-3 bg-navy/[0.035] border-y border-navy/[0.08]">
+                        <span className="text-[15px] font-bold text-navy">{label}</span>
+                        <span className={`text-sm font-semibold tabular-nums ${monthNet < 0 ? "text-danger" : "text-success"}`}>
                           {monthNet < 0 ? "−" : "+"}{fmtAmt(Math.abs(monthNet))}
                         </span>
                       </div>
