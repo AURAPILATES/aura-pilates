@@ -768,9 +768,11 @@ export default function TransaccionesList({
 
   return (
     <div>
-      {/* ── Desktop: KPI card (doble función: stats globales o de la selección) ── */}
-      <div className="hidden sm:block bg-white border border-navy/[0.07] rounded-2xl shadow-card mb-4">
-        <div className="flex items-stretch justify-start gap-5 px-6 py-4">
+      {/* ── Desktop: todo unificado en una sola tarjeta (KPIs + filtros + tabla) ── */}
+      <div className="hidden sm:block bg-white border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden mb-4">
+
+        {/* KPIs */}
+        <div className="flex items-stretch justify-start gap-5 px-6 py-4 border-b border-navy/[0.06]">
           <div className="flex-initial min-w-[120px]">
             <p className="text-[12px] text-navy/40 uppercase tracking-wider leading-none mb-1 whitespace-nowrap">Entradas</p>
             <p className="text-[15px] font-semibold text-success tabular-nums truncate">{fmtAmt(totalIn)}</p>
@@ -811,6 +813,272 @@ export default function TransaccionesList({
             </button>
           )}
         </div>
+
+        {/* barra de filtros */}
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-navy/[0.06]">
+          <div className="relative flex-1">
+            <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-navy/30" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input
+              type="text"
+              placeholder="Buscar concepto o contacto…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 text-sm border border-navy/15 rounded-lg bg-white text-navy placeholder:text-navy/35 outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition"
+            />
+            {search && (
+              <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-navy/30 hover:text-navy/60">✕</button>
+            )}
+          </div>
+          <DateFilter />
+          <CategoryMultiFilter selected={catFilters} categories={categories} onChange={setCatFilters} />
+          <SelectWrapper>
+            <select value={originFilter} onChange={(e) => setOriginFilter(e.target.value)} className={SELECT_CLS}>
+              <option value="all">Origen</option>
+              <option value="banco">CaixaBank</option>
+              <option value="efectivo">Efectivo Aura</option>
+              <option value="victor">Víctor</option>
+              <option value="celia">Celia</option>
+              <option value="olga">Olga</option>
+              <option value="carles">Carles</option>
+            </select>
+          </SelectWrapper>
+          <MoreOptionsMenu
+            onlyRecurring={onlyRecurring}
+            setOnlyRecurring={setOnlyRecurring}
+            onExport={exportCSV}
+            onPapelera={() => setShowPapelera(true)}
+          />
+          <ImportButton onManual={() => setShowAddCash(true)} />
+        </div>
+
+        {/* recuento */}
+        <div className="flex items-center gap-3 px-4 py-2.5 border-b border-navy/[0.06]">
+          {!someSelected && (
+            <span className="text-sm text-navy/45">{filtered.length} movimientos</span>
+          )}
+          {isPending && <span className="text-xs text-primary/60">Guardando…</span>}
+          {(catFilters.length > 0 || originFilter !== "all" || onlyRecurring || currentRange !== "all" || search !== "") && (
+            <button
+              onClick={() => {
+                setCatFilters([]);
+                setOriginFilter("all");
+                setOnlyRecurring(false);
+                setSearch("");
+                if (currentRange !== "all") router.push(pathname);
+              }}
+              className="text-xs text-navy/45 hover:text-navy underline whitespace-nowrap"
+            >
+              Eliminar filtros
+            </button>
+          )}
+        </div>
+
+        {/* tira de meses, estilo Revolut (igual que mobile) */}
+        <div className="flex gap-1.5 overflow-x-auto scrollbar-none px-4 py-2.5 border-b border-navy/[0.06]">
+          <button
+            onClick={() => router.push(pathname)}
+            className={`shrink-0 px-3.5 py-1.5 rounded-full text-sm transition-colors whitespace-nowrap ${
+              !activeMonth ? "bg-navy text-white font-medium" : "text-navy/40 hover:text-navy/70"
+            }`}
+          >
+            Todo
+          </button>
+          {monthStrip.map(({ key, label, year }) => {
+            const isActive = key === activeMonth;
+            const showYear = year !== new Date().getFullYear();
+            return (
+              <button
+                key={key}
+                onClick={() => goToMonth(key)}
+                className={`shrink-0 px-3.5 py-1.5 rounded-full text-sm transition-colors capitalize whitespace-nowrap ${
+                  isActive ? "bg-navy text-white font-medium" : "text-navy/40 hover:text-navy/70"
+                }`}
+              >
+                {label}{showYear && <span className="text-[10px] ml-0.5 opacity-60">{year}</span>}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* tabla */}
+        {(() => {
+          const renderRow = (t: Transaction) => {
+            const isSelected = selected.has(t.id);
+            const primary    = t.contact || t.concept || "—";
+            const secondary  = t.contact && t.concept && t.concept !== t.contact ? t.concept : null;
+            const cat        = t.category ? categories.find((c) => c.value === t.category) : undefined;
+            const accent     = cat ? cat.text_color : CAT_FALLBACK.color;
+            const iconKey    = cat ? cat.emoji : CAT_FALLBACK.emoji;
+
+            return (
+              <div
+                key={t.id}
+                onClick={() => setDrawerTxnId(t.id)}
+                className={`flex items-center gap-4 px-4 py-2.5 border-b border-navy/[0.04] last:border-0 group transition-colors cursor-pointer ${
+                  isSelected ? "bg-primary/[0.03]" : "hover:bg-navy/[0.012]"
+                }`}
+              >
+                {/* avatar / checkbox */}
+                <div
+                  className="relative w-9 h-9 shrink-0 flex items-center justify-center"
+                  onClick={(e) => { e.stopPropagation(); toggleOne(t.id); }}
+                >
+                  <div className={`absolute inset-0 flex items-center justify-center transition-opacity ${isSelected ? "opacity-0" : "opacity-100 group-hover:opacity-0"}`}>
+                    <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ backgroundColor: accent }}>
+                      <CatIcon iconKey={iconKey} name={cat?.label ?? primary} color="#fff" size={15} />
+                    </div>
+                  </div>
+                  <div className={`absolute inset-0 flex items-center justify-center transition-opacity ${isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}>
+                    <Checkbox checked={isSelected} onChange={() => toggleOne(t.id)} />
+                  </div>
+                </div>
+
+                {/* concepto */}
+                <div className="flex-1 min-w-0" onClick={(e) => e.stopPropagation()}>
+                  {editingField?.id === t.id && editingField.field === (t.contact != null ? "contact" : "concept") ? (
+                    <div className="flex items-center gap-2">
+                      <input
+                        autoFocus type="text" value={editValue}
+                        onChange={(e) => setEditValue(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") setEditingField(null); }}
+                        className="text-[13px] font-medium text-navy bg-navy/[0.04] rounded-md px-1.5 -mx-1.5 outline-none ring-1 ring-navy/10 focus:ring-navy/20 w-full"
+                      />
+                      <EditConfirmButtons onConfirm={saveEdit} onCancel={() => setEditingField(null)} />
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1 min-w-0 overflow-hidden">
+                      <span
+                        className="text-[13px] font-medium text-navy truncate cursor-pointer hover:text-navy/70 transition-colors"
+                        onClick={() => startEditing(t, "primary")}
+                      >{primary}</span>
+                      {t.notes && (
+                        <svg className="shrink-0 text-navy/30" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <title>{t.notes}</title>
+                          <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+                        </svg>
+                      )}
+                    </div>
+                  )}
+                  {secondary && (
+                    editingField?.id === t.id && editingField.field === "concept" && t.contact != null ? (
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <input
+                          autoFocus type="text" value={editValue}
+                          onChange={(e) => setEditValue(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") setEditingField(null); }}
+                          className="text-xs text-navy/60 bg-navy/[0.04] rounded-md px-1.5 -mx-1.5 outline-none ring-1 ring-navy/10 focus:ring-navy/20 w-full"
+                        />
+                        <EditConfirmButtons onConfirm={saveEdit} onCancel={() => setEditingField(null)} small />
+                      </div>
+                    ) : (
+                      <p
+                        className="text-xs text-navy/40 truncate mt-0.5 cursor-pointer hover:text-navy/60 transition-colors"
+                        onClick={() => startEditing(t, "secondary")}
+                      >{secondary}</p>
+                    )
+                  )}
+                </div>
+
+                {/* origen */}
+                <div className="w-[120px] shrink-0 flex items-center gap-1.5 text-navy/40">
+                  {t.payment_method === "efectivo" ? (
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                      <rect x="2" y="6" width="20" height="14" rx="2"/><circle cx="12" cy="13" r="3"/><path d="M6 10h.01M18 10h.01"/>
+                    </svg>
+                  ) : t.payment_method === "banco" ? (
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                      <path d="M3 21h18M4 21V10l8-6 8 6v11M9 21v-6h6v6"/>
+                    </svg>
+                  ) : (
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                      <circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"/>
+                    </svg>
+                  )}
+                  <span className="text-xs leading-none whitespace-nowrap truncate">{originLabel(t.payment_method)}</span>
+                </div>
+
+                {/* categoría */}
+                <div className="w-[180px] shrink-0" onClick={(e) => e.stopPropagation()}>
+                  <CategoryPill category={t.category} categories={categories} onChange={(cat) => handleCategoryChange(t.id, cat)} />
+                </div>
+
+                {/* fecha */}
+                <div className="w-[90px] shrink-0 text-right">
+                  <span className="text-xs text-navy/45 tabular-nums whitespace-nowrap">{fmtDate(t.date)}</span>
+                </div>
+
+                {/* importe */}
+                <div className="w-[120px] shrink-0 text-right">
+                  <span className={`text-sm font-semibold tabular-nums ${t.amount > 0 ? "text-success" : "text-navy/75"}`}>
+                    {t.amount > 0 ? "+" : "−"}{fmtAmt(t.amount)}
+                  </span>
+                  {t.balance != null && (
+                    <p className="text-[10px] text-navy/40 tabular-nums mt-0.5">{fmtAmt(t.balance)}</p>
+                  )}
+                </div>
+              </div>
+            );
+          };
+
+          const headerRow = (
+            <div className="flex items-center gap-4 px-4 py-2.5 border-b border-navy/[0.06] bg-navy/[0.012] group/head">
+              <div className="w-9 shrink-0 flex items-center pl-[3px]">
+                <Checkbox checked={allSelected} onChange={toggleAll} />
+              </div>
+              <SortableHeader label="Concepto" sortKey="concept" align="left" className="flex-1" currentKey={sortKey} dir={sortDir} onClick={toggleSort} />
+              <div className="w-[120px] shrink-0 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Origen</div>
+              <div className="w-[180px] shrink-0 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Categoría</div>
+              <SortableHeader label="Fecha" sortKey="date" align="right" className="w-[90px]" currentKey={sortKey} dir={sortDir} onClick={toggleSort} />
+              <SortableHeader label="Importe / Saldo" sortKey="amount" align="right" className="w-[120px]" currentKey={sortKey} dir={sortDir} onClick={toggleSort} />
+            </div>
+          );
+
+          if (sortedFiltered.length === 0) {
+            return (
+              <>
+                {headerRow}
+                <p className="py-12 text-center text-sm text-navy/40">Sin resultados</p>
+              </>
+            );
+          }
+
+          if (sortKey) {
+            /* Orden manual activo → lista plana, sin agrupar por día */
+            return (
+              <div className={isPending ? "opacity-50 pointer-events-none" : ""}>
+                {headerRow}
+                {sortedFiltered.map(renderRow)}
+              </div>
+            );
+          }
+
+          /* Agrupado por mes, lista continua (igual que el mockup) */
+          return (
+            <div className={isPending ? "opacity-50 pointer-events-none" : ""}>
+              {headerRow}
+              {byMonth.map(([monthKey, monthTxns]) => {
+                const monthNet = monthTxns.reduce((s, t) => s + t.amount, 0);
+                const [y, m] = monthKey.split("-");
+                const monthName = MONTHS_ES[parseInt(m) - 1];
+                const label = monthName.charAt(0).toUpperCase() + monthName.slice(1)
+                  + (parseInt(y) !== new Date().getFullYear() ? ` ${y}` : "");
+                return (
+                  <div key={monthKey}>
+                    <div className="flex items-baseline justify-between px-4 py-3 bg-navy/[0.035] border-y border-navy/[0.08]">
+                      <span className="text-[15px] font-bold text-navy">{label}</span>
+                      <span className={`text-sm font-semibold tabular-nums ${monthNet < 0 ? "text-danger" : "text-success"}`}>
+                        {monthNet < 0 ? "−" : "+"}{fmtAmt(Math.abs(monthNet))}
+                      </span>
+                    </div>
+                    {monthTxns.map(renderRow)}
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
       </div>
 
       {/* ── Mobile: KPIs ──────────────────────────────────────────────────────── */}
@@ -912,94 +1180,6 @@ export default function TransaccionesList({
         </button>
       )}
 
-
-      {/* ── Desktop: barra de filtros unificada ────────────────────────────── */}
-      <div className="hidden sm:flex items-center gap-2 mb-3">
-        <div className="relative flex-1">
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-navy/30" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
-          <input
-            type="text"
-            placeholder="Buscar concepto o contacto…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-sm border border-navy/15 rounded-lg bg-white text-navy placeholder:text-navy/35 outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition"
-          />
-          {search && (
-            <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-navy/30 hover:text-navy/60">✕</button>
-          )}
-        </div>
-        <DateFilter />
-        <CategoryMultiFilter selected={catFilters} categories={categories} onChange={setCatFilters} />
-        <SelectWrapper>
-          <select value={originFilter} onChange={(e) => setOriginFilter(e.target.value)} className={SELECT_CLS}>
-            <option value="all">Origen</option>
-            <option value="banco">CaixaBank</option>
-            <option value="efectivo">Efectivo Aura</option>
-            <option value="victor">Víctor</option>
-            <option value="celia">Celia</option>
-            <option value="olga">Olga</option>
-            <option value="carles">Carles</option>
-          </select>
-        </SelectWrapper>
-        <MoreOptionsMenu
-          onlyRecurring={onlyRecurring}
-          setOnlyRecurring={setOnlyRecurring}
-          onExport={exportCSV}
-          onPapelera={() => setShowPapelera(true)}
-        />
-        <ImportButton onManual={() => setShowAddCash(true)} />
-      </div>
-
-      {/* ── Desktop: recuento ─────────────────────────────────────────────────── */}
-      <div className="hidden sm:flex items-center gap-3 mb-5">
-        {!someSelected && (
-          <span className="text-sm text-navy/45">{filtered.length} movimientos</span>
-        )}
-        {isPending && <span className="text-xs text-primary/60">Guardando…</span>}
-        {(catFilters.length > 0 || originFilter !== "all" || onlyRecurring || currentRange !== "all" || search !== "") && (
-          <button
-            onClick={() => {
-              setCatFilters([]);
-              setOriginFilter("all");
-              setOnlyRecurring(false);
-              setSearch("");
-              if (currentRange !== "all") router.push(pathname);
-            }}
-            className="text-xs text-navy/45 hover:text-navy underline whitespace-nowrap"
-          >
-            Eliminar filtros
-          </button>
-        )}
-      </div>
-
-      {/* ── Desktop: month strip, estilo Revolut (igual que mobile) ─────────── */}
-      <div className="hidden sm:flex gap-1.5 overflow-x-auto scrollbar-none mb-4">
-        <button
-          onClick={() => router.push(pathname)}
-          className={`shrink-0 px-3.5 py-1.5 rounded-full text-sm transition-colors whitespace-nowrap ${
-            !activeMonth ? "bg-navy text-white font-medium" : "text-navy/40 hover:text-navy/70"
-          }`}
-        >
-          Todo
-        </button>
-        {monthStrip.map(({ key, label, year }) => {
-          const isActive = key === activeMonth;
-          const showYear = year !== new Date().getFullYear();
-          return (
-            <button
-              key={key}
-              onClick={() => goToMonth(key)}
-              className={`shrink-0 px-3.5 py-1.5 rounded-full text-sm transition-colors capitalize whitespace-nowrap ${
-                isActive ? "bg-navy text-white font-medium" : "text-navy/40 hover:text-navy/70"
-              }`}
-            >
-              {label}{showYear && <span className="text-[10px] ml-0.5 opacity-60">{year}</span>}
-            </button>
-          );
-        })}
-      </div>
 
       {/* ── Mobile: toolbar ────────────────────────────────────────────────── */}
       <div className="sm:hidden mb-3">
@@ -1205,180 +1385,6 @@ export default function TransaccionesList({
           );
         })}
       </div>
-
-      {/* ── Desktop: lista estilo Revolut (misma identidad visual que mobile) ── */}
-      {(() => {
-        const renderRow = (t: Transaction) => {
-          const isSelected = selected.has(t.id);
-          const primary    = t.contact || t.concept || "—";
-          const secondary  = t.contact && t.concept && t.concept !== t.contact ? t.concept : null;
-          const cat        = t.category ? categories.find((c) => c.value === t.category) : undefined;
-          const accent     = cat ? cat.text_color : CAT_FALLBACK.color;
-          const iconKey    = cat ? cat.emoji : CAT_FALLBACK.emoji;
-
-          return (
-            <div
-              key={t.id}
-              onClick={() => setDrawerTxnId(t.id)}
-              className={`flex items-center gap-4 px-4 py-2.5 border-b border-navy/[0.04] last:border-0 group transition-colors cursor-pointer ${
-                isSelected ? "bg-primary/[0.03]" : "hover:bg-navy/[0.012]"
-              }`}
-            >
-              {/* avatar / checkbox */}
-              <div
-                className="relative w-9 h-9 shrink-0 flex items-center justify-center"
-                onClick={(e) => { e.stopPropagation(); toggleOne(t.id); }}
-              >
-                <div className={`absolute inset-0 flex items-center justify-center transition-opacity ${isSelected ? "opacity-0" : "opacity-100 group-hover:opacity-0"}`}>
-                  <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ backgroundColor: accent }}>
-                    <CatIcon iconKey={iconKey} name={cat?.label ?? primary} color="#fff" size={15} />
-                  </div>
-                </div>
-                <div className={`absolute inset-0 flex items-center justify-center transition-opacity ${isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}>
-                  <Checkbox checked={isSelected} onChange={() => toggleOne(t.id)} />
-                </div>
-              </div>
-
-              {/* concepto */}
-              <div className="flex-1 min-w-0" onClick={(e) => e.stopPropagation()}>
-                {editingField?.id === t.id && editingField.field === (t.contact != null ? "contact" : "concept") ? (
-                  <div className="flex items-center gap-2">
-                    <input
-                      autoFocus type="text" value={editValue}
-                      onChange={(e) => setEditValue(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") setEditingField(null); }}
-                      className="text-[13px] font-medium text-navy bg-navy/[0.04] rounded-md px-1.5 -mx-1.5 outline-none ring-1 ring-navy/10 focus:ring-navy/20 w-full"
-                    />
-                    <EditConfirmButtons onConfirm={saveEdit} onCancel={() => setEditingField(null)} />
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-1 min-w-0 overflow-hidden">
-                    <span
-                      className="text-[13px] font-medium text-navy truncate cursor-pointer hover:text-navy/70 transition-colors"
-                      onClick={() => startEditing(t, "primary")}
-                    >{primary}</span>
-                    {t.notes && (
-                      <svg className="shrink-0 text-navy/30" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                        <title>{t.notes}</title>
-                        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
-                      </svg>
-                    )}
-                  </div>
-                )}
-                {secondary && (
-                  editingField?.id === t.id && editingField.field === "concept" && t.contact != null ? (
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <input
-                        autoFocus type="text" value={editValue}
-                        onChange={(e) => setEditValue(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") setEditingField(null); }}
-                        className="text-xs text-navy/60 bg-navy/[0.04] rounded-md px-1.5 -mx-1.5 outline-none ring-1 ring-navy/10 focus:ring-navy/20 w-full"
-                      />
-                      <EditConfirmButtons onConfirm={saveEdit} onCancel={() => setEditingField(null)} small />
-                    </div>
-                  ) : (
-                    <p
-                      className="text-xs text-navy/40 truncate mt-0.5 cursor-pointer hover:text-navy/60 transition-colors"
-                      onClick={() => startEditing(t, "secondary")}
-                    >{secondary}</p>
-                  )
-                )}
-              </div>
-
-              {/* origen */}
-              <div className="w-[120px] shrink-0 flex items-center gap-1.5 text-navy/40">
-                {t.payment_method === "efectivo" ? (
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                    <rect x="2" y="6" width="20" height="14" rx="2"/><circle cx="12" cy="13" r="3"/><path d="M6 10h.01M18 10h.01"/>
-                  </svg>
-                ) : t.payment_method === "banco" ? (
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                    <path d="M3 21h18M4 21V10l8-6 8 6v11M9 21v-6h6v6"/>
-                  </svg>
-                ) : (
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                    <circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"/>
-                  </svg>
-                )}
-                <span className="text-xs leading-none whitespace-nowrap truncate">{originLabel(t.payment_method)}</span>
-              </div>
-
-              {/* categoría */}
-              <div className="w-[180px] shrink-0" onClick={(e) => e.stopPropagation()}>
-                <CategoryPill category={t.category} categories={categories} onChange={(cat) => handleCategoryChange(t.id, cat)} />
-              </div>
-
-              {/* fecha */}
-              <div className="w-[90px] shrink-0 text-right">
-                <span className="text-xs text-navy/45 tabular-nums whitespace-nowrap">{fmtDate(t.date)}</span>
-              </div>
-
-              {/* importe */}
-              <div className="w-[120px] shrink-0 text-right">
-                <span className={`text-sm font-semibold tabular-nums ${t.amount > 0 ? "text-success" : "text-navy/75"}`}>
-                  {t.amount > 0 ? "+" : "−"}{fmtAmt(t.amount)}
-                </span>
-                {t.balance != null && (
-                  <p className="text-[10px] text-navy/40 tabular-nums mt-0.5">{fmtAmt(t.balance)}</p>
-                )}
-              </div>
-            </div>
-          );
-        };
-
-        const headerRow = (
-          <div className="flex items-center gap-4 px-4 py-2.5 border-b border-navy/[0.06] bg-navy/[0.012] group/head">
-            <div className="w-9 shrink-0 flex items-center pl-[3px]">
-              <Checkbox checked={allSelected} onChange={toggleAll} />
-            </div>
-            <SortableHeader label="Concepto" sortKey="concept" align="left" className="flex-1" currentKey={sortKey} dir={sortDir} onClick={toggleSort} />
-            <div className="w-[120px] shrink-0 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Origen</div>
-            <div className="w-[180px] shrink-0 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Categoría</div>
-            <SortableHeader label="Fecha" sortKey="date" align="right" className="w-[90px]" currentKey={sortKey} dir={sortDir} onClick={toggleSort} />
-            <SortableHeader label="Importe / Saldo" sortKey="amount" align="right" className="w-[120px]" currentKey={sortKey} dir={sortDir} onClick={toggleSort} />
-          </div>
-        );
-
-        return (
-          <div className="hidden sm:block">
-            {sortedFiltered.length === 0 ? (
-              <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden">
-                {headerRow}
-                <p className="py-12 text-center text-sm text-navy/40">Sin resultados</p>
-              </div>
-            ) : sortKey ? (
-              /* Orden manual activo → lista plana, sin agrupar por día */
-              <div className={`bg-white border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden ${isPending ? "opacity-50 pointer-events-none" : ""}`}>
-                {headerRow}
-                {sortedFiltered.map(renderRow)}
-              </div>
-            ) : (
-              /* Agrupado por mes, lista continua (igual que el mockup) */
-              <div className={`bg-white border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden ${isPending ? "opacity-50 pointer-events-none" : ""}`}>
-                {headerRow}
-                {byMonth.map(([monthKey, monthTxns]) => {
-                  const monthNet = monthTxns.reduce((s, t) => s + t.amount, 0);
-                  const [y, m] = monthKey.split("-");
-                  const monthName = MONTHS_ES[parseInt(m) - 1];
-                  const label = monthName.charAt(0).toUpperCase() + monthName.slice(1)
-                    + (parseInt(y) !== new Date().getFullYear() ? ` ${y}` : "");
-                  return (
-                    <div key={monthKey}>
-                      <div className="flex items-baseline justify-between px-4 py-3 bg-navy/[0.035] border-y border-navy/[0.08]">
-                        <span className="text-[15px] font-bold text-navy">{label}</span>
-                        <span className={`text-sm font-semibold tabular-nums ${monthNet < 0 ? "text-danger" : "text-success"}`}>
-                          {monthNet < 0 ? "−" : "+"}{fmtAmt(Math.abs(monthNet))}
-                        </span>
-                      </div>
-                      {monthTxns.map(renderRow)}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        );
-      })()}
 
       {showAddCash && (
         <AddCashModal categories={categories} onClose={() => setShowAddCash(false)} />
