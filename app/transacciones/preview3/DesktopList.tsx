@@ -1338,30 +1338,36 @@ export default function TransaccionesList({
           );
         };
 
+        const headerRow = (
+          <div className="flex items-center gap-4 px-4 py-2.5 border-b border-navy/[0.06] bg-navy/[0.012] group/head">
+            <div className="w-9 shrink-0 flex items-center pl-[3px]">
+              <Checkbox checked={allSelected} onChange={toggleAll} />
+            </div>
+            <SortableHeader label="Concepto" sortKey="concept" align="left" className="flex-1" currentKey={sortKey} dir={sortDir} onClick={toggleSort} />
+            <div className="w-[120px] shrink-0 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Origen</div>
+            <div className="w-[180px] shrink-0 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Categoría</div>
+            <SortableHeader label="Fecha" sortKey="date" align="right" className="w-[90px]" currentKey={sortKey} dir={sortDir} onClick={toggleSort} />
+            <SortableHeader label="Importe / Saldo" sortKey="amount" align="right" className="w-[120px]" currentKey={sortKey} dir={sortDir} onClick={toggleSort} />
+          </div>
+        );
+
         return (
           <div className="hidden sm:block">
-            {/* header */}
-            <div className="flex items-center gap-4 px-4 pb-2 group/head">
-              <div className="w-9 shrink-0 flex items-center pl-[3px]">
-                <Checkbox checked={allSelected} onChange={toggleAll} />
-              </div>
-              <SortableHeader label="Concepto" sortKey="concept" align="left" className="flex-1" currentKey={sortKey} dir={sortDir} onClick={toggleSort} />
-              <div className="w-[120px] shrink-0 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Origen</div>
-              <div className="w-[180px] shrink-0 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Categoría</div>
-              <SortableHeader label="Fecha" sortKey="date" align="right" className="w-[90px]" currentKey={sortKey} dir={sortDir} onClick={toggleSort} />
-              <SortableHeader label="Importe / Saldo" sortKey="amount" align="right" className="w-[120px]" currentKey={sortKey} dir={sortDir} onClick={toggleSort} />
-            </div>
-
             {sortedFiltered.length === 0 ? (
-              <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card py-12 text-center text-sm text-navy/40">Sin resultados</div>
+              <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden">
+                {headerRow}
+                <p className="py-12 text-center text-sm text-navy/40">Sin resultados</p>
+              </div>
             ) : sortKey ? (
               /* Orden manual activo → lista plana, sin agrupar por día */
               <div className={`bg-white border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden ${isPending ? "opacity-50 pointer-events-none" : ""}`}>
+                {headerRow}
                 {sortedFiltered.map(renderRow)}
               </div>
             ) : (
               /* Agrupado por mes, lista continua (igual que el mockup) */
               <div className={`bg-white border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden ${isPending ? "opacity-50 pointer-events-none" : ""}`}>
+                {headerRow}
                 {byMonth.map(([monthKey, monthTxns]) => {
                   const monthNet = monthTxns.reduce((s, t) => s + t.amount, 0);
                   const [y, m] = monthKey.split("-");
