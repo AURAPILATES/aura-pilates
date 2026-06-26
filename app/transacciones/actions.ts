@@ -3,7 +3,7 @@ import { createServerClient } from "@/lib/supabase";
 import { revalidatePath, revalidateTag } from "next/cache";
 import type { PaymentMethod, Transaction } from "@/lib/transactions";
 import { loadCategories, type Category } from "@/lib/categories";
-import { contactKeyFor, recleanPattern } from "@/lib/contactRules";
+import { contactKeyFor, recleanPattern, matchesPattern } from "@/lib/contactRules";
 import { PERIOD_BUCKETS, displayLabel, seriesKeyFor } from "@/lib/recurring";
 
 export type ImportRow = {
@@ -34,11 +34,11 @@ function buildAutoCategory(categories: { value: string; auto_keywords: string | 
  * concepto+más datos coincide con un contacto guardado (ver contact_concepts); si no hay
  * coincidencia queda en null, a la espera de asignarlo a mano. */
 function buildRowInsert(
-  patternMap: Map<string, ContactInfo>,
+  patterns: PatternEntry[],
   autoCategory: (row: ImportRow) => string | null,
 ) {
   return function (row: ImportRow) {
-    const contact = patternMap.get(contactKeyFor(row.concept, row.bankDetails));
+    const contact = matchContact(contactKeyFor(row.concept, row.bankDetails), patterns);
     return {
       date: row.date,
       value_date: row.valueDate,
@@ -55,19 +55,28 @@ function buildRowInsert(
 }
 
 type ContactConceptJoinRow = { pattern: string; contacts: ContactInfo | ContactInfo[] | null };
+type PatternEntry = { pattern: string; contact: ContactInfo };
 
 async function loadContactPatternMap(
   supabase: ReturnType<typeof createServerClient>,
-): Promise<Map<string, ContactInfo>> {
+): Promise<PatternEntry[]> {
   const { data } = await supabase
     .from("contact_concepts")
     .select("pattern, contacts(label, category, iva_rate, retencion_rate)");
-  const map = new Map<string, ContactInfo>();
+  const entries: PatternEntry[] = [];
   for (const row of (data ?? []) as ContactConceptJoinRow[]) {
     const c = Array.isArray(row.contacts) ? row.contacts[0] : row.contacts;
-    if (c) map.set(row.pattern, c);
+    if (c) entries.push({ pattern: row.pattern, contact: c });
   }
-  return map;
+  return entries;
+}
+
+/** Busca el contacto cuyo patrón guardado aparece dentro del texto de un movimiento (ver
+ * matchesPattern) — así un "Concepto bancario" editado a mano para quedarse más corto que el
+ * texto real del banco (ej. "Stripe" en vez de "Stripe Technology Eu") sigue reconociendo el
+ * contacto en futuros movimientos. */
+function matchContact(text: string, patterns: PatternEntry[]): ContactInfo | undefined {
+  return patterns.find((p) => matchesPattern(text, p.pattern))?.contact;
 }
 
 export async function getKnownContactPatterns(): Promise<string[]> {
@@ -236,7 +245,10 @@ async function applyPatternsToTransactions(
     .is("deleted_at", null);
 
   const matchingIds = (txns ?? [])
-    .filter((t: { id: string; concept: string | null; bank_details: string | null }) => patterns.has(contactKeyFor(t.concept, t.bank_details)))
+    .filter((t: { id: string; concept: string | null; bank_details: string | null }) => {
+      const key = contactKeyFor(t.concept, t.bank_details);
+      return [...patterns].some((p) => matchesPattern(key, p));
+    })
     .map((t: { id: string }) => t.id);
   if (matchingIds.length === 0) return 0;
 
@@ -279,7 +291,7 @@ export async function recomputeContactsFromBankDetails(): Promise<{ updated: num
 
   const idsByNewContact = new Map<string, string[]>();
   for (const t of (txns ?? []) as { id: string; concept: string | null; bank_details: string | null; contact: string | null }[]) {
-    const info = patternMap.get(contactKeyFor(t.concept, t.bank_details));
+    const info = matchContact(contactKeyFor(t.concept, t.bank_details), patternMap);
     const newContact = info?.label ?? null;
     if (newContact === t.contact) continue;
     const key = newContact ?? " ";
@@ -402,6 +414,7 @@ export async function assignContactToTransaction(transactionId: string, contactL
 
 export type NewContactDraft = {
   pattern: string;
+  bankPattern: string;
   action: "create" | "attach" | "ignore";
   label: string;
   category: string | null;
@@ -412,9 +425,11 @@ export type NewContactDraft = {
 
 /** Guarda las decisiones tomadas al revisar los contactos nuevos detectados en una
  * importación: crear contacto, añadir el patrón a uno ya existente, o descartarlo (no volver
- * a preguntar). En los dos primeros casos aplica también categoría/IVA/retención a los
- * movimientos ya importados antes que coincidan con el patrón, sin esperar a que alguien
- * pulse "Aplicar a existentes" a mano en Configuración. */
+ * a preguntar). El "Concepto bancario" (bankPattern) es el texto, editado a mano por el
+ * usuario si hace falta, que se guarda como patrón de reconocimiento — puede ser más corto que
+ * el texto crudo del banco (ver matchesPattern en lib/contactRules). En los dos primeros casos
+ * aplica también categoría/IVA/retención a los movimientos ya importados antes que coincidan,
+ * sin esperar a que alguien pulse "Aplicar a existentes" a mano en Configuración. */
 export async function saveNewContacts(drafts: NewContactDraft[]): Promise<{ updated: number }> {
   if (!drafts.length) return { updated: 0 };
   const supabase = createServerClient();
@@ -424,10 +439,11 @@ export async function saveNewContacts(drafts: NewContactDraft[]): Promise<{ upda
 
   let updated = 0;
   for (const d of drafts) {
+    const pattern = recleanPattern(d.bankPattern.trim() || d.pattern);
     if (d.action === "attach" && d.attachToContactId != null) {
       const { error } = await supabase
         .from("contact_concepts")
-        .upsert({ contact_id: d.attachToContactId, pattern: d.pattern }, { onConflict: "pattern" });
+        .upsert({ contact_id: d.attachToContactId, pattern }, { onConflict: "pattern" });
       if (error) throw new Error(error.message);
 
       const { data: contact } = await supabase
@@ -435,7 +451,7 @@ export async function saveNewContacts(drafts: NewContactDraft[]): Promise<{ upda
         .select("category, iva_rate, retencion_rate")
         .eq("id", d.attachToContactId)
         .single();
-      if (contact) updated += await applyPatternsToTransactions(supabase, new Set([d.pattern]), contact);
+      if (contact) updated += await applyPatternsToTransactions(supabase, new Set([pattern]), contact);
     } else if (d.action === "create") {
       const { data: contact, error } = await supabase
         .from("contacts")
@@ -445,10 +461,10 @@ export async function saveNewContacts(drafts: NewContactDraft[]): Promise<{ upda
       if (error) throw new Error(error.message);
       const { error: patError } = await supabase
         .from("contact_concepts")
-        .insert({ contact_id: contact.id, pattern: d.pattern });
+        .insert({ contact_id: contact.id, pattern });
       if (patError) throw new Error(patError.message);
 
-      updated += await applyPatternsToTransactions(supabase, new Set([d.pattern]), contact);
+      updated += await applyPatternsToTransactions(supabase, new Set([pattern]), contact);
     }
   }
   if (updated > 0) revalidateTag("transactions");

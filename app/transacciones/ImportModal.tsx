@@ -6,7 +6,7 @@ import {
   getKnownContactPatterns, getCategoriesForImport, saveNewContacts, getContacts,
   type ImportRow, type ImportBatch, type NewContactDraft, type Contact,
 } from "./actions";
-import { contactKeyFor, cleanContactLabel } from "@/lib/contactRules";
+import { contactKeyFor, cleanContactLabel, cleanBankText, matchesPattern } from "@/lib/contactRules";
 import { sortCategoriesHierarchical, categoryDisplayLabel, type Category } from "@/lib/categories";
 import type { PaymentMethod } from "@/lib/transactions";
 import Drawer from "@/app/components/Drawer";
@@ -194,6 +194,7 @@ function fmtDateShort(d: string) {
 
 type ContactDraft = {
   pattern: string;
+  bankPattern: string;
   sample: string;
   concept: string | null;
   bankDetailsRaw: string | null;
@@ -285,7 +286,7 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
         const countByPattern = new Map<string, number>();
         for (const row of rows) {
           const pattern = contactKeyFor(row.concept, row.bankDetails);
-          if (knownPatterns.has(pattern)) continue;
+          if ([...knownPatterns].some((kp) => matchesPattern(pattern, kp))) continue;
           countByPattern.set(pattern, (countByPattern.get(pattern) ?? 0) + 1);
           if (!newContacts.has(pattern)) newContacts.set(pattern, row);
         }
@@ -296,9 +297,10 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
           const drafts: ContactDraft[] = [...newContacts.entries()].map(([pattern, row]) => {
             const sample = row.bankDetails?.trim() || row.concept?.trim() || "(sin concepto)";
             const cleaned = cleanContactLabel(sample);
+            const bankPattern = cleanBankText(sample) || sample;
             const existing = contacts.find((c) => c.label.toLowerCase() === cleaned.toLowerCase());
             return {
-              pattern, sample,
+              pattern, bankPattern, sample,
               concept: row.concept, bankDetailsRaw: row.bankDetails,
               count: countByPattern.get(pattern) ?? 1,
               exampleDate: row.date, exampleAmount: row.amount,
@@ -332,6 +334,7 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
     try {
       const payload: NewContactDraft[] = drafts.map((d) => ({
         pattern: d.pattern,
+        bankPattern: d.bankPattern.trim() || d.pattern,
         action: d.action,
         label: d.label.trim() || d.sample,
         category: d.category,
@@ -342,7 +345,7 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
       const { updated } = await saveNewContacts(payload);
       setKnownPatterns((prev) => {
         const next = new Set(prev);
-        for (const d of drafts) next.add(d.pattern);
+        for (const d of drafts) { next.add(d.pattern); next.add(d.bankPattern.trim() || d.pattern); }
         return next;
       });
       setState({ kind: "preview", rows, filename, appliedCount: updated });
@@ -509,24 +512,46 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                         )}
 
                         {d.action === "attach" ? (
-                          <select
-                            value={d.attachToContactId ?? ""}
-                            onChange={(e) => updateDraft(d.pattern, { attachToContactId: parseInt(e.target.value, 10) })}
-                            className="w-full mb-2 px-2.5 py-1.5 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40 bg-white"
-                          >
-                            {contacts.map((c) => (
-                              <option key={c.id} value={c.id}>{c.label}</option>
-                            ))}
-                          </select>
+                          <>
+                            <select
+                              value={d.attachToContactId ?? ""}
+                              onChange={(e) => updateDraft(d.pattern, { attachToContactId: parseInt(e.target.value, 10) })}
+                              className="w-full mb-2 px-2.5 py-1.5 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40 bg-white"
+                            >
+                              {contacts.map((c) => (
+                                <option key={c.id} value={c.id}>{c.label}</option>
+                              ))}
+                            </select>
+                            <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1">Concepto bancario</p>
+                            <input
+                              type="text"
+                              value={d.bankPattern}
+                              onChange={(e) => updateDraft(d.pattern, { bankPattern: e.target.value })}
+                              placeholder="Texto que identifica al contacto en el extracto"
+                              className="w-full mb-0.5 px-2.5 py-1.5 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40"
+                            />
+                            <p className="text-[11px] text-navy/35">Se usará para reconocer este contacto en futuros movimientos.</p>
+                          </>
                         ) : (
                           <>
+                            <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1">Nombre contacto</p>
                             <input
                               type="text"
                               value={d.label}
                               onChange={(e) => updateDraft(d.pattern, { label: e.target.value })}
-                              placeholder="Etiqueta"
+                              placeholder="Nombre contacto"
                               className="w-full mb-2 px-2.5 py-1.5 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40"
                             />
+                            <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1">Concepto bancario</p>
+                            <input
+                              type="text"
+                              value={d.bankPattern}
+                              onChange={(e) => updateDraft(d.pattern, { bankPattern: e.target.value })}
+                              placeholder="Texto que identifica al contacto en el extracto"
+                              className="w-full mb-0.5 px-2.5 py-1.5 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40"
+                            />
+                            <p className="text-[11px] text-navy/35 mb-2">Se usará para reconocer este contacto en futuros movimientos.</p>
+                            <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1">Etiqueta</p>
                             <select
                               value={d.category ?? ""}
                               onChange={(e) => updateDraft(d.pattern, { category: e.target.value || null })}
@@ -549,7 +574,7 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                                 %
                               </label>
                               <label className="flex-1 flex items-center gap-1.5 text-xs text-navy/50">
-                                Ret.
+                                IRPF
                                 <input
                                   type="number" min={0} max={100} step={0.5}
                                   value={d.retencionRate}

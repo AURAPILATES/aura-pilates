@@ -5,33 +5,71 @@ export function isReferenceLike(s: string): boolean {
   const clean = s.replace(/[\s-]/g, "");
   if (!clean) return true;
   const digits = clean.replace(/[^0-9]/g, "").length;
-  return digits / clean.length >= 0.5;
+  return digits / clean.length > 0.5;
 }
 
 /** Un token "parece un código" (de operación, de transferencia, de factura...) si es mayoría
- * dígitos, o si es un bloque de mayúsculas sin vocales — ese patrón no aparece en palabras o
- * nombres reales, solo en identificadores que el banco genera por movimiento (ej. "SXPYDKKK"
- * en "SXPYDKKK -Stripe Technology Eu") y que cambian aunque sea siempre el mismo contacto. */
+ * dígitos, si es un bloque de mayúsculas sin vocales, o si mezcla letras y números (ej.
+ * "WORKSPÑ2386", "HYVEDEMM488") — ese patrón no aparece en palabras o nombres reales, solo en
+ * identificadores que el banco genera por movimiento y que cambian aunque sea siempre el mismo
+ * contacto. */
 function looksLikeCode(word: string): boolean {
   const w = word.replace(/[.,]/g, "");
   if (!w) return true;
   if (isReferenceLike(w)) return true;
-  return w.length >= 6 && w === w.toUpperCase() && !/[aeiouáéíóú]/i.test(w);
+  if (w.length >= 6 && w === w.toUpperCase() && !/[aeiouáéíóú]/i.test(w)) return true;
+  return w.length >= 6 && /[0-9]/.test(w) && /[a-záéíóúñ]/i.test(w);
+}
+
+/** Sufijos genéricos de forma jurídica o términos bancarios que el extracto añade pero que no
+ * identifican al contacto (GmbH, S.L., "client"...). No es identificación de empresa, solo ruido
+ * a quitar antes de guardar el patrón de coincidencia. */
+const NOISE_WORDS = new Set([
+  "gmbh", "ltd", "inc", "llc", "corp", "plc", "srl", "kg", "ag", "nv", "bv", "co",
+  "sl", "sa", "slu", "sau", "sll", "scp",
+  "client", "cliente", "clientes", "sucursal",
+]);
+
+function isNoiseWord(word: string): boolean {
+  return NOISE_WORDS.has(word.replace(/[.,]/g, "").toLowerCase());
 }
 
 function normalize(s: string): string {
   return s.toLowerCase().trim().replace(/\s+/g, " ");
 }
 
-/** Quita de un texto de banco los tokens que "parecen un código" (ver looksLikeCode),
- * dejando solo lo que identifica de forma estable a un contacto — así dos movimientos del
- * mismo contacto con referencias distintas ("SXPYDKKK", "QWERTYZZ"...) producen el mismo
- * resultado. Si no queda ninguna palabra reconocible, devuelve el texto original sin tocar. */
+/** Quita de un texto de banco los tokens que "parecen un código" (ver looksLikeCode) o que son
+ * ruido genérico de forma jurídica (ver NOISE_WORDS), dejando solo lo que identifica de forma
+ * estable a un contacto — así dos movimientos del mismo contacto con referencias distintas
+ * ("SXPYDKKK", "QWERTYZZ"...) producen el mismo resultado. Si no queda ninguna palabra
+ * reconocible, devuelve el texto original sin tocar. */
 export function cleanBankText(s: string | null | undefined): string {
   if (!s) return "";
-  const words = s.trim().replace(/[,\-–—]/g, " ").split(/\s+/).filter(Boolean);
-  const kept = words.filter((w) => !looksLikeCode(w));
+  const words = s.trim().replace(/[,\-–—*]/g, " ").split(/\s+/).filter(Boolean);
+  const kept = words.filter((w) => !looksLikeCode(w) && !isNoiseWord(w));
   return (kept.length ? kept : words).join(" ");
+}
+
+function tokenize(s: string): string[] {
+  return normalize(s).match(/[a-z0-9áéíóúñ]+/gi) ?? [];
+}
+
+/** ¿Aparece `pattern` como subsecuencia contigua de palabras dentro de `text`? Permite que un
+ * "Concepto bancario" guardado más corto que el texto real del banco (ej. el contacto se editó
+ * a mano de "Stripe Technology Eu" a "Stripe") siga reconociendo el mismo contacto en futuros
+ * movimientos, en lugar de exigir igualdad exacta. */
+export function matchesPattern(text: string, pattern: string): boolean {
+  const p = tokenize(pattern);
+  if (p.length === 0) return false;
+  const t = tokenize(text);
+  for (let i = 0; i + p.length <= t.length; i++) {
+    let ok = true;
+    for (let j = 0; j < p.length; j++) {
+      if (t[i + j] !== p[j]) { ok = false; break; }
+    }
+    if (ok) return true;
+  }
+  return false;
 }
 
 /** Clave de agrupación de un movimiento: combina concepto + "más datos", ya limpios de
