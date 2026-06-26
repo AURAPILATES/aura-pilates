@@ -101,3 +101,36 @@ export function recleanPattern(pattern: string): string {
 export function cleanContactLabel(s: string): string {
   return cleanBankText(s) || s.trim();
 }
+
+const STOPWORDS = new Set(["de", "del", "la", "el", "los", "las", "y", "i", "en", "a", "al", "con"]);
+
+/** Descripciones bancarias genéricas que se repiten en muchos contactos distintos y por tanto
+ * no identifican a ninguno en particular (ej. "Recibo de suministros", "Recibos varios",
+ * "Transfer. en div."). Sirve para no escoger esta parte del movimiento como nombre/patrón. */
+const GENERIC_WORDS = new Set([
+  "recibo", "recibos", "varios", "varias", "suministros", "transferencia", "transferencias",
+  "transfer", "transf", "favor", "bizum", "pago", "pagos", "compra", "compras", "abono",
+  "abonos", "ingreso", "ingresos", "domiciliacion", "adeudo", "adeudos", "traspaso",
+  "traspasos", "nomina", "cuota", "cuotas", "liquidacion", "comision", "comisiones",
+  "intereses", "devolucion", "devoluciones", "operacion", "operaciones", "movimiento", "div",
+  "client", "cliente", "clientes",
+]);
+
+function isGenericLabel(s: string): boolean {
+  const tokens = tokenize(s).filter((t) => !STOPWORDS.has(t));
+  if (tokens.length === 0) return true;
+  return tokens.every((t) => GENERIC_WORDS.has(t));
+}
+
+/** Decide cuál de "concepto" o "más datos" identifica mejor al contacto real. En
+ * transferencias suele ser "más datos" (ej. "SXPYDKKK -Stripe Technology Eu"); en recibos o
+ * domiciliaciones suele ser el concepto (ej. "IBERDROLA CLIENT.") y "más datos" es solo una
+ * descripción genérica que se repite igual para contactos distintos ("Recibo de suministros",
+ * "Recibos varios"). Prioriza el que no sea genérico. */
+export function pickIdentifyingText(concept: string | null, bankDetails: string | null): string {
+  const c = concept?.trim() || "";
+  const b = bankDetails?.trim() || "";
+  if (b && !isGenericLabel(b)) return b;
+  if (c && !isGenericLabel(c)) return c;
+  return b || c;
+}

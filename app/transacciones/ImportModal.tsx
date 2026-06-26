@@ -6,7 +6,7 @@ import {
   getKnownContactPatterns, getCategoriesForImport, saveNewContacts, getContacts,
   type ImportRow, type ImportBatch, type NewContactDraft, type Contact,
 } from "./actions";
-import { contactKeyFor, cleanContactLabel, cleanBankText, matchesPattern } from "@/lib/contactRules";
+import { contactKeyFor, cleanContactLabel, cleanBankText, matchesPattern, pickIdentifyingText } from "@/lib/contactRules";
 import { sortCategoriesHierarchical, categoryDisplayLabel, type Category } from "@/lib/categories";
 import type { PaymentMethod } from "@/lib/transactions";
 import Drawer from "@/app/components/Drawer";
@@ -295,7 +295,7 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
           setState({ kind: "preview", rows, filename: file.name });
         } else {
           const drafts: ContactDraft[] = [...newContacts.entries()].map(([pattern, row]) => {
-            const sample = row.bankDetails?.trim() || row.concept?.trim() || "(sin concepto)";
+            const sample = pickIdentifyingText(row.concept, row.bankDetails) || "(sin concepto)";
             const cleaned = cleanContactLabel(sample);
             const bankPattern = cleanBankText(sample) || sample;
             const existing = contacts.find((c) => c.label.toLowerCase() === cleaned.toLowerCase());
