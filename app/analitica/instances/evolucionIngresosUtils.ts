@@ -1,5 +1,6 @@
 import type { Sale } from "@/lib/sales";
 import type { MonthlyProductRevenue } from "@/lib/productRevenue";
+import type { MonthlySubStats } from "@/lib/subscriptionCohort";
 
 export const MONTH_NAMES: Record<string, string> = {
   "01": "Ene", "02": "Feb", "03": "Mar", "04": "Abr",
@@ -50,6 +51,75 @@ export function buildSeriesFromProcedencia(monthly: MonthlyProductRevenue[]) {
     data.set(m.month, row);
   }
   return { months, data };
+}
+
+export type Period = "mes" | "trimestre" | "año";
+
+export function periodKey(month: string, period: Period): string {
+  const [y, m] = month.split("-");
+  if (period === "mes") return month;
+  if (period === "trimestre") return `${y}-Q${Math.ceil(parseInt(m) / 3)}`;
+  return y;
+}
+
+export function periodLabel(key: string, period: Period): string {
+  if (period === "mes") {
+    const [y, m] = key.split("-");
+    return `${MONTH_NAMES[m] ?? m}'${y.slice(2)}`;
+  }
+  if (period === "trimestre") return key.replace("-", " ");
+  return key;
+}
+
+/** Reagrupa una serie mensual (suma de valores) al período pedido. */
+export function regroupSeries(
+  months: string[],
+  data: Map<string, Map<string, number>>,
+  period: Period,
+): { months: string[]; data: Map<string, Map<string, number>> } {
+  if (period === "mes") return { months, data };
+  const grouped = new Map<string, Map<string, number>>();
+  for (const m of months) {
+    const k = periodKey(m, period);
+    const src = data.get(m);
+    if (!src) continue;
+    const dst = grouped.get(k) ?? new Map<string, number>();
+    for (const [name, val] of src) dst.set(name, (dst.get(name) ?? 0) + val);
+    grouped.set(k, dst);
+  }
+  const keys = [...grouped.keys()].sort();
+  return { months: keys, data: grouped };
+}
+
+/** Reagrupa las cohortes de suscripción al período pedido: los flujos (altas/bajas/
+ * reactivaciones/ingresos) se suman, "activeCount" toma el valor del último mes del período
+ * (es una foto, no un flujo). */
+export function regroupCohorts(cohorts: MonthlySubStats[], period: Period): MonthlySubStats[] {
+  if (period === "mes") return cohorts;
+  const byKey = new Map<string, MonthlySubStats & { lastMonth: string }>();
+  for (const c of cohorts) {
+    const k = periodKey(c.month, period);
+    const prev = byKey.get(k);
+    if (!prev) {
+      byKey.set(k, { ...c, month: k, label: periodLabel(k, period), lastMonth: c.month });
+    } else {
+      byKey.set(k, {
+        ...prev,
+        revenue: prev.revenue + c.revenue,
+        newSubs: prev.newSubs + c.newSubs,
+        churned: prev.churned + c.churned,
+        reactivated: prev.reactivated + c.reactivated,
+        activeCount: c.month > prev.lastMonth ? c.activeCount : prev.activeCount,
+        lastMonth: c.month > prev.lastMonth ? c.month : prev.lastMonth,
+      });
+    }
+  }
+  return Array.from(byKey.values())
+    .sort((a, b) => a.month.localeCompare(b.month))
+    .map((v) => ({
+      month: v.month, label: v.label, revenue: v.revenue,
+      activeCount: v.activeCount, newSubs: v.newSubs, churned: v.churned, reactivated: v.reactivated,
+    }));
 }
 
 export function makeTrendSummary(

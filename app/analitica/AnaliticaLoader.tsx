@@ -515,9 +515,6 @@ export default async function AnaliticaLoader({
                 item: seg.item, revenue: seg.revenue, count: seg.count, share: seg.share, color: seg.color,
               }))}
               total={byProductTotal}
-              monthly={monthlyRevenue}
-              events={businessEvents}
-              rawPayments={pMain}
             />
             <IngresosPorCanal
               rows={[
@@ -526,8 +523,6 @@ export default async function AnaliticaLoader({
               ]}
               combinedTotal={stripeTotalRevenue(paymentsBounded) + uscRevenue}
               rangeLabel={uscLastDateLabel}
-              monthly={monthlyRevenue}
-              events={businessEvents}
             />
             <MrrPorTier tiers={mrrByTier} />
           </div>
@@ -562,7 +557,7 @@ export default async function AnaliticaLoader({
               excludeSegments={["disputed", "failed"]}
             />
             <EvolucionInscritos data={activeCustomersData} />
-            <EvolucionSuscripciones monthly={monthlyRevenue} cohorts={subscriptionCohorts} />
+            <EvolucionSuscripciones monthly={monthlyRevenue} cohorts={subscriptionCohorts} events={businessEvents} rawPayments={pMain} />
             <RetencionCohorte cohorts={retentionCohorts} />
             <ConversionPack summary={conversionSummary} />
             <PrimeraCompra summary={firstPurchaseSummary} />
