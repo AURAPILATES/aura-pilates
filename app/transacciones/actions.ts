@@ -8,17 +8,18 @@ import { PERIOD_BUCKETS, displayLabel, seriesKeyFor } from "@/lib/recurring";
 
 export type ImportRow = {
   date: string;
+  valueDate: string | null;
   amount: number;
   balance: number | null;
   concept: string | null;
-  contact: string | null;
+  bankDetails: string | null;
 };
 
 type ContactInfo = { label: string; category: string | null; iva_rate: number; retencion_rate: number };
 
 function buildAutoCategory(categories: { value: string; auto_keywords: string | null }[]) {
   return function (row: ImportRow): string | null {
-    const hay = `${row.concept ?? ""} ${row.contact ?? ""}`.toLowerCase();
+    const hay = `${row.concept ?? ""} ${row.bankDetails ?? ""}`.toLowerCase();
     for (const cat of categories) {
       if (!cat.auto_keywords) continue;
       const kws = cat.auto_keywords.split(",").map((k: string) => k.trim().toLowerCase()).filter(Boolean);
@@ -28,20 +29,24 @@ function buildAutoCategory(categories: { value: string; auto_keywords: string | 
   };
 }
 
-/** Aplica el contacto guardado (si existe): categoría y etiqueta tienen prioridad sobre el
- * auto-categorizado por palabra clave, y copia iva_rate/retencion_rate al movimiento. */
+/** "Movimiento" (concepto), "Más datos", fecha, fecha valor, importe y saldo vienen tal cual
+ * del extracto del banco. "Contacto" lo nutrimos nosotros: solo se rellena si el patrón
+ * concepto+más datos coincide con un contacto guardado (ver contact_concepts); si no hay
+ * coincidencia queda en null, a la espera de asignarlo a mano. */
 function buildRowInsert(
   patternMap: Map<string, ContactInfo>,
   autoCategory: (row: ImportRow) => string | null,
 ) {
   return function (row: ImportRow) {
-    const contact = patternMap.get(contactKeyFor(row.concept, row.contact));
+    const contact = patternMap.get(contactKeyFor(row.concept, row.bankDetails));
     return {
       date: row.date,
+      value_date: row.valueDate,
       amount: row.amount,
       balance: row.balance,
       concept: row.concept,
-      contact: row.contact?.trim() || contact?.label || null,
+      bank_details: row.bankDetails,
+      contact: contact?.label ?? null,
       category: contact?.category ?? autoCategory(row),
       iva_rate: contact ? contact.iva_rate : null,
       retencion_rate: contact ? contact.retencion_rate : null,
@@ -198,11 +203,11 @@ async function applyPatternsToTransactions(
   if (patterns.size === 0) return 0;
   const { data: txns } = await supabase
     .from("transactions")
-    .select("id, concept, contact")
+    .select("id, concept, bank_details")
     .is("deleted_at", null);
 
   const matchingIds = (txns ?? [])
-    .filter((t: { id: string; concept: string | null; contact: string | null }) => patterns.has(contactKeyFor(t.concept, t.contact)))
+    .filter((t: { id: string; concept: string | null; bank_details: string | null }) => patterns.has(contactKeyFor(t.concept, t.bank_details)))
     .map((t: { id: string }) => t.id);
   if (matchingIds.length === 0) return 0;
 
@@ -227,6 +232,41 @@ export async function applyContactToExisting(contactId: number): Promise<{ updat
   if (!contact) return { updated: 0 };
   const patterns = new Set((contact.contact_concepts as { pattern: string }[]).map((c) => c.pattern));
   const updated = await applyPatternsToTransactions(supabase, patterns, contact);
+  if (updated > 0) revalidateTag("transactions");
+  return { updated };
+}
+
+/** Recalcula la columna "Contacto" de todos los movimientos a partir de "Más datos" +
+ * concepto, cruzando con los contactos guardados. Solo hace falta ejecutarlo una vez tras
+ * separar "Más datos" (texto crudo del banco) de "Contacto" (lo que nosotros asignamos) —
+ * antes de eso, "contact" mezclaba ambos. Es idempotente: se puede volver a ejecutar sin
+ * riesgo si se añaden contactos o patrones nuevos más adelante. */
+export async function recomputeContactsFromBankDetails(): Promise<{ updated: number }> {
+  const supabase = createServerClient();
+  const [{ data: txns }, patternMap] = await Promise.all([
+    supabase.from("transactions").select("id, concept, bank_details, contact").is("deleted_at", null),
+    loadContactPatternMap(supabase),
+  ]);
+
+  const idsByNewContact = new Map<string, string[]>();
+  for (const t of (txns ?? []) as { id: string; concept: string | null; bank_details: string | null; contact: string | null }[]) {
+    const info = patternMap.get(contactKeyFor(t.concept, t.bank_details));
+    const newContact = info?.label ?? null;
+    if (newContact === t.contact) continue;
+    const key = newContact ?? " ";
+    if (!idsByNewContact.has(key)) idsByNewContact.set(key, []);
+    idsByNewContact.get(key)!.push(t.id);
+  }
+
+  let updated = 0;
+  for (const [key, ids] of idsByNewContact) {
+    const { error } = await supabase
+      .from("transactions")
+      .update({ contact: key === " " ? null : key })
+      .in("id", ids);
+    if (error) throw new Error(error.message);
+    updated += ids.length;
+  }
   if (updated > 0) revalidateTag("transactions");
   return { updated };
 }
@@ -492,6 +532,16 @@ export async function updateTransactionConcept(id: string, concept: string) {
   const { error } = await supabase
     .from("transactions")
     .update({ concept: concept.trim() || null })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidateTag("transactions");
+}
+
+export async function updateTransactionBankDetails(id: string, bankDetails: string) {
+  const supabase = createServerClient();
+  const { error } = await supabase
+    .from("transactions")
+    .update({ bank_details: bankDetails.trim() || null })
     .eq("id", id);
   if (error) throw new Error(error.message);
   revalidateTag("transactions");

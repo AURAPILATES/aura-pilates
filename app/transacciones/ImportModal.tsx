@@ -8,7 +8,16 @@ import {
 } from "./actions";
 import { contactKeyFor, cleanContactLabel } from "@/lib/contactRules";
 import { sortCategoriesHierarchical, categoryDisplayLabel, type Category } from "@/lib/categories";
+import type { PaymentMethod } from "@/lib/transactions";
 import Drawer from "@/app/components/Drawer";
+
+const CASH_ACCOUNTS: { value: PaymentMethod; label: string }[] = [
+  { value: "efectivo", label: "Efectivo Aura" },
+  { value: "carles", label: "Carles" },
+  { value: "victor", label: "Víctor" },
+  { value: "celia", label: "Celia" },
+  { value: "olga", label: "Olga" },
+];
 
 // ── CSV parser ────────────────────────────────────────────────────────────────
 
@@ -68,11 +77,12 @@ function parseCSV(text: string): ImportRow[] {
       .replace(/[^a-z0-9\/\.\-]/g, " ").trim()
   );
 
-  const dateIdx    = findCol(headers, ["fecha", "f.operacion", "f.valor", "fecha operacion", "fecha valor", "date"]);
-  const amountIdx  = findCol(headers, ["importe", "amount", "movimiento", "cargo abono", "importe eur"]);
-  const balanceIdx = findCol(headers, ["saldo", "balance", "saldo disponible", "saldo contable"]);
-  const conceptIdx = findCol(headers, ["concepto", "concept", "descripcion", "description"]);
-  const contactIdx = findCol(headers, ["beneficiario ordenante", "contact", "contacto", "ordenante", "beneficiario", "comercio"]);
+  const dateIdx      = findCol(headers, ["fecha operacion", "f.operacion", "fecha", "date"]);
+  const valueDateIdx = findCol(headers, ["fecha valor", "f.valor"]);
+  const amountIdx    = findCol(headers, ["importe", "amount", "movimiento", "cargo abono", "importe eur"]);
+  const balanceIdx   = findCol(headers, ["saldo", "balance", "saldo disponible", "saldo contable"]);
+  const conceptIdx   = findCol(headers, ["movimiento", "concepto", "concept", "descripcion", "description"]);
+  const bankDetailsIdx = findCol(headers, ["mas datos", "beneficiario ordenante", "ordenante", "beneficiario", "comercio"]);
 
   if (dateIdx === -1) throw new Error(`Columna de fecha no encontrada. Cabeceras: ${headers.join(" | ")}`);
   if (amountIdx === -1) throw new Error(`Columna de importe no encontrada. Cabeceras: ${headers.join(" | ")}`);
@@ -86,10 +96,11 @@ function parseCSV(text: string): ImportRow[] {
     if (amount === null) continue;
     rows.push({
       date,
+      valueDate: valueDateIdx >= 0 ? parseDate(cols[valueDateIdx] ?? "") : null,
       amount,
       balance: balanceIdx >= 0 ? parseSpanishNum(cols[balanceIdx] ?? "") : null,
       concept: conceptIdx >= 0 ? (cols[conceptIdx]?.trim() || null) : null,
-      contact: contactIdx >= 0 ? (cols[contactIdx]?.trim() || null) : null,
+      bankDetails: bankDetailsIdx >= 0 ? (cols[bankDetailsIdx]?.trim() || null) : null,
     });
   }
   if (rows.length === 0) throw new Error("No se encontraron filas válidas. Revisa el formato del CSV.");
@@ -126,11 +137,12 @@ function parseExcel(buffer: ArrayBuffer): ImportRow[] {
   }
   if (headerIdx === -1) throw new Error("No se encontró la fila de cabeceras (Fecha / Importe) en el Excel.");
 
-  const dateIdx    = findCol(headers, ["fecha"]);
-  const amountIdx  = findCol(headers, ["importe"]);
-  const balanceIdx = findCol(headers, ["saldo"]);
-  const conceptIdx = findCol(headers, ["movimiento", "concepto"]);
-  const contactIdx = findCol(headers, ["mas datos", "beneficiario", "ordenante", "comercio"]);
+  const dateIdx      = findCol(headers, ["fecha operacion", "fecha"]);
+  const valueDateIdx = findCol(headers, ["fecha valor"]);
+  const amountIdx    = findCol(headers, ["importe"]);
+  const balanceIdx   = findCol(headers, ["saldo"]);
+  const conceptIdx   = findCol(headers, ["movimiento", "concepto"]);
+  const bankDetailsIdx = findCol(headers, ["mas datos", "beneficiario", "ordenante", "comercio"]);
 
   if (dateIdx === -1) throw new Error("Columna de fecha no encontrada en el Excel.");
   if (amountIdx === -1) throw new Error("Columna de importe no encontrada en el Excel.");
@@ -144,6 +156,11 @@ function parseExcel(buffer: ArrayBuffer): ImportRow[] {
     const date = typeof rawDate === "number" ? excelSerialToISO(rawDate) : parseDate(String(rawDate ?? ""));
     if (!date) continue;
 
+    const rawValueDate = valueDateIdx >= 0 ? cols[valueDateIdx] : null;
+    const valueDate =
+      typeof rawValueDate === "number" ? excelSerialToISO(rawValueDate)
+      : rawValueDate != null ? parseDate(String(rawValueDate)) : null;
+
     const rawAmount = cols[amountIdx];
     const amount = typeof rawAmount === "number" ? rawAmount : parseSpanishNum(String(rawAmount ?? ""));
     if (amount === null) continue;
@@ -156,10 +173,11 @@ function parseExcel(buffer: ArrayBuffer): ImportRow[] {
 
     rows.push({
       date,
+      valueDate,
       amount,
       balance,
       concept: conceptIdx >= 0 && cols[conceptIdx] != null ? String(cols[conceptIdx]).trim() || null : null,
-      contact: contactIdx >= 0 && cols[contactIdx] != null ? String(cols[contactIdx]).trim() || null : null,
+      bankDetails: bankDetailsIdx >= 0 && cols[bankDetailsIdx] != null ? String(cols[bankDetailsIdx]).trim() || null : null,
     });
   }
   if (rows.length === 0) throw new Error("No se encontraron filas válidas. Revisa el formato del Excel.");
@@ -178,7 +196,7 @@ type ContactDraft = {
   pattern: string;
   sample: string;
   concept: string | null;
-  contactRaw: string | null;
+  bankDetailsRaw: string | null;
   count: number;
   exampleDate: string;
   exampleAmount: number;
@@ -202,7 +220,7 @@ type State =
  * mismo criterio que el auto-categorizador del servidor (app/transacciones/actions.ts),
  * pero solo entre categorías ya existentes: nunca propone crear una nueva. */
 function suggestCategory(row: ImportRow, categories: Category[]): string | null {
-  const hay = `${row.concept ?? ""} ${row.contact ?? ""}`.toLowerCase();
+  const hay = `${row.concept ?? ""} ${row.bankDetails ?? ""}`.toLowerCase();
   for (const cat of categories) {
     if (!cat.auto_keywords) continue;
     const kws = cat.auto_keywords.split(",").map((k) => k.trim().toLowerCase()).filter(Boolean);
@@ -218,6 +236,7 @@ function fmtAmt(n: number) {
 export default function ImportModal({ onClose }: { onClose: () => void }) {
   const [state, setState] = useState<State>({ kind: "idle" });
   const [isCash, setIsCash] = useState(false);
+  const [cashAccount, setCashAccount] = useState<PaymentMethod>("efectivo");
   const fileRef = useRef<HTMLInputElement>(null);
   const [historial, setHistorial] = useState<ImportBatch[]>([]);
   const [confirmUndo, setConfirmUndo] = useState<string | null>(null);
@@ -265,7 +284,7 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
         const newContacts = new Map<string, ImportRow>();
         const countByPattern = new Map<string, number>();
         for (const row of rows) {
-          const pattern = contactKeyFor(row.concept, row.contact);
+          const pattern = contactKeyFor(row.concept, row.bankDetails);
           if (knownPatterns.has(pattern)) continue;
           countByPattern.set(pattern, (countByPattern.get(pattern) ?? 0) + 1);
           if (!newContacts.has(pattern)) newContacts.set(pattern, row);
@@ -275,12 +294,12 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
           setState({ kind: "preview", rows, filename: file.name });
         } else {
           const drafts: ContactDraft[] = [...newContacts.entries()].map(([pattern, row]) => {
-            const sample = row.contact?.trim() || row.concept?.trim() || "(sin concepto)";
+            const sample = row.bankDetails?.trim() || row.concept?.trim() || "(sin concepto)";
             const cleaned = cleanContactLabel(sample);
             const existing = contacts.find((c) => c.label.toLowerCase() === cleaned.toLowerCase());
             return {
               pattern, sample,
-              concept: row.concept, contactRaw: row.contact,
+              concept: row.concept, bankDetailsRaw: row.bankDetails,
               count: countByPattern.get(pattern) ?? 1,
               exampleDate: row.date, exampleAmount: row.amount,
               action: existing ? "attach" : "create",
@@ -335,7 +354,7 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
   async function handleForceImport(rows: ImportRow[], batchId: string) {
     setForcingDuplicates(true);
     try {
-      await forceImportTransactions(rows, isCash ? "efectivo" : "banco", batchId);
+      await forceImportTransactions(rows, isCash ? cashAccount : "banco", batchId);
       const keys = new Set(rows.map((r) => `${r.date}|${r.amount}|${r.concept}`));
       setState((prev) => {
         if (prev.kind !== "done") return prev;
@@ -349,7 +368,7 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
   async function doImport(rows: ImportRow[]) {
     setState({ kind: "importing" });
     try {
-      const res = await importTransactions(rows, isCash ? "efectivo" : "banco");
+      const res = await importTransactions(rows, isCash ? cashAccount : "banco");
       setState({ kind: "done", imported: res.imported, skipped: res.skipped, skippedRows: res.skippedRows, batchId: res.batchId });
       if (res.batchId) {
         getRecentImports().then(setHistorial).catch(() => {});
@@ -449,7 +468,7 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                           <span className="text-navy/40">Concepto:</span> {d.concept || "—"}
                         </p>
                         <p className="text-xs text-navy truncate">
-                          <span className="text-navy/40">Contacto:</span> {d.contactRaw || "—"}
+                          <span className="text-navy/40">Más datos:</span> {d.bankDetailsRaw || "—"}
                         </p>
                         <p className="text-[11px] text-navy/40 mt-0.5">
                           {d.count} {d.count === 1 ? "movimiento" : "movimientos"} · ej. {fmtDateShort(d.exampleDate)} · {d.exampleAmount >= 0 ? "+" : "−"}{fmtAmt(d.exampleAmount)} €
@@ -590,7 +609,7 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                     {state.rows.slice(0, 5).map((r, i) => (
                       <tr key={i} className="border-b border-navy/[0.04] last:border-0">
                         <td className="px-3 py-2 text-navy/60 whitespace-nowrap tabular-nums">{r.date.split("-").reverse().join("/")}</td>
-                        <td className="px-3 py-2 text-navy truncate max-w-[200px]">{r.concept ?? r.contact ?? "—"}</td>
+                        <td className="px-3 py-2 text-navy truncate max-w-[200px]">{r.concept ?? r.bankDetails ?? "—"}</td>
                         <td className={`px-3 py-2 text-right font-semibold tabular-nums ${r.amount >= 0 ? "text-success" : "text-navy/70"}`}>
                           {r.amount >= 0 ? "+" : "−"}{fmtAmt(r.amount)} €
                         </td>
@@ -616,6 +635,17 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                 />
                 Estos movimientos son en efectivo (no del banco)
               </label>
+              {isCash && (
+                <select
+                  value={cashAccount}
+                  onChange={(e) => setCashAccount(e.target.value as PaymentMethod)}
+                  className="w-full mb-4 px-2.5 py-1.5 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40 bg-white"
+                >
+                  {CASH_ACCOUNTS.map((a) => (
+                    <option key={a.value} value={a.value}>{a.label}</option>
+                  ))}
+                </select>
+              )}
               <div className="flex gap-2">
                 <button
                   onClick={() => setState({ kind: "idle" })}
@@ -679,7 +709,7 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                           {r.date.split("-").reverse().join("/")}
                         </span>
                         <span className="text-xs text-navy truncate flex-1">
-                          {r.concept ?? r.contact ?? "—"}
+                          {r.concept ?? r.bankDetails ?? "—"}
                         </span>
                         <span className={`text-xs font-semibold tabular-nums shrink-0 ${r.amount >= 0 ? "text-success" : "text-navy/70"}`}>
                           {r.amount >= 0 ? "+" : "−"}{fmtAmt(r.amount)} €

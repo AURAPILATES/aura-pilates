@@ -4,7 +4,7 @@ import type { Category } from "@/lib/categories";
 import { contactKeyFor } from "@/lib/contactRules";
 import {
   type Contact, updateContact, deleteContact, applyContactToExisting, createContact,
-  addPatternToContact, removeContactPattern,
+  addPatternToContact, removeContactPattern, recomputeContactsFromBankDetails,
 } from "@/app/transacciones/actions";
 import Drawer from "@/app/components/Drawer";
 import { CategoryPill } from "@/app/transacciones/TransaccionesList";
@@ -263,7 +263,20 @@ function NewContactForm({ categories, onCreated, onCancel }: {
 export default function ContactosManager({ contacts: initialContacts, categories }: { contacts: Contact[]; categories: Category[] }) {
   const [contacts, setContacts] = useState(initialContacts);
   const [creating, setCreating] = useState(false);
+  const [recomputing, setRecomputing] = useState(false);
+  const [recomputed, setRecomputed] = useState<number | null>(null);
   const [, startTransition] = useTransition();
+
+  async function handleRecompute() {
+    setRecomputing(true);
+    setRecomputed(null);
+    try {
+      const { updated } = await recomputeContactsFromBankDetails();
+      setRecomputed(updated);
+    } finally {
+      setRecomputing(false);
+    }
+  }
 
   function patchContact(id: number, patch: Partial<{ label: string; category: string | null; ivaRate: number; retencionRate: number; patterns: string[] }>) {
     setContacts((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)));
@@ -289,12 +302,22 @@ export default function ContactosManager({ contacts: initialContacts, categories
             Categoría, IVA y retención por contacto, identificado por uno o varios conceptos bancarios. Se aplican automáticamente al importar movimientos que coincidan.
           </p>
         </div>
-        <button
-          onClick={() => setCreating(true)}
-          className="px-3 py-1.5 text-xs font-semibold bg-navy text-white rounded-md hover:bg-navy/85 transition-colors shrink-0"
-        >
-          + Nuevo contacto
-        </button>
+        <div className="flex items-center gap-3 shrink-0">
+          <button
+            onClick={handleRecompute}
+            disabled={recomputing}
+            title="Vuelve a calcular Contacto a partir de Concepto + Más datos, cruzando con los contactos guardados"
+            className="text-xs text-navy/45 hover:text-navy transition-colors disabled:opacity-50 whitespace-nowrap"
+          >
+            {recomputing ? "Recalculando…" : recomputed !== null ? `${recomputed} movimientos actualizados` : "Recalcular contactos"}
+          </button>
+          <button
+            onClick={() => setCreating(true)}
+            className="px-3 py-1.5 text-xs font-semibold bg-navy text-white rounded-md hover:bg-navy/85 transition-colors"
+          >
+            + Nuevo contacto
+          </button>
+        </div>
       </div>
       {creating && (
         <NewContactForm

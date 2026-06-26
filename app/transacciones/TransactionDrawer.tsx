@@ -216,6 +216,7 @@ export default function TransactionDrawer({
   onClose,
   onUpdateContact,
   onUpdateConcept,
+  onUpdateBankDetails,
   onUpdateCategory,
   onUpdateNotes,
   onUpdateDate,
@@ -229,6 +230,7 @@ export default function TransactionDrawer({
   onClose: () => void;
   onUpdateContact: (id: string, value: string) => void;
   onUpdateConcept: (id: string, value: string) => void;
+  onUpdateBankDetails: (id: string, value: string) => void;
   onUpdateCategory: (id: string, value: string | null) => void;
   onUpdateNotes: (id: string, value: string) => void;
   onUpdateDate: (id: string, value: string) => void;
@@ -287,6 +289,7 @@ export default function TransactionDrawer({
           <ContactPicker value={t.contact ?? ""} contacts={contacts} onSave={(v) => onUpdateContact(t.id, v)} />
         </div>
         <Field label="Concepto" value={t.concept ?? ""} onSave={(v) => onUpdateConcept(t.id, v)} />
+        <Field label="Más datos" value={t.bank_details ?? ""} onSave={(v) => onUpdateBankDetails(t.id, v)} />
 
         <div>
           <p className="text-[11px] text-navy/40 uppercase tracking-wider mb-1.5">Categoría</p>
@@ -307,6 +310,9 @@ export default function TransactionDrawer({
               />
             ) : (
               <p className="text-sm text-navy">{fmtDate(t.date)}</p>
+            )}
+            {t.value_date && t.value_date !== t.date && (
+              <p className="text-xs text-navy/40 mt-0.5">Fecha valor: {fmtDate(t.value_date)}</p>
             )}
           </div>
           <div>

@@ -9,9 +9,11 @@ export type PaymentMethod = "banco" | "efectivo" | "victor" | "celia" | "olga" |
 export type Transaction = {
   id: string;
   date: string;
+  value_date: string | null;
   amount: number;
   balance: number | null;
   concept: string | null;
+  bank_details: string | null;
   contact: string | null;
   labels: string | null;
   category: string | null;

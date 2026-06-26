@@ -5,7 +5,7 @@ import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import type { Transaction, PaymentMethod } from "@/lib/transactions";
 import type { Category } from "@/lib/categories";
 import { sortCategoriesHierarchical, categoryDisplayLabel } from "@/lib/categories";
-import { updateTransactionCategory, updateTransactionConcept, updateTransactionContact, updateTransactionNotes, updateTransactionDate, updateTransactionPaymentMethod, softDeleteTransactions, type Contact } from "./actions";
+import { updateTransactionCategory, updateTransactionConcept, updateTransactionContact, updateTransactionBankDetails, updateTransactionNotes, updateTransactionDate, updateTransactionPaymentMethod, softDeleteTransactions, type Contact } from "./actions";
 import DateFilter from "@/app/components/DateFilter";
 import ImportButton from "./ImportButton";
 import AddCashModal from "./AddCashModal";
@@ -638,7 +638,7 @@ export default function TransaccionesList({
 
   const filtered = transactions.filter((t) => {
     const q = search.toLowerCase();
-    if (q && !t.contact?.toLowerCase().includes(q) && !t.concept?.toLowerCase().includes(q)) return false;
+    if (q && !t.contact?.toLowerCase().includes(q) && !t.concept?.toLowerCase().includes(q) && !t.bank_details?.toLowerCase().includes(q)) return false;
     if (catFilters.length > 0 && !catFilters.includes(t.category ?? "__none__")) return false;
     if (originFilter !== "all" && t.payment_method !== originFilter) return false;
     if (onlyRecurring && !recurringPeriods[t.id]) return false;
@@ -708,6 +708,9 @@ export default function TransaccionesList({
   }
   function handleConceptChange(id: string, value: string) {
     startTransition(() => updateTransactionConcept(id, value));
+  }
+  function handleBankDetailsChange(id: string, value: string) {
+    startTransition(() => updateTransactionBankDetails(id, value));
   }
   function handleNotesChange(id: string, value: string) {
     startTransition(() => updateTransactionNotes(id, value));
@@ -1321,6 +1324,7 @@ export default function TransaccionesList({
           onClose={() => setDrawerTxnId(null)}
           onUpdateContact={handleContactChange}
           onUpdateConcept={handleConceptChange}
+          onUpdateBankDetails={handleBankDetailsChange}
           onUpdateCategory={handleCategoryChange}
           onUpdateNotes={handleNotesChange}
           onUpdateDate={handleDateChange}
