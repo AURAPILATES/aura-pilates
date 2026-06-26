@@ -7,9 +7,10 @@ import {
   type ImportRow, type ImportBatch, type NewContactDraft, type Contact,
 } from "./actions";
 import { contactKeyFor, cleanContactLabel, cleanBankText, matchesPattern, pickIdentifyingText } from "@/lib/contactRules";
-import { sortCategoriesHierarchical, categoryDisplayLabel, type Category } from "@/lib/categories";
+import { type Category } from "@/lib/categories";
 import type { PaymentMethod } from "@/lib/transactions";
 import Drawer from "@/app/components/Drawer";
+import { CategoryPill } from "./TransaccionesList";
 
 const CASH_ACCOUNTS: { value: PaymentMethod; label: string }[] = [
   { value: "efectivo", label: "Efectivo Aura" },
@@ -194,7 +195,7 @@ function fmtDateShort(d: string) {
 
 type ContactDraft = {
   pattern: string;
-  bankPattern: string;
+  bankPatterns: string[];
   sample: string;
   concept: string | null;
   bankDetailsRaw: string | null;
@@ -232,6 +233,44 @@ function suggestCategory(row: ImportRow, categories: Category[]): string | null 
 
 function fmtAmt(n: number) {
   return Math.abs(n).toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+/** Lista de conceptos bancarios para un contacto aún no guardado, con la misma UI de chips
+ * removibles + input para añadir uno más que usa Configuración > Contactos — pero sin tocar el
+ * servidor todavía: se guardan todos juntos al confirmar la revisión. */
+function DraftPatternsEditor({ patterns, onChange }: { patterns: string[]; onChange: (patterns: string[]) => void }) {
+  const [draft, setDraft] = useState("");
+
+  function add() {
+    const value = draft.trim();
+    if (!value || patterns.includes(value)) { setDraft(""); return; }
+    onChange([...patterns, value]);
+    setDraft("");
+  }
+
+  function remove(p: string) {
+    onChange(patterns.filter((x) => x !== p));
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      {patterns.map((p) => (
+        <span key={p} className="inline-flex items-center gap-1 px-2 py-0.5 bg-navy/[0.04] rounded-full text-[11px] text-navy/55">
+          {p}
+          <button onClick={() => remove(p)} className="text-navy/30 hover:text-danger transition-colors">✕</button>
+        </span>
+      ))}
+      <input
+        type="text"
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(); } }}
+        onBlur={add}
+        placeholder="+ añadir concepto…"
+        className="w-36 px-1.5 py-0.5 text-[11px] border border-navy/15 rounded-full focus:outline-none focus:border-primary/40"
+      />
+    </div>
+  );
 }
 
 export default function ImportModal({ onClose }: { onClose: () => void }) {
@@ -297,10 +336,10 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
           const drafts: ContactDraft[] = [...newContacts.entries()].map(([pattern, row]) => {
             const sample = pickIdentifyingText(row.concept, row.bankDetails) || "(sin concepto)";
             const cleaned = cleanContactLabel(sample);
-            const bankPattern = cleanBankText(sample) || sample;
+            const bankPatterns = [cleanBankText(sample) || sample];
             const existing = contacts.find((c) => c.label.toLowerCase() === cleaned.toLowerCase());
             return {
-              pattern, bankPattern, sample,
+              pattern, bankPatterns, sample,
               concept: row.concept, bankDetailsRaw: row.bankDetails,
               count: countByPattern.get(pattern) ?? 1,
               exampleDate: row.date, exampleAmount: row.amount,
@@ -334,7 +373,7 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
     try {
       const payload: NewContactDraft[] = drafts.map((d) => ({
         pattern: d.pattern,
-        bankPattern: d.bankPattern.trim() || d.pattern,
+        bankPatterns: d.bankPatterns.length ? d.bankPatterns : [d.pattern],
         action: d.action,
         label: d.label.trim() || d.sample,
         category: d.category,
@@ -345,7 +384,10 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
       const { updated } = await saveNewContacts(payload);
       setKnownPatterns((prev) => {
         const next = new Set(prev);
-        for (const d of drafts) { next.add(d.pattern); next.add(d.bankPattern.trim() || d.pattern); }
+        for (const d of drafts) {
+          next.add(d.pattern);
+          for (const p of d.bankPatterns) next.add(p);
+        }
         return next;
       });
       setState({ kind: "preview", rows, filename, appliedCount: updated });
@@ -383,7 +425,7 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
 
   return (
     <Drawer title="Importar movimientos" onClose={onClose}>
-        <div className="px-6 py-5">
+        <div className="px-6 py-5 h-full flex flex-col">
 
           {/* ── Idle: dropzone ── */}
           {state.kind === "idle" && (
@@ -455,14 +497,14 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
 
           {/* ── Review contacts: contactos nuevos detectados en el archivo ── */}
           {state.kind === "review-contacts" && (
-            <div>
-              <p className="text-sm text-navy/55 mb-1">
+            <div className="flex flex-col flex-1 min-h-0">
+              <p className="text-sm text-navy/55 mb-1 shrink-0">
                 <strong className="text-navy">{state.drafts.length}</strong> {state.drafts.length === 1 ? "contacto nuevo" : "contactos nuevos"} en este archivo
               </p>
-              <p className="text-xs text-navy/45 mb-4">
+              <p className="text-xs text-navy/45 mb-4 shrink-0">
                 Acepta o descarta cada sugerencia. Lo aceptado se aplicará automáticamente la próxima vez que aparezca; lo descartado no se volverá a preguntar.
               </p>
-              <div className="space-y-3 mb-4 max-h-[50vh] overflow-y-auto pr-1">
+              <div className="space-y-3 mb-4 flex-1 min-h-0 overflow-y-auto pr-1">
                 {state.drafts.map((d) => (
                   <div key={d.pattern} className="border border-navy/[0.08] rounded-xl p-3">
                     <div className="flex items-start justify-between gap-2 mb-2">
@@ -523,14 +565,11 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                               ))}
                             </select>
                             <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1">Concepto bancario</p>
-                            <input
-                              type="text"
-                              value={d.bankPattern}
-                              onChange={(e) => updateDraft(d.pattern, { bankPattern: e.target.value })}
-                              placeholder="Texto que identifica al contacto en el extracto"
-                              className="w-full mb-0.5 px-2.5 py-1.5 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40"
+                            <DraftPatternsEditor
+                              patterns={d.bankPatterns}
+                              onChange={(bankPatterns) => updateDraft(d.pattern, { bankPatterns })}
                             />
-                            <p className="text-[11px] text-navy/35">Se usará para reconocer este contacto en futuros movimientos.</p>
+                            <p className="text-[11px] text-navy/35 mt-1">Se usará para reconocer este contacto en futuros movimientos.</p>
                           </>
                         ) : (
                           <>
@@ -543,25 +582,19 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                               className="w-full mb-2 px-2.5 py-1.5 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40"
                             />
                             <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1">Concepto bancario</p>
-                            <input
-                              type="text"
-                              value={d.bankPattern}
-                              onChange={(e) => updateDraft(d.pattern, { bankPattern: e.target.value })}
-                              placeholder="Texto que identifica al contacto en el extracto"
-                              className="w-full mb-0.5 px-2.5 py-1.5 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40"
+                            <DraftPatternsEditor
+                              patterns={d.bankPatterns}
+                              onChange={(bankPatterns) => updateDraft(d.pattern, { bankPatterns })}
                             />
-                            <p className="text-[11px] text-navy/35 mb-2">Se usará para reconocer este contacto en futuros movimientos.</p>
+                            <p className="text-[11px] text-navy/35 mt-1 mb-2">Se usará para reconocer este contacto en futuros movimientos.</p>
                             <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1">Etiqueta</p>
-                            <select
-                              value={d.category ?? ""}
-                              onChange={(e) => updateDraft(d.pattern, { category: e.target.value || null })}
-                              className="w-full mb-2 px-2.5 py-1.5 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40 bg-white"
-                            >
-                              <option value="">Sin categoría</option>
-                              {sortCategoriesHierarchical(categories).map((c) => (
-                                <option key={c.id} value={c.value}>{categoryDisplayLabel(c, categories)}</option>
-                              ))}
-                            </select>
+                            <div className="mb-2">
+                              <CategoryPill
+                                category={d.category}
+                                categories={categories}
+                                onChange={(cat) => updateDraft(d.pattern, { category: cat })}
+                              />
+                            </div>
                             <div className="flex gap-2">
                               <label className="flex-1 flex items-center gap-1.5 text-xs text-navy/50">
                                 IVA
@@ -591,7 +624,7 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                   </div>
                 ))}
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 shrink-0">
                 <button
                   onClick={() => setState({ kind: "idle" })}
                   className="flex-1 py-2.5 text-sm text-navy/60 border border-navy/15 rounded-lg hover:bg-navy/[0.03] transition-colors"

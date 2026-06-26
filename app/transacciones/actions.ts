@@ -414,7 +414,7 @@ export async function assignContactToTransaction(transactionId: string, contactL
 
 export type NewContactDraft = {
   pattern: string;
-  bankPattern: string;
+  bankPatterns: string[];
   action: "create" | "attach" | "ignore";
   label: string;
   category: string | null;
@@ -425,11 +425,11 @@ export type NewContactDraft = {
 
 /** Guarda las decisiones tomadas al revisar los contactos nuevos detectados en una
  * importación: crear contacto, añadir el patrón a uno ya existente, o descartarlo (no volver
- * a preguntar). El "Concepto bancario" (bankPattern) es el texto, editado a mano por el
- * usuario si hace falta, que se guarda como patrón de reconocimiento — puede ser más corto que
- * el texto crudo del banco (ver matchesPattern en lib/contactRules). En los dos primeros casos
- * aplica también categoría/IVA/retención a los movimientos ya importados antes que coincidan,
- * sin esperar a que alguien pulse "Aplicar a existentes" a mano en Configuración. */
+ * a preguntar). "Concepto bancario" (bankPatterns) son los textos, editados a mano por el
+ * usuario si hace falta, que se guardan como patrones de reconocimiento — pueden ser más cortos
+ * que el texto crudo del banco (ver matchesPattern en lib/contactRules). En los dos primeros
+ * casos aplica también categoría/IVA/retención a los movimientos ya importados antes que
+ * coincidan, sin esperar a que alguien pulse "Aplicar a existentes" a mano en Configuración. */
 export async function saveNewContacts(drafts: NewContactDraft[]): Promise<{ updated: number }> {
   if (!drafts.length) return { updated: 0 };
   const supabase = createServerClient();
@@ -439,11 +439,12 @@ export async function saveNewContacts(drafts: NewContactDraft[]): Promise<{ upda
 
   let updated = 0;
   for (const d of drafts) {
-    const pattern = recleanPattern(d.bankPattern.trim() || d.pattern);
+    const rawPatterns = d.bankPatterns.length ? d.bankPatterns : [d.pattern];
+    const patterns = [...new Set(rawPatterns.map((p) => recleanPattern(p.trim() || d.pattern)))];
     if (d.action === "attach" && d.attachToContactId != null) {
       const { error } = await supabase
         .from("contact_concepts")
-        .upsert({ contact_id: d.attachToContactId, pattern }, { onConflict: "pattern" });
+        .upsert(patterns.map((pattern) => ({ contact_id: d.attachToContactId, pattern })), { onConflict: "pattern" });
       if (error) throw new Error(error.message);
 
       const { data: contact } = await supabase
@@ -451,7 +452,7 @@ export async function saveNewContacts(drafts: NewContactDraft[]): Promise<{ upda
         .select("category, iva_rate, retencion_rate")
         .eq("id", d.attachToContactId)
         .single();
-      if (contact) updated += await applyPatternsToTransactions(supabase, new Set([pattern]), contact);
+      if (contact) updated += await applyPatternsToTransactions(supabase, new Set(patterns), contact);
     } else if (d.action === "create") {
       const { data: contact, error } = await supabase
         .from("contacts")
@@ -461,10 +462,10 @@ export async function saveNewContacts(drafts: NewContactDraft[]): Promise<{ upda
       if (error) throw new Error(error.message);
       const { error: patError } = await supabase
         .from("contact_concepts")
-        .insert({ contact_id: contact.id, pattern });
+        .insert(patterns.map((pattern) => ({ contact_id: contact.id, pattern })));
       if (patError) throw new Error(patError.message);
 
-      updated += await applyPatternsToTransactions(supabase, new Set([pattern]), contact);
+      updated += await applyPatternsToTransactions(supabase, new Set(patterns), contact);
     }
   }
   if (updated > 0) revalidateTag("transactions");
