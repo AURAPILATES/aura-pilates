@@ -240,6 +240,30 @@ function CategoryMultiFilter({
   );
 }
 
+/** Pill visual de categoría, sin interacción — para mostrar en sitios de solo lectura como
+ * la tabla de contactos. CategoryPill la usa por dentro para el botón interactivo. */
+export function CategoryBadge({ category, categories, hideIcon = false }: { category: string | null; categories: Category[]; hideIcon?: boolean }) {
+  const cat = category ? categories.find((c) => c.value === category) : undefined;
+  const cfg = cat ? {
+    emoji: cat.emoji,
+    bg: cat.bg_color === cat.text_color
+      ? (() => { const r = parseInt(cat.text_color.slice(1,3),16), g = parseInt(cat.text_color.slice(3,5),16), b = parseInt(cat.text_color.slice(5,7),16); return `rgba(${r},${g},${b},0.12)`; })()
+      : cat.bg_color,
+    color: cat.text_color,
+  } : CAT_FALLBACK;
+  const label = cat ? categoryDisplayLabel(cat, categories) : (category || "Sin categoría");
+  const iconName = cat?.label ?? label;
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap"
+      style={{ backgroundColor: cfg.bg, color: cfg.color }}
+    >
+      {!hideIcon && <CatIcon iconKey={cfg.emoji} name={iconName} color={cfg.color} />}
+      <span>{label}</span>
+    </span>
+  );
+}
+
 export function CategoryPill({ category, categories, onChange, hideIcon = false }: { category: string | null; categories: Category[]; onChange: (cat: string | null) => void; hideIcon?: boolean }) {
   const [open, setOpen] = useState(false);
   const [dropPos, setDropPos] = useState<{ top: number; left: number } | null>(null);
@@ -266,27 +290,14 @@ export function CategoryPill({ category, categories, onChange, hideIcon = false 
     setOpen((v) => !v);
   }
 
-  const cat = category ? categories.find((c) => c.value === category) : undefined;
-  const cfg = cat ? {
-    emoji: cat.emoji,
-    bg: cat.bg_color === cat.text_color
-      ? (() => { const r = parseInt(cat.text_color.slice(1,3),16), g = parseInt(cat.text_color.slice(3,5),16), b = parseInt(cat.text_color.slice(5,7),16); return `rgba(${r},${g},${b},0.12)`; })()
-      : cat.bg_color,
-    color: cat.text_color,
-  } : CAT_FALLBACK;
-  const label = cat ? categoryDisplayLabel(cat, categories) : (category || "Sin categoría");
-  const iconName = cat?.label ?? label;
-
   return (
     <div ref={wrapRef} className="relative inline-block">
       <button
         ref={btnRef}
         onClick={handleToggle}
-        className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap hover:brightness-95 transition-all"
-        style={{ backgroundColor: cfg.bg, color: cfg.color }}
+        className="inline-block rounded-full hover:brightness-95 transition-all"
       >
-        {!hideIcon && <CatIcon iconKey={cfg.emoji} name={iconName} color={cfg.color} />}
-        <span>{label}</span>
+        <CategoryBadge category={category} categories={categories} hideIcon={hideIcon} />
       </button>
       {open && dropPos && createPortal(
         <div
@@ -1192,7 +1203,7 @@ export default function TransaccionesList({
               </th>
               <SortableHeader label="Concepto" sortKey="concept" align="left" className="pl-2 pr-4" currentKey={sortKey} dir={sortDir} onClick={toggleSort} />
               <th className="text-left px-4 py-3 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Origen</th>
-              <th />
+              <th className="text-left px-4 py-3 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Contacto</th>
               <th className="text-left px-4 py-3 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Categoría</th>
               <SortableHeader label="Fecha" sortKey="date" align="right" className="px-4" currentKey={sortKey} dir={sortDir} onClick={toggleSort} />
               <SortableHeader label="Importe" sortKey="amount" align="right" className="pr-6" currentKey={sortKey} dir={sortDir} onClick={toggleSort} />
@@ -1283,7 +1294,11 @@ export default function TransaccionesList({
                   <td className="px-4 py-3 align-middle">
                     <span className="text-xs text-navy/55 whitespace-nowrap">{originLabel(t.payment_method)}</span>
                   </td>
-                  <td />
+                  <td className="px-4 py-3 align-middle overflow-hidden">
+                    <span className={`text-xs truncate block ${t.contact ? "text-navy/70" : "text-navy/35"}`}>
+                      {t.contact || "Sin asignar"}
+                    </span>
+                  </td>
                   <td className="px-4 py-3 align-middle" onClick={(e) => e.stopPropagation()}>
                     <CategoryPill category={t.category} categories={categories} onChange={(cat) => handleCategoryChange(t.id, cat)} />
                   </td>
