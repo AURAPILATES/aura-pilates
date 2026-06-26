@@ -1,13 +1,26 @@
 "use client";
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import type { Category } from "@/lib/categories";
 import { contactKeyFor } from "@/lib/contactRules";
 import {
-  type Contact, updateContact, deleteContact, applyContactToExisting, createContact,
-  addPatternToContact, removeContactPattern, recomputeContactsFromBankDetails,
+  type Contact, type ContactStats, updateContact, deleteContact, applyContactToExisting, createContact,
+  addPatternToContact, removeContactPattern, recomputeContactsFromBankDetails, cleanupContactPatterns,
 } from "@/app/transacciones/actions";
 import Drawer from "@/app/components/Drawer";
-import { CategoryPill } from "@/app/transacciones/TransaccionesList";
+import { CategoryPill, CategoryBadge } from "@/app/transacciones/TransaccionesList";
+
+const MONTHS_SHORT = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+function fmtDate(d: string) {
+  const [y, m, day] = d.split("-");
+  return `${parseInt(day)} ${MONTHS_SHORT[parseInt(m) - 1]} ${y}`;
+}
+function fmtAmt(n: number) {
+  return Math.abs(n).toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
+}
+function initials(label: string) {
+  return label.split(" ").filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
+}
 
 function RateInput({ value, onSave }: { value: number; onSave: (v: number) => void }) {
   const [draft, setDraft] = useState(String(value));
@@ -22,7 +35,7 @@ function RateInput({ value, onSave }: { value: number; onSave: (v: number) => vo
         setDraft(String(v));
         if (v !== value) onSave(v);
       }}
-      className="w-14 px-1.5 py-1 text-xs text-right border border-navy/15 rounded-md focus:outline-none focus:border-primary/40"
+      className="w-16 px-1.5 py-1 text-sm text-right border border-navy/15 rounded-md focus:outline-none focus:border-primary/40"
     />
   );
 }
@@ -59,7 +72,7 @@ function PatternsEditor({ contactId, patterns, onAdd, onRemove }: {
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+    <div className="flex flex-wrap items-center gap-1.5">
       {patterns.map((p) => (
         <span key={p} className="inline-flex items-center gap-1 px-2 py-0.5 bg-navy/[0.04] rounded-full text-[11px] text-navy/55">
           {p}
@@ -74,21 +87,24 @@ function PatternsEditor({ contactId, patterns, onAdd, onRemove }: {
         onBlur={handleAdd}
         placeholder="+ añadir concepto…"
         disabled={adding}
-        className="w-32 px-1.5 py-0.5 text-[11px] border border-navy/15 rounded-full focus:outline-none focus:border-primary/40 disabled:opacity-50"
+        className="w-36 px-1.5 py-0.5 text-[11px] border border-navy/15 rounded-full focus:outline-none focus:border-primary/40 disabled:opacity-50"
       />
     </div>
   );
 }
 
-function ContactRow({ contact, categories, onChange, onRemove }: {
+function ContactDetailDrawer({ contact, categories, stats, onChange, onRemove, onClose }: {
   contact: Contact;
   categories: Category[];
+  stats: ContactStats | undefined;
   onChange: (patch: Partial<{ label: string; category: string | null; ivaRate: number; retencionRate: number; patterns: string[] }>) => void;
   onRemove: () => void;
+  onClose: () => void;
 }) {
   const [label, setLabel] = useState(contact.label);
   const [applying, setApplying] = useState(false);
   const [applied, setApplied] = useState<number | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   async function handleApply() {
     setApplying(true);
@@ -101,44 +117,116 @@ function ContactRow({ contact, categories, onChange, onRemove }: {
     }
   }
 
+  const count = stats?.count ?? 0;
+  const total = stats?.total ?? 0;
+  const avg = count ? Math.round(total / count) : 0;
+
   return (
-    <div className="py-2.5 px-3 border-b border-navy/[0.05] last:border-0">
-      <div className="flex items-center gap-2">
-        <input
-          type="text"
-          value={label}
-          onChange={(e) => setLabel(e.target.value)}
-          onBlur={() => { if (label.trim() && label !== contact.label) onChange({ label: label.trim() }); }}
-          className="flex-1 min-w-0 px-2 py-1 text-sm border border-navy/15 rounded-md focus:outline-none focus:border-primary/40"
-        />
-        <div className="shrink-0">
-          <CategoryPill category={contact.category} categories={categories} onChange={(cat) => onChange({ category: cat })} />
+    <Drawer
+      onClose={onClose}
+      header={
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-semibold shrink-0">
+            {initials(contact.label)}
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-navy truncate">{contact.label}</p>
+            <div className="mt-1">
+              <CategoryPill category={contact.category} categories={categories} onChange={(cat) => onChange({ category: cat })} />
+            </div>
+          </div>
         </div>
-        <div className="flex items-center gap-1 text-xs text-navy/45 shrink-0">
-          IVA <RateInput value={contact.ivaRate} onSave={(v) => onChange({ ivaRate: v })} />%
+      }
+      footer={
+        <div className="flex items-center justify-between gap-2">
+          <button
+            onClick={handleApply}
+            disabled={applying}
+            title="Aplicar este contacto a movimientos ya importados que coincidan con sus conceptos"
+            className="text-xs text-primary hover:text-primary/75 transition-colors disabled:opacity-40 whitespace-nowrap"
+          >
+            {applying ? "Aplicando…" : applied !== null ? `${applied} actualizados` : "Aplicar a existentes"}
+          </button>
+          {confirmDelete ? (
+            <div className="flex items-center gap-2">
+              <button onClick={() => setConfirmDelete(false)} className="text-xs text-navy/40 hover:text-navy transition-colors">Cancelar</button>
+              <button onClick={onRemove} className="text-xs font-semibold text-danger hover:text-danger/80 transition-colors">Confirmar</button>
+            </div>
+          ) : (
+            <button onClick={() => setConfirmDelete(true)} className="text-xs text-navy/35 hover:text-danger transition-colors">
+              Eliminar contacto
+            </button>
+          )}
         </div>
-        <div className="flex items-center gap-1 text-xs text-navy/45 shrink-0">
-          Ret. <RateInput value={contact.retencionRate} onSave={(v) => onChange({ retencionRate: v })} />%
+      }
+    >
+      <div>
+        <div className="grid grid-cols-2 gap-3 p-4 border-b border-navy/[0.06]">
+          <div className="bg-navy/[0.02] rounded-xl px-3 py-2.5">
+            <p className="text-[11px] text-navy/40">Total acumulado</p>
+            <p className={`text-lg font-semibold ${total >= 0 ? "text-success" : "text-navy"}`}>
+              {total >= 0 ? "+" : "−"}{fmtAmt(total)}
+            </p>
+            <p className="text-[11px] text-navy/40 mt-0.5">{count} {count === 1 ? "movimiento" : "movimientos"}</p>
+          </div>
+          <div className="bg-navy/[0.02] rounded-xl px-3 py-2.5">
+            <p className="text-[11px] text-navy/40">Media por movimiento</p>
+            <p className="text-lg font-semibold text-navy">{fmtAmt(avg)}</p>
+            <p className="text-[11px] text-navy/40 mt-0.5">último: {stats?.latest[0] ? fmtDate(stats.latest[0].date) : "—"}</p>
+          </div>
         </div>
-        <button
-          onClick={handleApply}
-          disabled={applying}
-          title="Aplicar este contacto a movimientos ya importados que coincidan con sus conceptos"
-          className="text-xs text-primary hover:text-primary/75 transition-colors shrink-0 disabled:opacity-40 whitespace-nowrap"
-        >
-          {applying ? "Aplicando…" : applied !== null ? `${applied} actualizados` : "Aplicar a existentes"}
-        </button>
-        <button onClick={onRemove} className="text-xs text-navy/35 hover:text-danger transition-colors shrink-0">
-          Eliminar
-        </button>
+
+        <div className="p-4 border-b border-navy/[0.06] space-y-3">
+          <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider">Etiqueta</p>
+          <input
+            type="text"
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            onBlur={() => { if (label.trim() && label !== contact.label) onChange({ label: label.trim() }); }}
+            className="w-full px-3 py-2 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40"
+          />
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2 text-xs text-navy/45">
+              IVA <RateInput value={contact.ivaRate} onSave={(v) => onChange({ ivaRate: v })} />%
+            </label>
+            <label className="flex items-center gap-2 text-xs text-navy/45">
+              Ret. IRPF <RateInput value={contact.retencionRate} onSave={(v) => onChange({ retencionRate: v })} />%
+            </label>
+          </div>
+        </div>
+
+        <div className="p-4 border-b border-navy/[0.06]">
+          <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-2">Conceptos bancarios</p>
+          <PatternsEditor
+            contactId={contact.id}
+            patterns={contact.patterns}
+            onAdd={(p) => onChange({ patterns: [...contact.patterns, p] })}
+            onRemove={(p) => onChange({ patterns: contact.patterns.filter((x) => x !== p) })}
+          />
+        </div>
+
+        <div className="p-4">
+          <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-2">Últimas transacciones</p>
+          {!stats || stats.latest.length === 0 ? (
+            <p className="text-xs text-navy/40">Todavía no hay movimientos asociados.</p>
+          ) : (
+            <div className="space-y-2.5">
+              {stats.latest.map((t) => (
+                <div key={t.id} className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-xs text-navy truncate">{t.concept || "—"}</p>
+                    <p className="text-[11px] text-navy/40">{fmtDate(t.date)}</p>
+                  </div>
+                  <span className={`text-xs font-semibold tabular-nums shrink-0 ${t.amount >= 0 ? "text-success" : "text-navy/70"}`}>
+                    {t.amount >= 0 ? "+" : "−"}{fmtAmt(t.amount)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
-      <PatternsEditor
-        contactId={contact.id}
-        patterns={contact.patterns}
-        onAdd={(p) => onChange({ patterns: [...contact.patterns, p] })}
-        onRemove={(p) => onChange({ patterns: contact.patterns.filter((x) => x !== p) })}
-      />
-    </div>
+    </Drawer>
   );
 }
 
@@ -260,11 +348,20 @@ function NewContactForm({ categories, onCreated, onCancel }: {
   );
 }
 
-export default function ContactosManager({ contacts: initialContacts, categories }: { contacts: Contact[]; categories: Category[] }) {
+export default function ContactosManager({ contacts: initialContacts, categories, contactStats }: {
+  contacts: Contact[];
+  categories: Category[];
+  contactStats: Record<number, ContactStats>;
+}) {
+  const router = useRouter();
   const [contacts, setContacts] = useState(initialContacts);
   const [creating, setCreating] = useState(false);
   const [recomputing, setRecomputing] = useState(false);
   const [recomputed, setRecomputed] = useState<number | null>(null);
+  const [cleaning, setCleaning] = useState(false);
+  const [cleaned, setCleaned] = useState<{ updated: number; merged: number } | null>(null);
+  const [search, setSearch] = useState("");
+  const [selectedId, setSelectedId] = useState<number | null>(null);
   const [, startTransition] = useTransition();
 
   async function handleRecompute() {
@@ -275,6 +372,18 @@ export default function ContactosManager({ contacts: initialContacts, categories
       setRecomputed(updated);
     } finally {
       setRecomputing(false);
+    }
+  }
+
+  async function handleCleanup() {
+    setCleaning(true);
+    setCleaned(null);
+    try {
+      const result = await cleanupContactPatterns();
+      setCleaned(result);
+      router.refresh();
+    } finally {
+      setCleaning(false);
     }
   }
 
@@ -290,19 +399,41 @@ export default function ContactosManager({ contacts: initialContacts, categories
 
   function removeContact(id: number) {
     setContacts((prev) => prev.filter((c) => c.id !== id));
+    setSelectedId(null);
     startTransition(() => { deleteContact(id); });
   }
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return contacts;
+    return contacts.filter((c) => c.label.toLowerCase().includes(q) || c.patterns.some((p) => p.toLowerCase().includes(q)));
+  }, [contacts, search]);
+
+  const selected = selectedId !== null ? contacts.find((c) => c.id === selectedId) ?? null : null;
 
   return (
     <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden">
       <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-navy/[0.06]">
         <div>
           <p className="text-sm font-semibold text-navy">Contactos</p>
-          <p className="text-xs text-navy/45 mt-0.5">
-            Categoría, IVA y retención por contacto, identificado por uno o varios conceptos bancarios. Se aplican automáticamente al importar movimientos que coincidan.
-          </p>
+          <p className="text-xs text-navy/45 mt-0.5">{contacts.length} {contacts.length === 1 ? "contacto" : "contactos"}</p>
         </div>
         <div className="flex items-center gap-3 shrink-0">
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar contacto…"
+            className="w-44 px-3 py-1.5 text-xs border border-navy/15 rounded-md focus:outline-none focus:border-primary/40"
+          />
+          <button
+            onClick={handleCleanup}
+            disabled={cleaning}
+            title="Vuelve a limpiar los conceptos ya guardados quitando códigos de operación variables, para que coincidan de forma estable"
+            className="text-xs text-navy/45 hover:text-navy transition-colors disabled:opacity-50 whitespace-nowrap"
+          >
+            {cleaning ? "Limpiando…" : cleaned !== null ? `${cleaned.updated} limpiados, ${cleaned.merged} fusionados` : "Limpiar conceptos"}
+          </button>
           <button
             onClick={handleRecompute}
             disabled={recomputing}
@@ -313,12 +444,13 @@ export default function ContactosManager({ contacts: initialContacts, categories
           </button>
           <button
             onClick={() => setCreating(true)}
-            className="px-3 py-1.5 text-xs font-semibold bg-navy text-white rounded-md hover:bg-navy/85 transition-colors"
+            className="px-3 py-1.5 text-xs font-semibold bg-navy text-white rounded-md hover:bg-navy/85 transition-colors whitespace-nowrap"
           >
             + Nuevo contacto
           </button>
         </div>
       </div>
+
       {creating && (
         <NewContactForm
           categories={categories}
@@ -329,18 +461,74 @@ export default function ContactosManager({ contacts: initialContacts, categories
           }}
         />
       )}
-      {contacts.length === 0 ? (
-        <p className="text-sm text-navy/40 px-4 py-6">Todavía no hay contactos guardados.</p>
+
+      {selected && (
+        <ContactDetailDrawer
+          contact={selected}
+          categories={categories}
+          stats={contactStats[selected.id]}
+          onChange={(patch) => patchContact(selected.id, patch)}
+          onRemove={() => removeContact(selected.id)}
+          onClose={() => setSelectedId(null)}
+        />
+      )}
+
+      {filtered.length === 0 ? (
+        <p className="text-sm text-navy/40 px-4 py-6">
+          {contacts.length === 0 ? "Todavía no hay contactos guardados." : "Ningún contacto coincide con la búsqueda."}
+        </p>
       ) : (
-        contacts.map((contact) => (
-          <ContactRow
-            key={contact.id}
-            contact={contact}
-            categories={categories}
-            onChange={(patch) => patchContact(contact.id, patch)}
-            onRemove={() => removeContact(contact.id)}
-          />
-        ))
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="bg-navy/[0.02] border-b border-navy/[0.06]">
+              <th className="text-left px-4 py-2 text-[11px] text-navy/45 font-semibold uppercase tracking-wide">Etiqueta</th>
+              <th className="text-left px-4 py-2 text-[11px] text-navy/45 font-semibold uppercase tracking-wide">Categoría</th>
+              <th className="text-left px-4 py-2 text-[11px] text-navy/45 font-semibold uppercase tracking-wide">Conceptos bancarios</th>
+              <th className="text-right px-4 py-2 text-[11px] text-navy/45 font-semibold uppercase tracking-wide">IVA</th>
+              <th className="text-right px-4 py-2 text-[11px] text-navy/45 font-semibold uppercase tracking-wide">Ret. IRPF</th>
+              <th className="text-right px-4 py-2 text-[11px] text-navy/45 font-semibold uppercase tracking-wide">Transacciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((c) => {
+              const stats = contactStats[c.id];
+              const visiblePatterns = c.patterns.slice(0, 2);
+              const extra = c.patterns.length - visiblePatterns.length;
+              return (
+                <tr
+                  key={c.id}
+                  onClick={() => setSelectedId(c.id)}
+                  className={`border-b border-navy/[0.04] last:border-0 cursor-pointer hover:bg-navy/[0.02] transition-colors ${selectedId === c.id ? "bg-primary/[0.04]" : ""}`}
+                >
+                  <td className="px-4 py-2.5 font-medium text-navy whitespace-nowrap">{c.label}</td>
+                  <td className="px-4 py-2.5"><CategoryBadge category={c.category} categories={categories} /></td>
+                  <td className="px-4 py-2.5">
+                    <div className="flex flex-wrap gap-1">
+                      {visiblePatterns.map((p) => (
+                        <span key={p} title={p} className="inline-block px-1.5 py-0.5 max-w-[140px] truncate rounded text-[11px] bg-navy/[0.04] text-navy/55">{p}</span>
+                      ))}
+                      {extra > 0 && <span className="text-[11px] text-navy/35">+{extra}</span>}
+                    </div>
+                  </td>
+                  <td className="px-4 py-2.5 text-right text-navy/70">{c.ivaRate > 0 ? `${c.ivaRate}%` : "—"}</td>
+                  <td className="px-4 py-2.5 text-right text-navy/70">{c.retencionRate > 0 ? `${c.retencionRate}%` : "—"}</td>
+                  <td className="px-4 py-2.5 text-right">
+                    {stats ? (
+                      <span className="inline-flex items-center gap-1.5 justify-end">
+                        <span className="font-semibold text-navy">{stats.count}</span>
+                        <span className={`text-[11px] ${stats.total >= 0 ? "text-success" : "text-navy/40"}`}>
+                          {stats.total >= 0 ? "+" : "−"}{fmtAmt(stats.total)}
+                        </span>
+                      </span>
+                    ) : (
+                      <span className="text-navy/30">—</span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       )}
     </div>
   );

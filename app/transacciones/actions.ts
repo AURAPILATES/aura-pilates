@@ -3,7 +3,7 @@ import { createServerClient } from "@/lib/supabase";
 import { revalidatePath, revalidateTag } from "next/cache";
 import type { PaymentMethod, Transaction } from "@/lib/transactions";
 import { loadCategories, type Category } from "@/lib/categories";
-import { contactKeyFor } from "@/lib/contactRules";
+import { contactKeyFor, recleanPattern } from "@/lib/contactRules";
 import { PERIOD_BUCKETS, displayLabel, seriesKeyFor } from "@/lib/recurring";
 
 export type ImportRow = {
@@ -112,6 +112,35 @@ export async function getContacts(): Promise<Contact[]> {
     retencionRate: c.retencion_rate,
     patterns: c.contact_concepts.map((cc) => cc.pattern),
   }));
+}
+
+export type ContactStats = { count: number; total: number; latest: { id: string; date: string; amount: number; concept: string | null }[] };
+
+/** Recuento, suma y últimos movimientos por contacto, cruzando sus patrones con los
+ * movimientos importados — para mostrar en la tabla/drawer de Configuración > Contactos sin
+ * hacer una consulta por contacto. */
+export async function getContactsStats(): Promise<Record<number, ContactStats>> {
+  const supabase = createServerClient();
+  const [{ data: contactRows }, { data: txns }] = await Promise.all([
+    supabase.from("contacts").select("id, contact_concepts(pattern)"),
+    supabase.from("transactions").select("id, date, amount, concept, bank_details").is("deleted_at", null).order("date", { ascending: false }),
+  ]);
+
+  const patternToContactId = new Map<string, number>();
+  for (const c of (contactRows ?? []) as { id: number; contact_concepts: { pattern: string }[] }[]) {
+    for (const cc of c.contact_concepts) patternToContactId.set(cc.pattern, c.id);
+  }
+
+  const stats: Record<number, ContactStats> = {};
+  for (const t of (txns ?? []) as { id: string; date: string; amount: number; concept: string | null; bank_details: string | null }[]) {
+    const contactId = patternToContactId.get(contactKeyFor(t.concept, t.bank_details));
+    if (contactId === undefined) continue;
+    const s = stats[contactId] ?? (stats[contactId] = { count: 0, total: 0, latest: [] });
+    s.count++;
+    s.total += t.amount;
+    if (s.latest.length < 5) s.latest.push({ id: t.id, date: t.date, amount: t.amount, concept: t.concept });
+  }
+  return stats;
 }
 
 export async function createContact(input: {
@@ -269,6 +298,106 @@ export async function recomputeContactsFromBankDetails(): Promise<{ updated: num
   }
   if (updated > 0) revalidateTag("transactions");
   return { updated };
+}
+
+/** Re-limpia los patrones ya guardados (contact_concepts e ignored_contact_patterns) con las
+ * reglas actuales de cleanBankText, por si se crearon antes de afinarlas y arrastran un
+ * código variable (ej. una referencia de operación) que les impide volver a coincidir.
+ * Si dos patrones distintos limpian al mismo resultado, se fusionan en uno. */
+export async function cleanupContactPatterns(): Promise<{ updated: number; merged: number }> {
+  const supabase = createServerClient();
+  let updated = 0;
+  let merged = 0;
+
+  const { data: concepts } = await supabase.from("contact_concepts").select("id, contact_id, pattern");
+  const seen = new Map<string, number>(); // "contactId:newPattern" -> concept id ya migrado
+  for (const row of (concepts ?? []) as { id: number; contact_id: number; pattern: string }[]) {
+    const next = recleanPattern(row.pattern);
+    if (next === row.pattern) { seen.set(`${row.contact_id}:${next}`, row.id); continue; }
+
+    const dupKey = `${row.contact_id}:${next}`;
+    const { data: clash } = await supabase.from("contact_concepts").select("id").eq("pattern", next).maybeSingle();
+    if (seen.has(dupKey) || clash) {
+      await supabase.from("contact_concepts").delete().eq("id", row.id);
+      merged++;
+      continue;
+    }
+    const { error } = await supabase.from("contact_concepts").update({ pattern: next }).eq("id", row.id);
+    if (!error) { updated++; seen.set(dupKey, row.id); }
+  }
+
+  const { data: ignored } = await supabase.from("ignored_contact_patterns").select("pattern");
+  for (const row of (ignored ?? []) as { pattern: string }[]) {
+    const next = recleanPattern(row.pattern);
+    if (next === row.pattern) continue;
+    const { data: clash } = await supabase.from("ignored_contact_patterns").select("pattern").eq("pattern", next).maybeSingle();
+    await supabase.from("ignored_contact_patterns").delete().eq("pattern", row.pattern);
+    if (!clash) {
+      const { error } = await supabase.from("ignored_contact_patterns").insert({ pattern: next });
+      if (!error) updated++;
+    } else {
+      merged++;
+    }
+  }
+
+  return { updated, merged };
+}
+
+/** Asigna un contacto a un movimiento concreto: si el contacto no existe todavía lo crea, y
+ * registra el patrón (concepto + más datos, ya limpios) de este movimiento para que la
+ * próxima vez que aparezca se reconozca solo — la misma idea que confirmar un contacto nuevo
+ * al importar, pero hecha a mano desde el detalle de un movimiento ya importado. */
+export async function assignContactToTransaction(transactionId: string, contactLabel: string): Promise<void> {
+  const supabase = createServerClient();
+  const label = contactLabel.trim();
+
+  if (!label) {
+    const { error } = await supabase.from("transactions").update({ contact: null }).eq("id", transactionId);
+    if (error) throw new Error(error.message);
+    revalidateTag("transactions");
+    return;
+  }
+
+  const { data: t, error: loadError } = await supabase
+    .from("transactions")
+    .select("concept, bank_details")
+    .eq("id", transactionId)
+    .single();
+  if (loadError || !t) throw new Error(loadError?.message ?? "Movimiento no encontrado");
+
+  const pattern = contactKeyFor(t.concept, t.bank_details);
+
+  let contact: { id: number; category: string | null; iva_rate: number; retencion_rate: number } | null = null;
+  const { data: existing } = await supabase
+    .from("contacts")
+    .select("id, category, iva_rate, retencion_rate")
+    .ilike("label", label)
+    .maybeSingle();
+  contact = existing;
+
+  if (!contact) {
+    const { data: created, error: createError } = await supabase
+      .from("contacts")
+      .insert({ label })
+      .select("id, category, iva_rate, retencion_rate")
+      .single();
+    if (createError) throw new Error(createError.message);
+    contact = created;
+  }
+
+  const { error: patError } = await supabase
+    .from("contact_concepts")
+    .upsert({ contact_id: contact.id, pattern }, { onConflict: "pattern" });
+  if (patError) throw new Error(patError.message);
+
+  const { error: updError } = await supabase
+    .from("transactions")
+    .update({ contact: label, category: contact.category, iva_rate: contact.iva_rate, retencion_rate: contact.retencion_rate })
+    .eq("id", transactionId);
+  if (updError) throw new Error(updError.message);
+
+  await applyPatternsToTransactions(supabase, new Set([pattern]), contact);
+  revalidateTag("transactions");
 }
 
 export type NewContactDraft = {

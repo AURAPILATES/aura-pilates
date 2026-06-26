@@ -714,9 +714,6 @@ export default function TransaccionesList({
   function handleCategoryChange(id: string, category: string | null) {
     startTransition(() => updateTransactionCategory(id, category));
   }
-  function handleContactChange(id: string, value: string) {
-    startTransition(() => updateTransactionContact(id, value));
-  }
   function handleConceptChange(id: string, value: string) {
     startTransition(() => updateTransactionConcept(id, value));
   }
@@ -1337,7 +1334,6 @@ export default function TransaccionesList({
           contacts={contacts}
           recurringPeriod={recurringPeriods[drawerTxn.id]}
           onClose={() => setDrawerTxnId(null)}
-          onUpdateContact={handleContactChange}
           onUpdateConcept={handleConceptChange}
           onUpdateBankDetails={handleBankDetailsChange}
           onUpdateCategory={handleCategoryChange}
