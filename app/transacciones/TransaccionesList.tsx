@@ -5,7 +5,7 @@ import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import type { Transaction, PaymentMethod } from "@/lib/transactions";
 import type { Category } from "@/lib/categories";
 import { sortCategoriesHierarchical, categoryDisplayLabel } from "@/lib/categories";
-import { updateTransactionCategory, updateTransactionConcept, updateTransactionContact, updateTransactionNotes, updateTransactionDate, updateTransactionPaymentMethod, softDeleteTransactions, type ContactRule } from "./actions";
+import { updateTransactionCategory, updateTransactionConcept, updateTransactionContact, updateTransactionNotes, updateTransactionDate, updateTransactionPaymentMethod, softDeleteTransactions, type Contact } from "./actions";
 import DateFilter from "@/app/components/DateFilter";
 import ImportButton from "./ImportButton";
 import AddCashModal from "./AddCashModal";
@@ -557,11 +557,11 @@ type Props = {
   uncategorizedCount: number;
   recurringPeriods: Record<string, string>;
   allMonthKeys: string[];
-  contactRules: ContactRule[];
+  contacts: Contact[];
 };
 
 export default function TransaccionesList({
-  transactions, categories, uncategorizedCount, recurringPeriods, allMonthKeys, contactRules,
+  transactions, categories, uncategorizedCount, recurringPeriods, allMonthKeys, contacts,
 }: Props) {
   const router       = useRouter();
   const pathname     = usePathname();
@@ -1316,7 +1316,7 @@ export default function TransaccionesList({
         <TransactionDrawer
           transaction={drawerTxn}
           categories={categories}
-          contactRules={contactRules}
+          contacts={contacts}
           recurringPeriod={recurringPeriods[drawerTxn.id]}
           onClose={() => setDrawerTxnId(null)}
           onUpdateContact={handleContactChange}

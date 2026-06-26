@@ -7,7 +7,7 @@ import type { Transaction, PaymentMethod } from "@/lib/transactions";
 import type { Category } from "@/lib/categories";
 import { PERIOD_BUCKETS } from "@/lib/recurring";
 import { CategoryPill, SourceAvatar } from "./TransaccionesList";
-import { createRecurringExpenseFromTransaction, type ContactRule } from "./actions";
+import { createRecurringExpenseFromTransaction, type Contact } from "./actions";
 
 const PAYMENT_METHOD_OPTIONS: { value: PaymentMethod; label: string }[] = [
   { value: "efectivo", label: "Efectivo Aura" },
@@ -55,7 +55,7 @@ function Field({ label, value, onSave }: { label: string; value: string; onSave:
 /** Combobox: escribe texto libre o elige uno de los contactos guardados en
  * Configuración > Contactos, para no tener que retipear nombres ya conocidos
  * (y evitar typos que rompan el agrupado por contacto de los gastos recurrentes). */
-function ContactPicker({ value, contactRules, onSave }: { value: string; contactRules: ContactRule[]; onSave: (v: string) => void }) {
+function ContactPicker({ value, contacts, onSave }: { value: string; contacts: Contact[]; onSave: (v: string) => void }) {
   const [draft, setDraft] = useState(value);
   const [open, setOpen] = useState(false);
   const [dropPos, setDropPos] = useState<{ top: number; left: number; width: number } | null>(null);
@@ -64,10 +64,10 @@ function ContactPicker({ value, contactRules, onSave }: { value: string; contact
   const inputRef = useRef<HTMLInputElement>(null);
 
   const options = useMemo(() => {
-    const labels = [...new Set(contactRules.map((r) => r.label))].sort((a, b) => a.localeCompare(b));
+    const labels = [...new Set(contacts.map((r) => r.label))].sort((a, b) => a.localeCompare(b));
     const q = draft.trim().toLowerCase();
     return q ? labels.filter((l) => l.toLowerCase().includes(q)) : labels;
-  }, [contactRules, draft]);
+  }, [contacts, draft]);
 
   useEffect(() => {
     if (!open) return;
@@ -211,7 +211,7 @@ function MarkRecurringControl({ transactionId }: { transactionId: string }) {
 export default function TransactionDrawer({
   transaction,
   categories,
-  contactRules,
+  contacts,
   recurringPeriod,
   onClose,
   onUpdateContact,
@@ -224,7 +224,7 @@ export default function TransactionDrawer({
 }: {
   transaction: Transaction;
   categories: Category[];
-  contactRules: ContactRule[];
+  contacts: Contact[];
   recurringPeriod?: string;
   onClose: () => void;
   onUpdateContact: (id: string, value: string) => void;
@@ -284,7 +284,7 @@ export default function TransactionDrawer({
 
         <div>
           <p className="text-[11px] text-navy/40 uppercase tracking-wider mb-1">Contacto</p>
-          <ContactPicker value={t.contact ?? ""} contactRules={contactRules} onSave={(v) => onUpdateContact(t.id, v)} />
+          <ContactPicker value={t.contact ?? ""} contacts={contacts} onSave={(v) => onUpdateContact(t.id, v)} />
         </div>
         <Field label="Concepto" value={t.concept ?? ""} onSave={(v) => onUpdateConcept(t.id, v)} />
 

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { Category } from "@/lib/categories";
 import type { BusinessEvent } from "@/lib/businessEvents";
-import type { ContactRule } from "@/app/transacciones/actions";
+import type { Contact } from "@/app/transacciones/actions";
 import CategoriasManager from "./CategoriasManager";
 import ContactosManager from "./ContactosManager";
 import HistorialTimeline from "@/app/historial/HistorialTimeline";
@@ -21,10 +21,10 @@ type Props = {
   categories: Category[];
   events: BusinessEvent[];
   categoryCounts: Record<string, number>;
-  contactRules: ContactRule[];
+  contacts: Contact[];
 };
 
-export default function ConfiguracionTabs({ categories, events, categoryCounts, contactRules }: Props) {
+export default function ConfiguracionTabs({ categories, events, categoryCounts, contacts }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialTab = (["contactos", "historial"] as const).find((t) => t === searchParams.get("tab")) ?? "categorias";
@@ -56,7 +56,7 @@ export default function ConfiguracionTabs({ categories, events, categoryCounts, 
       {tab === "categorias" ? (
         <CategoriasManager categories={categories} categoryCounts={categoryCounts} />
       ) : tab === "contactos" ? (
-        <ContactosManager rules={contactRules} categories={categories} />
+        <ContactosManager contacts={contacts} categories={categories} />
       ) : (
         <HistorialTimeline events={events} />
       )}

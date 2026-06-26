@@ -21,3 +21,14 @@ export function contactKeyFor(concept: string | null, contact: string | null): s
   if (c && !isReferenceLike(c)) return normalize(`${concept ?? ""}|${c}`);
   return normalize(concept?.trim() || c || "sin-concepto");
 }
+
+/** Sugiere un nombre legible a partir de un texto de banco, quitando palabras finales de
+ * referencia (números de operación, códigos de factura...) que no identifican al contacto:
+ * "Spotify P4106A003" → "Spotify". Conserva siempre al menos una palabra. */
+export function cleanContactLabel(s: string): string {
+  const words = s.trim().replace(/,/g, " ").split(/\s+/).filter(Boolean);
+  while (words.length > 1 && isReferenceLike(words[words.length - 1])) {
+    words.pop();
+  }
+  return words.join(" ") || s.trim();
+}

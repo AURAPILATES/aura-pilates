@@ -3,10 +3,10 @@ import { useState, useRef, useEffect } from "react";
 import * as XLSX from "xlsx";
 import {
   importTransactions, undoImport, getRecentImports, forceImportTransactions,
-  getKnownContactKeys, getCategoriesForImport, saveContactRules,
-  type ImportRow, type ImportBatch,
+  getKnownContactPatterns, getCategoriesForImport, saveNewContacts, getContacts,
+  type ImportRow, type ImportBatch, type NewContactDraft, type Contact,
 } from "./actions";
-import { contactKeyFor } from "@/lib/contactRules";
+import { contactKeyFor, cleanContactLabel } from "@/lib/contactRules";
 import { sortCategoriesHierarchical, categoryDisplayLabel, type Category } from "@/lib/categories";
 import Drawer from "@/app/components/Drawer";
 
@@ -175,12 +175,14 @@ function fmtDateShort(d: string) {
 }
 
 type ContactDraft = {
-  key: string;
+  pattern: string;
   sample: string;
+  action: "create" | "attach" | "ignore";
   label: string;
   category: string | null;
   ivaRate: number;
   retencionRate: number;
+  attachToContactId: number | null;
 };
 
 type State =
@@ -217,13 +219,14 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
   const [undoingId, setUndoingId] = useState<string | null>(null);
   const [forcingDuplicates, setForcingDuplicates] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [knownKeys, setKnownKeys] = useState<Set<string>>(new Set());
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [knownPatterns, setKnownPatterns] = useState<Set<string>>(new Set());
   const [savingContacts, setSavingContacts] = useState(false);
 
   useEffect(() => {
     getRecentImports().then(setHistorial).catch(() => {});
-    Promise.all([getCategoriesForImport(), getKnownContactKeys()])
-      .then(([cats, keys]) => { setCategories(cats); setKnownKeys(new Set(keys)); })
+    Promise.all([getCategoriesForImport(), getKnownContactPatterns(), getContacts()])
+      .then(([cats, patterns, cs]) => { setCategories(cats); setKnownPatterns(new Set(patterns)); setContacts(cs); })
       .catch(() => {});
   }, []);
 
@@ -256,16 +259,26 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
 
         const newContacts = new Map<string, ImportRow>();
         for (const row of rows) {
-          const key = contactKeyFor(row.concept, row.contact);
-          if (!knownKeys.has(key) && !newContacts.has(key)) newContacts.set(key, row);
+          const pattern = contactKeyFor(row.concept, row.contact);
+          if (!knownPatterns.has(pattern) && !newContacts.has(pattern)) newContacts.set(pattern, row);
         }
 
         if (newContacts.size === 0) {
           setState({ kind: "preview", rows, filename: file.name });
         } else {
-          const drafts: ContactDraft[] = [...newContacts.entries()].map(([key, row]) => {
+          const drafts: ContactDraft[] = [...newContacts.entries()].map(([pattern, row]) => {
             const sample = row.contact?.trim() || row.concept?.trim() || "(sin concepto)";
-            return { key, sample, label: sample, category: suggestCategory(row, categories), ivaRate: 0, retencionRate: 0 };
+            const cleaned = cleanContactLabel(sample);
+            const existing = contacts.find((c) => c.label.toLowerCase() === cleaned.toLowerCase());
+            return {
+              pattern, sample,
+              action: existing ? "attach" : "create",
+              label: cleaned,
+              category: existing?.category ?? suggestCategory(row, categories),
+              ivaRate: existing?.ivaRate ?? 0,
+              retencionRate: existing?.retencionRate ?? 0,
+              attachToContactId: existing?.id ?? null,
+            };
           });
           setState({ kind: "review-contacts", drafts, rows, filename: file.name });
         }
@@ -277,26 +290,29 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
     else reader.readAsText(file, "utf-8");
   }
 
-  function updateDraft(key: string, patch: Partial<ContactDraft>) {
+  function updateDraft(pattern: string, patch: Partial<ContactDraft>) {
     setState((prev) => {
       if (prev.kind !== "review-contacts") return prev;
-      return { ...prev, drafts: prev.drafts.map((d) => (d.key === key ? { ...d, ...patch } : d)) };
+      return { ...prev, drafts: prev.drafts.map((d) => (d.pattern === pattern ? { ...d, ...patch } : d)) };
     });
   }
 
   async function handleConfirmContacts(drafts: ContactDraft[], rows: ImportRow[], filename: string) {
     setSavingContacts(true);
     try {
-      await saveContactRules(drafts.map((d) => ({
-        contactKey: d.key,
+      const payload: NewContactDraft[] = drafts.map((d) => ({
+        pattern: d.pattern,
+        action: d.action,
         label: d.label.trim() || d.sample,
         category: d.category,
         ivaRate: d.ivaRate,
         retencionRate: d.retencionRate,
-      })));
-      setKnownKeys((prev) => {
+        attachToContactId: d.attachToContactId,
+      }));
+      await saveNewContacts(payload);
+      setKnownPatterns((prev) => {
         const next = new Set(prev);
-        for (const d of drafts) next.add(d.key);
+        for (const d of drafts) next.add(d.pattern);
         return next;
       });
       setState({ kind: "preview", rows, filename });
@@ -411,51 +427,102 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                 <strong className="text-navy">{state.drafts.length}</strong> {state.drafts.length === 1 ? "contacto nuevo" : "contactos nuevos"} en este archivo
               </p>
               <p className="text-xs text-navy/45 mb-4">
-                Indica etiqueta, categoría, IVA y retención para cada uno. Se guardará y se aplicará automáticamente la próxima vez que aparezcan.
+                Acepta o descarta cada sugerencia. Lo aceptado se aplicará automáticamente la próxima vez que aparezca; lo descartado no se volverá a preguntar.
               </p>
               <div className="space-y-3 mb-4 max-h-[50vh] overflow-y-auto pr-1">
                 {state.drafts.map((d) => (
-                  <div key={d.key} className="border border-navy/[0.08] rounded-xl p-3">
-                    <p className="text-xs text-navy/40 mb-2 truncate" title={d.sample}>{d.sample}</p>
-                    <input
-                      type="text"
-                      value={d.label}
-                      onChange={(e) => updateDraft(d.key, { label: e.target.value })}
-                      placeholder="Etiqueta"
-                      className="w-full mb-2 px-2.5 py-1.5 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40"
-                    />
-                    <select
-                      value={d.category ?? ""}
-                      onChange={(e) => updateDraft(d.key, { category: e.target.value || null })}
-                      className="w-full mb-2 px-2.5 py-1.5 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40 bg-white"
-                    >
-                      <option value="">Sin categoría</option>
-                      {sortCategoriesHierarchical(categories).map((c) => (
-                        <option key={c.id} value={c.value}>{categoryDisplayLabel(c, categories)}</option>
-                      ))}
-                    </select>
-                    <div className="flex gap-2">
-                      <label className="flex-1 flex items-center gap-1.5 text-xs text-navy/50">
-                        IVA
-                        <input
-                          type="number" min={0} max={100} step={0.5}
-                          value={d.ivaRate}
-                          onChange={(e) => updateDraft(d.key, { ivaRate: parseFloat(e.target.value) || 0 })}
-                          className="w-full px-2 py-1.5 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40"
-                        />
-                        %
-                      </label>
-                      <label className="flex-1 flex items-center gap-1.5 text-xs text-navy/50">
-                        Ret.
-                        <input
-                          type="number" min={0} max={100} step={0.5}
-                          value={d.retencionRate}
-                          onChange={(e) => updateDraft(d.key, { retencionRate: parseFloat(e.target.value) || 0 })}
-                          className="w-full px-2 py-1.5 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40"
-                        />
-                        %
-                      </label>
+                  <div key={d.pattern} className="border border-navy/[0.08] rounded-xl p-3">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <p className="text-xs text-navy/40 truncate" title={d.sample}>{d.sample}</p>
+                      {d.action === "ignore" ? (
+                        <button
+                          onClick={() => updateDraft(d.pattern, { action: contacts.some((c) => c.id === d.attachToContactId) ? "attach" : "create" })}
+                          className="text-xs text-primary hover:text-primary/75 transition-colors shrink-0 whitespace-nowrap"
+                        >
+                          Deshacer
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => updateDraft(d.pattern, { action: "ignore" })}
+                          className="text-xs text-navy/35 hover:text-danger transition-colors shrink-0 whitespace-nowrap"
+                        >
+                          Descartar
+                        </button>
+                      )}
                     </div>
+
+                    {d.action === "ignore" ? (
+                      <p className="text-xs text-navy/40 italic">Descartado — no se creará un contacto para esto.</p>
+                    ) : (
+                      <>
+                        {contacts.length > 0 && (
+                          <div className="flex gap-3 mb-2 text-xs">
+                            <label className="flex items-center gap-1.5 text-navy/60 cursor-pointer">
+                              <input type="radio" checked={d.action === "create"} onChange={() => updateDraft(d.pattern, { action: "create" })} />
+                              Contacto nuevo
+                            </label>
+                            <label className="flex items-center gap-1.5 text-navy/60 cursor-pointer">
+                              <input type="radio" checked={d.action === "attach"} onChange={() => updateDraft(d.pattern, { action: "attach", attachToContactId: d.attachToContactId ?? contacts[0].id })} />
+                              Añadir a contacto existente
+                            </label>
+                          </div>
+                        )}
+
+                        {d.action === "attach" ? (
+                          <select
+                            value={d.attachToContactId ?? ""}
+                            onChange={(e) => updateDraft(d.pattern, { attachToContactId: parseInt(e.target.value, 10) })}
+                            className="w-full mb-2 px-2.5 py-1.5 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40 bg-white"
+                          >
+                            {contacts.map((c) => (
+                              <option key={c.id} value={c.id}>{c.label}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <>
+                            <input
+                              type="text"
+                              value={d.label}
+                              onChange={(e) => updateDraft(d.pattern, { label: e.target.value })}
+                              placeholder="Etiqueta"
+                              className="w-full mb-2 px-2.5 py-1.5 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40"
+                            />
+                            <select
+                              value={d.category ?? ""}
+                              onChange={(e) => updateDraft(d.pattern, { category: e.target.value || null })}
+                              className="w-full mb-2 px-2.5 py-1.5 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40 bg-white"
+                            >
+                              <option value="">Sin categoría</option>
+                              {sortCategoriesHierarchical(categories).map((c) => (
+                                <option key={c.id} value={c.value}>{categoryDisplayLabel(c, categories)}</option>
+                              ))}
+                            </select>
+                            <div className="flex gap-2">
+                              <label className="flex-1 flex items-center gap-1.5 text-xs text-navy/50">
+                                IVA
+                                <input
+                                  type="number" min={0} max={100} step={0.5}
+                                  value={d.ivaRate}
+                                  onChange={(e) => updateDraft(d.pattern, { ivaRate: parseFloat(e.target.value) || 0 })}
+                                  className="w-full px-2 py-1.5 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40"
+                                />
+                                %
+                              </label>
+                              <label className="flex-1 flex items-center gap-1.5 text-xs text-navy/50">
+                                Ret.
+                                <input
+                                  type="number" min={0} max={100} step={0.5}
+                                  value={d.retencionRate}
+                                  onChange={(e) => updateDraft(d.pattern, { retencionRate: parseFloat(e.target.value) || 0 })}
+                                  className="w-full px-2 py-1.5 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40"
+                                />
+                                %
+                              </label>
+                            </div>
+                          </>
+                        )}
+                      </>
+                    )}
                   </div>
                 ))}
               </div>

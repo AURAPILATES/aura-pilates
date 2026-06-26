@@ -14,13 +14,7 @@ export type ImportRow = {
   contact: string | null;
 };
 
-type ContactRuleRow = {
-  contact_key: string;
-  label: string;
-  category: string | null;
-  iva_rate: number;
-  retencion_rate: number;
-};
+type ContactInfo = { label: string; category: string | null; iva_rate: number; retencion_rate: number };
 
 function buildAutoCategory(categories: { value: string; auto_keywords: string | null }[]) {
   return function (row: ImportRow): string | null {
@@ -34,106 +28,116 @@ function buildAutoCategory(categories: { value: string; auto_keywords: string | 
   };
 }
 
-/** Aplica la regla del contacto (si existe): categoría y etiqueta tienen prioridad sobre el
+/** Aplica el contacto guardado (si existe): categoría y etiqueta tienen prioridad sobre el
  * auto-categorizado por palabra clave, y copia iva_rate/retencion_rate al movimiento. */
 function buildRowInsert(
-  rulesByKey: Map<string, ContactRuleRow>,
+  patternMap: Map<string, ContactInfo>,
   autoCategory: (row: ImportRow) => string | null,
 ) {
   return function (row: ImportRow) {
-    const rule = rulesByKey.get(contactKeyFor(row.concept, row.contact));
+    const contact = patternMap.get(contactKeyFor(row.concept, row.contact));
     return {
       date: row.date,
       amount: row.amount,
       balance: row.balance,
       concept: row.concept,
-      contact: row.contact?.trim() || rule?.label || null,
-      category: rule?.category ?? autoCategory(row),
-      iva_rate: rule ? rule.iva_rate : null,
-      retencion_rate: rule ? rule.retencion_rate : null,
+      contact: row.contact?.trim() || contact?.label || null,
+      category: contact?.category ?? autoCategory(row),
+      iva_rate: contact ? contact.iva_rate : null,
+      retencion_rate: contact ? contact.retencion_rate : null,
     };
   };
 }
 
-async function loadContactRulesMap(
+type ContactConceptJoinRow = { pattern: string; contacts: ContactInfo | ContactInfo[] | null };
+
+async function loadContactPatternMap(
   supabase: ReturnType<typeof createServerClient>,
-): Promise<Map<string, ContactRuleRow>> {
+): Promise<Map<string, ContactInfo>> {
   const { data } = await supabase
-    .from("contact_rules")
-    .select("contact_key, label, category, iva_rate, retencion_rate");
-  return new Map((data ?? []).map((r: ContactRuleRow) => [r.contact_key, r]));
+    .from("contact_concepts")
+    .select("pattern, contacts(label, category, iva_rate, retencion_rate)");
+  const map = new Map<string, ContactInfo>();
+  for (const row of (data ?? []) as ContactConceptJoinRow[]) {
+    const c = Array.isArray(row.contacts) ? row.contacts[0] : row.contacts;
+    if (c) map.set(row.pattern, c);
+  }
+  return map;
 }
 
-export async function getKnownContactKeys(): Promise<string[]> {
+export async function getKnownContactPatterns(): Promise<string[]> {
   const supabase = createServerClient();
-  const { data } = await supabase.from("contact_rules").select("contact_key");
-  return (data ?? []).map((r: { contact_key: string }) => r.contact_key);
+  const [{ data: concepts }, { data: ignored }] = await Promise.all([
+    supabase.from("contact_concepts").select("pattern"),
+    supabase.from("ignored_contact_patterns").select("pattern"),
+  ]);
+  return [
+    ...(concepts ?? []).map((c: { pattern: string }) => c.pattern),
+    ...(ignored ?? []).map((i: { pattern: string }) => i.pattern),
+  ];
 }
 
 export async function getCategoriesForImport(): Promise<Category[]> {
   return loadCategories();
 }
 
-export type ContactRule = {
+export type Contact = {
   id: number;
-  contactKey: string;
   label: string;
   category: string | null;
   ivaRate: number;
   retencionRate: number;
+  patterns: string[];
 };
 
-export async function getContactRules(): Promise<ContactRule[]> {
+type ContactRow = { id: number; label: string; category: string | null; iva_rate: number; retencion_rate: number; contact_concepts: { pattern: string }[] };
+
+export async function getContacts(): Promise<Contact[]> {
   const supabase = createServerClient();
-  const { data } = await supabase
-    .from("contact_rules")
-    .select("id, contact_key, label, category, iva_rate, retencion_rate")
+  const { data, error } = await supabase
+    .from("contacts")
+    .select("id, label, category, iva_rate, retencion_rate, contact_concepts(pattern)")
     .order("label", { ascending: true });
-  return (data ?? []).map((r: { id: number; contact_key: string; label: string; category: string | null; iva_rate: number; retencion_rate: number }) => ({
-    id: r.id,
-    contactKey: r.contact_key,
-    label: r.label,
-    category: r.category,
-    ivaRate: r.iva_rate,
-    retencionRate: r.retencion_rate,
+  if (error) throw new Error(error.message);
+  return ((data ?? []) as ContactRow[]).map((c) => ({
+    id: c.id,
+    label: c.label,
+    category: c.category,
+    ivaRate: c.iva_rate,
+    retencionRate: c.retencion_rate,
+    patterns: c.contact_concepts.map((cc) => cc.pattern),
   }));
 }
 
-export async function createContactRule(input: {
-  contactKey: string;
+export async function createContact(input: {
   label: string;
   category: string | null;
   ivaRate: number;
   retencionRate: number;
-}): Promise<ContactRule> {
+  patterns: string[];
+}): Promise<Contact> {
   const supabase = createServerClient();
-  const { data, error } = await supabase
-    .from("contact_rules")
-    .upsert(
-      {
-        contact_key: input.contactKey,
-        label: input.label,
-        category: input.category,
-        iva_rate: input.ivaRate,
-        retencion_rate: input.retencionRate,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "contact_key" },
-    )
-    .select("id, contact_key, label, category, iva_rate, retencion_rate")
+  const { data: contact, error } = await supabase
+    .from("contacts")
+    .insert({ label: input.label, category: input.category, iva_rate: input.ivaRate, retencion_rate: input.retencionRate })
+    .select("id, label, category, iva_rate, retencion_rate")
     .single();
   if (error) throw new Error(error.message);
+
+  const patterns = [...new Set(input.patterns.map((p) => p.trim()).filter(Boolean))];
+  if (patterns.length) {
+    const { error: patError } = await supabase
+      .from("contact_concepts")
+      .upsert(patterns.map((pattern) => ({ contact_id: contact.id, pattern })), { onConflict: "pattern" });
+    if (patError) throw new Error(patError.message);
+  }
   return {
-    id: data.id,
-    contactKey: data.contact_key,
-    label: data.label,
-    category: data.category,
-    ivaRate: data.iva_rate,
-    retencionRate: data.retencion_rate,
+    id: contact.id, label: contact.label, category: contact.category,
+    ivaRate: contact.iva_rate, retencionRate: contact.retencion_rate, patterns,
   };
 }
 
-export async function updateContactRule(
+export async function updateContact(
   id: number,
   patch: { label?: string; category?: string | null; ivaRate?: number; retencionRate?: number },
 ): Promise<void> {
@@ -143,26 +147,57 @@ export async function updateContactRule(
   if (patch.category !== undefined) update.category = patch.category;
   if (patch.ivaRate !== undefined) update.iva_rate = patch.ivaRate;
   if (patch.retencionRate !== undefined) update.retencion_rate = patch.retencionRate;
-  const { error } = await supabase.from("contact_rules").update(update).eq("id", id);
+  const { error } = await supabase.from("contacts").update(update).eq("id", id);
   if (error) throw new Error(error.message);
 }
 
-export async function deleteContactRule(id: number): Promise<void> {
+export async function deleteContact(id: number): Promise<void> {
   const supabase = createServerClient();
-  const { error } = await supabase.from("contact_rules").delete().eq("id", id);
+  const { error } = await supabase.from("contacts").delete().eq("id", id);
   if (error) throw new Error(error.message);
 }
 
-/** Aplica retroactivamente una regla de contacto a los movimientos ya importados que
- * coincidan con su clave, por si la regla se creó o cambió después de importarlos. */
-export async function applyContactRuleToExisting(contactKey: string): Promise<{ updated: number }> {
+/** Añade un patrón (concepto bancario) más que identifique a un contacto ya existente, p. ej.
+ * cuando una empresa factura con un texto distinto al habitual. */
+export async function addPatternToContact(contactId: number, pattern: string): Promise<void> {
   const supabase = createServerClient();
-  const { data: rule } = await supabase
-    .from("contact_rules")
-    .select("label, category, iva_rate, retencion_rate")
-    .eq("contact_key", contactKey)
+  const { error } = await supabase
+    .from("contact_concepts")
+    .upsert({ contact_id: contactId, pattern: pattern.trim() }, { onConflict: "pattern" });
+  if (error) throw new Error(error.message);
+}
+
+export async function removeContactPattern(pattern: string): Promise<void> {
+  const supabase = createServerClient();
+  const { error } = await supabase.from("contact_concepts").delete().eq("pattern", pattern);
+  if (error) throw new Error(error.message);
+}
+
+/** Recuerda un patrón descartado al revisar una importación, para no volver a sugerir crear
+ * un contacto para él en futuras importaciones. */
+export async function ignorePatterns(patterns: string[]): Promise<void> {
+  const clean = [...new Set(patterns.map((p) => p.trim()).filter(Boolean))];
+  if (!clean.length) return;
+  const supabase = createServerClient();
+  const { error } = await supabase
+    .from("ignored_contact_patterns")
+    .upsert(clean.map((pattern) => ({ pattern })), { onConflict: "pattern" });
+  if (error) throw new Error(error.message);
+}
+
+/** Aplica retroactivamente los datos de un contacto a los movimientos ya importados que
+ * coincidan con alguno de sus patrones, por si el contacto se creó o cambió después de
+ * importarlos. */
+export async function applyContactToExisting(contactId: number): Promise<{ updated: number }> {
+  const supabase = createServerClient();
+  const { data: contact } = await supabase
+    .from("contacts")
+    .select("category, iva_rate, retencion_rate, contact_concepts(pattern)")
+    .eq("id", contactId)
     .single();
-  if (!rule) return { updated: 0 };
+  if (!contact) return { updated: 0 };
+  const patterns = new Set((contact.contact_concepts as { pattern: string }[]).map((c) => c.pattern));
+  if (patterns.size === 0) return { updated: 0 };
 
   const { data: txns } = await supabase
     .from("transactions")
@@ -170,13 +205,13 @@ export async function applyContactRuleToExisting(contactKey: string): Promise<{ 
     .is("deleted_at", null);
 
   const matchingIds = (txns ?? [])
-    .filter((t: { id: string; concept: string | null; contact: string | null }) => contactKeyFor(t.concept, t.contact) === contactKey)
+    .filter((t: { id: string; concept: string | null; contact: string | null }) => patterns.has(contactKeyFor(t.concept, t.contact)))
     .map((t: { id: string }) => t.id);
   if (matchingIds.length === 0) return { updated: 0 };
 
   const { error } = await supabase
     .from("transactions")
-    .update({ category: rule.category, iva_rate: rule.iva_rate, retencion_rate: rule.retencion_rate })
+    .update({ category: contact.category, iva_rate: contact.iva_rate, retencion_rate: contact.retencion_rate })
     .in("id", matchingIds);
   if (error) throw new Error(error.message);
 
@@ -184,23 +219,45 @@ export async function applyContactRuleToExisting(contactKey: string): Promise<{ 
   return { updated: matchingIds.length };
 }
 
-export async function saveContactRules(
-  rules: { contactKey: string; label: string; category: string | null; ivaRate: number; retencionRate: number }[],
-): Promise<void> {
-  if (!rules.length) return;
+export type NewContactDraft = {
+  pattern: string;
+  action: "create" | "attach" | "ignore";
+  label: string;
+  category: string | null;
+  ivaRate: number;
+  retencionRate: number;
+  attachToContactId: number | null;
+};
+
+/** Guarda las decisiones tomadas al revisar los contactos nuevos detectados en una
+ * importación: crear contacto, añadir el patrón a uno ya existente, o descartarlo (no
+ * volver a preguntar). */
+export async function saveNewContacts(drafts: NewContactDraft[]): Promise<void> {
+  if (!drafts.length) return;
   const supabase = createServerClient();
-  const { error } = await supabase.from("contact_rules").upsert(
-    rules.map((r) => ({
-      contact_key: r.contactKey,
-      label: r.label,
-      category: r.category,
-      iva_rate: r.ivaRate,
-      retencion_rate: r.retencionRate,
-      updated_at: new Date().toISOString(),
-    })),
-    { onConflict: "contact_key" },
-  );
-  if (error) throw new Error(error.message);
+
+  const toIgnore = drafts.filter((d) => d.action === "ignore").map((d) => d.pattern);
+  if (toIgnore.length) await ignorePatterns(toIgnore);
+
+  for (const d of drafts) {
+    if (d.action === "attach" && d.attachToContactId != null) {
+      const { error } = await supabase
+        .from("contact_concepts")
+        .upsert({ contact_id: d.attachToContactId, pattern: d.pattern }, { onConflict: "pattern" });
+      if (error) throw new Error(error.message);
+    } else if (d.action === "create") {
+      const { data: contact, error } = await supabase
+        .from("contacts")
+        .insert({ label: d.label, category: d.category, iva_rate: d.ivaRate, retencion_rate: d.retencionRate })
+        .select("id")
+        .single();
+      if (error) throw new Error(error.message);
+      const { error: patError } = await supabase
+        .from("contact_concepts")
+        .insert({ contact_id: contact.id, pattern: d.pattern });
+      if (patError) throw new Error(patError.message);
+    }
+  }
 }
 
 export async function importTransactions(
@@ -213,7 +270,7 @@ export async function importTransactions(
 
   const [{ data: cats }, rulesByKey] = await Promise.all([
     supabase.from("categories").select("value, auto_keywords"),
-    loadContactRulesMap(supabase),
+    loadContactPatternMap(supabase),
   ]);
   const autoCategory = buildAutoCategory(cats ?? []);
   const buildRow = buildRowInsert(rulesByKey, autoCategory);
@@ -264,7 +321,7 @@ export async function forceImportTransactions(
   const supabase = createServerClient();
   const [{ data: cats }, rulesByKey] = await Promise.all([
     supabase.from("categories").select("value, auto_keywords"),
-    loadContactRulesMap(supabase),
+    loadContactPatternMap(supabase),
   ]);
   const autoCategory = buildAutoCategory(cats ?? []);
   const buildRow = buildRowInsert(rulesByKey, autoCategory);

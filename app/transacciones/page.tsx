@@ -3,7 +3,7 @@ import { loadTransactionsCached } from "@/lib/transactions";
 import { loadCategoriesCached } from "@/lib/categories";
 import { getDateRange } from "@/lib/dateRange";
 import { detectRecurringTransactions } from "@/lib/recurring";
-import { getContactRules } from "./actions";
+import { getContacts } from "./actions";
 import TransaccionesList from "./TransaccionesList";
 import MobileNav from "@/app/components/MobileNav";
 
@@ -18,11 +18,11 @@ export default async function TransaccionesPage(props: {
     ? { from: sp.from ?? null, to: sp.to ?? null }
     : getDateRange(sp.range);
 
-  const [transactions, categories, allTransactions, contactRules] = await Promise.all([
+  const [transactions, categories, allTransactions, contacts] = await Promise.all([
     loadTransactionsCached(from, to),
     loadCategoriesCached(),
     isCustom || sp.range ? loadTransactionsCached(null, null) : Promise.resolve(null),
-    getContactRules(),
+    getContacts(),
   ]);
 
   const uncategorizedCount = transactions.filter((t) => !t.category).length;
@@ -52,7 +52,7 @@ export default async function TransaccionesPage(props: {
             uncategorizedCount={uncategorizedCount}
             recurringPeriods={recurringPeriods}
             allMonthKeys={allMonthKeys}
-            contactRules={contactRules}
+            contacts={contacts}
           />
         </Suspense>
       </div>
