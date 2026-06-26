@@ -177,6 +177,11 @@ function fmtDateShort(d: string) {
 type ContactDraft = {
   pattern: string;
   sample: string;
+  concept: string | null;
+  contactRaw: string | null;
+  count: number;
+  exampleDate: string;
+  exampleAmount: number;
   action: "create" | "attach" | "ignore";
   label: string;
   category: string | null;
@@ -258,9 +263,12 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
           : parseCSV(e.target?.result as string);
 
         const newContacts = new Map<string, ImportRow>();
+        const countByPattern = new Map<string, number>();
         for (const row of rows) {
           const pattern = contactKeyFor(row.concept, row.contact);
-          if (!knownPatterns.has(pattern) && !newContacts.has(pattern)) newContacts.set(pattern, row);
+          if (knownPatterns.has(pattern)) continue;
+          countByPattern.set(pattern, (countByPattern.get(pattern) ?? 0) + 1);
+          if (!newContacts.has(pattern)) newContacts.set(pattern, row);
         }
 
         if (newContacts.size === 0) {
@@ -272,6 +280,9 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
             const existing = contacts.find((c) => c.label.toLowerCase() === cleaned.toLowerCase());
             return {
               pattern, sample,
+              concept: row.concept, contactRaw: row.contact,
+              count: countByPattern.get(pattern) ?? 1,
+              exampleDate: row.date, exampleAmount: row.amount,
               action: existing ? "attach" : "create",
               label: cleaned,
               category: existing?.category ?? suggestCategory(row, categories),
@@ -433,7 +444,17 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                 {state.drafts.map((d) => (
                   <div key={d.pattern} className="border border-navy/[0.08] rounded-xl p-3">
                     <div className="flex items-start justify-between gap-2 mb-2">
-                      <p className="text-xs text-navy/40 truncate" title={d.sample}>{d.sample}</p>
+                      <div className="min-w-0">
+                        <p className="text-xs text-navy truncate">
+                          <span className="text-navy/40">Concepto:</span> {d.concept || "—"}
+                        </p>
+                        <p className="text-xs text-navy truncate">
+                          <span className="text-navy/40">Contacto:</span> {d.contactRaw || "—"}
+                        </p>
+                        <p className="text-[11px] text-navy/40 mt-0.5">
+                          {d.count} {d.count === 1 ? "movimiento" : "movimientos"} · ej. {fmtDateShort(d.exampleDate)} · {d.exampleAmount >= 0 ? "+" : "−"}{fmtAmt(d.exampleAmount)} €
+                        </p>
+                      </div>
                       {d.action === "ignore" ? (
                         <button
                           onClick={() => updateDraft(d.pattern, { action: contacts.some((c) => c.id === d.attachToContactId) ? "attach" : "create" })}
