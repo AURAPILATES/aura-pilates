@@ -185,6 +185,35 @@ export async function ignorePatterns(patterns: string[]): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
+/** Copia categoría/IVA/retención a los movimientos ya importados (de cualquier fecha) que
+ * coincidan con alguno de los patrones dados. Se usa tanto para "Aplicar a existentes" en
+ * Configuración > Contactos como, automáticamente, al confirmar un contacto nuevo o añadir un
+ * patrón a uno existente durante la importación — así no hace falta acordarse de aplicarlo
+ * a mano para los movimientos que ya estaban importados antes de crear el contacto. */
+async function applyPatternsToTransactions(
+  supabase: ReturnType<typeof createServerClient>,
+  patterns: Set<string>,
+  contact: { category: string | null; iva_rate: number; retencion_rate: number },
+): Promise<number> {
+  if (patterns.size === 0) return 0;
+  const { data: txns } = await supabase
+    .from("transactions")
+    .select("id, concept, contact")
+    .is("deleted_at", null);
+
+  const matchingIds = (txns ?? [])
+    .filter((t: { id: string; concept: string | null; contact: string | null }) => patterns.has(contactKeyFor(t.concept, t.contact)))
+    .map((t: { id: string }) => t.id);
+  if (matchingIds.length === 0) return 0;
+
+  const { error } = await supabase
+    .from("transactions")
+    .update({ category: contact.category, iva_rate: contact.iva_rate, retencion_rate: contact.retencion_rate })
+    .in("id", matchingIds);
+  if (error) throw new Error(error.message);
+  return matchingIds.length;
+}
+
 /** Aplica retroactivamente los datos de un contacto a los movimientos ya importados que
  * coincidan con alguno de sus patrones, por si el contacto se creó o cambió después de
  * importarlos. */
@@ -197,26 +226,9 @@ export async function applyContactToExisting(contactId: number): Promise<{ updat
     .single();
   if (!contact) return { updated: 0 };
   const patterns = new Set((contact.contact_concepts as { pattern: string }[]).map((c) => c.pattern));
-  if (patterns.size === 0) return { updated: 0 };
-
-  const { data: txns } = await supabase
-    .from("transactions")
-    .select("id, concept, contact")
-    .is("deleted_at", null);
-
-  const matchingIds = (txns ?? [])
-    .filter((t: { id: string; concept: string | null; contact: string | null }) => patterns.has(contactKeyFor(t.concept, t.contact)))
-    .map((t: { id: string }) => t.id);
-  if (matchingIds.length === 0) return { updated: 0 };
-
-  const { error } = await supabase
-    .from("transactions")
-    .update({ category: contact.category, iva_rate: contact.iva_rate, retencion_rate: contact.retencion_rate })
-    .in("id", matchingIds);
-  if (error) throw new Error(error.message);
-
-  revalidateTag("transactions");
-  return { updated: matchingIds.length };
+  const updated = await applyPatternsToTransactions(supabase, patterns, contact);
+  if (updated > 0) revalidateTag("transactions");
+  return { updated };
 }
 
 export type NewContactDraft = {
@@ -230,34 +242,48 @@ export type NewContactDraft = {
 };
 
 /** Guarda las decisiones tomadas al revisar los contactos nuevos detectados en una
- * importación: crear contacto, añadir el patrón a uno ya existente, o descartarlo (no
- * volver a preguntar). */
-export async function saveNewContacts(drafts: NewContactDraft[]): Promise<void> {
-  if (!drafts.length) return;
+ * importación: crear contacto, añadir el patrón a uno ya existente, o descartarlo (no volver
+ * a preguntar). En los dos primeros casos aplica también categoría/IVA/retención a los
+ * movimientos ya importados antes que coincidan con el patrón, sin esperar a que alguien
+ * pulse "Aplicar a existentes" a mano en Configuración. */
+export async function saveNewContacts(drafts: NewContactDraft[]): Promise<{ updated: number }> {
+  if (!drafts.length) return { updated: 0 };
   const supabase = createServerClient();
 
   const toIgnore = drafts.filter((d) => d.action === "ignore").map((d) => d.pattern);
   if (toIgnore.length) await ignorePatterns(toIgnore);
 
+  let updated = 0;
   for (const d of drafts) {
     if (d.action === "attach" && d.attachToContactId != null) {
       const { error } = await supabase
         .from("contact_concepts")
         .upsert({ contact_id: d.attachToContactId, pattern: d.pattern }, { onConflict: "pattern" });
       if (error) throw new Error(error.message);
+
+      const { data: contact } = await supabase
+        .from("contacts")
+        .select("category, iva_rate, retencion_rate")
+        .eq("id", d.attachToContactId)
+        .single();
+      if (contact) updated += await applyPatternsToTransactions(supabase, new Set([d.pattern]), contact);
     } else if (d.action === "create") {
       const { data: contact, error } = await supabase
         .from("contacts")
         .insert({ label: d.label, category: d.category, iva_rate: d.ivaRate, retencion_rate: d.retencionRate })
-        .select("id")
+        .select("id, category, iva_rate, retencion_rate")
         .single();
       if (error) throw new Error(error.message);
       const { error: patError } = await supabase
         .from("contact_concepts")
         .insert({ contact_id: contact.id, pattern: d.pattern });
       if (patError) throw new Error(patError.message);
+
+      updated += await applyPatternsToTransactions(supabase, new Set([d.pattern]), contact);
     }
   }
+  if (updated > 0) revalidateTag("transactions");
+  return { updated };
 }
 
 export async function importTransactions(

@@ -188,7 +188,7 @@ type ContactDraft = {
 type State =
   | { kind: "idle" }
   | { kind: "review-contacts"; drafts: ContactDraft[]; rows: ImportRow[]; filename: string }
-  | { kind: "preview"; rows: ImportRow[]; filename: string }
+  | { kind: "preview"; rows: ImportRow[]; filename: string; appliedCount?: number }
   | { kind: "importing" }
   | { kind: "done"; imported: number; skipped: number; skippedRows: ImportRow[]; batchId: string }
   | { kind: "error"; message: string };
@@ -309,13 +309,13 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
         retencionRate: d.retencionRate,
         attachToContactId: d.attachToContactId,
       }));
-      await saveNewContacts(payload);
+      const { updated } = await saveNewContacts(payload);
       setKnownPatterns((prev) => {
         const next = new Set(prev);
         for (const d of drafts) next.add(d.pattern);
         return next;
       });
-      setState({ kind: "preview", rows, filename });
+      setState({ kind: "preview", rows, filename, appliedCount: updated });
     } finally {
       setSavingContacts(false);
     }
@@ -551,6 +551,11 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                 <span className="font-medium text-navy">{state.filename}</span>
                 {" · "}<strong className="text-navy">{state.rows.length}</strong> movimientos detectados
               </p>
+              {!!state.appliedCount && (
+                <p className="text-xs text-primary/70 mb-3">
+                  {state.appliedCount} {state.appliedCount === 1 ? "movimiento anterior actualizado" : "movimientos anteriores actualizados"} con el contacto que acabas de confirmar.
+                </p>
+              )}
               <div className="border border-navy/[0.07] rounded-xl overflow-hidden mb-4">
                 <table className="w-full text-xs">
                   <thead>
