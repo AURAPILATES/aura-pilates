@@ -1,12 +1,13 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import Drawer from "@/app/components/Drawer";
 import type { Transaction, PaymentMethod } from "@/lib/transactions";
 import type { Category } from "@/lib/categories";
 import { PERIOD_BUCKETS } from "@/lib/recurring";
 import { CategoryPill, SourceAvatar } from "./TransaccionesList";
-import { createRecurringExpenseFromTransaction } from "./actions";
+import { createRecurringExpenseFromTransaction, type ContactRule } from "./actions";
 
 const PAYMENT_METHOD_OPTIONS: { value: PaymentMethod; label: string }[] = [
   { value: "efectivo", label: "Efectivo Aura" },
@@ -47,6 +48,86 @@ function Field({ label, value, onSave }: { label: string; value: string; onSave:
         }}
         className="w-full text-sm font-medium text-navy border border-navy/[0.12] rounded-lg px-3 py-2 outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15 transition"
       />
+    </div>
+  );
+}
+
+/** Combobox: escribe texto libre o elige uno de los contactos guardados en
+ * Configuración > Contactos, para no tener que retipear nombres ya conocidos
+ * (y evitar typos que rompan el agrupado por contacto de los gastos recurrentes). */
+function ContactPicker({ value, contactRules, onSave }: { value: string; contactRules: ContactRule[]; onSave: (v: string) => void }) {
+  const [draft, setDraft] = useState(value);
+  const [open, setOpen] = useState(false);
+  const [dropPos, setDropPos] = useState<{ top: number; left: number; width: number } | null>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const dropRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const options = useMemo(() => {
+    const labels = [...new Set(contactRules.map((r) => r.label))].sort((a, b) => a.localeCompare(b));
+    const q = draft.trim().toLowerCase();
+    return q ? labels.filter((l) => l.toLowerCase().includes(q)) : labels;
+  }, [contactRules, draft]);
+
+  useEffect(() => {
+    if (!open) return;
+    function handle(e: MouseEvent) {
+      if (!wrapRef.current?.contains(e.target as Node) && !dropRef.current?.contains(e.target as Node)) {
+        setOpen(false);
+        if (draft !== value) onSave(draft);
+      }
+    }
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, [open, draft, value, onSave]);
+
+  function openDropdown() {
+    if (inputRef.current) {
+      const rect = inputRef.current.getBoundingClientRect();
+      setDropPos({ top: rect.bottom + 4, left: rect.left, width: rect.width });
+    }
+    setOpen(true);
+  }
+
+  function pick(label: string) {
+    setDraft(label);
+    onSave(label);
+    setOpen(false);
+  }
+
+  return (
+    <div ref={wrapRef} className="relative">
+      <input
+        ref={inputRef}
+        type="text"
+        value={draft}
+        onChange={(e) => { setDraft(e.target.value); if (!open) openDropdown(); }}
+        onFocus={openDropdown}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") { onSave(draft); setOpen(false); (e.target as HTMLInputElement).blur(); }
+          if (e.key === "Escape") { setDraft(value); setOpen(false); (e.target as HTMLInputElement).blur(); }
+        }}
+        placeholder="Escribe o elige uno guardado…"
+        className="w-full text-sm font-medium text-navy border border-navy/[0.12] rounded-lg px-3 py-2 outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15 transition"
+      />
+      {open && dropPos && options.length > 0 && createPortal(
+        <div
+          ref={dropRef}
+          className="fixed z-[9999] bg-white border border-navy/10 rounded-xl shadow-xl overflow-y-auto py-1"
+          style={{ top: dropPos.top, left: dropPos.left, width: dropPos.width, maxHeight: "14rem" }}
+        >
+          {options.map((label) => (
+            <button
+              key={label}
+              onClick={() => pick(label)}
+              className={`w-full text-left px-3 py-1.5 text-xs hover:bg-navy/[0.04] transition-colors ${label === value ? "font-semibold text-navy" : "text-navy/70"}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>,
+        document.body
+      )}
     </div>
   );
 }
@@ -130,6 +211,7 @@ function MarkRecurringControl({ transactionId }: { transactionId: string }) {
 export default function TransactionDrawer({
   transaction,
   categories,
+  contactRules,
   recurringPeriod,
   onClose,
   onUpdateContact,
@@ -142,6 +224,7 @@ export default function TransactionDrawer({
 }: {
   transaction: Transaction;
   categories: Category[];
+  contactRules: ContactRule[];
   recurringPeriod?: string;
   onClose: () => void;
   onUpdateContact: (id: string, value: string) => void;
@@ -199,7 +282,10 @@ export default function TransactionDrawer({
           )}
         </div>
 
-        <Field label="Contacto" value={t.contact ?? ""} onSave={(v) => onUpdateContact(t.id, v)} />
+        <div>
+          <p className="text-[11px] text-navy/40 uppercase tracking-wider mb-1">Contacto</p>
+          <ContactPicker value={t.contact ?? ""} contactRules={contactRules} onSave={(v) => onUpdateContact(t.id, v)} />
+        </div>
         <Field label="Concepto" value={t.concept ?? ""} onSave={(v) => onUpdateConcept(t.id, v)} />
 
         <div>
