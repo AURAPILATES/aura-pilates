@@ -1,13 +1,13 @@
 "use client";
 import { useState, useTransition } from "react";
 import type { Category } from "@/lib/categories";
-import { sortCategoriesHierarchical, categoryDisplayLabel } from "@/lib/categories";
 import { contactKeyFor } from "@/lib/contactRules";
 import {
   type Contact, updateContact, deleteContact, applyContactToExisting, createContact,
   addPatternToContact, removeContactPattern,
 } from "@/app/transacciones/actions";
 import Drawer from "@/app/components/Drawer";
+import { CategoryPill } from "@/app/transacciones/TransaccionesList";
 
 function RateInput({ value, onSave }: { value: number; onSave: (v: number) => void }) {
   const [draft, setDraft] = useState(String(value));
@@ -111,16 +111,9 @@ function ContactRow({ contact, categories, onChange, onRemove }: {
           onBlur={() => { if (label.trim() && label !== contact.label) onChange({ label: label.trim() }); }}
           className="flex-1 min-w-0 px-2 py-1 text-sm border border-navy/15 rounded-md focus:outline-none focus:border-primary/40"
         />
-        <select
-          value={contact.category ?? ""}
-          onChange={(e) => onChange({ category: e.target.value || null })}
-          className="w-40 shrink-0 px-2 py-1 text-xs border border-navy/15 rounded-md bg-white focus:outline-none focus:border-primary/40"
-        >
-          <option value="">Sin categoría</option>
-          {sortCategoriesHierarchical(categories).map((c) => (
-            <option key={c.id} value={c.value}>{categoryDisplayLabel(c, categories)}</option>
-          ))}
-        </select>
+        <div className="shrink-0">
+          <CategoryPill category={contact.category} categories={categories} onChange={(cat) => onChange({ category: cat })} />
+        </div>
         <div className="flex items-center gap-1 text-xs text-navy/45 shrink-0">
           IVA <RateInput value={contact.ivaRate} onSave={(v) => onChange({ ivaRate: v })} />%
         </div>
@@ -243,16 +236,7 @@ function NewContactForm({ categories, onCreated, onCancel }: {
         </div>
         <div>
           <label className="block text-xs font-medium text-navy/55 mb-1">Categoría</label>
-          <select
-            value={category ?? ""}
-            onChange={(e) => setCategory(e.target.value || null)}
-            className="w-full px-3 py-2 text-sm border border-navy/15 rounded-lg bg-white focus:outline-none focus:border-primary/40"
-          >
-            <option value="">Sin categoría</option>
-            {sortCategoriesHierarchical(categories).map((c) => (
-              <option key={c.id} value={c.value}>{categoryDisplayLabel(c, categories)}</option>
-            ))}
-          </select>
+          <CategoryPill category={category} categories={categories} onChange={setCategory} />
         </div>
         <div className="flex gap-3">
           <div className="flex-1">
