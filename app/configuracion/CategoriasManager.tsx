@@ -49,7 +49,7 @@ function flattenDisplayOrder(all: Category[]): Category[] {
     const items = all.filter((c) => c.group_type === g || (g === "operational" && !KNOWN_GROUPS.has(c.group_type)));
     if (g === "operational") {
       for (const eg of ECONOMIC_ORDER) {
-        result.push(...byParentOrdered(items.filter((c) => economicGroupOf(c.label) === eg)));
+        result.push(...byParentOrdered(items.filter((c) => economicGroupOf(c.label, c.economic_group) === eg)));
       }
     } else {
       result.push(...byParentOrdered(items));
@@ -167,6 +167,7 @@ const EMPTY: Omit<Category, "id" | "created_at"> = {
   auto_keywords: null,
   sort_order: 99,
   parent_id: null,
+  economic_group: null,
 };
 
 type EditorState = { mode: "new" } | { mode: "edit"; cat: Category };
@@ -262,6 +263,7 @@ export default function CategoriasManager({
       auto_keywords: cat.auto_keywords,
       sort_order: cat.sort_order,
       parent_id: cat.parent_id,
+      economic_group: cat.economic_group,
     });
     setEditor({ mode: "edit", cat });
     setError(null);
@@ -427,7 +429,7 @@ export default function CategoriasManager({
                 {g === "operational" ? (
                   <div className="space-y-4">
                     {ECONOMIC_ORDER.map((eg) => {
-                      const subItems = items.filter((c) => economicGroupOf(c.label) === eg);
+                      const subItems = items.filter((c) => economicGroupOf(c.label, c.economic_group) === eg);
                       if (subItems.length === 0) return null;
                       return (
                         <div key={eg}>
@@ -575,6 +577,33 @@ export default function CategoriasManager({
                   ))}
                 </div>
               </div>
+
+              {/* Naturaleza económica (solo aplica dentro de Operacional) */}
+              {form.group_type === "operational" && (
+                <div>
+                  <label className="block text-xs font-semibold text-navy/45 uppercase tracking-wider mb-2">
+                    Naturaleza económica
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {ECONOMIC_ORDER.map((eg) => (
+                      <button
+                        key={eg}
+                        onClick={() => setForm((f) => ({ ...f, economic_group: eg }))}
+                        className={`text-sm px-3 py-2 rounded-xl border transition-colors ${
+                          economicGroupOf(form.label, form.economic_group) === eg
+                            ? "border-navy bg-navy/[0.06] text-navy font-semibold"
+                            : "border-navy/[0.10] text-navy/50 hover:border-navy/20"
+                        }`}
+                      >
+                        {ECONOMIC_LABELS[eg]}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[11px] text-navy/35 mt-1.5">
+                    Por defecto se deduce del nombre. Fíjalo a mano si necesitas que se quede en un grupo concreto al renombrar.
+                  </p>
+                </div>
+              )}
 
               {/* Categoría padre */}
               <div>

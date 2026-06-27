@@ -15,6 +15,7 @@ export type Category = {
   sort_order: number;
   created_at: string;
   parent_id: string | null;
+  economic_group: string | null;
 };
 
 /** "Suministros > Agua" si `cat` es una subcategoría, o solo "Agua" si no tiene padre. */

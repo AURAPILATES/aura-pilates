@@ -12,6 +12,7 @@ type CategoryInput = {
   auto_keywords: string | null;
   sort_order: number;
   parent_id: string | null;
+  economic_group: string | null;
 };
 
 function revalidateAll() {
