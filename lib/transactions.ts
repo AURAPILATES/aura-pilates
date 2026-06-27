@@ -1,6 +1,7 @@
 import { createServerClient } from "@/lib/supabase";
 import { unstable_cache } from "next/cache";
-import { STARTUP_CATS, economicGroupOf, type EconomicGroup } from "@/lib/economicGroups";
+import { economicGroupOf, type EconomicGroup } from "@/lib/economicGroups";
+import type { Category } from "@/lib/categories";
 export type { EconomicGroup };
 
 export type ContactType = "empleado" | "socio" | "proveedor" | "administracion" | "banco" | null;
@@ -27,25 +28,22 @@ export type Transaction = {
   retencion_rate: number | null;
 };
 
-const OPERATIONAL_CATS = new Set([
-  "Alquiler",
-  "Salarios",
-  "Seguridad social",
-  "Electricidad",
-  "Agua",
-  "Software",
-  "Gestoría y legal",
-  "Impuestos y tasas",
-  "IVA",
-  "IRPF",
-  "IS",
-  "Teléfono",
-  "Seguros",
-  "Comisiones bancarias",
-  "Merchandising",
-  "Local",
-  "Otros",
-]);
+/** Tipos de categoría que no representan un gasto real (ventas, aportaciones/financiación, traspasos internos). */
+const NON_EXPENSE_GROUP_TYPES = new Set(["income", "transfer", "internal"]);
+
+/** Busca la categoría de una transacción por su `value`, sin sensibilidad a mayúsculas/minúsculas
+ * (las categorías guardan el value con distinta capitalización según cuándo se crearon). */
+function findCategory(categories: Category[], value: string): Category | undefined {
+  const norm = value.toLowerCase();
+  return categories.find((c) => c.value.toLowerCase() === norm);
+}
+
+/** Si la transacción tiene categoría, ¿representa un gasto? Solo se excluyen las categorías de
+ * tipo ingreso/traspaso/interno; cualquier otra categoría (conocida o no) cuenta como gasto. */
+function isExpenseCategory(category: string, categories: Category[]): boolean {
+  const cat = findCategory(categories, category);
+  return !cat || !NON_EXPENSE_GROUP_TYPES.has(cat.group_type);
+}
 
 
 export async function loadCategoryCounts(): Promise<Record<string, number>> {
@@ -93,36 +91,26 @@ export const loadTransactionsCached = unstable_cache(
   { revalidate: 300, tags: ["transactions"] },
 );
 
-export function totalOperationalExpenses(txns: Transaction[]): number {
-  return txns
-    .filter((t) => t.amount < 0 && t.category !== null && OPERATIONAL_CATS.has(t.category))
-    .reduce((s, t) => s + Math.abs(t.amount), 0);
-}
-
-export function totalStartupCosts(txns: Transaction[]): number {
-  return txns
-    .filter((t) => t.amount < 0 && t.category !== null && STARTUP_CATS.has(t.category))
-    .reduce((s, t) => s + Math.abs(t.amount), 0);
-}
-
-export function expensesByMonth(txns: Transaction[]): Map<string, number> {
+export function expensesByMonth(txns: Transaction[], categories: Category[]): Map<string, number> {
   const map = new Map<string, number>();
   for (const t of txns) {
-    if (t.amount >= 0) continue;
-    if (!t.category || (!OPERATIONAL_CATS.has(t.category) && !STARTUP_CATS.has(t.category))) continue;
+    if (t.amount >= 0 || !t.category) continue;
+    if (!isExpenseCategory(t.category, categories)) continue;
     const month = t.date.slice(0, 7);
     map.set(month, (map.get(month) ?? 0) + Math.abs(t.amount));
   }
   return map;
 }
 
-/** Gastos por categoría (operativos + CapEx), cada uno con su grupo económico. */
-export function expensesByCategoryAll(txns: Transaction[]) {
+/** Gastos por categoría (operativos + CapEx), cada uno con su grupo económico. Cualquier
+ * transacción con categoría cuenta, salvo que esa categoría sea de tipo ingreso/traspaso/interno. */
+export function expensesByCategoryAll(txns: Transaction[], categories: Category[]) {
   const map = new Map<string, { count: number; total: number; group: EconomicGroup }>();
   for (const t of txns) {
     if (t.amount >= 0 || t.category === null) continue;
-    if (!OPERATIONAL_CATS.has(t.category) && !STARTUP_CATS.has(t.category)) continue;
-    const d = map.get(t.category) ?? { count: 0, total: 0, group: economicGroupOf(t.category) };
+    if (!isExpenseCategory(t.category, categories)) continue;
+    const cat = findCategory(categories, t.category);
+    const d = map.get(t.category) ?? { count: 0, total: 0, group: economicGroupOf(cat?.label ?? t.category, cat?.economic_group) };
     d.count++;
     d.total += Math.abs(t.amount);
     map.set(t.category, d);

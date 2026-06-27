@@ -148,23 +148,6 @@ function ContactPicker({ transactionId, value, contacts, onSaved }: { transactio
   );
 }
 
-function NotesField({ value, onSave }: { value: string; onSave: (v: string) => void }) {
-  const [draft, setDraft] = useState(value);
-  return (
-    <div>
-      <p className="text-[11px] text-navy/40 uppercase tracking-wider mb-1">Notas</p>
-      <textarea
-        value={draft}
-        onChange={(e) => setDraft(e.target.value)}
-        onBlur={() => { if (draft !== value) onSave(draft); }}
-        placeholder="Añade una nota…"
-        rows={3}
-        className="w-full text-sm text-navy border border-navy/[0.12] rounded-lg px-3 py-2 outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15 transition resize-none"
-      />
-    </div>
-  );
-}
-
 function MarkRecurringControl({ transactionId }: { transactionId: string }) {
   const [open, setOpen] = useState(false);
   const [period, setPeriod] = useState("mensual");
@@ -184,14 +167,14 @@ function MarkRecurringControl({ transactionId }: { transactionId: string }) {
   }
 
   if (done) {
-    return <p className="text-xs text-primary/70">Dado de alta como gasto recurrente {period}. Ajusta IVA/retención en Gastos recurrentes.</p>;
+    return <p className="text-sm text-primary/70">Dado de alta como gasto recurrente {period}. Ajusta IVA/retención en Gastos recurrentes.</p>;
   }
 
   if (!open) {
     return (
       <button
         onClick={() => setOpen(true)}
-        className="text-xs font-medium text-primary/70 hover:text-primary transition-colors self-start"
+        className="text-sm font-medium text-primary/70 hover:text-primary transition-colors self-start"
       >
         + Marcar como gasto recurrente
       </button>
@@ -200,11 +183,11 @@ function MarkRecurringControl({ transactionId }: { transactionId: string }) {
 
   return (
     <div className="flex items-center gap-2 flex-wrap">
-      <label className="text-xs text-navy/45">Periodicidad</label>
+      <label className="text-sm text-navy/45">Periodicidad</label>
       <select
         value={period}
         onChange={(e) => setPeriod(e.target.value)}
-        className="text-sm border border-navy/[0.12] rounded-lg px-2 py-1.5 outline-none focus:border-primary/50"
+        className="text-base border border-navy/[0.12] rounded-lg px-2 py-1.5 outline-none focus:border-primary/50"
       >
         {PERIOD_BUCKETS.map((b) => (
           <option key={b.label} value={b.label}>{b.label}</option>
@@ -213,11 +196,11 @@ function MarkRecurringControl({ transactionId }: { transactionId: string }) {
       <button
         onClick={confirm}
         disabled={saving}
-        className="px-3 py-1.5 text-xs font-semibold text-white bg-navy rounded-lg hover:bg-navy/85 transition-colors disabled:opacity-40"
+        className="px-3 py-1.5 text-sm font-semibold text-white bg-navy rounded-lg hover:bg-navy/85 transition-colors disabled:opacity-40"
       >
         Confirmar
       </button>
-      <button onClick={() => setOpen(false)} className="text-xs text-navy/45 hover:text-navy transition-colors">
+      <button onClick={() => setOpen(false)} className="text-sm text-navy/45 hover:text-navy transition-colors">
         Cancelar
       </button>
     </div>
@@ -233,7 +216,6 @@ export default function TransactionDrawer({
   onUpdateConcept,
   onUpdateBankDetails,
   onUpdateCategory,
-  onUpdateNotes,
   onUpdateDate,
   onUpdatePaymentMethod,
   onDelete,
@@ -246,7 +228,6 @@ export default function TransactionDrawer({
   onUpdateConcept: (id: string, value: string) => void;
   onUpdateBankDetails: (id: string, value: string) => void;
   onUpdateCategory: (id: string, value: string | null) => void;
-  onUpdateNotes: (id: string, value: string) => void;
   onUpdateDate: (id: string, value: string) => void;
   onUpdatePaymentMethod: (id: string, value: PaymentMethod) => void;
   onDelete: (id: string) => void;
@@ -311,8 +292,6 @@ export default function TransactionDrawer({
           <CategoryPill category={t.category} categories={categories} onChange={(cat) => onUpdateCategory(t.id, cat)} />
         </div>
 
-        {t.amount < 0 && !recurringPeriod && <MarkRecurringControl transactionId={t.id} />}
-
         <div className="grid grid-cols-2 gap-4 pt-2 border-t border-navy/[0.06]">
           <div>
             <p className="text-[11px] text-navy/40 uppercase tracking-wider mb-1">Fecha</p>
@@ -354,7 +333,7 @@ export default function TransactionDrawer({
           </div>
         </div>
 
-        <NotesField value={t.notes ?? ""} onSave={(v) => onUpdateNotes(t.id, v)} />
+        {t.amount < 0 && !recurringPeriod && <MarkRecurringControl transactionId={t.id} />}
       </div>
     </Drawer>
   );

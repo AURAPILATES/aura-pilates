@@ -1,6 +1,7 @@
 import type { StripePayment } from "./stripePayments";
 import type { Sale } from "./sales";
 import { expensesByMonth, type Transaction } from "./transactions";
+import type { Category } from "./categories";
 
 const MONTH_LABELS: Record<string, string> = {
   "01": "Ene", "02": "Feb", "03": "Mar", "04": "Abr",
@@ -25,6 +26,7 @@ export function computeBreakeven(
   payments: StripePayment[],
   sales: Sale[],
   txns: Transaction[],
+  categories: Category[],
 ): BreakevenPoint[] {
   const revByMonth = new Map<string, number>();
   for (const p of payments) {
@@ -37,7 +39,7 @@ export function computeBreakeven(
     revByMonth.set(m, (revByMonth.get(m) ?? 0) + s.amount);
   }
 
-  const expByMonth = expensesByMonth(txns);
+  const expByMonth = expensesByMonth(txns, categories);
   const months = [...new Set([...revByMonth.keys(), ...expByMonth.keys()])].sort();
 
   let cumRevenue = 0;

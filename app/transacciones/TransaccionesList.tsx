@@ -5,7 +5,7 @@ import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import type { Transaction, PaymentMethod } from "@/lib/transactions";
 import type { Category } from "@/lib/categories";
 import { sortCategoriesHierarchical, categoryDisplayLabel } from "@/lib/categories";
-import { updateTransactionCategory, updateTransactionConcept, updateTransactionContact, updateTransactionBankDetails, updateTransactionNotes, updateTransactionDate, updateTransactionPaymentMethod, softDeleteTransactions, type Contact } from "./actions";
+import { updateTransactionCategory, updateTransactionConcept, updateTransactionContact, updateTransactionBankDetails, updateTransactionDate, updateTransactionPaymentMethod, softDeleteTransactions, type Contact } from "./actions";
 import DateFilter from "@/app/components/DateFilter";
 import ImportButton from "./ImportButton";
 import AddCashModal from "./AddCashModal";
@@ -255,7 +255,7 @@ export function CategoryBadge({ category, categories, hideIcon = false }: { cate
   const iconName = cat?.label ?? label;
   return (
     <span
-      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap"
+      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium whitespace-nowrap"
       style={{ backgroundColor: cfg.bg, color: cfg.color }}
     >
       {!hideIcon && <CatIcon iconKey={cfg.emoji} name={iconName} color={cfg.color} />}
@@ -734,9 +734,6 @@ export default function TransaccionesList({
   function handleBankDetailsChange(id: string, value: string) {
     startTransition(() => updateTransactionBankDetails(id, value));
   }
-  function handleNotesChange(id: string, value: string) {
-    startTransition(() => updateTransactionNotes(id, value));
-  }
   function handleDateChange(id: string, value: string) {
     startTransition(() => updateTransactionDate(id, value));
   }
@@ -1200,7 +1197,7 @@ export default function TransaccionesList({
         <table className="w-full" style={{ tableLayout: "fixed" }}>
           <colgroup>
             <col style={{ width: "44px" }} />
-            <col style={{ width: "380px" }} />
+            <col style={{ width: "330px" }} />
             <col style={{ width: "130px" }} />
             <col />
             <col style={{ width: "172px" }} />
@@ -1351,7 +1348,6 @@ export default function TransaccionesList({
           onUpdateConcept={handleConceptChange}
           onUpdateBankDetails={handleBankDetailsChange}
           onUpdateCategory={handleCategoryChange}
-          onUpdateNotes={handleNotesChange}
           onUpdateDate={handleDateChange}
           onUpdatePaymentMethod={handlePaymentMethodChange}
           onDelete={handleDeleteOne}

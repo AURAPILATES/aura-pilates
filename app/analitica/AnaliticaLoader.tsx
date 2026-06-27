@@ -220,14 +220,14 @@ export default async function AnaliticaLoader({
   // p.ej. al convertir "Electricidad" en la subcategoría "Luz"), así que el lookup va por value.
   const dbCatByValue = new Map(dbCategories.map((c) => [c.value, c]));
   const dbCatById = new Map(dbCategories.map((c) => [c.id, c]));
-  const expByCategory = expensesByCategoryAll(txnsAll);
+  const expByCategory = expensesByCategoryAll(txnsAll, dbCategories);
   const totalExpCat   = expByCategory.reduce((s, r) => s + r.total, 0);
 
   // ── Budgets / Financiación ────────────────────────────────────────────────
   const budgetSpent = computeSpent(budgets, txnsAll);
 
   // ── Breakeven desde el inicio ────────────────────────────────────────────
-  const breakevenPoints = computeBreakeven(paymentsAll, momenceSalesAll, txnsAll);
+  const breakevenPoints = computeBreakeven(paymentsAll, momenceSalesAll, txnsAll, dbCategories);
 
   // ── Conversión Pack Benvinguda 2x1 → Suscripción ──────────────────────────
   const conversionSummary = benvingudaConversion(momenceSalesAll);
