@@ -776,3 +776,25 @@ export async function createRecurringExpenseFromTransaction(
   revalidatePath("/gastos-recurrentes");
   revalidatePath("/analitica");
 }
+
+/** Desmarca un movimiento como recurrente: borra la fila de `recurring_expenses` dada de
+ * alta manualmente desde este movimiento (misma key que `createRecurringExpenseFromTransaction`). */
+export async function removeRecurringExpenseForTransaction(transactionId: string): Promise<void> {
+  const supabase = createServerClient();
+  const { data: t, error } = await supabase
+    .from("transactions")
+    .select("*")
+    .eq("id", transactionId)
+    .single();
+  if (error || !t) throw new Error(error?.message ?? "Movimiento no encontrado");
+
+  const key = seriesKeyFor(t as Transaction);
+  if (!key) return;
+
+  const { error: deleteError } = await supabase.from("recurring_expenses").delete().eq("key", key);
+  if (deleteError) throw new Error(deleteError.message);
+
+  revalidateTag("recurring_expenses");
+  revalidatePath("/gastos-recurrentes");
+  revalidatePath("/analitica");
+}

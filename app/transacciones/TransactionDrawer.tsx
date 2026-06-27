@@ -7,7 +7,7 @@ import type { Transaction, PaymentMethod } from "@/lib/transactions";
 import type { Category } from "@/lib/categories";
 import { PERIOD_BUCKETS } from "@/lib/recurring";
 import { CategoryPill, SourceAvatar } from "./TransaccionesList";
-import { createRecurringExpenseFromTransaction, assignContactToTransaction, type Contact } from "./actions";
+import { createRecurringExpenseFromTransaction, removeRecurringExpenseForTransaction, assignContactToTransaction, type Contact } from "./actions";
 
 const PAYMENT_METHOD_OPTIONS: { value: PaymentMethod; label: string }[] = [
   { value: "efectivo", label: "Efectivo Aura" },
@@ -148,61 +148,65 @@ function ContactPicker({ transactionId, value, contacts, onSaved }: { transactio
   );
 }
 
-function MarkRecurringControl({ transactionId }: { transactionId: string }) {
-  const [open, setOpen] = useState(false);
-  const [period, setPeriod] = useState("mensual");
+function MarkRecurringControl({ transactionId, isIncome, initiallyRecurring, initialPeriod }: { transactionId: string; isIncome: boolean; initiallyRecurring: boolean; initialPeriod?: string }) {
+  const [checked, setChecked] = useState(initiallyRecurring);
+  const [period, setPeriod] = useState(initialPeriod ?? "mensual");
   const [saving, setSaving] = useState(false);
-  const [done, setDone] = useState(false);
   const router = useRouter();
 
-  async function confirm() {
+  async function toggle(next: boolean) {
+    setChecked(next);
     setSaving(true);
     try {
-      await createRecurringExpenseFromTransaction(transactionId, period, 21, 0);
-      setDone(true);
+      if (next) {
+        await createRecurringExpenseFromTransaction(transactionId, period, 21, 0);
+      } else {
+        await removeRecurringExpenseForTransaction(transactionId);
+      }
       router.refresh();
     } finally {
       setSaving(false);
     }
   }
 
-  if (done) {
-    return <p className="text-sm text-primary/70">Dado de alta como gasto recurrente {period}. Ajusta IVA/retención en Gastos recurrentes.</p>;
-  }
-
-  if (!open) {
-    return (
-      <button
-        onClick={() => setOpen(true)}
-        className="text-sm font-medium text-primary/70 hover:text-primary transition-colors self-start"
-      >
-        + Marcar como gasto recurrente
-      </button>
-    );
+  async function changePeriod(next: string) {
+    setPeriod(next);
+    setSaving(true);
+    try {
+      await createRecurringExpenseFromTransaction(transactionId, next, 21, 0);
+      router.refresh();
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
-    <div className="flex items-center gap-2 flex-wrap">
-      <label className="text-sm text-navy/45">Periodicidad</label>
-      <select
-        value={period}
-        onChange={(e) => setPeriod(e.target.value)}
-        className="text-base border border-navy/[0.12] rounded-lg px-2 py-1.5 outline-none focus:border-primary/50"
-      >
-        {PERIOD_BUCKETS.map((b) => (
-          <option key={b.label} value={b.label}>{b.label}</option>
-        ))}
-      </select>
-      <button
-        onClick={confirm}
-        disabled={saving}
-        className="px-3 py-1.5 text-sm font-semibold text-white bg-navy rounded-lg hover:bg-navy/85 transition-colors disabled:opacity-40"
-      >
-        Confirmar
-      </button>
-      <button onClick={() => setOpen(false)} className="text-sm text-navy/45 hover:text-navy transition-colors">
-        Cancelar
-      </button>
+    <div className="flex flex-col gap-2">
+      <label className="flex items-center gap-2 text-sm font-medium text-navy cursor-pointer">
+        <input
+          type="checkbox"
+          checked={checked}
+          disabled={saving}
+          onChange={(e) => toggle(e.target.checked)}
+          className="w-4 h-4 rounded border-navy/[0.25] text-primary focus:ring-2 focus:ring-primary/15"
+        />
+        {isIncome ? "Es un ingreso recurrente" : "Es un gasto recurrente"}
+      </label>
+      {checked && (
+        <div className="flex items-center gap-2 pl-6">
+          <label className="text-sm text-navy/45">Periodicidad</label>
+          <select
+            value={period}
+            disabled={saving}
+            onChange={(e) => changePeriod(e.target.value)}
+            className="text-base border border-navy/[0.12] rounded-lg px-2 py-1.5 outline-none focus:border-primary/50 disabled:opacity-50"
+          >
+            {PERIOD_BUCKETS.map((b) => (
+              <option key={b.label} value={b.label}>{b.label}</option>
+            ))}
+          </select>
+        </div>
+      )}
     </div>
   );
 }
@@ -280,12 +284,13 @@ export default function TransactionDrawer({
           )}
         </div>
 
+        <Field label="Concepto" value={t.concept ?? ""} onSave={(v) => onUpdateConcept(t.id, v)} />
+        <Field label="Más datos" value={t.bank_details ?? ""} onSave={(v) => onUpdateBankDetails(t.id, v)} />
+
         <div>
           <p className="text-[11px] text-navy/40 uppercase tracking-wider mb-1">Contacto</p>
           <ContactPicker transactionId={t.id} value={t.contact ?? ""} contacts={contacts} onSaved={() => router.refresh()} />
         </div>
-        <Field label="Concepto" value={t.concept ?? ""} onSave={(v) => onUpdateConcept(t.id, v)} />
-        <Field label="Más datos" value={t.bank_details ?? ""} onSave={(v) => onUpdateBankDetails(t.id, v)} />
 
         <div>
           <p className="text-[11px] text-navy/40 uppercase tracking-wider mb-1.5">Categoría</p>
@@ -333,7 +338,12 @@ export default function TransactionDrawer({
           </div>
         </div>
 
-        {t.amount < 0 && !recurringPeriod && <MarkRecurringControl transactionId={t.id} />}
+        <MarkRecurringControl
+          transactionId={t.id}
+          isIncome={t.amount > 0}
+          initiallyRecurring={!!recurringPeriod}
+          initialPeriod={recurringPeriod}
+        />
       </div>
     </Drawer>
   );
