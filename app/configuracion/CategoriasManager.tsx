@@ -189,6 +189,8 @@ export default function CategoriasManager({
   const [isPending, startTransition] = useTransition();
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
+  const editorHasChildren =
+    editor?.mode === "edit" && categories.some((c) => c.parent_id === editor.cat.id);
 
   function handleDrop(list: Category[], targetId: string) {
     const dragId = draggedId;
@@ -610,18 +612,25 @@ export default function CategoriasManager({
                 <label className="block text-xs font-semibold text-navy/45 uppercase tracking-wider mb-2">
                   Categoría padre <span className="font-normal normal-case text-navy/35">(opcional, para crear una subcategoría)</span>
                 </label>
-                <select
-                  value={form.parent_id ?? ""}
-                  onChange={(e) => handleParentSelect(e.target.value)}
-                  className="w-full text-sm border border-navy/[0.12] rounded-xl px-4 py-3 outline-none focus:border-navy/40 focus:ring-1 focus:ring-navy/20 bg-white text-navy"
-                >
-                  <option value="">— Sin categoría padre —</option>
-                  {categories
-                    .filter((c) => !c.parent_id && (editor.mode !== "edit" || c.id !== editor.cat.id))
-                    .map((c) => (
-                      <option key={c.id} value={c.id}>{c.label}</option>
-                    ))}
-                </select>
+                {editorHasChildren ? (
+                  <p className="text-[11px] text-navy/45 leading-snug bg-navy/[0.04] rounded-xl px-4 py-3">
+                    Esta categoría tiene subcategorías propias, así que no puede moverse bajo otra categoría
+                    (la pantalla solo soporta dos niveles y sus hijas dejarían de verse).
+                  </p>
+                ) : (
+                  <select
+                    value={form.parent_id ?? ""}
+                    onChange={(e) => handleParentSelect(e.target.value)}
+                    className="w-full text-sm border border-navy/[0.12] rounded-xl px-4 py-3 outline-none focus:border-navy/40 focus:ring-1 focus:ring-navy/20 bg-white text-navy"
+                  >
+                    <option value="">— Sin categoría padre —</option>
+                    {categories
+                      .filter((c) => !c.parent_id && (editor.mode !== "edit" || c.id !== editor.cat.id))
+                      .map((c) => (
+                        <option key={c.id} value={c.id}>{c.label}</option>
+                      ))}
+                  </select>
+                )}
               </div>
 
               {/* Conceptos bancarios */}

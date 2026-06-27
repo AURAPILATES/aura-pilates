@@ -29,6 +29,19 @@ export async function createCategory(data: CategoryInput) {
 
 export async function updateCategory(id: string, data: CategoryInput) {
   const supabase = createServerClient();
+  if (data.parent_id) {
+    // La pantalla solo soporta dos niveles (padre → hijas); si esta categoría
+    // ya tiene hijas propias, convertirla en hija de otra la dejaría a 3
+    // niveles y las nietas dejarían de mostrarse en el árbol.
+    const { count, error: countError } = await supabase
+      .from("categories")
+      .select("id", { count: "exact", head: true })
+      .eq("parent_id", id);
+    if (countError) throw new Error(countError.message);
+    if (count && count > 0) {
+      throw new Error("Esta categoría tiene subcategorías propias y no puede moverse bajo otra categoría.");
+    }
+  }
   const { error } = await supabase.from("categories").update(data).eq("id", id);
   if (error) throw new Error(error.message);
   revalidateAll();
