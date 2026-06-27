@@ -135,16 +135,14 @@ export async function getContactsStats(): Promise<Record<number, ContactStats>> 
     supabase.from("transactions").select("id, date, amount, concept, bank_details").is("deleted_at", null).order("date", { ascending: false }),
   ]);
 
-  const patternToContactId = new Map<string, number>();
-  for (const c of (contactRows ?? []) as { id: number; contact_concepts: { pattern: string }[] }[]) {
-    for (const cc of c.contact_concepts) patternToContactId.set(cc.pattern, c.id);
-  }
+  const contactPatterns = (contactRows ?? []) as { id: number; contact_concepts: { pattern: string }[] }[];
 
   const stats: Record<number, ContactStats> = {};
   for (const t of (txns ?? []) as { id: string; date: string; amount: number; concept: string | null; bank_details: string | null }[]) {
-    const contactId = patternToContactId.get(contactKeyFor(t.concept, t.bank_details));
-    if (contactId === undefined) continue;
-    const s = stats[contactId] ?? (stats[contactId] = { count: 0, total: 0, latest: [] });
+    const key = contactKeyFor(t.concept, t.bank_details);
+    const match = contactPatterns.find((c) => c.contact_concepts.some((cc) => matchesPattern(key, cc.pattern)));
+    if (!match) continue;
+    const s = stats[match.id] ?? (stats[match.id] = { count: 0, total: 0, latest: [] });
     s.count++;
     s.total += t.amount;
     if (s.latest.length < 5) s.latest.push({ id: t.id, date: t.date, amount: t.amount, concept: t.concept });

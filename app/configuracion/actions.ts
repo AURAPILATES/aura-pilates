@@ -50,3 +50,14 @@ export async function reorderCategories(updates: { id: string; sort_order: numbe
   if (failed?.error) throw new Error(failed.error.message);
   revalidateAll();
 }
+
+export async function updateCategoryColors(updates: { id: string; bg_color: string; text_color: string }[]) {
+  if (!updates.length) return;
+  const supabase = createServerClient();
+  const results = await Promise.all(
+    updates.map((u) => supabase.from("categories").update({ bg_color: u.bg_color, text_color: u.text_color }).eq("id", u.id)),
+  );
+  const failed = results.find((r) => r.error);
+  if (failed?.error) throw new Error(failed.error.message);
+  revalidateAll();
+}

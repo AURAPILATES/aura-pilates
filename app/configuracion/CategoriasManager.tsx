@@ -4,7 +4,8 @@ import { useRouter } from "next/navigation";
 import type { Category, GroupType } from "@/lib/categories";
 import { economicGroupOf, type EconomicGroup } from "@/lib/economicGroups";
 import { siblingColor } from "@/lib/colorVariants";
-import { createCategory, updateCategory, deleteCategory, reorderCategories } from "./actions";
+import { createCategory, updateCategory, deleteCategory, reorderCategories, updateCategoryColors } from "./actions";
+import ChipsInput from "@/app/components/ChipsInput";
 
 const GROUP_LABELS: Record<GroupType, string> = {
   operational: "Operacional",
@@ -285,6 +286,18 @@ export default function CategoriasManager({
             value: editor.cat.value,
             auto_keywords: form.auto_keywords?.trim() || null,
           });
+          if (!editor.cat.parent_id && form.text_color !== editor.cat.text_color) {
+            const children = categories
+              .filter((c) => c.parent_id === editor.cat.id)
+              .sort((a, b) => a.sort_order - b.sort_order);
+            if (children.length > 0) {
+              const childUpdates = children.map((c, i) => ({
+                id: c.id,
+                ...deriveColors(siblingColor(form.text_color, i, children.length)),
+              }));
+              await updateCategoryColors(childUpdates);
+            }
+          }
         } else {
           await createCategory({
             ...form,
@@ -582,20 +595,18 @@ export default function CategoriasManager({
                 </select>
               </div>
 
-              {/* Auto-keywords */}
+              {/* Conceptos bancarios */}
               <div>
                 <label className="block text-xs font-semibold text-navy/45 uppercase tracking-wider mb-2">
-                  Auto-keywords <span className="font-normal normal-case text-navy/35">(separadas por coma)</span>
+                  Conceptos bancarios
                 </label>
-                <textarea
-                  value={form.auto_keywords ?? ""}
-                  onChange={(e) => setForm((f) => ({ ...f, auto_keywords: e.target.value || null }))}
-                  rows={2}
-                  className="w-full text-sm border border-navy/[0.12] rounded-xl px-4 py-3 outline-none focus:border-navy/40 focus:ring-1 focus:ring-navy/20 resize-none font-mono text-navy placeholder:text-navy/30"
-                  placeholder="endesa, iberdrola, naturgy"
+                <ChipsInput
+                  values={(form.auto_keywords ?? "").split(",").map((s) => s.trim()).filter(Boolean)}
+                  onChange={(next) => setForm((f) => ({ ...f, auto_keywords: next.length ? next.join(", ") : null }))}
+                  placeholder="ej. endesa, iberdrola… (Enter para añadir)"
                 />
                 <p className="text-[11px] text-navy/35 mt-1.5">
-                  Si el concepto contiene alguna de estas palabras, la transacción se categorizará automáticamente.
+                  Si el concepto contiene alguno de estos textos, la transacción se categorizará automáticamente.
                 </p>
               </div>
 

@@ -8,6 +8,7 @@ import {
   addPatternToContact, removeContactPattern, recomputeContactsFromBankDetails, cleanupContactPatterns,
 } from "@/app/transacciones/actions";
 import Drawer from "@/app/components/Drawer";
+import ChipsInput from "@/app/components/ChipsInput";
 import { CategoryPill, CategoryBadge } from "@/app/transacciones/TransaccionesList";
 
 const MONTHS_SHORT = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
@@ -40,56 +41,32 @@ function RateInput({ value, onSave }: { value: number; onSave: (v: number) => vo
   );
 }
 
-/** Lista de patrones (conceptos bancarios) que identifican a un contacto, con chips
- * removibles y un input para añadir uno más — p. ej. cuando una empresa factura con un
- * texto distinto al habitual ("Spotify P4106A003" además de "SPOTIFY SPAIN SL"). */
+/** Conceptos bancarios que identifican a un contacto, con persistencia inmediata de cada
+ * alta/baja — p. ej. cuando una empresa factura con un texto distinto al habitual
+ * ("Spotify P4106A003" además de "SPOTIFY SPAIN SL"). */
 function PatternsEditor({ contactId, patterns, onAdd, onRemove }: {
   contactId: number;
   patterns: string[];
   onAdd: (pattern: string) => void;
   onRemove: (pattern: string) => void;
 }) {
-  const [draft, setDraft] = useState("");
-  const [adding, setAdding] = useState(false);
-
-  async function handleAdd() {
-    if (!draft.trim()) return;
-    const pattern = contactKeyFor(draft.trim(), null);
-    if (patterns.includes(pattern)) { setDraft(""); return; }
-    setAdding(true);
-    try {
-      await addPatternToContact(contactId, pattern);
-      onAdd(pattern);
-      setDraft("");
-    } finally {
-      setAdding(false);
-    }
-  }
-
-  async function handleRemove(pattern: string) {
-    await removeContactPattern(pattern);
-    onRemove(pattern);
-  }
-
   return (
-    <div className="flex flex-wrap items-center gap-1.5">
-      {patterns.map((p) => (
-        <span key={p} className="inline-flex items-center gap-1 px-2 py-0.5 bg-navy/[0.04] rounded-full text-[11px] text-navy/55">
-          {p}
-          <button onClick={() => handleRemove(p)} className="text-navy/30 hover:text-danger transition-colors">✕</button>
-        </span>
-      ))}
-      <input
-        type="text"
-        value={draft}
-        onChange={(e) => setDraft(e.target.value)}
-        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAdd(); } }}
-        onBlur={handleAdd}
-        placeholder="+ añadir concepto…"
-        disabled={adding}
-        className="w-36 px-1.5 py-0.5 text-[11px] border border-navy/15 rounded-full focus:outline-none focus:border-primary/40 disabled:opacity-50"
-      />
-    </div>
+    <ChipsInput
+      values={patterns}
+      clean={(raw) => contactKeyFor(raw, null)}
+      placeholder="+ añadir concepto…"
+      onChange={(next) => {
+        if (next.length > patterns.length) {
+          const added = next.find((p) => !patterns.includes(p))!;
+          addPatternToContact(contactId, added);
+          onAdd(added);
+        } else {
+          const removed = patterns.find((p) => !next.includes(p))!;
+          removeContactPattern(removed);
+          onRemove(removed);
+        }
+      }}
+    />
   );
 }
 
@@ -235,7 +212,6 @@ function NewContactForm({ categories, onCreated, onCancel }: {
   onCreated: (contact: Contact) => void;
   onCancel: () => void;
 }) {
-  const [patternDraft, setPatternDraft] = useState("");
   const [patterns, setPatterns] = useState<string[]>([]);
   const [label, setLabel] = useState("");
   const [category, setCategory] = useState<string | null>(null);
@@ -243,12 +219,6 @@ function NewContactForm({ categories, onCreated, onCancel }: {
   const [retencionRate, setRetencionRate] = useState("0");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  function addPattern() {
-    const key = contactKeyFor(patternDraft.trim(), null);
-    if (patternDraft.trim() && !patterns.includes(key)) setPatterns((prev) => [...prev, key]);
-    setPatternDraft("");
-  }
 
   async function handleSave() {
     if (!label.trim()) { setError("Falta la etiqueta."); return; }
@@ -304,23 +274,14 @@ function NewContactForm({ categories, onCreated, onCancel }: {
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-navy/55 mb-1">Conceptos para etiquetarlo</label>
-          <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
-            {patterns.map((p) => (
-              <span key={p} className="inline-flex items-center gap-1 px-2 py-0.5 bg-navy/[0.04] rounded-full text-[11px] text-navy/55">
-                {p}
-                <button onClick={() => setPatterns((prev) => prev.filter((x) => x !== p))} className="text-navy/30 hover:text-danger transition-colors">✕</button>
-              </span>
-            ))}
-          </div>
-          <input
-            type="text" placeholder="ej. Spotify, Stripe Technology Eu… (Enter para añadir)"
-            value={patternDraft} onChange={(e) => setPatternDraft(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addPattern(); } }}
-            onBlur={addPattern}
-            className="w-full px-3 py-2 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40"
+          <label className="block text-xs font-medium text-navy/55 mb-1.5">Conceptos bancarios</label>
+          <ChipsInput
+            values={patterns}
+            onChange={setPatterns}
+            clean={(raw) => contactKeyFor(raw, null)}
+            placeholder="ej. Spotify, Stripe Technology Eu… (Enter para añadir)"
           />
-          <p className="text-xs text-navy/40 mt-1">Texto tal y como aparece en el extracto del banco (concepto o contacto). Puedes añadir varios.</p>
+          <p className="text-xs text-navy/40 mt-1.5">Texto tal y como aparece en el extracto del banco (concepto o contacto). Puedes añadir varios.</p>
         </div>
         <div>
           <label className="block text-xs font-medium text-navy/55 mb-1">Categoría</label>
@@ -510,8 +471,8 @@ export default function ContactosManager({ contacts: initialContacts, categories
                       {extra > 0 && <span className="text-[11px] text-navy/35">+{extra}</span>}
                     </div>
                   </td>
-                  <td className="px-4 py-2.5 text-right text-navy/70">{c.ivaRate > 0 ? `${c.ivaRate}%` : "—"}</td>
-                  <td className="px-4 py-2.5 text-right text-navy/70">{c.retencionRate > 0 ? `${c.retencionRate}%` : "—"}</td>
+                  <td className="px-4 py-2.5 text-right text-navy/70 text-xs">{c.ivaRate > 0 ? `${c.ivaRate}%` : <span className="text-navy/30 text-[10px]">-</span>}</td>
+                  <td className="px-4 py-2.5 text-right text-navy/70 text-xs">{c.retencionRate > 0 ? `${c.retencionRate}%` : <span className="text-navy/30 text-[10px]">-</span>}</td>
                   <td className="px-4 py-2.5 text-right">
                     {stats ? (
                       <span className="inline-flex items-center gap-1.5 justify-end">
