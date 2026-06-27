@@ -773,7 +773,7 @@ export async function createRecurringExpenseFromTransaction(
   if (upsertError) throw new Error(upsertError.message);
 
   revalidateTag("recurring_expenses");
-  revalidatePath("/gastos-recurrentes");
+  revalidatePath("/transacciones");
   revalidatePath("/analitica");
 }
 
@@ -795,6 +795,6 @@ export async function removeRecurringExpenseForTransaction(transactionId: string
   if (deleteError) throw new Error(deleteError.message);
 
   revalidateTag("recurring_expenses");
-  revalidatePath("/gastos-recurrentes");
+  revalidatePath("/transacciones");
   revalidatePath("/analitica");
 }

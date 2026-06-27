@@ -42,7 +42,7 @@ const groups = [
     links: [
       {
         href: "/transacciones",
-        label: "Movimientos",
+        label: "Transacciones",
         icon: (
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
             <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>
@@ -55,15 +55,6 @@ const groups = [
         icon: (
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-          </svg>
-        ),
-      },
-      {
-        href: "/gastos-recurrentes",
-        label: "Gastos recurrentes",
-        icon: (
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
           </svg>
         ),
       },
@@ -133,7 +124,7 @@ export default function Sidebar() {
                   >
                     <span className={active ? "text-primary" : "text-navy/40"}>{icon}</span>
                     <span className="flex-1">{label}</span>
-                    {href === "/gastos-recurrentes" && pendingRecurringCount > 0 && (
+                    {href === "/transacciones" && pendingRecurringCount > 0 && (
                       <span className="shrink-0 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-warning text-white text-[10px] font-bold px-1">
                         {pendingRecurringCount}
                       </span>

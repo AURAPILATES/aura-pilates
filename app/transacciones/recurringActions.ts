@@ -4,7 +4,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 
 function revalidateAll() {
   revalidateTag("recurring_expenses");
-  revalidatePath("/gastos-recurrentes");
+  revalidatePath("/transacciones");
   revalidatePath("/analitica");
 }
 

@@ -7,7 +7,7 @@ import type { Category } from "@/lib/categories";
 import { categoryDisplayLabel } from "@/lib/categories";
 import { PERIOD_BUCKETS } from "@/lib/recurring";
 import type { RecurringExpense } from "@/lib/recurringExpenses";
-import { recordRecurringExpense, updateRecurringExpense, setRecurringExpenseStatus, deleteRecurringExpense } from "./actions";
+import { recordRecurringExpense, updateRecurringExpense, setRecurringExpenseStatus, deleteRecurringExpense } from "./recurringActions";
 
 export type PendingSeriesRow = {
   key: string;

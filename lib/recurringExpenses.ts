@@ -40,8 +40,8 @@ export const loadRecurringExpensesCached = unstable_cache(
 
 /**
  * Previsión de cashflow basada solo en gastos recurrentes confirmados manualmente en
- * /gastos-recurrentes (no en la heurística cruda), para que el cashflow refleje decisiones
- * humanas en vez de falsos positivos/negativos del algoritmo de detección.
+ * Transacciones › Recurrentes (no en la heurística cruda), para que el cashflow refleje
+ * decisiones humanas en vez de falsos positivos/negativos del algoritmo de detección.
  */
 export function forecastConfirmedExpenses(
   expenses: RecurringExpense[],

@@ -33,7 +33,7 @@ export default function PrevisionGastos({ forecasts, categories }: Props) {
   return (
     <ChartCard
       title="Previsión de gastos recurrentes"
-      subtitle="Próximos pagos de los gastos recurrentes confirmados en Gastos recurrentes"
+      subtitle="Próximos pagos de los gastos recurrentes confirmados en Transacciones › Recurrentes"
       kpiItems={[
         { label: "Próximos 30 días", value: fmt(totalNext30), helper: `${next30.length} pagos previstos` },
         { label: "Gastos confirmados", value: String(forecasts.length), helper: "series activas" },
@@ -41,12 +41,12 @@ export default function PrevisionGastos({ forecasts, categories }: Props) {
           ? [{ label: "Vencidos", value: String(overdueCount), valueClassName: "text-warning", helper: "sin registrar aún" }]
           : []),
       ]}
-      dataSource="Gastos recurrentes confirmados manualmente en /gastos-recurrentes, proyectados por última fecha de pago + periodicidad"
+      dataSource="Gastos recurrentes confirmados manualmente en /transacciones?tab=recurrentes, proyectados por última fecha de pago + periodicidad"
     >
       {forecasts.length === 0 ? (
         <p className="text-sm text-navy/45 text-center py-6">
           Sin gastos recurrentes confirmados todavía.{" "}
-          <Link href="/gastos-recurrentes" className="text-primary hover:underline">Gestionarlos →</Link>
+          <Link href="/transacciones?tab=recurrentes" className="text-primary hover:underline">Gestionarlos →</Link>
         </p>
       ) : (
         <div className="divide-y divide-navy/[0.05]">
@@ -71,7 +71,7 @@ export default function PrevisionGastos({ forecasts, categories }: Props) {
         </div>
       )}
       <div className="pt-3 text-right">
-        <Link href="/gastos-recurrentes" className="text-xs text-primary hover:underline">Gestionar gastos recurrentes →</Link>
+        <Link href="/transacciones?tab=recurrentes" className="text-xs text-primary hover:underline">Gestionar recurrentes →</Link>
       </div>
     </ChartCard>
   );
