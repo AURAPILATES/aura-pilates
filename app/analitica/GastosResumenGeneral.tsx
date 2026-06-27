@@ -40,8 +40,6 @@ function GroupIcon({ group, size = 40 }: { group: EconomicGroup; size?: number }
 
 const GROUP_ORDER: EconomicGroup[] = ["personal", "operational", "capex"];
 
-const R = 80, CX = 100, CY = 100, CIRC = 2 * Math.PI * R, SW = 20;
-
 function fmtAmount(n: number) {
   return n.toLocaleString("es-ES", { maximumFractionDigits: 0 }) + " €";
 }
@@ -65,14 +63,11 @@ export default function GastosResumenGeneral({
 
   const ordered = GROUP_ORDER.map((g) => groups.find((x) => x.group === g)).filter((g): g is GroupTotal => !!g && g.total > 0);
 
-  let acc = 0;
+  const maxTotal = Math.max(...ordered.map((g) => g.total), 0);
   const segments = ordered.map((g) => {
     const share = totalExpCat > 0 ? g.total / totalExpCat : 0;
-    const dash   = share * CIRC;
-    const gap    = 2;
-    const offset = -(acc + (ordered.length > 1 ? gap / 2 : 0));
-    acc += dash + gap;
-    return { ...g, share, dash: Math.max(dash - gap, 0), offset };
+    const barWidth = maxTotal > 0 ? g.total / maxTotal : 0;
+    return { ...g, share, barWidth };
   });
 
   const selectedSeg  = segments.find((s) => s.group === selected) ?? null;
@@ -82,61 +77,39 @@ export default function GastosResumenGeneral({
 
   return (
     <>
-      <div className="flex justify-center mb-6">
-        <div className="relative w-[220px] h-[220px]">
-          <svg viewBox="0 0 200 200" width="220" height="220">
-            <circle cx={CX} cy={CY} r={R} fill="none" stroke="#F0F2FA" strokeWidth={SW} />
-            <g transform={`rotate(-90, ${CX}, ${CY})`}>
-              {segments.map((seg, i) => (
-                <circle
-                  key={i}
-                  cx={CX} cy={CY} r={R}
-                  fill="none"
-                  stroke={GROUP_COLORS[seg.group]}
-                  strokeWidth={SW}
-                  strokeDasharray={`${seg.dash} ${CIRC}`}
-                  strokeDashoffset={seg.offset}
-                  strokeLinecap="round"
-                  className="cursor-pointer transition-opacity"
-                  style={{ opacity: selected && selected !== seg.group ? 0.35 : 1 }}
-                  onClick={() => setSelected(seg.group === selected ? null : seg.group)}
-                />
-              ))}
-            </g>
-            <foreignObject x="20" y="50" width="160" height="100">
-              <div className="h-full flex flex-col items-center justify-center text-center">
-                <p className="text-[11px] text-navy/45 font-medium mb-1">Gastos</p>
-                <p className="text-xl font-bold text-navy tabular-nums leading-tight">
-                  {fmtAmount(totalExpCat)}
-                </p>
-                {rangeLabel && (
-                  <p className="text-[10px] text-navy/40 mt-1">{rangeLabel}</p>
-                )}
-              </div>
-            </foreignObject>
-          </svg>
+      <div className="flex items-baseline justify-between mb-5">
+        <p className="text-xs text-navy/45 font-medium">Total gastos</p>
+        <div className="text-right">
+          <p className="text-2xl font-bold text-navy tabular-nums leading-tight">{fmtAmount(totalExpCat)}</p>
+          {rangeLabel && <p className="text-[11px] text-navy/40 mt-0.5">{rangeLabel}</p>}
         </div>
       </div>
 
-      <div className="divide-y divide-navy/[0.05]">
+      <div className="space-y-3">
         {segments.map((seg) => (
           <button
             key={seg.group}
             onClick={() => setSelected(seg.group === selected ? null : seg.group)}
-            className={`w-full flex items-center gap-3 py-3 text-left transition-colors rounded-xl px-2 -mx-2 ${
+            className={`w-full text-left transition-colors rounded-xl px-2 py-2 -mx-2 ${
               selected === seg.group ? "bg-navy/[0.03]" : "hover:bg-navy/[0.02]"
             }`}
           >
-            <GroupIcon group={seg.group} />
-            <div className="flex-1 min-w-0">
-              <p className="text-[13px] font-semibold text-navy truncate">{GROUP_LABELS[seg.group]}</p>
-              <p className="text-xs text-navy/50">{seg.count} transacciones</p>
+            <div className="flex items-center gap-3 mb-1.5">
+              <GroupIcon group={seg.group} size={32} />
+              <div className="flex-1 min-w-0">
+                <p className="text-[13px] font-semibold text-navy truncate">{GROUP_LABELS[seg.group]}</p>
+                <p className="text-xs text-navy/50">{seg.count} transacciones</p>
+              </div>
+              <div className="text-right shrink-0">
+                <p className="text-[13px] font-semibold text-navy tabular-nums">−{fmtAmount(seg.total)}</p>
+                <p className="text-xs text-navy/50 tabular-nums">{pct(seg.share)}</p>
+              </div>
             </div>
-            <div className="text-right shrink-0">
-              <p className="text-[13px] font-semibold text-navy tabular-nums">
-                −{fmtAmount(seg.total)}
-              </p>
-              <p className="text-xs text-navy/50 tabular-nums">{pct(seg.share)}</p>
+            <div className="h-2 bg-navy/5 rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all"
+                style={{ width: `${Math.max(seg.barWidth * 100, 2)}%`, backgroundColor: GROUP_COLORS[seg.group] }}
+              />
             </div>
           </button>
         ))}
