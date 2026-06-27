@@ -24,8 +24,7 @@ import DesglosGastos from "./instances/DesglosGastos";
 import DesglosGastosGeneral from "./instances/DesglosGastosGeneral";
 import ResumenFinanzas from "./instances/ResumenFinanzas";
 import VolumenBruto from "./instances/VolumenBruto";
-import FuentesIngreso from "./instances/FuentesIngreso";
-import IngresosPorProducto from "./instances/IngresosPorProducto";
+import Ingresos from "./instances/Ingresos";
 import IngresosPorCanal from "./instances/IngresosPorCanal";
 import EvolucionInscritos from "./instances/EvolucionInscritos";
 import Financiacion from "./instances/Financiacion";
@@ -33,7 +32,6 @@ import { loadBudgetsCached, computeSpent } from "@/lib/budgets";
 import Breakeven from "./instances/Breakeven";
 import { computeBreakeven } from "@/lib/breakeven";
 import ConversionPack from "./instances/ConversionPack";
-import MrrPorTier from "./instances/MrrPorTier";
 import { subscriptionTiersFromMemberships, computeMrrByTier } from "@/lib/mrr";
 import { getMemberships, getProducts, getCustomers } from "@/lib/momence";
 import { catalogFromMomence, revenueByProductFromStripe, revenueByProductByMonth, addUscToMonthlyRevenue } from "@/lib/productRevenue";
@@ -500,7 +498,7 @@ export default async function AnaliticaLoader({
         <section>
           <SectionHeader id="ingresos" title="Ingresos" />
           <div className="space-y-4">
-            <FuentesIngreso
+            <Ingresos
               recurrente={recurrente}
               puntual={puntual}
               totalRev={totalRev}
@@ -509,12 +507,11 @@ export default async function AnaliticaLoader({
               paymentsCount={pMain.length}
               activeSubsCount={activeSubsCount}
               periodLabel={periodLabel}
-            />
-            <IngresosPorProducto
-              segments={productSegments.map((seg) => ({
+              productSegments={productSegments.map((seg) => ({
                 item: seg.item, revenue: seg.revenue, count: seg.count, share: seg.share, color: seg.color,
               }))}
-              total={byProductTotal}
+              productTotal={byProductTotal}
+              tiers={mrrByTier}
             />
             <IngresosPorCanal
               rows={[
@@ -524,7 +521,6 @@ export default async function AnaliticaLoader({
               combinedTotal={stripeTotalRevenue(paymentsBounded) + uscRevenue}
               rangeLabel={uscLastDateLabel}
             />
-            <MrrPorTier tiers={mrrByTier} />
           </div>
         </section>
 
