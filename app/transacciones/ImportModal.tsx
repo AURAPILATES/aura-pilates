@@ -499,23 +499,23 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
           {state.kind === "review-contacts" && (
             <div className="flex flex-col flex-1 min-h-0">
               <p className="text-sm text-navy/55 mb-1 shrink-0">
-                <strong className="text-navy">{state.drafts.length}</strong> {state.drafts.length === 1 ? "contacto nuevo" : "contactos nuevos"} en este archivo
+                <strong className="text-navy">{state.drafts.length}</strong> {state.drafts.length === 1 ? "contacto nuevo detectado" : "contactos nuevos detectados"}
               </p>
               <p className="text-xs text-navy/45 mb-4 shrink-0">
                 Acepta o descarta cada sugerencia. Lo aceptado se aplicará automáticamente la próxima vez que aparezca; lo descartado no se volverá a preguntar.
               </p>
-              <div className="space-y-3 mb-4 flex-1 min-h-0 overflow-y-auto pr-1">
+              <div className="space-y-4 mb-4 flex-1 min-h-0 overflow-y-auto pr-1">
                 {state.drafts.map((d) => (
-                  <div key={d.pattern} className="border border-navy/[0.08] rounded-xl p-3">
-                    <div className="flex items-start justify-between gap-2 mb-2">
+                  <div key={d.pattern} className="border border-navy/[0.08] rounded-xl p-5">
+                    <div className="flex items-start justify-between gap-2 mb-3">
                       <div className="min-w-0">
                         <p className="text-xs text-navy truncate">
                           <span className="text-navy/40">Concepto:</span> {d.concept || "—"}
                         </p>
-                        <p className="text-xs text-navy truncate">
+                        <p className="text-xs text-navy truncate mt-1">
                           <span className="text-navy/40">Más datos:</span> {d.bankDetailsRaw || "—"}
                         </p>
-                        <p className="text-[11px] text-navy/40 mt-0.5">
+                        <p className="text-[11px] text-navy/40 mt-1.5">
                           {d.count} {d.count === 1 ? "movimiento" : "movimientos"} · ej. {fmtDateShort(d.exampleDate)} · {d.exampleAmount >= 0 ? "+" : "−"}{fmtAmt(d.exampleAmount)} €
                         </p>
                       </div>
@@ -541,13 +541,13 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                     ) : (
                       <>
                         {contacts.length > 0 && (
-                          <div className="flex gap-3 mb-2 text-xs">
+                          <div className="flex gap-3 mb-3 text-xs">
                             <label className="flex items-center gap-1.5 text-navy/60 cursor-pointer">
-                              <input type="radio" checked={d.action === "create"} onChange={() => updateDraft(d.pattern, { action: "create" })} />
+                              <input type="radio" className="accent-navy" checked={d.action === "create"} onChange={() => updateDraft(d.pattern, { action: "create" })} />
                               Contacto nuevo
                             </label>
                             <label className="flex items-center gap-1.5 text-navy/60 cursor-pointer">
-                              <input type="radio" checked={d.action === "attach"} onChange={() => updateDraft(d.pattern, { action: "attach", attachToContactId: d.attachToContactId ?? contacts[0].id })} />
+                              <input type="radio" className="accent-navy" checked={d.action === "attach"} onChange={() => updateDraft(d.pattern, { action: "attach", attachToContactId: d.attachToContactId ?? contacts[0].id })} />
                               Añadir a contacto existente
                             </label>
                           </div>
@@ -558,37 +558,37 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                             <select
                               value={d.attachToContactId ?? ""}
                               onChange={(e) => updateDraft(d.pattern, { attachToContactId: parseInt(e.target.value, 10) })}
-                              className="w-full mb-2 px-2.5 py-1.5 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40 bg-white"
+                              className="w-full mb-3 px-2.5 py-1.5 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40 bg-white"
                             >
                               {contacts.map((c) => (
                                 <option key={c.id} value={c.id}>{c.label}</option>
                               ))}
                             </select>
-                            <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1">Concepto bancario</p>
+                            <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1.5">Concepto bancario</p>
                             <DraftPatternsEditor
                               patterns={d.bankPatterns}
                               onChange={(bankPatterns) => updateDraft(d.pattern, { bankPatterns })}
                             />
-                            <p className="text-[11px] text-navy/35 mt-1">Se usará para reconocer este contacto en futuros movimientos.</p>
+                            <p className="text-[11px] text-navy/35 mt-1.5">Se usará para reconocer este contacto en futuros movimientos.</p>
                           </>
                         ) : (
                           <>
-                            <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1">Nombre contacto</p>
+                            <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1.5">Nombre contacto</p>
                             <input
                               type="text"
                               value={d.label}
                               onChange={(e) => updateDraft(d.pattern, { label: e.target.value })}
                               placeholder="Nombre contacto"
-                              className="w-full mb-2 px-2.5 py-1.5 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40"
+                              className="w-full mb-3 px-2.5 py-1.5 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40"
                             />
-                            <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1">Concepto bancario</p>
+                            <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1.5">Concepto bancario</p>
                             <DraftPatternsEditor
                               patterns={d.bankPatterns}
                               onChange={(bankPatterns) => updateDraft(d.pattern, { bankPatterns })}
                             />
-                            <p className="text-[11px] text-navy/35 mt-1 mb-2">Se usará para reconocer este contacto en futuros movimientos.</p>
-                            <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1">Etiqueta</p>
-                            <div className="mb-2">
+                            <p className="text-[11px] text-navy/35 mt-1.5 mb-3">Se usará para reconocer este contacto en futuros movimientos.</p>
+                            <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1.5">Etiqueta</p>
+                            <div className="mb-3">
                               <CategoryPill
                                 category={d.category}
                                 categories={categories}
