@@ -192,6 +192,16 @@ export default function CategoriasManager({
   const editorHasChildren =
     editor?.mode === "edit" && categories.some((c) => c.parent_id === editor.cat.id);
 
+  /** Trx de una categoría + las de sus hijas (las categorías padre son el sumatorio de su rama). */
+  function totalCount(cat: Category): number {
+    const own = categoryCounts[cat.value] ?? 0;
+    if (cat.parent_id) return own;
+    const childrenCount = categories
+      .filter((c) => c.parent_id === cat.id)
+      .reduce((sum, c) => sum + (categoryCounts[c.value] ?? 0), 0);
+    return own + childrenCount;
+  }
+
   function handleDrop(list: Category[], targetId: string) {
     const dragId = draggedId;
     setDraggedId(null);
@@ -397,7 +407,7 @@ export default function CategoriasManager({
                           </div>
                         </button>
                         <span className="shrink-0 text-[11px] text-navy/40 tabular-nums whitespace-nowrap">
-                          {categoryCounts[cat.value] ?? 0} trx
+                          {totalCount(cat)} trx
                         </span>
                         <button
                           onClick={(e) => {

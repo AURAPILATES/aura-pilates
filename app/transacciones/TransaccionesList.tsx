@@ -647,10 +647,24 @@ export default function TransaccionesList({
     if (cat && cat !== "all") setCatFilters([cat]);
   }, [searchParams]);
 
+  // Filtrar por una categoría padre debe incluir también las transacciones de sus hijas.
+  const expandedCatFilters = useMemo(() => {
+    if (catFilters.length === 0) return catFilters;
+    const expanded = new Set(catFilters);
+    for (const value of catFilters) {
+      const parent = categories.find((c) => c.value === value);
+      if (!parent || parent.parent_id) continue;
+      for (const child of categories) {
+        if (child.parent_id === parent.id) expanded.add(child.value);
+      }
+    }
+    return [...expanded];
+  }, [catFilters, categories]);
+
   const filtered = transactions.filter((t) => {
     const q = search.toLowerCase();
     if (q && !t.contact?.toLowerCase().includes(q) && !t.concept?.toLowerCase().includes(q) && !t.bank_details?.toLowerCase().includes(q)) return false;
-    if (catFilters.length > 0 && !catFilters.includes(t.category ?? "__none__")) return false;
+    if (expandedCatFilters.length > 0 && !expandedCatFilters.includes(t.category ?? "__none__")) return false;
     if (originFilter !== "all" && t.payment_method !== originFilter) return false;
     if (onlyRecurring && !recurringPeriods[t.id]) return false;
     return true;
