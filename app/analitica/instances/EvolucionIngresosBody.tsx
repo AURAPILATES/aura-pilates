@@ -117,6 +117,7 @@ export default function EvolucionIngresosBody({
   colorOf,
   eventsByMonth,
   onBarClick,
+  height = 340,
 }: {
   rows: EvolucionRow[];
   keys: string[];
@@ -127,6 +128,7 @@ export default function EvolucionIngresosBody({
   colorOf: (key: string) => string;
   eventsByMonth: Map<string, BusinessEvent[]>;
   onBarClick?: (month: string, key: string) => void;
+  height?: number;
 }) {
   const [hoveredEventId, setHoveredEventId] = useState<string | null>(null);
   const visibleKeys = keys.filter((k) => !hiddenKeys.has(k));
@@ -136,7 +138,7 @@ export default function EvolucionIngresosBody({
   }
 
   return (
-    <div style={{ width: "100%", height: 340 }}>
+    <div style={{ width: "100%", height }}>
       <ResponsiveContainer width="100%" height="100%">
         <ComposedChart data={rows} margin={{ top: 16, right: 8, bottom: 0, left: 0 }} barGap={2}>
           {view === "procedencia" && (

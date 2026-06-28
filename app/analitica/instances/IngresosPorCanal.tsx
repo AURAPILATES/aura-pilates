@@ -142,6 +142,7 @@ export default function IngresosPorCanal({
             view="procedencia"
             colorOf={chartColorOf}
             eventsByMonth={eventsByMonth}
+            height={220}
           />
         </div>
 
