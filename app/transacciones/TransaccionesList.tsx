@@ -1095,13 +1095,13 @@ export default function TransaccionesList({
         </div>
       )}
 
-      {/* ── Mobile: month strip (sticky), pills sueltas estilo Revolut ──────── */}
+      {/* ── Mobile: month strip (sticky), cápsula estilo Apple Photos ───────── */}
       <div className="sm:hidden sticky top-[45px] z-20 -mx-2 px-2 pt-2 pb-3 bg-app-bg">
-        <div className="flex gap-1.5 overflow-x-auto scrollbar-none">
+        <div className="flex gap-0.5 p-1 rounded-full bg-navy/[0.05] overflow-x-auto scrollbar-none">
           <button
             onClick={() => router.push(pathname)}
             className={`shrink-0 px-3.5 py-1.5 rounded-full text-sm transition-colors whitespace-nowrap ${
-              !activeMonth ? "bg-navy text-white font-medium" : "text-navy/40 hover:text-navy/70"
+              !activeMonth ? "bg-white text-navy font-semibold shadow-card" : "text-navy/45 hover:text-navy/70"
             }`}
           >
             Todo
@@ -1115,7 +1115,7 @@ export default function TransaccionesList({
                 ref={isActive ? activeMonthRef : undefined}
                 onClick={() => goToMonth(key)}
                 className={`shrink-0 px-3.5 py-1.5 rounded-full text-sm transition-colors capitalize whitespace-nowrap ${
-                  isActive ? "bg-navy text-white font-medium" : "text-navy/40 hover:text-navy/70"
+                  isActive ? "bg-white text-navy font-semibold shadow-card" : "text-navy/45 hover:text-navy/70"
                 }`}
               >
                 {label}{showYear && <span className="text-[10px] ml-0.5 opacity-60">{year}</span>}
