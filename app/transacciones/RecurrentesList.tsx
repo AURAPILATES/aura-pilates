@@ -7,7 +7,7 @@ import Drawer from "@/app/components/Drawer";
 import type { Category } from "@/lib/categories";
 import { categoryDisplayLabel } from "@/lib/categories";
 import { PERIOD_BUCKETS } from "@/lib/recurring";
-import type { RecurringExpense } from "@/lib/recurringExpenses";
+import type { RecurringExpense, RecurringExpenseEndType } from "@/lib/recurringExpenses";
 import type { Contact } from "./actions";
 import { CategoryBadge } from "./TransaccionesList";
 import type { ContactPickResult } from "./ContactPicker";
@@ -125,6 +125,66 @@ function pickToInfo(pick: ContactPick, contacts: Contact[]): string {
   return "Contacto nuevo — sin IVA/retención todavía (edítalo en Configuración › Contactos).";
 }
 
+const END_TYPE_OPTIONS: { value: RecurringExpenseEndType; label: string }[] = [
+  { value: "never", label: "Nunca" },
+  { value: "date", label: "En una fecha" },
+  { value: "count", label: "Tras X repeticiones" },
+];
+
+type EndFields = { type: RecurringExpenseEndType; date: string; count: string };
+
+function defaultEnd(): EndFields {
+  return { type: "never", date: "", count: "" };
+}
+
+function endFromExpense(e: RecurringExpense): EndFields {
+  return {
+    type: e.end_type,
+    date: e.end_date ?? "",
+    count: e.end_count != null ? String(e.end_count) : "",
+  };
+}
+
+/** Mismo control de "Finaliza" que el detalle de movimiento (TransactionDrawer): periodo
+ * indefinido, hasta una fecha, o tras X repeticiones. */
+function EndOfRecurrenceFields({ value, onChange, disabled }: { value: EndFields; onChange: (next: EndFields) => void; disabled?: boolean }) {
+  return (
+    <div>
+      <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-1.5">Finaliza</p>
+      <select
+        value={value.type}
+        disabled={disabled}
+        onChange={(e) => onChange({ ...value, type: e.target.value as RecurringExpenseEndType })}
+        className="w-full px-3 py-2 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40 disabled:opacity-50"
+      >
+        {END_TYPE_OPTIONS.map((o) => (
+          <option key={o.value} value={o.value}>{o.label}</option>
+        ))}
+      </select>
+      {value.type === "date" && (
+        <input
+          type="date"
+          value={value.date}
+          disabled={disabled}
+          onChange={(e) => onChange({ ...value, date: e.target.value })}
+          className="w-full mt-2 px-3 py-2 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40 disabled:opacity-50"
+        />
+      )}
+      {value.type === "count" && (
+        <input
+          type="number"
+          min={1}
+          value={value.count}
+          disabled={disabled}
+          onChange={(e) => onChange({ ...value, count: e.target.value })}
+          placeholder="Número de repeticiones"
+          className="w-full mt-2 px-3 py-2 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40 disabled:opacity-50"
+        />
+      )}
+    </div>
+  );
+}
+
 /** Drawer de búsqueda/creación de contacto, abierto desde el detalle de un pendiente o de un
  * confirmado para vincular/cambiar el contacto sin ensuciar la fila con un combobox inline. */
 function ContactPickerDrawer({ contacts, title, onPick, onClose }: {
@@ -224,13 +284,15 @@ function PendingRow({ row, categories, contacts, pick, selected, onToggleSelecte
   );
 }
 
-function ConfirmPendingDrawer({ row, period, pick, contacts, onClose, onPeriodChange, onOpenContactPicker, onConfirm, onIgnore }: {
+function ConfirmPendingDrawer({ row, period, pick, end, contacts, onClose, onPeriodChange, onEndChange, onOpenContactPicker, onConfirm, onIgnore }: {
   row: PendingSeriesRow;
   period: string;
   pick: ContactPick;
+  end: EndFields;
   contacts: Contact[];
   onClose: () => void;
   onPeriodChange: (period: string) => void;
+  onEndChange: (end: EndFields) => void;
   onOpenContactPicker: () => void;
   onConfirm: () => Promise<void>;
   onIgnore: () => Promise<void>;
@@ -294,7 +356,7 @@ function ConfirmPendingDrawer({ row, period, pick, contacts, onClose, onPeriodCh
         <p className="text-xs text-navy/40 mt-2">{pickToInfo(pick, contacts)}</p>
       </div>
 
-      <div className="p-4">
+      <div className="p-4 border-b border-navy/[0.06]">
         <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-1.5">Periodicidad</p>
         <select
           value={period}
@@ -305,6 +367,10 @@ function ConfirmPendingDrawer({ row, period, pick, contacts, onClose, onPeriodCh
             <option key={b.label} value={b.label}>{b.label}</option>
           ))}
         </select>
+      </div>
+
+      <div className="p-4">
+        <EndOfRecurrenceFields value={end} onChange={onEndChange} />
       </div>
     </Drawer>
   );
@@ -353,12 +419,28 @@ function RecurringExpenseDrawer({ row, categories, contacts, onClose, onOpenCont
   const label = contact?.label ?? e.label;
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [end, setEnd] = useState<EndFields>(() => endFromExpense(e));
 
   async function changePeriod(next: string) {
     const days = PERIOD_BUCKETS.find((b) => b.label === next)?.days ?? e.period_days;
     setSaving(true);
     try {
       await updateRecurringExpense(e.id, { period: next, period_days: days });
+      router.refresh();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function changeEnd(next: EndFields) {
+    setEnd(next);
+    setSaving(true);
+    try {
+      await updateRecurringExpense(e.id, {
+        end_type: next.type,
+        end_date: next.type === "date" ? next.date || null : null,
+        end_count: next.type === "count" ? parseInt(next.count, 10) || null : null,
+      });
       router.refresh();
     } finally {
       setSaving(false);
@@ -423,7 +505,7 @@ function RecurringExpenseDrawer({ row, categories, contacts, onClose, onOpenCont
         <p className="text-xs text-navy/40 mt-2">IVA: {e.iva_rate}% · Retención: {e.retencion_rate}% — heredados de la ficha del contacto.</p>
       </div>
 
-      <div className="p-4">
+      <div className="p-4 border-b border-navy/[0.06]">
         <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-1.5">Periodicidad</p>
         <select
           value={e.period}
@@ -435,6 +517,10 @@ function RecurringExpenseDrawer({ row, categories, contacts, onClose, onOpenCont
             <option key={b.label} value={b.label}>{b.label}</option>
           ))}
         </select>
+      </div>
+
+      <div className="p-4">
+        <EndOfRecurrenceFields value={end} onChange={changeEnd} disabled={saving} />
       </div>
     </Drawer>
   );
@@ -470,6 +556,7 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
   const router = useRouter();
   const [periods, setPeriods] = useState<Record<string, string>>({});
   const [picks, setPicks] = useState<Record<string, ContactPick>>({});
+  const [ends, setEnds] = useState<Record<string, EndFields>>({});
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
   const [openPendingKey, setOpenPendingKey] = useState<string | null>(null);
@@ -483,6 +570,10 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
     return periods[row.key] ?? row.period;
   }
 
+  function endFor(row: PendingSeriesRow): EndFields {
+    return ends[row.key] ?? defaultEnd();
+  }
+
   function pickFor(row: PendingSeriesRow): ContactPick {
     if (row.key in picks) return picks[row.key];
     return row.matchedContactId != null ? { contactId: row.matchedContactId } : null;
@@ -493,6 +584,7 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
     if (!pick) return null;
     const period = periodFor(row);
     const periodDays = PERIOD_BUCKETS.find((b) => b.label === period)?.days ?? row.periodDays;
+    const end = endFor(row);
     return {
       key: row.key,
       label: row.label,
@@ -503,6 +595,9 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
       bankPattern: row.bankPattern,
       contactId: "contactId" in pick ? pick.contactId : null,
       newContactLabel: "newLabel" in pick ? pick.newLabel : null,
+      endType: end.type,
+      endDate: end.type === "date" ? end.date || null : null,
+      endCount: end.type === "count" ? parseInt(end.count, 10) || null : null,
     };
   }
 
@@ -582,7 +677,7 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
             </button>
           }
         >
-          <div className="flex items-center gap-2 px-4 py-2 border-b border-navy/[0.06] bg-navy/[0.012]">
+          <label className="flex items-center gap-2 px-4 py-2 border-b border-navy/[0.06] bg-navy/[0.012] cursor-pointer">
             <input
               type="checkbox"
               checked={allSelected}
@@ -590,7 +685,7 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
               className="w-4 h-4 rounded border-navy/[0.25] accent-navy"
             />
             <span className="text-xs text-navy/45">Seleccionar todos</span>
-          </div>
+          </label>
           <div className="divide-y divide-navy/[0.05]">
             {pending.map((row) => (
               <PendingRow
@@ -654,9 +749,11 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
           row={openPendingRow}
           period={periodFor(openPendingRow)}
           pick={pickFor(openPendingRow)}
+          end={endFor(openPendingRow)}
           contacts={contacts}
           onClose={() => setOpenPendingKey(null)}
           onPeriodChange={(p) => setPeriods((prev) => ({ ...prev, [openPendingRow.key]: p }))}
+          onEndChange={(end) => setEnds((prev) => ({ ...prev, [openPendingRow.key]: end }))}
           onOpenContactPicker={() => setPickerOpen(true)}
           onConfirm={() => confirmRow(openPendingRow)}
           onIgnore={() => ignoreRow(openPendingRow)}

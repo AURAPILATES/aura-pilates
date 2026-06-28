@@ -40,6 +40,9 @@ export type ConfirmRecurringRow = {
   bankPattern: string;
   contactId: number | null;
   newContactLabel: string | null;
+  endType: "never" | "date" | "count";
+  endDate: string | null;
+  endCount: number | null;
 };
 
 /** Confirma uno o varios gastos detectados vinculándolos a un Contacto: el IVA/Retención se
@@ -83,6 +86,9 @@ export async function confirmRecurringExpenses(rows: ConfirmRecurringRow[]): Pro
         retencion_rate: contact.retencion_rate,
         contact_id: contact.id,
         status: "confirmed",
+        end_type: row.endType,
+        end_date: row.endType === "date" ? row.endDate : null,
+        end_count: row.endType === "count" ? row.endCount : null,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "key" },

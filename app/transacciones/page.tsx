@@ -4,8 +4,8 @@ import { loadCategoriesCached } from "@/lib/categories";
 import { getDateRange } from "@/lib/dateRange";
 import { detectRecurringTransactions, findRecurringSeries, projectNextDate } from "@/lib/recurring";
 import { loadRecurringExpensesCached } from "@/lib/recurringExpenses";
-import { contactKeyFor } from "@/lib/contactRules";
-import { getContacts } from "./actions";
+import { contactKeyFor, matchesPattern } from "@/lib/contactRules";
+import { getContacts, type Contact } from "./actions";
 import TransaccionesTabs from "./TransaccionesTabs";
 import type { ConfirmedExpenseRow, PendingSeriesRow } from "./RecurrentesList";
 import MobileNav from "@/app/components/MobileNav";
@@ -49,12 +49,22 @@ export default async function TransaccionesPage(props: {
   const isExpenseRow = (e: { category: string | null }) =>
     !e.category || !nonOperationalLabels.has(e.category);
 
-  const contactsByLabel = new Map(contacts.map((c) => [c.label.toLowerCase(), c.id]));
+  // Empareja por patrón bancario (no solo por nombre exacto): la misma serie puede aparecer
+  // dos veces si parte de sus movimientos son anteriores a tener el contacto asignado y
+  // conservan códigos/referencias en el texto — el patrón ya limpio (bankPattern) sí coincide
+  // con los conceptos guardados del contacto aunque la "label" visible todavía no.
+  function findMatchedContact(bankPattern: string, label: string): Contact | undefined {
+    return (
+      contacts.find((c) => c.patterns.some((p) => matchesPattern(bankPattern, p))) ??
+      contacts.find((c) => c.label.toLowerCase() === label.toLowerCase())
+    );
+  }
 
   const pendingRecurring: PendingSeriesRow[] = series
     .filter((s) => !expenseByKey.has(s.key))
     .map((s) => {
       const last = s.transactions[s.transactions.length - 1];
+      const bankPattern = contactKeyFor(last.concept, last.bank_details);
       return {
         key: s.key,
         label: s.label,
@@ -64,8 +74,8 @@ export default async function TransaccionesPage(props: {
         amount: s.amount,
         occurrences: s.transactions.length,
         lastDate: last.date,
-        bankPattern: contactKeyFor(last.concept, last.bank_details),
-        matchedContactId: contactsByLabel.get(s.label.toLowerCase()) ?? null,
+        bankPattern,
+        matchedContactId: findMatchedContact(bankPattern, s.label)?.id ?? null,
       };
     });
 
