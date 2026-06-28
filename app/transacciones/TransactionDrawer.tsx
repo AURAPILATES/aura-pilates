@@ -90,9 +90,16 @@ const END_TYPE_OPTIONS: { value: RecurringExpenseEndType; label: string }[] = [
   { value: "count", label: "Tras X repeticiones" },
 ];
 
+function recurringFiscalInfo(contact: Contact | undefined): string {
+  if (!contact) return "Sin contacto vinculado — asígnalo arriba para heredar su IVA y retención.";
+  return `Hereda de ${contact.label}: IVA ${contact.ivaRate}% · Retención ${contact.retencionRate}%`;
+}
+
 function MarkRecurringControl({
   transactionId,
   isIncome,
+  contactLabel,
+  contacts,
   initiallyRecurring,
   initialPeriod,
   initialEndType,
@@ -101,6 +108,8 @@ function MarkRecurringControl({
 }: {
   transactionId: string;
   isIncome: boolean;
+  contactLabel: string;
+  contacts: Contact[];
   initiallyRecurring: boolean;
   initialPeriod?: string;
   initialEndType?: RecurringExpenseEndType;
@@ -115,6 +124,9 @@ function MarkRecurringControl({
   const [periodSaving, setPeriodSaving] = useState(false);
   const router = useRouter();
 
+  const matchedContact = contacts.find((c) => c.label.toLowerCase() === contactLabel.trim().toLowerCase());
+  const contactId = matchedContact?.id ?? null;
+
   function buildEnd(type: RecurringExpenseEndType, date: string, count: string) {
     return {
       type,
@@ -126,7 +138,7 @@ function MarkRecurringControl({
   async function toggle(next: boolean) {
     setChecked(next);
     if (next) {
-      createRecurringExpenseFromTransaction(transactionId, period, 21, 0, buildEnd(endType, endDate, endCount)).then(() => router.refresh());
+      createRecurringExpenseFromTransaction(transactionId, period, contactId, buildEnd(endType, endDate, endCount)).then(() => router.refresh());
     } else {
       await removeRecurringExpenseForTransaction(transactionId);
       router.refresh();
@@ -140,7 +152,7 @@ function MarkRecurringControl({
     const ec = next.endCount ?? endCount;
     setPeriodSaving(true);
     try {
-      await createRecurringExpenseFromTransaction(transactionId, p, 21, 0, buildEnd(et, ed, ec));
+      await createRecurringExpenseFromTransaction(transactionId, p, contactId, buildEnd(et, ed, ec));
       router.refresh();
     } finally {
       setPeriodSaving(false);
@@ -159,54 +171,59 @@ function MarkRecurringControl({
         {isIncome ? "Es un ingreso recurrente" : "Es un gasto recurrente"}
       </label>
       {checked && (
-        <div className="flex flex-col gap-2 pl-6">
-          <div className="flex items-center gap-2">
-            <label className="text-sm text-navy/45">Periodicidad</label>
-            <select
-              value={period}
-              disabled={periodSaving}
-              onChange={(e) => { setPeriod(e.target.value); save({ period: e.target.value }); }}
-              className="text-base border border-navy/[0.12] rounded-lg px-2 py-1.5 outline-none focus:border-primary/50 disabled:opacity-50"
-            >
-              {PERIOD_BUCKETS.map((b) => (
-                <option key={b.label} value={b.label}>{b.label}</option>
-              ))}
-            </select>
-          </div>
-          <div className="flex items-center gap-2">
-            <label className="text-sm text-navy/45">Finaliza</label>
-            <select
-              value={endType}
-              disabled={periodSaving}
-              onChange={(e) => { const v = e.target.value as RecurringExpenseEndType; setEndType(v); save({ endType: v }); }}
-              className="text-base border border-navy/[0.12] rounded-lg px-2 py-1.5 outline-none focus:border-primary/50 disabled:opacity-50"
-            >
-              {END_TYPE_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </select>
-            {endType === "date" && (
-              <input
-                type="date"
-                value={endDate}
+        <div className="flex flex-col gap-3 pl-6">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-[11px] text-navy/40 uppercase tracking-wider mb-1">Periodicidad</p>
+              <select
+                value={period}
                 disabled={periodSaving}
-                onChange={(e) => { setEndDate(e.target.value); save({ endDate: e.target.value }); }}
-                className="text-sm border border-navy/[0.12] rounded-lg px-2 py-1.5 outline-none focus:border-primary/50 disabled:opacity-50"
-              />
-            )}
-            {endType === "count" && (
-              <input
-                type="number"
-                min={1}
-                value={endCount}
+                onChange={(e) => { setPeriod(e.target.value); save({ period: e.target.value }); }}
+                className="w-full text-sm text-navy border border-navy/[0.12] rounded-lg px-2 py-1.5 outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15 transition disabled:opacity-50"
+              >
+                {PERIOD_BUCKETS.map((b) => (
+                  <option key={b.label} value={b.label}>{b.label}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <p className="text-[11px] text-navy/40 uppercase tracking-wider mb-1">Finaliza</p>
+              <select
+                value={endType}
                 disabled={periodSaving}
-                onChange={(e) => setEndCount(e.target.value)}
-                onBlur={(e) => save({ endCount: e.target.value })}
-                placeholder="repeticiones"
-                className="w-28 text-sm border border-navy/[0.12] rounded-lg px-2 py-1.5 outline-none focus:border-primary/50 disabled:opacity-50"
-              />
-            )}
+                onChange={(e) => { const v = e.target.value as RecurringExpenseEndType; setEndType(v); save({ endType: v }); }}
+                className="w-full text-sm text-navy border border-navy/[0.12] rounded-lg px-2 py-1.5 outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15 transition disabled:opacity-50"
+              >
+                {END_TYPE_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
+            </div>
           </div>
+          {endType === "date" && (
+            <input
+              type="date"
+              value={endDate}
+              disabled={periodSaving}
+              onChange={(e) => { setEndDate(e.target.value); save({ endDate: e.target.value }); }}
+              className="w-full text-sm text-navy border border-navy/[0.12] rounded-lg px-2 py-1.5 outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15 transition disabled:opacity-50"
+            />
+          )}
+          {endType === "count" && (
+            <input
+              type="number"
+              min={1}
+              value={endCount}
+              disabled={periodSaving}
+              onChange={(e) => setEndCount(e.target.value)}
+              onBlur={(e) => save({ endCount: e.target.value })}
+              placeholder="Número de repeticiones"
+              className="w-full text-sm text-navy border border-navy/[0.12] rounded-lg px-2 py-1.5 outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15 transition disabled:opacity-50"
+            />
+          )}
+          <p className={`text-xs rounded-lg px-3 py-2 ${matchedContact ? "bg-success/[0.08] text-success" : "bg-navy/[0.04] text-navy/45"}`}>
+            {matchedContact ? "ℹ️ " : ""}{recurringFiscalInfo(matchedContact)}
+          </p>
         </div>
       )}
     </div>
@@ -345,6 +362,8 @@ export default function TransactionDrawer({
         <MarkRecurringControl
           transactionId={t.id}
           isIncome={t.amount > 0}
+          contactLabel={t.contact ?? ""}
+          contacts={contacts}
           initiallyRecurring={recurringExpense?.status === "confirmed" || !!recurringPeriod}
           initialPeriod={recurringExpense?.period ?? recurringPeriod}
           initialEndType={recurringExpense?.end_type}

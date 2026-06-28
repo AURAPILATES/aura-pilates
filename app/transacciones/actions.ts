@@ -752,8 +752,7 @@ export async function updateTransactionPaymentMethod(id: string, paymentMethod: 
 export async function createRecurringExpenseFromTransaction(
   transactionId: string,
   period: string,
-  ivaRate: number,
-  retencionRate: number,
+  contactId: number | null,
   end?: { type: "never" | "date" | "count"; date?: string | null; count?: number | null },
 ): Promise<void> {
   const bucket = PERIOD_BUCKETS.find((b) => b.label === period);
@@ -770,16 +769,32 @@ export async function createRecurringExpenseFromTransaction(
   const key = seriesKeyFor(t as Transaction);
   if (!key) throw new Error("El movimiento no tiene contacto ni concepto para agruparlo");
 
+  let ivaRate = 0;
+  let retencionRate = 0;
+  let category = t.category;
+  if (contactId != null) {
+    const { data: contact, error: contactError } = await supabase
+      .from("contacts")
+      .select("category, iva_rate, retencion_rate")
+      .eq("id", contactId)
+      .single();
+    if (contactError || !contact) throw new Error(contactError?.message ?? "Contacto no encontrado");
+    ivaRate = contact.iva_rate;
+    retencionRate = contact.retencion_rate;
+    category = contact.category ?? t.category;
+  }
+
   const { error: upsertError } = await supabase.from("recurring_expenses").upsert(
     {
       key,
       label: displayLabel(t as Transaction),
-      category: t.category,
+      category,
       period,
       period_days: bucket.days,
       amount: t.amount,
       iva_rate: ivaRate,
       retencion_rate: retencionRate,
+      contact_id: contactId,
       status: "confirmed",
       end_type: end?.type ?? "never",
       end_date: end?.type === "date" ? end.date ?? null : null,
