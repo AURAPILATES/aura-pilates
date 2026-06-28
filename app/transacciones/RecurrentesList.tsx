@@ -22,7 +22,10 @@ import {
 } from "./recurringActions";
 
 export type PendingSeriesRow = {
-  key: string;
+  /** Una fila puede agrupar varias series detectadas que en realidad son el mismo gasto
+   * (mismo contacto + mismo importe, separadas porque parte de los movimientos no tenían el
+   * contacto asignado todavía) — se usa keys[0] como identificador estable de la fila. */
+  keys: string[];
   label: string;
   category: string | null;
   period: string;
@@ -30,9 +33,9 @@ export type PendingSeriesRow = {
   amount: number; // negativo
   occurrences: number;
   lastDate: string;
-  /** Texto de banco (concepto + más datos, ya limpios) del último movimiento de la serie —
-   * se guarda como patrón del contacto al confirmar. */
-  bankPattern: string;
+  /** Textos de banco (concepto + más datos, ya limpios) de cada serie agrupada — se guardan
+   * como patrones del contacto al confirmar. */
+  bankPatterns: string[];
   /** Contacto ya reconocido en el último movimiento de la serie (preselecciona el picker). */
   matchedContactId: number | null;
 };
@@ -563,19 +566,19 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
   const [openConfirmedId, setOpenConfirmedId] = useState<number | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
 
-  const openPendingRow = openPendingKey != null ? pending.find((p) => p.key === openPendingKey) ?? null : null;
+  const openPendingRow = openPendingKey != null ? pending.find((p) => p.keys[0] === openPendingKey) ?? null : null;
   const openConfirmedRow = openConfirmedId != null ? confirmed.find((c) => c.expense.id === openConfirmedId) ?? null : null;
 
   function periodFor(row: PendingSeriesRow): string {
-    return periods[row.key] ?? row.period;
+    return periods[row.keys[0]] ?? row.period;
   }
 
   function endFor(row: PendingSeriesRow): EndFields {
-    return ends[row.key] ?? defaultEnd();
+    return ends[row.keys[0]] ?? defaultEnd();
   }
 
   function pickFor(row: PendingSeriesRow): ContactPick {
-    if (row.key in picks) return picks[row.key];
+    if (row.keys[0] in picks) return picks[row.keys[0]];
     return row.matchedContactId != null ? { contactId: row.matchedContactId } : null;
   }
 
@@ -586,13 +589,13 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
     const periodDays = PERIOD_BUCKETS.find((b) => b.label === period)?.days ?? row.periodDays;
     const end = endFor(row);
     return {
-      key: row.key,
+      keys: row.keys,
       label: row.label,
       category: row.category,
       period,
       period_days: periodDays,
       amount: row.amount,
-      bankPattern: row.bankPattern,
+      bankPatterns: row.bankPatterns,
       contactId: "contactId" in pick ? pick.contactId : null,
       newContactLabel: "newLabel" in pick ? pick.newLabel : null,
       endType: end.type,
@@ -612,7 +615,7 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
     const period = periodFor(row);
     const periodDays = PERIOD_BUCKETS.find((b) => b.label === period)?.days ?? row.periodDays;
     await recordRecurringExpense(
-      { key: row.key, label: row.label, category: row.category, period, period_days: periodDays, amount: row.amount, iva_rate: 0, retencion_rate: 0 },
+      { keys: row.keys, label: row.label, category: row.category, period, period_days: periodDays, amount: row.amount, iva_rate: 0, retencion_rate: 0 },
       "ignored",
     );
     router.refresh();
@@ -620,7 +623,7 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
 
   async function confirmSelected() {
     const rows = pending
-      .filter((p) => selected.has(p.key))
+      .filter((p) => selected.has(p.keys[0]))
       .map(buildConfirmRow)
       .filter((r): r is ConfirmRecurringRow => r != null);
     if (!rows.length) return;
@@ -635,7 +638,7 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
   }
 
   function toggleAll(checked: boolean) {
-    setSelected(checked ? new Set(pending.map((p) => p.key)) : new Set());
+    setSelected(checked ? new Set(pending.map((p) => p.keys[0])) : new Set());
   }
 
   function toggleOne(key: string, checked: boolean) {
@@ -650,7 +653,7 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
   async function handlePickerPick(result: ContactPickResult) {
     if (openPendingRow) {
       const pick = resultToPick(result);
-      setPicks((prev) => ({ ...prev, [openPendingRow.key]: pick }));
+      setPicks((prev) => ({ ...prev, [openPendingRow.keys[0]]: pick }));
     } else if (openConfirmedRow) {
       const relinkPick = "contactId" in result ? { contactId: result.contactId } : { newContactLabel: result.newLabel };
       await relinkRecurringExpenseContact(openConfirmedRow.expense.id, relinkPick);
@@ -658,8 +661,8 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
     }
   }
 
-  const allSelected = pending.length > 0 && pending.every((p) => selected.has(p.key));
-  const selectableCount = pending.filter((p) => selected.has(p.key) && pickFor(p) != null).length;
+  const allSelected = pending.length > 0 && pending.every((p) => selected.has(p.keys[0]));
+  const selectableCount = pending.filter((p) => selected.has(p.keys[0]) && pickFor(p) != null).length;
 
   return (
     <div className="space-y-4">
@@ -689,14 +692,14 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
           <div className="divide-y divide-navy/[0.05]">
             {pending.map((row) => (
               <PendingRow
-                key={row.key}
+                key={row.keys[0]}
                 row={row}
                 categories={categories}
                 contacts={contacts}
                 pick={pickFor(row)}
-                selected={selected.has(row.key)}
-                onToggleSelected={(checked) => toggleOne(row.key, checked)}
-                onOpen={() => setOpenPendingKey(row.key)}
+                selected={selected.has(row.keys[0])}
+                onToggleSelected={(checked) => toggleOne(row.keys[0], checked)}
+                onOpen={() => setOpenPendingKey(row.keys[0])}
               />
             ))}
           </div>
@@ -752,8 +755,8 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
           end={endFor(openPendingRow)}
           contacts={contacts}
           onClose={() => setOpenPendingKey(null)}
-          onPeriodChange={(p) => setPeriods((prev) => ({ ...prev, [openPendingRow.key]: p }))}
-          onEndChange={(end) => setEnds((prev) => ({ ...prev, [openPendingRow.key]: end }))}
+          onPeriodChange={(p) => setPeriods((prev) => ({ ...prev, [openPendingRow.keys[0]]: p }))}
+          onEndChange={(end) => setEnds((prev) => ({ ...prev, [openPendingRow.keys[0]]: end }))}
           onOpenContactPicker={() => setPickerOpen(true)}
           onConfirm={() => confirmRow(openPendingRow)}
           onIgnore={() => ignoreRow(openPendingRow)}

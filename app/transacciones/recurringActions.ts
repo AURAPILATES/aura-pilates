@@ -11,7 +11,7 @@ function revalidateAll() {
 
 export async function recordRecurringExpense(
   data: {
-    key: string;
+    keys: string[];
     label: string;
     category: string | null;
     period: string;
@@ -22,22 +22,31 @@ export async function recordRecurringExpense(
   },
   status: "confirmed" | "ignored" = "confirmed",
 ) {
+  if (!data.keys.length) return;
   const supabase = createServerClient();
-  const { error } = await supabase.from("recurring_expenses").insert({ ...data, status });
+  const { keys, ...rest } = data;
+  const { error } = await supabase
+    .from("recurring_expenses")
+    .insert(keys.map((key) => ({ ...rest, key, status })));
   if (error) throw new Error(error.message);
   revalidateAll();
 }
 
 export type ConfirmRecurringRow = {
-  key: string;
+  /** Una fila puede agrupar varias series detectadas (mismo contacto + mismo importe pero
+   * separadas porque parte de los movimientos todavía no tenían el contacto asignado en el
+   * texto bancario) — se confirma una fila de recurring_expenses por cada key para que ninguna
+   * de las variantes vuelva a aparecer como pendiente. */
+  keys: string[];
   label: string;
   category: string | null;
   period: string;
   period_days: number;
   amount: number;
-  /** Texto de banco (concepto + más datos, ya limpios) del último movimiento de la serie —
-   * se registra como patrón del contacto para que futuros movimientos se reconozcan solos. */
-  bankPattern: string;
+  /** Textos de banco (concepto + más datos, ya limpios) de cada serie agrupada — se registran
+   * todos como patrones del contacto para que futuros movimientos de cualquier variante se
+   * reconozcan solos. */
+  bankPatterns: string[];
   contactId: number | null;
   newContactLabel: string | null;
   endType: "never" | "date" | "count";
@@ -47,8 +56,8 @@ export type ConfirmRecurringRow = {
 
 /** Confirma uno o varios gastos detectados vinculándolos a un Contacto: el IVA/Retención se
  * hereda de su ficha (ver contacts en migrations/011_contacts.sql) en vez de teclearse a mano.
- * Si el contacto no existe todavía, lo crea. En ambos casos registra/asegura el patrón bancario
- * y aplica el contacto a los movimientos ya importados que coincidan (ver
+ * Si el contacto no existe todavía, lo crea. En ambos casos registra/asegura los patrones
+ * bancarios y aplica el contacto a los movimientos ya importados que coincidan (ver
  * resolveOrCreateContact y applyPatternsToTransactions en ./actions). */
 export async function confirmRecurringExpenses(rows: ConfirmRecurringRow[]): Promise<void> {
   if (!rows.length) return;
@@ -64,38 +73,42 @@ export async function confirmRecurringExpenses(rows: ConfirmRecurringRow[]): Pro
         .single();
       if (error || !data) throw new Error(error?.message ?? "Contacto no encontrado");
       contact = data;
-      const { error: patError } = await supabase
-        .from("contact_concepts")
-        .upsert({ contact_id: contact.id, pattern: row.bankPattern }, { onConflict: "pattern" });
-      if (patError) throw new Error(patError.message);
+      if (row.bankPatterns.length) {
+        const { error: patError } = await supabase
+          .from("contact_concepts")
+          .upsert(row.bankPatterns.map((pattern) => ({ contact_id: contact.id, pattern })), { onConflict: "pattern" });
+        if (patError) throw new Error(patError.message);
+      }
     } else if (row.newContactLabel) {
-      contact = await resolveOrCreateContact(supabase, row.newContactLabel, row.bankPattern);
+      contact = await resolveOrCreateContact(supabase, row.newContactLabel, row.bankPatterns);
     } else {
       throw new Error("Selecciona o crea un contacto antes de confirmar");
     }
 
-    const { error: upsertError } = await supabase.from("recurring_expenses").upsert(
-      {
-        key: row.key,
-        label: row.label,
-        category: contact.category ?? row.category,
-        period: row.period,
-        period_days: row.period_days,
-        amount: row.amount,
-        iva_rate: contact.iva_rate,
-        retencion_rate: contact.retencion_rate,
-        contact_id: contact.id,
-        status: "confirmed",
-        end_type: row.endType,
-        end_date: row.endType === "date" ? row.endDate : null,
-        end_count: row.endType === "count" ? row.endCount : null,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "key" },
-    );
-    if (upsertError) throw new Error(upsertError.message);
+    for (const key of row.keys) {
+      const { error: upsertError } = await supabase.from("recurring_expenses").upsert(
+        {
+          key,
+          label: row.label,
+          category: contact.category ?? row.category,
+          period: row.period,
+          period_days: row.period_days,
+          amount: row.amount,
+          iva_rate: contact.iva_rate,
+          retencion_rate: contact.retencion_rate,
+          contact_id: contact.id,
+          status: "confirmed",
+          end_type: row.endType,
+          end_date: row.endType === "date" ? row.endDate : null,
+          end_count: row.endType === "count" ? row.endCount : null,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "key" },
+      );
+      if (upsertError) throw new Error(upsertError.message);
+    }
 
-    await applyPatternsToTransactions(supabase, new Set([row.bankPattern]), contact);
+    await applyPatternsToTransactions(supabase, new Set(row.bankPatterns), contact);
   }
 
   revalidateAll();

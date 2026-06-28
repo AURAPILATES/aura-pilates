@@ -362,7 +362,7 @@ export type ResolvedContact = { id: number; category: string | null; iva_rate: n
 export async function resolveOrCreateContact(
   supabase: ReturnType<typeof createServerClient>,
   label: string,
-  pattern: string,
+  pattern: string | string[],
 ): Promise<ResolvedContact> {
   const { data: existing } = await supabase
     .from("contacts")
@@ -381,10 +381,13 @@ export async function resolveOrCreateContact(
     contact = created;
   }
 
-  const { error: patError } = await supabase
-    .from("contact_concepts")
-    .upsert({ contact_id: contact.id, pattern }, { onConflict: "pattern" });
-  if (patError) throw new Error(patError.message);
+  const patterns = [...new Set(Array.isArray(pattern) ? pattern : [pattern])].filter(Boolean);
+  if (patterns.length) {
+    const { error: patError } = await supabase
+      .from("contact_concepts")
+      .upsert(patterns.map((p) => ({ contact_id: contact.id, pattern: p })), { onConflict: "pattern" });
+    if (patError) throw new Error(patError.message);
+  }
 
   return contact;
 }
