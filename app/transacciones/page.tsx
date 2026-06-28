@@ -4,6 +4,7 @@ import { loadCategoriesCached } from "@/lib/categories";
 import { getDateRange } from "@/lib/dateRange";
 import { detectRecurringTransactions, findRecurringSeries, projectNextDate } from "@/lib/recurring";
 import { loadRecurringExpensesCached } from "@/lib/recurringExpenses";
+import { contactKeyFor } from "@/lib/contactRules";
 import { getContacts } from "./actions";
 import TransaccionesTabs from "./TransaccionesTabs";
 import type { ConfirmedExpenseRow, PendingSeriesRow } from "./RecurrentesList";
@@ -48,18 +49,25 @@ export default async function TransaccionesPage(props: {
   const isExpenseRow = (e: { category: string | null }) =>
     !e.category || !nonOperationalLabels.has(e.category);
 
+  const contactsByLabel = new Map(contacts.map((c) => [c.label.toLowerCase(), c.id]));
+
   const pendingRecurring: PendingSeriesRow[] = series
     .filter((s) => !expenseByKey.has(s.key))
-    .map((s) => ({
-      key: s.key,
-      label: s.label,
-      category: s.category,
-      period: s.period,
-      periodDays: s.periodDays,
-      amount: s.amount,
-      occurrences: s.transactions.length,
-      lastDate: s.transactions[s.transactions.length - 1].date,
-    }));
+    .map((s) => {
+      const last = s.transactions[s.transactions.length - 1];
+      return {
+        key: s.key,
+        label: s.label,
+        category: s.category,
+        period: s.period,
+        periodDays: s.periodDays,
+        amount: s.amount,
+        occurrences: s.transactions.length,
+        lastDate: last.date,
+        bankPattern: contactKeyFor(last.concept, last.bank_details),
+        matchedContactId: contactsByLabel.get(s.label.toLowerCase()) ?? null,
+      };
+    });
 
   const confirmedRecurring: ConfirmedExpenseRow[] = expenses
     .filter((e) => e.status === "confirmed" && isExpenseRow(e))

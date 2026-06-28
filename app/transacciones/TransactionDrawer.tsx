@@ -1,6 +1,5 @@
 "use client";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Drawer from "@/app/components/Drawer";
 import type { Transaction, PaymentMethod } from "@/lib/transactions";
@@ -8,6 +7,7 @@ import type { Category } from "@/lib/categories";
 import { PERIOD_BUCKETS } from "@/lib/recurring";
 import type { RecurringExpense, RecurringExpenseEndType } from "@/lib/recurringExpenses";
 import { CategoryPill, SourceAvatar } from "./TransaccionesList";
+import ContactPicker from "./ContactPicker";
 import { createRecurringExpenseFromTransaction, removeRecurringExpenseForTransaction, assignContactToTransaction, type Contact } from "./actions";
 
 const PAYMENT_METHOD_OPTIONS: { value: PaymentMethod; label: string }[] = [
@@ -58,20 +58,8 @@ function Field({ label, value, onSave }: { label: string; value: string; onSave:
  * contacto si no existe y registra su patrón (concepto + más datos, limpios de códigos de
  * operación) para que la próxima vez que aparezca se reconozca solo, igual que al confirmar
  * un contacto nuevo durante la importación. */
-function ContactPicker({ transactionId, value, contacts, onSaved }: { transactionId: string; value: string; contacts: Contact[]; onSaved: () => void }) {
-  const [draft, setDraft] = useState(value);
-  const [open, setOpen] = useState(false);
+function TransactionContactPicker({ transactionId, value, contacts, onSaved }: { transactionId: string; value: string; contacts: Contact[]; onSaved: () => void }) {
   const [saving, setSaving] = useState(false);
-  const [dropPos, setDropPos] = useState<{ top: number; left: number; width: number } | null>(null);
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const dropRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const options = useMemo(() => {
-    const labels = [...new Set(contacts.map((r) => r.label))].sort((a, b) => a.localeCompare(b));
-    const q = draft.trim().toLowerCase();
-    return q ? labels.filter((l) => l.toLowerCase().includes(q)) : labels;
-  }, [contacts, draft]);
 
   async function save(label: string) {
     if (label === value) return;
@@ -84,68 +72,15 @@ function ContactPicker({ transactionId, value, contacts, onSaved }: { transactio
     }
   }
 
-  useEffect(() => {
-    if (!open) return;
-    function handle(e: MouseEvent) {
-      if (!wrapRef.current?.contains(e.target as Node) && !dropRef.current?.contains(e.target as Node)) {
-        setOpen(false);
-        if (draft !== value) save(draft);
-      }
-    }
-    document.addEventListener("mousedown", handle);
-    return () => document.removeEventListener("mousedown", handle);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, draft, value]);
-
-  function openDropdown() {
-    if (inputRef.current) {
-      const rect = inputRef.current.getBoundingClientRect();
-      setDropPos({ top: rect.bottom + 4, left: rect.left, width: rect.width });
-    }
-    setOpen(true);
-  }
-
-  function pick(label: string) {
-    setDraft(label);
-    setOpen(false);
-    save(label);
-  }
-
   return (
-    <div ref={wrapRef} className="relative">
-      <input
-        ref={inputRef}
-        type="text"
-        value={draft}
-        disabled={saving}
-        onChange={(e) => { setDraft(e.target.value); if (!open) openDropdown(); }}
-        onFocus={openDropdown}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") { save(draft); setOpen(false); (e.target as HTMLInputElement).blur(); }
-          if (e.key === "Escape") { setDraft(value); setOpen(false); (e.target as HTMLInputElement).blur(); }
-        }}
-        placeholder="Escribe o elige uno guardado…"
-        className="w-full text-sm font-medium text-navy border border-navy/[0.12] rounded-lg px-3 py-2 outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15 transition disabled:opacity-50"
-      />
-      {open && dropPos && options.length > 0 && createPortal(
-        <div
-          ref={dropRef}
-          className="fixed z-[9999] bg-white border border-navy/10 rounded-xl shadow-xl overflow-y-auto py-1"
-          style={{ top: dropPos.top, left: dropPos.left, width: dropPos.width, maxHeight: "14rem" }}
-        >
-          {options.map((label) => (
-            <button
-              key={label}
-              onClick={() => pick(label)}
-              className={`w-full text-left px-3 py-1.5 text-xs hover:bg-navy/[0.04] transition-colors ${label === value ? "font-semibold text-navy" : "text-navy/70"}`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>,
-        document.body
-      )}
-    </div>
+    <ContactPicker
+      value={value}
+      contacts={contacts}
+      disabled={saving}
+      commitOnBlur
+      placeholder="Escribe o elige uno guardado…"
+      onPick={(result) => save("contactId" in result ? result.label : result.newLabel)}
+    />
   );
 }
 
@@ -358,7 +293,7 @@ export default function TransactionDrawer({
 
         <div>
           <p className="text-[11px] text-navy/40 uppercase tracking-wider mb-1">Contacto</p>
-          <ContactPicker transactionId={t.id} value={t.contact ?? ""} contacts={contacts} onSaved={() => router.refresh()} />
+          <TransactionContactPicker transactionId={t.id} value={t.contact ?? ""} contacts={contacts} onSaved={() => router.refresh()} />
         </div>
 
         <div>

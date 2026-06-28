@@ -231,7 +231,7 @@ export async function ignorePatterns(patterns: string[]): Promise<void> {
  * Configuración > Contactos como, automáticamente, al confirmar un contacto nuevo o añadir un
  * patrón a uno existente durante la importación — así no hace falta acordarse de aplicarlo
  * a mano para los movimientos que ya estaban importados antes de crear el contacto. */
-async function applyPatternsToTransactions(
+export async function applyPatternsToTransactions(
   supabase: ReturnType<typeof createServerClient>,
   patterns: Set<string>,
   contact: { category: string | null; iva_rate: number; retencion_rate: number },
@@ -353,6 +353,42 @@ export async function cleanupContactPatterns(): Promise<{ updated: number; merge
   return { updated, merged };
 }
 
+export type ResolvedContact = { id: number; category: string | null; iva_rate: number; retencion_rate: number };
+
+/** Busca un contacto por nombre (sin distinguir mayúsculas); si no existe lo crea, y registra
+ * `pattern` (concepto + más datos, ya limpios) como uno de sus conceptos de reconocimiento —
+ * así la próxima vez que aparezca ese texto bancario se asigna solo. Usado tanto al asignar un
+ * contacto a mano desde el detalle de un movimiento como al confirmar un gasto recurrente. */
+export async function resolveOrCreateContact(
+  supabase: ReturnType<typeof createServerClient>,
+  label: string,
+  pattern: string,
+): Promise<ResolvedContact> {
+  const { data: existing } = await supabase
+    .from("contacts")
+    .select("id, category, iva_rate, retencion_rate")
+    .ilike("label", label)
+    .maybeSingle();
+
+  let contact: ResolvedContact | null = existing;
+  if (!contact) {
+    const { data: created, error: createError } = await supabase
+      .from("contacts")
+      .insert({ label })
+      .select("id, category, iva_rate, retencion_rate")
+      .single();
+    if (createError) throw new Error(createError.message);
+    contact = created;
+  }
+
+  const { error: patError } = await supabase
+    .from("contact_concepts")
+    .upsert({ contact_id: contact.id, pattern }, { onConflict: "pattern" });
+  if (patError) throw new Error(patError.message);
+
+  return contact;
+}
+
 /** Asigna un contacto a un movimiento concreto: si el contacto no existe todavía lo crea, y
  * registra el patrón (concepto + más datos, ya limpios) de este movimiento para que la
  * próxima vez que aparezca se reconozca solo — la misma idea que confirmar un contacto nuevo
@@ -376,29 +412,7 @@ export async function assignContactToTransaction(transactionId: string, contactL
   if (loadError || !t) throw new Error(loadError?.message ?? "Movimiento no encontrado");
 
   const pattern = contactKeyFor(t.concept, t.bank_details);
-
-  let contact: { id: number; category: string | null; iva_rate: number; retencion_rate: number } | null = null;
-  const { data: existing } = await supabase
-    .from("contacts")
-    .select("id, category, iva_rate, retencion_rate")
-    .ilike("label", label)
-    .maybeSingle();
-  contact = existing;
-
-  if (!contact) {
-    const { data: created, error: createError } = await supabase
-      .from("contacts")
-      .insert({ label })
-      .select("id, category, iva_rate, retencion_rate")
-      .single();
-    if (createError) throw new Error(createError.message);
-    contact = created;
-  }
-
-  const { error: patError } = await supabase
-    .from("contact_concepts")
-    .upsert({ contact_id: contact.id, pattern }, { onConflict: "pattern" });
-  if (patError) throw new Error(patError.message);
+  const contact = await resolveOrCreateContact(supabase, label, pattern);
 
   const { error: updError } = await supabase
     .from("transactions")

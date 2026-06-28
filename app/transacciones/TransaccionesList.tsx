@@ -244,7 +244,7 @@ function CategoryMultiFilter({
 
 /** Pill visual de categoría, sin interacción — para mostrar en sitios de solo lectura como
  * la tabla de contactos. CategoryPill la usa por dentro para el botón interactivo. */
-export function CategoryBadge({ category, categories, hideIcon = false, compact = false }: { category: string | null; categories: Category[]; hideIcon?: boolean; compact?: boolean }) {
+export function CategoryBadge({ category, categories, hideIcon = false }: { category: string | null; categories: Category[]; hideIcon?: boolean }) {
   const cat = category ? categories.find((c) => c.value === category) : undefined;
   const cfg = cat ? {
     emoji: cat.emoji,
@@ -257,16 +257,16 @@ export function CategoryBadge({ category, categories, hideIcon = false, compact 
   const iconName = cat?.label ?? label;
   return (
     <span
-      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-medium whitespace-nowrap ${compact ? "text-[10px]" : "text-[11px]"}`}
+      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium whitespace-nowrap"
       style={{ backgroundColor: cfg.bg, color: cfg.color }}
     >
-      {!hideIcon && <CatIcon iconKey={cfg.emoji} name={iconName} color={cfg.color} size={compact ? 11 : 12} />}
+      {!hideIcon && <CatIcon iconKey={cfg.emoji} name={iconName} color={cfg.color} />}
       <span>{label}</span>
     </span>
   );
 }
 
-export function CategoryPill({ category, categories, onChange, hideIcon = false, compact = false }: { category: string | null; categories: Category[]; onChange: (cat: string | null) => void; hideIcon?: boolean; compact?: boolean }) {
+export function CategoryPill({ category, categories, onChange, hideIcon = false }: { category: string | null; categories: Category[]; onChange: (cat: string | null) => void; hideIcon?: boolean }) {
   const [open, setOpen] = useState(false);
   const [dropPos, setDropPos] = useState<{ top: number; left: number } | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -299,7 +299,7 @@ export function CategoryPill({ category, categories, onChange, hideIcon = false,
         onClick={handleToggle}
         className="inline-block rounded-full hover:brightness-95 transition-all"
       >
-        <CategoryBadge category={category} categories={categories} hideIcon={hideIcon} compact={compact} />
+        <CategoryBadge category={category} categories={categories} hideIcon={hideIcon} />
       </button>
       {open && dropPos && createPortal(
         <div
@@ -1312,7 +1312,7 @@ export default function TransaccionesList({
 
               {/* categoría */}
               <div className="w-[170px] shrink-0" onClick={(e) => e.stopPropagation()}>
-                <CategoryPill category={t.category} categories={categories} onChange={(cat) => handleCategoryChange(t.id, cat)} compact />
+                <CategoryPill category={t.category} categories={categories} onChange={(cat) => handleCategoryChange(t.id, cat)} />
               </div>
 
               {/* fecha */}
