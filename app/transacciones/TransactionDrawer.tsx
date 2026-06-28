@@ -5,9 +5,11 @@ import Drawer from "@/app/components/Drawer";
 import type { Transaction, PaymentMethod } from "@/lib/transactions";
 import type { Category } from "@/lib/categories";
 import { PERIOD_BUCKETS } from "@/lib/recurring";
+import { contactKeyFor } from "@/lib/contactRules";
 import type { RecurringExpense, RecurringExpenseEndType } from "@/lib/recurringExpenses";
 import { CategoryPill, SourceAvatar } from "./TransaccionesList";
 import ContactPicker from "./ContactPicker";
+import NewContactDrawer from "./NewContactDrawer";
 import { createRecurringExpenseFromTransaction, removeRecurringExpenseForTransaction, assignContactToTransaction, type Contact } from "./actions";
 
 const PAYMENT_METHOD_OPTIONS: { value: PaymentMethod; label: string }[] = [
@@ -54,14 +56,27 @@ function Field({ label, value, onSave }: { label: string; value: string; onSave:
 }
 
 /** Combobox: escribe texto libre o elige uno de los contactos guardados en
- * Configuración > Contactos. Al confirmar, no solo renombra este movimiento — crea el
- * contacto si no existe y registra su patrón (concepto + más datos, limpios de códigos de
- * operación) para que la próxima vez que aparezca se reconozca solo, igual que al confirmar
- * un contacto nuevo durante la importación. */
-function TransactionContactPicker({ transactionId, value, contacts, onSaved }: { transactionId: string; value: string; contacts: Contact[]; onSaved: () => void }) {
+ * Configuración > Contactos. Si eliges uno guardado, vincula directamente. Si escribes un
+ * nombre nuevo, abre el formulario completo de contacto (categoría, IVA, retención, conceptos
+ * bancarios) prellenado con los datos de este movimiento, igual que al crear uno desde
+ * Configuración > Contactos. */
+function TransactionContactPicker({
+  transactionId, value, contacts, categories, concept, bankDetails, category, onSaved,
+}: {
+  transactionId: string;
+  value: string;
+  contacts: Contact[];
+  categories: Category[];
+  concept: string | null;
+  bankDetails: string | null;
+  category: string | null;
+  onSaved: () => void;
+}) {
   const [saving, setSaving] = useState(false);
+  const [draftNewLabel, setDraftNewLabel] = useState<string | null>(null);
+  const [pickerResetKey, setPickerResetKey] = useState(0);
 
-  async function save(label: string) {
+  async function link(label: string) {
     if (label === value) return;
     setSaving(true);
     try {
@@ -72,15 +87,35 @@ function TransactionContactPicker({ transactionId, value, contacts, onSaved }: {
     }
   }
 
+  function cancelNewLabel() {
+    setDraftNewLabel(null);
+    setPickerResetKey((k) => k + 1);
+  }
+
+  const derivedPattern = contactKeyFor(concept, bankDetails);
+
   return (
-    <ContactPicker
-      value={value}
-      contacts={contacts}
-      disabled={saving}
-      commitOnBlur
-      placeholder="Escribe o elige uno guardado…"
-      onPick={(result) => save("contactId" in result ? result.label : result.newLabel)}
-    />
+    <>
+      <ContactPicker
+        key={pickerResetKey}
+        value={value}
+        contacts={contacts}
+        disabled={saving}
+        commitOnBlur
+        placeholder="Escribe o elige uno guardado…"
+        onPick={(result) => { if ("contactId" in result) link(result.label); else setDraftNewLabel(result.newLabel); }}
+      />
+      {draftNewLabel !== null && (
+        <NewContactDrawer
+          categories={categories}
+          initialLabel={draftNewLabel}
+          initialPatterns={derivedPattern === "sin-concepto" ? [] : [derivedPattern]}
+          initialCategory={category}
+          onCancel={cancelNewLabel}
+          onCreated={(contact) => { setDraftNewLabel(null); link(contact.label); }}
+        />
+      )}
+    </>
   );
 }
 
@@ -310,7 +345,16 @@ export default function TransactionDrawer({
 
         <div>
           <p className="text-[11px] text-navy/40 uppercase tracking-wider mb-1">Contacto</p>
-          <TransactionContactPicker transactionId={t.id} value={t.contact ?? ""} contacts={contacts} onSaved={() => router.refresh()} />
+          <TransactionContactPicker
+            transactionId={t.id}
+            value={t.contact ?? ""}
+            contacts={contacts}
+            categories={categories}
+            concept={t.concept}
+            bankDetails={t.bank_details}
+            category={t.category}
+            onSaved={() => router.refresh()}
+          />
         </div>
 
         <div>

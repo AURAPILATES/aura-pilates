@@ -6,6 +6,7 @@ import { economicGroupOf, type EconomicGroup } from "@/lib/economicGroups";
 import { siblingColor } from "@/lib/colorVariants";
 import { createCategory, updateCategory, deleteCategory, reorderCategories, updateCategoryColors } from "./actions";
 import ChipsInput from "@/app/components/ChipsInput";
+import { AutomationIcon } from "@/app/transacciones/NewContactDrawer";
 
 const GROUP_LABELS: Record<GroupType, string> = {
   operational: "Operacional",
@@ -645,7 +646,8 @@ export default function CategoriasManager({
 
               {/* Conceptos bancarios */}
               <div>
-                <label className="block text-xs font-semibold text-navy/45 uppercase tracking-wider mb-2">
+                <label className="flex items-center gap-1.5 text-xs font-semibold text-navy/45 uppercase tracking-wider mb-2">
+                  <AutomationIcon />
                   Conceptos bancarios
                 </label>
                 <ChipsInput
