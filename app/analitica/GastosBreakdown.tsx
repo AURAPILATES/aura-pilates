@@ -219,7 +219,7 @@ export default function GastosBreakdown({
                   {GROUP_LABELS[group]}
                 </p>
                 <p className="text-[10px] text-navy/45 tabular-nums">
-                  −{fmtAmount(groupTotal)} · {pct(groupShare)}
+                  {fmtAmount(groupTotal)} · {pct(groupShare)}
                 </p>
               </div>
               <div className="divide-y divide-navy/[0.05]">
@@ -253,7 +253,7 @@ export default function GastosBreakdown({
                         </div>
                         <div className="text-right shrink-0">
                           <p className="text-[12px] font-semibold text-navy tabular-nums">
-                            −{fmtAmount(seg.total)}
+                            {fmtAmount(seg.total)}
                           </p>
                           <p className="text-xs text-navy/50 tabular-nums">{pct(seg.share)}</p>
                         </div>
@@ -272,10 +272,10 @@ export default function GastosBreakdown({
                               >
                                 <CategoryIcon name={ch.label} color={ch.color} iconKey={ch.iconKey} small />
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-[11.5px] font-medium text-navy/80 truncate">{ch.label}</p>
+                                  <p className="text-[11.5px] font-medium text-navy/90 truncate">{ch.label}</p>
                                 </div>
-                                <p className="text-[11.5px] text-navy/55 tabular-nums shrink-0">
-                                  −{fmtAmount(ch.total)} · {pct(chShare)}
+                                <p className="text-[11.5px] text-navy/70 tabular-nums shrink-0">
+                                  {fmtAmount(ch.total)} · {pct(chShare)}
                                 </p>
                               </button>
                             );
@@ -300,7 +300,7 @@ export default function GastosBreakdown({
               <div className="min-w-0">
                 <h2 className="text-base font-semibold text-navy">{selectedInfo.label}</h2>
                 <p className="text-xs text-navy/55 mt-0.5">
-                  −{fmtAmount(selectedInfo.total)} · {selectedInfo.count} transacciones
+                  {fmtAmount(selectedInfo.total)} · {selectedInfo.count} transacciones
                 </p>
               </div>
             </div>
