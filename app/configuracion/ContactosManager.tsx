@@ -154,7 +154,7 @@ function ContactDetailDrawer({ contact, categories, stats, onChange, onRemove, o
         </div>
 
         <div className="p-4 border-b border-navy/[0.06] space-y-3">
-          <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider">Etiqueta</p>
+          <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider">Nombre</p>
           <input
             type="text"
             value={label}
@@ -167,7 +167,7 @@ function ContactDetailDrawer({ contact, categories, stats, onChange, onRemove, o
               IVA <RateInput value={contact.ivaRate} onSave={(v) => onChange({ ivaRate: v })} />%
             </label>
             <label className="flex items-center gap-2 text-xs text-navy/45">
-              Ret. IRPF <RateInput value={contact.retencionRate} onSave={(v) => onChange({ retencionRate: v })} />%
+              IRPF <RateInput value={contact.retencionRate} onSave={(v) => onChange({ retencionRate: v })} />%
             </label>
           </div>
         </div>
@@ -266,7 +266,7 @@ function NewContactForm({ categories, onCreated, onCancel }: {
     >
       <div className="px-6 py-5 space-y-4">
         <div>
-          <label className="block text-xs font-medium text-navy/55 mb-1">Etiqueta</label>
+          <label className="block text-xs font-medium text-navy/55 mb-1">Nombre</label>
           <input
             type="text" placeholder="Cómo quieres que se muestre"
             value={label} onChange={(e) => setLabel(e.target.value)}
@@ -442,12 +442,12 @@ export default function ContactosManager({ contacts: initialContacts, categories
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-navy/[0.02] border-b border-navy/[0.06]">
-              <th className="text-left px-4 py-2 text-[11px] text-navy/45 font-semibold uppercase tracking-wide">Etiqueta</th>
+              <th className="text-left px-4 py-2 text-[11px] text-navy/45 font-semibold uppercase tracking-wide">Nombre</th>
               <th className="text-left px-4 py-2 text-[11px] text-navy/45 font-semibold uppercase tracking-wide">Categoría</th>
               <th className="text-left px-4 py-2 text-[11px] text-navy/45 font-semibold uppercase tracking-wide">Conceptos bancarios</th>
               <th className="text-right px-4 py-2 text-[11px] text-navy/45 font-semibold uppercase tracking-wide">IVA</th>
-              <th className="text-right px-4 py-2 text-[11px] text-navy/45 font-semibold uppercase tracking-wide">Ret. IRPF</th>
-              <th className="text-right px-4 py-2 text-[11px] text-navy/45 font-semibold uppercase tracking-wide">Transacciones</th>
+              <th className="text-right px-4 py-2 text-[11px] text-navy/45 font-semibold uppercase tracking-wide">IRPF</th>
+              <th className="text-right px-4 py-2 text-[11px] text-navy/45 font-semibold uppercase tracking-wide">Movimientos</th>
             </tr>
           </thead>
           <tbody>
@@ -475,12 +475,12 @@ export default function ContactosManager({ contacts: initialContacts, categories
                   <td className="px-4 py-2.5 text-right text-navy/70 text-xs">{c.retencionRate > 0 ? `${c.retencionRate}%` : <span className="text-navy/30 text-[10px]">-</span>}</td>
                   <td className="px-4 py-2.5 text-right">
                     {stats ? (
-                      <span className="inline-flex items-center gap-1.5 justify-end">
-                        <span className="font-semibold text-navy">{stats.count}</span>
+                      <div className="flex flex-col items-end">
+                        <span className="font-medium text-navy">{stats.count}</span>
                         <span className={`text-[11px] ${stats.total >= 0 ? "text-success" : "text-navy/40"}`}>
                           {stats.total >= 0 ? "+" : "−"}{fmtAmt(stats.total)}
                         </span>
-                      </span>
+                      </div>
                     ) : (
                       <span className="text-navy/30">—</span>
                     )}

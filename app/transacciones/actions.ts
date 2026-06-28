@@ -740,6 +740,7 @@ export async function createRecurringExpenseFromTransaction(
   period: string,
   ivaRate: number,
   retencionRate: number,
+  end?: { type: "never" | "date" | "count"; date?: string | null; count?: number | null },
 ): Promise<void> {
   const bucket = PERIOD_BUCKETS.find((b) => b.label === period);
   if (!bucket) throw new Error("Periodo inválido");
@@ -766,6 +767,9 @@ export async function createRecurringExpenseFromTransaction(
       iva_rate: ivaRate,
       retencion_rate: retencionRate,
       status: "confirmed",
+      end_type: end?.type ?? "never",
+      end_date: end?.type === "date" ? end.date ?? null : null,
+      end_count: end?.type === "count" ? end.count ?? null : null,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "key" },

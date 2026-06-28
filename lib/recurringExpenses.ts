@@ -5,6 +5,7 @@ import type { Transaction } from "@/lib/transactions";
 import type { Category } from "@/lib/categories";
 
 export type RecurringExpenseStatus = "confirmed" | "ignored" | "cancelled";
+export type RecurringExpenseEndType = "never" | "date" | "count";
 
 export type RecurringExpense = {
   id: number;
@@ -16,7 +17,11 @@ export type RecurringExpense = {
   amount: number; // negativo
   iva_rate: number;
   retencion_rate: number;
+  contact_id: number | null;
   status: RecurringExpenseStatus;
+  end_type: RecurringExpenseEndType;
+  end_date: string | null;
+  end_count: number | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -57,7 +62,9 @@ export function forecastConfirmedExpenses(
     const s = seriesByKey.get(e.key);
     const lastDate = s ? s.transactions[s.transactions.length - 1].date : null;
     if (!lastDate) continue; // sin movimientos que lo respalden todavía
+    if (e.end_type === "count" && e.end_count != null && s!.transactions.length >= e.end_count) continue;
     const { nextDate, daysUntil } = projectNextDate(lastDate, e.period_days, referenceDate);
+    if (e.end_type === "date" && e.end_date && nextDate > e.end_date) continue;
     result.push({
       key: e.key,
       label: e.label,

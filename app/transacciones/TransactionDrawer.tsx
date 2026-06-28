@@ -6,6 +6,7 @@ import Drawer from "@/app/components/Drawer";
 import type { Transaction, PaymentMethod } from "@/lib/transactions";
 import type { Category } from "@/lib/categories";
 import { PERIOD_BUCKETS } from "@/lib/recurring";
+import type { RecurringExpense, RecurringExpenseEndType } from "@/lib/recurringExpenses";
 import { CategoryPill, SourceAvatar } from "./TransaccionesList";
 import { createRecurringExpenseFromTransaction, removeRecurringExpenseForTransaction, assignContactToTransaction, type Contact } from "./actions";
 
@@ -148,63 +149,129 @@ function ContactPicker({ transactionId, value, contacts, onSaved }: { transactio
   );
 }
 
-function MarkRecurringControl({ transactionId, isIncome, initiallyRecurring, initialPeriod }: { transactionId: string; isIncome: boolean; initiallyRecurring: boolean; initialPeriod?: string }) {
+const END_TYPE_OPTIONS: { value: RecurringExpenseEndType; label: string }[] = [
+  { value: "never", label: "Nunca" },
+  { value: "date", label: "En una fecha" },
+  { value: "count", label: "Tras X repeticiones" },
+];
+
+function MarkRecurringControl({
+  transactionId,
+  isIncome,
+  initiallyRecurring,
+  initialPeriod,
+  initialEndType,
+  initialEndDate,
+  initialEndCount,
+}: {
+  transactionId: string;
+  isIncome: boolean;
+  initiallyRecurring: boolean;
+  initialPeriod?: string;
+  initialEndType?: RecurringExpenseEndType;
+  initialEndDate?: string | null;
+  initialEndCount?: number | null;
+}) {
   const [checked, setChecked] = useState(initiallyRecurring);
   const [period, setPeriod] = useState(initialPeriod ?? "mensual");
-  const [saving, setSaving] = useState(false);
+  const [endType, setEndType] = useState<RecurringExpenseEndType>(initialEndType ?? "never");
+  const [endDate, setEndDate] = useState(initialEndDate ?? "");
+  const [endCount, setEndCount] = useState(initialEndCount != null ? String(initialEndCount) : "");
+  const [periodSaving, setPeriodSaving] = useState(false);
   const router = useRouter();
+
+  function buildEnd(type: RecurringExpenseEndType, date: string, count: string) {
+    return {
+      type,
+      date: type === "date" ? date || null : null,
+      count: type === "count" ? parseInt(count, 10) || null : null,
+    };
+  }
 
   async function toggle(next: boolean) {
     setChecked(next);
-    setSaving(true);
-    try {
-      if (next) {
-        await createRecurringExpenseFromTransaction(transactionId, period, 21, 0);
-      } else {
-        await removeRecurringExpenseForTransaction(transactionId);
-      }
+    if (next) {
+      createRecurringExpenseFromTransaction(transactionId, period, 21, 0, buildEnd(endType, endDate, endCount)).then(() => router.refresh());
+    } else {
+      await removeRecurringExpenseForTransaction(transactionId);
       router.refresh();
-    } finally {
-      setSaving(false);
     }
   }
 
-  async function changePeriod(next: string) {
-    setPeriod(next);
-    setSaving(true);
+  async function save(next: { period?: string; endType?: RecurringExpenseEndType; endDate?: string; endCount?: string }) {
+    const p = next.period ?? period;
+    const et = next.endType ?? endType;
+    const ed = next.endDate ?? endDate;
+    const ec = next.endCount ?? endCount;
+    setPeriodSaving(true);
     try {
-      await createRecurringExpenseFromTransaction(transactionId, next, 21, 0);
+      await createRecurringExpenseFromTransaction(transactionId, p, 21, 0, buildEnd(et, ed, ec));
       router.refresh();
     } finally {
-      setSaving(false);
+      setPeriodSaving(false);
     }
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-3 pt-3 border-t border-navy/[0.06]">
       <label className="flex items-center gap-2 text-sm font-medium text-navy cursor-pointer">
         <input
           type="checkbox"
           checked={checked}
-          disabled={saving}
           onChange={(e) => toggle(e.target.checked)}
-          className="w-4 h-4 rounded border-navy/[0.25] text-primary focus:ring-2 focus:ring-primary/15"
+          className="w-4 h-4 rounded border-navy/[0.25] accent-navy focus:ring-2 focus:ring-navy/15"
         />
         {isIncome ? "Es un ingreso recurrente" : "Es un gasto recurrente"}
       </label>
       {checked && (
-        <div className="flex items-center gap-2 pl-6">
-          <label className="text-sm text-navy/45">Periodicidad</label>
-          <select
-            value={period}
-            disabled={saving}
-            onChange={(e) => changePeriod(e.target.value)}
-            className="text-base border border-navy/[0.12] rounded-lg px-2 py-1.5 outline-none focus:border-primary/50 disabled:opacity-50"
-          >
-            {PERIOD_BUCKETS.map((b) => (
-              <option key={b.label} value={b.label}>{b.label}</option>
-            ))}
-          </select>
+        <div className="flex flex-col gap-2 pl-6">
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-navy/45">Periodicidad</label>
+            <select
+              value={period}
+              disabled={periodSaving}
+              onChange={(e) => { setPeriod(e.target.value); save({ period: e.target.value }); }}
+              className="text-base border border-navy/[0.12] rounded-lg px-2 py-1.5 outline-none focus:border-primary/50 disabled:opacity-50"
+            >
+              {PERIOD_BUCKETS.map((b) => (
+                <option key={b.label} value={b.label}>{b.label}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-navy/45">Finaliza</label>
+            <select
+              value={endType}
+              disabled={periodSaving}
+              onChange={(e) => { const v = e.target.value as RecurringExpenseEndType; setEndType(v); save({ endType: v }); }}
+              className="text-base border border-navy/[0.12] rounded-lg px-2 py-1.5 outline-none focus:border-primary/50 disabled:opacity-50"
+            >
+              {END_TYPE_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+            {endType === "date" && (
+              <input
+                type="date"
+                value={endDate}
+                disabled={periodSaving}
+                onChange={(e) => { setEndDate(e.target.value); save({ endDate: e.target.value }); }}
+                className="text-sm border border-navy/[0.12] rounded-lg px-2 py-1.5 outline-none focus:border-primary/50 disabled:opacity-50"
+              />
+            )}
+            {endType === "count" && (
+              <input
+                type="number"
+                min={1}
+                value={endCount}
+                disabled={periodSaving}
+                onChange={(e) => setEndCount(e.target.value)}
+                onBlur={(e) => save({ endCount: e.target.value })}
+                placeholder="repeticiones"
+                className="w-28 text-sm border border-navy/[0.12] rounded-lg px-2 py-1.5 outline-none focus:border-primary/50 disabled:opacity-50"
+              />
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -216,6 +283,7 @@ export default function TransactionDrawer({
   categories,
   contacts,
   recurringPeriod,
+  recurringExpense,
   onClose,
   onUpdateConcept,
   onUpdateBankDetails,
@@ -228,6 +296,7 @@ export default function TransactionDrawer({
   categories: Category[];
   contacts: Contact[];
   recurringPeriod?: string;
+  recurringExpense?: RecurringExpense | null;
   onClose: () => void;
   onUpdateConcept: (id: string, value: string) => void;
   onUpdateBankDetails: (id: string, value: string) => void;
@@ -341,8 +410,11 @@ export default function TransactionDrawer({
         <MarkRecurringControl
           transactionId={t.id}
           isIncome={t.amount > 0}
-          initiallyRecurring={!!recurringPeriod}
-          initialPeriod={recurringPeriod}
+          initiallyRecurring={recurringExpense?.status === "confirmed" || !!recurringPeriod}
+          initialPeriod={recurringExpense?.period ?? recurringPeriod}
+          initialEndType={recurringExpense?.end_type}
+          initialEndDate={recurringExpense?.end_date}
+          initialEndCount={recurringExpense?.end_count}
         />
       </div>
     </Drawer>

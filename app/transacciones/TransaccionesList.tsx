@@ -5,6 +5,8 @@ import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import type { Transaction, PaymentMethod } from "@/lib/transactions";
 import type { Category } from "@/lib/categories";
 import { sortCategoriesHierarchical, categoryDisplayLabel } from "@/lib/categories";
+import { seriesKeyFor } from "@/lib/recurring";
+import type { RecurringExpense } from "@/lib/recurringExpenses";
 import { updateTransactionCategory, updateTransactionConcept, updateTransactionContact, updateTransactionBankDetails, updateTransactionDate, updateTransactionPaymentMethod, softDeleteTransactions, type Contact } from "./actions";
 import DateFilter from "@/app/components/DateFilter";
 import ImportButton from "./ImportButton";
@@ -242,7 +244,7 @@ function CategoryMultiFilter({
 
 /** Pill visual de categoría, sin interacción — para mostrar en sitios de solo lectura como
  * la tabla de contactos. CategoryPill la usa por dentro para el botón interactivo. */
-export function CategoryBadge({ category, categories, hideIcon = false }: { category: string | null; categories: Category[]; hideIcon?: boolean }) {
+export function CategoryBadge({ category, categories, hideIcon = false, compact = false }: { category: string | null; categories: Category[]; hideIcon?: boolean; compact?: boolean }) {
   const cat = category ? categories.find((c) => c.value === category) : undefined;
   const cfg = cat ? {
     emoji: cat.emoji,
@@ -255,16 +257,16 @@ export function CategoryBadge({ category, categories, hideIcon = false }: { cate
   const iconName = cat?.label ?? label;
   return (
     <span
-      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium whitespace-nowrap"
+      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-medium whitespace-nowrap ${compact ? "text-[10px]" : "text-[11px]"}`}
       style={{ backgroundColor: cfg.bg, color: cfg.color }}
     >
-      {!hideIcon && <CatIcon iconKey={cfg.emoji} name={iconName} color={cfg.color} />}
+      {!hideIcon && <CatIcon iconKey={cfg.emoji} name={iconName} color={cfg.color} size={compact ? 11 : 12} />}
       <span>{label}</span>
     </span>
   );
 }
 
-export function CategoryPill({ category, categories, onChange, hideIcon = false }: { category: string | null; categories: Category[]; onChange: (cat: string | null) => void; hideIcon?: boolean }) {
+export function CategoryPill({ category, categories, onChange, hideIcon = false, compact = false }: { category: string | null; categories: Category[]; onChange: (cat: string | null) => void; hideIcon?: boolean; compact?: boolean }) {
   const [open, setOpen] = useState(false);
   const [dropPos, setDropPos] = useState<{ top: number; left: number } | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -297,7 +299,7 @@ export function CategoryPill({ category, categories, onChange, hideIcon = false 
         onClick={handleToggle}
         className="inline-block rounded-full hover:brightness-95 transition-all"
       >
-        <CategoryBadge category={category} categories={categories} hideIcon={hideIcon} />
+        <CategoryBadge category={category} categories={categories} hideIcon={hideIcon} compact={compact} />
       </button>
       {open && dropPos && createPortal(
         <div
@@ -421,10 +423,8 @@ function MobileActionsMenu({ onExport, onPapelera }: { onExport: () => void; onP
 }
 
 function MoreOptionsMenu({
-  originFilter, setOriginFilter, onlyRecurring, setOnlyRecurring, onExport, onPapelera,
+  onlyRecurring, setOnlyRecurring, onExport, onPapelera,
 }: {
-  originFilter: string;
-  setOriginFilter: (v: string) => void;
   onlyRecurring: boolean;
   setOnlyRecurring: (v: boolean | ((prev: boolean) => boolean)) => void;
   onExport: () => void;
@@ -455,7 +455,7 @@ function MoreOptionsMenu({
     setOpen((v) => !v);
   }
 
-  const hasActive = originFilter !== "all" || onlyRecurring;
+  const hasActive = onlyRecurring;
 
   return (
     <div ref={wrapRef} className="relative">
@@ -478,19 +478,6 @@ function MoreOptionsMenu({
           className="fixed z-[9999] bg-white border border-navy/10 rounded-xl shadow-xl py-2"
           style={{ top: dropPos.top, left: dropPos.left, width: "220px" }}
         >
-          <div className="px-3 pb-2">
-            <SelectWrapper>
-              <select value={originFilter} onChange={(e) => setOriginFilter(e.target.value)} className={SELECT_CLS}>
-                <option value="all">Origen</option>
-                <option value="banco">CaixaBank</option>
-                <option value="efectivo">Efectivo Aura</option>
-                <option value="victor">Víctor</option>
-                <option value="celia">Celia</option>
-                <option value="olga">Olga</option>
-                <option value="carles">Carles</option>
-              </select>
-            </SelectWrapper>
-          </div>
           <button
             onClick={() => setOnlyRecurring((v) => !v)}
             className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors ${
@@ -543,9 +530,9 @@ function SortableHeader({
 }) {
   const isActive = currentKey === sortKey;
   return (
-    <th
+    <div
       onClick={() => onClick(sortKey)}
-      className={`${align === "right" ? "text-right" : "text-left"} ${className} py-3 text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none transition-colors ${
+      className={`${align === "right" ? "text-right" : "text-left"} ${className} text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none transition-colors ${
         isActive ? "text-navy" : "text-navy/45 hover:text-navy/70"
       }`}
     >
@@ -558,7 +545,7 @@ function SortableHeader({
           <polyline points="6 9 12 15 18 9" />
         </svg>
       </span>
-    </th>
+    </div>
   );
 }
 
@@ -567,12 +554,13 @@ type Props = {
   categories: Category[];
   uncategorizedCount: number;
   recurringPeriods: Record<string, string>;
+  recurringExpenses: RecurringExpense[];
   allMonthKeys: string[];
   contacts: Contact[];
 };
 
 export default function TransaccionesList({
-  transactions, categories, uncategorizedCount, recurringPeriods, allMonthKeys, contacts,
+  transactions, categories, uncategorizedCount, recurringPeriods, recurringExpenses, allMonthKeys, contacts,
 }: Props) {
   const router       = useRouter();
   const pathname     = usePathname();
@@ -692,6 +680,17 @@ export default function TransaccionesList({
     return [...map.entries()].sort((a, b) => b[0].localeCompare(a[0]));
   }, [filtered]);
 
+  // ── Month grouping for desktop ─────────────────────────────────────────────
+  const byMonth = useMemo(() => {
+    const map = new Map<string, Transaction[]>();
+    for (const t of filtered) {
+      const key = t.date.slice(0, 7);
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(t);
+    }
+    return [...map.entries()].sort((a, b) => b[0].localeCompare(a[0]));
+  }, [filtered]);
+
   const allFilteredIds = filtered.map((t) => t.id);
   const allSelected    = allFilteredIds.length > 0 && allFilteredIds.every((id) => selected.has(id));
   const someSelected   = selected.size > 0;
@@ -793,36 +792,42 @@ export default function TransaccionesList({
 
   return (
     <div>
-      {/* ── Desktop: KPI bar sticky (reactiva a filtros) ────────────────────── */}
-      <div className="hidden sm:block sm:sticky sm:top-[45px] sm:z-[15] sm:-mx-6 sm:bg-app-bg/95 sm:backdrop-blur-sm sm:border-b sm:border-navy/[0.06] mb-3">
-        <div className="flex items-stretch justify-start gap-5 px-6 py-4">
+      {/* ── Desktop: KPIs, directamente sobre el fondo (sin caja, estilo Apple) ── */}
+      <div className="hidden sm:block mb-4">
+        <div className="flex items-stretch justify-start gap-5 px-1 py-1">
           <div className="flex-initial min-w-[120px]">
             <p className="text-[12px] text-navy/40 uppercase tracking-wider leading-none mb-1 whitespace-nowrap">Entradas</p>
-            <p className="text-[13px] font-semibold text-success tabular-nums truncate">{fmtAmt(totalIn)}</p>
+            <p className="text-[15px] font-semibold text-success tabular-nums truncate">{fmtAmt(totalIn)}</p>
           </div>
           <div className="flex-initial min-w-[120px]">
             <p className="text-[12px] text-navy/40 uppercase tracking-wider leading-none mb-1 whitespace-nowrap">Salidas</p>
-            <p className="text-[13px] font-semibold text-[#B85C3A] tabular-nums truncate">−{fmtAmt(totalOut)}</p>
+            <p className="text-[15px] font-semibold text-[#B85C3A] tabular-nums truncate">−{fmtAmt(totalOut)}</p>
           </div>
           <div className="flex-initial min-w-[120px]">
-            <p className="text-[12px] text-navy/40 uppercase tracking-wider leading-none mb-1 whitespace-nowrap">Diferencia</p>
-            <p className={`text-[13px] font-semibold tabular-nums truncate ${neto >= 0 ? "text-navy" : "text-danger"}`}>
+            <p className="text-[12px] text-navy/40 uppercase tracking-wider leading-none mb-1 whitespace-nowrap">{someSelected ? "Neto selección" : "Diferencia"}</p>
+            <p className={`text-[15px] font-semibold tabular-nums truncate ${neto >= 0 ? "text-navy" : "text-danger"}`}>
               {neto < 0 && "−"}{fmtAmt(Math.abs(neto))}
             </p>
           </div>
-          {totalIn > 0 && (
+          {someSelected && (
+            <div className="flex-initial min-w-[120px]">
+              <p className="text-[12px] text-navy/40 uppercase tracking-wider leading-none mb-1 whitespace-nowrap">Seleccionados</p>
+              <p className="text-[15px] font-semibold text-primary tabular-nums truncate">{selected.size} mov.</p>
+            </div>
+          )}
+          {!someSelected && totalIn > 0 && (
             <span className="flex items-center text-xs text-navy/35 tabular-nums">
               margen {(neto / totalIn * 100).toFixed(1).replace(".", ",")}%
             </span>
           )}
           <div className="flex-1" />
-          {uncategorizedCount > 0 && (
+          {!someSelected && uncategorizedCount > 0 && (
             <button
               onClick={() => setCatFilters(catFilters.includes("__none__") ? catFilters.filter((v) => v !== "__none__") : [...catFilters, "__none__"])}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors self-center ${
                 catFilters.includes("__none__")
                   ? "bg-warning/10 text-warning/80"
-                  : "bg-navy/[0.04] text-navy/45 hover:bg-navy/[0.06] hover:text-navy/60"
+                  : "bg-warning/10 text-warning/80 hover:bg-warning/15"
               }`}
             >
               <span>⚠</span>
@@ -951,9 +956,18 @@ export default function TransaccionesList({
         </div>
         <DateFilter />
         <CategoryMultiFilter selected={catFilters} categories={categories} onChange={setCatFilters} />
+        <SelectWrapper>
+          <select value={originFilter} onChange={(e) => setOriginFilter(e.target.value)} className={SELECT_CLS}>
+            <option value="all">Origen</option>
+            <option value="banco">CaixaBank</option>
+            <option value="efectivo">Efectivo Aura</option>
+            <option value="victor">Víctor</option>
+            <option value="celia">Celia</option>
+            <option value="olga">Olga</option>
+            <option value="carles">Carles</option>
+          </select>
+        </SelectWrapper>
         <MoreOptionsMenu
-          originFilter={originFilter}
-          setOriginFilter={setOriginFilter}
           onlyRecurring={onlyRecurring}
           setOnlyRecurring={setOnlyRecurring}
           onExport={exportCSV}
@@ -964,13 +978,10 @@ export default function TransaccionesList({
 
       {/* ── Desktop: recuento ─────────────────────────────────────────────────── */}
       <div className="hidden sm:flex items-center gap-3 mb-5">
-        <span className="text-sm text-navy/45">
-          {someSelected
-            ? <>{selected.size} seleccionada{selected.size !== 1 ? "s" : ""} <span className="text-navy/30">de {filtered.length}</span></>
-            : <>{filtered.length} movimientos</>
-          }
-          {isPending && <span className="ml-2 text-xs text-primary/60">Guardando…</span>}
-        </span>
+        {!someSelected && (
+          <span className="text-sm text-navy/45">{filtered.length} movimientos</span>
+        )}
+        {isPending && <span className="text-xs text-primary/60">Guardando…</span>}
         {(catFilters.length > 0 || originFilter !== "all" || onlyRecurring || currentRange !== "all" || search !== "") && (
           <button
             onClick={() => {
@@ -1192,145 +1203,190 @@ export default function TransaccionesList({
         })}
       </div>
 
-      {/* ── Desktop table ──────────────────────────────────────────────────── */}
-      <div className="hidden sm:block bg-white border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden">
-        <table className="w-full" style={{ tableLayout: "fixed" }}>
-          <colgroup>
-            <col style={{ width: "44px" }} />
-            <col style={{ width: "330px" }} />
-            <col style={{ width: "130px" }} />
-            <col />
-            <col style={{ width: "172px" }} />
-            <col style={{ width: "110px" }} />
-            <col style={{ width: "128px" }} />
-          </colgroup>
-          <thead>
-            <tr className="border-b border-navy/[0.06] bg-navy/[0.012] group/head">
-              <th className="pl-3 py-3 align-middle">
-                <Checkbox checked={allSelected} onChange={toggleAll} />
-              </th>
-              <SortableHeader label="Concepto" sortKey="concept" align="left" className="pl-2 pr-4" currentKey={sortKey} dir={sortDir} onClick={toggleSort} />
-              <th className="text-left px-4 py-3 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Origen</th>
-              <th className="text-left px-4 py-3 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Contacto</th>
-              <th className="text-left px-4 py-3 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Categoría</th>
-              <SortableHeader label="Fecha" sortKey="date" align="right" className="px-4" currentKey={sortKey} dir={sortDir} onClick={toggleSort} />
-              <SortableHeader label="Importe" sortKey="amount" align="right" className="pr-6" currentKey={sortKey} dir={sortDir} onClick={toggleSort} />
-            </tr>
-          </thead>
-          <tbody className={isPending ? "opacity-50 pointer-events-none" : ""}>
-            {sortedFiltered.length === 0 && (
-              <tr>
-                <td colSpan={7} className="px-4 py-12 text-center text-sm text-navy/40">Sin resultados</td>
-              </tr>
-            )}
-            {sortedFiltered.map((t) => {
-              const recurringPeriod = recurringPeriods[t.id];
-              const isSelected  = selected.has(t.id);
-              const primary     = t.contact || t.concept || "—";
-              const secondary   = t.contact && t.concept && t.concept !== t.contact ? t.concept : null;
+      {/* ── Desktop: lista estilo Revolut (misma identidad visual que mobile) ── */}
+      {(() => {
+        const renderRow = (t: Transaction) => {
+          const recurringPeriod = recurringPeriods[t.id];
+          const isSelected = selected.has(t.id);
+          const primary    = t.contact || t.concept || "—";
+          const secondary  = t.contact && t.concept && t.concept !== t.contact ? t.concept : null;
+          const cat        = t.category ? categories.find((c) => c.value === t.category) : undefined;
+          const accent     = cat ? cat.text_color : CAT_FALLBACK.color;
+          const iconKey    = cat ? cat.emoji : CAT_FALLBACK.emoji;
 
-              return (
-                <tr
-                  key={t.id}
-                  onClick={() => setDrawerTxnId(t.id)}
-                  className={`border-b border-navy/[0.04] last:border-0 group transition-colors cursor-pointer ${
-                    isSelected ? "bg-primary/[0.03]" : "hover:bg-navy/[0.01]"
-                  }`}
-                >
-                  <td className="pl-3 py-2.5 align-middle">
-                    <div className="relative w-[22px] h-[22px] flex items-center justify-center">
-                      <div className={`absolute inset-0 flex items-center justify-center pointer-events-none transition-opacity ${isSelected ? "opacity-0" : "opacity-100 group-hover:opacity-0"}`}>
-                        <SourceAvatar method={t.payment_method} />
-                      </div>
-                      <div className={`absolute inset-0 flex items-center justify-center transition-opacity ${isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}>
-                        <Checkbox checked={isSelected} onChange={() => toggleOne(t.id)} />
-                      </div>
-                    </div>
-                  </td>
+          return (
+            <div
+              key={t.id}
+              onClick={() => setDrawerTxnId(t.id)}
+              className={`flex items-center gap-4 px-4 py-2.5 border-b border-navy/[0.04] last:border-0 group transition-colors cursor-pointer ${
+                isSelected ? "bg-primary/[0.03]" : "hover:bg-navy/[0.012]"
+              }`}
+            >
+              {/* avatar / checkbox */}
+              <div
+                className="relative w-9 h-9 shrink-0 flex items-center justify-center"
+                onClick={(e) => { e.stopPropagation(); toggleOne(t.id); }}
+              >
+                <div className={`absolute inset-0 flex items-center justify-center transition-opacity ${isSelected ? "opacity-0" : "opacity-100 group-hover:opacity-0"}`}>
+                  <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ backgroundColor: accent }}>
+                    <CatIcon iconKey={iconKey} name={cat?.label ?? primary} color="#fff" size={15} />
+                  </div>
+                </div>
+                <div className={`absolute inset-0 flex items-center justify-center transition-opacity ${isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}>
+                  <Checkbox checked={isSelected} onChange={() => toggleOne(t.id)} />
+                </div>
+              </div>
 
-                  <td className="pl-2 pr-4 py-2.5 align-middle overflow-hidden" onClick={(e) => e.stopPropagation()}>
-                    <div className="min-w-0">
-                      <div className="min-w-0">
-                        {editingField?.id === t.id && editingField.field === (t.contact != null ? "contact" : "concept") ? (
-                          <div className="flex items-center gap-2">
-                            <input
-                              autoFocus type="text" value={editValue}
-                              onChange={(e) => setEditValue(e.target.value)}
-                              onKeyDown={(e) => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") setEditingField(null); }}
-                              className="text-sm font-medium text-navy bg-navy/[0.04] rounded-md px-1.5 -mx-1.5 outline-none ring-1 ring-navy/10 focus:ring-navy/20 w-full"
-                            />
-                            <EditConfirmButtons onConfirm={saveEdit} onCancel={() => setEditingField(null)} />
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
-                            <span
-                              className="text-sm font-medium text-navy truncate cursor-pointer hover:text-navy/70 transition-colors"
-                              onClick={() => startEditing(t, "primary")}
-                            >{primary}</span>
-                            {recurringPeriod && (
-                              <span className="shrink-0 inline-flex items-center gap-1 text-[11px] text-primary/60 font-medium whitespace-nowrap">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                  <path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15"/>
-                                </svg>
-                                {recurringPeriod}
-                              </span>
-                            )}
-                          </div>
-                        )}
-                        {secondary && (
-                          editingField?.id === t.id && editingField.field === "concept" && t.contact != null ? (
-                            <div className="flex items-center gap-2 mt-0.5">
-                              <input
-                                autoFocus type="text" value={editValue}
-                                onChange={(e) => setEditValue(e.target.value)}
-                                onKeyDown={(e) => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") setEditingField(null); }}
-                                className="text-[11px] text-navy/60 bg-navy/[0.04] rounded-md px-1.5 -mx-1.5 outline-none ring-1 ring-navy/10 focus:ring-navy/20 w-full"
-                              />
-                              <EditConfirmButtons onConfirm={saveEdit} onCancel={() => setEditingField(null)} small />
-                            </div>
-                          ) : (
-                            <p
-                              className="text-[11px] text-navy/40 truncate mt-0.5 cursor-pointer hover:text-navy/60 transition-colors"
-                              onClick={() => startEditing(t, "secondary")}
-                            >{secondary}</p>
-                          )
-                        )}
-                      </div>
-                    </div>
-                  </td>
-
-                  <td className="px-4 py-3 align-middle">
-                    <span className="text-xs text-navy/55 whitespace-nowrap">{originLabel(t.payment_method)}</span>
-                  </td>
-                  <td className="px-4 py-3 align-middle overflow-hidden">
-                    <span className={`text-xs truncate block ${t.contact ? "text-navy/70" : "text-navy/35"}`}>
-                      {t.contact || "Sin asignar"}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 align-middle" onClick={(e) => e.stopPropagation()}>
-                    <CategoryPill category={t.category} categories={categories} onChange={(cat) => handleCategoryChange(t.id, cat)} />
-                  </td>
-
-                  <td className="px-4 py-3 align-middle text-right">
-                    <span className="text-xs text-navy/45 tabular-nums whitespace-nowrap">{fmtDate(t.date)}</span>
-                  </td>
-
-                  <td className="pr-6 pl-4 py-3 align-middle text-right">
-                    <div className="flex items-center justify-end gap-1.5">
-                      <span className={`text-sm font-semibold tabular-nums ${t.amount > 0 ? "text-success" : "text-navy/75"}`}>
-                        {t.amount > 0 ? "+" : "−"}{fmtAmt(t.amount)}
+              {/* concepto */}
+              <div className="flex-1 min-w-0" onClick={(e) => e.stopPropagation()}>
+                {editingField?.id === t.id && editingField.field === (t.contact != null ? "contact" : "concept") ? (
+                  <div className="flex items-center gap-2">
+                    <input
+                      autoFocus type="text" value={editValue}
+                      onChange={(e) => setEditValue(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") setEditingField(null); }}
+                      className="text-[13px] font-medium text-navy bg-navy/[0.04] rounded-md px-1.5 -mx-1.5 outline-none ring-1 ring-navy/10 focus:ring-navy/20 w-full"
+                    />
+                    <EditConfirmButtons onConfirm={saveEdit} onCancel={() => setEditingField(null)} />
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
+                    <span
+                      className="text-[13px] font-medium text-navy truncate cursor-pointer hover:text-navy/70 transition-colors"
+                      onClick={() => startEditing(t, "primary")}
+                    >{primary}</span>
+                    {recurringPeriod && (
+                      <span className="shrink-0 inline-flex items-center gap-1 text-[11px] text-primary/60 font-medium whitespace-nowrap">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15"/>
+                        </svg>
+                        {recurringPeriod}
                       </span>
-                    </div>
-                    {t.balance != null && (
-                      <p className="text-[10px] text-navy/40 tabular-nums mt-0.5">{fmtAmt(t.balance)}</p>
                     )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+                  </div>
+                )}
+                {secondary && (
+                  editingField?.id === t.id && editingField.field === "concept" && t.contact != null ? (
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <input
+                        autoFocus type="text" value={editValue}
+                        onChange={(e) => setEditValue(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") setEditingField(null); }}
+                        className="text-xs text-navy/60 bg-navy/[0.04] rounded-md px-1.5 -mx-1.5 outline-none ring-1 ring-navy/10 focus:ring-navy/20 w-full"
+                      />
+                      <EditConfirmButtons onConfirm={saveEdit} onCancel={() => setEditingField(null)} small />
+                    </div>
+                  ) : (
+                    <p
+                      className="text-xs text-navy/40 truncate mt-0.5 cursor-pointer hover:text-navy/60 transition-colors"
+                      onClick={() => startEditing(t, "secondary")}
+                    >{secondary}</p>
+                  )
+                )}
+              </div>
+
+              {/* origen */}
+              <div className="w-[110px] shrink-0 flex items-center gap-1.5 text-navy/40">
+                {t.payment_method === "efectivo" ? (
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                    <rect x="2" y="6" width="20" height="14" rx="2"/><circle cx="12" cy="13" r="3"/><path d="M6 10h.01M18 10h.01"/>
+                  </svg>
+                ) : t.payment_method === "banco" ? (
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                    <path d="M3 21h18M4 21V10l8-6 8 6v11M9 21v-6h6v6"/>
+                  </svg>
+                ) : (
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                    <circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"/>
+                  </svg>
+                )}
+                <span className="text-xs leading-none whitespace-nowrap truncate">{originLabel(t.payment_method)}</span>
+              </div>
+
+              {/* contacto */}
+              <div className="w-[140px] shrink-0 overflow-hidden">
+                <span className={`text-xs truncate block ${t.contact ? "text-navy/55" : "text-navy/30"}`}>
+                  {t.contact || "Sin asignar"}
+                </span>
+              </div>
+
+              {/* categoría */}
+              <div className="w-[170px] shrink-0" onClick={(e) => e.stopPropagation()}>
+                <CategoryPill category={t.category} categories={categories} onChange={(cat) => handleCategoryChange(t.id, cat)} compact />
+              </div>
+
+              {/* fecha */}
+              <div className="w-[90px] shrink-0 text-right">
+                <span className="text-xs text-navy/45 tabular-nums whitespace-nowrap">{fmtDate(t.date)}</span>
+              </div>
+
+              {/* importe */}
+              <div className="w-[120px] shrink-0 text-right">
+                <span className={`text-sm font-semibold tabular-nums ${t.amount > 0 ? "text-success" : "text-navy/75"}`}>
+                  {t.amount > 0 ? "+" : "−"}{fmtAmt(t.amount)}
+                </span>
+                {t.balance != null && (
+                  <p className="text-[10px] text-navy/40 tabular-nums mt-0.5">{fmtAmt(t.balance)}</p>
+                )}
+              </div>
+            </div>
+          );
+        };
+
+        const headerRow = (
+          <div className="flex items-center gap-4 px-4 py-2.5 border-b border-navy/[0.06] bg-navy/[0.012] group/head">
+            <div className="w-9 shrink-0 flex items-center pl-[3px]">
+              <Checkbox checked={allSelected} onChange={toggleAll} />
+            </div>
+            <SortableHeader label="Concepto" sortKey="concept" align="left" className="flex-1" currentKey={sortKey} dir={sortDir} onClick={toggleSort} />
+            <div className="w-[110px] shrink-0 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Origen</div>
+            <div className="w-[140px] shrink-0 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Contacto</div>
+            <div className="w-[170px] shrink-0 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Categoría</div>
+            <SortableHeader label="Fecha" sortKey="date" align="right" className="w-[90px]" currentKey={sortKey} dir={sortDir} onClick={toggleSort} />
+            <SortableHeader label="Importe / Saldo" sortKey="amount" align="right" className="w-[120px]" currentKey={sortKey} dir={sortDir} onClick={toggleSort} />
+          </div>
+        );
+
+        return (
+          <div className="hidden sm:block">
+            {sortedFiltered.length === 0 ? (
+              <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden">
+                {headerRow}
+                <p className="py-12 text-center text-sm text-navy/40">Sin resultados</p>
+              </div>
+            ) : sortKey ? (
+              /* Orden manual activo → lista plana, sin agrupar por mes */
+              <div className={`bg-white border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden ${isPending ? "opacity-50 pointer-events-none" : ""}`}>
+                {headerRow}
+                {sortedFiltered.map(renderRow)}
+              </div>
+            ) : (
+              /* Agrupado por mes, lista continua */
+              <div className={`bg-white border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden ${isPending ? "opacity-50 pointer-events-none" : ""}`}>
+                {headerRow}
+                {byMonth.map(([monthKey, monthTxns]) => {
+                  const monthNet = monthTxns.reduce((s, t) => s + t.amount, 0);
+                  const [y, m] = monthKey.split("-");
+                  const monthName = MONTHS_ES[parseInt(m) - 1];
+                  const label = monthName.charAt(0).toUpperCase() + monthName.slice(1)
+                    + (parseInt(y) !== new Date().getFullYear() ? ` ${y}` : "");
+                  return (
+                    <div key={monthKey}>
+                      <div className="flex items-baseline justify-between px-4 py-3 bg-navy/[0.035] border-y border-navy/[0.08]">
+                        <span className="text-[15px] font-bold text-navy">{label}</span>
+                        <span className={`text-sm font-semibold tabular-nums ${monthNet < 0 ? "text-danger" : "text-success"}`}>
+                          {monthNet < 0 ? "−" : "+"}{fmtAmt(Math.abs(monthNet))}
+                        </span>
+                      </div>
+                      {monthTxns.map(renderRow)}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {showAddCash && (
         <AddCashModal categories={categories} onClose={() => setShowAddCash(false)} />
@@ -1344,6 +1400,7 @@ export default function TransaccionesList({
           categories={categories}
           contacts={contacts}
           recurringPeriod={recurringPeriods[drawerTxn.id]}
+          recurringExpense={recurringExpenses.find((e) => e.key === seriesKeyFor(drawerTxn)) ?? null}
           onClose={() => setDrawerTxnId(null)}
           onUpdateConcept={handleConceptChange}
           onUpdateBankDetails={handleBankDetailsChange}

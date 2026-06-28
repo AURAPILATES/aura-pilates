@@ -21,6 +21,7 @@ type Props = {
   categories: Category[];
   uncategorizedCount: number;
   recurringPeriods: Record<string, string>;
+  recurringExpenses: RecurringExpense[];
   allMonthKeys: string[];
   contacts: Contact[];
   pendingRecurring: PendingSeriesRow[];
@@ -33,6 +34,7 @@ export default function TransaccionesTabs({
   categories,
   uncategorizedCount,
   recurringPeriods,
+  recurringExpenses,
   allMonthKeys,
   contacts,
   pendingRecurring,
@@ -79,6 +81,7 @@ export default function TransaccionesTabs({
           categories={categories}
           uncategorizedCount={uncategorizedCount}
           recurringPeriods={recurringPeriods}
+          recurringExpenses={recurringExpenses}
           allMonthKeys={allMonthKeys}
           contacts={contacts}
         />

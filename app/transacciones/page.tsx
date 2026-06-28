@@ -99,6 +99,7 @@ export default async function TransaccionesPage(props: {
             categories={categories}
             uncategorizedCount={uncategorizedCount}
             recurringPeriods={recurringPeriods}
+            recurringExpenses={expenses}
             allMonthKeys={allMonthKeys}
             contacts={contacts}
             pendingRecurring={pendingRecurring}
