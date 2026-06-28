@@ -61,7 +61,7 @@ function Field({ label, value, onSave }: { label: string; value: string; onSave:
  * bancarios) prellenado con los datos de este movimiento, igual que al crear uno desde
  * Configuración > Contactos. */
 function TransactionContactPicker({
-  transactionId, value, contacts, categories, concept, bankDetails, category, onSaved,
+  transactionId, value, contacts, categories, concept, bankDetails, category, ivaRate, retencionRate, onSaved,
 }: {
   transactionId: string;
   value: string;
@@ -70,6 +70,8 @@ function TransactionContactPicker({
   concept: string | null;
   bankDetails: string | null;
   category: string | null;
+  ivaRate: number | null;
+  retencionRate: number | null;
   onSaved: () => void;
 }) {
   const [saving, setSaving] = useState(false);
@@ -111,6 +113,8 @@ function TransactionContactPicker({
           initialLabel={draftNewLabel}
           initialPatterns={derivedPattern === "sin-concepto" ? [] : [derivedPattern]}
           initialCategory={category}
+          initialIvaRate={ivaRate ?? 0}
+          initialRetencionRate={retencionRate ?? 0}
           onCancel={cancelNewLabel}
           onCreated={(contact) => { setDraftNewLabel(null); link(contact.label); }}
         />
@@ -353,6 +357,8 @@ export default function TransactionDrawer({
             concept={t.concept}
             bankDetails={t.bank_details}
             category={t.category}
+            ivaRate={t.iva_rate}
+            retencionRate={t.retencion_rate}
             onSaved={() => router.refresh()}
           />
         </div>

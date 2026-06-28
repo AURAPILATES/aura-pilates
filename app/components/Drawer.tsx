@@ -1,6 +1,10 @@
 "use client";
 import { useEffect } from "react";
 
+/** Pila de drawers abiertos (puede haber varios apilados, ej. NewContactDrawer sobre
+ * TransactionDrawer) — Escape solo debe cerrar el de más arriba, no todos a la vez. */
+const openDrawers: Array<() => void> = [];
+
 export default function Drawer({
   title,
   subtitle,
@@ -19,8 +23,16 @@ export default function Drawer({
   maxWidth?: string;
 }) {
   useEffect(() => {
+    openDrawers.push(onClose);
+    return () => {
+      const idx = openDrawers.lastIndexOf(onClose);
+      if (idx !== -1) openDrawers.splice(idx, 1);
+    };
+  }, [onClose]);
+
+  useEffect(() => {
     const handler = (ev: KeyboardEvent) => {
-      if (ev.key === "Escape") onClose();
+      if (ev.key === "Escape" && openDrawers[openDrawers.length - 1] === onClose) onClose();
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);

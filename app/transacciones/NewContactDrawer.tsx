@@ -23,6 +23,8 @@ export default function NewContactDrawer({
   initialLabel = "",
   initialPatterns = [],
   initialCategory = null,
+  initialIvaRate = 0,
+  initialRetencionRate = 0,
   onCreated,
   onCancel,
 }: {
@@ -30,14 +32,16 @@ export default function NewContactDrawer({
   initialLabel?: string;
   initialPatterns?: string[];
   initialCategory?: string | null;
+  initialIvaRate?: number;
+  initialRetencionRate?: number;
   onCreated: (contact: Contact) => void;
   onCancel: () => void;
 }) {
   const [patterns, setPatterns] = useState<string[]>(initialPatterns);
   const [label, setLabel] = useState(initialLabel);
   const [category, setCategory] = useState<string | null>(initialCategory);
-  const [ivaRate, setIvaRate] = useState("0");
-  const [retencionRate, setRetencionRate] = useState("0");
+  const [ivaRate, setIvaRate] = useState(String(initialIvaRate));
+  const [retencionRate, setRetencionRate] = useState(String(initialRetencionRate));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
