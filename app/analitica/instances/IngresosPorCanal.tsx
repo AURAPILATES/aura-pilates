@@ -17,10 +17,18 @@ const EvolucionIngresosBody = dynamic(() => import("./EvolucionIngresosBody"), {
 type MethodRow = { key: string; label: string; revenue: number; count: number; bar: string };
 
 const CHANNEL_LABELS: Record<string, string> = { Interna: "Interno", Urban: "Urban Sports Club" };
+// Nombres cortos para el gráfico de evolución (leyenda y tooltip) — el panel "Por canal"
+// usa el nombre completo de Urban Sports Club, pero en el gráfico ambos deben leerse igual de cortos.
+const CHART_LABELS: Record<string, string> = { Interna: "Interno", Urban: "Urban" };
+const CHART_COLORS: Record<string, string> = { Interno: PROCEDENCIA_COLORS.Interna, Urban: PROCEDENCIA_COLORS.Urban };
 const EMPTY_HIDDEN = new Set<string>();
 
 function colorOf(key: string) {
   return PROCEDENCIA_COLORS[key] ?? "#6B7280";
+}
+
+function chartColorOf(key: string) {
+  return CHART_COLORS[key] ?? "#6B7280";
 }
 
 export default function IngresosPorCanal({
@@ -76,10 +84,11 @@ export default function IngresosPorCanal({
   }
 
   const { months, data } = buildSeriesFromProcedencia(monthly);
-  const keys = ["Interna", "Urban"].filter((k) => months.some((m) => (data.get(m)?.get(k) ?? 0) > 0));
+  const rawKeys = ["Interna", "Urban"].filter((k) => months.some((m) => (data.get(m)?.get(k) ?? 0) > 0));
+  const keys = rawKeys.map((k) => CHART_LABELS[k] ?? k);
   const evolRows: EvolucionRow[] = months.map((m) => {
     const row: EvolucionRow = { month: m, label: periodLabel(m, "mes") };
-    for (const k of keys) row[k] = data.get(m)?.get(k) ?? 0;
+    for (const rk of rawKeys) row[CHART_LABELS[rk] ?? rk] = data.get(m)?.get(rk) ?? 0;
     return row;
   });
 
@@ -106,8 +115,8 @@ export default function IngresosPorCanal({
           <div className="flex gap-3 mb-2">
             {keys.map((k) => (
               <div key={k} className="flex items-center gap-1.5 text-xs text-navy/55">
-                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: colorOf(k) }} />
-                {CHANNEL_LABELS[k] ?? k}
+                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: chartColorOf(k) }} />
+                {k}
               </div>
             ))}
           </div>
@@ -118,7 +127,7 @@ export default function IngresosPorCanal({
             hoveredLegendKey={null}
             chartType="line"
             view="procedencia"
-            colorOf={colorOf}
+            colorOf={chartColorOf}
             eventsByMonth={eventsByMonth}
           />
         </div>

@@ -22,7 +22,9 @@ export const GROUP_COLORS: Record<EconomicGroup, string> = {
 export const GROUP_ORDER: EconomicGroup[] = ["personal", "operational", "capex"];
 
 export function fmtAmount(n: number) {
-  return n.toLocaleString("es-ES", { maximumFractionDigits: 0 }) + " €";
+  // "es-ES" solo agrupa millares a partir de 5 cifras (quirk de CLDR); "de-DE" usa el
+  // mismo separador (punto) pero agrupa siempre a partir de 1000, dando un formato consistente.
+  return Math.round(n).toLocaleString("de-DE", { maximumFractionDigits: 0 }) + " €";
 }
 function pct(n: number) {
   return `${Math.round(n * 100)}%`;
@@ -58,7 +60,7 @@ export default function GastosResumenGeneral({
         {segments.map((seg) => (
           <div
             key={seg.group}
-            style={{ width: `${seg.share * 100}%`, backgroundColor: GROUP_COLORS[seg.group] }}
+            style={{ flex: `${seg.share} 0 0%`, backgroundColor: GROUP_COLORS[seg.group] }}
           />
         ))}
       </div>
@@ -77,7 +79,7 @@ export default function GastosResumenGeneral({
               <span className="text-[13px] font-medium text-navy flex-1 min-w-0 truncate">{GROUP_LABELS[seg.group]}</span>
             </div>
             <div className="flex items-baseline justify-between pl-4">
-              <span className="text-[13px] font-semibold text-navy tabular-nums">−{fmtAmount(seg.total)}</span>
+              <span className="text-[13px] font-semibold text-navy tabular-nums">{fmtAmount(seg.total)}</span>
               <span className="text-xs text-navy/50 tabular-nums">{pct(seg.share)}</span>
             </div>
           </button>

@@ -61,28 +61,18 @@ export default function EvolucionGastosBody({ groups, period }: { groups: GroupT
   }
 
   return (
-    <>
-      <div style={{ width: "100%", height: 280 }}>
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={rows} margin={{ top: 16, right: 8, bottom: 0, left: 0 }}>
-            <CartesianGrid strokeDasharray="4 3" stroke="rgba(28,25,23,0.07)" vertical={false} />
-            <XAxis dataKey="label" tick={{ fontSize: 10, fill: "rgba(28,25,23,0.45)" }} tickLine={false} axisLine={false} />
-            <YAxis tickFormatter={fmtTick} tick={{ fontSize: 10, fill: "rgba(28,25,23,0.45)" }} tickLine={false} axisLine={false} width={34} />
-            <Tooltip content={GastosTooltip} cursor={{ fill: "rgba(28,25,23,0.04)" }} />
-            {GROUP_ORDER.map((g) => (
-              <Bar key={g} dataKey={g} stackId="a" fill={GROUP_COLORS[g]} radius={[2, 2, 0, 0]} />
-            ))}
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-      <div className="flex gap-3 flex-wrap mt-3">
-        {GROUP_ORDER.map((g) => (
-          <div key={g} className="flex items-center gap-1.5 text-xs text-navy/55">
-            <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: GROUP_COLORS[g] }} />
-            {GROUP_LABELS[g]}
-          </div>
-        ))}
-      </div>
-    </>
+    <div style={{ width: "100%", height: 280 }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={rows} margin={{ top: 16, right: 8, bottom: 0, left: 0 }}>
+          <CartesianGrid strokeDasharray="4 3" stroke="rgba(28,25,23,0.07)" vertical={false} />
+          <XAxis dataKey="label" tick={{ fontSize: 10, fill: "rgba(28,25,23,0.45)" }} tickLine={false} axisLine={false} />
+          <YAxis tickFormatter={fmtTick} tick={{ fontSize: 10, fill: "rgba(28,25,23,0.45)" }} tickLine={false} axisLine={false} width={34} />
+          <Tooltip content={GastosTooltip} cursor={{ fill: "rgba(28,25,23,0.04)" }} />
+          {GROUP_ORDER.map((g) => (
+            <Bar key={g} dataKey={g} stackId="a" fill={GROUP_COLORS[g]} radius={[2, 2, 0, 0]} />
+          ))}
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
   );
 }

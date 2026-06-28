@@ -260,7 +260,9 @@ export function occupancyByWeek(events: MomenceEvent[]) {
 }
 
 export function fmt(amount: number) {
-  return amount.toLocaleString("es-ES", {
+  // "es-ES" solo agrupa millares a partir de 5 cifras (quirk de CLDR); "de-DE" usa el
+  // mismo separador (punto) pero agrupa siempre a partir de 1000, dando un formato consistente.
+  return Math.round(amount).toLocaleString("de-DE", {
     style: "currency",
     currency: "EUR",
     maximumFractionDigits: 0,
