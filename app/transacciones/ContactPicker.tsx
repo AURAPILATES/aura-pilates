@@ -85,6 +85,13 @@ export default function ContactPicker({
     onPick({ newLabel: label });
   }
 
+  function clear() {
+    setDraft("");
+    setOpen(false);
+    onPick({ newLabel: "" });
+    inputRef.current?.focus();
+  }
+
   return (
     <div ref={wrapRef} className="relative">
       <input
@@ -105,8 +112,29 @@ export default function ContactPicker({
           if (e.key === "Escape") { setDraft(value); setOpen(false); (e.target as HTMLInputElement).blur(); }
         }}
         placeholder={placeholder}
-        className="w-full text-sm font-medium text-navy border border-navy/[0.12] rounded-lg px-3 py-2 outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15 transition disabled:opacity-50"
+        className="w-full text-sm font-medium text-navy border border-navy/[0.12] rounded-lg pl-3 pr-8 py-2 outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15 transition disabled:opacity-50"
       />
+      {draft.trim().length > 0 ? (
+        <button
+          type="button"
+          onClick={clear}
+          disabled={disabled}
+          tabIndex={-1}
+          aria-label="Quitar contacto"
+          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-navy/35 hover:text-danger transition-colors disabled:opacity-50"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      ) : (
+        <svg
+          width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-navy/30 pointer-events-none"
+        >
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      )}
       {open && dropPos && (options.length > 0 || showCreate) && createPortal(
         <div
           ref={dropRef}
