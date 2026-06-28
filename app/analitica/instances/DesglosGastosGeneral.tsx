@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
-import { ChartCard, ToggleGroup, type MultiKpiItem } from "@/components/charts";
+import { BarChart2, Activity } from "react-feather";
+import { ChartCard, ToggleGroup, ChartTypeToggle, type MultiKpiItem } from "@/components/charts";
 import GastosResumenGeneral, { GROUP_LABELS, GROUP_COLORS, GROUP_ORDER, type GroupTotal, fmtAmount } from "../GastosResumenGeneral";
 import { regroupSeries, periodLabel, buildGroupSeries, type Period } from "./evolucionIngresosUtils";
 import type { EconomicGroup } from "@/lib/transactions";
@@ -28,6 +29,7 @@ export default function DesglosGastosGeneral({
   rangeLabel?: string | null;
 }) {
   const [period, setPeriod] = useState<Period>("mes");
+  const [chartType, setChartType] = useState<"bar" | "line">("bar");
   const [hiddenGroups, setHiddenGroups] = useState<Set<EconomicGroup>>(new Set());
 
   const toggleHidden = (group: EconomicGroup) =>
@@ -50,7 +52,15 @@ export default function DesglosGastosGeneral({
       dateRange={rangeLabel ?? undefined}
       kpiItems={kpiItems}
       toolbar={
-        <div className="flex justify-end w-full">
+        <div className="flex justify-end items-center gap-2 w-full">
+          <ChartTypeToggle
+            value={chartType}
+            onChange={(v) => setChartType(v as "bar" | "line")}
+            options={[
+              { value: "bar", label: "Ver como barras", icon: <BarChart2 size={14} /> },
+              { value: "line", label: "Ver como línea", icon: <Activity size={14} /> },
+            ]}
+          />
           <ToggleGroup
             value={period}
             onChange={(v) => setPeriod(v as Period)}
@@ -63,7 +73,7 @@ export default function DesglosGastosGeneral({
     >
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
         <div className="lg:col-span-3 min-w-0">
-          <EvolucionGastosBody groups={groups} period={period} hiddenGroups={hiddenGroups} />
+          <EvolucionGastosBody groups={groups} period={period} hiddenGroups={hiddenGroups} chartType={chartType} />
         </div>
         <div className="lg:col-span-1 min-w-0">
           <p className="text-xs font-medium text-navy/55 mb-2.5">Resumen</p>

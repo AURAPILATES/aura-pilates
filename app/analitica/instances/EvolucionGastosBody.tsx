@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  ResponsiveContainer, BarChart, Bar, CartesianGrid, XAxis, YAxis, Tooltip,
+  ResponsiveContainer, ComposedChart, Bar, Line, CartesianGrid, XAxis, YAxis, Tooltip,
   type TooltipContentProps,
 } from "recharts";
 import type { EconomicGroup } from "@/lib/transactions";
@@ -38,10 +38,12 @@ export default function EvolucionGastosBody({
   groups,
   period,
   hiddenGroups,
+  chartType = "bar",
 }: {
   groups: GroupTotal[];
   period: Period;
   hiddenGroups?: Set<EconomicGroup>;
+  chartType?: "bar" | "line";
 }) {
   const base = buildGroupSeries(groups);
   const { months, data } = regroupSeries(base.months, base.data, period);
@@ -60,15 +62,30 @@ export default function EvolucionGastosBody({
   return (
     <div style={{ width: "100%", height: 280 }}>
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={rows} margin={{ top: 16, right: 8, bottom: 0, left: 0 }}>
+        <ComposedChart data={rows} margin={{ top: 16, right: 8, bottom: 0, left: 0 }}>
           <CartesianGrid strokeDasharray="4 3" stroke="rgba(28,25,23,0.07)" vertical={false} />
           <XAxis dataKey="label" tick={{ fontSize: 10, fill: "rgba(28,25,23,0.45)" }} tickLine={false} axisLine={false} />
           <YAxis tickFormatter={fmtTick} tick={{ fontSize: 10, fill: "rgba(28,25,23,0.45)" }} tickLine={false} axisLine={false} width={34} />
-          <Tooltip content={makeTooltip(visibleGroups)} cursor={{ fill: "rgba(28,25,23,0.04)" }} />
-          {visibleGroups.map((g) => (
-            <Bar key={g} dataKey={g} stackId="a" fill={GROUP_COLORS[g]} radius={[2, 2, 0, 0]} />
-          ))}
-        </BarChart>
+          <Tooltip
+            content={makeTooltip(visibleGroups)}
+            cursor={chartType === "bar" ? { fill: "rgba(28,25,23,0.04)" } : { stroke: "rgba(28,25,23,0.2)", strokeDasharray: "4 3" }}
+          />
+          {chartType === "bar"
+            ? visibleGroups.map((g) => (
+                <Bar key={g} dataKey={g} stackId="a" fill={GROUP_COLORS[g]} radius={[2, 2, 0, 0]} />
+              ))
+            : visibleGroups.map((g) => (
+                <Line
+                  key={g}
+                  type="monotone"
+                  dataKey={g}
+                  stroke={GROUP_COLORS[g]}
+                  strokeWidth={2}
+                  dot={{ r: 3, fill: GROUP_COLORS[g], stroke: "white", strokeWidth: 1.5 }}
+                  activeDot={{ r: 4.5 }}
+                />
+              ))}
+        </ComposedChart>
       </ResponsiveContainer>
     </div>
   );
