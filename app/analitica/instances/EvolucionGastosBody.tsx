@@ -7,26 +7,12 @@ import {
 import type { EconomicGroup } from "@/lib/transactions";
 import type { GroupTotal } from "../GastosResumenGeneral";
 import { GROUP_LABELS, GROUP_COLORS, GROUP_ORDER, fmtAmount } from "../GastosResumenGeneral";
-import { regroupSeries, periodLabel, type Period } from "./evolucionIngresosUtils";
+import { regroupSeries, periodLabel, buildGroupSeries, type Period } from "./evolucionIngresosUtils";
 
 type Row = { month: string; label: string } & Record<EconomicGroup, number>;
 
 function fmtTick(v: number) {
   return v >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${v}`;
-}
-
-function buildGroupSeries(groups: GroupTotal[]) {
-  const data = new Map<string, Map<string, number>>();
-  for (const g of groups) {
-    for (const t of g.txns) {
-      const m = t.date.slice(0, 7);
-      if (!data.has(m)) data.set(m, new Map());
-      const row = data.get(m)!;
-      row.set(g.group, (row.get(g.group) ?? 0) + Math.abs(t.amount));
-    }
-  }
-  const months = [...data.keys()].sort();
-  return { months, data };
 }
 
 function makeTooltip(visibleGroups: EconomicGroup[]) {

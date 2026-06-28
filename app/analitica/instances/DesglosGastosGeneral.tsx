@@ -3,8 +3,8 @@
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import { ChartCard, ToggleGroup, type MultiKpiItem } from "@/components/charts";
-import GastosResumenGeneral, { type GroupTotal, fmtAmount } from "../GastosResumenGeneral";
-import { type Period } from "./evolucionIngresosUtils";
+import GastosResumenGeneral, { GROUP_LABELS, GROUP_COLORS, GROUP_ORDER, type GroupTotal, fmtAmount } from "../GastosResumenGeneral";
+import { regroupSeries, periodLabel, buildGroupSeries, type Period } from "./evolucionIngresosUtils";
 import type { EconomicGroup } from "@/lib/transactions";
 
 const EvolucionGastosBody = dynamic(() => import("./EvolucionGastosBody"), {
@@ -40,6 +40,9 @@ export default function DesglosGastosGeneral({
 
   const kpiItems: MultiKpiItem[] = [{ label: "Total gastos", value: fmtAmount(totalExpCat) }];
 
+  const base = buildGroupSeries(groups);
+  const { months, data } = regroupSeries(base.months, base.data, period);
+
   return (
     <ChartCard
       title="Desglose de gastos: visión general"
@@ -71,6 +74,39 @@ export default function DesglosGastosGeneral({
             onToggleHidden={toggleHidden}
           />
         </div>
+      </div>
+
+      <div className="mt-5 overflow-x-auto">
+        <table className="w-full min-w-max text-xs">
+          <thead>
+            <tr className="border-b border-navy/[0.07]">
+              <th className="text-left py-2 pr-3 text-navy/45 font-semibold uppercase tracking-wide">Período</th>
+              <th className="text-right py-2 pr-3 text-navy/45 font-semibold uppercase tracking-wide">Total</th>
+              {GROUP_ORDER.map((g) => (
+                <th key={g} className="text-right py-2 pr-3 text-navy/45 font-semibold uppercase tracking-wide whitespace-nowrap">
+                  {GROUP_LABELS[g]}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {months.map((m) => {
+              const row = data.get(m);
+              const total = GROUP_ORDER.reduce((s, g) => s + (row?.get(g) ?? 0), 0);
+              return (
+                <tr key={m} className="border-b border-navy/[0.04] last:border-0">
+                  <td className="py-2 pr-3 text-navy/70 whitespace-nowrap">{periodLabel(m, period)}</td>
+                  <td className="py-2 pr-3 text-right text-navy font-medium tabular-nums">{fmtAmount(total)}</td>
+                  {GROUP_ORDER.map((g) => (
+                    <td key={g} className="py-2 pr-3 text-right text-navy tabular-nums">
+                      {row?.get(g) ? fmtAmount(row.get(g)!) : "—"}
+                    </td>
+                  ))}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
     </ChartCard>
   );

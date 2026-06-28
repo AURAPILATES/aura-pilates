@@ -174,6 +174,38 @@ export default function IngresosPorCanal({
         </div>
       </div>
 
+      <div className="mt-5 overflow-x-auto">
+        <table className="w-full min-w-max text-xs">
+          <thead>
+            <tr className="border-b border-navy/[0.07]">
+              <th className="text-left py-2 pr-3 text-navy/45 font-semibold uppercase tracking-wide">Período</th>
+              <th className="text-right py-2 pr-3 text-navy/45 font-semibold uppercase tracking-wide">Total</th>
+              {keys.map((k) => (
+                <th key={k} className="text-right py-2 pr-3 text-navy/45 font-semibold uppercase tracking-wide whitespace-nowrap">
+                  {k}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {evolRows.map((row) => {
+              const total = keys.reduce((s, k) => s + Number(row[k] ?? 0), 0);
+              return (
+                <tr key={row.month} className="border-b border-navy/[0.04] last:border-0">
+                  <td className="py-2 pr-3 text-navy/70 whitespace-nowrap">{row.label}</td>
+                  <td className="py-2 pr-3 text-right text-navy font-medium tabular-nums">{fmt(total)}</td>
+                  {keys.map((k) => (
+                    <td key={k} className="py-2 pr-3 text-right text-navy tabular-nums">
+                      {Number(row[k] ?? 0) > 0 ? fmt(Number(row[k])) : "—"}
+                    </td>
+                  ))}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
       {selectedChannel && (
         <Drawer
           maxWidth="max-w-[420px]"

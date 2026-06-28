@@ -1,6 +1,7 @@
 import type { Sale } from "@/lib/sales";
 import type { MonthlyProductRevenue } from "@/lib/productRevenue";
 import type { MonthlySubStats } from "@/lib/subscriptionCohort";
+import type { GroupTotal } from "../GastosResumenGeneral";
 
 export const MONTH_NAMES: Record<string, string> = {
   "01": "Ene", "02": "Feb", "03": "Mar", "04": "Abr",
@@ -50,6 +51,20 @@ export function buildSeriesFromProcedencia(monthly: MonthlyProductRevenue[]) {
     if (urban > 0) row.set("Urban", urban);
     data.set(m.month, row);
   }
+  return { months, data };
+}
+
+export function buildGroupSeries(groups: GroupTotal[]) {
+  const data = new Map<string, Map<string, number>>();
+  for (const g of groups) {
+    for (const t of g.txns) {
+      const m = t.date.slice(0, 7);
+      if (!data.has(m)) data.set(m, new Map());
+      const row = data.get(m)!;
+      row.set(g.group, (row.get(g.group) ?? 0) + Math.abs(t.amount));
+    }
+  }
+  const months = [...data.keys()].sort();
   return { months, data };
 }
 
