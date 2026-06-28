@@ -38,6 +38,7 @@ export default function EvolucionInscritos({ data }: { data: ActiveCustomersRow[
       ]}
       dataSource="Suscripción (vigencia 45 días) o pack (15–90 días según tipo) según último pago en Stripe"
       sources={["stripe"]}
+      lastUpdated="ahora"
     >
       <EvolucionInscritosBody data={data} />
     </ChartCard>

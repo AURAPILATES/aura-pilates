@@ -30,12 +30,20 @@ export function MomenceIcon({ size = 13, className = "" }: IconProps) {
   );
 }
 
-export type SourceKey = "stripe" | "momence" | "excel";
+export type SourceKey = "stripe" | "momence" | "excel" | "recurrentes";
 
 const ICONS: Record<SourceKey, (props: IconProps) => React.ReactElement> = {
   stripe: StripeIcon,
   momence: MomenceIcon,
   excel: ExcelIcon,
+  recurrentes: ExcelIcon,
+};
+
+export const SOURCE_LABELS: Record<SourceKey, string> = {
+  stripe: "Stripe",
+  momence: "Momence",
+  excel: "Banco",
+  recurrentes: "Transacciones > Recurrentes",
 };
 
 /** Fila de logos de fuente de datos (Stripe/Momence/Excel), monocromos. */

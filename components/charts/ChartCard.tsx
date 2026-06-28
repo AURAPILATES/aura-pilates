@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { ChevronDown, Database, Eye, EyeOff, Zap } from "react-feather";
+import { Book, ChevronDown, Eye, EyeOff, Zap } from "react-feather";
 import DeltaBadge, { type DeltaDirection } from "./DeltaBadge";
-import { SourceIcons, type SourceKey } from "../icons/SourceIcons";
+import { SOURCE_LABELS, type SourceKey } from "../icons/SourceIcons";
 
 export interface SingleKpi {
   value: string;
@@ -34,9 +34,11 @@ export interface ChartCardProps {
   chartDescription?: string;
   aiInsight?: ReactNode;
   aiInsightDefaultOpen?: boolean;
-  dataSource?: ReactNode;
-  /** logos de marca a mostrar junto a la fuente, en vez del icono genérico de base de datos */
+  /** detalle/metodología de la fuente — no se muestra en línea, aparece como tooltip al pasar el ratón */
+  dataSource?: string;
   sources?: SourceKey[];
+  /** texto ya formateado, p.ej. "ahora" / "hace 3 min" / "hoy 8:30" / "11 jun 2026" */
+  lastUpdated?: string | null;
   className?: string;
 }
 
@@ -53,6 +55,7 @@ export default function ChartCard({
   aiInsightDefaultOpen = false,
   dataSource,
   sources,
+  lastUpdated,
   className = "",
 }: ChartCardProps) {
   const [aiOpen, setAiOpen] = useState(aiInsightDefaultOpen);
@@ -148,14 +151,17 @@ export default function ChartCard({
       )}
 
       {/* SOURCE */}
-      {dataSource && (
-        <div className="flex items-start gap-1.5 text-[11px] text-navy/45 leading-relaxed px-4 sm:px-5 py-2.5 border-t border-navy/[0.07]">
+      {((sources && sources.length > 0) || lastUpdated) && (
+        <div className="flex items-center justify-between gap-3 text-[11px] text-navy/45 leading-relaxed px-4 sm:px-5 py-2.5 border-t border-navy/[0.07]">
           {sources && sources.length > 0 ? (
-            <SourceIcons sources={sources} size={13} className="shrink-0 mt-px text-navy/45" />
+            <span className="flex items-center gap-1.5 min-w-0" title={dataSource || undefined}>
+              <Book size={13} className="shrink-0" />
+              <span className="truncate">Fuentes de datos: {sources.map((s) => SOURCE_LABELS[s]).join(", ")}</span>
+            </span>
           ) : (
-            <Database size={13} className="shrink-0 mt-px" />
+            <span />
           )}
-          {dataSource}
+          {lastUpdated && <span className="shrink-0 whitespace-nowrap">Última actualización: {lastUpdated}</span>}
         </div>
       )}
     </div>

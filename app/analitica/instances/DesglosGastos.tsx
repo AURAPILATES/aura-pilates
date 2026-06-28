@@ -26,11 +26,13 @@ export default function DesglosGastos({
   transactionsByCategory,
   totalExpCat,
   rangeLabel,
+  lastUpdated,
 }: {
   categories: TopCategory[];
   transactionsByCategory: Record<string, Txn[]>;
   totalExpCat: number;
   rangeLabel?: string | null;
+  lastUpdated?: string | null;
 }) {
   return (
     <ChartCard
@@ -39,6 +41,7 @@ export default function DesglosGastos({
       dateRange={rangeLabel ?? undefined}
       dataSource="Exportación bancaria CaixaBank · excluye aportaciones de socios y préstamo"
       sources={["excel"]}
+      lastUpdated={lastUpdated}
     >
       <GastosBreakdown
         categories={categories}

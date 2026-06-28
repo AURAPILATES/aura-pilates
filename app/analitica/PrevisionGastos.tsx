@@ -42,6 +42,7 @@ export default function PrevisionGastos({ forecasts, categories }: Props) {
           : []),
       ]}
       dataSource="Gastos recurrentes confirmados manualmente en /transacciones?tab=recurrentes, proyectados por última fecha de pago + periodicidad"
+      sources={["recurrentes"]}
     >
       {forecasts.length === 0 ? (
         <p className="text-sm text-navy/45 text-center py-6">

@@ -135,6 +135,7 @@ export default function EvolucionSuscripciones({
       <ChartCard
         title="Evolución de ingresos y suscripciones"
         subtitle="Ingresos por producto o procedencia · altas, bajas y reactivaciones de suscripción"
+        dateRange={months.length > 0 ? `${periodLabel(months[0], period)} – ${periodLabel(months[months.length - 1], period)}` : undefined}
         kpiItems={kpiItems}
         toolbar={
           <>
@@ -192,6 +193,7 @@ export default function EvolucionSuscripciones({
         }
         dataSource="Ingresos: Stripe + catálogo Momence en vivo (Urban Sports Club desde CSV) · Altas/bajas/reactivaciones identificadas por el patrón de pagos de suscripción en Stripe"
         sources={["stripe", "momence"]}
+        lastUpdated="ahora"
         aiInsight={
           trendSummary.length > 0 && (
             <div className="space-y-1">

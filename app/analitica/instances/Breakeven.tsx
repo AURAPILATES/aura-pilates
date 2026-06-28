@@ -29,6 +29,7 @@ export default function Breakeven({ points }: { points: BreakevenPoint[] }) {
   return (
     <ChartCard
       title="Breakeven desde el inicio"
+      dateRange="Desde apertura"
       subtitle={
         isBreakeven ? (
           <span className="text-success font-medium">
@@ -55,6 +56,7 @@ export default function Breakeven({ points }: { points: BreakevenPoint[] }) {
       }
       dataSource="Ingresos: Stripe + Urban Sports Club · Gastos: operacionales + inversión inicial"
       sources={["stripe"]}
+      lastUpdated="ahora"
     >
       <BreakevenBody points={points} view={view} />
     </ChartCard>

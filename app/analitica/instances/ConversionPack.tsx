@@ -20,6 +20,7 @@ export default function ConversionPack({ summary }: { summary: ConversionSummary
     <ChartCard
       title="Conversión Pack Benvinguda 2×1 → suscripción"
       subtitle="% de compradores del pack que acabaron suscribiéndose"
+      dateRange="Histórico completo"
       kpiItems={[
         { label: "Tasa de conversión", value: fmtPct(rate), valueClassName: "text-success" },
         { label: "Convertidos / total", value: <>{totalConverted} <span className="text-[13px] text-navy/50 font-normal">de {totalBuyers}</span></> },
@@ -32,6 +33,7 @@ export default function ConversionPack({ summary }: { summary: ConversionSummary
       chartDescription={`Evolución mensual de la tasa de conversión del Pack Benvinguda, ${fmtPct(rate)} de media`}
       dataSource="Cohorte = mes de compra del pack · Convertido = suscripción en fecha posterior · Momence + Stripe. Haz clic en un punto o una fila para ver el detalle."
       sources={["momence", "stripe"]}
+      lastUpdated="ahora"
     >
       <ConversionPackBody summary={summary} />
     </ChartCard>

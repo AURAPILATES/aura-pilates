@@ -88,7 +88,7 @@ export default function Ingresos({
     <ChartCard
       title="Ingresos"
       subtitle={meta.subtitle}
-      dateRange={tab === "fuentes" ? periodLabel : undefined}
+      dateRange={tab === "suscripciones" ? "Estado actual" : periodLabel}
       kpiItems={meta.kpiItems}
       toolbar={
         <ToggleGroup
@@ -99,6 +99,7 @@ export default function Ingresos({
       }
       dataSource={meta.dataSource}
       sources={[...meta.sources]}
+      lastUpdated="ahora"
     >
       {tab === "fuentes" && (
         <>

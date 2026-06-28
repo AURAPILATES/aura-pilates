@@ -127,9 +127,11 @@ export default function IngresosPorCanal({
     <ChartCard
       title="Por canal de pago"
       subtitle="Distribución y evolución de ingresos por procedencia (interno vs. Urban Sports Club)"
+      dateRange={rangeLabel ? `hasta ${rangeLabel}` : undefined}
       kpiItems={kpiItems}
       dataSource={`Stripe en vivo + Urban Sports Club (Momence CSV)${rangeLabel ? ` · datos hasta ${rangeLabel}` : ""}.`}
       sources={["stripe", "momence"]}
+      lastUpdated="ahora"
     >
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
         <div className="lg:col-span-3 min-w-0">

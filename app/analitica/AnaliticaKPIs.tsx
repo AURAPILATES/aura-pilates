@@ -165,6 +165,7 @@ export default function AnaliticaKPIs({
         ]}
         dataSource="Suscripción renovada hace ≤30 días, o pack vigente (Benvinguda: 15d · Pack 4/8: 90d)"
         sources={["stripe"]}
+        lastUpdated="ahora"
       >
         {activeTotal > 0 && (
           <ProportionBar
@@ -205,12 +206,14 @@ export default function AnaliticaKPIs({
         ]}
         dataSource="Nuevo = primer pago en el período · Reactivado = pagó pero no es ni nuevo ni recurrente"
         sources={["stripe"]}
+        lastUpdated="ahora"
       />
 
       {/* ── Riesgo de baja ── */}
       <ChartCard
         title="Riesgo de baja"
         subtitle="Suscriptoras sin renovar y cobros fallidos recientes"
+        dateRange={dateRange}
         kpiItems={[
           {
             label: "Sin renovar",
@@ -229,6 +232,7 @@ export default function AnaliticaKPIs({
         ]}
         dataSource="Stripe · suscripciones Bàsic / Plus / Pro"
         sources={["stripe"]}
+        lastUpdated="ahora"
       />
 
       {drawer && (() => {

@@ -17,7 +17,8 @@ import { loadStripeCustomers } from "@/lib/stripeCustomers";
 import { buildPrimaryIdMap, enrichCustomers, hasActiveSub } from "@/lib/customerEnrichment";
 import { estimatedMRR, recurringCustomerIds } from "@/lib/stripeRecurrence";
 
-import { loadTransactionsCached, expensesByCategoryAll, type EconomicGroup } from "@/lib/transactions";
+import { loadTransactionsCached, expensesByCategoryAll, getLatestImportDate, type EconomicGroup } from "@/lib/transactions";
+import { formatRelativeTime } from "@/lib/formatRelativeTime";
 import { loadCategoriesCached, type Category } from "@/lib/categories";
 import { loadRecurringExpensesCached, forecastConfirmedExpenses } from "@/lib/recurringExpenses";
 import DesglosGastos from "./instances/DesglosGastos";
@@ -143,6 +144,7 @@ export default async function AnaliticaLoader({
   const [
     paymentsAll, membershipsAll, productsAll, customersAll,
     txnsAll, dbCategories, budgets, businessEvents, recurringExpenses, breakdown,
+    bancoLastImport,
   ] = await Promise.all([
     loadStripePaymentsCached(),
     getMemberships(),
@@ -154,7 +156,12 @@ export default async function AnaliticaLoader({
     loadBusinessEvents(),
     loadRecurringExpensesCached(),
     loadPaymentsBreakdown(mainFrom, mainTo),
+    getLatestImportDate(),
   ]);
+
+  // Stripe/Momence se leen en vivo en cada carga; el banco depende de la última subida manual de CSV.
+  const liveLastUpdated = formatRelativeTime(now.toISOString());
+  const bancoLastUpdated = formatRelativeTime(bancoLastImport);
 
   // Mapa stripeId → cliente fusionado por email, para agrupar cohortes/clientes por persona real
   const stripeCustomersAll = await loadStripeCustomers(paymentsAll, curMonth);
@@ -468,8 +475,9 @@ export default async function AnaliticaLoader({
               ]}
               dataSource="Stripe en vivo + Urban Sports Club (Momence CSV)"
               sources={["stripe", "momence"]}
+              lastUpdated={liveLastUpdated}
             >
-              <VolumenBruto sales={salesAll} txns={txnsAll} />
+              <VolumenBruto sales={salesAll} txns={txnsAll} lastUpdated={bancoLastUpdated} />
             </ChartCard>
             <Breakeven points={breakevenPoints} />
           </div>
@@ -483,12 +491,14 @@ export default async function AnaliticaLoader({
               groups={expGroupTotals}
               totalExpCat={totalExpCat}
               rangeLabel={txnRangeLabel}
+              lastUpdated={bancoLastUpdated}
             />
             <DesglosGastos
               categories={expByTopCategoryNoCapex}
               transactionsByCategory={transactionsByCategory}
               totalExpCat={totalExpCatNoCapex}
               rangeLabel={txnRangeLabel}
+              lastUpdated={bancoLastUpdated}
             />
             <PrevisionGastos forecasts={recurringForecasts} categories={dbCategories} />
           </div>

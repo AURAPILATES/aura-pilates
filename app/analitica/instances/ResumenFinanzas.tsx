@@ -39,6 +39,7 @@ export default function ResumenFinanzas(props: Props) {
     <ChartCard
       title="Resumen financiero"
       subtitle={`Snapshot de ${curMonthLabel.toLowerCase()}: caja, resultado y cobertura de gastos`}
+      dateRange={curMonthLabel}
       kpiItems={[
         {
           label: "Saldo en cuenta",

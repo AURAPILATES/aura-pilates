@@ -23,10 +23,12 @@ export default function DesglosGastosGeneral({
   groups,
   totalExpCat,
   rangeLabel,
+  lastUpdated,
 }: {
   groups: GroupTotal[];
   totalExpCat: number;
   rangeLabel?: string | null;
+  lastUpdated?: string | null;
 }) {
   const [period, setPeriod] = useState<Period>("mes");
   const [chartType, setChartType] = useState<"bar" | "line">("bar");
@@ -70,6 +72,7 @@ export default function DesglosGastosGeneral({
       }
       dataSource="Exportación bancaria CaixaBank · excluye aportaciones de socios y préstamo"
       sources={["excel"]}
+      lastUpdated={lastUpdated}
     >
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
         <div className="lg:col-span-3 min-w-0">

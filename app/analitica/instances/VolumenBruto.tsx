@@ -100,16 +100,28 @@ function groupData(sales: Sale[], txns: Transaction[], period: Period): VolumenB
     .map(([key, { income, expense }]) => ({ key, label: formatLabel(key, period), income, expense }));
 }
 
-export default function VolumenBruto({ sales, txns }: { sales: Sale[]; txns: Transaction[] }) {
+export default function VolumenBruto({
+  sales,
+  txns,
+  lastUpdated,
+}: {
+  sales: Sale[];
+  txns: Transaction[];
+  lastUpdated?: string | null;
+}) {
   const [period, setPeriod] = useState<Period>("mes");
   const [chartType, setChartType] = useState<"bar" | "line">("bar");
 
   const data = groupData(sales, txns, period);
+  const dateRange = data.length > 0
+    ? data.length > 1 ? `${data[0].label} – ${data[data.length - 1].label}` : data[0].label
+    : undefined;
 
   return (
     <ChartCard
       title="Ingresos y gastos"
       subtitle="Volumen bruto de ingresos (Momence) frente a gastos (exportación bancaria) por período"
+      dateRange={dateRange}
       toolbar={
         <>
           <div className="flex items-center gap-3 flex-wrap">
@@ -133,6 +145,7 @@ export default function VolumenBruto({ sales, txns }: { sales: Sale[]; txns: Tra
       chartDescription="Evolución de ingresos y gastos por período seleccionado"
       dataSource="Ingresos: Momence sales.csv · Gastos: exportación bancaria CaixaBank"
       sources={["momence", "excel"]}
+      lastUpdated={lastUpdated}
     >
       <VolumenBrutoBody data={data} chartType={chartType} />
 
