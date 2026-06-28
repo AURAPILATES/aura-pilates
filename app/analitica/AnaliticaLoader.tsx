@@ -520,6 +520,8 @@ export default async function AnaliticaLoader({
               ]}
               combinedTotal={stripeTotalRevenue(paymentsBounded) + uscRevenue}
               rangeLabel={uscLastDateLabel}
+              comparisonTotal={revComp + uscRevComp}
+              compRangeLabel={compDateRange}
             />
           </div>
         </section>

@@ -7,7 +7,7 @@ import type { MonthlyProductRevenue } from "@/lib/productRevenue";
 import type { MonthlySubStats } from "@/lib/subscriptionCohort";
 import type { BusinessEvent } from "@/lib/businessEvents";
 import type { StripePayment } from "@/lib/stripePayments";
-import { ChartCard, ChartTypeToggle, ToggleGroup } from "@/components/charts";
+import { ChartCard, ChartTypeToggle, ToggleGroup, type MultiKpiItem } from "@/components/charts";
 import Drawer from "@/app/components/Drawer";
 import type { EvolucionRow } from "./EvolucionIngresosBody";
 import {
@@ -99,6 +99,33 @@ export default function EvolucionSuscripciones({
   const cohortByPeriod = new Map(cohortRows.map((c) => [c.month, c]));
   const procedenciaByPeriod = view === "procedencia" ? data : regroupSeries(buildSeriesFromProcedencia(monthly).months, buildSeriesFromProcedencia(monthly).data, period).data;
 
+  const lastCohort = cohortRows.length > 0 ? cohortRows[cohortRows.length - 1] : null;
+  const lastTotal = rows.length > 0 ? keys.reduce((s, k) => s + Number(rows[rows.length - 1][k] ?? 0), 0) : 0;
+  const prevTotal = rows.length > 1 ? keys.reduce((s, k) => s + Number(rows[rows.length - 2][k] ?? 0), 0) : 0;
+
+  const kpiItems: MultiKpiItem[] = [{ label: "Ingresos del período", value: fmtEur(lastTotal) }];
+  if (prevTotal > 0) {
+    const deltaPct = Math.round(((lastTotal - prevTotal) / prevTotal) * 100);
+    kpiItems.push({
+      label: "Variación",
+      value: `${deltaPct > 0 ? "+" : ""}${deltaPct}%`,
+      valueClassName: deltaPct >= 0 ? "text-success" : "text-danger",
+    });
+  }
+  if (lastCohort) {
+    kpiItems.push({ label: "Suscritos activos", value: String(lastCohort.activeCount) });
+    kpiItems.push({
+      label: "Altas / Bajas",
+      value: (
+        <>
+          <span className="text-success">+{lastCohort.newSubs}</span>
+          {" / "}
+          <span className="text-danger">−{lastCohort.churned}</span>
+        </>
+      ),
+    });
+  }
+
   if (monthly.length === 0) {
     return <ChartCard title="Evolución de ingresos y suscripciones" subtitle="Sin datos suficientes" />;
   }
@@ -108,6 +135,7 @@ export default function EvolucionSuscripciones({
       <ChartCard
         title="Evolución de ingresos y suscripciones"
         subtitle="Ingresos por producto o procedencia · altas, bajas y reactivaciones de suscripción"
+        kpiItems={kpiItems}
         toolbar={
           <>
             <div className="flex items-center gap-3 flex-wrap min-w-0">

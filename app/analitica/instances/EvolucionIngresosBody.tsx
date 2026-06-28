@@ -139,6 +139,16 @@ export default function EvolucionIngresosBody({
     <div style={{ width: "100%", height: 340 }}>
       <ResponsiveContainer width="100%" height="100%">
         <ComposedChart data={rows} margin={{ top: 16, right: 8, bottom: 0, left: 0 }} barGap={2}>
+          {view === "procedencia" && (
+            <defs>
+              {visibleKeys.map((key) => (
+                <linearGradient key={`grad-${key}`} id={`grad-${key.replace(/\s+/g, "-")}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={colorOf(key)} stopOpacity={hoveredLegendKey !== null && hoveredLegendKey !== key ? 0.03 : 0.22} />
+                  <stop offset="100%" stopColor={colorOf(key)} stopOpacity={0} />
+                </linearGradient>
+              ))}
+            </defs>
+          )}
           <CartesianGrid strokeDasharray="4 3" stroke="rgba(28,25,23,0.07)" vertical={false} />
           <XAxis dataKey="label" tick={{ fontSize: 10, fill: "rgba(28,25,23,0.45)" }} tickLine={false} axisLine={false} />
           <YAxis tickFormatter={fmtTick} tick={{ fontSize: 10, fill: "rgba(28,25,23,0.45)" }} tickLine={false} axisLine={false} width={34} />
@@ -179,16 +189,26 @@ export default function EvolucionIngresosBody({
                   }
                 />
               ))
-            : visibleKeys.map((key) => (
-                <Area
-                  key={`area-${key}`}
-                  type="monotone"
-                  dataKey={key}
-                  stroke="none"
-                  fill={colorOf(key)}
-                  fillOpacity={hoveredLegendKey !== null && hoveredLegendKey !== key ? 0.02 : 0.06}
-                />
-              ))}
+            : visibleKeys.map((key) =>
+                view === "procedencia" ? (
+                  <Area
+                    key={`area-${key}`}
+                    type="monotone"
+                    dataKey={key}
+                    stroke="none"
+                    fill={`url(#grad-${key.replace(/\s+/g, "-")})`}
+                  />
+                ) : (
+                  <Area
+                    key={`area-${key}`}
+                    type="monotone"
+                    dataKey={key}
+                    stroke="none"
+                    fill={colorOf(key)}
+                    fillOpacity={hoveredLegendKey !== null && hoveredLegendKey !== key ? 0.02 : 0.06}
+                  />
+                ),
+              )}
           {chartType === "line" &&
             visibleKeys.map((key) => (
               <Line
