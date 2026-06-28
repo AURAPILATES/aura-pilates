@@ -1,0 +1,88 @@
+"use client";
+
+import {
+  ResponsiveContainer, BarChart, Bar, CartesianGrid, XAxis, YAxis, Tooltip,
+  type TooltipContentProps,
+} from "recharts";
+import type { EconomicGroup } from "@/lib/transactions";
+import type { GroupTotal } from "../GastosResumenGeneral";
+import { GROUP_LABELS, GROUP_COLORS, GROUP_ORDER, fmtAmount } from "../GastosResumenGeneral";
+import { regroupSeries, periodLabel, type Period } from "./evolucionIngresosUtils";
+
+type Row = { month: string; label: string } & Record<EconomicGroup, number>;
+
+function fmtTick(v: number) {
+  return v >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${v}`;
+}
+
+function buildGroupSeries(groups: GroupTotal[]) {
+  const data = new Map<string, Map<string, number>>();
+  for (const g of groups) {
+    for (const t of g.txns) {
+      const m = t.date.slice(0, 7);
+      if (!data.has(m)) data.set(m, new Map());
+      const row = data.get(m)!;
+      row.set(g.group, (row.get(g.group) ?? 0) + Math.abs(t.amount));
+    }
+  }
+  const months = [...data.keys()].sort();
+  return { months, data };
+}
+
+function GastosTooltip({ active, payload }: TooltipContentProps) {
+  if (!active || !payload?.length) return null;
+  const row = payload[0].payload as Row;
+  return (
+    <div className="bg-white border border-navy/[0.07] rounded-lg shadow-card px-3 py-2 text-xs min-w-[170px]">
+      <p className="font-semibold text-navy mb-1.5">{row.label}</p>
+      {GROUP_ORDER.map((g) => (
+        <div key={g} className="flex items-center gap-1.5 mb-0.5 last:mb-0">
+          <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: GROUP_COLORS[g] }} />
+          <span className="text-navy/55 truncate">{GROUP_LABELS[g]}</span>
+          <span className="font-semibold text-navy ml-auto whitespace-nowrap">{fmtAmount(Number(row[g] ?? 0))}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export default function EvolucionGastosBody({ groups, period }: { groups: GroupTotal[]; period: Period }) {
+  const base = buildGroupSeries(groups);
+  const { months, data } = regroupSeries(base.months, base.data, period);
+
+  const rows: Row[] = months.map((m) => {
+    const row = { month: m, label: periodLabel(m, period) } as Row;
+    for (const g of GROUP_ORDER) row[g] = data.get(m)?.get(g) ?? 0;
+    return row;
+  });
+
+  if (rows.length === 0) {
+    return <p className="text-sm text-navy/45 text-center py-10">Sin datos de gastos</p>;
+  }
+
+  return (
+    <>
+      <div style={{ width: "100%", height: 280 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={rows} margin={{ top: 16, right: 8, bottom: 0, left: 0 }}>
+            <CartesianGrid strokeDasharray="4 3" stroke="rgba(28,25,23,0.07)" vertical={false} />
+            <XAxis dataKey="label" tick={{ fontSize: 10, fill: "rgba(28,25,23,0.45)" }} tickLine={false} axisLine={false} />
+            <YAxis tickFormatter={fmtTick} tick={{ fontSize: 10, fill: "rgba(28,25,23,0.45)" }} tickLine={false} axisLine={false} width={34} />
+            <Tooltip content={GastosTooltip} cursor={{ fill: "rgba(28,25,23,0.04)" }} />
+            {GROUP_ORDER.map((g) => (
+              <Bar key={g} dataKey={g} stackId="a" fill={GROUP_COLORS[g]} radius={[2, 2, 0, 0]} />
+            ))}
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+      <div className="flex gap-3 flex-wrap mt-3">
+        {GROUP_ORDER.map((g) => (
+          <div key={g} className="flex items-center gap-1.5 text-xs text-navy/55">
+            <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: GROUP_COLORS[g] }} />
+            {GROUP_LABELS[g]}
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}

@@ -160,7 +160,7 @@ const END_TYPE_OPTIONS: { value: RecurringExpenseEndType; label: string }[] = [
 ];
 
 function recurringFiscalInfo(contact: Contact | undefined): string {
-  if (!contact) return "Sin contacto vinculado — asígnalo arriba para heredar su IVA y retención.";
+  if (!contact) return "Sin contacto vinculado. Asígnalo arriba para heredar su IVA e IRPF.";
   return `Hereda de ${contact.label}: IVA ${contact.ivaRate}% · Retención ${contact.retencionRate}%`;
 }
 
