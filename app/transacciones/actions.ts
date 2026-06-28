@@ -292,7 +292,7 @@ export async function recomputeContactsFromBankDetails(): Promise<{ updated: num
     const info = matchContact(contactKeyFor(t.concept, t.bank_details), patternMap);
     const newContact = info?.label ?? null;
     if (newContact === t.contact) continue;
-    const key = newContact ?? " ";
+    const key = newContact ?? " ";
     if (!idsByNewContact.has(key)) idsByNewContact.set(key, []);
     idsByNewContact.get(key)!.push(t.id);
   }
@@ -301,7 +301,7 @@ export async function recomputeContactsFromBankDetails(): Promise<{ updated: num
   for (const [key, ids] of idsByNewContact) {
     const { error } = await supabase
       .from("transactions")
-      .update({ contact: key === " " ? null : key })
+      .update({ contact: key === " " ? null : key })
       .in("id", ids);
     if (error) throw new Error(error.message);
     updated += ids.length;

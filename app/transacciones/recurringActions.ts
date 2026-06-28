@@ -100,7 +100,6 @@ export async function updateRecurringExpense(
   id: number,
   data: {
     amount?: number;
-    contact_id?: number;
     notes?: string | null;
     period?: string;
     period_days?: number;
@@ -110,21 +109,52 @@ export async function updateRecurringExpense(
   },
 ) {
   const supabase = createServerClient();
-  const update: Record<string, unknown> = { ...data, updated_at: new Date().toISOString() };
+  const { error } = await supabase
+    .from("recurring_expenses")
+    .update({ ...data, updated_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidateAll();
+}
 
-  if (data.contact_id != null) {
-    const { data: contact, error } = await supabase
+/** Re-vincula un gasto recurrente ya confirmado a otro Contacto (existente o nuevo) — vuelve a
+ * copiar su IVA/Retención, igual que en la confirmación inicial. A diferencia de
+ * `confirmRecurringExpenses`, aquí no se registra ningún patrón bancario nuevo: el movimiento
+ * ya estaba reconocido antes, esto solo cambia de qué ficha hereda los impuestos. */
+export async function relinkRecurringExpenseContact(
+  id: number,
+  pick: { contactId: number } | { newContactLabel: string },
+): Promise<void> {
+  const supabase = createServerClient();
+  let contact: ResolvedContact;
+  if ("contactId" in pick) {
+    const { data, error } = await supabase
       .from("contacts")
-      .select("iva_rate, retencion_rate")
-      .eq("id", data.contact_id)
+      .select("id, category, iva_rate, retencion_rate")
+      .eq("id", pick.contactId)
       .single();
-    if (error || !contact) throw new Error(error?.message ?? "Contacto no encontrado");
-    update.iva_rate = contact.iva_rate;
-    update.retencion_rate = contact.retencion_rate;
+    if (error || !data) throw new Error(error?.message ?? "Contacto no encontrado");
+    contact = data;
+  } else {
+    const { data, error } = await supabase
+      .from("contacts")
+      .insert({ label: pick.newContactLabel })
+      .select("id, category, iva_rate, retencion_rate")
+      .single();
+    if (error) throw new Error(error.message);
+    contact = data;
   }
 
-  const { error } = await supabase.from("recurring_expenses").update(update).eq("id", id);
-  if (error) throw new Error(error.message);
+  const { error: updateError } = await supabase
+    .from("recurring_expenses")
+    .update({
+      contact_id: contact.id,
+      iva_rate: contact.iva_rate,
+      retencion_rate: contact.retencion_rate,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+  if (updateError) throw new Error(updateError.message);
   revalidateAll();
 }
 

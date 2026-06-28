@@ -1,18 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChartCard } from "@/components/charts";
+import { ChevronRight } from "react-feather";
+import Drawer from "@/app/components/Drawer";
 import type { Category } from "@/lib/categories";
 import { categoryDisplayLabel } from "@/lib/categories";
 import { PERIOD_BUCKETS } from "@/lib/recurring";
 import type { RecurringExpense } from "@/lib/recurringExpenses";
 import type { Contact } from "./actions";
-import ContactPicker, { type ContactPickResult } from "./ContactPicker";
+import { CategoryBadge } from "./TransaccionesList";
+import type { ContactPickResult } from "./ContactPicker";
 import {
   recordRecurringExpense,
   confirmRecurringExpenses,
   updateRecurringExpense,
+  relinkRecurringExpenseContact,
   setRecurringExpenseStatus,
   deleteRecurringExpense,
   type ConfirmRecurringRow,
@@ -66,6 +69,40 @@ function dueLabel(daysUntil: number | null): { text: string; className: string }
   return { text: `en ${daysUntil}d`, className: "text-navy/50" };
 }
 
+function initials(label: string): string {
+  return label.split(" ").filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
+}
+
+/** Avatar circular consistente con el resto de la app (ver iniciales en ContactDetailDrawer de
+ * Configuración > Contactos): coloreado cuando hay un contacto vinculado, neutro si no. */
+function ContactAvatar({ label, resolved, size = 36 }: { label: string; resolved: boolean; size?: number }) {
+  return (
+    <div
+      className={`shrink-0 rounded-full flex items-center justify-center font-semibold ${resolved ? "bg-primary/10 text-primary" : "bg-navy/[0.05] text-navy/30"}`}
+      style={{ width: size, height: size, fontSize: Math.round(size * 0.32) }}
+    >
+      {resolved && label ? initials(label) : "?"}
+    </div>
+  );
+}
+
+/** Card "sólida" del resto de la app (mismo chrome que ContactosManager/ClientesTable):
+ * fondo blanco, borde sutil, esquinas grandes, header con título + acción opcional. */
+function SectionCard({ title, subtitle, action, children }: { title: string; subtitle?: string; action?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden">
+      <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-navy/[0.06]">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-navy">{title}</p>
+          {subtitle && <p className="text-xs text-navy/45 mt-0.5">{subtitle}</p>}
+        </div>
+        {action && <div className="shrink-0">{action}</div>}
+      </div>
+      {children}
+    </div>
+  );
+}
+
 type ContactPick = { contactId: number } | { newLabel: string } | null;
 
 function resultToPick(result: ContactPickResult): ContactPick {
@@ -83,167 +120,323 @@ function pickToInfo(pick: ContactPick, contacts: Contact[]): string {
   if (!pick) return "Elige o crea un contacto para heredar su IVA y retención.";
   if ("contactId" in pick) {
     const c = contacts.find((x) => x.id === pick.contactId);
-    return c ? `ℹ️ Hereda IVA: ${c.ivaRate}% / Retención: ${c.retencionRate}%` : "";
+    return c ? `Hereda de ${c.label}: IVA ${c.ivaRate}% · Retención ${c.retencionRate}%` : "";
   }
-  return "ℹ️ Contacto nuevo — sin IVA/retención todavía (edítalo en Configuración › Contactos).";
+  return "Contacto nuevo — sin IVA/retención todavía (edítalo en Configuración › Contactos).";
 }
 
-function PendingRow({
-  row,
-  categories,
-  contacts,
-  period,
-  pick,
-  selected,
-  busy,
-  onPeriodChange,
-  onPickChange,
-  onToggleSelected,
-  onConfirm,
-  onIgnore,
-}: {
+/** Drawer de búsqueda/creación de contacto, abierto desde el detalle de un pendiente o de un
+ * confirmado para vincular/cambiar el contacto sin ensuciar la fila con un combobox inline. */
+function ContactPickerDrawer({ contacts, title, onPick, onClose }: {
+  contacts: Contact[];
+  title?: string;
+  onPick: (result: ContactPickResult) => void;
+  onClose: () => void;
+}) {
+  const [query, setQuery] = useState("");
+  const q = query.trim().toLowerCase();
+
+  const filtered = useMemo(() => {
+    const sorted = [...contacts].sort((a, b) => a.label.localeCompare(b.label));
+    return q ? sorted.filter((c) => c.label.toLowerCase().includes(q)) : sorted;
+  }, [contacts, q]);
+
+  const exact = contacts.some((c) => c.label.toLowerCase() === q);
+
+  return (
+    <Drawer title={title ?? "Vincular contacto"} subtitle="Busca uno guardado o crea uno nuevo" onClose={onClose} maxWidth="max-w-sm">
+      <div className="px-4 pt-4 pb-2">
+        <input
+          autoFocus
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Buscar contacto…"
+          className="w-full px-3 py-2 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40"
+        />
+      </div>
+      <div className="px-2 pb-4">
+        {filtered.map((c) => (
+          <button
+            key={c.id}
+            onClick={() => { onPick({ contactId: c.id, label: c.label }); onClose(); }}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-navy/[0.03] transition-colors text-left"
+          >
+            <ContactAvatar label={c.label} resolved size={32} />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm text-navy truncate">{c.label}</p>
+              <p className="text-[11px] text-navy/40">IVA {c.ivaRate}% · Ret {c.retencionRate}%</p>
+            </div>
+          </button>
+        ))}
+        {query.trim() && !exact && (
+          <button
+            onClick={() => { onPick({ newLabel: query.trim() }); onClose(); }}
+            className="w-full flex items-center gap-2 px-3 py-2.5 mt-1 rounded-lg hover:bg-primary/[0.06] transition-colors text-left text-primary text-sm font-medium border-t border-navy/[0.06]"
+          >
+            + Crear contacto &ldquo;{query.trim()}&rdquo;
+          </button>
+        )}
+        {filtered.length === 0 && !query.trim() && (
+          <p className="text-xs text-navy/40 px-3 py-4">Todavía no hay contactos guardados.</p>
+        )}
+      </div>
+    </Drawer>
+  );
+}
+
+function PendingRow({ row, categories, contacts, pick, selected, onToggleSelected, onOpen }: {
   row: PendingSeriesRow;
   categories: Category[];
   contacts: Contact[];
-  period: string;
   pick: ContactPick;
   selected: boolean;
-  busy: boolean;
-  onPeriodChange: (period: string) => void;
-  onPickChange: (pick: ContactPick) => void;
   onToggleSelected: (checked: boolean) => void;
-  onConfirm: () => void;
-  onIgnore: () => void;
+  onOpen: () => void;
 }) {
   const catLabel = row.category ? categories.find((c) => c.value === row.category) : null;
+  const label = pickToLabel(pick, contacts);
 
   return (
-    <div className="flex items-start gap-3 py-3">
+    <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-navy/[0.015] transition-colors">
       <input
         type="checkbox"
         checked={selected}
         onChange={(e) => onToggleSelected(e.target.checked)}
-        className="mt-1.5 w-4 h-4 rounded border-navy/[0.25] accent-navy shrink-0"
+        onClick={(e) => e.stopPropagation()}
+        className="w-4 h-4 rounded border-navy/[0.25] accent-navy shrink-0"
       />
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-navy truncate">{row.label}</p>
-        <p className="text-xs text-navy/45 truncate mb-2">
-          detectado {row.period}{catLabel ? ` · ${categoryDisplayLabel(catLabel, categories)}` : ""} · {row.occurrences} pagos · último {fmtDate(row.lastDate)} · {fmtEUR(Math.abs(row.amount))}
-        </p>
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className="w-60">
-            <ContactPicker
-              value={pickToLabel(pick, contacts)}
-              contacts={contacts}
-              disabled={busy}
-              placeholder="Vincular contacto o crear…"
-              onPick={(result) => onPickChange(resultToPick(result))}
-            />
-          </div>
-          <select
-            value={period}
-            disabled={busy}
-            onChange={(e) => onPeriodChange(e.target.value)}
-            className="text-sm border border-navy/[0.12] rounded-md px-1.5 py-1 focus:outline-none focus:border-primary/40 disabled:opacity-50"
-          >
-            {PERIOD_BUCKETS.map((b) => (
-              <option key={b.label} value={b.label}>{b.label}</option>
-            ))}
-          </select>
-          <button
-            onClick={onConfirm}
-            disabled={busy || !pick}
-            className="px-3 py-1.5 text-xs font-semibold text-white bg-navy rounded-lg hover:bg-navy/85 transition-colors disabled:opacity-40"
-          >
-            Confirmar
-          </button>
-          <button
-            onClick={onIgnore}
-            disabled={busy}
-            className="px-2.5 py-1.5 text-xs font-medium text-navy/45 hover:text-navy transition-colors disabled:opacity-40"
-          >
-            Ignorar
-          </button>
+      <button onClick={onOpen} className="flex items-center gap-3 flex-1 min-w-0 text-left">
+        <ContactAvatar label={label || row.label} resolved={!!pick} />
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium text-navy truncate">{row.label}</p>
+          <p className="text-xs text-navy/45 truncate mt-0.5">
+            {row.period} · {row.occurrences} pagos · último {fmtDate(row.lastDate)} · {fmtEUR(Math.abs(row.amount))}
+          </p>
         </div>
-        <p className="text-xs text-navy/40 mt-1.5">{pickToInfo(pick, contacts)}</p>
-      </div>
+        {catLabel && <CategoryBadge category={row.category} categories={categories} />}
+        <span className={`text-xs font-medium px-2.5 py-1 rounded-full whitespace-nowrap shrink-0 ${pick ? "bg-primary/10 text-primary" : "bg-navy/[0.05] text-navy/40"}`}>
+          {pick ? label : "Sin vincular"}
+        </span>
+        <ChevronRight size={16} className="text-navy/25 shrink-0" />
+      </button>
     </div>
   );
 }
 
-function ConfirmedTableRow({ row, categories, contacts }: { row: ConfirmedExpenseRow; categories: Category[]; contacts: Contact[] }) {
-  const e = row.expense;
-  const due = dueLabel(row.daysUntil);
-  const catLabel = e.category ? categories.find((c) => c.value === e.category) : null;
-  const [relinking, setRelinking] = useState(false);
-  const router = useRouter();
+function ConfirmPendingDrawer({ row, period, pick, contacts, onClose, onPeriodChange, onOpenContactPicker, onConfirm, onIgnore }: {
+  row: PendingSeriesRow;
+  period: string;
+  pick: ContactPick;
+  contacts: Contact[];
+  onClose: () => void;
+  onPeriodChange: (period: string) => void;
+  onOpenContactPicker: () => void;
+  onConfirm: () => Promise<void>;
+  onIgnore: () => Promise<void>;
+}) {
+  const [saving, setSaving] = useState(false);
+  const label = pickToLabel(pick, contacts);
 
-  const contact = e.contact_id != null ? contacts.find((c) => c.id === e.contact_id) : undefined;
-  const displayLabel = contact?.label ?? e.label;
-
-  async function relink(result: ContactPickResult) {
-    if (!("contactId" in result)) return; // re-vincular solo a contactos ya existentes desde aquí
-    setRelinking(false);
-    await updateRecurringExpense(e.id, { contact_id: result.contactId });
-    router.refresh();
+  async function handleConfirm() {
+    setSaving(true);
+    try { await onConfirm(); onClose(); } finally { setSaving(false); }
   }
-
-  async function changePeriod(next: string) {
-    const days = PERIOD_BUCKETS.find((b) => b.label === next)?.days ?? e.period_days;
-    await updateRecurringExpense(e.id, { period: next, period_days: days });
-    router.refresh();
-  }
-
-  async function cancel() {
-    await setRecurringExpenseStatus(e.id, "cancelled");
-    router.refresh();
+  async function handleIgnore() {
+    setSaving(true);
+    try { await onIgnore(); onClose(); } finally { setSaving(false); }
   }
 
   return (
-    <tr className="border-b border-navy/[0.05] last:border-0">
-      <td className="py-2.5 pr-3 align-top">
-        <p className="text-sm font-medium text-navy truncate">{displayLabel}</p>
-        <p className="text-xs text-navy/45 truncate">{catLabel ? categoryDisplayLabel(catLabel, categories) : "Sin categoría"}</p>
-      </td>
-      <td className="py-2.5 pr-3 align-top">
+    <Drawer
+      onClose={onClose}
+      header={
+        <div className="flex items-start gap-3">
+          <ContactAvatar label={label || row.label} resolved={!!pick} size={40} />
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-navy truncate">{row.label}</p>
+            <p className="text-xs text-navy/45 mt-0.5">{row.occurrences} pagos detectados · último {fmtDate(row.lastDate)}</p>
+          </div>
+        </div>
+      }
+      footer={
+        <div className="flex items-center justify-between gap-2">
+          <button onClick={handleIgnore} disabled={saving} className="text-xs text-navy/40 hover:text-danger transition-colors disabled:opacity-40">
+            Ignorar
+          </button>
+          <button
+            onClick={handleConfirm}
+            disabled={saving || !pick}
+            className="px-4 py-2.5 text-sm font-semibold text-white bg-navy rounded-lg hover:bg-navy/85 transition-colors disabled:opacity-40"
+          >
+            Confirmar gasto recurrente
+          </button>
+        </div>
+      }
+    >
+      <div className="p-4 border-b border-navy/[0.06]">
+        <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-1.5">Importe</p>
+        <p className="text-lg font-semibold text-navy">{fmtEUR(Math.abs(row.amount))}</p>
+        <p className="text-xs text-navy/40 mt-0.5">detectado {row.period} · {row.occurrences} pagos</p>
+      </div>
+
+      <div className="p-4 border-b border-navy/[0.06]">
+        <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-1.5">Contacto</p>
+        <button
+          onClick={onOpenContactPicker}
+          className="w-full flex items-center justify-between gap-2 px-3 py-2.5 border border-navy/15 rounded-lg hover:border-primary/40 transition-colors text-left"
+        >
+          <span className={`text-sm truncate ${pick ? "text-navy font-medium" : "text-navy/40"}`}>
+            {label || "Elegir o crear contacto…"}
+          </span>
+          <ChevronRight size={14} className="text-navy/30 shrink-0" />
+        </button>
+        <p className="text-xs text-navy/40 mt-2">{pickToInfo(pick, contacts)}</p>
+      </div>
+
+      <div className="p-4">
+        <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-1.5">Periodicidad</p>
         <select
-          value={e.period}
-          onChange={(ev) => changePeriod(ev.target.value)}
-          className="text-sm border border-navy/[0.12] rounded-md px-1.5 py-1 focus:outline-none focus:border-primary/40"
+          value={period}
+          onChange={(e) => onPeriodChange(e.target.value)}
+          className="w-full px-3 py-2 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40"
         >
           {PERIOD_BUCKETS.map((b) => (
             <option key={b.label} value={b.label}>{b.label}</option>
           ))}
         </select>
-      </td>
-      <td className="py-2.5 pr-3 align-top whitespace-nowrap">
-        {relinking ? (
-          <div className="w-48">
-            <ContactPicker
-              value={contact?.label ?? ""}
-              contacts={contacts}
-              placeholder="Nuevo contacto…"
-              onPick={relink}
-            />
+      </div>
+    </Drawer>
+  );
+}
+
+function ConfirmedTableRow({ row, categories, contacts, onOpen }: { row: ConfirmedExpenseRow; categories: Category[]; contacts: Contact[]; onOpen: () => void }) {
+  const e = row.expense;
+  const due = dueLabel(row.daysUntil);
+  const catLabel = e.category ? categories.find((c) => c.value === e.category) : null;
+  const contact = e.contact_id != null ? contacts.find((c) => c.id === e.contact_id) : undefined;
+  const label = contact?.label ?? e.label;
+
+  return (
+    <tr onClick={onOpen} className="border-b border-navy/[0.04] last:border-0 cursor-pointer hover:bg-navy/[0.02] transition-colors">
+      <td className="px-4 py-2.5">
+        <div className="flex items-center gap-2.5">
+          <ContactAvatar label={label} resolved={!!contact} size={28} />
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-navy truncate">{label}</p>
+            {catLabel && <p className="text-[11px] text-navy/40 truncate">{categoryDisplayLabel(catLabel, categories)}</p>}
           </div>
-        ) : (
-          <button
-            onClick={() => setRelinking(true)}
-            className="text-sm text-navy/70 hover:text-navy underline decoration-dotted decoration-navy/30 transition-colors"
-            title="Cambiar contacto vinculado"
-          >
-            IVA: {e.iva_rate}% / Ret: {e.retencion_rate}%
-          </button>
-        )}
+        </div>
       </td>
-      <td className="py-2.5 pr-3 align-top text-right whitespace-nowrap">
+      <td className="px-4 py-2.5 text-sm text-navy/70 capitalize whitespace-nowrap">{e.period}</td>
+      <td className="px-4 py-2.5 text-sm text-navy/70 whitespace-nowrap">IVA {e.iva_rate}% / Ret {e.retencion_rate}%</td>
+      <td className="px-4 py-2.5 text-right whitespace-nowrap">
         <p className="text-sm font-semibold text-navy tabular-nums">{fmtEUR(Math.abs(e.amount))}</p>
         <p className={`text-xs tabular-nums ${due.className}`}>{due.text}</p>
       </td>
-      <td className="py-2.5 align-top text-right whitespace-nowrap">
-        <button onClick={cancel} className="text-xs text-navy/40 hover:text-danger transition-colors">Dar de baja</button>
-      </td>
     </tr>
+  );
+}
+
+function RecurringExpenseDrawer({ row, categories, contacts, onClose, onOpenContactPicker }: {
+  row: ConfirmedExpenseRow;
+  categories: Category[];
+  contacts: Contact[];
+  onClose: () => void;
+  onOpenContactPicker: () => void;
+}) {
+  const e = row.expense;
+  const router = useRouter();
+  const due = dueLabel(row.daysUntil);
+  const catLabel = e.category ? categories.find((c) => c.value === e.category) : null;
+  const contact = e.contact_id != null ? contacts.find((c) => c.id === e.contact_id) : undefined;
+  const label = contact?.label ?? e.label;
+  const [confirmCancel, setConfirmCancel] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  async function changePeriod(next: string) {
+    const days = PERIOD_BUCKETS.find((b) => b.label === next)?.days ?? e.period_days;
+    setSaving(true);
+    try {
+      await updateRecurringExpense(e.id, { period: next, period_days: days });
+      router.refresh();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function cancel() {
+    await setRecurringExpenseStatus(e.id, "cancelled");
+    router.refresh();
+    onClose();
+  }
+
+  return (
+    <Drawer
+      onClose={onClose}
+      header={
+        <div className="flex items-start gap-3">
+          <ContactAvatar label={label} resolved={!!contact} size={40} />
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-navy truncate">{label}</p>
+            {catLabel && <div className="mt-1"><CategoryBadge category={e.category} categories={categories} /></div>}
+          </div>
+        </div>
+      }
+      footer={
+        confirmCancel ? (
+          <div className="flex items-center justify-between gap-2">
+            <button onClick={() => setConfirmCancel(false)} className="text-xs text-navy/40 hover:text-navy transition-colors">Cancelar</button>
+            <button onClick={cancel} className="text-xs font-semibold text-danger hover:text-danger/80 transition-colors">Confirmar baja</button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setConfirmCancel(true)}
+            className="w-full py-2.5 text-sm font-medium text-danger border border-danger/20 rounded-lg hover:bg-danger/5 transition-colors"
+          >
+            Dar de baja
+          </button>
+        )
+      }
+    >
+      <div className="grid grid-cols-2 gap-3 p-4 border-b border-navy/[0.06]">
+        <div className="bg-navy/[0.02] rounded-xl px-3 py-2.5">
+          <p className="text-[11px] text-navy/40">Importe</p>
+          <p className="text-lg font-semibold text-navy">{fmtEUR(Math.abs(e.amount))}</p>
+        </div>
+        <div className="bg-navy/[0.02] rounded-xl px-3 py-2.5">
+          <p className="text-[11px] text-navy/40">Próximo pago</p>
+          <p className={`text-sm font-semibold ${due.className}`}>{due.text}</p>
+          {row.nextDate && <p className="text-[11px] text-navy/40 mt-0.5">{fmtDate(row.nextDate)}</p>}
+        </div>
+      </div>
+
+      <div className="p-4 border-b border-navy/[0.06]">
+        <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-1.5">Contacto vinculado</p>
+        <button
+          onClick={onOpenContactPicker}
+          className="w-full flex items-center justify-between gap-2 px-3 py-2.5 border border-navy/15 rounded-lg hover:border-primary/40 transition-colors text-left"
+        >
+          <span className="text-sm text-navy font-medium truncate">{label}</span>
+          <span className="text-xs text-primary shrink-0">Cambiar</span>
+        </button>
+        <p className="text-xs text-navy/40 mt-2">IVA: {e.iva_rate}% · Retención: {e.retencion_rate}% — heredados de la ficha del contacto.</p>
+      </div>
+
+      <div className="p-4">
+        <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-1.5">Periodicidad</p>
+        <select
+          value={e.period}
+          disabled={saving}
+          onChange={(ev) => changePeriod(ev.target.value)}
+          className="w-full px-3 py-2 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40 disabled:opacity-50"
+        >
+          {PERIOD_BUCKETS.map((b) => (
+            <option key={b.label} value={b.label}>{b.label}</option>
+          ))}
+        </select>
+      </div>
+    </Drawer>
   );
 }
 
@@ -258,7 +451,7 @@ function ArchivedRow({ row }: { row: RecurringExpense }) {
     router.refresh();
   }
   return (
-    <div className="flex items-center justify-between gap-3 py-2.5">
+    <div className="flex items-center justify-between gap-3 px-4 py-2.5">
       <div className="min-w-0">
         <p className="text-sm font-medium text-navy/60 truncate">{row.label}</p>
         <p className="text-xs text-navy/40 truncate">
@@ -278,8 +471,13 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
   const [periods, setPeriods] = useState<Record<string, string>>({});
   const [picks, setPicks] = useState<Record<string, ContactPick>>({});
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [busyKeys, setBusyKeys] = useState<Set<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
+  const [openPendingKey, setOpenPendingKey] = useState<string | null>(null);
+  const [openConfirmedId, setOpenConfirmedId] = useState<number | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  const openPendingRow = openPendingKey != null ? pending.find((p) => p.key === openPendingKey) ?? null : null;
+  const openConfirmedRow = openConfirmedId != null ? confirmed.find((c) => c.expense.id === openConfirmedId) ?? null : null;
 
   function periodFor(row: PendingSeriesRow): string {
     return periods[row.key] ?? row.period;
@@ -308,34 +506,21 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
     };
   }
 
-  async function withBusy(key: string, fn: () => Promise<void>) {
-    setBusyKeys((prev) => new Set(prev).add(key));
-    try {
-      await fn();
-    } finally {
-      setBusyKeys((prev) => { const next = new Set(prev); next.delete(key); return next; });
-    }
+  async function confirmRow(row: PendingSeriesRow) {
+    const confirmRowPayload = buildConfirmRow(row);
+    if (!confirmRowPayload) return;
+    await confirmRecurringExpenses([confirmRowPayload]);
+    router.refresh();
   }
 
-  function confirmOne(row: PendingSeriesRow) {
-    const confirmRow = buildConfirmRow(row);
-    if (!confirmRow) return;
-    withBusy(row.key, async () => {
-      await confirmRecurringExpenses([confirmRow]);
-      router.refresh();
-    });
-  }
-
-  function ignoreOne(row: PendingSeriesRow) {
-    withBusy(row.key, async () => {
-      const period = periodFor(row);
-      const periodDays = PERIOD_BUCKETS.find((b) => b.label === period)?.days ?? row.periodDays;
-      await recordRecurringExpense(
-        { key: row.key, label: row.label, category: row.category, period, period_days: periodDays, amount: row.amount, iva_rate: 0, retencion_rate: 0 },
-        "ignored",
-      );
-      router.refresh();
-    });
+  async function ignoreRow(row: PendingSeriesRow) {
+    const period = periodFor(row);
+    const periodDays = PERIOD_BUCKETS.find((b) => b.label === period)?.days ?? row.periodDays;
+    await recordRecurringExpense(
+      { key: row.key, label: row.label, category: row.category, period, period_days: periodDays, amount: row.amount, iva_rate: 0, retencion_rate: 0 },
+      "ignored",
+    );
+    router.refresh();
   }
 
   async function confirmSelected() {
@@ -367,33 +552,44 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
     });
   }
 
+  async function handlePickerPick(result: ContactPickResult) {
+    if (openPendingRow) {
+      const pick = resultToPick(result);
+      setPicks((prev) => ({ ...prev, [openPendingRow.key]: pick }));
+    } else if (openConfirmedRow) {
+      const relinkPick = "contactId" in result ? { contactId: result.contactId } : { newContactLabel: result.newLabel };
+      await relinkRecurringExpenseContact(openConfirmedRow.expense.id, relinkPick);
+      router.refresh();
+    }
+  }
+
   const allSelected = pending.length > 0 && pending.every((p) => selected.has(p.key));
   const selectableCount = pending.filter((p) => selected.has(p.key) && pickFor(p) != null).length;
 
   return (
     <div className="space-y-4">
       {pending.length > 0 && (
-        <ChartCard
+        <SectionCard
           title="Gastos detectados"
-          subtitle="Hemos detectado estos patrones en tus cuentas. Vincúlalos a un contacto para aplicar sus impuestos automáticamente."
-        >
-          <div className="flex items-center justify-between gap-3 pb-2.5 mb-1 border-b border-navy/[0.06]">
-            <label className="flex items-center gap-2 text-xs text-navy/50 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={allSelected}
-                onChange={(e) => toggleAll(e.target.checked)}
-                className="w-4 h-4 rounded border-navy/[0.25] accent-navy"
-              />
-              Seleccionar todos
-            </label>
+          subtitle="Vincúlalos a un contacto para aplicar sus impuestos automáticamente."
+          action={
             <button
               onClick={confirmSelected}
               disabled={bulkBusy || selectableCount === 0}
-              className="px-3 py-1.5 text-xs font-semibold text-white bg-navy rounded-lg hover:bg-navy/85 transition-colors disabled:opacity-40"
+              className="px-3 py-1.5 text-xs font-semibold bg-navy text-white rounded-md hover:bg-navy/85 transition-colors disabled:opacity-40 whitespace-nowrap"
             >
               Confirmar seleccionados{selectableCount > 0 ? ` (${selectableCount})` : ""}
             </button>
+          }
+        >
+          <div className="flex items-center gap-2 px-4 py-2 border-b border-navy/[0.06] bg-navy/[0.012]">
+            <input
+              type="checkbox"
+              checked={allSelected}
+              onChange={(e) => toggleAll(e.target.checked)}
+              className="w-4 h-4 rounded border-navy/[0.25] accent-navy"
+            />
+            <span className="text-xs text-navy/45">Seleccionar todos</span>
           </div>
           <div className="divide-y divide-navy/[0.05]">
             {pending.map((row) => (
@@ -402,55 +598,88 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
                 row={row}
                 categories={categories}
                 contacts={contacts}
-                period={periodFor(row)}
                 pick={pickFor(row)}
                 selected={selected.has(row.key)}
-                busy={busyKeys.has(row.key)}
-                onPeriodChange={(p) => setPeriods((prev) => ({ ...prev, [row.key]: p }))}
-                onPickChange={(p) => setPicks((prev) => ({ ...prev, [row.key]: p }))}
                 onToggleSelected={(checked) => toggleOne(row.key, checked)}
-                onConfirm={() => confirmOne(row)}
-                onIgnore={() => ignoreOne(row)}
+                onOpen={() => setOpenPendingKey(row.key)}
               />
             ))}
           </div>
-        </ChartCard>
+        </SectionCard>
       )}
 
-      <ChartCard
+      <SectionCard
         title="Gastos recurrentes activos"
-        subtitle="Próximo pago previsto, IVA deducible y retención aplicable. Para cambiarlos, vincula otro contacto."
+        subtitle="Próximo pago previsto, IVA deducible y retención aplicable."
       >
         {confirmed.length === 0 ? (
-          <p className="text-sm text-navy/45 text-center py-6">Sin gastos recurrentes confirmados todavía.</p>
+          <p className="text-sm text-navy/40 px-4 py-6">Sin gastos recurrentes confirmados todavía.</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left">
+            <table className="w-full text-sm">
               <thead>
-                <tr className="text-[11px] text-navy/40 uppercase tracking-wider">
-                  <th className="pb-2 pr-3 font-medium">Contacto / Concepto</th>
-                  <th className="pb-2 pr-3 font-medium">Periodicidad</th>
-                  <th className="pb-2 pr-3 font-medium">Configuración fiscal</th>
-                  <th className="pb-2 pr-3 font-medium text-right">Próximo pago</th>
-                  <th className="pb-2 font-medium text-right">Acciones</th>
+                <tr className="bg-navy/[0.02] border-b border-navy/[0.06]">
+                  <th className="text-left px-4 py-2 text-[11px] text-navy/45 font-semibold uppercase tracking-wide">Contacto / Concepto</th>
+                  <th className="text-left px-4 py-2 text-[11px] text-navy/45 font-semibold uppercase tracking-wide">Periodicidad</th>
+                  <th className="text-left px-4 py-2 text-[11px] text-navy/45 font-semibold uppercase tracking-wide">Configuración fiscal</th>
+                  <th className="text-right px-4 py-2 text-[11px] text-navy/45 font-semibold uppercase tracking-wide">Próximo pago</th>
                 </tr>
               </thead>
               <tbody>
                 {confirmed.map((row) => (
-                  <ConfirmedTableRow key={row.expense.id} row={row} categories={categories} contacts={contacts} />
+                  <ConfirmedTableRow
+                    key={row.expense.id}
+                    row={row}
+                    categories={categories}
+                    contacts={contacts}
+                    onOpen={() => setOpenConfirmedId(row.expense.id)}
+                  />
                 ))}
               </tbody>
             </table>
           </div>
         )}
-      </ChartCard>
+      </SectionCard>
 
       {archived.length > 0 && (
-        <ChartCard title="Ignorados / dados de baja" subtitle="No se proyectan en la previsión de cashflow">
+        <SectionCard title="Ignorados / dados de baja" subtitle="No se proyectan en la previsión de cashflow">
           <div className="divide-y divide-navy/[0.05]">
             {archived.map((row) => <ArchivedRow key={row.id} row={row} />)}
           </div>
-        </ChartCard>
+        </SectionCard>
+      )}
+
+      {openPendingRow && (
+        <ConfirmPendingDrawer
+          row={openPendingRow}
+          period={periodFor(openPendingRow)}
+          pick={pickFor(openPendingRow)}
+          contacts={contacts}
+          onClose={() => setOpenPendingKey(null)}
+          onPeriodChange={(p) => setPeriods((prev) => ({ ...prev, [openPendingRow.key]: p }))}
+          onOpenContactPicker={() => setPickerOpen(true)}
+          onConfirm={() => confirmRow(openPendingRow)}
+          onIgnore={() => ignoreRow(openPendingRow)}
+        />
+      )}
+
+      {openConfirmedRow && (
+        <RecurringExpenseDrawer
+          row={openConfirmedRow}
+          categories={categories}
+          contacts={contacts}
+          onClose={() => setOpenConfirmedId(null)}
+          onOpenContactPicker={() => setPickerOpen(true)}
+        />
+      )}
+
+      {pickerOpen && (
+        <ContactPickerDrawer
+          contacts={contacts}
+          title={openConfirmedRow ? "Cambiar contacto vinculado" : "Vincular contacto"}
+          onClose={() => setPickerOpen(false)}
+          onPick={handlePickerPick}
+        />
       )}
     </div>
   );
