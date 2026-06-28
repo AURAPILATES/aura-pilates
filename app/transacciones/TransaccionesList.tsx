@@ -1173,17 +1173,34 @@ export default function TransaccionesList({
                       >
                         <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
                           <span className="text-[15px] font-semibold text-navy truncate">{primary}</span>
-                          {recurringPeriod && (
-                            <svg className="shrink-0 text-primary/55" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                              <title>{recurringPeriod}</title>
-                              <path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15"/>
-                            </svg>
-                          )}
                         </div>
                         {secondary && <p className="text-xs text-navy/40 truncate">{secondary}</p>}
-                        <p className="text-xs text-navy/35 truncate">{originLabel(t.payment_method)}</p>
-                        <div className="mt-1" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center gap-1.5 mt-1 overflow-x-auto scrollbar-none" onClick={(e) => e.stopPropagation()}>
                           <CategoryPill category={t.category} categories={categories} onChange={(cat) => handleCategoryChange(t.id, cat)} hideIcon />
+                          <span className="shrink-0 inline-flex items-center gap-1 text-xs text-navy/35 whitespace-nowrap">
+                            {t.payment_method === "efectivo" ? (
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                                <rect x="2" y="6" width="20" height="14" rx="2"/><circle cx="12" cy="13" r="3"/><path d="M6 10h.01M18 10h.01"/>
+                              </svg>
+                            ) : t.payment_method === "banco" ? (
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                                <path d="M3 21h18M4 21V10l8-6 8 6v11M9 21v-6h6v6"/>
+                              </svg>
+                            ) : (
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                                <circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"/>
+                              </svg>
+                            )}
+                            {originLabel(t.payment_method)}
+                          </span>
+                          {recurringPeriod && (
+                            <span className="shrink-0 inline-flex items-center gap-1 text-[11px] text-primary/60 font-medium whitespace-nowrap">
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15"/>
+                              </svg>
+                              {recurringPeriod}
+                            </span>
+                          )}
                         </div>
                       </div>
                       <div className="shrink-0 text-right">
