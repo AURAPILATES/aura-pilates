@@ -75,6 +75,10 @@ function formatLabel(key: string, period: Period): string {
   }
 }
 
+function fmtEur(v: number) {
+  return Math.round(v).toLocaleString("de-DE", { maximumFractionDigits: 0 }) + " €";
+}
+
 function groupData(sales: Sale[], txns: Transaction[], period: Period): VolumenBrutoRow[] {
   const map = new Map<string, { income: number; expense: number }>();
 
@@ -131,6 +135,34 @@ export default function VolumenBruto({ sales, txns }: { sales: Sale[]; txns: Tra
       sources={["momence", "excel"]}
     >
       <VolumenBrutoBody data={data} chartType={chartType} />
+
+      <div className="mt-5 overflow-x-auto">
+        <table className="w-full min-w-max text-xs">
+          <thead>
+            <tr className="border-b border-navy/[0.07]">
+              <th className="text-left py-2 pr-3 text-navy/45 font-semibold uppercase tracking-wide">Período</th>
+              <th className="text-right py-2 pr-3 text-navy/45 font-semibold uppercase tracking-wide">Ingresos</th>
+              <th className="text-right py-2 pr-3 text-navy/45 font-semibold uppercase tracking-wide">Gastos</th>
+              <th className="text-right py-2 text-navy/45 font-semibold uppercase tracking-wide">Margen</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((row) => {
+              const margin = row.income - row.expense;
+              return (
+                <tr key={row.key} className="border-b border-navy/[0.04] last:border-0">
+                  <td className="py-2 pr-3 text-navy/70 whitespace-nowrap">{row.label}</td>
+                  <td className="py-2 pr-3 text-right text-navy tabular-nums">{fmtEur(row.income)}</td>
+                  <td className="py-2 pr-3 text-right text-navy tabular-nums">{fmtEur(row.expense)}</td>
+                  <td className={`py-2 text-right font-medium tabular-nums ${margin >= 0 ? "text-success" : "text-danger"}`}>
+                    {margin >= 0 ? "+" : ""}{fmtEur(margin)}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </ChartCard>
   );
 }
