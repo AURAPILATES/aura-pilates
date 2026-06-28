@@ -63,19 +63,23 @@ export default function GastosResumenGeneral({
         ))}
       </div>
 
-      <div className="mt-4 space-y-0.5">
+      <div className="mt-4 space-y-1">
         {segments.map((seg) => (
           <button
             key={seg.group}
             onClick={() => setSelected(seg.group === selected ? null : seg.group)}
-            className={`w-full flex items-center gap-2.5 text-left transition-colors rounded-xl px-2 py-2 -mx-2 ${
+            className={`w-full text-left transition-colors rounded-xl px-2 py-2 -mx-2 ${
               selected === seg.group ? "bg-navy/[0.03]" : "hover:bg-navy/[0.02]"
             }`}
           >
-            <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: GROUP_COLORS[seg.group] }} />
-            <span className="text-[13px] font-medium text-navy flex-1 min-w-0 truncate">{GROUP_LABELS[seg.group]}</span>
-            <span className="text-[13px] font-semibold text-navy tabular-nums shrink-0">−{fmtAmount(seg.total)}</span>
-            <span className="text-xs text-navy/50 tabular-nums shrink-0 w-10 text-right">{pct(seg.share)}</span>
+            <div className="flex items-center gap-1.5 mb-1">
+              <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: GROUP_COLORS[seg.group] }} />
+              <span className="text-[13px] font-medium text-navy flex-1 min-w-0 truncate">{GROUP_LABELS[seg.group]}</span>
+            </div>
+            <div className="flex items-baseline justify-between pl-4">
+              <span className="text-[13px] font-semibold text-navy tabular-nums">−{fmtAmount(seg.total)}</span>
+              <span className="text-xs text-navy/50 tabular-nums">{pct(seg.share)}</span>
+            </div>
           </button>
         ))}
       </div>
