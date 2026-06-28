@@ -77,6 +77,7 @@ function TransactionContactPicker({
   const [saving, setSaving] = useState(false);
   const [draftNewLabel, setDraftNewLabel] = useState<string | null>(null);
   const [pickerResetKey, setPickerResetKey] = useState(0);
+  const [confirmRemove, setConfirmRemove] = useState(false);
 
   async function link(label: string) {
     if (label === value) return;
@@ -94,6 +95,12 @@ function TransactionContactPicker({
     setPickerResetKey((k) => k + 1);
   }
 
+  async function remove() {
+    setConfirmRemove(false);
+    await link("");
+    setPickerResetKey((k) => k + 1);
+  }
+
   const derivedPattern = contactKeyFor(concept, bankDetails);
 
   return (
@@ -105,8 +112,31 @@ function TransactionContactPicker({
         disabled={saving}
         commitOnBlur
         placeholder="Escribe o elige uno guardado…"
-        onPick={(result) => { if ("contactId" in result) link(result.label); else setDraftNewLabel(result.newLabel); }}
+        onPick={(result) => {
+          if ("contactId" in result) link(result.label);
+          else if (result.newLabel.trim()) setDraftNewLabel(result.newLabel);
+          else link("");
+        }}
       />
+      {value && (
+        confirmRemove ? (
+          <div className="flex items-center justify-between gap-2 mt-1.5 text-xs">
+            <span className="text-navy/50">¿Quitar &ldquo;{value}&rdquo; de este movimiento?</span>
+            <div className="flex gap-2 shrink-0">
+              <button onClick={() => setConfirmRemove(false)} className="text-navy/45 hover:text-navy transition-colors">Cancelar</button>
+              <button onClick={remove} className="font-semibold text-danger hover:text-danger/80 transition-colors">Confirmar</button>
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={() => setConfirmRemove(true)}
+            disabled={saving}
+            className="mt-1.5 text-xs text-navy/40 hover:text-danger transition-colors disabled:opacity-50"
+          >
+            Quitar contacto
+          </button>
+        )
+      )}
       {draftNewLabel !== null && (
         <NewContactDrawer
           categories={categories}
