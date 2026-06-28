@@ -522,6 +522,8 @@ export default async function AnaliticaLoader({
               rangeLabel={uscLastDateLabel}
               comparisonTotal={revComp + uscRevComp}
               compRangeLabel={compDateRange}
+              monthly={monthlyRevenue}
+              events={businessEvents}
             />
           </div>
         </section>
