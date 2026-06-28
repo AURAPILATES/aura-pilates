@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import Drawer from "@/app/components/Drawer";
+import { InteractiveLegend } from "@/components/charts";
 import type { EconomicGroup } from "@/lib/transactions";
 
 type Txn = { date: string; amount: number; concept: string; contact: string };
@@ -36,9 +37,13 @@ function fmtDate(d: string) {
 export default function GastosResumenGeneral({
   groups,
   totalExpCat,
+  hiddenGroups,
+  onToggleHidden,
 }: {
   groups: GroupTotal[];
   totalExpCat: number;
+  hiddenGroups?: Set<EconomicGroup>;
+  onToggleHidden?: (group: EconomicGroup) => void;
 }) {
   const [selected, setSelected] = useState<EconomicGroup | null>(null);
 
@@ -65,26 +70,19 @@ export default function GastosResumenGeneral({
         ))}
       </div>
 
-      <div className="mt-4 space-y-1">
-        {segments.map((seg) => (
-          <button
-            key={seg.group}
-            onClick={() => setSelected(seg.group === selected ? null : seg.group)}
-            className={`w-full text-left transition-colors rounded-xl px-2 py-2 -mx-2 ${
-              selected === seg.group ? "bg-navy/[0.03]" : "hover:bg-navy/[0.02]"
-            }`}
-          >
-            <div className="flex items-center gap-1.5 mb-1">
-              <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: GROUP_COLORS[seg.group] }} />
-              <span className="text-[13px] font-medium text-navy flex-1 min-w-0 truncate">{GROUP_LABELS[seg.group]}</span>
-            </div>
-            <div className="flex items-baseline justify-between pl-4">
-              <span className="text-[13px] font-semibold text-navy tabular-nums">{fmtAmount(seg.total)}</span>
-              <span className="text-xs text-navy/50 tabular-nums">{pct(seg.share)}</span>
-            </div>
-          </button>
-        ))}
-      </div>
+      <InteractiveLegend
+        className="mt-4"
+        items={segments.map((seg) => ({
+          key: seg.group,
+          label: GROUP_LABELS[seg.group],
+          color: GROUP_COLORS[seg.group],
+          value: fmtAmount(seg.total),
+          helper: pct(seg.share),
+          hidden: hiddenGroups?.has(seg.group),
+        }))}
+        onSelect={(key) => setSelected(key === selected ? null : (key as EconomicGroup))}
+        onToggleVisibility={onToggleHidden ? (key) => onToggleHidden(key as EconomicGroup) : undefined}
+      />
 
       {selected && selectedSeg && (
         <Drawer

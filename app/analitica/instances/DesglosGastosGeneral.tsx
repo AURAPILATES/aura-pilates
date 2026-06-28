@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { ChartCard, ToggleGroup, type MultiKpiItem } from "@/components/charts";
 import GastosResumenGeneral, { type GroupTotal, fmtAmount } from "../GastosResumenGeneral";
 import { type Period } from "./evolucionIngresosUtils";
+import type { EconomicGroup } from "@/lib/transactions";
 
 const EvolucionGastosBody = dynamic(() => import("./EvolucionGastosBody"), {
   ssr: false,
@@ -27,6 +28,15 @@ export default function DesglosGastosGeneral({
   rangeLabel?: string | null;
 }) {
   const [period, setPeriod] = useState<Period>("mes");
+  const [hiddenGroups, setHiddenGroups] = useState<Set<EconomicGroup>>(new Set());
+
+  const toggleHidden = (group: EconomicGroup) =>
+    setHiddenGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(group)) next.delete(group);
+      else next.add(group);
+      return next;
+    });
 
   const kpiItems: MultiKpiItem[] = [{ label: "Total gastos", value: fmtAmount(totalExpCat) }];
 
@@ -50,11 +60,16 @@ export default function DesglosGastosGeneral({
     >
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
         <div className="lg:col-span-3 min-w-0">
-          <EvolucionGastosBody groups={groups} period={period} />
+          <EvolucionGastosBody groups={groups} period={period} hiddenGroups={hiddenGroups} />
         </div>
         <div className="lg:col-span-1 min-w-0">
           <p className="text-xs font-medium text-navy/55 mb-2.5">Resumen</p>
-          <GastosResumenGeneral groups={groups} totalExpCat={totalExpCat} />
+          <GastosResumenGeneral
+            groups={groups}
+            totalExpCat={totalExpCat}
+            hiddenGroups={hiddenGroups}
+            onToggleHidden={toggleHidden}
+          />
         </div>
       </div>
     </ChartCard>

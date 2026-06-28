@@ -524,6 +524,7 @@ export default async function AnaliticaLoader({
               compRangeLabel={compDateRange}
               monthly={monthlyRevenue}
               events={businessEvents}
+              rawPayments={paymentsBounded}
             />
           </div>
         </section>

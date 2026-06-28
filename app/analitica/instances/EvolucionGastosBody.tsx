@@ -29,26 +29,37 @@ function buildGroupSeries(groups: GroupTotal[]) {
   return { months, data };
 }
 
-function GastosTooltip({ active, payload }: TooltipContentProps) {
-  if (!active || !payload?.length) return null;
-  const row = payload[0].payload as Row;
-  return (
-    <div className="bg-white border border-navy/[0.07] rounded-lg shadow-card px-3 py-2 text-xs min-w-[170px]">
-      <p className="font-semibold text-navy mb-1.5">{row.label}</p>
-      {GROUP_ORDER.map((g) => (
-        <div key={g} className="flex items-center gap-1.5 mb-0.5 last:mb-0">
-          <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: GROUP_COLORS[g] }} />
-          <span className="text-navy/55 truncate">{GROUP_LABELS[g]}</span>
-          <span className="font-semibold text-navy ml-auto whitespace-nowrap">{fmtAmount(Number(row[g] ?? 0))}</span>
-        </div>
-      ))}
-    </div>
-  );
+function makeTooltip(visibleGroups: EconomicGroup[]) {
+  return function GastosTooltip({ active, payload }: TooltipContentProps) {
+    if (!active || !payload?.length) return null;
+    const row = payload[0].payload as Row;
+    return (
+      <div className="bg-white border border-navy/[0.07] rounded-lg shadow-card px-3 py-2 text-xs min-w-[170px]">
+        <p className="font-semibold text-navy mb-1.5">{row.label}</p>
+        {visibleGroups.map((g) => (
+          <div key={g} className="flex items-center gap-1.5 mb-0.5 last:mb-0">
+            <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: GROUP_COLORS[g] }} />
+            <span className="text-navy/55 truncate">{GROUP_LABELS[g]}</span>
+            <span className="font-semibold text-navy ml-auto whitespace-nowrap">{fmtAmount(Number(row[g] ?? 0))}</span>
+          </div>
+        ))}
+      </div>
+    );
+  };
 }
 
-export default function EvolucionGastosBody({ groups, period }: { groups: GroupTotal[]; period: Period }) {
+export default function EvolucionGastosBody({
+  groups,
+  period,
+  hiddenGroups,
+}: {
+  groups: GroupTotal[];
+  period: Period;
+  hiddenGroups?: Set<EconomicGroup>;
+}) {
   const base = buildGroupSeries(groups);
   const { months, data } = regroupSeries(base.months, base.data, period);
+  const visibleGroups = GROUP_ORDER.filter((g) => !hiddenGroups?.has(g));
 
   const rows: Row[] = months.map((m) => {
     const row = { month: m, label: periodLabel(m, period) } as Row;
@@ -67,8 +78,8 @@ export default function EvolucionGastosBody({ groups, period }: { groups: GroupT
           <CartesianGrid strokeDasharray="4 3" stroke="rgba(28,25,23,0.07)" vertical={false} />
           <XAxis dataKey="label" tick={{ fontSize: 10, fill: "rgba(28,25,23,0.45)" }} tickLine={false} axisLine={false} />
           <YAxis tickFormatter={fmtTick} tick={{ fontSize: 10, fill: "rgba(28,25,23,0.45)" }} tickLine={false} axisLine={false} width={34} />
-          <Tooltip content={GastosTooltip} cursor={{ fill: "rgba(28,25,23,0.04)" }} />
-          {GROUP_ORDER.map((g) => (
+          <Tooltip content={makeTooltip(visibleGroups)} cursor={{ fill: "rgba(28,25,23,0.04)" }} />
+          {visibleGroups.map((g) => (
             <Bar key={g} dataKey={g} stackId="a" fill={GROUP_COLORS[g]} radius={[2, 2, 0, 0]} />
           ))}
         </BarChart>

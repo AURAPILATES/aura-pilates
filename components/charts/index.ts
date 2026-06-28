@@ -1,4 +1,4 @@
-export { default as ChartCard, ToggleGroup, ChartTypeToggle, Legend } from "./ChartCard";
+export { default as ChartCard, ToggleGroup, ChartTypeToggle, Legend, InteractiveLegend } from "./ChartCard";
 export type {
   ChartCardProps,
   SingleKpi,
@@ -8,6 +8,7 @@ export type {
   IconToggleOption,
   ChartTypeToggleProps,
   LegendItem,
+  InteractiveLegendItem,
 } from "./ChartCard";
 
 export { default as KpiCard } from "./KpiCard";

@@ -1,11 +1,13 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { fmt, pct } from "@/lib/analytics";
-import { ChartCard, type MultiKpiItem } from "@/components/charts";
+import { ChartCard, InteractiveLegend, type MultiKpiItem } from "@/components/charts";
+import Drawer from "@/app/components/Drawer";
 import type { MonthlyProductRevenue } from "@/lib/productRevenue";
 import type { BusinessEvent } from "@/lib/businessEvents";
+import type { StripePayment } from "@/lib/stripePayments";
 import type { EvolucionRow } from "./EvolucionIngresosBody";
 import { PROCEDENCIA_COLORS, buildSeriesFromProcedencia, periodLabel } from "./evolucionIngresosUtils";
 
@@ -21,7 +23,6 @@ const CHANNEL_LABELS: Record<string, string> = { Interna: "Interno", Urban: "Urb
 // usa el nombre completo de Urban Sports Club, pero en el gráfico ambos deben leerse igual de cortos.
 const CHART_LABELS: Record<string, string> = { Interna: "Interno", Urban: "Urban" };
 const CHART_COLORS: Record<string, string> = { Interno: PROCEDENCIA_COLORS.Interna, Urban: PROCEDENCIA_COLORS.Urban };
-const EMPTY_HIDDEN = new Set<string>();
 
 function colorOf(key: string) {
   return PROCEDENCIA_COLORS[key] ?? "#6B7280";
@@ -39,6 +40,7 @@ export default function IngresosPorCanal({
   compRangeLabel,
   monthly,
   events,
+  rawPayments,
 }: {
   rows: MethodRow[];
   combinedTotal: number;
@@ -47,7 +49,21 @@ export default function IngresosPorCanal({
   compRangeLabel?: string;
   monthly: MonthlyProductRevenue[];
   events?: BusinessEvent[];
+  rawPayments?: StripePayment[];
 }) {
+  const [hiddenKeys, setHiddenKeys] = useState<Set<string>>(new Set());
+  const [selectedChannel, setSelectedChannel] = useState<string | null>(null);
+
+  const toggleHidden = (rawKey: string) => {
+    const chartKey = CHART_LABELS[rawKey] ?? rawKey;
+    setHiddenKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(chartKey)) next.delete(chartKey);
+      else next.add(chartKey);
+      return next;
+    });
+  };
+
   const totalCount = rows.reduce((s, r) => s + r.count, 0);
 
   const urbanRow = rows.find((r) => r.key === "usc");
@@ -102,6 +118,11 @@ export default function IngresosPorCanal({
     return map;
   }, [events]);
 
+  const selectedTxns = useMemo(() => {
+    if (selectedChannel !== "Interna" || !rawPayments) return [];
+    return [...rawPayments].sort((a, b) => b.date.localeCompare(a.date));
+  }, [selectedChannel, rawPayments]);
+
   return (
     <ChartCard
       title="Por canal de pago"
@@ -112,18 +133,10 @@ export default function IngresosPorCanal({
     >
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
         <div className="lg:col-span-3 min-w-0">
-          <div className="flex gap-3 mb-2">
-            {keys.map((k) => (
-              <div key={k} className="flex items-center gap-1.5 text-xs text-navy/55">
-                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: chartColorOf(k) }} />
-                {k}
-              </div>
-            ))}
-          </div>
           <EvolucionIngresosBody
             rows={evolRows}
             keys={keys}
-            hiddenKeys={EMPTY_HIDDEN}
+            hiddenKeys={hiddenKeys}
             hoveredLegendKey={null}
             chartType="line"
             view="procedencia"
@@ -138,30 +151,58 @@ export default function IngresosPorCanal({
             {channels.map((c) => (
               <div
                 key={c.key}
-                style={{ width: `${(combinedTotal > 0 ? c.revenue / combinedTotal : 0) * 100}%`, backgroundColor: colorOf(c.key) }}
+                style={{ flex: `${combinedTotal > 0 ? c.revenue / combinedTotal : 0} 0 0%`, backgroundColor: colorOf(c.key) }}
               />
             ))}
           </div>
-          <div className="space-y-3.5">
-            {channels.map((c) => {
+          <InteractiveLegend
+            items={channels.map((c) => {
               const share = combinedTotal > 0 ? c.revenue / combinedTotal : 0;
-              return (
-                <div key={c.key}>
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: colorOf(c.key) }} />
-                    <span className="text-xs font-medium text-navy truncate">{CHANNEL_LABELS[c.key] ?? c.key}</span>
-                  </div>
-                  <div className="flex items-baseline justify-between pl-4">
-                    <span className="text-sm font-semibold text-navy tabular-nums">{fmt(c.revenue)}</span>
-                    <span className="text-xs text-navy/50 tabular-nums">{pct(share)}</span>
-                  </div>
-                  <p className="pl-4 text-[11px] text-navy/45">{c.count} cobros</p>
-                </div>
-              );
+              return {
+                key: c.key,
+                label: CHANNEL_LABELS[c.key] ?? c.key,
+                color: colorOf(c.key),
+                value: fmt(c.revenue),
+                helper: pct(share),
+                hidden: hiddenKeys.has(CHART_LABELS[c.key] ?? c.key),
+              };
             })}
-          </div>
+            onSelect={(key) => setSelectedChannel(key === selectedChannel ? null : key)}
+            onToggleVisibility={toggleHidden}
+          />
         </div>
       </div>
+
+      {selectedChannel && (
+        <Drawer
+          maxWidth="max-w-[420px]"
+          header={
+            <div className="flex items-center gap-3">
+              <span className="w-3 h-3 rounded-sm shrink-0" style={{ backgroundColor: colorOf(selectedChannel) }} />
+              <h2 className="text-base font-semibold text-navy">{CHANNEL_LABELS[selectedChannel] ?? selectedChannel}</h2>
+            </div>
+          }
+          onClose={() => setSelectedChannel(null)}
+        >
+          {selectedChannel === "Urban" ? (
+            <p className="text-sm text-navy/45 px-6 py-8">
+              Los ingresos de Urban Sports Club llegan por transferencia bancaria — no hay datos individuales por alumno.
+            </p>
+          ) : selectedTxns.length === 0 ? (
+            <p className="text-sm text-navy/45 px-6 py-8">Sin pagos registrados en Stripe para este período.</p>
+          ) : (
+            selectedTxns.map((p) => (
+              <div key={p.id} className="flex items-center gap-3 px-6 py-3.5 border-b border-navy/5 last:border-0">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-navy truncate">{p.customerName ?? "Sin nombre"}</p>
+                  <p className="text-xs text-navy/55 mt-0.5 truncate">{p.customerEmail ?? p.date}</p>
+                </div>
+                <p className="text-sm font-semibold tabular-nums shrink-0 text-success">+{fmt(p.amount)}</p>
+              </div>
+            ))
+          )}
+        </Drawer>
+      )}
     </ChartCard>
   );
 }
