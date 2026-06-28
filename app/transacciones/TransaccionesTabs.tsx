@@ -91,6 +91,7 @@ export default function TransaccionesTabs({
           confirmed={confirmedRecurring}
           archived={archivedRecurring}
           categories={categories}
+          contacts={contacts}
         />
       )}
     </div>
