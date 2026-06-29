@@ -218,18 +218,18 @@ export interface ChartTypeToggleProps {
 
 export function ChartTypeToggle({ options, value, onChange, className = "" }: ChartTypeToggleProps) {
   return (
-    <div className={`flex ${className}`}>
-      {options.map((opt, i) => (
+    <div className={`flex gap-0.5 bg-navy/5 p-[3px] rounded-[10px] ${className}`}>
+      {options.map((opt) => (
         <button
           key={opt.value}
           type="button"
           onClick={() => onChange(opt.value)}
           aria-label={opt.label}
           aria-pressed={opt.value === value}
-          className={`w-[30px] h-7 flex items-center justify-center border border-navy/[0.07] ${
-            i === 0 ? "rounded-l-[7px]" : "-ml-px"
-          } ${i === options.length - 1 ? "rounded-r-[7px]" : ""} ${
-            opt.value === value ? "bg-navy text-white border-navy" : "bg-navy/5 text-navy/50"
+          className={`w-7 h-[26px] flex items-center justify-center rounded-[7px] transition-colors ${
+            opt.value === value
+              ? "bg-white text-navy border border-navy/[0.07] shadow-card"
+              : "text-navy/50 hover:text-navy"
           }`}
         >
           {opt.icon}

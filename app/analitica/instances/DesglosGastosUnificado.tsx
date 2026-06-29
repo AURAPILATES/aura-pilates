@@ -87,7 +87,7 @@ export default function DesglosGastosUnificado({
   const kpiItems: MultiKpiItem[] = [
     { label: "Total período", value: fmtAmount(totalExpCat) },
     { label: "Coste operativo", value: fmtAmount(totalExpCatNoCapex), helper: "Personal + OpEx · excluye CapEx" },
-    { label: "Promedio mensual", value: `${fmtAmount(avgMonthlyBurn)}/mes`, helper: "Personal + OpEx · últ. 3 meses completos" },
+    { label: "Promedio mensual coste operativo", value: `${fmtAmount(avgMonthlyBurn)}/mes`, helper: "Personal + OpEx · últ. 3 meses completos" },
   ];
 
   const selectedTxns = selectedLeaf
