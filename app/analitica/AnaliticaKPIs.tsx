@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { AlertTriangle, CreditCard } from "react-feather";
 import { fmt } from "@/lib/analytics";
 import Drawer from "@/app/components/Drawer";
 import { ChartCard, ProportionBar } from "@/components/charts";
@@ -133,107 +134,150 @@ export default function AnaliticaKPIs({
     ? Math.round(((spendPerClient - spendPerClientComp) / spendPerClientComp) * 100)
     : null;
 
+  const churnRiskTotal = churnList.length + delinquentList.length;
+
   return (
     <>
-      {/* ── Clientes activos: composición de la base activa + gasto + conversión ── */}
-      <ChartCard
-        title="Clientes activos"
-        subtitle="Composición de la base activa, gasto medio y candidatos a suscripción"
-        dateRange={dateRange}
-        kpiItems={[
-          {
-            label: "Activos",
-            value: activeTotal,
-            onClick: () => setDrawer("active"),
-          },
-          { label: "Suscritos", value: activeSubList.length },
-          { label: "Packs", value: activePackList.length },
-          {
-            label: "Gasto medio",
-            value: fmt(spendPerClient),
-            helper: spendDeltaPct !== null
-              ? `${spendDeltaPct >= 0 ? "+" : ""}${spendDeltaPct}% vs ${compDateRange}`
-              : undefined,
-          },
-          {
-            label: "Por convertir",
-            value: convertCandidates.length,
-            valueClassName: convertCandidates.length > 0 ? "text-primary" : "text-navy/50",
-            helper: "2+ packs, sin sub.",
-            onClick: convertCandidates.length > 0 ? () => setDrawer("convert") : undefined,
-          },
-        ]}
-        dataSource="Suscripción renovada hace ≤30 días, o pack vigente (Benvinguda: 15d · Pack 4/8: 90d)"
-        sources={["stripe"]}
-        lastUpdated="ahora"
-      >
-        {activeTotal > 0 && (
-          <ProportionBar
-            segments={[
-              { label: "Suscritos", color: "#7F77DD", percentage: Math.round(subPct) },
-              { label: "Packs", color: "#AFA9EC", percentage: Math.round(packPct) },
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+        {/* ── Clientes activos: base activa + movimiento del período ── */}
+        <div className="lg:col-span-3 min-w-0">
+          <ChartCard
+            title="Clientes activos"
+            subtitle="Base activa y movimiento del período"
+            dateRange={dateRange}
+            kpiItems={[
+              {
+                label: "Activos",
+                value: activeTotal,
+                onClick: () => setDrawer("active"),
+              },
+              { label: "Suscritos", value: activeSubList.length },
+              { label: "Packs", value: activePackList.length },
+              {
+                label: "Gasto medio",
+                value: fmt(spendPerClient),
+                helper: spendDeltaPct !== null
+                  ? `${spendDeltaPct >= 0 ? "+" : ""}${spendDeltaPct}% vs ${compDateRange}`
+                  : undefined,
+              },
+              {
+                label: "Por convertir",
+                value: convertCandidates.length,
+                valueClassName: convertCandidates.length > 0 ? "text-primary" : "text-navy/50",
+                helper: "2+ packs, sin sub.",
+                onClick: convertCandidates.length > 0 ? () => setDrawer("convert") : undefined,
+              },
             ]}
-          />
-        )}
-      </ChartCard>
+            dataSource="Suscripción renovada hace ≤30 días, o pack vigente (Benvinguda: 15d · Pack 4/8: 90d)"
+            sources={["stripe"]}
+            lastUpdated="ahora"
+          >
+            {activeTotal > 0 && (
+              <ProportionBar
+                segments={[
+                  { label: "Suscritos", color: "#7F77DD", percentage: Math.round(subPct) },
+                  { label: "Packs", color: "#AFA9EC", percentage: Math.round(packPct) },
+                ]}
+              />
+            )}
 
-      {/* ── Altas: nuevos vs reactivados ── */}
-      <ChartCard
-        title="Altas"
-        subtitle="Nuevos y reactivados en el período"
-        dateRange={dateRange}
-        kpiItems={[
-          {
-            label: "Nuevos",
-            value: newCustomers.length,
-            valueClassName: "text-success",
-            helper: "primer pago",
-            onClick: newCustomers.length > 0 ? () => setDrawer("new") : undefined,
-          },
-          {
-            label: "Reactivados",
-            value: reactivatedCustomers.length,
-            valueClassName: "text-success",
-            helper: "volvieron tras un hueco",
-            onClick: reactivatedCustomers.length > 0 ? () => setDrawer("altas") : undefined,
-          },
-          {
-            label: "Total altas",
-            value: `+${altasList.length}`,
-            valueClassName: "text-success",
-            onClick: altasList.length > 0 ? () => setDrawer("altas") : undefined,
-          },
-        ]}
-        dataSource="Nuevo = primer pago en el período · Reactivado = pagó pero no es ni nuevo ni recurrente"
-        sources={["stripe"]}
-        lastUpdated="ahora"
-      />
+            <div className="mt-5 pt-4 border-t border-navy/[0.07]">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs font-semibold text-navy/55 uppercase tracking-wider">Movimiento del período</p>
+                {altasList.length > 0 && (
+                  <span className="text-xs font-semibold text-success bg-success/10 px-2 py-0.5 rounded-full">
+                    +{altasList.length} altas
+                  </span>
+                )}
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <button
+                  type="button"
+                  onClick={newCustomers.length > 0 ? () => setDrawer("new") : undefined}
+                  className="text-left"
+                  disabled={newCustomers.length === 0}
+                >
+                  <div className="text-[10px] uppercase tracking-wide text-navy/50 mb-1">Nuevos</div>
+                  <div className="text-[20px] font-medium text-success leading-tight">+{newCustomers.length}</div>
+                  <div className="text-[11px] text-navy/50 mt-0.5">primer pago</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={reactivatedCustomers.length > 0 ? () => setDrawer("altas") : undefined}
+                  className="text-left"
+                  disabled={reactivatedCustomers.length === 0}
+                >
+                  <div className="text-[10px] uppercase tracking-wide text-navy/50 mb-1">Reactivados</div>
+                  <div className="text-[20px] font-medium text-success leading-tight">+{reactivatedCustomers.length}</div>
+                  <div className="text-[11px] text-navy/50 mt-0.5">volvieron tras un hueco</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={altasList.length > 0 ? () => setDrawer("altas") : undefined}
+                  className="text-left"
+                  disabled={altasList.length === 0}
+                >
+                  <div className="text-[10px] uppercase tracking-wide text-navy/50 mb-1">Total altas</div>
+                  <div className="text-[20px] font-medium text-success leading-tight">+{altasList.length}</div>
+                </button>
+              </div>
+            </div>
+          </ChartCard>
+        </div>
 
-      {/* ── Riesgo de baja ── */}
-      <ChartCard
-        title="Riesgo de baja"
-        subtitle="Suscriptoras sin renovar y cobros fallidos recientes"
-        dateRange={dateRange}
-        kpiItems={[
-          {
-            label: "Sin renovar",
-            value: churnList.length,
-            valueClassName: churnList.length > 0 ? "text-danger" : "text-navy/50",
-            helper: "46-76 días sin pagar",
-            onClick: churnList.length > 0 ? () => setDrawer("churn") : undefined,
-          },
-          {
-            label: "Error de pago",
-            value: delinquentList.length,
-            valueClassName: delinquentList.length > 0 ? "text-danger" : "text-navy/50",
-            helper: "últimos 30 días",
-            onClick: delinquentList.length > 0 ? () => setDrawer("error") : undefined,
-          },
-        ]}
-        dataSource="Stripe · suscripciones Bàsic / Plus / Pro"
-        sources={["stripe"]}
-        lastUpdated="ahora"
-      />
+        {/* ── Riesgo de baja: estado actual, no respeta el filtro de período ── */}
+        <div className="lg:col-span-1 min-w-0">
+          <ChartCard
+            title="Riesgo de baja"
+            subtitle="Suscriptoras sin renovar y cobros fallidos recientes"
+            dateRange="Estado actual"
+            kpiItems={[
+              {
+                label: "Sin renovar",
+                value: churnList.length,
+                valueClassName: churnList.length > 0 ? "text-danger" : "text-navy/50",
+                helper: (
+                  <>
+                    46-76 días sin pagar
+                    {churnList.length > 0 && (
+                      <span className="flex items-center gap-1 mt-1.5 text-[11px] font-medium text-warning bg-warning/10 px-2 py-0.5 rounded-full w-fit whitespace-nowrap">
+                        <AlertTriangle size={11} className="shrink-0" /> Contactar
+                      </span>
+                    )}
+                  </>
+                ),
+                onClick: churnList.length > 0 ? () => setDrawer("churn") : undefined,
+              },
+              {
+                label: "Error de pago",
+                value: delinquentList.length,
+                valueClassName: delinquentList.length > 0 ? "text-danger" : "text-navy/50",
+                helper: (
+                  <>
+                    últimos 30 días
+                    {delinquentList.length > 0 && (
+                      <span className="flex items-center gap-1 mt-1.5 text-[11px] font-medium text-danger bg-danger/10 px-2 py-0.5 rounded-full w-fit whitespace-nowrap">
+                        <CreditCard size={11} className="shrink-0" /> Revisar pago
+                      </span>
+                    )}
+                  </>
+                ),
+                onClick: delinquentList.length > 0 ? () => setDrawer("error") : undefined,
+              },
+            ]}
+            dataSource="Stripe · suscripciones Bàsic / Plus / Pro · no respeta el filtro de período, siempre estado actual"
+            sources={["stripe"]}
+            lastUpdated="ahora"
+          >
+            {churnRiskTotal > 0 && (
+              <div className="-mx-4 sm:-mx-5 -mb-4 mt-1 flex items-center justify-between bg-danger/[0.06] px-4 sm:px-5 py-2.5">
+                <span className="text-xs font-semibold text-danger">Total en riesgo</span>
+                <span className="text-sm font-semibold text-danger tabular-nums">{churnRiskTotal}</span>
+              </div>
+            )}
+          </ChartCard>
+        </div>
+      </div>
 
       {drawer && (() => {
         const cfg = drawerConfig[drawer];
