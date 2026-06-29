@@ -59,7 +59,7 @@ const BURN_CATS = new Set([
   "Impuestos y tasas","IVA","IRPF","IS","Teléfono","Seguros","Comisiones bancarias","Merchandising","Local","Otros",
 ]);
 
-type LeafExpenseSeg = { value: string; label: string; count: number; total: number; color: string; iconKey?: string };
+export type LeafExpenseSeg = { value: string; label: string; count: number; total: number; color: string; iconKey?: string };
 export type TopExpenseSeg = {
   key: string; label: string; color: string; iconKey?: string; group: EconomicGroup;
   count: number; total: number; children: LeafExpenseSeg[];
