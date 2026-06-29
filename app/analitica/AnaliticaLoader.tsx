@@ -38,6 +38,7 @@ import { getMemberships, getProducts, getCustomers } from "@/lib/momence";
 import { catalogFromMomence, revenueByProductFromStripe, revenueByProductByMonth, addUscToMonthlyRevenue } from "@/lib/productRevenue";
 import { computeSubscriptionCohorts, computeRetentionCohorts } from "@/lib/subscriptionCohort";
 import EvolucionSuscripciones from "./instances/EvolucionSuscripciones";
+import EvolucionSuscripcionesFullWidth from "./instances/EvolucionSuscripcionesFullWidth";
 import RetencionCohorte from "./instances/RetencionCohorte";
 import { loadBusinessEvents } from "@/lib/businessEvents";
 import { ChartCard } from "@/components/charts";
@@ -569,6 +570,7 @@ export default async function AnaliticaLoader({
             />
             <EvolucionInscritos data={activeCustomersData} />
             <EvolucionSuscripciones monthly={monthlyRevenue} cohorts={subscriptionCohorts} events={businessEvents} rawPayments={pMain} />
+            <EvolucionSuscripcionesFullWidth monthly={monthlyRevenue} cohorts={subscriptionCohorts} events={businessEvents} rawPayments={pMain} />
             <RetencionCohorte cohorts={retentionCohorts} />
             <ConversionPack summary={conversionSummary} />
             <PrimeraCompra summary={firstPurchaseSummary} />
