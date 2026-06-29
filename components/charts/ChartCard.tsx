@@ -280,44 +280,45 @@ export function InteractiveLegend({
   className?: string;
 }) {
   return (
-    <div className={`space-y-1 ${className}`}>
+    <div className={className}>
       {items.map((item) => (
         <div
           key={item.key}
-          className={`flex items-start gap-1 rounded-xl px-2 py-2 -mx-2 transition-colors ${
+          className={`flex items-center gap-1.5 rounded-lg px-2 py-1.5 -mx-2 transition-colors ${
             item.hidden ? "opacity-40" : "hover:bg-navy/[0.02]"
           }`}
         >
           <button
             type="button"
             onClick={() => onSelect?.(item.key)}
-            className="flex-1 min-w-0 text-left"
+            className="flex items-center gap-1.5 min-w-0 flex-1 text-left"
             title={onSelect ? "Ver transacciones" : undefined}
           >
-            <div className="flex items-center gap-1.5 mb-1">
-              <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: item.color }} />
-              <span className={`text-[13px] font-medium text-navy flex-1 min-w-0 truncate ${item.hidden ? "line-through" : ""}`}>
-                {item.label}
-              </span>
-            </div>
-            {(item.value !== undefined || item.helper !== undefined) && (
-              <div className="flex items-baseline justify-between pl-4">
-                {item.value !== undefined && (
-                  <span className="text-[13px] font-semibold text-navy tabular-nums">{item.value}</span>
-                )}
-                {item.helper !== undefined && <span className="text-xs text-navy/50 tabular-nums">{item.helper}</span>}
-              </div>
-            )}
+            <span className="w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: item.color }} />
+            <span
+              title={item.label}
+              className={`text-[13px] font-medium text-navy truncate ${item.hidden ? "line-through" : ""}`}
+            >
+              {item.label}
+            </span>
           </button>
+          {(item.value !== undefined || item.helper !== undefined) && (
+            <div className="flex items-baseline gap-1.5 shrink-0">
+              {item.value !== undefined && (
+                <span className="text-[13px] font-semibold text-navy tabular-nums">{item.value}</span>
+              )}
+              {item.helper !== undefined && <span className="text-xs text-navy/50 tabular-nums">{item.helper}</span>}
+            </div>
+          )}
           {onToggleVisibility && (
             <button
               type="button"
               onClick={() => onToggleVisibility(item.key)}
               aria-pressed={!item.hidden}
               title={item.hidden ? "Mostrar en el gráfico" : "Ocultar en el gráfico"}
-              className="shrink-0 p-1.5 rounded-full text-navy/35 hover:text-navy hover:bg-navy/[0.06] transition-colors"
+              className="shrink-0 p-1 rounded-full text-navy/35 hover:text-navy hover:bg-navy/[0.06] transition-colors"
             >
-              {item.hidden ? <EyeOff size={13} /> : <Eye size={13} />}
+              {item.hidden ? <EyeOff size={12} /> : <Eye size={12} />}
             </button>
           )}
         </div>
