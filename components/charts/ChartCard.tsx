@@ -279,12 +279,19 @@ export function InteractiveLegend({
   onToggleVisibility?: (key: string) => void;
   className?: string;
 }) {
+  // Con pocas series sobra espacio vertical para una columna a tamaño normal; con muchas,
+  // compactamos a 2 columnas y texto más pequeño para que quepan en el mismo alto. Las 2
+  // columnas solo se activan si el propio contenedor tiene sitio real (container query) —
+  // en un panel lateral estrecho (25%) 2 columnas no caben y se queda en 1 compacta.
+  const compact = items.length > 3;
+
   return (
-    <div className={className}>
+    <div className={`@container ${className}`}>
+      <div className={compact ? "grid grid-cols-1 @[360px]:grid-cols-2 gap-x-4" : "space-y-0.5"}>
       {items.map((item) => (
         <div
           key={item.key}
-          className={`flex items-center gap-1.5 rounded-lg px-2 py-1.5 -mx-2 transition-colors ${
+          className={`flex items-center gap-1.5 rounded-lg transition-colors -mx-2 ${compact ? "px-1.5 py-1" : "px-2 py-1.5"} ${
             item.hidden ? "opacity-40" : "hover:bg-navy/[0.02]"
           }`}
         >
@@ -297,18 +304,22 @@ export function InteractiveLegend({
             <span className="w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: item.color }} />
             <span
               title={item.label}
-              className={`text-[13px] font-medium text-navy truncate ${item.hidden ? "line-through" : ""}`}
+              className={`font-medium text-navy truncate ${compact ? "text-[12px]" : "text-[13px]"} ${item.hidden ? "line-through" : ""}`}
             >
               {item.label}
             </span>
           </button>
-          {(item.value !== undefined || item.helper !== undefined) && (
-            <div className="flex items-baseline gap-1.5 shrink-0">
-              {item.value !== undefined && (
-                <span className="text-[13px] font-semibold text-navy tabular-nums">{item.value}</span>
-              )}
-              {item.helper !== undefined && <span className="text-xs text-navy/50 tabular-nums">{item.helper}</span>}
-            </div>
+          {item.value !== undefined && (
+            <span
+              className={`font-semibold text-navy tabular-nums text-right shrink-0 ${compact ? "text-[12px] w-20" : "text-[13px] w-24"}`}
+            >
+              {item.value}
+            </span>
+          )}
+          {item.helper !== undefined && (
+            <span className={`text-navy/50 tabular-nums text-right shrink-0 ${compact ? "text-[11px] w-9" : "text-xs w-10"}`}>
+              {item.helper}
+            </span>
           )}
           {onToggleVisibility && (
             <button
@@ -318,11 +329,12 @@ export function InteractiveLegend({
               title={item.hidden ? "Mostrar en el gráfico" : "Ocultar en el gráfico"}
               className="shrink-0 p-1 rounded-full text-navy/35 hover:text-navy hover:bg-navy/[0.06] transition-colors"
             >
-              {item.hidden ? <EyeOff size={12} /> : <Eye size={12} />}
+              {item.hidden ? <EyeOff size={compact ? 11 : 12} /> : <Eye size={compact ? 11 : 12} />}
             </button>
           )}
         </div>
       ))}
+      </div>
     </div>
   );
 }

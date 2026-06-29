@@ -228,7 +228,6 @@ export default function EvolucionSuscripcionesFullWidth({
           ))}
         </div>
         <InteractiveLegend
-          className="grid grid-cols-1 sm:grid-cols-2 gap-x-6"
           items={legendTotals.map((t) => ({
             key: t.key,
             label: legendLabel(t.key),
