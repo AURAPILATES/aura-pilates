@@ -23,6 +23,7 @@ import { loadCategoriesCached, type Category } from "@/lib/categories";
 import { loadRecurringExpensesCached, forecastConfirmedExpenses } from "@/lib/recurringExpenses";
 import DesglosGastos from "./instances/DesglosGastos";
 import DesglosGastosGeneral from "./instances/DesglosGastosGeneral";
+import DesglosGastosUnificado from "./instances/DesglosGastosUnificado";
 import ResumenFinanzas from "./instances/ResumenFinanzas";
 import VolumenBruto from "./instances/VolumenBruto";
 import Ingresos from "./instances/Ingresos";
@@ -500,6 +501,15 @@ export default async function AnaliticaLoader({
               totalExpCat={totalExpCatNoCapex}
               rangeLabel={txnRangeLabel}
               lastUpdated={bancoLastUpdated}
+            />
+            <DesglosGastosUnificado
+              groups={expGroupTotals}
+              categories={expByTopCategory}
+              transactionsByCategory={transactionsByCategory}
+              totalExpCat={totalExpCat}
+              totalExpCatNoCapex={totalExpCatNoCapex}
+              avgMonthlyBurn={avgMonthlyBurn}
+              rangeLabel={txnRangeLabel}
             />
             <PrevisionGastos forecasts={recurringForecasts} categories={dbCategories} />
           </div>

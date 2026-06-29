@@ -78,7 +78,7 @@ const NAME_TO_KEY: Record<string, string> = {
   "Ingresos Stripe": "trending-up", "Ingresos USC": "trending-up",
 };
 
-function CategoryIcon({ name, color, iconKey, small = false }: { name: string; color: string; iconKey?: string; small?: boolean }) {
+export function CategoryIcon({ name, color, iconKey, small = false }: { name: string; color: string; iconKey?: string; small?: boolean }) {
   const key = iconKey && ICON_BY_KEY[iconKey] ? iconKey : (NAME_TO_KEY[name] ?? "package");
   const size = small ? 24 : 40;
   return (
