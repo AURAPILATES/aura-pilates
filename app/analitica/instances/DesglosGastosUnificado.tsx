@@ -311,7 +311,7 @@ export default function DesglosGastosUnificado({
                     </td>
                     {months.map((m) => (
                       <td key={m} className="py-2 pr-3 text-right text-navy font-semibold tabular-nums">
-                        {data.get(m)?.get(group) ? fmtAmount(data.get(m)!.get(group)!) : "—"}
+                        {data.get(m)?.get(group) ? fmtAmount(data.get(m)!.get(group)!) : "-"}
                       </td>
                     ))}
                     <td className="py-2 text-right text-navy font-semibold tabular-nums">{fmtAmount(g.total)}</td>
@@ -328,7 +328,7 @@ export default function DesglosGastosUnificado({
                         <td className="py-1.5 pl-6 pr-3 text-navy/80 whitespace-nowrap">{c.label}</td>
                         {months.map((m) => (
                           <td key={m} className="py-1.5 pr-3 text-right text-navy/80 tabular-nums">
-                            {catSeries.get(m) ? fmtAmount(catSeries.get(m)!) : "—"}
+                            {catSeries.get(m) ? fmtAmount(catSeries.get(m)!) : "-"}
                           </td>
                         ))}
                         <td className="py-1.5 text-right text-navy/80 tabular-nums">{fmtAmount(c.total)}</td>
@@ -345,7 +345,7 @@ export default function DesglosGastosUnificado({
                             <td className="py-1.5 pl-11 pr-3 text-navy/55 whitespace-nowrap">{ch.label}</td>
                             {months.map((m) => (
                               <td key={m} className="py-1.5 pr-3 text-right text-navy/55 tabular-nums">
-                                {leafSeries.get(m) ? fmtAmount(leafSeries.get(m)!) : "—"}
+                                {leafSeries.get(m) ? fmtAmount(leafSeries.get(m)!) : "-"}
                               </td>
                             ))}
                             <td className="py-1.5 text-right text-navy/55 tabular-nums">{fmtAmount(ch.total)}</td>

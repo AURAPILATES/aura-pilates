@@ -112,7 +112,7 @@ export default function DesglosGastosGeneral({
                   <td className="py-2 pr-3 text-right text-navy font-medium tabular-nums">{fmtAmount(total)}</td>
                   {GROUP_ORDER.map((g) => (
                     <td key={g} className="py-2 pr-3 text-right text-navy tabular-nums">
-                      {row?.get(g) ? fmtAmount(row.get(g)!) : "—"}
+                      {row?.get(g) ? fmtAmount(row.get(g)!) : "-"}
                     </td>
                   ))}
                 </tr>

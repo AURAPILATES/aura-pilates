@@ -198,7 +198,7 @@ export default function IngresosPorCanal({
                   <td className="py-2 pr-3 text-right text-navy font-medium tabular-nums">{fmt(total)}</td>
                   {keys.map((k) => (
                     <td key={k} className="py-2 pr-3 text-right text-navy tabular-nums">
-                      {Number(row[k] ?? 0) > 0 ? fmt(Number(row[k])) : "—"}
+                      {Number(row[k] ?? 0) > 0 ? fmt(Number(row[k])) : "-"}
                     </td>
                   ))}
                 </tr>

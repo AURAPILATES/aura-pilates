@@ -268,10 +268,10 @@ export default function EvolucionSuscripciones({
                     <td className="py-2 pr-3 text-right text-navy tabular-nums">{fmtEur(interna + urban)}</td>
                     <td className="py-2 pr-3 text-right text-navy tabular-nums">{fmtEur(interna)}</td>
                     <td className="py-2 pr-3 text-right text-navy tabular-nums">{fmtEur(urban)}</td>
-                    <td className="py-2 pr-3 text-right text-navy tabular-nums">{c?.activeCount ?? "—"}</td>
-                    <td className="py-2 pr-3 text-right text-danger font-medium tabular-nums">{c ? `−${c.churned}` : "—"}</td>
-                    <td className="py-2 pr-3 text-right text-success font-medium tabular-nums">{c ? `+${c.newSubs}` : "—"}</td>
-                    <td className="py-2 text-right text-primary font-medium tabular-nums">{c?.reactivated ?? "—"}</td>
+                    <td className="py-2 pr-3 text-right text-navy tabular-nums">{c?.activeCount ?? "-"}</td>
+                    <td className="py-2 pr-3 text-right text-danger font-medium tabular-nums">{c ? `−${c.churned}` : "-"}</td>
+                    <td className="py-2 pr-3 text-right text-success font-medium tabular-nums">{c ? `+${c.newSubs}` : "-"}</td>
+                    <td className="py-2 text-right text-primary font-medium tabular-nums">{c?.reactivated ?? "-"}</td>
                   </tr>
                 );
               })}
