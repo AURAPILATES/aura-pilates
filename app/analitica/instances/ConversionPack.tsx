@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import type { ConversionSummary } from "@/lib/sales";
 import { ChartCard } from "@/components/charts";
+import { analyzeCohorts, buildConversionInsight } from "./conversionAnalysis";
 
 const ConversionPackBody = dynamic(() => import("./ConversionPackBody"), {
   ssr: false,
@@ -14,7 +15,9 @@ function fmtPct(v: number) {
 }
 
 export default function ConversionPack({ summary }: { summary: ConversionSummary }) {
-  const { totalBuyers, totalConverted, rate, avgDaysToConvert, medianDaysToConvert } = summary;
+  const { totalBuyers, totalConverted, rate, avgDaysToConvert, medianDaysToConvert, cohorts } = summary;
+
+  const insight = buildConversionInsight(analyzeCohorts(cohorts, medianDaysToConvert), medianDaysToConvert);
 
   return (
     <ChartCard
@@ -34,6 +37,15 @@ export default function ConversionPack({ summary }: { summary: ConversionSummary
       dataSource="Cohorte = mes de compra del pack · Convertido = suscripción en fecha posterior · Momence + Stripe. Haz clic en un punto o una fila para ver el detalle."
       sources={["momence", "stripe"]}
       lastUpdated="ahora"
+      aiInsight={
+        insight.length > 0 && (
+          <div className="space-y-1">
+            {insight.map((sentence, i) => (
+              <p key={i}>{sentence}</p>
+            ))}
+          </div>
+        )
+      }
     >
       <ConversionPackBody summary={summary} />
     </ChartCard>

@@ -257,6 +257,38 @@ export function Legend({ items, className = "" }: { items: LegendItem[]; classNa
   );
 }
 
+/** Leyenda estática (sin estado, sin drawer): solo explica qué significa cada color/trazo
+ * del gráfico. No confundir con InteractiveLegend, que sí permite ocultar series y abrir detalle. */
+export interface StaticLegendItem {
+  label: string;
+  color: string;
+  swatch?: "dot" | "line" | "dashed";
+}
+
+export function StaticLegend({ items, className = "" }: { items: StaticLegendItem[]; className?: string }) {
+  return (
+    <div className={`flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-navy/60 ${className}`}>
+      {items.map((item) => (
+        <span key={item.label} className="flex items-center gap-1.5">
+          {item.swatch === "dot" ? (
+            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+          ) : (
+            <svg width="14" height="8" className="shrink-0" aria-hidden="true">
+              <line
+                x1="0" y1="4" x2="14" y2="4"
+                stroke={item.color}
+                strokeWidth="2"
+                strokeDasharray={item.swatch === "dashed" ? "3 2" : undefined}
+              />
+            </svg>
+          )}
+          {item.label}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 /** Leyenda interactiva estándar: clic en la etiqueta abre el detalle (drawer) de ese
  * dato; el icono de ojo muestra/oculta esa serie en el gráfico sin alterar los totales. */
 export interface InteractiveLegendItem {
