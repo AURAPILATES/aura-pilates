@@ -7,7 +7,8 @@ import type { MonthlyProductRevenue } from "@/lib/productRevenue";
 import type { MonthlySubStats } from "@/lib/subscriptionCohort";
 import type { BusinessEvent } from "@/lib/businessEvents";
 import type { StripePayment } from "@/lib/stripePayments";
-import { ChartCard, ChartTypeToggle, ToggleGroup, type MultiKpiItem } from "@/components/charts";
+import { ChartCard, ChartTypeToggle, ToggleGroup, InteractiveLegend, type MultiKpiItem } from "@/components/charts";
+import { pct } from "@/lib/analytics";
 import Drawer from "@/app/components/Drawer";
 import type { EvolucionRow } from "./EvolucionIngresosBody";
 import {
@@ -51,9 +52,20 @@ export default function EvolucionSuscripciones({
   const [view, setView] = useState<View>("producto");
   const [period, setPeriod] = useState<Period>("mes");
   const [chartType, setChartType] = useState<ChartType>("line");
-  const [hoveredLegendKey, setHoveredLegendKey] = useState<string | null>(null);
   const [hiddenKeys, setHiddenKeys] = useState<Set<string>>(new Set());
   const [barDrawer, setBarDrawer] = useState<{ month: string; key: string } | null>(null);
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
+
+  const toggleHidden = (key: string) =>
+    setHiddenKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+
+  const legendLabel = (key: string) =>
+    view === "procedencia" ? (key === "Interna" ? "Interno" : key === "Urban" ? "Urban Sports Club" : key) : key;
 
   const baseSeries = view === "producto" ? buildSeriesFromMonthly(monthly) : buildSeriesFromProcedencia(monthly);
   const { months, data } = regroupSeries(baseSeries.months, baseSeries.data, period);
@@ -92,6 +104,24 @@ export default function EvolucionSuscripciones({
       .filter((p) => p.date.slice(0, 7) === barDrawer.month && p.inferredProduct === barDrawer.key)
       .map((p) => ({ name: p.customerName, email: p.customerEmail, amount: p.amount }));
   }, [barDrawer, rawPayments]);
+
+  const legendTotals = keys.map((k) => ({ key: k, total: rows.reduce((s, r) => s + Number(r[k] ?? 0), 0) }));
+  const legendGrandTotal = legendTotals.reduce((s, t) => s + t.total, 0);
+
+  const selectedDrawerPayments = useMemo(() => {
+    if (!selectedKey || !rawPayments || baseSeries.months.length === 0) return [];
+    const fromMonth = baseSeries.months[0];
+    const toMonth = baseSeries.months[baseSeries.months.length - 1];
+    if (view === "procedencia") {
+      if (selectedKey !== "Interna") return [];
+      return rawPayments
+        .filter((p) => p.date.slice(0, 7) >= fromMonth && p.date.slice(0, 7) <= toMonth)
+        .sort((a, b) => b.date.localeCompare(a.date));
+    }
+    return rawPayments
+      .filter((p) => p.inferredProduct === selectedKey && p.date.slice(0, 7) >= fromMonth && p.date.slice(0, 7) <= toMonth)
+      .sort((a, b) => b.date.localeCompare(a.date));
+  }, [selectedKey, rawPayments, view, baseSeries.months]);
 
   const trendSummary = makeTrendSummary(baseSeries.months, baseSeries.data, keysByRevenue);
 
@@ -139,45 +169,15 @@ export default function EvolucionSuscripciones({
         kpiItems={kpiItems}
         toolbar={
           <>
-            <div className="flex items-center gap-3 flex-wrap min-w-0">
-              <ChartTypeToggle
-                value={chartType}
-                onChange={(v) => setChartType(v as ChartType)}
-                options={[
-                  { value: "line", label: "Ver como línea", icon: <Activity size={14} /> },
-                  { value: "bar", label: "Ver como barras", icon: <BarChart2 size={14} /> },
-                ]}
-              />
-              <div className="flex flex-wrap gap-x-3 gap-y-1 min-w-0">
-                {keys.map((key) => {
-                  const isHid = hiddenKeys.has(key);
-                  const isDimmed = hoveredLegendKey !== null && hoveredLegendKey !== key && !isHid;
-                  return (
-                    <span
-                      key={key}
-                      className={`flex items-center gap-1.5 text-xs cursor-pointer select-none transition-opacity ${
-                        isHid ? "opacity-30 line-through" : isDimmed ? "opacity-40 text-navy/60" : "text-navy/60"
-                      }`}
-                      title={isHid ? "Clic para mostrar" : "Clic para ocultar"}
-                      onMouseEnter={() => setHoveredLegendKey(key)}
-                      onMouseLeave={() => setHoveredLegendKey(null)}
-                      onClick={() =>
-                        setHiddenKeys((prev) => {
-                          const next = new Set(prev);
-                          if (next.has(key)) next.delete(key);
-                          else next.add(key);
-                          return next;
-                        })
-                      }
-                    >
-                      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: colorOf(key) }} />
-                      {key}
-                    </span>
-                  );
-                })}
-              </div>
-            </div>
-            <div className="flex items-center gap-2 flex-wrap">
+            <ChartTypeToggle
+              value={chartType}
+              onChange={(v) => setChartType(v as ChartType)}
+              options={[
+                { value: "line", label: "Ver como línea", icon: <Activity size={14} /> },
+                { value: "bar", label: "Ver como barras", icon: <BarChart2 size={14} /> },
+              ]}
+            />
+            <div className="flex items-center gap-2 flex-wrap ml-auto">
               <ToggleGroup
                 value={view}
                 onChange={(v) => { setView(v as View); setHiddenKeys(new Set()); }}
@@ -204,17 +204,44 @@ export default function EvolucionSuscripciones({
           )
         }
       >
-        <EvolucionIngresosBody
-          rows={rows}
-          keys={keys}
-          hiddenKeys={hiddenKeys}
-          hoveredLegendKey={hoveredLegendKey}
-          chartType={chartType}
-          view={view}
-          colorOf={colorOf}
-          eventsByMonth={eventsByMonth}
-          onBarClick={period === "mes" ? (month, key) => setBarDrawer({ month, key }) : undefined}
-        />
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
+          <div className="lg:col-span-3 min-w-0">
+            <EvolucionIngresosBody
+              rows={rows}
+              keys={keys}
+              hiddenKeys={hiddenKeys}
+              hoveredLegendKey={null}
+              chartType={chartType}
+              view={view}
+              colorOf={colorOf}
+              eventsByMonth={eventsByMonth}
+              onBarClick={period === "mes" ? (month, key) => setBarDrawer({ month, key }) : undefined}
+            />
+          </div>
+          <div className="lg:col-span-1 min-w-0">
+            <p className="text-xs font-medium text-navy/55 mb-2.5">Resumen</p>
+            <div className="flex h-3 rounded-full overflow-hidden bg-navy/5 mb-4">
+              {legendTotals.map((t) => (
+                <div
+                  key={t.key}
+                  style={{ flex: `${legendGrandTotal > 0 ? t.total / legendGrandTotal : 0} 0 0%`, backgroundColor: colorOf(t.key) }}
+                />
+              ))}
+            </div>
+            <InteractiveLegend
+              items={legendTotals.map((t) => ({
+                key: t.key,
+                label: legendLabel(t.key),
+                color: colorOf(t.key),
+                value: fmtEur(t.total),
+                helper: pct(legendGrandTotal > 0 ? t.total / legendGrandTotal : 0),
+                hidden: hiddenKeys.has(t.key),
+              }))}
+              onSelect={(key) => setSelectedKey(key === selectedKey ? null : key)}
+              onToggleVisibility={toggleHidden}
+            />
+          </div>
+        </div>
 
         <div className="mt-5 overflow-x-auto">
           <table className="w-full min-w-max text-xs">
@@ -281,6 +308,37 @@ export default function EvolucionSuscripciones({
               ))
             )}
           </div>
+        </Drawer>
+      )}
+
+      {selectedKey && (
+        <Drawer
+          maxWidth="max-w-[420px]"
+          header={
+            <div className="flex items-center gap-3">
+              <span className="w-3 h-3 rounded-sm shrink-0" style={{ backgroundColor: colorOf(selectedKey) }} />
+              <h2 className="text-base font-semibold text-navy">{legendLabel(selectedKey)}</h2>
+            </div>
+          }
+          onClose={() => setSelectedKey(null)}
+        >
+          {view === "procedencia" && selectedKey === "Urban" ? (
+            <p className="text-sm text-navy/45 px-6 py-8">
+              Los ingresos de Urban Sports Club llegan por transferencia bancaria — no hay datos individuales por alumno.
+            </p>
+          ) : selectedDrawerPayments.length === 0 ? (
+            <p className="text-sm text-navy/45 px-6 py-8">Sin pagos registrados en Stripe para este período.</p>
+          ) : (
+            selectedDrawerPayments.map((p) => (
+              <div key={p.id} className="flex items-center gap-3 px-6 py-3.5 border-b border-navy/5 last:border-0">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-navy truncate">{p.customerName ?? "Sin nombre"}</p>
+                  <p className="text-xs text-navy/55 mt-0.5 truncate">{p.customerEmail ?? p.date}</p>
+                </div>
+                <p className="text-sm font-semibold tabular-nums shrink-0 text-success">+{fmtEur(p.amount)}</p>
+              </div>
+            ))
+          )}
         </Drawer>
       )}
     </>
