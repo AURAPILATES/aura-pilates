@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import { BarChart2, Activity } from "react-feather";
 import type { Sale } from "@/lib/sales";
 import type { Transaction } from "@/lib/transactions";
-import { ChartCard, ChartTypeToggle, ToggleGroup, Legend } from "@/components/charts";
+import { ChartCard, ChartTypeToggle, ToggleGroup, Legend, type MultiKpiItem } from "@/components/charts";
 import type { VolumenBrutoRow } from "./VolumenBrutoBody";
 
 const VolumenBrutoBody = dynamic(() => import("./VolumenBrutoBody"), {
@@ -104,10 +104,12 @@ export default function VolumenBruto({
   sales,
   txns,
   lastUpdated,
+  kpiItems,
 }: {
   sales: Sale[];
   txns: Transaction[];
   lastUpdated?: string | null;
+  kpiItems?: MultiKpiItem[];
 }) {
   const [period, setPeriod] = useState<Period>("mes");
   const [chartType, setChartType] = useState<"bar" | "line">("bar");
@@ -119,9 +121,10 @@ export default function VolumenBruto({
 
   return (
     <ChartCard
-      title="Ingresos y gastos"
+      title="Ingresos, gastos y resultado"
       subtitle="Volumen bruto de ingresos (Momence) frente a gastos (exportación bancaria) por período"
       dateRange={dateRange}
+      kpiItems={kpiItems}
       toolbar={
         <>
           <div className="flex items-center gap-3 flex-wrap">
@@ -143,8 +146,8 @@ export default function VolumenBruto({
         </>
       }
       chartDescription="Evolución de ingresos y gastos por período seleccionado"
-      dataSource="Ingresos: Momence sales.csv · Gastos: exportación bancaria CaixaBank"
-      sources={["momence", "excel"]}
+      dataSource="Ingresos: Stripe en vivo + Momence sales.csv · Gastos: exportación bancaria CaixaBank"
+      sources={["stripe", "momence", "excel"]}
       lastUpdated={lastUpdated}
     >
       <VolumenBrutoBody data={data} chartType={chartType} />

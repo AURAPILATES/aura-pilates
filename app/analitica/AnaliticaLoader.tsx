@@ -209,7 +209,6 @@ export default async function AnaliticaLoader({
   ).reduce((sum, s) => sum + s.amount, 0);
   const q1Revenue = totalRev + uscRevenue;
   const q1RevComp = revComp + uscRevComp;
-  const q1Label   = periodLabel;
 
   // Última fecha con datos reales de Urban (el CSV no se actualiza solo) — se usa para
   // acotar "Por producto" / "Por canal de pago" y que Stripe y Urban cubran el mismo periodo.
@@ -449,9 +448,10 @@ export default async function AnaliticaLoader({
               clientesNecesarios={clientesNecesarios}
               curMonthLabel={monthLabel(curMonth)}
             />
-            <ChartCard
-              title="Ingresos, gastos y resultado"
-              dateRange={q1Label}
+            <VolumenBruto
+              sales={salesAll}
+              txns={txnsAll}
+              lastUpdated={liveLastUpdated}
               kpiItems={[
                 {
                   label: "Ingresos",
@@ -475,12 +475,7 @@ export default async function AnaliticaLoader({
                   helper: `MRR estimado ${fmt(realMrr)}`,
                 },
               ]}
-              dataSource="Stripe en vivo + Urban Sports Club (Momence CSV)"
-              sources={["stripe", "momence"]}
-              lastUpdated={liveLastUpdated}
-            >
-              <VolumenBruto sales={salesAll} txns={txnsAll} lastUpdated={bancoLastUpdated} />
-            </ChartCard>
+            />
             <Breakeven points={breakevenPoints} />
           </div>
         </section>
