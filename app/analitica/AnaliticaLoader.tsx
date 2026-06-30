@@ -274,7 +274,7 @@ export default async function AnaliticaLoader({
       month: m,
       label: `${MONTH_ES[mm] ?? mm}'${y.slice(2)}`,
       stripeNet: monthlyStripeNetMap.get(m) ?? 0,
-      uscNet: (uscByMonth.get(m) ?? 0) * 0.55,
+      uscNet: uscByMonth.get(m) ?? 0,
     };
   });
 

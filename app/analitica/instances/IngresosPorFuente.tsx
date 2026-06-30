@@ -6,7 +6,8 @@ import { BarChart2, Activity } from "react-feather";
 import { ChartCard, ChartTypeToggle, Legend } from "@/components/charts";
 import type { IngresosPorFuenteRow } from "./IngresosPorFuenteBody";
 
-const USC_COMMISSION = 0.45;
+const USC_PRICE_STUDIO = 20;  // precio tarifa Aura por clase suelta
+const USC_PRICE_PAID   = 11;  // lo que Urban paga a Aura por clase (ya es neto)
 
 const IngresosPorFuenteBody = dynamic(() => import("./IngresosPorFuenteBody"), {
   ssr: false,
@@ -36,7 +37,8 @@ export default function IngresosPorFuente({
 }) {
   const [chartType, setChartType] = useState<"bar" | "line">("bar");
 
-  const uscNet   = uscGross * (1 - USC_COMMISSION);
+  // El CSV de Momence ya registra lo que paga Urban (11 €/clase = neto para Aura)
+  const uscNet   = uscGross;
   const totalNet = stripeNet + uscNet;
 
   return (
@@ -48,7 +50,7 @@ export default function IngresosPorFuente({
         {
           label: "Ventas totales",
           value: fmtEur(totalNet),
-          helper: `Stripe + Urban · neto`,
+          helper: "Stripe neto + Urban",
         },
         {
           label: "Ventas Stripe",
@@ -58,7 +60,7 @@ export default function IngresosPorFuente({
         {
           label: "Ventas Urban",
           value: fmtEur(uscNet),
-          helper: `Bruto: ${fmtEur(uscGross)} · comis. ${USC_COMMISSION * 100}%`,
+          helper: `${USC_PRICE_PAID} €/clase · tarifa estudio ${USC_PRICE_STUDIO} €`,
         },
       ]}
       toolbar={
@@ -79,7 +81,7 @@ export default function IngresosPorFuente({
           />
         </div>
       }
-      dataSource="Stripe API (pagos netos) + Urban Sports Club CSV (bruto × 55% neto)"
+      dataSource="Stripe API (pagos netos) + Urban Sports Club Momence CSV (11 €/clase, ya neto)"
       sources={["stripe", "momence"]}
       lastUpdated={lastUpdated}
     >
