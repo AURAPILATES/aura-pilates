@@ -24,7 +24,6 @@ import { loadRecurringExpensesCached, forecastConfirmedExpenses } from "@/lib/re
 import DesglosGastosUnificado from "./instances/DesglosGastosUnificado";
 import CockpitFinanciero from "./instances/CockpitFinanciero";
 import Ingresos from "./instances/Ingresos";
-import IngresosPorCanal from "./instances/IngresosPorCanal";
 import IngresosPorFuente from "./instances/IngresosPorFuente";
 import type { IngresosPorFuenteRow } from "./instances/IngresosPorFuenteBody";
 import EvolucionInscritos from "./instances/EvolucionInscritos";
@@ -545,19 +544,6 @@ export default async function AnaliticaLoader({
               }))}
               productTotal={byProductTotal}
               tiers={mrrByTier}
-            />
-            <IngresosPorCanal
-              rows={[
-                ...byMethodBounded.map((r) => ({ key: r.method, label: r.label, revenue: r.revenue, count: r.count, bar: "bg-primary" })),
-                ...(uscRevenue > 0 ? [{ key: "usc", label: "Urban Sports Club", revenue: uscRevenue, count: uscCount, bar: "bg-warning" }] : []),
-              ]}
-              combinedTotal={stripeTotalRevenue(paymentsBounded) + uscRevenue}
-              rangeLabel={uscLastDateLabel}
-              comparisonTotal={revComp + uscRevComp}
-              compRangeLabel={compDateRange}
-              monthly={monthlyRevenue}
-              events={businessEvents}
-              rawPayments={paymentsBounded}
             />
           </div>
         </section>
