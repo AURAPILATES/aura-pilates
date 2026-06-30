@@ -322,11 +322,23 @@ export default async function AnaliticaLoader({
     .find((t) => t.balance !== null)?.date ?? null;
 
   const burnByMonth = new Map<string, number>();
+  const suministrosByMonth = new Map<string, number>();
+  const SUMINISTROS_CATS = new Set(["Electricidad", "Agua"]);
   for (const t of txnsAll) {
-    if (t.amount >= 0 || !t.category || !BURN_CATS.has(t.category)) continue;
-    const m = t.date.slice(0, 7);
-    burnByMonth.set(m, (burnByMonth.get(m) ?? 0) + Math.abs(t.amount));
+    if (t.amount >= 0 || !t.category) continue;
+    if (BURN_CATS.has(t.category)) {
+      const m = t.date.slice(0, 7);
+      burnByMonth.set(m, (burnByMonth.get(m) ?? 0) + Math.abs(t.amount));
+    }
+    if (SUMINISTROS_CATS.has(t.category)) {
+      const m = t.date.slice(0, 7);
+      suministrosByMonth.set(m, (suministrosByMonth.get(m) ?? 0) + Math.abs(t.amount));
+    }
   }
+  const complSuministrosMths = [...suministrosByMonth.keys()].filter((m) => m < today_ym).sort().reverse().slice(0, 3);
+  const avgSuministros = complSuministrosMths.length > 0
+    ? Math.round(complSuministrosMths.reduce((s, m) => s + suministrosByMonth.get(m)!, 0) / complSuministrosMths.length)
+    : 0;
   const completeBurnMonths = [...burnByMonth.keys()].filter((m) => m < today_ym).sort().reverse().slice(0, 3);
   const avgMonthlyBurn = completeBurnMonths.length > 0
     ? completeBurnMonths.reduce((s, m) => s + burnByMonth.get(m)!, 0) / completeBurnMonths.length
@@ -533,7 +545,7 @@ export default async function AnaliticaLoader({
               burnByMonth={Object.fromEntries(burnByMonth)}
               rangeLabel={txnRangeLabel}
             />
-            <PrevisionGastos forecasts={recurringForecasts} categories={dbCategories} />
+            <PrevisionGastos forecasts={recurringForecasts} categories={dbCategories} avgSuministros={avgSuministros} />
           </div>
         </section>
 
