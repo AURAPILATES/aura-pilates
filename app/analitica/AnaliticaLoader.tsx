@@ -22,8 +22,7 @@ import { formatRelativeTime } from "@/lib/formatRelativeTime";
 import { loadCategoriesCached, type Category } from "@/lib/categories";
 import { loadRecurringExpensesCached, forecastConfirmedExpenses } from "@/lib/recurringExpenses";
 import DesglosGastosUnificado from "./instances/DesglosGastosUnificado";
-import ResumenFinanzas from "./instances/ResumenFinanzas";
-import VolumenBruto from "./instances/VolumenBruto";
+import CockpitFinanciero from "./instances/CockpitFinanciero";
 import Ingresos from "./instances/Ingresos";
 import IngresosPorCanal from "./instances/IngresosPorCanal";
 import IngresosPorFuente from "./instances/IngresosPorFuente";
@@ -200,6 +199,13 @@ export default async function AnaliticaLoader({
   const uscRevenue = uscSales.reduce((sum, s) => sum + s.amount, 0);
   const uscCount   = uscSales.length;
   const uscCur  = momenceSalesAll.filter((s) => s.method === "urban-sports-club" && s.paymentDate.startsWith(curMonth)).reduce((sum, s) => sum + s.amount, 0);
+
+  const prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const prevMonth = `${prevMonthDate.getFullYear()}-${pad2(prevMonthDate.getMonth() + 1)}`;
+  const prevMonthRev =
+    stripeRevenueForMonth(paymentsAll, prevMonth) +
+    momenceSalesAll.filter((s) => s.method === "urban-sports-club" && s.paymentDate.startsWith(prevMonth)).reduce((s, x) => s + x.amount, 0);
+  const prevMonthLabel = MES[prevMonthDate.getMonth()].toLowerCase();
 
   const revComp    = stripeTotalRevenue(pComp);
   const uscRevComp = momenceSalesAll.filter((s) =>
@@ -403,6 +409,7 @@ export default async function AnaliticaLoader({
 
   // ── Clientela (composición, altas, riesgo de baja) ───────────────────────
   const recurringForecasts = forecastConfirmedExpenses(recurringExpenses, txnsAll, undefined, dbCategories);
+  const gastosComprometidos = recurringForecasts.reduce((s, f) => s + Math.abs(f.amount), 0) + avgSuministros;
 
   const firstPaymentMap = new Map<string, string>();
   for (const p of paymentsAll) {
@@ -472,45 +479,23 @@ export default async function AnaliticaLoader({
         <section>
           <SectionHeader id="caja" title="Caja y resultado" />
           <div className="space-y-4">
-            <ResumenFinanzas
+            <CockpitFinanciero
+              curMonthLabel={monthLabel(curMonth)}
+              prevMonthLabel={prevMonthLabel}
+              curMonthIngresos={cur + uscCur}
+              curMonthGastos={estGastosMes}
+              isGastosEst={isGastosEst}
+              prevMonthIngresos={prevMonthRev}
               currentBalance={currentBalance}
               balanceDate={balanceDate}
               runwayMonths={runwayMonths}
               avgMonthlyBurn={avgMonthlyBurn}
               completeBurnMonthsCount={completeBurnMonths.length}
-              resultadoMes={resultadoMes}
-              breakEvenGap={breakEvenGap}
-              avgMonthlyRevenue={avgMonthlyRevenue}
-              clientesNecesarios={clientesNecesarios}
-              curMonthLabel={monthLabel(curMonth)}
-            />
-            <VolumenBruto
+              ventasPrevistas={avgMonthlyRevenue}
+              gastosComprometidos={gastosComprometidos}
               sales={salesAll}
               txns={txnsAll}
               lastUpdated={liveLastUpdated}
-              kpiItems={[
-                {
-                  label: "Ingresos",
-                  value: fmt(q1Revenue),
-                  helper: `vs ${fmt(q1RevComp)} (${compDateRange})`,
-                },
-                {
-                  label: `Gastos · ${monthLabel(curMonth)}`,
-                  value: fmt(estGastosMes),
-                  helper: isGastosEst ? "estimado" : `${txnsAll.filter(t => t.amount < 0 && t.date.startsWith(curMonth)).length} transacciones`,
-                },
-                {
-                  label: "Resultado mes",
-                  value: `${resultadoMes >= 0 ? "+" : "−"}${fmt(Math.abs(resultadoMes))}`,
-                  valueClassName: resultadoMes >= 0 ? "text-success" : "text-danger",
-                  helper: "ingresos − gastos",
-                },
-                {
-                  label: "Clientes recurrentes",
-                  value: String(activeSubsCount),
-                  helper: `MRR estimado ${fmt(realMrr)}`,
-                },
-              ]}
             />
             <Breakeven points={breakevenPoints} />
           </div>
