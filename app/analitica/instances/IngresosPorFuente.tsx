@@ -92,21 +92,35 @@ export default function IngresosPorFuente({
           <thead>
             <tr className="border-b border-navy/[0.07]">
               <th className="text-left py-2 pr-3 text-navy/45 font-semibold uppercase tracking-wide">Mes</th>
+              <th className="text-right py-2 pr-3 text-navy/45 font-semibold uppercase tracking-wide">Stripe bruto</th>
+              <th className="text-right py-2 pr-3 text-navy/45 font-semibold uppercase tracking-wide">Comis. Stripe</th>
               <th className="text-right py-2 pr-3 text-navy/45 font-semibold uppercase tracking-wide">Stripe neto</th>
-              <th className="text-right py-2 pr-3 text-navy/45 font-semibold uppercase tracking-wide">Urban neto</th>
-              <th className="text-right py-2 text-navy/45 font-semibold uppercase tracking-wide">Total</th>
+              <th className="text-right py-2 pr-3 text-navy/45 font-semibold uppercase tracking-wide">Urban</th>
+              <th className="text-right py-2 text-navy/45 font-semibold uppercase tracking-wide">Total neto</th>
             </tr>
           </thead>
           <tbody>
             {monthly.map((row) => (
-              <tr key={row.month} className="border-b border-navy/[0.04] last:border-0">
+              <tr key={row.month} className="border-b border-navy/[0.04]">
                 <td className="py-2 pr-3 text-navy/70 whitespace-nowrap">{row.label}</td>
+                <td className="py-2 pr-3 text-right text-navy tabular-nums">{row.stripeGross > 0 ? fmtEur(row.stripeGross) : "-"}</td>
+                <td className="py-2 pr-3 text-right text-danger tabular-nums">{row.stripeFees > 0 ? `−${fmtEur(row.stripeFees)}` : "-"}</td>
                 <td className="py-2 pr-3 text-right text-navy tabular-nums">{row.stripeNet > 0 ? fmtEur(row.stripeNet) : "-"}</td>
-                <td className="py-2 pr-3 text-right text-navy tabular-nums">{row.uscNet   > 0 ? fmtEur(row.uscNet)   : "-"}</td>
+                <td className="py-2 pr-3 text-right text-navy tabular-nums">{row.uscNet > 0 ? fmtEur(row.uscNet) : "-"}</td>
                 <td className="py-2 text-right text-navy font-medium tabular-nums">{fmtEur(row.stripeNet + row.uscNet)}</td>
               </tr>
             ))}
           </tbody>
+          <tfoot>
+            <tr className="border-t border-navy/[0.07] bg-navy/[0.025]">
+              <td className="py-2 pr-3 text-navy/55 font-semibold">Total</td>
+              <td className="py-2 pr-3 text-right text-navy font-semibold tabular-nums">{fmtEur(stripeGross)}</td>
+              <td className="py-2 pr-3 text-right text-danger font-semibold tabular-nums">−{fmtEur(stripeFees)}</td>
+              <td className="py-2 pr-3 text-right text-navy font-semibold tabular-nums">{fmtEur(stripeNet)}</td>
+              <td className="py-2 pr-3 text-right text-navy font-semibold tabular-nums">{fmtEur(uscGross)}</td>
+              <td className="py-2 text-right text-navy font-semibold tabular-nums">{fmtEur(totalNet)}</td>
+            </tr>
+          </tfoot>
         </table>
       </div>
     </ChartCard>

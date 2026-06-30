@@ -8,6 +8,8 @@ import {
 export type IngresosPorFuenteRow = {
   month: string;
   label: string;
+  stripeGross: number;
+  stripeFees: number;
   stripeNet: number;
   uscNet: number;
 };

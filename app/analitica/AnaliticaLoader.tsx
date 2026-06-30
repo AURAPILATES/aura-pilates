@@ -260,21 +260,27 @@ export default async function AnaliticaLoader({
   }
   const monthlyRevenue = addUscToMonthlyRevenue(monthlyStripeRevenue, uscByMonth);
 
-  // Ingresos netos por fuente (Stripe net API + USC bruto × 55%)
-  const monthlyStripeNetMap = new Map<string, number>();
+  // Ingresos por fuente: bruto, comisión y neto de Stripe por mes + USC neto
+  const monthlyStripeGrossMap = new Map<string, number>();
+  const monthlyStripeFeesMap  = new Map<string, number>();
+  const monthlyStripeNetMap   = new Map<string, number>();
   for (const p of paymentsAllBounded) {
     const m = p.date.slice(0, 7);
-    monthlyStripeNetMap.set(m, (monthlyStripeNetMap.get(m) ?? 0) + p.net);
+    monthlyStripeGrossMap.set(m, (monthlyStripeGrossMap.get(m) ?? 0) + p.amount);
+    monthlyStripeFeesMap.set(m,  (monthlyStripeFeesMap.get(m)  ?? 0) + p.fee);
+    monthlyStripeNetMap.set(m,   (monthlyStripeNetMap.get(m)   ?? 0) + p.net);
   }
   const allMonthsFuente = new Set([...monthlyStripeNetMap.keys(), ...uscByMonth.keys()]);
+  const MONTH_ES_F: Record<string, string> = { "01":"Ene","02":"Feb","03":"Mar","04":"Abr","05":"May","06":"Jun","07":"Jul","08":"Ago","09":"Sep","10":"Oct","11":"Nov","12":"Dic" };
   const monthlyByFuente: IngresosPorFuenteRow[] = Array.from(allMonthsFuente).sort().map((m) => {
     const [y, mm] = m.split("-");
-    const MONTH_ES: Record<string, string> = { "01":"Ene","02":"Feb","03":"Mar","04":"Abr","05":"May","06":"Jun","07":"Jul","08":"Ago","09":"Sep","10":"Oct","11":"Nov","12":"Dic" };
     return {
       month: m,
-      label: `${MONTH_ES[mm] ?? mm}'${y.slice(2)}`,
-      stripeNet: monthlyStripeNetMap.get(m) ?? 0,
-      uscNet: uscByMonth.get(m) ?? 0,
+      label: `${MONTH_ES_F[mm] ?? mm}'${y.slice(2)}`,
+      stripeGross: monthlyStripeGrossMap.get(m) ?? 0,
+      stripeFees:  monthlyStripeFeesMap.get(m)  ?? 0,
+      stripeNet:   monthlyStripeNetMap.get(m)   ?? 0,
+      uscNet:      uscByMonth.get(m)            ?? 0,
     };
   });
 
