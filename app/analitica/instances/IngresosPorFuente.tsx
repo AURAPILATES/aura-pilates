@@ -3,7 +3,7 @@
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import { BarChart2, Activity } from "react-feather";
-import { ChartCard, ChartTypeToggle, Legend } from "@/components/charts";
+import { ChartCard, ChartTypeToggle } from "@/components/charts";
 import type { IngresosPorFuenteRow } from "./IngresosPorFuenteBody";
 
 const USC_PRICE_STUDIO = 20;  // precio tarifa Aura por clase suelta
@@ -41,6 +41,11 @@ export default function IngresosPorFuente({
   const uscNet   = uscGross;
   const totalNet = stripeNet + uscNet;
 
+  const SOURCES = [
+    { key: "stripe", label: "Stripe", color: "#4021c8", value: stripeNet },
+    { key: "urban",  label: "Urban",  color: "#F59E0B", value: uscNet },
+  ];
+
   return (
     <ChartCard
       title="Ingresos por fuente"
@@ -73,19 +78,42 @@ export default function IngresosPorFuente({
               { value: "line", label: "Ver como línea",  icon: <Activity  size={14} /> },
             ]}
           />
-          <Legend
-            items={[
-              { label: "Stripe", color: "#4021c8" },
-              { label: "Urban",  color: "#F59E0B" },
-            ]}
-          />
         </div>
       }
       dataSource="Stripe API (pagos netos) + Urban Sports Club Momence CSV (11 €/clase, ya neto)"
       sources={["stripe", "momence"]}
       lastUpdated={lastUpdated}
     >
-      <IngresosPorFuenteBody data={monthly} chartType={chartType} />
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
+        <div className="lg:col-span-3 min-w-0">
+          <IngresosPorFuenteBody data={monthly} chartType={chartType} />
+        </div>
+        <div className="lg:col-span-1 min-w-0">
+          <p className="text-xs font-medium text-navy/55 mb-2.5">Resumen</p>
+          <div className="flex h-3 rounded-full overflow-hidden bg-navy/5 mb-4">
+            {SOURCES.map((s) => (
+              <div
+                key={s.key}
+                style={{ flex: `${totalNet > 0 ? s.value / totalNet : 0} 0 0%`, backgroundColor: s.color }}
+              />
+            ))}
+          </div>
+          <div className="space-y-2.5">
+            {SOURCES.map((s) => (
+              <div key={s.key} className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: s.color }} />
+                  <span className="text-xs text-navy/70 truncate">{s.label}</span>
+                </div>
+                <div className="text-right shrink-0">
+                  <span className="text-xs font-semibold text-navy tabular-nums">{fmtEur(s.value)}</span>
+                  <span className="text-[11px] text-navy/40 ml-1">{totalNet > 0 ? `${Math.round(s.value / totalNet * 100)}%` : "—"}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
 
       <div className="mt-5 overflow-x-auto">
         <table className="w-full min-w-max text-xs">
