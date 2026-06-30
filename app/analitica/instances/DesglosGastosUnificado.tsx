@@ -53,13 +53,20 @@ function rowSeriesByPeriod(txns: Txn[], period: Period): Map<string, number> {
 /** Prueba "todo en horizontal" (mismo patrón que EvolucionSuscripcionesFullWidth) aplicada
  * a gastos: unifica "visión general" y "personal y operativo" en una sola card, con el
  * desglose por categoría/subcategoría como acordeón en vez de un segundo gráfico aparte. */
+type BurnWindow = 3 | 6 | "all";
+const BURN_WINDOW_OPTIONS: { value: BurnWindow; label: string }[] = [
+  { value: 3, label: "3 m" },
+  { value: 6, label: "6 m" },
+  { value: "all", label: "Todo" },
+];
+
 export default function DesglosGastosUnificado({
   groups,
   categories,
   transactionsByCategory,
   totalExpCat,
   totalExpCatNoCapex,
-  avgMonthlyBurn,
+  burnByMonth,
   rangeLabel,
 }: {
   groups: GroupTotal[];
@@ -67,7 +74,7 @@ export default function DesglosGastosUnificado({
   transactionsByCategory: Record<string, Txn[]>;
   totalExpCat: number;
   totalExpCatNoCapex: number;
-  avgMonthlyBurn: number;
+  burnByMonth: Record<string, number>;
   rangeLabel?: string | null;
 }) {
   const [period, setPeriod] = useState<Period>("mes");
@@ -76,6 +83,7 @@ export default function DesglosGastosUnificado({
   const [expandedGroups, setExpandedGroups] = useState<Set<EconomicGroup>>(new Set());
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [selected, setSelected] = useState<Selected | null>(null);
+  const [burnWindow, setBurnWindow] = useState<BurnWindow>(3);
 
   const toggleHidden = (group: EconomicGroup) =>
     setHiddenGroups((prev) => {
@@ -104,6 +112,14 @@ export default function DesglosGastosUnificado({
   const base = buildGroupSeries(groups);
   const { months, data } = regroupSeries(base.months, base.data, period);
 
+  // Promedio mensual calculado client-side según la ventana elegida
+  const today_ym = new Date().toISOString().slice(0, 7);
+  const completeMonths = Object.keys(burnByMonth).filter((m) => m < today_ym).sort().reverse();
+  const windowMonths = burnWindow === "all" ? completeMonths : completeMonths.slice(0, burnWindow);
+  const avgMonthlyBurn = windowMonths.length > 0
+    ? windowMonths.reduce((s, m) => s + (burnByMonth[m] ?? 0), 0) / windowMonths.length
+    : 0;
+
   const capexGroup = groups.find((g) => g.group === "capex");
   const capexShare = totalExpCat > 0 && capexGroup ? capexGroup.total / totalExpCat : 0;
   const insight =
@@ -113,10 +129,38 @@ export default function DesglosGastosUnificado({
         ]
       : [];
 
+  const burnWindowSelector = (
+    <span className="inline-flex items-center gap-0.5 ml-1">
+      {BURN_WINDOW_OPTIONS.map((opt) => (
+        <button
+          key={String(opt.value)}
+          type="button"
+          onClick={(e) => { e.stopPropagation(); setBurnWindow(opt.value); }}
+          className={`text-[10px] px-1.5 py-0.5 rounded transition-colors ${
+            burnWindow === opt.value
+              ? "bg-navy/10 text-navy font-medium"
+              : "text-navy/40 hover:text-navy/60"
+          }`}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </span>
+  );
+
   const kpiItems: MultiKpiItem[] = [
     { label: "Total período", value: fmtAmount(totalExpCat) },
     { label: "Coste operativo", value: fmtAmount(totalExpCatNoCapex), helper: "Personal + OpEx · excluye CapEx" },
-    { label: "Promedio mensual coste operativo", value: `${fmtAmount(avgMonthlyBurn)}/mes`, helper: "Personal + OpEx · últ. 3 meses completos" },
+    {
+      label: "Promedio mensual coste operativo",
+      value: `${fmtAmount(avgMonthlyBurn)}/mes`,
+      helper: (
+        <span className="flex items-center flex-wrap gap-0.5 mt-0.5">
+          <span className="text-navy/50">Personal + OpEx</span>
+          {burnWindowSelector}
+        </span>
+      ),
+    },
   ];
 
   function categoryTxns(seg: TopExpenseSeg): Txn[] {
