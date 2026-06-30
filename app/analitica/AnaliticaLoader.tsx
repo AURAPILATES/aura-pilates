@@ -28,6 +28,8 @@ import ResumenFinanzas from "./instances/ResumenFinanzas";
 import VolumenBruto from "./instances/VolumenBruto";
 import Ingresos from "./instances/Ingresos";
 import IngresosPorCanal from "./instances/IngresosPorCanal";
+import IngresosPorFuente from "./instances/IngresosPorFuente";
+import type { IngresosPorFuenteRow } from "./instances/IngresosPorFuenteBody";
 import EvolucionInscritos from "./instances/EvolucionInscritos";
 import Financiacion from "./instances/Financiacion";
 import { loadBudgetsCached, computeSpent } from "@/lib/budgets";
@@ -257,6 +259,25 @@ export default async function AnaliticaLoader({
     uscByMonth.set(m, (uscByMonth.get(m) ?? 0) + s.amount);
   }
   const monthlyRevenue = addUscToMonthlyRevenue(monthlyStripeRevenue, uscByMonth);
+
+  // Ingresos netos por fuente (Stripe net API + USC bruto × 55%)
+  const monthlyStripeNetMap = new Map<string, number>();
+  for (const p of paymentsAllBounded) {
+    const m = p.date.slice(0, 7);
+    monthlyStripeNetMap.set(m, (monthlyStripeNetMap.get(m) ?? 0) + p.net);
+  }
+  const allMonthsFuente = new Set([...monthlyStripeNetMap.keys(), ...uscByMonth.keys()]);
+  const monthlyByFuente: IngresosPorFuenteRow[] = Array.from(allMonthsFuente).sort().map((m) => {
+    const [y, mm] = m.split("-");
+    const MONTH_ES: Record<string, string> = { "01":"Ene","02":"Feb","03":"Mar","04":"Abr","05":"May","06":"Jun","07":"Jul","08":"Ago","09":"Sep","10":"Oct","11":"Nov","12":"Dic" };
+    return {
+      month: m,
+      label: `${MONTH_ES[mm] ?? mm}'${y.slice(2)}`,
+      stripeNet: monthlyStripeNetMap.get(m) ?? 0,
+      uscNet: (uscByMonth.get(m) ?? 0) * 0.55,
+    };
+  });
+
   const subscriptionCohorts = computeSubscriptionCohorts(paymentsAllBounded, subscriptionTiers, primaryIdMap);
   const retentionCohorts = computeRetentionCohorts(paymentsAllBounded, subscriptionTiers, 4, primaryIdMap);
 
@@ -514,6 +535,15 @@ export default async function AnaliticaLoader({
         <section>
           <SectionHeader id="ingresos" title="Ingresos" />
           <div className="space-y-4">
+            <IngresosPorFuente
+              stripeGross={totalRev}
+              stripeFees={stripeFees}
+              stripeNet={stripeNet}
+              uscGross={uscRevenue}
+              monthly={monthlyByFuente}
+              dateRange={periodLabel}
+              lastUpdated={liveLastUpdated}
+            />
             <Ingresos
               recurrente={recurrente}
               puntual={puntual}
