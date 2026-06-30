@@ -21,8 +21,6 @@ import { loadTransactionsCached, expensesByCategoryAll, getLatestImportDate, typ
 import { formatRelativeTime } from "@/lib/formatRelativeTime";
 import { loadCategoriesCached, type Category } from "@/lib/categories";
 import { loadRecurringExpensesCached, forecastConfirmedExpenses } from "@/lib/recurringExpenses";
-import DesglosGastos from "./instances/DesglosGastos";
-import DesglosGastosGeneral from "./instances/DesglosGastosGeneral";
 import DesglosGastosUnificado from "./instances/DesglosGastosUnificado";
 import ResumenFinanzas from "./instances/ResumenFinanzas";
 import VolumenBruto from "./instances/VolumenBruto";
@@ -310,7 +308,6 @@ export default async function AnaliticaLoader({
   // ── Desglose de gastos: visión general (Personal/OpEx/CapEx) vs. específico (Personal+OpEx) ──
   const expGroupTotals = groupExpensesByEconomicGroup(expByCategory, transactionsByCategory);
   const expByTopCategory = groupExpensesByTopCategory(expByCategory, dbCatByValue, dbCatById, EXPENSE_COLORS);
-  const expByTopCategoryNoCapex = expByTopCategory.filter((c) => c.group !== "capex");
   const totalExpCatNoCapex = expGroupTotals.filter((g) => g.group !== "capex").reduce((s, g) => s + g.total, 0);
 
   // ── Salud financiera (datos completos) ──
@@ -523,19 +520,6 @@ export default async function AnaliticaLoader({
         <section>
           <SectionHeader id="gastos" title="Gastos" />
           <div className="space-y-4">
-            <DesglosGastosGeneral
-              groups={expGroupTotals}
-              totalExpCat={totalExpCat}
-              rangeLabel={txnRangeLabel}
-              lastUpdated={bancoLastUpdated}
-            />
-            <DesglosGastos
-              categories={expByTopCategoryNoCapex}
-              transactionsByCategory={transactionsByCategory}
-              totalExpCat={totalExpCatNoCapex}
-              rangeLabel={txnRangeLabel}
-              lastUpdated={bancoLastUpdated}
-            />
             <DesglosGastosUnificado
               groups={expGroupTotals}
               categories={expByTopCategory}

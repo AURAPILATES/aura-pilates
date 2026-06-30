@@ -278,9 +278,11 @@ function PendingRow({ row, categories, contacts, pick, selected, onToggleSelecte
           </p>
         </div>
         {catLabel && <CategoryBadge category={row.category} categories={categories} />}
-        <span className={`text-xs font-medium px-2.5 py-1 rounded-full whitespace-nowrap shrink-0 ${pick ? "bg-primary/10 text-primary" : "bg-navy/[0.05] text-navy/40"}`}>
-          {pick ? label : "Sin vincular"}
-        </span>
+        {(!pick || label !== row.label) && (
+          <span className={`text-xs font-medium px-2.5 py-1 rounded-full whitespace-nowrap shrink-0 ${pick ? "bg-primary/10 text-primary" : "bg-navy/[0.05] text-navy/40"}`}>
+            {pick ? label : "Sin vincular"}
+          </span>
+        )}
         <ChevronRight size={16} className="text-navy/25 shrink-0" />
       </button>
     </div>
