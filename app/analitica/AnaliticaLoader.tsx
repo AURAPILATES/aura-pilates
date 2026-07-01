@@ -184,6 +184,16 @@ export default async function AnaliticaLoader({
   const activeSubsCount = recurringIds.size;
   const realMrr         = estimatedMRR(paymentsAll, curMonth);
 
+  // Recurrentes activas: ≥2 pagos en últimos 3 meses Y pagaron en los últimos 30 días
+  const thirtyDaysAgo = new Date(now);
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().slice(0, 10);
+  const activeRecurringCount = new Set(
+    paymentsAll
+      .filter((p) => p.customerId && recurringIds.has(p.customerId) && p.date >= thirtyDaysAgoStr)
+      .map((p) => p.customerId!)
+  ).size;
+
   const recurrente = pMain.filter((p) => p.customerId && recurringIds.has(p.customerId)).reduce((s, p) => s + p.amount, 0);
   const puntual    = totalRev - recurrente;
 
@@ -566,6 +576,7 @@ export default async function AnaliticaLoader({
               reactivatedCustomers={reactivatedCustomers}
               convertCandidates={convertCandidates}
               activeMomenceSubCount={activeMomenceSubCount}
+              activeRecurringCount={activeRecurringCount}
             />
             <ClientesPaymentsBreakdown
               succeeded={totalRev}

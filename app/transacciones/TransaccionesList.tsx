@@ -816,137 +816,96 @@ export default function TransaccionesList({
 
   return (
     <div>
-      {/* ── Desktop: KPIs en cajas clicables ── */}
-      <div className="hidden sm:block mb-4">
+      {/* ── Desktop: KPIs ── */}
+      <div className="hidden sm:block mb-5">
         <div className="flex items-stretch gap-3">
           {/* Entradas — clicable */}
           <button
             type="button"
             onClick={() => setDirectionFilter(directionFilter === "in" ? "all" : "in")}
-            className={`flex-1 min-w-[130px] text-left bg-white border rounded-2xl shadow-card px-4 py-3 transition-all group ${
+            className={`flex-1 min-w-[130px] text-left rounded-2xl px-5 py-4 transition-all duration-200 ${
               directionFilter === "in"
-                ? "border-success/40 ring-1 ring-success/20"
-                : "border-navy/[0.07] hover:border-navy/20 hover:shadow-md"
+                ? "bg-success/[0.07] border border-success/20 shadow-[0_2px_16px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.85)]"
+                : "bg-white/75 backdrop-blur-xl border border-white/60 shadow-[0_2px_16px_rgba(0,0,0,0.05),inset_0_1px_0_rgba(255,255,255,1)] hover:bg-white/90 hover:shadow-[0_4px_24px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,1)]"
             }`}
           >
-            <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider leading-none mb-1.5 flex items-center gap-1.5">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-success/70">
-                <line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>
-              </svg>
-              Entradas
-            </p>
-            <p className="text-[17px] font-semibold text-success tabular-nums">{fmtAmt(totalIn)}</p>
-            <p className={`text-[10px] mt-1.5 transition-opacity ${
-              directionFilter === "in" ? "text-success/70" : "text-transparent group-hover:text-navy/30"
-            }`}>
-              {directionFilter === "in" ? "Filtrando cobros ×" : "Filtrar cobros →"}
-            </p>
+            <p className="text-[10px] font-medium text-navy/35 uppercase tracking-widest leading-none mb-2.5">Entradas</p>
+            <p className="text-[20px] font-semibold text-success tabular-nums leading-none">{fmtAmt(totalIn)}</p>
+            {directionFilter === "in" && (
+              <p className="text-[10px] text-success/60 mt-2">activo ×</p>
+            )}
           </button>
 
           {/* Salidas — clicable */}
           <button
             type="button"
             onClick={() => setDirectionFilter(directionFilter === "out" ? "all" : "out")}
-            className={`flex-1 min-w-[130px] text-left bg-white border rounded-2xl shadow-card px-4 py-3 transition-all group ${
+            className={`flex-1 min-w-[130px] text-left rounded-2xl px-5 py-4 transition-all duration-200 ${
               directionFilter === "out"
-                ? "border-[#B85C3A]/40 ring-1 ring-[#B85C3A]/20"
-                : "border-navy/[0.07] hover:border-navy/20 hover:shadow-md"
+                ? "bg-[#B85C3A]/[0.07] border border-[#B85C3A]/20 shadow-[0_2px_16px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.85)]"
+                : "bg-white/75 backdrop-blur-xl border border-white/60 shadow-[0_2px_16px_rgba(0,0,0,0.05),inset_0_1px_0_rgba(255,255,255,1)] hover:bg-white/90 hover:shadow-[0_4px_24px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,1)]"
             }`}
           >
-            <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider leading-none mb-1.5 flex items-center gap-1.5">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-[#B85C3A]/70">
-                <line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/>
-              </svg>
-              Salidas
-            </p>
-            <p className="text-[17px] font-semibold text-[#B85C3A] tabular-nums">{fmtAmt(totalOut)}</p>
-            <p className={`text-[10px] mt-1.5 transition-opacity ${
-              directionFilter === "out" ? "text-[#B85C3A]/70" : "text-transparent group-hover:text-navy/30"
-            }`}>
-              {directionFilter === "out" ? "Filtrando pagos ×" : "Filtrar pagos →"}
-            </p>
+            <p className="text-[10px] font-medium text-navy/35 uppercase tracking-widest leading-none mb-2.5">Salidas</p>
+            <p className="text-[20px] font-semibold text-[#B85C3A] tabular-nums leading-none">{fmtAmt(totalOut)}</p>
+            {directionFilter === "out" && (
+              <p className="text-[10px] text-[#B85C3A]/60 mt-2">activo ×</p>
+            )}
           </button>
 
           {/* Diferencia — no clicable */}
-          <div className="flex-1 min-w-[130px] bg-white border border-navy/[0.07] rounded-2xl shadow-card px-4 py-3">
-            <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider leading-none mb-1.5 flex items-center gap-1.5">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-navy/35">
-                <line x1="5" y1="12" x2="19" y2="12"/>
-              </svg>
+          <div className="flex-1 min-w-[130px] bg-white/75 backdrop-blur-xl border border-white/60 rounded-2xl shadow-[0_2px_16px_rgba(0,0,0,0.05),inset_0_1px_0_rgba(255,255,255,1)] px-5 py-4">
+            <p className="text-[10px] font-medium text-navy/35 uppercase tracking-widest leading-none mb-2.5">
               {someSelected ? "Neto selección" : "Diferencia"}
             </p>
-            <p className={`text-[17px] font-semibold tabular-nums ${neto >= 0 ? "text-navy" : "text-danger"}`}>
+            <p className={`text-[20px] font-semibold tabular-nums leading-none ${neto >= 0 ? "text-navy" : "text-danger"}`}>
               {neto < 0 && "−"}{fmtAmt(Math.abs(neto))}
             </p>
-            {!someSelected && totalIn > 0 ? (
-              <p className="text-[12px] text-navy/40 mt-1.5">
+            {!someSelected && totalIn > 0 && (
+              <p className="text-[11px] text-navy/30 mt-2">
                 margen {(neto / totalIn * 100).toFixed(1).replace(".", ",")}%
               </p>
-            ) : (
-              <p className="text-[12px] text-transparent mt-1.5">—</p>
             )}
           </div>
-
-          {someSelected && (
-            <div className="flex-1 min-w-[130px] bg-white border border-primary/20 rounded-2xl shadow-card px-4 py-3">
-              <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider leading-none mb-1.5">Seleccionados</p>
-              <p className="text-[17px] font-semibold text-primary tabular-nums">{selected.size} mov.</p>
-            </div>
-          )}
         </div>
       </div>
 
-      {/* ── Mobile: KPIs en cajas clicables ──────────────────────────────────── */}
+      {/* ── Mobile: KPIs ── */}
       <div className="sm:hidden grid grid-cols-3 gap-2 mb-3">
         {/* Entradas — clicable */}
         <button
           type="button"
           onClick={() => setDirectionFilter(directionFilter === "in" ? "all" : "in")}
-          className={`text-center bg-white border rounded-xl py-3 px-2 transition-all ${
+          className={`text-center rounded-xl py-3 px-2 transition-all duration-200 ${
             directionFilter === "in"
-              ? "border-success/40 ring-1 ring-success/20"
-              : "border-navy/[0.08] active:border-navy/20"
+              ? "bg-success/[0.08] border border-success/20 shadow-[0_1px_8px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.8)]"
+              : "bg-white/75 backdrop-blur-xl border border-white/60 shadow-[0_1px_8px_rgba(0,0,0,0.05),inset_0_1px_0_rgba(255,255,255,1)] active:bg-white/90"
           }`}
         >
-          <p className="text-[11px] text-navy/40 uppercase tracking-wider leading-none mb-0.5 flex items-center justify-center gap-1">
-            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-success/70">
-              <line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>
-            </svg>
-            Entradas
-          </p>
-          <p className="text-[13px] font-semibold text-success tabular-nums truncate">{fmtAmt(totalIn)}</p>
-          {directionFilter === "in" && <p className="text-[9px] text-success/60 mt-0.5">activo ×</p>}
+          <p className="text-[9px] font-medium text-navy/35 uppercase tracking-widest leading-none mb-1.5">Entradas</p>
+          <p className="text-[13px] font-semibold text-success tabular-nums truncate leading-none">{fmtAmt(totalIn)}</p>
+          {directionFilter === "in" && <p className="text-[8px] text-success/55 mt-1">activo ×</p>}
         </button>
 
         {/* Salidas — clicable */}
         <button
           type="button"
           onClick={() => setDirectionFilter(directionFilter === "out" ? "all" : "out")}
-          className={`text-center bg-white border rounded-xl py-3 px-2 transition-all ${
+          className={`text-center rounded-xl py-3 px-2 transition-all duration-200 ${
             directionFilter === "out"
-              ? "border-[#B85C3A]/40 ring-1 ring-[#B85C3A]/20"
-              : "border-navy/[0.08] active:border-navy/20"
+              ? "bg-[#B85C3A]/[0.08] border border-[#B85C3A]/20 shadow-[0_1px_8px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.8)]"
+              : "bg-white/75 backdrop-blur-xl border border-white/60 shadow-[0_1px_8px_rgba(0,0,0,0.05),inset_0_1px_0_rgba(255,255,255,1)] active:bg-white/90"
           }`}
         >
-          <p className="text-[11px] text-navy/40 uppercase tracking-wider leading-none mb-0.5 flex items-center justify-center gap-1">
-            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-[#B85C3A]/70">
-              <line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/>
-            </svg>
-            Salidas
-          </p>
-          <p className="text-[13px] font-semibold text-[#B85C3A] tabular-nums truncate">{fmtAmt(totalOut)}</p>
-          {directionFilter === "out" && <p className="text-[9px] text-[#B85C3A]/60 mt-0.5">activo ×</p>}
+          <p className="text-[9px] font-medium text-navy/35 uppercase tracking-widest leading-none mb-1.5">Salidas</p>
+          <p className="text-[13px] font-semibold text-[#B85C3A] tabular-nums truncate leading-none">{fmtAmt(totalOut)}</p>
+          {directionFilter === "out" && <p className="text-[8px] text-[#B85C3A]/55 mt-1">activo ×</p>}
         </button>
 
         {/* Diferencia — no clicable */}
-        <div className="text-center bg-white border border-navy/[0.08] rounded-xl py-3 px-2">
-          <p className="text-[11px] text-navy/40 uppercase tracking-wider leading-none mb-0.5 flex items-center justify-center gap-1">
-            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-navy/35">
-              <line x1="5" y1="12" x2="19" y2="12"/>
-            </svg>
-            Dif.
-          </p>
-          <p className={`text-[13px] font-semibold tabular-nums truncate ${neto >= 0 ? "text-navy" : "text-danger"}`}>
+        <div className="text-center bg-white/75 backdrop-blur-xl border border-white/60 rounded-xl shadow-[0_1px_8px_rgba(0,0,0,0.05),inset_0_1px_0_rgba(255,255,255,1)] py-3 px-2">
+          <p className="text-[9px] font-medium text-navy/35 uppercase tracking-widest leading-none mb-1.5">Dif.</p>
+          <p className={`text-[13px] font-semibold tabular-nums truncate leading-none ${neto >= 0 ? "text-navy" : "text-danger"}`}>
             {neto < 0 && "−"}{fmtAmt(Math.abs(neto))}
           </p>
         </div>
@@ -1066,7 +1025,9 @@ export default function TransaccionesList({
 
       {/* ── Desktop: recuento ─────────────────────────────────────────────────── */}
       <div className="hidden sm:flex items-center gap-3 mb-5">
-        {!someSelected && (
+        {someSelected ? (
+          <span className="text-sm text-navy/45">{selected.size} seleccionado{selected.size !== 1 ? "s" : ""}</span>
+        ) : (
           <span className="text-sm text-navy/45">{filtered.length} movimientos</span>
         )}
         {!someSelected && uncategorizedCount > 0 && (

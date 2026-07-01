@@ -72,11 +72,12 @@ type Props = {
   reactivatedCustomers: EnrichedCustomer[];
   convertCandidates: EnrichedCustomer[];
   activeMomenceSubCount: number;
+  activeRecurringCount: number;
 };
 
 export default function AnaliticaKPIs({
   customers, periodLabel, periodFrom, periodTo, compDateRange, spendPerClient, spendPerClientComp,
-  newCustomers, reactivatedCustomers, convertCandidates, activeMomenceSubCount,
+  newCustomers, reactivatedCustomers, convertCandidates, activeMomenceSubCount, activeRecurringCount,
 }: Props) {
   const [drawer, setDrawer] = useState<DrawerKey>(null);
 
@@ -159,8 +160,8 @@ export default function AnaliticaKPIs({
               {
                 label: "Suscripciones",
                 value: activeMomenceSubCount,
-                helper: "estado actual · Momence",
-                tooltip: "Membresías Basic, Plus o Pro activas y no congeladas ahora mismo según Momence. Fuente de verdad directa.",
+                helper: `${activeRecurringCount} recurrentes (≥2m)`,
+                tooltip: "Membresías Basic, Plus o Pro activas y no congeladas ahora mismo según Momence. El helper muestra cuántas de ellas llevan ≥2 meses seguidos pagando y pagaron en los últimos 30 días (fuente: Stripe).",
               },
               {
                 label: "Packs activos",
