@@ -858,14 +858,16 @@ export default function TransaccionesList({
             <p className="text-[10px] font-medium text-navy/35 uppercase tracking-widest leading-none mb-2.5">
               {someSelected ? "Neto selección" : "Diferencia"}
             </p>
-            <p className={`text-[20px] font-semibold tabular-nums leading-none ${neto >= 0 ? "text-navy" : "text-danger"}`}>
-              {neto < 0 && "−"}{fmtAmt(Math.abs(neto))}
-            </p>
-            {!someSelected && totalIn > 0 && (
-              <p className="text-[11px] text-navy/30 mt-2">
-                margen {(neto / totalIn * 100).toFixed(1).replace(".", ",")}%
+            <div className="flex items-baseline gap-2 leading-none">
+              <p className={`text-[20px] font-semibold tabular-nums ${neto >= 0 ? "text-navy" : "text-danger"}`}>
+                {neto < 0 && "−"}{fmtAmt(Math.abs(neto))}
               </p>
-            )}
+              {!someSelected && totalIn > 0 && (
+                <span className="text-[11px] text-navy/30">
+                  {(neto / totalIn * 100).toFixed(1).replace(".", ",")}%
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </div>
