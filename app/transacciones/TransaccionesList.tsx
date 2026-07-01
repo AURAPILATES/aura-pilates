@@ -864,7 +864,7 @@ export default function TransaccionesList({
               </p>
               {!someSelected && totalIn > 0 && (
                 <span className="text-[11px] text-navy/30">
-                  {(neto / totalIn * 100).toFixed(1).replace(".", ",")}%
+                  margen {(neto / totalIn * 100).toFixed(1).replace(".", ",")}%
                 </span>
               )}
             </div>
