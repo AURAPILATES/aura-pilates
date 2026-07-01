@@ -423,10 +423,12 @@ function MobileActionsMenu({ onExport, onPapelera }: { onExport: () => void; onP
 }
 
 function MoreOptionsMenu({
-  onlyRecurring, setOnlyRecurring, onExport, onPapelera,
+  onlyRecurring, setOnlyRecurring, originFilter, setOriginFilter, onExport, onPapelera,
 }: {
   onlyRecurring: boolean;
   setOnlyRecurring: (v: boolean | ((prev: boolean) => boolean)) => void;
+  originFilter: string;
+  setOriginFilter: (v: string) => void;
   onExport: () => void;
   onPapelera: () => void;
 }) {
@@ -450,12 +452,12 @@ function MoreOptionsMenu({
   function handleToggle() {
     if (!open && btnRef.current) {
       const rect = btnRef.current.getBoundingClientRect();
-      setDropPos({ top: rect.bottom + 4, left: rect.right - 220 });
+      setDropPos({ top: rect.bottom + 4, left: rect.right - 240 });
     }
     setOpen((v) => !v);
   }
 
-  const hasActive = onlyRecurring;
+  const hasActive = onlyRecurring || originFilter !== "all";
 
   return (
     <div ref={wrapRef} className="relative">
@@ -476,8 +478,23 @@ function MoreOptionsMenu({
         <div
           ref={dropRef}
           className="fixed z-[9999] bg-white border border-navy/10 rounded-xl shadow-xl py-2"
-          style={{ top: dropPos.top, left: dropPos.left, width: "220px" }}
+          style={{ top: dropPos.top, left: dropPos.left, width: "240px" }}
         >
+          <div className="px-3 pt-1 pb-2">
+            <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1.5">Origen</p>
+            <SelectWrapper>
+              <select value={originFilter} onChange={(e) => setOriginFilter(e.target.value)} className={SELECT_CLS}>
+                <option value="all">Todos</option>
+                <option value="banco">CaixaBank</option>
+                <option value="efectivo">Efectivo Aura</option>
+                <option value="victor">Víctor</option>
+                <option value="celia">Celia</option>
+                <option value="olga">Olga</option>
+                <option value="carles">Carles</option>
+              </select>
+            </SelectWrapper>
+          </div>
+          <div className="border-t border-navy/[0.06] my-1" />
           <button
             onClick={() => setOnlyRecurring((v) => !v)}
             className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors ${
@@ -809,10 +826,15 @@ export default function TransaccionesList({
             className={`flex-1 min-w-[130px] text-left bg-white border rounded-2xl shadow-card px-4 py-3 transition-all group ${
               directionFilter === "in"
                 ? "border-success/40 ring-1 ring-success/20"
-                : "border-navy/[0.07] hover:border-success/30 hover:shadow-md"
+                : "border-navy/[0.07] hover:border-navy/20 hover:shadow-md"
             }`}
           >
-            <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider leading-none mb-1.5">Entradas</p>
+            <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider leading-none mb-1.5 flex items-center gap-1.5">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-success/70">
+                <line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>
+              </svg>
+              Entradas
+            </p>
             <p className="text-[17px] font-semibold text-success tabular-nums">{fmtAmt(totalIn)}</p>
             <p className={`text-[10px] mt-1.5 transition-opacity ${
               directionFilter === "in" ? "text-success/70" : "text-transparent group-hover:text-navy/30"
@@ -828,11 +850,16 @@ export default function TransaccionesList({
             className={`flex-1 min-w-[130px] text-left bg-white border rounded-2xl shadow-card px-4 py-3 transition-all group ${
               directionFilter === "out"
                 ? "border-[#B85C3A]/40 ring-1 ring-[#B85C3A]/20"
-                : "border-navy/[0.07] hover:border-[#B85C3A]/30 hover:shadow-md"
+                : "border-navy/[0.07] hover:border-navy/20 hover:shadow-md"
             }`}
           >
-            <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider leading-none mb-1.5">Salidas</p>
-            <p className="text-[17px] font-semibold text-[#B85C3A] tabular-nums">−{fmtAmt(totalOut)}</p>
+            <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider leading-none mb-1.5 flex items-center gap-1.5">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-[#B85C3A]/70">
+                <line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/>
+              </svg>
+              Salidas
+            </p>
+            <p className="text-[17px] font-semibold text-[#B85C3A] tabular-nums">{fmtAmt(totalOut)}</p>
             <p className={`text-[10px] mt-1.5 transition-opacity ${
               directionFilter === "out" ? "text-[#B85C3A]/70" : "text-transparent group-hover:text-navy/30"
             }`}>
@@ -842,18 +869,21 @@ export default function TransaccionesList({
 
           {/* Diferencia — no clicable */}
           <div className="flex-1 min-w-[130px] bg-white border border-navy/[0.07] rounded-2xl shadow-card px-4 py-3">
-            <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider leading-none mb-1.5">
+            <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider leading-none mb-1.5 flex items-center gap-1.5">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-navy/35">
+                <line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
               {someSelected ? "Neto selección" : "Diferencia"}
             </p>
             <p className={`text-[17px] font-semibold tabular-nums ${neto >= 0 ? "text-navy" : "text-danger"}`}>
               {neto < 0 && "−"}{fmtAmt(Math.abs(neto))}
             </p>
             {!someSelected && totalIn > 0 ? (
-              <p className="text-[10px] text-navy/40 mt-1.5">
+              <p className="text-[12px] text-navy/40 mt-1.5">
                 margen {(neto / totalIn * 100).toFixed(1).replace(".", ",")}%
               </p>
             ) : (
-              <p className="text-[10px] text-transparent mt-1.5">—</p>
+              <p className="text-[12px] text-transparent mt-1.5">—</p>
             )}
           </div>
 
@@ -862,22 +892,6 @@ export default function TransaccionesList({
               <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider leading-none mb-1.5">Seleccionados</p>
               <p className="text-[17px] font-semibold text-primary tabular-nums">{selected.size} mov.</p>
             </div>
-          )}
-
-          <div className="flex-1" />
-
-          {!someSelected && uncategorizedCount > 0 && (
-            <button
-              onClick={() => setCatFilters(catFilters.includes("__none__") ? catFilters.filter((v) => v !== "__none__") : [...catFilters, "__none__"])}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors self-center ${
-                catFilters.includes("__none__")
-                  ? "bg-warning/10 text-warning/80"
-                  : "bg-warning/10 text-warning/80 hover:bg-warning/15"
-              }`}
-            >
-              <span>⚠</span>
-              <span>{uncategorizedCount} sin etiquetar</span>
-            </button>
           )}
         </div>
       </div>
@@ -891,10 +905,15 @@ export default function TransaccionesList({
           className={`text-center bg-white border rounded-xl py-3 px-2 transition-all ${
             directionFilter === "in"
               ? "border-success/40 ring-1 ring-success/20"
-              : "border-navy/[0.08] active:border-success/30"
+              : "border-navy/[0.08] active:border-navy/20"
           }`}
         >
-          <p className="text-[11px] text-navy/40 uppercase tracking-wider leading-none mb-0.5">Entradas</p>
+          <p className="text-[11px] text-navy/40 uppercase tracking-wider leading-none mb-0.5 flex items-center justify-center gap-1">
+            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-success/70">
+              <line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>
+            </svg>
+            Entradas
+          </p>
           <p className="text-[13px] font-semibold text-success tabular-nums truncate">{fmtAmt(totalIn)}</p>
           {directionFilter === "in" && <p className="text-[9px] text-success/60 mt-0.5">activo ×</p>}
         </button>
@@ -906,17 +925,27 @@ export default function TransaccionesList({
           className={`text-center bg-white border rounded-xl py-3 px-2 transition-all ${
             directionFilter === "out"
               ? "border-[#B85C3A]/40 ring-1 ring-[#B85C3A]/20"
-              : "border-navy/[0.08] active:border-[#B85C3A]/30"
+              : "border-navy/[0.08] active:border-navy/20"
           }`}
         >
-          <p className="text-[11px] text-navy/40 uppercase tracking-wider leading-none mb-0.5">Salidas</p>
-          <p className="text-[13px] font-semibold text-[#B85C3A] tabular-nums truncate">−{fmtAmt(totalOut)}</p>
+          <p className="text-[11px] text-navy/40 uppercase tracking-wider leading-none mb-0.5 flex items-center justify-center gap-1">
+            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-[#B85C3A]/70">
+              <line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/>
+            </svg>
+            Salidas
+          </p>
+          <p className="text-[13px] font-semibold text-[#B85C3A] tabular-nums truncate">{fmtAmt(totalOut)}</p>
           {directionFilter === "out" && <p className="text-[9px] text-[#B85C3A]/60 mt-0.5">activo ×</p>}
         </button>
 
         {/* Diferencia — no clicable */}
         <div className="text-center bg-white border border-navy/[0.08] rounded-xl py-3 px-2">
-          <p className="text-[11px] text-navy/40 uppercase tracking-wider leading-none mb-0.5">Dif.</p>
+          <p className="text-[11px] text-navy/40 uppercase tracking-wider leading-none mb-0.5 flex items-center justify-center gap-1">
+            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-navy/35">
+              <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Dif.
+          </p>
           <p className={`text-[13px] font-semibold tabular-nums truncate ${neto >= 0 ? "text-navy" : "text-danger"}`}>
             {neto < 0 && "−"}{fmtAmt(Math.abs(neto))}
           </p>
@@ -1024,20 +1053,11 @@ export default function TransaccionesList({
         </div>
         <DateFilter />
         <CategoryMultiFilter selected={catFilters} categories={categories} onChange={setCatFilters} />
-        <SelectWrapper>
-          <select value={originFilter} onChange={(e) => setOriginFilter(e.target.value)} className={SELECT_CLS}>
-            <option value="all">Origen</option>
-            <option value="banco">CaixaBank</option>
-            <option value="efectivo">Efectivo Aura</option>
-            <option value="victor">Víctor</option>
-            <option value="celia">Celia</option>
-            <option value="olga">Olga</option>
-            <option value="carles">Carles</option>
-          </select>
-        </SelectWrapper>
         <MoreOptionsMenu
           onlyRecurring={onlyRecurring}
           setOnlyRecurring={setOnlyRecurring}
+          originFilter={originFilter}
+          setOriginFilter={setOriginFilter}
           onExport={exportCSV}
           onPapelera={() => setShowPapelera(true)}
         />
@@ -1048,6 +1068,19 @@ export default function TransaccionesList({
       <div className="hidden sm:flex items-center gap-3 mb-5">
         {!someSelected && (
           <span className="text-sm text-navy/45">{filtered.length} movimientos</span>
+        )}
+        {!someSelected && uncategorizedCount > 0 && (
+          <button
+            onClick={() => setCatFilters(catFilters.includes("__none__") ? catFilters.filter((v) => v !== "__none__") : [...catFilters, "__none__"])}
+            className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium transition-colors ${
+              catFilters.includes("__none__")
+                ? "bg-warning/10 text-warning/80"
+                : "bg-warning/10 text-warning/80 hover:bg-warning/15"
+            }`}
+          >
+            <span>⚠</span>
+            <span>{uncategorizedCount} sin etiquetar</span>
+          </button>
         )}
         {isPending && <span className="text-xs text-primary/60">Guardando…</span>}
         {(catFilters.length > 0 || originFilter !== "all" || onlyRecurring || directionFilter !== "all" || currentRange !== "all" || search !== "") && (
