@@ -410,6 +410,8 @@ export default async function AnaliticaLoader({
   const recurringForecasts = forecastConfirmedExpenses(recurringExpenses, txnsAll, undefined, dbCategories);
   const gastosComprometidos = recurringForecasts.reduce((s, f) => s + Math.abs(f.amount), 0) + avgSuministros;
 
+  const activeMomenceSubCount = mrrByTier.reduce((s, t) => s + t.activeCount, 0);
+
   const firstPaymentMap = new Map<string, string>();
   for (const p of paymentsAll) {
     if (!p.customerId) continue;
@@ -563,6 +565,7 @@ export default async function AnaliticaLoader({
               newCustomers={newCustomers}
               reactivatedCustomers={reactivatedCustomers}
               convertCandidates={convertCandidates}
+              activeMomenceSubCount={activeMomenceSubCount}
             />
             <ClientesPaymentsBreakdown
               succeeded={totalRev}

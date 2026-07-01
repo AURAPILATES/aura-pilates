@@ -71,11 +71,12 @@ type Props = {
   newCustomers: EnrichedCustomer[];
   reactivatedCustomers: EnrichedCustomer[];
   convertCandidates: EnrichedCustomer[];
+  activeMomenceSubCount: number;
 };
 
 export default function AnaliticaKPIs({
   customers, periodLabel, periodFrom, periodTo, compDateRange, spendPerClient, spendPerClientComp,
-  newCustomers, reactivatedCustomers, convertCandidates,
+  newCustomers, reactivatedCustomers, convertCandidates, activeMomenceSubCount,
 }: Props) {
   const [drawer, setDrawer] = useState<DrawerKey>(null);
 
@@ -87,10 +88,13 @@ export default function AnaliticaKPIs({
   const delinquentList  = customers.filter((c) => c.hasPaymentError);
   const altasList       = [...newCustomers, ...reactivatedCustomers];
 
+  // Base activa verificada: suscripciones según Momence (fuente de verdad) + packs activos
+  const activeTotal = activeMomenceSubCount + activePackList.length;
+
   const drawerConfig: Record<NonNullable<DrawerKey>, DrawerEntry> = {
     active: {
-      title: "Activos",
-      subtitle: "Con suscripción vigente o pack en plazo",
+      title: "Activos (historial Stripe)",
+      subtitle: "Aproximación por historial de cobros · para detalle exacto ver Momence",
       sections: [
         { title: `Suscripción · ${activeSubList.length}`, customers: activeSubList },
         { title: `Pack vigente · ${activePackList.length}`, customers: activePackList },
@@ -126,9 +130,8 @@ export default function AnaliticaKPIs({
     },
   };
 
-  const activeTotal = activeSubList.length + activePackList.length;
-  const subPct  = activeTotal > 0 ? (activeSubList.length  / activeTotal) * 100 : 0;
-  const packPct = activeTotal > 0 ? (activePackList.length / activeTotal) * 100 : 0;
+  const subPct  = activeTotal > 0 ? (activeMomenceSubCount / activeTotal) * 100 : 0;
+  const packPct = activeTotal > 0 ? (activePackList.length  / activeTotal) * 100 : 0;
 
   const spendDeltaPct = spendPerClientComp > 0
     ? Math.round(((spendPerClient - spendPerClientComp) / spendPerClientComp) * 100)
@@ -149,10 +152,19 @@ export default function AnaliticaKPIs({
               {
                 label: "Activos",
                 value: activeTotal,
+                helper: "subs + packs activos",
                 onClick: () => setDrawer("active"),
               },
-              { label: "Suscritos", value: activeSubList.length },
-              { label: "Packs", value: activePackList.length },
+              {
+                label: "Suscripciones",
+                value: activeMomenceSubCount,
+                helper: "estado actual · Momence",
+              },
+              {
+                label: "Packs activos",
+                value: activePackList.length,
+                onClick: activePackList.length > 0 ? () => setDrawer("active") : undefined,
+              },
               {
                 label: "Gasto medio",
                 value: fmt(spendPerClient),
@@ -168,15 +180,15 @@ export default function AnaliticaKPIs({
                 onClick: convertCandidates.length > 0 ? () => setDrawer("convert") : undefined,
               },
             ]}
-            dataSource="Suscripción renovada hace ≤30 días, o pack vigente (Benvinguda: 15d · Pack 4/8: 90d)"
+            dataSource="Suscripciones: membresías activas no congeladas en Momence · Packs activos: compra hace ≤90 días (Benvinguda: 15d)"
             sources={["stripe"]}
             lastUpdated="ahora"
           >
             {activeTotal > 0 && (
               <ProportionBar
                 segments={[
-                  { label: "Suscritos", color: "#7F77DD", percentage: Math.round(subPct) },
-                  { label: "Packs", color: "#AFA9EC", percentage: Math.round(packPct) },
+                  { label: "Suscripciones", color: "#7F77DD", percentage: Math.round(subPct) },
+                  { label: "Packs activos", color: "#AFA9EC", percentage: Math.round(packPct) },
                 ]}
               />
             )}
