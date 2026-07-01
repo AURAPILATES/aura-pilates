@@ -17,6 +17,7 @@ export interface MultiKpiItem {
   value: ReactNode;
   valueClassName?: string;
   helper?: ReactNode;
+  tooltip?: string;
   onClick?: () => void;
 }
 
@@ -104,7 +105,21 @@ export default function ChartCard({
                   item.onClick ? "hover:bg-navy/[0.02] transition-colors cursor-pointer" : ""
                 }`}
               >
-                <div className="text-[10px] uppercase tracking-wide text-navy/50 mb-1">{item.label}</div>
+                <div className="text-[10px] uppercase tracking-wide text-navy/50 mb-1 flex items-center gap-1">
+                  {item.label}
+                  {item.tooltip && (
+                    <div className="relative group/tip shrink-0">
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" className="text-navy/30 cursor-help">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M12 16v-4M12 8h.01" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      <div className="pointer-events-none absolute bottom-full left-0 mb-2 w-52 bg-navy text-white text-[11px] leading-relaxed rounded-xl px-3 py-2.5 opacity-0 group-hover/tip:opacity-100 transition-opacity z-50 shadow-xl normal-case tracking-normal font-normal">
+                        {item.tooltip}
+                        <div className="absolute top-full left-3 border-4 border-transparent border-t-navy" />
+                      </div>
+                    </div>
+                  )}
+                </div>
                 <div className={`text-[22px] font-medium leading-tight text-navy ${item.valueClassName ?? ""}`}>
                   {item.value}
                 </div>

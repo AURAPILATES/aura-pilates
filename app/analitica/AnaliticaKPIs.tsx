@@ -153,16 +153,19 @@ export default function AnaliticaKPIs({
                 label: "Activos",
                 value: activeTotal,
                 helper: "subs + packs activos",
+                tooltip: "Clientes con membresía activa en Momence o con un pack vigente. Haz clic para ver el listado completo.",
                 onClick: () => setDrawer("active"),
               },
               {
                 label: "Suscripciones",
                 value: activeMomenceSubCount,
                 helper: "estado actual · Momence",
+                tooltip: "Membresías Basic, Plus o Pro activas y no congeladas ahora mismo según Momence. Fuente de verdad directa.",
               },
               {
                 label: "Packs activos",
                 value: activePackList.length,
+                tooltip: "Clientes sin suscripción que compraron un pack hace ≤90 días (Pack Benvinguda: ≤15 días). Fuente: historial Stripe.",
                 onClick: activePackList.length > 0 ? () => setDrawer("active") : undefined,
               },
               {
@@ -171,12 +174,14 @@ export default function AnaliticaKPIs({
                 helper: spendDeltaPct !== null
                   ? `${spendDeltaPct >= 0 ? "+" : ""}${spendDeltaPct}% vs ${compDateRange}`
                   : undefined,
+                tooltip: "Facturación total del período ÷ clientes únicos que pagaron. Solo Stripe.",
               },
               {
                 label: "Por convertir",
                 value: convertCandidates.length,
                 valueClassName: convertCandidates.length > 0 ? "text-primary" : "text-navy/50",
                 helper: "2+ packs, sin sub.",
+                tooltip: "Compraron 2 o más packs (sin contar Benvinguda) pero nunca han tenido suscripción. Son el perfil ideal para proponer un plan mensual.",
                 onClick: convertCandidates.length > 0 ? () => setDrawer("convert") : undefined,
               },
             ]}
@@ -208,6 +213,7 @@ export default function AnaliticaKPIs({
                   onClick={newCustomers.length > 0 ? () => setDrawer("new") : undefined}
                   className="text-left"
                   disabled={newCustomers.length === 0}
+                  title="Clientes cuyo primer pago registrado en Stripe cae dentro del período seleccionado."
                 >
                   <div className="text-[10px] uppercase tracking-wide text-navy/50 mb-1">Nuevos</div>
                   <div className="text-[20px] font-medium text-success leading-tight">+{newCustomers.length}</div>
@@ -218,6 +224,7 @@ export default function AnaliticaKPIs({
                   onClick={reactivatedCustomers.length > 0 ? () => setDrawer("altas") : undefined}
                   className="text-left"
                   disabled={reactivatedCustomers.length === 0}
+                  title="Clientes que ya habían pagado antes pero llevaban más de 60 días sin hacerlo y volvieron a pagar en el período."
                 >
                   <div className="text-[10px] uppercase tracking-wide text-navy/50 mb-1">Reactivados</div>
                   <div className="text-[20px] font-medium text-success leading-tight">+{reactivatedCustomers.length}</div>
@@ -228,6 +235,7 @@ export default function AnaliticaKPIs({
                   onClick={altasList.length > 0 ? () => setDrawer("altas") : undefined}
                   className="text-left"
                   disabled={altasList.length === 0}
+                  title="Nuevos + reactivados en el período. Son todas las altas netas sin contar bajas."
                 >
                   <div className="text-[10px] uppercase tracking-wide text-navy/50 mb-1">Total altas</div>
                   <div className="text-[20px] font-medium text-success leading-tight">+{altasList.length}</div>
@@ -258,6 +266,7 @@ export default function AnaliticaKPIs({
                     )}
                   </>
                 ),
+                tooltip: "Suscriptoras con historial en Stripe que llevan entre 46 y 76 días sin renovar. Ventana crítica: probablemente cancelaron pero aún se puede recuperar. Haz clic para ver quiénes son.",
                 onClick: churnList.length > 0 ? () => setDrawer("churn") : undefined,
               },
               {
@@ -274,6 +283,7 @@ export default function AnaliticaKPIs({
                     )}
                   </>
                 ),
+                tooltip: "Stripe intentó cobrar en los últimos 30 días pero el cargo fue rechazado. El cliente sigue suscrito pero no está pagando. Requiere acción inmediata.",
                 onClick: delinquentList.length > 0 ? () => setDrawer("error") : undefined,
               },
             ]}
