@@ -53,17 +53,19 @@ export default function TransaccionesTabs({
 
   return (
     <div>
-      <div className="flex items-center gap-6 border-b border-navy/[0.08] mb-4">
+      <div className="flex items-center gap-1 border-b border-navy/[0.08] mb-4">
         {TABS.map(({ key, label }) => (
           <button
             key={key}
             type="button"
             onClick={() => selectTab(key)}
-            className={`py-2.5 text-sm font-semibold transition-colors ${
+            className={`relative py-2.5 text-sm font-semibold transition-colors ${
               tab === key ? "text-navy" : "text-navy/50 hover:text-navy"
             }`}
           >
-            <span className={`pb-2.5 border-b-2 -mb-px flex items-center gap-1.5 ${tab === key ? "border-navy" : "border-transparent"}`}>
+            <span className={`flex items-center gap-1.5 px-3 py-1 rounded-lg transition-colors ${
+              tab === key ? "bg-navy/[0.06]" : ""
+            }`}>
               {label}
               {key === "recurrentes" && pendingRecurring.length > 0 && (
                 <span className="shrink-0 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-warning text-white text-[10px] font-bold px-1">
@@ -71,6 +73,9 @@ export default function TransaccionesTabs({
                 </span>
               )}
             </span>
+            {tab === key && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-navy" />
+            )}
           </button>
         ))}
       </div>

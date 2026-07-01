@@ -588,6 +588,7 @@ export default function TransaccionesList({
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [showAddCash, setShowAddCash] = useState(false);
   const [onlyRecurring, setOnlyRecurring] = useState(false);
+  const [directionFilter, setDirectionFilter] = useState<"all" | "in" | "out">("all");
   const [drawerTxnId, setDrawerTxnId] = useState<string | null>(null);
   const drawerTxn = drawerTxnId ? transactions.find((t) => t.id === drawerTxnId) ?? null : null;
 
@@ -649,12 +650,18 @@ export default function TransaccionesList({
     return [...expanded];
   }, [catFilters, categories]);
 
-  const filtered = transactions.filter((t) => {
+  const baseFiltered = transactions.filter((t) => {
     const q = search.toLowerCase();
     if (q && !t.contact?.toLowerCase().includes(q) && !t.concept?.toLowerCase().includes(q) && !t.bank_details?.toLowerCase().includes(q)) return false;
     if (expandedCatFilters.length > 0 && !expandedCatFilters.includes(t.category ?? "__none__")) return false;
     if (originFilter !== "all" && t.payment_method !== originFilter) return false;
     if (onlyRecurring && !recurringPeriods[t.id]) return false;
+    return true;
+  });
+
+  const filtered = baseFiltered.filter((t) => {
+    if (directionFilter === "in" && t.amount <= 0) return false;
+    if (directionFilter === "out" && t.amount >= 0) return false;
     return true;
   });
 
@@ -695,9 +702,9 @@ export default function TransaccionesList({
   const allSelected    = allFilteredIds.length > 0 && allFilteredIds.every((id) => selected.has(id));
   const someSelected   = selected.size > 0;
 
-  const activeTxns = someSelected ? filtered.filter((t) => selected.has(t.id)) : filtered;
-  const totalIn  = activeTxns.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0);
-  const totalOut = activeTxns.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
+  const kpiBase  = someSelected ? baseFiltered.filter((t) => selected.has(t.id)) : baseFiltered;
+  const totalIn  = kpiBase.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0);
+  const totalOut = kpiBase.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
   const neto     = totalIn - totalOut;
 
 
@@ -792,35 +799,73 @@ export default function TransaccionesList({
 
   return (
     <div>
-      {/* ── Desktop: KPIs, directamente sobre el fondo (sin caja, estilo Apple) ── */}
+      {/* ── Desktop: KPIs en cajas clicables ── */}
       <div className="hidden sm:block mb-4">
-        <div className="flex items-stretch justify-start gap-5 px-1 py-1">
-          <div className="flex-initial min-w-[120px]">
-            <p className="text-[12px] text-navy/40 uppercase tracking-wider leading-none mb-1 whitespace-nowrap">Entradas</p>
-            <p className="text-[15px] font-semibold text-success tabular-nums truncate">{fmtAmt(totalIn)}</p>
-          </div>
-          <div className="flex-initial min-w-[120px]">
-            <p className="text-[12px] text-navy/40 uppercase tracking-wider leading-none mb-1 whitespace-nowrap">Salidas</p>
-            <p className="text-[15px] font-semibold text-[#B85C3A] tabular-nums truncate">−{fmtAmt(totalOut)}</p>
-          </div>
-          <div className="flex-initial min-w-[120px]">
-            <p className="text-[12px] text-navy/40 uppercase tracking-wider leading-none mb-1 whitespace-nowrap">{someSelected ? "Neto selección" : "Diferencia"}</p>
-            <p className={`text-[15px] font-semibold tabular-nums truncate ${neto >= 0 ? "text-navy" : "text-danger"}`}>
+        <div className="flex items-stretch gap-3">
+          {/* Entradas — clicable */}
+          <button
+            type="button"
+            onClick={() => setDirectionFilter(directionFilter === "in" ? "all" : "in")}
+            className={`flex-1 min-w-[130px] text-left bg-white border rounded-2xl shadow-card px-4 py-3 transition-all group ${
+              directionFilter === "in"
+                ? "border-success/40 ring-1 ring-success/20"
+                : "border-navy/[0.07] hover:border-success/30 hover:shadow-md"
+            }`}
+          >
+            <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider leading-none mb-1.5">Entradas</p>
+            <p className="text-[17px] font-semibold text-success tabular-nums">{fmtAmt(totalIn)}</p>
+            <p className={`text-[10px] mt-1.5 transition-opacity ${
+              directionFilter === "in" ? "text-success/70" : "text-transparent group-hover:text-navy/30"
+            }`}>
+              {directionFilter === "in" ? "Filtrando cobros ×" : "Filtrar cobros →"}
+            </p>
+          </button>
+
+          {/* Salidas — clicable */}
+          <button
+            type="button"
+            onClick={() => setDirectionFilter(directionFilter === "out" ? "all" : "out")}
+            className={`flex-1 min-w-[130px] text-left bg-white border rounded-2xl shadow-card px-4 py-3 transition-all group ${
+              directionFilter === "out"
+                ? "border-[#B85C3A]/40 ring-1 ring-[#B85C3A]/20"
+                : "border-navy/[0.07] hover:border-[#B85C3A]/30 hover:shadow-md"
+            }`}
+          >
+            <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider leading-none mb-1.5">Salidas</p>
+            <p className="text-[17px] font-semibold text-[#B85C3A] tabular-nums">−{fmtAmt(totalOut)}</p>
+            <p className={`text-[10px] mt-1.5 transition-opacity ${
+              directionFilter === "out" ? "text-[#B85C3A]/70" : "text-transparent group-hover:text-navy/30"
+            }`}>
+              {directionFilter === "out" ? "Filtrando pagos ×" : "Filtrar pagos →"}
+            </p>
+          </button>
+
+          {/* Diferencia — no clicable */}
+          <div className="flex-1 min-w-[130px] bg-white border border-navy/[0.07] rounded-2xl shadow-card px-4 py-3">
+            <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider leading-none mb-1.5">
+              {someSelected ? "Neto selección" : "Diferencia"}
+            </p>
+            <p className={`text-[17px] font-semibold tabular-nums ${neto >= 0 ? "text-navy" : "text-danger"}`}>
               {neto < 0 && "−"}{fmtAmt(Math.abs(neto))}
             </p>
+            {!someSelected && totalIn > 0 ? (
+              <p className="text-[10px] text-navy/40 mt-1.5">
+                margen {(neto / totalIn * 100).toFixed(1).replace(".", ",")}%
+              </p>
+            ) : (
+              <p className="text-[10px] text-transparent mt-1.5">—</p>
+            )}
           </div>
+
           {someSelected && (
-            <div className="flex-initial min-w-[120px]">
-              <p className="text-[12px] text-navy/40 uppercase tracking-wider leading-none mb-1 whitespace-nowrap">Seleccionados</p>
-              <p className="text-[15px] font-semibold text-primary tabular-nums truncate">{selected.size} mov.</p>
+            <div className="flex-1 min-w-[130px] bg-white border border-primary/20 rounded-2xl shadow-card px-4 py-3">
+              <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider leading-none mb-1.5">Seleccionados</p>
+              <p className="text-[17px] font-semibold text-primary tabular-nums">{selected.size} mov.</p>
             </div>
           )}
-          {!someSelected && totalIn > 0 && (
-            <span className="flex items-center text-xs text-navy/35 tabular-nums">
-              margen {(neto / totalIn * 100).toFixed(1).replace(".", ",")}%
-            </span>
-          )}
+
           <div className="flex-1" />
+
           {!someSelected && uncategorizedCount > 0 && (
             <button
               onClick={() => setCatFilters(catFilters.includes("__none__") ? catFilters.filter((v) => v !== "__none__") : [...catFilters, "__none__"])}
@@ -837,18 +882,41 @@ export default function TransaccionesList({
         </div>
       </div>
 
-      {/* ── Mobile: KPIs ──────────────────────────────────────────────────────── */}
-      <div className="sm:hidden grid grid-cols-3 text-center gap-1 mb-3 bg-white border border-navy/[0.08] rounded-xl py-3">
-        <div className="min-w-0">
-          <p className="text-[12px] text-navy/40 uppercase tracking-wider leading-none mb-0.5 whitespace-nowrap">Entradas</p>
+      {/* ── Mobile: KPIs en cajas clicables ──────────────────────────────────── */}
+      <div className="sm:hidden grid grid-cols-3 gap-2 mb-3">
+        {/* Entradas — clicable */}
+        <button
+          type="button"
+          onClick={() => setDirectionFilter(directionFilter === "in" ? "all" : "in")}
+          className={`text-center bg-white border rounded-xl py-3 px-2 transition-all ${
+            directionFilter === "in"
+              ? "border-success/40 ring-1 ring-success/20"
+              : "border-navy/[0.08] active:border-success/30"
+          }`}
+        >
+          <p className="text-[11px] text-navy/40 uppercase tracking-wider leading-none mb-0.5">Entradas</p>
           <p className="text-[13px] font-semibold text-success tabular-nums truncate">{fmtAmt(totalIn)}</p>
-        </div>
-        <div className="min-w-0">
-          <p className="text-[12px] text-navy/40 uppercase tracking-wider leading-none mb-0.5 whitespace-nowrap">Salidas</p>
+          {directionFilter === "in" && <p className="text-[9px] text-success/60 mt-0.5">activo ×</p>}
+        </button>
+
+        {/* Salidas — clicable */}
+        <button
+          type="button"
+          onClick={() => setDirectionFilter(directionFilter === "out" ? "all" : "out")}
+          className={`text-center bg-white border rounded-xl py-3 px-2 transition-all ${
+            directionFilter === "out"
+              ? "border-[#B85C3A]/40 ring-1 ring-[#B85C3A]/20"
+              : "border-navy/[0.08] active:border-[#B85C3A]/30"
+          }`}
+        >
+          <p className="text-[11px] text-navy/40 uppercase tracking-wider leading-none mb-0.5">Salidas</p>
           <p className="text-[13px] font-semibold text-[#B85C3A] tabular-nums truncate">−{fmtAmt(totalOut)}</p>
-        </div>
-        <div className="min-w-0">
-          <p className="text-[12px] text-navy/40 uppercase tracking-wider leading-none mb-0.5 whitespace-nowrap">Dif.</p>
+          {directionFilter === "out" && <p className="text-[9px] text-[#B85C3A]/60 mt-0.5">activo ×</p>}
+        </button>
+
+        {/* Diferencia — no clicable */}
+        <div className="text-center bg-white border border-navy/[0.08] rounded-xl py-3 px-2">
+          <p className="text-[11px] text-navy/40 uppercase tracking-wider leading-none mb-0.5">Dif.</p>
           <p className={`text-[13px] font-semibold tabular-nums truncate ${neto >= 0 ? "text-navy" : "text-danger"}`}>
             {neto < 0 && "−"}{fmtAmt(Math.abs(neto))}
           </p>
@@ -880,7 +948,7 @@ export default function TransaccionesList({
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/>
           </svg>
-          {(catFilters.length > 0 || originFilter !== "all" || onlyRecurring || currentRange !== "all") && (
+          {(catFilters.length > 0 || originFilter !== "all" || onlyRecurring || currentRange !== "all" || directionFilter !== "all") && (
             <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-primary" />
           )}
         </button>
@@ -982,12 +1050,13 @@ export default function TransaccionesList({
           <span className="text-sm text-navy/45">{filtered.length} movimientos</span>
         )}
         {isPending && <span className="text-xs text-primary/60">Guardando…</span>}
-        {(catFilters.length > 0 || originFilter !== "all" || onlyRecurring || currentRange !== "all" || search !== "") && (
+        {(catFilters.length > 0 || originFilter !== "all" || onlyRecurring || directionFilter !== "all" || currentRange !== "all" || search !== "") && (
           <button
             onClick={() => {
               setCatFilters([]);
               setOriginFilter("all");
               setOnlyRecurring(false);
+              setDirectionFilter("all");
               setSearch("");
               if (currentRange !== "all") router.push(pathname);
             }}
@@ -1000,13 +1069,14 @@ export default function TransaccionesList({
 
       {/* ── Mobile: toolbar ────────────────────────────────────────────────── */}
       <div className="sm:hidden mb-3">
-        {(catFilters.length > 0 || originFilter !== "all" || onlyRecurring || currentRange !== "all" || search !== "") && (
+        {(catFilters.length > 0 || originFilter !== "all" || onlyRecurring || directionFilter !== "all" || currentRange !== "all" || search !== "") && (
           <div className="flex items-center mb-3">
             <button
               onClick={() => {
                 setCatFilters([]);
                 setOriginFilter("all");
                 setOnlyRecurring(false);
+                setDirectionFilter("all");
                 setSearch("");
                 if (currentRange !== "all") router.push(pathname);
               }}

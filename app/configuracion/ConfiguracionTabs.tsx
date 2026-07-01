@@ -38,19 +38,24 @@ export default function ConfiguracionTabs({ categories, events, categoryCounts, 
 
   return (
     <div>
-      <div className="flex items-center gap-6 border-b border-navy/[0.08] mb-6">
+      <div className="flex items-center gap-1 border-b border-navy/[0.08] mb-6">
         {TABS.map(({ key, label }) => (
           <button
             key={key}
             type="button"
             onClick={() => selectTab(key)}
-            className={`py-2.5 text-sm font-semibold transition-colors ${
+            className={`relative py-2.5 text-sm font-semibold transition-colors ${
               tab === key ? "text-navy" : "text-navy/50 hover:text-navy"
             }`}
           >
-            <span className={`pb-2.5 border-b-2 -mb-px ${tab === key ? "border-navy" : "border-transparent"}`}>
+            <span className={`px-3 py-1 rounded-lg transition-colors ${
+              tab === key ? "bg-navy/[0.06]" : ""
+            }`}>
               {label}
             </span>
+            {tab === key && (
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-navy" />
+            )}
           </button>
         ))}
       </div>
