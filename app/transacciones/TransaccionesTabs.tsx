@@ -59,7 +59,7 @@ export default function TransaccionesTabs({
             key={key}
             type="button"
             onClick={() => selectTab(key)}
-            className={`relative py-2.5 text-sm font-medium transition-colors ${
+            className={`relative py-3 text-sm font-medium transition-colors ${
               tab === key ? "text-navy" : "text-navy/50 hover:text-navy"
             }`}
           >
