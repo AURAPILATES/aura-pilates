@@ -44,7 +44,7 @@ export default function ConfiguracionTabs({ categories, events, categoryCounts, 
             key={key}
             type="button"
             onClick={() => selectTab(key)}
-            className={`relative py-2.5 text-sm font-semibold transition-colors ${
+            className={`relative py-2.5 text-sm font-medium transition-colors ${
               tab === key ? "text-navy" : "text-navy/50 hover:text-navy"
             }`}
           >
@@ -54,7 +54,7 @@ export default function ConfiguracionTabs({ categories, events, categoryCounts, 
               {label}
             </span>
             {tab === key && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-navy" />
+              <span className="absolute bottom-0 left-0 right-0 h-px bg-navy" />
             )}
           </button>
         ))}
