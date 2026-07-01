@@ -831,9 +831,7 @@ export default function TransaccionesList({
           >
             <p className="text-[10px] font-medium text-navy/35 uppercase tracking-widest leading-none mb-2.5">Entradas</p>
             <p className="text-[20px] font-semibold text-success tabular-nums leading-none">{fmtAmt(totalIn)}</p>
-            {directionFilter === "in" && (
-              <p className="text-[10px] text-success/60 mt-2">activo ×</p>
-            )}
+            <p className={`text-[10px] text-success/60 mt-2 ${directionFilter === "in" ? "" : "invisible"}`}>activo ×</p>
           </button>
 
           {/* Salidas — clicable */}
@@ -848,9 +846,7 @@ export default function TransaccionesList({
           >
             <p className="text-[10px] font-medium text-navy/35 uppercase tracking-widest leading-none mb-2.5">Salidas</p>
             <p className="text-[20px] font-semibold text-[#B85C3A] tabular-nums leading-none">{fmtAmt(totalOut)}</p>
-            {directionFilter === "out" && (
-              <p className="text-[10px] text-[#B85C3A]/60 mt-2">activo ×</p>
-            )}
+            <p className={`text-[10px] text-[#B85C3A]/60 mt-2 ${directionFilter === "out" ? "" : "invisible"}`}>activo ×</p>
           </button>
 
           {/* Diferencia — no clicable */}
@@ -886,7 +882,7 @@ export default function TransaccionesList({
         >
           <p className="text-[9px] font-medium text-navy/35 uppercase tracking-widest leading-none mb-1.5">Entradas</p>
           <p className="text-[13px] font-semibold text-success tabular-nums truncate leading-none">{fmtAmt(totalIn)}</p>
-          {directionFilter === "in" && <p className="text-[8px] text-success/55 mt-1">activo ×</p>}
+          <p className={`text-[8px] text-success/55 mt-1 ${directionFilter === "in" ? "" : "invisible"}`}>activo ×</p>
         </button>
 
         {/* Salidas — clicable */}
@@ -901,7 +897,7 @@ export default function TransaccionesList({
         >
           <p className="text-[9px] font-medium text-navy/35 uppercase tracking-widest leading-none mb-1.5">Salidas</p>
           <p className="text-[13px] font-semibold text-[#B85C3A] tabular-nums truncate leading-none">{fmtAmt(totalOut)}</p>
-          {directionFilter === "out" && <p className="text-[8px] text-[#B85C3A]/55 mt-1">activo ×</p>}
+          <p className={`text-[8px] text-[#B85C3A]/55 mt-1 ${directionFilter === "out" ? "" : "invisible"}`}>activo ×</p>
         </button>
 
         {/* Diferencia — no clicable */}

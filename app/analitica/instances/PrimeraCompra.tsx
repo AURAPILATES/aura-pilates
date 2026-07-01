@@ -7,6 +7,17 @@ function pct(v: number) {
 
 const COLORS = ["#6B7ED6", "#D4AA35", "#9260B8", "#4A7A9B", "#4A9870", "#D46055", "#C46890", "#3AA09C"];
 
+const PILL_COLORS = [
+  { bg: "#EEF2FF", fill: "#C7D2FE", text: "#3730A3" },
+  { bg: "#FEF9C3", fill: "#FDE68A", text: "#92400E" },
+  { bg: "#F0FDF4", fill: "#BBF7D0", text: "#166534" },
+  { bg: "#FFF1F2", fill: "#FECDD3", text: "#9F1239" },
+  { bg: "#F5F3FF", fill: "#DDD6FE", text: "#5B21B6" },
+  { bg: "#FFF7ED", fill: "#FED7AA", text: "#9A3412" },
+  { bg: "#ECFEFF", fill: "#A5F3FC", text: "#164E63" },
+  { bg: "#F0FDF4", fill: "#BBF7D0", text: "#166534" },
+];
+
 export default function PrimeraCompra({ summary }: { summary: FirstPurchaseSummary }) {
   const { totalSubscribers, rows } = summary;
 
@@ -22,6 +33,7 @@ export default function PrimeraCompra({ summary }: { summary: FirstPurchaseSumma
       {rows.length === 0 ? (
         <p className="text-sm text-navy/45 text-center py-10">Sin datos suficientes</p>
       ) : (
+        <>
         <div className="space-y-3">
           {rows.map((r, i) => (
             <div key={r.item}>
@@ -38,6 +50,43 @@ export default function PrimeraCompra({ summary }: { summary: FirstPurchaseSumma
             </div>
           ))}
         </div>
+
+        <div className="mt-6 pt-5 border-t border-navy/[0.06]">
+          <p className="text-xs font-medium text-navy/55 mb-3">Vista alternativa</p>
+          <div className="space-y-2.5">
+            {rows.map((r, i) => {
+              const c = PILL_COLORS[i % PILL_COLORS.length];
+              return (
+                <div
+                  key={`pill-${r.item}`}
+                  style={{ backgroundColor: c.bg }}
+                  className="rounded-2xl flex items-center h-11 overflow-hidden"
+                >
+                  <div
+                    className="w-44 shrink-0 px-4 h-full flex items-center"
+                    style={{ borderRight: `1.5px solid ${c.fill}` }}
+                  >
+                    <span style={{ color: c.text }} className="text-sm font-medium truncate">{r.item}</span>
+                  </div>
+                  <div className="flex-1 relative h-full">
+                    <div
+                      style={{ width: pct(r.rate), backgroundColor: c.fill, minWidth: "3rem" }}
+                      className="absolute left-0 top-0 h-full flex items-center justify-end pr-1.5"
+                    >
+                      <span
+                        style={{ color: c.text }}
+                        className="text-xs font-semibold bg-white rounded-full px-2 py-0.5 whitespace-nowrap"
+                      >
+                        {pct(r.rate)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+        </>
       )}
     </ChartCard>
   );

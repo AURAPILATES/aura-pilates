@@ -21,18 +21,29 @@ export function subscriptionTiersFromMemberships(memberships: MomenceMembership[
 
 // MRR/ARR por suscripción contando suscriptores activos reales en Momence
 // (no congelados), en vez de adivinar por el importe del cobro en Stripe.
+// Deduplica por email: si la misma persona tiene dos cuentas de Momence o dos
+// suscripciones solapadas, cuenta como una sola suscriptora por plan.
 export function computeMrrByTier(customers: MomenceCustomer[], tiers: SubscriptionTier[]): TierMrr[] {
-  const activeCountByTier = new Map<string, number>();
+  const activeEmailsByTier = new Map<string, Set<string>>();
 
   for (const customer of customers) {
+    const email = customer.email.toLowerCase().trim();
+    const tiersThisCustomer = new Set<string>();
     for (const sub of customer.activeSubscriptions) {
       if (sub.type !== "subscription" || sub.isFreezed) continue;
-      activeCountByTier.set(sub.membership.name, (activeCountByTier.get(sub.membership.name) ?? 0) + 1);
+      const tierName = sub.membership.name;
+      // Una persona cuenta una sola vez por plan, aunque tenga varias subs solapadas
+      if (!tiersThisCustomer.has(tierName)) {
+        tiersThisCustomer.add(tierName);
+        const emails = activeEmailsByTier.get(tierName) ?? new Set<string>();
+        emails.add(email);
+        activeEmailsByTier.set(tierName, emails);
+      }
     }
   }
 
   return tiers.map((tier) => {
-    const activeCount = activeCountByTier.get(tier.name) ?? 0;
+    const activeCount = (activeEmailsByTier.get(tier.name) ?? new Set()).size;
     const mrr = activeCount * tier.price;
     return { name: tier.name, price: tier.price, mrr, arr: mrr * 12, activeCount };
   });
