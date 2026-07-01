@@ -105,7 +105,7 @@ export default function ChartCard({
                   item.onClick ? "hover:bg-navy/[0.02] transition-colors cursor-pointer" : ""
                 }`}
               >
-                <div className="text-[10px] uppercase tracking-wide text-navy/50 mb-1 flex items-center gap-1">
+                <div className="text-[11px] text-navy/50 mb-1 flex items-center gap-1">
                   {item.label}
                   {item.tooltip && (
                     <div className="relative group/tip shrink-0">
@@ -120,10 +120,10 @@ export default function ChartCard({
                     </div>
                   )}
                 </div>
-                <div className={`text-[22px] font-medium leading-tight text-navy ${item.valueClassName ?? ""}`}>
+                <div className={`text-2xl font-medium leading-tight text-navy ${item.valueClassName ?? ""}`}>
                   {item.value}
                 </div>
-                {item.helper && <div className="text-[11px] text-navy/50 mt-0.5">{item.helper}</div>}
+                {item.helper && <div className="text-[11px] text-navy/45 mt-0.5">{item.helper}</div>}
               </Cell>
             );
           })}

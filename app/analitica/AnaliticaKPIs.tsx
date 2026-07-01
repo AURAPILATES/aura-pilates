@@ -6,8 +6,9 @@ import { fmt } from "@/lib/analytics";
 import Drawer from "@/app/components/Drawer";
 import { ChartCard, ProportionBar } from "@/components/charts";
 import { hasActiveSub, hasActivePack, isChurned, type EnrichedCustomer } from "@/lib/customerEnrichment";
+import type { MomenceChurnResult } from "@/lib/subscriberSnapshots";
 
-type DrawerKey = "active" | "new" | "altas" | "churn" | "error" | "convert" | null;
+type DrawerKey = "active" | "new" | "altas" | "churn" | "error" | "convert" | "baja_momence" | "alta_momence" | null;
 
 function fmtDate(d: string | null) {
   if (!d) return "—";
@@ -18,6 +19,11 @@ const MONTHS_ES = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","
 function fmtD(d: string): string {
   const [y, m, day] = d.split("-");
   return `${parseInt(day)} ${MONTHS_ES[parseInt(m) - 1]} ${y}`;
+}
+
+function fmtShort(d: string): string {
+  const [, m, day] = d.split("-");
+  return `${parseInt(day)} ${MONTHS_ES[parseInt(m) - 1]}`;
 }
 
 type DrawerSection = { title: string; customers: EnrichedCustomer[] };
@@ -73,11 +79,12 @@ type Props = {
   convertCandidates: EnrichedCustomer[];
   activeMomenceSubCount: number;
   activeRecurringCount: number;
+  momenceChurn: MomenceChurnResult | null;
 };
 
 export default function AnaliticaKPIs({
   customers, periodLabel, periodFrom, periodTo, compDateRange, spendPerClient, spendPerClientComp,
-  newCustomers, reactivatedCustomers, convertCandidates, activeMomenceSubCount, activeRecurringCount,
+  newCustomers, reactivatedCustomers, convertCandidates, activeMomenceSubCount, activeRecurringCount, momenceChurn,
 }: Props) {
   const [drawer, setDrawer] = useState<DrawerKey>(null);
 
@@ -92,7 +99,16 @@ export default function AnaliticaKPIs({
   // Base activa verificada: suscripciones según Momence (fuente de verdad) + packs activos
   const activeTotal = activeMomenceSubCount + activePackList.length;
 
-  const drawerConfig: Record<NonNullable<DrawerKey>, DrawerEntry> = {
+  const momenceChurnDrawer = drawer === "baja_momence" || drawer === "alta_momence";
+  const momenceDrawerData = drawer === "baja_momence" ? momenceChurn?.churned : momenceChurn?.gained;
+  const momenceDrawerTitle = drawer === "baja_momence"
+    ? `Bajas confirmadas · ${momenceChurn ? fmtShort(momenceChurn.refDate) + " – " + fmtShort(momenceChurn.compareDate) : ""}`
+    : `Altas de suscripción · ${momenceChurn ? fmtShort(momenceChurn.refDate) + " – " + fmtShort(momenceChurn.compareDate) : ""}`;
+  const momenceDrawerSubtitle = drawer === "baja_momence"
+    ? "Estaban activas en Momence al inicio del período y ya no aparecen hoy"
+    : "No estaban en Momence al inicio del período y sí aparecen hoy";
+
+  const drawerConfig: Record<Exclude<NonNullable<DrawerKey>, "baja_momence" | "alta_momence">, DrawerEntry> = {
     active: {
       title: "Activos (historial Stripe)",
       subtitle: "Aproximación por historial de cobros · para detalle exacto ver Momence",
@@ -200,15 +216,25 @@ export default function AnaliticaKPIs({
             )}
 
             <div className="mt-5 pt-4 border-t border-navy/[0.07]">
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-xs font-semibold text-navy/55 uppercase tracking-wider">Movimiento del período</p>
-                {altasList.length > 0 && (
-                  <span className="text-xs font-semibold text-success bg-success/10 px-2 py-0.5 rounded-full">
-                    +{altasList.length} altas
-                  </span>
-                )}
+              <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                <p className="text-[11px] font-medium text-navy/45">Movimiento</p>
+                <div className="flex items-center gap-2">
+                  {altasList.length > 0 && (
+                    <span className="text-xs font-semibold text-success bg-success/10 px-2 py-0.5 rounded-full">
+                      +{altasList.length} altas
+                    </span>
+                  )}
+                  {momenceChurn && momenceChurn.churned.length > 0 && (
+                    <span className="text-xs font-semibold text-danger bg-danger/10 px-2 py-0.5 rounded-full">
+                      −{momenceChurn.churned.length} bajas
+                    </span>
+                  )}
+                </div>
               </div>
-              <div className="grid grid-cols-3 gap-4">
+
+              {/* Fila 1: Stripe */}
+              <p className="text-[11px] text-navy/35 mb-2">Stripe · período seleccionado</p>
+              <div className="grid grid-cols-3 gap-4 mb-5">
                 <button
                   type="button"
                   onClick={newCustomers.length > 0 ? () => setDrawer("new") : undefined}
@@ -216,7 +242,7 @@ export default function AnaliticaKPIs({
                   disabled={newCustomers.length === 0}
                   title="Clientes cuyo primer pago registrado en Stripe cae dentro del período seleccionado."
                 >
-                  <div className="text-[10px] uppercase tracking-wide text-navy/50 mb-1">Nuevos</div>
+                  <div className="text-[11px] text-navy/50 mb-1">Nuevos</div>
                   <div className="text-[20px] font-medium text-success leading-tight">+{newCustomers.length}</div>
                   <div className="text-[11px] text-navy/50 mt-0.5">primer pago</div>
                 </button>
@@ -227,7 +253,7 @@ export default function AnaliticaKPIs({
                   disabled={reactivatedCustomers.length === 0}
                   title="Clientes que ya habían pagado antes pero llevaban más de 60 días sin hacerlo y volvieron a pagar en el período."
                 >
-                  <div className="text-[10px] uppercase tracking-wide text-navy/50 mb-1">Reactivados</div>
+                  <div className="text-[11px] text-navy/50 mb-1">Reactivados</div>
                   <div className="text-[20px] font-medium text-success leading-tight">+{reactivatedCustomers.length}</div>
                   <div className="text-[11px] text-navy/50 mt-0.5">volvieron tras un hueco</div>
                 </button>
@@ -238,10 +264,43 @@ export default function AnaliticaKPIs({
                   disabled={altasList.length === 0}
                   title="Nuevos + reactivados en el período. Son todas las altas netas sin contar bajas."
                 >
-                  <div className="text-[10px] uppercase tracking-wide text-navy/50 mb-1">Total altas</div>
+                  <div className="text-[11px] text-navy/50 mb-1">Total altas</div>
                   <div className="text-[20px] font-medium text-success leading-tight">+{altasList.length}</div>
                 </button>
               </div>
+
+              {/* Fila 2: Momence snapshots */}
+              {momenceChurn && (
+                <>
+                  <p className="text-[11px] text-navy/35 mb-2">
+                    Momence · {fmtShort(momenceChurn.refDate)} – {fmtShort(momenceChurn.compareDate)}
+                  </p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <button
+                      type="button"
+                      onClick={momenceChurn.churned.length > 0 ? () => setDrawer("baja_momence") : undefined}
+                      className="text-left"
+                      disabled={momenceChurn.churned.length === 0}
+                      title={`Suscriptoras que estaban activas en Momence el ${fmtShort(momenceChurn.refDate)} y ya no aparecen hoy. Baja confirmada.`}
+                    >
+                      <div className="text-[11px] text-navy/50 mb-1">Bajas</div>
+                      <div className="text-[20px] font-medium text-danger leading-tight">−{momenceChurn.churned.length}</div>
+                      <div className="text-[11px] text-navy/50 mt-0.5">salieron de Momence</div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={momenceChurn.gained.length > 0 ? () => setDrawer("alta_momence") : undefined}
+                      className="text-left"
+                      disabled={momenceChurn.gained.length === 0}
+                      title={`Suscriptoras que no estaban en Momence el ${fmtShort(momenceChurn.refDate)} y sí aparecen hoy.`}
+                    >
+                      <div className="text-[11px] text-navy/50 mb-1">Altas sub.</div>
+                      <div className="text-[20px] font-medium text-success leading-tight">+{momenceChurn.gained.length}</div>
+                      <div className="text-[11px] text-navy/50 mt-0.5">nuevas en Momence</div>
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </ChartCard>
         </div>
@@ -302,8 +361,30 @@ export default function AnaliticaKPIs({
         </div>
       </div>
 
-      {drawer && (() => {
-        const cfg = drawerConfig[drawer];
+      {drawer && momenceChurnDrawer && momenceDrawerData && (
+        <Drawer
+          title={momenceDrawerTitle}
+          subtitle={momenceDrawerSubtitle}
+          maxWidth="max-w-[420px]"
+          footer={<p className="text-xs text-navy/45">{momenceDrawerData.length} suscriptoras · fuente: Momence snapshots</p>}
+          onClose={() => setDrawer(null)}
+        >
+          <div className="divide-y divide-navy/[0.05]">
+            {momenceDrawerData.length === 0 && (
+              <p className="px-6 py-12 text-center text-sm text-navy/40">Sin datos.</p>
+            )}
+            {momenceDrawerData.map((entry) => (
+              <div key={entry.email} className="px-6 py-4">
+                <p className="text-sm font-semibold text-navy truncate">{entry.email}</p>
+                <p className="text-xs text-navy/50 mt-0.5">{entry.tier}</p>
+              </div>
+            ))}
+          </div>
+        </Drawer>
+      )}
+
+      {drawer && !momenceChurnDrawer && (() => {
+        const cfg = drawerConfig[drawer as Exclude<NonNullable<DrawerKey>, "baja_momence" | "alta_momence">];
         const allCustomers = cfg.sections
           ? cfg.sections.flatMap((s) => s.customers)
           : (cfg.customers ?? []);

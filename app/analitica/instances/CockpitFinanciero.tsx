@@ -144,10 +144,10 @@ export default function CockpitFinanciero({
         <div className="p-4">
           <div className="flex items-center gap-1.5 mb-4">
             <Clock size={12} className="text-navy/40" />
-            <span className="text-[10px] font-semibold text-navy/40 uppercase tracking-wider">Pasado</span>
+            <span className="text-[11px] font-semibold text-navy/40 uppercase tracking-wider">Pasado</span>
           </div>
           <div className="mb-4">
-            <div className="text-[10px] font-semibold uppercase tracking-wide text-navy/45 mb-1">Resultado del mes</div>
+            <div className="text-[11px] font-medium text-navy/45 mb-1">Resultado del mes</div>
             <div className={`text-[26px] font-medium leading-tight ${resultadoMes >= 0 ? "text-success" : "text-danger"}`}>
               {resultadoMes >= 0 ? "+" : "−"}{fmt(Math.abs(resultadoMes))}
             </div>
@@ -157,7 +157,7 @@ export default function CockpitFinanciero({
             </div>
           </div>
           <div>
-            <div className="text-[10px] font-semibold uppercase tracking-wide text-navy/45 mb-1">Ingresos vs mes ant.</div>
+            <div className="text-[11px] font-medium text-navy/45 mb-1">Ingresos vs mes ant.</div>
             <div className="text-[20px] font-medium text-navy leading-tight">{fmt(curMonthIngresos)}</div>
             <div className={`text-[11px] mt-0.5 ${revDelta < 0 ? "text-danger" : "text-success"}`}>
               {revDelta >= 0 ? "+" : "−"}{fmt(Math.abs(revDelta))} vs {prevMonthLabel}
@@ -169,10 +169,10 @@ export default function CockpitFinanciero({
         <div className="p-4">
           <div className="flex items-center gap-1.5 mb-4">
             <span className="w-2 h-2 rounded-full bg-primary shrink-0" />
-            <span className="text-[10px] font-semibold text-primary uppercase tracking-wider">Presente</span>
+            <span className="text-[11px] font-semibold text-primary uppercase tracking-wider">Presente</span>
           </div>
           <div className="mb-4">
-            <div className="text-[10px] font-semibold uppercase tracking-wide text-navy/45 mb-1">Saldo actual</div>
+            <div className="text-[11px] font-medium text-navy/45 mb-1">Saldo actual</div>
             <div className="text-[26px] font-medium text-navy leading-tight">
               {currentBalance !== null ? fmt(currentBalance) : "—"}
             </div>
@@ -181,7 +181,7 @@ export default function CockpitFinanciero({
             </div>
           </div>
           <div>
-            <div className="text-[10px] font-semibold uppercase tracking-wide text-navy/45 mb-1">Meses de caja</div>
+            <div className="text-[11px] font-medium text-navy/45 mb-1">Meses de caja</div>
             <div className="text-[20px] font-medium text-navy leading-tight">
               {runwayMonths !== null ? `${runwayMonths.toFixed(1)} m` : "—"}
             </div>
@@ -195,20 +195,20 @@ export default function CockpitFinanciero({
         <div className="p-4">
           <div className="flex items-center gap-1.5 mb-4">
             <TrendingUp size={12} className="text-navy/40" />
-            <span className="text-[10px] font-semibold text-navy/40 uppercase tracking-wider">Futuro · 30d</span>
+            <span className="text-[11px] font-semibold text-navy/40 uppercase tracking-wider">Futuro · 30d</span>
           </div>
           <div className="mb-4">
-            <div className="text-[10px] font-semibold uppercase tracking-wide text-navy/45 mb-1">Saldo proyectado</div>
+            <div className="text-[11px] font-medium text-navy/45 mb-1">Saldo proyectado</div>
             <div className="text-[26px] font-medium text-navy leading-tight">~{fmt(saldoProyectado)}</div>
             <div className="text-[11px] text-navy/50 mt-0.5">saldo + previsto – comprometido</div>
           </div>
           <div className="mb-3">
-            <div className="text-[10px] font-semibold uppercase tracking-wide text-navy/45 mb-1">Ventas previstas</div>
+            <div className="text-[11px] font-medium text-navy/45 mb-1">Ventas previstas</div>
             <div className="text-[20px] font-medium text-success leading-tight">~{fmt(ventasPrevistas)}</div>
             <div className="text-[11px] text-navy/50 mt-0.5">media últ. 3 meses</div>
           </div>
           <div>
-            <div className="text-[10px] font-semibold uppercase tracking-wide text-navy/45 mb-1">Gastos comprometidos</div>
+            <div className="text-[11px] font-medium text-navy/45 mb-1">Gastos comprometidos</div>
             <div className="text-[20px] font-medium text-danger leading-tight">−{fmt(gastosComprometidos)}</div>
             <div className="text-[11px] text-navy/50 mt-0.5">previsión recurrentes</div>
           </div>

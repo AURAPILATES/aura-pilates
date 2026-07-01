@@ -40,6 +40,7 @@ import EvolucionSuscripciones from "./instances/EvolucionSuscripciones";
 import EvolucionSuscripcionesFullWidth from "./instances/EvolucionSuscripcionesFullWidth";
 import RetencionCohorte from "./instances/RetencionCohorte";
 import { loadBusinessEvents } from "@/lib/businessEvents";
+import { getMomenceChurn } from "@/lib/subscriberSnapshots";
 import { ChartCard } from "@/components/charts";
 import { pad2 } from "@/lib/periodCalculation";
 import AnaliticaKPIs from "./AnaliticaKPIs";
@@ -144,7 +145,7 @@ export default async function AnaliticaLoader({
   const [
     paymentsAll, membershipsAll, productsAll, customersAll,
     txnsAll, dbCategories, budgets, businessEvents, recurringExpenses, breakdown,
-    bancoLastImport,
+    bancoLastImport, momenceChurn,
   ] = await Promise.all([
     loadStripePaymentsCached(),
     getMemberships(),
@@ -157,6 +158,7 @@ export default async function AnaliticaLoader({
     loadRecurringExpensesCached(),
     loadPaymentsBreakdown(mainFrom, mainTo),
     getLatestImportDate(),
+    getMomenceChurn(),
   ]);
 
   // Stripe/Momence se leen en vivo en cada carga; el banco depende de la última subida manual de CSV.
@@ -577,6 +579,7 @@ export default async function AnaliticaLoader({
               convertCandidates={convertCandidates}
               activeMomenceSubCount={activeMomenceSubCount}
               activeRecurringCount={activeRecurringCount}
+              momenceChurn={momenceChurn}
             />
             <ClientesPaymentsBreakdown
               succeeded={totalRev}
@@ -603,8 +606,7 @@ export default async function AnaliticaLoader({
         <section>
           <SectionHeader id="fiscal" title="Fiscal y financiación" />
           <div className="space-y-4">
-            <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
-              <p className="text-xs font-semibold text-navy/55 uppercase tracking-wider mb-4">Próximas obligaciones</p>
+            <ChartCard title="Próximas obligaciones">
               <div className="space-y-3">
                 {obligations.map(({ label, date, deadline }) => {
                   const days = daysUntil(deadline);
@@ -626,12 +628,13 @@ export default async function AnaliticaLoader({
                   );
                 })}
               </div>
-            </div>
-            <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
-              <p className="text-xs font-semibold text-navy/55 uppercase tracking-wider mb-1">IVA soportado y retenciones practicadas</p>
-              <p className="text-xs text-navy/40 mb-4">
-                Según el IVA/retención asignado por contacto al importar (Configuración → Contactos)
-              </p>
+            </ChartCard>
+            <ChartCard
+              title="IVA soportado y retenciones"
+              subtitle="Según el IVA/retención asignado por contacto al importar (Configuración → Contactos)"
+              sources={["excel"]}
+              lastUpdated={bancoLastUpdated}
+            >
               {fiscalRows.length === 0 ? (
                 <p className="text-sm text-navy/40">Todavía no hay movimientos con IVA o retención asignados.</p>
               ) : (
@@ -647,7 +650,7 @@ export default async function AnaliticaLoader({
                   ))}
                 </div>
               )}
-            </div>
+            </ChartCard>
             <Financiacion initialBudgets={budgets} spent={budgetSpent} />
           </div>
         </section>

@@ -12,9 +12,6 @@ export type {
   StaticLegendItem,
 } from "./ChartCard";
 
-export { default as KpiCard } from "./KpiCard";
-export type { KpiCardProps } from "./KpiCard";
-
 export { default as DeltaBadge } from "./DeltaBadge";
 export type { DeltaBadgeProps, DeltaDirection } from "./DeltaBadge";
 
