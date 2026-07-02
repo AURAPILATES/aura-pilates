@@ -93,3 +93,117 @@ export function resolvePeriod(
 }
 
 export { pad2, addDays, daysBetween, fmtShort };
+
+// ── Calendar-based period resolver (Analítica) ────────────────────────────────
+
+function lastDayOf(year: number, month: number): string {
+  const day = new Date(year, month, 0).getDate();
+  return `${year}-${pad2(month)}-${pad2(day)}`;
+}
+
+function prevMonth(year: number, month: number): { year: number; month: number } {
+  return month === 1 ? { year: year - 1, month: 12 } : { year, month: month - 1 };
+}
+
+function quarterRange(year: number, q: number): { from: string; to: string } {
+  const startM = (q - 1) * 3 + 1;
+  const endM = q * 3;
+  return { from: `${year}-${pad2(startM)}-01`, to: lastDayOf(year, endM) };
+}
+
+function prevQuarter(year: number, q: number): { year: number; q: number } {
+  return q === 1 ? { year: year - 1, q: 4 } : { year, q: q - 1 };
+}
+
+/**
+ * Resuelve los params de URL del filtro de Analítica (period/year/compareWith)
+ * a rangos de fechas concretos.
+ *
+ * period: month_01..month_12 | q1..q4 | year
+ * year: e.g. 2025, 2026
+ * compareWith: previous | year_ago | none
+ */
+export function resolveCalendarPeriod(sp: PeriodSearchParams): ResolvedPeriod {
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1;
+  const todayStr = now.toISOString().split("T")[0];
+
+  const yearParam = parseInt(str(sp.year, String(currentYear)));
+  const year = isNaN(yearParam) ? currentYear : yearParam;
+  const defaultPeriod = `month_${pad2(currentMonth)}`;
+  const periodType = str(sp.period, defaultPeriod);
+  const compareWith = str(sp.compareWith, "previous");
+
+  let from: string;
+  let to: string;
+  const MES_ES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+  let periodLabel: string;
+
+  if (periodType === "year") {
+    from = `${year}-01-01`;
+    to = `${year}-12-31`;
+    periodLabel = String(year);
+  } else if (/^q[1-4]$/.test(periodType)) {
+    const q = parseInt(periodType[1]);
+    const r = quarterRange(year, q);
+    from = r.from;
+    to = r.to;
+    periodLabel = `Q${q} ${year}`;
+  } else if (/^month_\d{2}$/.test(periodType)) {
+    const m = parseInt(periodType.slice(6));
+    from = `${year}-${pad2(m)}-01`;
+    to = lastDayOf(year, m);
+    periodLabel = `${MES_ES[m - 1]} ${year}`;
+  } else {
+    from = `${year}-${pad2(currentMonth)}-01`;
+    to = lastDayOf(year, currentMonth);
+    periodLabel = `${MES_ES[currentMonth - 1]} ${year}`;
+  }
+
+  if (to > todayStr) to = todayStr;
+
+  let compFrom: string;
+  let compTo: string;
+
+  if (compareWith === "none") {
+    compFrom = from;
+    compTo = from;
+  } else if (compareWith === "year_ago") {
+    const prevYear = year - 1;
+    if (periodType === "year") {
+      compFrom = `${prevYear}-01-01`;
+      compTo = `${prevYear}-12-31`;
+    } else if (/^q[1-4]$/.test(periodType)) {
+      const q = parseInt(periodType[1]);
+      const r = quarterRange(prevYear, q);
+      compFrom = r.from;
+      compTo = r.to;
+    } else {
+      const m = parseInt(periodType.slice(6));
+      compFrom = `${prevYear}-${pad2(m)}-01`;
+      compTo = lastDayOf(prevYear, m);
+    }
+  } else {
+    // previous
+    if (periodType === "year") {
+      compFrom = `${year - 1}-01-01`;
+      compTo = `${year - 1}-12-31`;
+    } else if (/^q[1-4]$/.test(periodType)) {
+      const q = parseInt(periodType[1]);
+      const { year: py, q: pq } = prevQuarter(year, q);
+      const r = quarterRange(py, pq);
+      compFrom = r.from;
+      compTo = r.to;
+    } else {
+      const m = parseInt(periodType.slice(6));
+      const { year: py, month: pm } = prevMonth(year, m);
+      compFrom = `${py}-${pad2(pm)}-01`;
+      compTo = lastDayOf(py, pm);
+    }
+  }
+
+  const compDateRange = compareWith === "none" ? "—" : `${fmtShort(compFrom)}–${fmtShort(compTo)}`;
+
+  return { from, to, compFrom, compTo, periodLabel, compDateRange };
+}

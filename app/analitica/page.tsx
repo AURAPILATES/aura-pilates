@@ -1,18 +1,18 @@
 export const dynamic = "force-dynamic";
 
 import { Suspense } from "react";
-import ClientesFilterBar from "@/app/clientes/ClientesFilterBar";
+import AnaliticaFilterBar from "./AnaliticaFilterBar";
 import AnaliticaLoader from "./AnaliticaLoader";
 import AnaliticaSkeleton from "./AnaliticaSkeleton";
 import MobileNav from "@/app/components/MobileNav";
-import { resolvePeriod } from "@/lib/periodCalculation";
+import { resolveCalendarPeriod } from "@/lib/periodCalculation";
 
 export default async function Analitica(props: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
   const sp = await props.searchParams;
 
-  const { from: mainFrom, to: mainTo, compFrom, compTo, periodLabel, compDateRange } = resolvePeriod(sp);
+  const { from: mainFrom, to: mainTo, compFrom, compTo, periodLabel, compDateRange } = resolveCalendarPeriod(sp);
 
   return (
     <div>
@@ -25,7 +25,7 @@ export default async function Analitica(props: {
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-8 pb-16">
         <Suspense fallback={<div className="h-10 mb-4" />}>
-          <ClientesFilterBar />
+          <AnaliticaFilterBar />
         </Suspense>
 
         <Suspense fallback={<AnaliticaSkeleton />}>
