@@ -991,73 +991,135 @@ export default function TransaccionesList({
       )}
 
 
-      {/* ── Desktop: barra de filtros unificada ────────────────────────────── */}
-      <div className="hidden sm:flex items-center gap-2 mb-5">
-        <div className="relative flex-1">
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-navy/30" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
-          <input
-            type="text"
-            placeholder="Buscar concepto o contacto…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 text-sm border border-navy/[0.12] rounded-xl bg-white text-navy placeholder:text-navy/35 outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition"
-          />
-          {search && (
-            <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-navy/30 hover:text-navy/60">✕</button>
-          )}
-        </div>
-        <DateFilter />
-        <CategoryMultiFilter selected={catFilters} categories={categories} onChange={setCatFilters} />
-        <MoreOptionsMenu
-          onlyRecurring={onlyRecurring}
-          setOnlyRecurring={setOnlyRecurring}
-          originFilter={originFilter}
-          setOriginFilter={setOriginFilter}
-          onExport={exportCSV}
-          onPapelera={() => setShowPapelera(true)}
-        />
-        <ImportButton onManual={() => setShowAddCash(true)} />
-      </div>
+      {/* ── Desktop toolbar (3 variantes) ───────────────────────────────────── */}
+      {(() => {
+        const layout = (searchParams.get("layout") ?? "stripe") as "stripe" | "factorial" | "linear";
 
-      {/* ── Desktop: recuento ─────────────────────────────────────────────────── */}
-      <div className="hidden sm:flex items-center gap-3 mb-6">
-        {someSelected ? (
-          <span className="text-sm text-navy/45">{selected.size} seleccionado{selected.size !== 1 ? "s" : ""}</span>
-        ) : (
-          <span className="text-sm text-navy/45">{filtered.length} movimientos</span>
-        )}
-        {!someSelected && uncategorizedCount > 0 && (
-          <button
-            onClick={() => setCatFilters(catFilters.includes("__none__") ? catFilters.filter((v) => v !== "__none__") : [...catFilters, "__none__"])}
-            className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium transition-colors ${
-              catFilters.includes("__none__")
-                ? "bg-warning/10 text-warning/80"
-                : "bg-warning/10 text-warning/80 hover:bg-warning/15"
-            }`}
-          >
-            <span>⚠</span>
-            <span>{uncategorizedCount} sin etiquetar</span>
-          </button>
-        )}
-        {isPending && <span className="text-xs text-primary/60">Guardando…</span>}
-        {(catFilters.length > 0 || originFilter !== "all" || onlyRecurring || directionFilter !== "all" || currentRange !== "all" || search !== "") && (
-          <button
-            onClick={() => {
-              setCatFilters([]);
-              setOriginFilter("all");
-              setOnlyRecurring(false);
-              setDirectionFilter("all");
-              setSearch("");
-              if (currentRange !== "all") router.push(pathname);
-            }}
-            className="text-xs text-navy/45 hover:text-navy underline whitespace-nowrap"
-          >
-            Eliminar filtros
-          </button>
-        )}
-      </div>
+        const searchFull = (
+          <div className="relative flex-1">
+            <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 text-navy/30" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input
+              type="text"
+              placeholder="Buscar concepto o contacto…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-9 pr-4 py-2.5 text-sm border border-navy/[0.12] rounded-xl bg-white text-navy placeholder:text-navy/35 outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition"
+            />
+            {search && <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-navy/30 hover:text-navy/60">✕</button>}
+          </div>
+        );
+
+        const searchNarrow = (
+          <div className="relative w-52">
+            <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 text-navy/30" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input
+              type="text"
+              placeholder="Buscar…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-9 pr-4 py-2.5 text-sm border border-navy/[0.12] rounded-xl bg-white text-navy placeholder:text-navy/35 outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition"
+            />
+            {search && <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-navy/30 hover:text-navy/60">✕</button>}
+          </div>
+        );
+
+        const chips = (
+          <>
+            <DateFilter />
+            <CategoryMultiFilter selected={catFilters} categories={categories} onChange={setCatFilters} />
+            <MoreOptionsMenu
+              onlyRecurring={onlyRecurring}
+              setOnlyRecurring={setOnlyRecurring}
+              originFilter={originFilter}
+              setOriginFilter={setOriginFilter}
+              onExport={exportCSV}
+              onPapelera={() => setShowPapelera(true)}
+            />
+          </>
+        );
+
+        const addBtn = <ImportButton onManual={() => setShowAddCash(true)} />;
+
+        const count = (
+          <div className="flex items-center gap-3">
+            {someSelected
+              ? <span className="text-sm text-navy/45">{selected.size} seleccionado{selected.size !== 1 ? "s" : ""}</span>
+              : <span className="text-sm text-navy/45">{filtered.length} movimientos</span>}
+            {!someSelected && uncategorizedCount > 0 && (
+              <button
+                onClick={() => setCatFilters(catFilters.includes("__none__") ? catFilters.filter((v) => v !== "__none__") : [...catFilters, "__none__"])}
+                className="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-warning/10 text-warning/80 hover:bg-warning/15 transition-colors"
+              >
+                <span>⚠</span><span>{uncategorizedCount} sin etiquetar</span>
+              </button>
+            )}
+            {isPending && <span className="text-xs text-primary/60">Guardando…</span>}
+            {(catFilters.length > 0 || originFilter !== "all" || onlyRecurring || directionFilter !== "all" || currentRange !== "all" || search !== "") && (
+              <button
+                onClick={() => { setCatFilters([]); setOriginFilter("all"); setOnlyRecurring(false); setDirectionFilter("all"); setSearch(""); if (currentRange !== "all") router.push(pathname); }}
+                className="text-xs text-navy/45 hover:text-navy underline whitespace-nowrap"
+              >Eliminar filtros</button>
+            )}
+          </div>
+        );
+
+        const switcher = (
+          <div className="flex items-center gap-0.5 text-[11px] text-navy/30 ml-auto">
+            {(["stripe", "factorial", "linear"] as const).map((v) => (
+              <button
+                key={v}
+                onClick={() => {
+                  const p = new URLSearchParams(searchParams.toString());
+                  if (v === "stripe") p.delete("layout"); else p.set("layout", v);
+                  router.push(`${pathname}${p.toString() ? "?" + p.toString() : ""}`);
+                }}
+                className={`px-2 py-0.5 rounded transition-colors capitalize ${layout === v ? "bg-navy/8 text-navy/60 font-semibold" : "hover:text-navy/50"}`}
+              >{v}</button>
+            ))}
+          </div>
+        );
+
+        /* ── Stripe: una fila ── */
+        if (layout === "stripe") return (
+          <div className="hidden sm:block">
+            <div className="flex items-center gap-2 mb-5">
+              {searchFull}{chips}{addBtn}
+            </div>
+            <div className="flex items-center gap-3 mb-6">
+              {count}{switcher}
+            </div>
+          </div>
+        );
+
+        /* ── Factorial: dos filas ── */
+        if (layout === "factorial") return (
+          <div className="hidden sm:block">
+            <div className="flex items-center gap-3 mb-4">
+              {searchFull}{addBtn}
+            </div>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-2">{chips}</div>
+              <div className="flex items-center gap-4">{count}{switcher}</div>
+            </div>
+          </div>
+        );
+
+        /* ── Linear: filtros a la izquierda, search + añadir a la derecha ── */
+        return (
+          <div className="hidden sm:block">
+            <div className="flex items-center gap-2 mb-6">
+              {chips}{count}
+              <div className="ml-auto flex items-center gap-2">
+                {searchNarrow}{addBtn}{switcher}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ── Mobile: toolbar ────────────────────────────────────────────────── */}
       <div className="sm:hidden mb-3">
