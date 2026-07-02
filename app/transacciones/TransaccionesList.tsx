@@ -607,7 +607,19 @@ export default function TransaccionesList({
   const [onlyRecurring, setOnlyRecurring] = useState(false);
   const [directionFilter, setDirectionFilter] = useState<"all" | "in" | "out">("all");
   const [drawerTxnId, setDrawerTxnId] = useState<string | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [filtersPanelOpen, setFiltersPanelOpen] = useState(false);
+  const filtersPanelRef = useRef<HTMLDivElement>(null);
   const drawerTxn = drawerTxnId ? transactions.find((t) => t.id === drawerTxnId) ?? null : null;
+
+  useEffect(() => {
+    if (!filtersPanelOpen) return;
+    function handle(e: MouseEvent) {
+      if (!filtersPanelRef.current?.contains(e.target as Node)) setFiltersPanelOpen(false);
+    }
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, [filtersPanelOpen]);
 
   function toggleSort(key: "date" | "amount" | "concept") {
     if (sortKey === key) {
@@ -1095,18 +1107,128 @@ export default function TransaccionesList({
           </div>
         );
 
-        /* ── Factorial: dos filas ── */
-        if (layout === "factorial") return (
-          <div className="hidden sm:block">
-            <div className="flex items-center gap-3 mb-4">
-              {searchFull}{addBtn}
+        /* ── Factorial: lupa expandible + botón Filtros único ── */
+        if (layout === "factorial") {
+          const activeFilterCount = (catFilters.length > 0 ? 1 : 0) + (originFilter !== "all" ? 1 : 0) + (onlyRecurring ? 1 : 0) + (currentRange !== "all" ? 1 : 0);
+          return (
+            <div className="hidden sm:block mb-6">
+              <div className="flex items-center gap-2">
+                {/* Filtros — botón único con panel */}
+                <div ref={filtersPanelRef} className="relative">
+                  <button
+                    onClick={() => setFiltersPanelOpen((v) => !v)}
+                    className={`flex items-center gap-2 px-3 py-2 text-sm border rounded-xl bg-white transition-colors ${
+                      activeFilterCount > 0 || filtersPanelOpen
+                        ? "border-primary/40 text-navy"
+                        : "border-navy/[0.12] text-navy/60 hover:text-navy hover:border-navy/25"
+                    }`}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+                    </svg>
+                    <span className="font-medium">Filtros</span>
+                    {activeFilterCount > 0 && (
+                      <span className="min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-primary text-white text-[10px] font-bold px-1">
+                        {activeFilterCount}
+                      </span>
+                    )}
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                      className={`transition-transform ${filtersPanelOpen ? "rotate-180" : ""}`}>
+                      <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                  </button>
+
+                  {filtersPanelOpen && (
+                    <div className="absolute left-0 top-full mt-1.5 z-50 bg-white border border-navy/[0.1] rounded-2xl shadow-xl p-4 min-w-[280px] space-y-3">
+                      <div>
+                        <p className="text-[10px] font-semibold text-navy/40 uppercase tracking-wider mb-2">Período</p>
+                        <DateFilter />
+                      </div>
+                      <div className="border-t border-navy/[0.06]" />
+                      <div>
+                        <p className="text-[10px] font-semibold text-navy/40 uppercase tracking-wider mb-2">Categoría</p>
+                        <CategoryMultiFilter selected={catFilters} categories={categories} onChange={setCatFilters} className="w-full" />
+                      </div>
+                      <div className="border-t border-navy/[0.06]" />
+                      <div>
+                        <p className="text-[10px] font-semibold text-navy/40 uppercase tracking-wider mb-2">Origen</p>
+                        <SelectWrapper>
+                          <select value={originFilter} onChange={(e) => setOriginFilter(e.target.value)} className={SELECT_CLS}>
+                            <option value="all">Todos</option>
+                            <option value="banco">CaixaBank</option>
+                            <option value="efectivo">Efectivo Aura</option>
+                            <option value="victor">Víctor</option>
+                            <option value="celia">Celia</option>
+                            <option value="olga">Olga</option>
+                            <option value="carles">Carles</option>
+                          </select>
+                        </SelectWrapper>
+                      </div>
+                      <div className="border-t border-navy/[0.06]" />
+                      <button
+                        onClick={() => setOnlyRecurring((v) => !v)}
+                        className={`w-full flex items-center gap-2 px-3 py-2 text-sm rounded-xl transition-colors ${
+                          onlyRecurring ? "bg-navy/[0.05] text-navy font-medium" : "text-navy/55 hover:bg-navy/[0.03]"
+                        }`}
+                      >
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15"/>
+                        </svg>
+                        Solo recurrentes
+                      </button>
+                      {activeFilterCount > 0 && (
+                        <button
+                          onClick={() => { setCatFilters([]); setOriginFilter("all"); setOnlyRecurring(false); if (currentRange !== "all") router.push(pathname); setFiltersPanelOpen(false); }}
+                          className="w-full text-xs text-navy/45 hover:text-navy underline py-1"
+                        >Eliminar filtros</button>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Recuento */}
+                {count}
+
+                {/* Derecha: lupa expandible + Añadir + switcher */}
+                <div className="ml-auto flex items-center gap-2">
+                  {searchOpen ? (
+                    <div className="relative w-60">
+                      <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-navy/30" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                      </svg>
+                      <input
+                        autoFocus
+                        type="text"
+                        placeholder="Buscar concepto o contacto…"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        onBlur={() => { if (!search) setSearchOpen(false); }}
+                        onKeyDown={(e) => { if (e.key === "Escape") { setSearch(""); setSearchOpen(false); } }}
+                        className="w-full pl-9 pr-8 py-2 text-sm border border-navy/[0.12] rounded-xl bg-white text-navy placeholder:text-navy/35 outline-none focus:ring-2 focus:ring-primary/30 transition"
+                      />
+                      {search && (
+                        <button onClick={() => { setSearch(""); setSearchOpen(false); }} className="absolute right-3 top-1/2 -translate-y-1/2 text-navy/30 hover:text-navy/60">✕</button>
+                      )}
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setSearchOpen(true)}
+                      className={`w-9 h-9 flex items-center justify-center rounded-xl border transition-colors ${
+                        search ? "border-primary/40 text-primary bg-primary/5" : "border-navy/[0.12] text-navy/50 bg-white hover:text-navy hover:border-navy/25"
+                      }`}
+                    >
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                      </svg>
+                    </button>
+                  )}
+                  {addBtn}
+                  {switcher}
+                </div>
+              </div>
             </div>
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-2">{chips}</div>
-              <div className="flex items-center gap-4">{count}{switcher}</div>
-            </div>
-          </div>
-        );
+          );
+        }
 
         /* ── Linear: filtros a la izquierda, search + añadir a la derecha ── */
         return (
