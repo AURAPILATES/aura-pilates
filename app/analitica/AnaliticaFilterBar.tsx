@@ -2,35 +2,57 @@
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Suspense } from "react";
+import { ChevronDown } from "react-feather";
 
 const MONTHS = [
-  { value: "month_01", label: "Ene" },
-  { value: "month_02", label: "Feb" },
-  { value: "month_03", label: "Mar" },
-  { value: "month_04", label: "Abr" },
-  { value: "month_05", label: "May" },
-  { value: "month_06", label: "Jun" },
-  { value: "month_07", label: "Jul" },
-  { value: "month_08", label: "Ago" },
-  { value: "month_09", label: "Sep" },
-  { value: "month_10", label: "Oct" },
-  { value: "month_11", label: "Nov" },
-  { value: "month_12", label: "Dic" },
+  { value: "month_01", label: "Enero" },
+  { value: "month_02", label: "Febrero" },
+  { value: "month_03", label: "Marzo" },
+  { value: "month_04", label: "Abril" },
+  { value: "month_05", label: "Mayo" },
+  { value: "month_06", label: "Junio" },
+  { value: "month_07", label: "Julio" },
+  { value: "month_08", label: "Agosto" },
+  { value: "month_09", label: "Septiembre" },
+  { value: "month_10", label: "Octubre" },
+  { value: "month_11", label: "Noviembre" },
+  { value: "month_12", label: "Diciembre" },
 ];
 
 const QUARTERS = [
-  { value: "q1", label: "Q1" },
-  { value: "q2", label: "Q2" },
-  { value: "q3", label: "Q3" },
-  { value: "q4", label: "Q4" },
+  { value: "q1", label: "Q1 · Ene–Mar" },
+  { value: "q2", label: "Q2 · Abr–Jun" },
+  { value: "q3", label: "Q3 · Jul–Sep" },
+  { value: "q4", label: "Q4 · Oct–Dic" },
 ];
 
-type PeriodType = "month" | "quarter" | "year";
+const COMPARE_OPTIONS = [
+  { value: "previous", label: "Período anterior" },
+  { value: "year_ago", label: "Año anterior" },
+  { value: "none", label: "Sin comparación" },
+] as const;
 
-function getType(period: string): PeriodType {
-  if (period.startsWith("month_")) return "month";
-  if (/^q[1-4]$/.test(period)) return "quarter";
-  return "year";
+function SelectPill({
+  value,
+  onChange,
+  children,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="relative inline-flex items-center">
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="appearance-none bg-white border border-navy/[0.13] rounded-xl pl-3 pr-7 py-1.5 text-sm font-semibold text-navy shadow-sm outline-none cursor-pointer hover:border-navy/25 transition-colors"
+      >
+        {children}
+      </select>
+      <ChevronDown size={12} className="absolute right-2 text-navy/35 pointer-events-none" />
+    </div>
+  );
 }
 
 function AnaliticaFilterBarInner() {
@@ -43,10 +65,8 @@ function AnaliticaFilterBarInner() {
   const currentMonth = now.getMonth() + 1;
 
   const period = sp.get("period") ?? `month_${String(currentMonth).padStart(2, "0")}`;
-  const year = parseInt(sp.get("year") ?? String(currentYear));
+  const year = sp.get("year") ?? String(currentYear);
   const compareWith = sp.get("compareWith") ?? "previous";
-
-  const type = getType(period);
 
   const availableYears: number[] = [];
   for (let y = 2025; y <= currentYear; y++) availableYears.push(y);
@@ -60,77 +80,43 @@ function AnaliticaFilterBarInner() {
     router.replace(`${pathname}?${params.toString()}`);
   }
 
-  function setType(newType: PeriodType) {
-    if (newType === "year") {
-      update({ period: "year" });
-    } else if (newType === "quarter") {
-      update({ period: "q1" });
-    } else {
-      update({ period: `month_${String(currentMonth).padStart(2, "0")}` });
-    }
+  function onPeriodChange(value: string) {
+    update({ period: value });
   }
-
-  const pill = (active: boolean) =>
-    `px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-      active ? "bg-white shadow-sm text-navy" : "text-navy/50 hover:text-navy"
-    }`;
 
   return (
     <div className="flex flex-wrap items-center gap-2 mb-4 pb-4 border-b border-navy/[0.06]">
 
-      {/* Granularity */}
-      <div className="flex items-center gap-0.5 bg-navy/[0.04] rounded-xl p-1">
-        {(["month", "quarter", "year"] as const).map((t) => (
-          <button key={t} onClick={() => setType(t)} className={pill(type === t)}>
-            {t === "month" ? "Mes" : t === "quarter" ? "Trimestre" : "Año"}
-          </button>
-        ))}
-      </div>
-
-      {/* Specific period */}
-      {type === "month" && (
-        <div className="flex items-center gap-0.5 bg-navy/[0.04] rounded-xl p-1 overflow-x-auto">
+      {/* Period selector: months + quarters + year grouped */}
+      <SelectPill value={period} onChange={onPeriodChange}>
+        <optgroup label="Mes">
           {MONTHS.map((m) => (
-            <button key={m.value} onClick={() => update({ period: m.value })} className={pill(period === m.value)}>
-              {m.label}
-            </button>
+            <option key={m.value} value={m.value}>{m.label}</option>
           ))}
-        </div>
-      )}
-
-      {type === "quarter" && (
-        <div className="flex items-center gap-0.5 bg-navy/[0.04] rounded-xl p-1">
+        </optgroup>
+        <optgroup label="Trimestre">
           {QUARTERS.map((q) => (
-            <button key={q.value} onClick={() => update({ period: q.value })} className={pill(period === q.value)}>
-              {q.label}
-            </button>
+            <option key={q.value} value={q.value}>{q.label}</option>
           ))}
-        </div>
-      )}
+        </optgroup>
+        <option value="year">Año completo</option>
+      </SelectPill>
 
-      {/* Year */}
-      <div className="flex items-center gap-0.5 bg-navy/[0.04] rounded-xl p-1">
+      {/* Year selector */}
+      <SelectPill value={year} onChange={(v) => update({ year: v })}>
         {availableYears.map((y) => (
-          <button key={y} onClick={() => update({ year: String(y) })} className={pill(year === y)}>
-            {y}
-          </button>
+          <option key={y} value={String(y)}>{y}</option>
         ))}
-      </div>
+      </SelectPill>
 
       {/* Compare with */}
       <div className="flex items-center gap-2 sm:ml-auto">
         <span className="text-[11px] text-navy/40">Comparar con</span>
-        <div className="flex items-center gap-0.5 bg-navy/[0.04] rounded-xl p-1">
-          {([
-            { value: "previous", label: "Período anterior" },
-            { value: "year_ago", label: "Año anterior" },
-            { value: "none", label: "—" },
-          ] as const).map((opt) => (
-            <button key={opt.value} onClick={() => update({ compareWith: opt.value })} className={pill(compareWith === opt.value)}>
-              {opt.label}
-            </button>
+        <SelectPill value={compareWith} onChange={(v) => update({ compareWith: v })}>
+          {COMPARE_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
           ))}
-        </div>
+        </SelectPill>
       </div>
     </div>
   );
