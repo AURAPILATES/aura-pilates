@@ -75,7 +75,7 @@ export default function DateFilter() {
           setOpen(next);
           if (next) setShowCustom(current === "custom");
         }}
-        className="flex items-center gap-2 px-3 py-2 text-sm font-medium border border-navy/[0.12] rounded-lg bg-white text-navy hover:bg-navy/[0.03] transition-colors"
+        className="flex items-center gap-2 px-3 py-2 text-sm font-medium border border-navy/[0.12] rounded-xl bg-white text-navy hover:bg-navy/[0.03] transition-colors"
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <rect x="3" y="4" width="18" height="18" rx="2"/>

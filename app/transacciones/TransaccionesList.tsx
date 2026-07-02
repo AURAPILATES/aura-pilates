@@ -193,8 +193,8 @@ function CategoryMultiFilter({
       <button
         ref={btnRef}
         onClick={handleToggle}
-        className={`flex items-center gap-2 text-sm border rounded-lg px-3 py-2 bg-white outline-none transition-colors cursor-pointer whitespace-nowrap w-full ${
-          selected.length > 0 ? "border-primary/40 text-navy font-medium" : "border-navy/15 text-navy hover:border-navy/30"
+        className={`flex items-center gap-2 text-sm border rounded-xl px-3 py-2 bg-white outline-none transition-colors cursor-pointer whitespace-nowrap w-full ${
+          selected.length > 0 ? "border-primary/40 text-navy font-medium" : "border-navy/[0.12] text-navy hover:border-navy/30"
         }`}
         style={{ minWidth: "130px" }}
       >
@@ -465,8 +465,8 @@ function MoreOptionsMenu({
         ref={btnRef}
         onClick={handleToggle}
         title="Más opciones"
-        className={`relative shrink-0 flex items-center justify-center w-9 h-9 border rounded-lg transition-colors ${
-          hasActive ? "border-primary/40 text-primary bg-primary/5" : "text-navy/50 hover:text-navy border-navy/15 bg-white hover:bg-navy/[0.02]"
+        className={`relative shrink-0 flex items-center justify-center w-9 h-9 border rounded-xl transition-colors ${
+          hasActive ? "border-primary/40 text-primary bg-primary/5" : "text-navy/50 hover:text-navy border-navy/[0.12] bg-white hover:bg-navy/[0.02]"
         }`}
       >
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -1002,7 +1002,7 @@ export default function TransaccionesList({
             placeholder="Buscar concepto o contacto…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-sm border border-navy/15 rounded-lg bg-white text-navy placeholder:text-navy/35 outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition"
+            className="w-full pl-9 pr-4 py-2.5 text-sm border border-navy/[0.12] rounded-xl bg-white text-navy placeholder:text-navy/35 outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition"
           />
           {search && (
             <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-navy/30 hover:text-navy/60">✕</button>
@@ -1413,7 +1413,7 @@ export default function TransaccionesList({
         };
 
         const headerRow = (
-          <div className="flex items-center gap-4 px-4 py-3 border-b border-navy/[0.06] bg-navy/[0.012] group/head">
+          <div className="flex items-center gap-4 px-4 py-3 border-b border-navy/[0.06] bg-navy/[0.02] group/head">
             <div className="w-9 shrink-0 flex items-center pl-[3px]">
               <Checkbox checked={allSelected} onChange={toggleAll} />
             </div>
@@ -1429,19 +1429,19 @@ export default function TransaccionesList({
         return (
           <div className="hidden sm:block">
             {sortedFiltered.length === 0 ? (
-              <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden">
+              <div className="bg-white border border-navy/[0.06] rounded-2xl overflow-hidden">
                 {headerRow}
                 <p className="py-12 text-center text-sm text-navy/40">Sin resultados</p>
               </div>
             ) : sortKey ? (
               /* Orden manual activo → lista plana, sin agrupar por mes */
-              <div className={`bg-white border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden ${isPending ? "opacity-50 pointer-events-none" : ""}`}>
+              <div className={`bg-white border border-navy/[0.06] rounded-2xl overflow-hidden ${isPending ? "opacity-50 pointer-events-none" : ""}`}>
                 {headerRow}
                 {sortedFiltered.map(renderRow)}
               </div>
             ) : (
               /* Agrupado por mes, lista continua */
-              <div className={`bg-white border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden ${isPending ? "opacity-50 pointer-events-none" : ""}`}>
+              <div className={`bg-white border border-navy/[0.06] rounded-2xl overflow-hidden ${isPending ? "opacity-50 pointer-events-none" : ""}`}>
                 {headerRow}
                 {byMonth.map(([monthKey, monthTxns]) => {
                   const monthNet = monthTxns.reduce((s, t) => s + t.amount, 0);
@@ -1451,8 +1451,8 @@ export default function TransaccionesList({
                     + (parseInt(y) !== new Date().getFullYear() ? ` ${y}` : "");
                   return (
                     <div key={monthKey}>
-                      <div className="flex items-baseline justify-between px-4 py-4 bg-navy/[0.025] border-y border-navy/[0.07]">
-                        <span className="text-[15px] font-bold text-navy">{label}</span>
+                      <div className="flex items-baseline justify-between px-5 py-3.5 border-t border-navy/[0.06]">
+                        <span className="text-[13px] font-semibold text-navy/60 uppercase tracking-wide">{label}</span>
                         <span className={`text-sm font-semibold tabular-nums ${monthNet < 0 ? "text-danger" : "text-success"}`}>
                           {monthNet < 0 ? "−" : "+"}{fmtAmt(Math.abs(monthNet))}
                         </span>
