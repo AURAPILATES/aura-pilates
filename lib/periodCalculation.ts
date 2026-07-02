@@ -140,7 +140,12 @@ export function resolveCalendarPeriod(sp: PeriodSearchParams): ResolvedPeriod {
   const MES_ES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
   let periodLabel: string;
 
-  if (periodType === "year") {
+  if (periodType === "all") {
+    from = "2025-01-01";
+    to = todayStr;
+    periodLabel = "Desde el inicio";
+    return { from, to, compFrom: from, compTo: from, periodLabel, compDateRange: "—" };
+  } else if (periodType === "year") {
     from = `${year}-01-01`;
     to = `${year}-12-31`;
     periodLabel = String(year);

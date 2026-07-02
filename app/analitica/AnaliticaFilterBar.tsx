@@ -87,7 +87,7 @@ function AnaliticaFilterBarInner() {
   return (
     <div className="flex flex-wrap items-center gap-2 mb-4 pb-4 border-b border-navy/[0.06]">
 
-      {/* Period selector: months + quarters + year grouped */}
+      {/* Period selector: months + quarters + year + all-time grouped */}
       <SelectPill value={period} onChange={onPeriodChange}>
         <optgroup label="Mes">
           {MONTHS.map((m) => (
@@ -100,17 +100,20 @@ function AnaliticaFilterBarInner() {
           ))}
         </optgroup>
         <option value="year">Año completo</option>
+        <option value="all">Desde el inicio</option>
       </SelectPill>
 
-      {/* Year selector */}
-      <SelectPill value={year} onChange={(v) => update({ year: v })}>
-        {availableYears.map((y) => (
-          <option key={y} value={String(y)}>{y}</option>
-        ))}
-      </SelectPill>
+      {/* Year selector — disabled when period is "all" */}
+      <div className={period === "all" ? "opacity-35 pointer-events-none" : undefined}>
+        <SelectPill value={year} onChange={(v) => update({ year: v })}>
+          {availableYears.map((y) => (
+            <option key={y} value={String(y)}>{y}</option>
+          ))}
+        </SelectPill>
+      </div>
 
-      {/* Compare with */}
-      <div className="flex items-center gap-2 sm:ml-auto">
+      {/* Compare with — disabled when period is "all" */}
+      <div className={`flex items-center gap-2 sm:ml-auto ${period === "all" ? "opacity-35 pointer-events-none" : ""}`}>
         <span className="text-[11px] text-navy/40">Comparar con</span>
         <SelectPill value={compareWith} onChange={(v) => update({ compareWith: v })}>
           {COMPARE_OPTIONS.map((opt) => (
