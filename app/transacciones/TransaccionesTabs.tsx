@@ -53,7 +53,7 @@ export default function TransaccionesTabs({
 
   return (
     <div>
-      <div className="flex items-center gap-1 border-b border-navy/[0.08] mb-4">
+      <div className="flex items-center gap-1 border-b border-navy/[0.08] mb-7">
         {TABS.map(({ key, label }) => (
           <button
             key={key}

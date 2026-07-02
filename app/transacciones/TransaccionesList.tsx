@@ -817,45 +817,45 @@ export default function TransaccionesList({
   return (
     <div>
       {/* ── Desktop: KPIs ── */}
-      <div className="hidden sm:block mb-5">
+      <div className="hidden sm:block mb-8">
         <div className="flex items-stretch gap-3">
           {/* Entradas — clicable */}
           <button
             type="button"
             onClick={() => setDirectionFilter(directionFilter === "in" ? "all" : "in")}
-            className={`flex-1 min-w-[130px] text-left rounded-2xl px-5 py-4 transition-all duration-200 ${
+            className={`flex-1 min-w-[130px] text-left rounded-2xl px-6 py-5 transition-all duration-200 ${
               directionFilter === "in"
                 ? "bg-success/[0.07] border border-success/20 shadow-[0_2px_16px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.85)]"
                 : "bg-white/75 backdrop-blur-xl border border-white/60 shadow-[0_2px_16px_rgba(0,0,0,0.05),inset_0_1px_0_rgba(255,255,255,1)] hover:bg-white/90 hover:shadow-[0_4px_24px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,1)]"
             }`}
           >
-            <p className="text-[10px] font-medium text-navy/35 uppercase tracking-widest leading-none mb-2.5">Entradas</p>
-            <p className="text-[20px] font-semibold text-success tabular-nums leading-none">{fmtAmt(totalIn)}</p>
-            <p className={`text-[10px] text-success/60 mt-2 ${directionFilter === "in" ? "" : "invisible"}`}>activo ×</p>
+            <p className="text-[10px] font-medium text-navy/35 uppercase tracking-widest leading-none mb-3">Entradas</p>
+            <p className="text-[22px] font-semibold text-success tabular-nums leading-none">{fmtAmt(totalIn)}</p>
+            <p className={`text-[10px] text-success/60 mt-2.5 ${directionFilter === "in" ? "" : "invisible"}`}>activo ×</p>
           </button>
 
           {/* Salidas — clicable */}
           <button
             type="button"
             onClick={() => setDirectionFilter(directionFilter === "out" ? "all" : "out")}
-            className={`flex-1 min-w-[130px] text-left rounded-2xl px-5 py-4 transition-all duration-200 ${
+            className={`flex-1 min-w-[130px] text-left rounded-2xl px-6 py-5 transition-all duration-200 ${
               directionFilter === "out"
                 ? "bg-[#B85C3A]/[0.07] border border-[#B85C3A]/20 shadow-[0_2px_16px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.85)]"
                 : "bg-white/75 backdrop-blur-xl border border-white/60 shadow-[0_2px_16px_rgba(0,0,0,0.05),inset_0_1px_0_rgba(255,255,255,1)] hover:bg-white/90 hover:shadow-[0_4px_24px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,1)]"
             }`}
           >
-            <p className="text-[10px] font-medium text-navy/35 uppercase tracking-widest leading-none mb-2.5">Salidas</p>
-            <p className="text-[20px] font-semibold text-[#B85C3A] tabular-nums leading-none">{fmtAmt(totalOut)}</p>
-            <p className={`text-[10px] text-[#B85C3A]/60 mt-2 ${directionFilter === "out" ? "" : "invisible"}`}>activo ×</p>
+            <p className="text-[10px] font-medium text-navy/35 uppercase tracking-widest leading-none mb-3">Salidas</p>
+            <p className="text-[22px] font-semibold text-[#B85C3A] tabular-nums leading-none">{fmtAmt(totalOut)}</p>
+            <p className={`text-[10px] text-[#B85C3A]/60 mt-2.5 ${directionFilter === "out" ? "" : "invisible"}`}>activo ×</p>
           </button>
 
           {/* Diferencia — no clicable */}
-          <div className="flex-1 min-w-[130px] bg-white/75 backdrop-blur-xl border border-white/60 rounded-2xl shadow-[0_2px_16px_rgba(0,0,0,0.05),inset_0_1px_0_rgba(255,255,255,1)] px-5 py-4">
-            <p className="text-[10px] font-medium text-navy/35 uppercase tracking-widest leading-none mb-2.5">
+          <div className="flex-1 min-w-[130px] bg-white/75 backdrop-blur-xl border border-white/60 rounded-2xl shadow-[0_2px_16px_rgba(0,0,0,0.05),inset_0_1px_0_rgba(255,255,255,1)] px-6 py-5">
+            <p className="text-[10px] font-medium text-navy/35 uppercase tracking-widest leading-none mb-3">
               {someSelected ? "Neto selección" : "Diferencia"}
             </p>
             <div className="flex items-baseline gap-2 leading-none">
-              <p className={`text-[20px] font-semibold tabular-nums ${neto >= 0 ? "text-navy" : "text-danger"}`}>
+              <p className={`text-[22px] font-semibold tabular-nums ${neto >= 0 ? "text-navy" : "text-danger"}`}>
                 {neto < 0 && "−"}{fmtAmt(Math.abs(neto))}
               </p>
               {!someSelected && totalIn > 0 && (
@@ -869,7 +869,7 @@ export default function TransaccionesList({
       </div>
 
       {/* ── Mobile: KPIs ── */}
-      <div className="sm:hidden grid grid-cols-3 gap-2 mb-3">
+      <div className="sm:hidden grid grid-cols-3 gap-2 mb-5">
         {/* Entradas — clicable */}
         <button
           type="button"
@@ -992,7 +992,7 @@ export default function TransaccionesList({
 
 
       {/* ── Desktop: barra de filtros unificada ────────────────────────────── */}
-      <div className="hidden sm:flex items-center gap-2 mb-3">
+      <div className="hidden sm:flex items-center gap-2 mb-5">
         <div className="relative flex-1">
           <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-navy/30" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
@@ -1022,7 +1022,7 @@ export default function TransaccionesList({
       </div>
 
       {/* ── Desktop: recuento ─────────────────────────────────────────────────── */}
-      <div className="hidden sm:flex items-center gap-3 mb-5">
+      <div className="hidden sm:flex items-center gap-3 mb-6">
         {someSelected ? (
           <span className="text-sm text-navy/45">{selected.size} seleccionado{selected.size !== 1 ? "s" : ""}</span>
         ) : (
@@ -1297,7 +1297,7 @@ export default function TransaccionesList({
             <div
               key={t.id}
               onClick={() => setDrawerTxnId(t.id)}
-              className={`flex items-center gap-4 px-4 py-2.5 border-b border-navy/[0.04] last:border-0 group transition-colors cursor-pointer ${
+              className={`flex items-center gap-4 px-4 py-3.5 border-b border-navy/[0.04] last:border-0 group transition-colors cursor-pointer ${
                 isSelected ? "bg-primary/[0.03]" : "hover:bg-navy/[0.012]"
               }`}
             >
@@ -1413,7 +1413,7 @@ export default function TransaccionesList({
         };
 
         const headerRow = (
-          <div className="flex items-center gap-4 px-4 py-2.5 border-b border-navy/[0.06] bg-navy/[0.012] group/head">
+          <div className="flex items-center gap-4 px-4 py-3 border-b border-navy/[0.06] bg-navy/[0.012] group/head">
             <div className="w-9 shrink-0 flex items-center pl-[3px]">
               <Checkbox checked={allSelected} onChange={toggleAll} />
             </div>
@@ -1451,7 +1451,7 @@ export default function TransaccionesList({
                     + (parseInt(y) !== new Date().getFullYear() ? ` ${y}` : "");
                   return (
                     <div key={monthKey}>
-                      <div className="flex items-baseline justify-between px-4 py-3 bg-navy/[0.035] border-y border-navy/[0.08]">
+                      <div className="flex items-baseline justify-between px-4 py-4 bg-navy/[0.025] border-y border-navy/[0.07]">
                         <span className="text-[15px] font-bold text-navy">{label}</span>
                         <span className={`text-sm font-semibold tabular-nums ${monthNet < 0 ? "text-danger" : "text-success"}`}>
                           {monthNet < 0 ? "−" : "+"}{fmtAmt(Math.abs(monthNet))}
