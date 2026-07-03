@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Suspense, useEffect, useRef, useState, useTransition } from "react";
-import { Calendar, ChevronDown, ChevronLeft, ChevronRight } from "react-feather";
+import { ChevronDown, ChevronLeft, ChevronRight } from "react-feather";
 import { pad2, resolveCalendarPeriod } from "@/lib/periodCalculation";
 
 const MONTHS = [
@@ -427,14 +427,13 @@ function AnaliticaFilterBarInner() {
                     <button
                       type="button"
                       onClick={() => { setShowCustom((s) => !s); setExpandedYear(null); }}
-                      className={`w-full flex items-center gap-2 px-4 py-2 text-sm transition-colors ${
+                      className={`w-full text-left whitespace-nowrap px-4 py-2 text-sm transition-colors ${
                         showCustom || activePeriod === "custom"
                           ? "text-primary font-medium bg-primary/[0.06]"
                           : "text-navy/70 hover:bg-navy/[0.04] hover:text-navy"
                       }`}
                     >
-                      <Calendar size={13} />
-                      Buscar período personalizado
+                      Período personalizado
                     </button>
                   </li>
                   <li>
