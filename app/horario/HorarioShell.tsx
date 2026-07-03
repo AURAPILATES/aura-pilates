@@ -10,6 +10,7 @@ import HorarioDrawer from "./HorarioDrawer";
 import HorarioReporting, { type ReportingData } from "./HorarioReporting";
 import ClientesFilterBar from "@/app/clientes/ClientesFilterBar";
 import MobileNav from "@/app/components/MobileNav";
+import SectionTabs from "@/app/components/SectionTabs";
 
 type OccFilter = "all" | "low" | "mid" | "high";
 type View = "lista" | "calendario";
@@ -139,46 +140,27 @@ export default function HorarioShell({
           STICKY HEADER
       ══════════════════════════════════════════════════════════════════════ */}
       <div className="sticky top-0 z-20 bg-app-bg/95 backdrop-blur-sm border-b border-navy/[0.06]">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-[45px] flex items-center justify-between gap-3">
-          {/* Left: menu + title + tabs (desktop) */}
-          <div className="flex items-center gap-3">
-            <MobileNav />
-            <span className="text-sm font-bold text-navy uppercase tracking-widest">Horario</span>
-            <div className="hidden sm:flex items-center gap-1">
-              {([{ v: "horario", l: "Horario" }, { v: "analisis", l: "Análisis" }] as { v: Tab; l: string }[]).map(({ v, l }) => (
-                <button
-                  key={v}
-                  onClick={() => setTab(v)}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
-                    tab === v ? "text-navy bg-white border border-navy/[0.15]" : "text-navy/50 hover:text-navy"
-                  }`}
-                >
-                  {l}
-                </button>
-              ))}
-            </div>
-          </div>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-[45px] flex items-center gap-3">
+          <MobileNav />
+          <span className="text-sm font-bold text-navy uppercase tracking-widest">Horario</span>
+        </div>
+      </div>
 
-          {/* Right: tabs (mobile) + week nav + view toggle (desktop) */}
-          <div className="flex items-center gap-2">
-            {/* Tabs — mobile only, right side */}
-            <div className="sm:hidden flex items-center gap-1">
-              {([{ v: "horario", l: "Horario" }, { v: "analisis", l: "Análisis" }] as { v: Tab; l: string }[]).map(({ v, l }) => (
-                <button
-                  key={v}
-                  onClick={() => setTab(v)}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
-                    tab === v ? "text-navy bg-white border border-navy/[0.15]" : "text-navy/50 hover:text-navy"
-                  }`}
-                >
-                  {l}
-                </button>
-              ))}
-            </div>
+      {/* ══════════════════════════════════════════════════════════════════════
+          CONTENT
+      ══════════════════════════════════════════════════════════════════════ */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 pb-16">
 
-            {/* Desktop: week nav + view toggle — horario tab only */}
-            {tab === "horario" && (
-            <div className="hidden sm:flex items-center gap-2">
+        {/* Tabs + week nav / view toggle (horario tab only, desktop) */}
+        <div className="flex items-center justify-between gap-3 mb-6">
+          <SectionTabs
+            active={tab}
+            onChange={setTab}
+            tabs={[{ key: "horario", label: "Horario" }, { key: "analisis", label: "Análisis" }]}
+          />
+
+          {tab === "horario" && (
+            <div className="hidden sm:flex items-center gap-2 shrink-0 pb-2">
               <div className="flex items-center gap-0.5">
                 <button
                   onClick={() => router.push(`?week=${prevWeek}`)}
@@ -220,15 +202,8 @@ export default function HorarioShell({
                 </button>
               </div>
             </div>
-            )}
-          </div>
+          )}
         </div>
-      </div>
-
-      {/* ══════════════════════════════════════════════════════════════════════
-          CONTENT
-      ══════════════════════════════════════════════════════════════════════ */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 pb-16">
 
         {tab === "horario" && hiddenEvents.length > 0 && (
           <HiddenEventsPanel events={hiddenEvents} />
