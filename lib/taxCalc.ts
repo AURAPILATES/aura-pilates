@@ -24,3 +24,19 @@ export function fiscalQuarterOf(date: string): string {
   const q = Math.ceil(parseInt(month, 10) / 3);
   return `${year}-Q${q}`;
 }
+
+/**
+ * IVA repercutido de una venta: el importe de Stripe/USC ya incluye el 21% de IVA (bruto),
+ * así que se extrae igual que el IVA soportado de un gasto, con retención 0.
+ */
+export function ivaRepercutidoFromGross(amount: number, ivaRate: number = 21): number {
+  return taxBreakdown(amount, ivaRate, 0).ivaAmount;
+}
+
+/**
+ * IVA neto a pagar de un trimestre: IVA repercutido de ventas − IVA soportado de gastos.
+ * No se clampa a 0 — un resultado negativo es "a favor"/a compensar y debe mostrarse tal cual.
+ */
+export function netIvaAPagar(ivaRepercutido: number, ivaSoportado: number): number {
+  return ivaRepercutido - ivaSoportado;
+}

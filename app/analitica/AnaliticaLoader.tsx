@@ -1,5 +1,5 @@
 import { fmt } from "@/lib/analytics";
-import { taxBreakdown, fiscalQuarterOf } from "@/lib/taxCalc";
+import { taxBreakdown, fiscalQuarterOf, ivaRepercutidoFromGross, netIvaAPagar } from "@/lib/taxCalc";
 import { loadSales, benvingudaConversion, subscriberFirstPurchase } from "@/lib/sales";
 import PrimeraCompra from "./instances/PrimeraCompra";
 import {
@@ -394,11 +394,11 @@ export default async function AnaliticaLoader({
   const daysUntil = (d: string) =>
     Math.ceil((new Date(d).getTime() - today.getTime()) / 86_400_000);
   const obligations = [
-    { label: "IVA T2",         date: "20 jul", deadline: "2026-07-20" },
-    { label: "IRPF T2",        date: "20 jul", deadline: "2026-07-20" },
-    { label: "IVA T3",         date: "20 oct", deadline: "2026-10-20" },
-    { label: "IRPF T3",        date: "20 oct", deadline: "2026-10-20" },
-    { label: "IVA T4 / Anual", date: "20 ene", deadline: "2027-01-20" },
+    { label: "IVA T2",         date: "20 jul", deadline: "2026-07-20", quarter: "2026-Q2" },
+    { label: "IRPF T2",        date: "20 jul", deadline: "2026-07-20", quarter: "2026-Q2" },
+    { label: "IVA T3",         date: "20 oct", deadline: "2026-10-20", quarter: "2026-Q3" },
+    { label: "IRPF T3",        date: "20 oct", deadline: "2026-10-20", quarter: "2026-Q3" },
+    { label: "IVA T4 / Anual", date: "20 ene", deadline: "2027-01-20", quarter: "2026-Q4" },
   ];
 
   // ── IVA soportado / retenciones practicadas por trimestre, a partir de las reglas de
@@ -418,6 +418,49 @@ export default async function AnaliticaLoader({
     .map(([quarter, v]) => ({ quarter, ...v }))
     .sort((a, b) => b.quarter.localeCompare(a.quarter))
     .slice(0, 6);
+
+  // ── IVA repercutido por trimestre, a partir de las ventas (Stripe + USC), que ya
+  // incluyen el 21% de IVA en el importe bruto ──
+  const ivaRepercutidoByQuarter = new Map<string, number>();
+  for (const p of paymentsAll) {
+    const q = fiscalQuarterOf(p.date);
+    ivaRepercutidoByQuarter.set(q, (ivaRepercutidoByQuarter.get(q) ?? 0) + ivaRepercutidoFromGross(p.amount));
+  }
+  for (const s of momenceSalesAll) {
+    if (s.method !== "urban-sports-club") continue;
+    const q = fiscalQuarterOf(s.paymentDate);
+    ivaRepercutidoByQuarter.set(q, (ivaRepercutidoByQuarter.get(q) ?? 0) + ivaRepercutidoFromGross(s.amount));
+  }
+
+  // ── Resumen fiscal por trimestre: IVA neto a pagar (repercutido − soportado) + retenciones ──
+  const allFiscalQuarters = new Set([...fiscalByQuarter.keys(), ...ivaRepercutidoByQuarter.keys()]);
+  const fiscalSummaryByQuarter = new Map(
+    [...allFiscalQuarters].map((q) => {
+      const gasto = fiscalByQuarter.get(q) ?? { iva: 0, retencion: 0, count: 0 };
+      const ivaRepercutido = ivaRepercutidoByQuarter.get(q) ?? 0;
+      return [q, {
+        ivaRepercutido,
+        ivaSoportado: gasto.iva,
+        ivaNeto: netIvaAPagar(ivaRepercutido, gasto.iva),
+        retenciones: gasto.retencion,
+      }];
+    }),
+  );
+
+  // Próxima obligación de IVA (la primera con vencimiento futuro o "vence hoy") y si su
+  // trimestre ya cerró (cifra real) o sigue en curso (cifra parcial, sin extrapolar).
+  function quarterEndDate(q: string): string {
+    const [y, qn] = q.split("-Q");
+    const endMonth = parseInt(qn, 10) * 3;
+    const lastDay = new Date(parseInt(y, 10), endMonth, 0).getDate();
+    return `${y}-${String(endMonth).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+  }
+  const todayStr = today.toISOString().slice(0, 10);
+  const nextIvaObligation = obligations.find((o) => o.label.startsWith("IVA") && o.deadline >= todayStr) ?? null;
+  const nextIvaQuarterData = nextIvaObligation
+    ? fiscalSummaryByQuarter.get(nextIvaObligation.quarter) ?? { ivaRepercutido: 0, ivaSoportado: 0, ivaNeto: 0, retenciones: 0 }
+    : null;
+  const nextIvaQuarterClosed = nextIvaObligation ? todayStr > quarterEndDate(nextIvaObligation.quarter) : false;
 
   // ── Clientela (composición, altas, riesgo de baja) ───────────────────────
   const recurringForecasts = forecastConfirmedExpenses(recurringExpenses, txnsAll, undefined, dbCategories);
@@ -510,6 +553,11 @@ export default async function AnaliticaLoader({
               sales={salesAll}
               txns={txnsAll}
               lastUpdated={liveLastUpdated}
+              nextIvaLabel={nextIvaObligation?.date ?? null}
+              nextIvaQuarter={nextIvaObligation?.quarter ?? null}
+              ivaNeto={nextIvaQuarterData?.ivaNeto ?? 0}
+              retenciones={nextIvaQuarterData?.retenciones ?? 0}
+              ivaQuarterClosed={nextIvaQuarterClosed}
             />
             <Breakeven points={breakevenPoints} />
           </div>

@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
-import { Clock, TrendingUp } from "react-feather";
+import Link from "next/link";
+import { Clock, TrendingUp, FileText } from "react-feather";
 import type { Sale } from "@/lib/sales";
 import type { Transaction } from "@/lib/transactions";
 import { ChartCard, ToggleGroup, Legend, CollapsibleTable } from "@/components/charts";
@@ -100,6 +101,11 @@ export type CockpitFinancieroProps = {
   sales: Sale[];
   txns: Transaction[];
   lastUpdated?: string | null;
+  nextIvaLabel: string | null;
+  nextIvaQuarter: string | null;
+  ivaNeto: number;
+  retenciones: number;
+  ivaQuarterClosed: boolean;
 };
 
 export default function CockpitFinanciero({
@@ -119,6 +125,11 @@ export default function CockpitFinanciero({
   sales,
   txns,
   lastUpdated,
+  nextIvaLabel,
+  nextIvaQuarter,
+  ivaNeto,
+  retenciones,
+  ivaQuarterClosed,
 }: CockpitFinancieroProps) {
   const [period, setPeriod] = useState<Period>("mes");
 
@@ -133,12 +144,12 @@ export default function CockpitFinanciero({
       title="Cockpit financiero"
       subtitle="Qué pasó, dónde estamos, a dónde vamos"
       dateRange={curMonthLabel}
-      dataSource="Stripe API (ingresos) + CaixaBank CSV (gastos, saldo) + Recurrentes confirmados"
+      dataSource="Stripe API (ingresos) + CaixaBank CSV (gastos, saldo) + Recurrentes confirmados + IVA 21% ventas / IVA-retención por contacto (gastos)"
       sources={["stripe", "momence", "excel"]}
       lastUpdated={lastUpdated}
     >
-      {/* 3-column section */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-navy/[0.07] border border-navy/[0.07] rounded-xl mb-6">
+      {/* 4-column section */}
+      <div className="grid grid-cols-1 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-navy/[0.07] border border-navy/[0.07] rounded-xl mb-6">
 
         {/* PASADO */}
         <div className="p-4">
@@ -156,11 +167,18 @@ export default function CockpitFinanciero({
               {isGastosEst ? " (est.)" : ""}
             </div>
           </div>
-          <div>
-            <div className="text-[11px] font-medium text-navy/45 mb-1">Ingresos vs mes ant.</div>
+          <div className="mb-4">
+            <div className="text-[11px] font-medium text-navy/45 mb-1">Ventas</div>
             <div className="text-[20px] font-medium text-navy leading-tight">{fmt(curMonthIngresos)}</div>
             <div className={`text-[11px] mt-0.5 ${revDelta < 0 ? "text-danger" : "text-success"}`}>
               {revDelta >= 0 ? "+" : "−"}{fmt(Math.abs(revDelta))} vs {prevMonthLabel}
+            </div>
+          </div>
+          <div>
+            <div className="text-[11px] font-medium text-navy/45 mb-1">Gastos</div>
+            <div className="text-[20px] font-medium text-navy leading-tight">{fmt(curMonthGastos)}</div>
+            <div className="text-[11px] text-navy/50 mt-0.5">
+              {curMonthLabel}{isGastosEst ? " (est.)" : ""}
             </div>
           </div>
         </div>
@@ -191,26 +209,54 @@ export default function CockpitFinanciero({
           </div>
         </div>
 
+        {/* FISCAL */}
+        <div className="p-4">
+          <div className="flex items-center gap-1.5 mb-4">
+            <FileText size={12} className="text-navy/40" />
+            <span className="text-[11px] font-semibold text-navy/40 uppercase tracking-wider">Fiscal</span>
+          </div>
+          <div className="mb-4">
+            <div className="text-[11px] font-medium text-navy/45 mb-1">Previsión de IVA e IRPF</div>
+            <div className={`text-[26px] font-medium leading-tight ${ivaNeto >= 0 ? "text-navy" : "text-success"}`}>
+              {ivaNeto >= 0 ? "−" : "+"}{fmt(Math.abs(ivaNeto))}{!ivaQuarterClosed ? " *" : ""}
+            </div>
+            <div className="text-[11px] text-navy/50 mt-0.5">
+              IVA {nextIvaQuarter ?? "—"} · vence {nextIvaLabel ?? "—"}
+              {ivaNeto < 0 && " · a favor / a compensar"}
+              {!ivaQuarterClosed && " · parcial, trimestre en curso"}
+            </div>
+          </div>
+          <div>
+            <div className="text-[11px] font-medium text-navy/45 mb-1">Retenciones (IRPF)</div>
+            <div className="text-[20px] font-medium text-navy leading-tight">{fmt(retenciones)}</div>
+            <div className="text-[11px] text-navy/45 mt-1 leading-snug">
+              IVA repercutido (21% ventas) − soportado (gastos, por contacto) · retenciones = nóminas + alquileres
+            </div>
+          </div>
+        </div>
+
         {/* FUTURO */}
         <div className="p-4">
           <div className="flex items-center gap-1.5 mb-4">
             <TrendingUp size={12} className="text-navy/40" />
-            <span className="text-[11px] font-semibold text-navy/40 uppercase tracking-wider">Futuro · 30d</span>
+            <span className="text-[11px] font-semibold text-navy/40 uppercase tracking-wider">Futuro</span>
           </div>
           <div className="mb-4">
             <div className="text-[11px] font-medium text-navy/45 mb-1">Saldo proyectado</div>
             <div className="text-[26px] font-medium text-navy leading-tight">~{fmt(saldoProyectado)}</div>
-            <div className="text-[11px] text-navy/50 mt-0.5">saldo + previsto – comprometido</div>
-          </div>
-          <div className="mb-3">
-            <div className="text-[11px] font-medium text-navy/45 mb-1">Ventas previstas</div>
-            <div className="text-[20px] font-medium text-success leading-tight">~{fmt(ventasPrevistas)}</div>
-            <div className="text-[11px] text-navy/50 mt-0.5">media últ. 3 meses</div>
+            <div className="text-[11px] text-navy/50 mt-0.5">saldo + previsto – comprometido · 30d</div>
           </div>
           <div>
-            <div className="text-[11px] font-medium text-navy/45 mb-1">Gastos comprometidos</div>
-            <div className="text-[20px] font-medium text-danger leading-tight">−{fmt(gastosComprometidos)}</div>
-            <div className="text-[11px] text-navy/50 mt-0.5">previsión recurrentes</div>
+            <div className="text-[11px] font-medium text-navy/45 mb-1">Previsión de ventas y pagos</div>
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-[18px] font-medium text-success leading-tight">~{fmt(ventasPrevistas)}</span>
+              <span className="text-[13px] text-navy/40">−</span>
+              <span className="text-[18px] font-medium text-danger leading-tight">{fmt(gastosComprometidos)}</span>
+            </div>
+            <div className="text-[11px] text-navy/50 mt-0.5">ventas media últ. 3m − gastos comprometidos</div>
+            <Link href="/previsiones" className="text-[11px] text-primary hover:underline mt-1.5 inline-block">
+              Ver previsión completa →
+            </Link>
           </div>
         </div>
       </div>
