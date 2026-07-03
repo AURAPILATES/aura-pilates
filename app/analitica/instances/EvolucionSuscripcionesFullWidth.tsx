@@ -14,7 +14,6 @@ import type { EvolucionRow } from "./EvolucionIngresosBody";
 import {
   PRODUCT_COLORS,
   buildSeriesFromMonthly,
-  buildSeriesFromProcedencia,
   regroupSeries,
   regroupCohorts,
   periodLabel,
@@ -114,11 +113,6 @@ export default function EvolucionSuscripcionesFullWidth({
 
   const cohortRows = regroupCohorts(cohorts, period);
   const cohortByPeriod = new Map(cohortRows.map((c) => [c.month, c]));
-  const procedenciaByPeriod = regroupSeries(
-    buildSeriesFromProcedencia(monthly).months,
-    buildSeriesFromProcedencia(monthly).data,
-    period,
-  ).data;
 
   const lastCohort = cohortRows.length > 0 ? cohortRows[cohortRows.length - 1] : null;
   const lastTotal = rows.length > 0 ? keys.reduce((s, k) => s + Number(rows[rows.length - 1][k] ?? 0), 0) : 0;
@@ -230,8 +224,14 @@ export default function EvolucionSuscripcionesFullWidth({
               <tr className="border-b border-navy/[0.07]">
                 <th className="text-left py-2 pr-3 text-navy/45 font-semibold uppercase tracking-wide">Período</th>
                 <th className="text-right py-2 pr-3 text-navy/45 font-semibold uppercase tracking-wide">Ingresos</th>
-                <th className="text-right py-2 pr-3 text-navy/45 font-semibold uppercase tracking-wide">Ingresos internos</th>
-                <th className="text-right py-2 pr-3 text-navy/45 font-semibold uppercase tracking-wide">Ingresos Urban</th>
+                {keys.map((k) => (
+                  <th key={k} className="text-right py-2 pr-3 text-navy/45 font-semibold uppercase tracking-wide whitespace-nowrap">
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: colorOf(k) }} />
+                      {k}
+                    </span>
+                  </th>
+                ))}
                 <th className="text-right py-2 pr-3 text-navy/45 font-semibold uppercase tracking-wide">Suscritos</th>
                 <th className="text-right py-2 pr-3 text-navy/45 font-semibold uppercase tracking-wide">Bajas susc.</th>
                 <th className="text-right py-2 pr-3 text-navy/45 font-semibold uppercase tracking-wide">Clientes nuevos</th>
@@ -239,16 +239,17 @@ export default function EvolucionSuscripcionesFullWidth({
               </tr>
             </thead>
             <tbody>
-              {months.map((m) => {
+              {rows.map((row) => {
+                const m = row.month;
                 const c = cohortByPeriod.get(m);
-                const interna = procedenciaByPeriod.get(m)?.get("Interna") ?? 0;
-                const urban = procedenciaByPeriod.get(m)?.get("Urban") ?? 0;
+                const total = keys.reduce((s, k) => s + Number(row[k] ?? 0), 0);
                 return (
                   <tr key={m} className="border-b border-navy/[0.04] last:border-0">
                     <td className="py-2 pr-3 text-navy/70 whitespace-nowrap">{periodLabel(m, period)}</td>
-                    <td className="py-2 pr-3 text-right text-navy tabular-nums">{fmtEur(interna + urban)}</td>
-                    <td className="py-2 pr-3 text-right text-navy tabular-nums">{fmtEur(interna)}</td>
-                    <td className="py-2 pr-3 text-right text-navy tabular-nums">{fmtEur(urban)}</td>
+                    <td className="py-2 pr-3 text-right text-navy tabular-nums">{fmtEur(total)}</td>
+                    {keys.map((k) => (
+                      <td key={k} className="py-2 pr-3 text-right text-navy tabular-nums">{fmtEur(Number(row[k] ?? 0))}</td>
+                    ))}
                     <td className="py-2 pr-3 text-right text-navy tabular-nums">{c?.activeCount ?? "-"}</td>
                     <td className="py-2 pr-3 text-right text-danger font-medium tabular-nums">{c ? `−${c.churned}` : "-"}</td>
                     <td className="py-2 pr-3 text-right text-success font-medium tabular-nums">{c ? `+${c.newSubs}` : "-"}</td>
