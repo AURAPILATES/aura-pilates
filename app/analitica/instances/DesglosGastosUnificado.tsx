@@ -3,7 +3,7 @@
 import { useState, type ReactElement } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { BarChart2, Activity, Eye, EyeOff, ChevronRight } from "react-feather";
+import { BarChart2, Activity, Eye, EyeOff, ChevronRight, ChevronDown } from "react-feather";
 import { ChartCard, ChartTypeToggle, ToggleGroup, CollapsibleTable, type MultiKpiItem } from "@/components/charts";
 import { pct } from "@/lib/analytics";
 import Drawer from "@/app/components/Drawer";
@@ -82,6 +82,7 @@ export default function DesglosGastosUnificado({
   const [hiddenGroups, setHiddenGroups] = useState<Set<EconomicGroup>>(new Set());
   const [expandedGroups, setExpandedGroups] = useState<Set<EconomicGroup>>(new Set());
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [tableExpanded, setTableExpanded] = useState(false);
   const [selected, setSelected] = useState<Selected | null>(null);
   const [burnWindow, setBurnWindow] = useState<BurnWindow>(3);
 
@@ -325,7 +326,19 @@ export default function DesglosGastosUnificado({
         <table className="w-full min-w-max text-xs">
           <thead>
             <tr className="border-b border-navy/[0.07]">
-              <th className="text-left py-2 pr-3 text-navy/45 font-semibold uppercase tracking-wide">Categoría</th>
+              <th className="text-left py-2 pr-3 text-navy/45 font-semibold uppercase tracking-wide">
+                <span className="flex items-center gap-2">
+                  Categoría
+                  <button
+                    type="button"
+                    onClick={() => setTableExpanded((v) => !v)}
+                    className="flex items-center gap-0.5 normal-case font-medium text-navy/40 hover:text-navy/70 transition-colors"
+                  >
+                    <ChevronDown size={11} className={`transition-transform duration-200 ${tableExpanded ? "rotate-180" : ""}`} />
+                    {tableExpanded ? "Contraer datos" : "Desplegar datos"}
+                  </button>
+                </span>
+              </th>
               {months.map((m) => (
                 <th key={m} className="text-right py-2 pr-3 text-navy/45 font-semibold uppercase tracking-wide whitespace-nowrap">
                   {periodLabel(m, period)}
@@ -338,7 +351,7 @@ export default function DesglosGastosUnificado({
             {GROUP_ORDER.map((group) => {
               const g = groups.find((x) => x.group === group);
               if (!g || g.total <= 0) return null;
-              const isOpen = expandedGroups.has(group);
+              const isOpen = tableExpanded;
               const groupCategories = categories.filter((c) => c.group === group).sort((a, b) => b.total - a.total);
 
               const rows: { jsx: ReactElement }[] = [];
@@ -379,7 +392,7 @@ export default function DesglosGastosUnificado({
                     ),
                   });
 
-                  if (expandedCategories.has(c.key)) {
+                  if (tableExpanded) {
                     for (const ch of c.children) {
                       const leafSeries = rowSeriesByPeriod(transactionsByCategory[ch.value] ?? [], period);
                       rows.push({
