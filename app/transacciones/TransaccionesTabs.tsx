@@ -73,6 +73,9 @@ export default function TransaccionesTabs({
                 </span>
               )}
             </span>
+            {tab === key && (
+              <span className="absolute -bottom-1.5 left-0 right-0 h-px bg-navy" />
+            )}
           </button>
         ))}
       </div>

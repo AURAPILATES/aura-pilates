@@ -118,11 +118,11 @@ export default function Sidebar() {
                     href={href}
                     className={`flex items-center gap-[9px] px-3 py-2.5 rounded-lg text-[13px] font-medium transition-colors ${
                       active
-                        ? "bg-primary/[0.07] text-primary"
+                        ? "bg-navy/[0.04] text-navy"
                         : "text-navy/55 hover:bg-navy/[0.04] hover:text-navy"
                     }`}
                   >
-                    <span className={active ? "text-primary" : "text-navy/40"}>{icon}</span>
+                    <span className={active ? "text-navy" : "text-navy/40"}>{icon}</span>
                     <span className="flex-1">{label}</span>
                     {href === "/transacciones" && pendingRecurringCount > 0 && (
                       <span className="shrink-0 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-warning text-white text-[10px] font-bold px-1">
@@ -148,11 +148,11 @@ export default function Sidebar() {
           href="/configuracion"
           className={`flex items-center gap-[9px] px-3 py-2.5 rounded-lg text-[13px] font-medium transition-colors ${
             pathname === "/configuracion"
-              ? "bg-primary/[0.07] text-primary"
+              ? "bg-navy/[0.04] text-navy"
               : "text-navy/55 hover:bg-navy/[0.04] hover:text-navy"
           }`}
         >
-          <span className={pathname === "/configuracion" ? "text-primary" : "text-navy/40"}>
+          <span className={pathname === "/configuracion" ? "text-navy" : "text-navy/40"}>
             <IconSettings />
           </span>
           Configuración
