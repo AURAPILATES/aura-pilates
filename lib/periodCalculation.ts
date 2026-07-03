@@ -145,6 +145,16 @@ export function resolveCalendarPeriod(sp: PeriodSearchParams): ResolvedPeriod {
     to = todayStr;
     periodLabel = "Desde el inicio";
     return { from, to, compFrom: from, compTo: from, periodLabel, compDateRange: "—" };
+  } else if (periodType === "custom") {
+    const customFrom = str(sp.from);
+    const customTo = str(sp.to);
+    from = customFrom || `${year}-01-01`;
+    to = customTo || todayStr;
+    const fromParts = from.split("-").map(Number);
+    const toParts = to.split("-").map(Number);
+    const fromLabel = `${fromParts[2]} ${MES_ES[fromParts[1] - 1].toLowerCase()}`;
+    const toLabel = `${toParts[2]} ${MES_ES[toParts[1] - 1].toLowerCase()}`;
+    periodLabel = `${fromLabel} - ${toLabel} ${toParts[0]}`;
   } else if (periodType === "year") {
     from = `${year}-01-01`;
     to = `${year}-12-31`;
@@ -154,7 +164,7 @@ export function resolveCalendarPeriod(sp: PeriodSearchParams): ResolvedPeriod {
     const r = quarterRange(year, q);
     from = r.from;
     to = r.to;
-    periodLabel = `Q${q} ${year}`;
+    periodLabel = `${q}T ${year}`;
   } else if (/^month_\d{2}$/.test(periodType)) {
     const m = parseInt(periodType.slice(6));
     from = `${year}-${pad2(m)}-01`;
@@ -184,6 +194,13 @@ export function resolveCalendarPeriod(sp: PeriodSearchParams): ResolvedPeriod {
       const r = quarterRange(prevYear, q);
       compFrom = r.from;
       compTo = r.to;
+    } else if (periodType === "custom") {
+      const fromD = new Date(from + "T12:00:00");
+      const toD = new Date(to + "T12:00:00");
+      fromD.setFullYear(fromD.getFullYear() - 1);
+      toD.setFullYear(toD.getFullYear() - 1);
+      compFrom = fromD.toISOString().split("T")[0];
+      compTo = toD.toISOString().split("T")[0];
     } else {
       const m = parseInt(periodType.slice(6));
       compFrom = `${prevYear}-${pad2(m)}-01`;
@@ -200,6 +217,10 @@ export function resolveCalendarPeriod(sp: PeriodSearchParams): ResolvedPeriod {
       const r = quarterRange(py, pq);
       compFrom = r.from;
       compTo = r.to;
+    } else if (periodType === "custom") {
+      const duration = daysBetween(from, to);
+      compTo = addDays(from, -1);
+      compFrom = addDays(compTo, -duration);
     } else {
       const m = parseInt(periodType.slice(6));
       const { year: py, month: pm } = prevMonth(year, m);
