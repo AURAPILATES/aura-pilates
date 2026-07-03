@@ -556,6 +556,8 @@ export default async function AnaliticaLoader({
               nextIvaLabel={nextIvaObligation?.date ?? null}
               nextIvaQuarter={nextIvaObligation?.quarter ?? null}
               ivaNeto={nextIvaQuarterData?.ivaNeto ?? 0}
+              ivaSoportado={nextIvaQuarterData?.ivaSoportado ?? 0}
+              ivaRepercutido={nextIvaQuarterData?.ivaRepercutido ?? 0}
               retenciones={nextIvaQuarterData?.retenciones ?? 0}
               ivaQuarterClosed={nextIvaQuarterClosed}
             />

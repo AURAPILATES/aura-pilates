@@ -104,6 +104,8 @@ export type CockpitFinancieroProps = {
   nextIvaLabel: string | null;
   nextIvaQuarter: string | null;
   ivaNeto: number;
+  ivaSoportado: number;
+  ivaRepercutido: number;
   retenciones: number;
   ivaQuarterClosed: boolean;
 };
@@ -128,6 +130,8 @@ export default function CockpitFinanciero({
   nextIvaLabel,
   nextIvaQuarter,
   ivaNeto,
+  ivaSoportado,
+  ivaRepercutido,
   retenciones,
   ivaQuarterClosed,
 }: CockpitFinancieroProps) {
@@ -217,21 +221,28 @@ export default function CockpitFinanciero({
           </div>
           <div className="mb-4">
             <div className="text-[11px] font-medium text-navy/45 mb-1">Previsión de IVA e IRPF</div>
-            <div className={`text-[26px] font-medium leading-tight ${ivaNeto >= 0 ? "text-navy" : "text-success"}`}>
-              {ivaNeto >= 0 ? "−" : "+"}{fmt(Math.abs(ivaNeto))}{!ivaQuarterClosed ? " *" : ""}
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className={`text-[26px] font-medium leading-tight ${ivaNeto >= 0 ? "text-navy" : "text-success"}`}>
+                {fmt(Math.abs(ivaNeto))}
+              </span>
+              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap ${
+                ivaNeto >= 0 ? "bg-danger/10 text-danger" : "bg-success/10 text-success"
+              }`}>
+                {ivaNeto >= 0 ? "A pagar" : "A favor"}
+              </span>
             </div>
-            <div className="text-[11px] text-navy/50 mt-0.5">
+            <div className="text-[11px] text-navy/50 mt-1">
+              Soportado {fmt(ivaSoportado)} · Repercutido {fmt(ivaRepercutido)}
+            </div>
+            <div className="text-[11px] text-navy/40 mt-0.5">
               IVA {nextIvaQuarter ?? "—"} · vence {nextIvaLabel ?? "—"}
-              {ivaNeto < 0 && " · a favor / a compensar"}
               {!ivaQuarterClosed && " · parcial, trimestre en curso"}
             </div>
           </div>
           <div>
             <div className="text-[11px] font-medium text-navy/45 mb-1">Retenciones (IRPF)</div>
             <div className="text-[20px] font-medium text-navy leading-tight">{fmt(retenciones)}</div>
-            <div className="text-[11px] text-navy/45 mt-1 leading-snug">
-              IVA repercutido (21% ventas) − soportado (gastos, por contacto) · retenciones = nóminas + alquileres
-            </div>
+            <div className="text-[11px] text-navy/45 mt-1">nóminas + alquileres</div>
           </div>
         </div>
 
