@@ -7,12 +7,11 @@ import type { MonthlyProductRevenue } from "@/lib/productRevenue";
 import type { MonthlySubStats } from "@/lib/subscriptionCohort";
 import type { BusinessEvent } from "@/lib/businessEvents";
 import type { StripePayment } from "@/lib/stripePayments";
-import { ChartCard, ChartTypeToggle, ToggleGroup, InteractiveLegend, type MultiKpiItem } from "@/components/charts";
+import { ChartCard, ChartTypeToggle, ToggleGroup, InteractiveLegend, CollapsibleTable, type MultiKpiItem } from "@/components/charts";
 import { pct } from "@/lib/analytics";
 import Drawer from "@/app/components/Drawer";
 import type { EvolucionRow } from "./EvolucionIngresosBody";
 import {
-  PROCEDENCIA_COLORS,
   PRODUCT_COLORS,
   buildSeriesFromMonthly,
   buildSeriesFromProcedencia,
@@ -29,7 +28,6 @@ const EvolucionIngresosBody = dynamic(() => import("./EvolucionIngresosBody"), {
   loading: () => <div className="h-[340px] rounded-lg bg-navy/[0.04] animate-pulse" />,
 });
 
-type View = "producto" | "procedencia";
 type ChartType = "line" | "bar";
 
 const PERIODS: { key: Period; label: string }[] = [
@@ -38,8 +36,6 @@ const PERIODS: { key: Period; label: string }[] = [
   { key: "año", label: "Año" },
 ];
 
-/** Prueba B: todo en horizontal (sin columnas) — KPIs, toolbar, gráfico 100%,
- * leyenda 100% en 2 columnas, tabla. Para comparar con la versión 75/25 actual. */
 export default function EvolucionSuscripcionesFullWidth({
   monthly,
   cohorts,
@@ -51,7 +47,6 @@ export default function EvolucionSuscripcionesFullWidth({
   events?: BusinessEvent[];
   rawPayments?: StripePayment[];
 }) {
-  const [view, setView] = useState<View>("producto");
   const [period, setPeriod] = useState<Period>("mes");
   const [chartType, setChartType] = useState<ChartType>("line");
   const [hiddenKeys, setHiddenKeys] = useState<Set<string>>(new Set());
@@ -66,23 +61,19 @@ export default function EvolucionSuscripcionesFullWidth({
       return next;
     });
 
-  const legendLabel = (key: string) =>
-    view === "procedencia" ? (key === "Interna" ? "Interno" : key === "Urban" ? "Urban Sports Club" : key) : key;
-
-  const baseSeries = view === "producto" ? buildSeriesFromMonthly(monthly) : buildSeriesFromProcedencia(monthly);
+  const baseSeries = buildSeriesFromMonthly(monthly);
   const { months, data } = regroupSeries(baseSeries.months, baseSeries.data, period);
 
-  const keysByRevenue = [...new Set(view === "producto" ? monthly.flatMap((m) => m.items.map((i) => i.name)) : ["Interna", "Urban"])].sort(
+  const keysByRevenue = [...new Set(monthly.flatMap((m) => m.items.map((i) => i.name)))].sort(
     (a, b) => {
       const totA = months.reduce((s, m) => s + (data.get(m)?.get(a) ?? 0), 0);
       const totB = months.reduce((s, m) => s + (data.get(m)?.get(b) ?? 0), 0);
       return totB - totA;
     },
   );
-  const keys = view === "producto" ? keysByRevenue.slice(0, 8) : keysByRevenue;
+  const keys = keysByRevenue.slice(0, 8);
 
-  const colorOf = (key: string) =>
-    view === "procedencia" ? (PROCEDENCIA_COLORS[key] ?? "#6B7280") : PRODUCT_COLORS[keys.indexOf(key) % PRODUCT_COLORS.length];
+  const colorOf = (key: string) => PRODUCT_COLORS[keys.indexOf(key) % PRODUCT_COLORS.length];
 
   const rows: EvolucionRow[] = months.map((m) => {
     const row: EvolucionRow = { month: m, label: periodLabel(m, period) };
@@ -114,22 +105,20 @@ export default function EvolucionSuscripcionesFullWidth({
     if (!selectedKey || !rawPayments || baseSeries.months.length === 0) return [];
     const fromMonth = baseSeries.months[0];
     const toMonth = baseSeries.months[baseSeries.months.length - 1];
-    if (view === "procedencia") {
-      if (selectedKey !== "Interna") return [];
-      return rawPayments
-        .filter((p) => p.date.slice(0, 7) >= fromMonth && p.date.slice(0, 7) <= toMonth)
-        .sort((a, b) => b.date.localeCompare(a.date));
-    }
     return rawPayments
       .filter((p) => p.inferredProduct === selectedKey && p.date.slice(0, 7) >= fromMonth && p.date.slice(0, 7) <= toMonth)
       .sort((a, b) => b.date.localeCompare(a.date));
-  }, [selectedKey, rawPayments, view, baseSeries.months]);
+  }, [selectedKey, rawPayments, baseSeries.months]);
 
   const trendSummary = makeTrendSummary(baseSeries.months, baseSeries.data, keysByRevenue);
 
   const cohortRows = regroupCohorts(cohorts, period);
   const cohortByPeriod = new Map(cohortRows.map((c) => [c.month, c]));
-  const procedenciaByPeriod = view === "procedencia" ? data : regroupSeries(buildSeriesFromProcedencia(monthly).months, buildSeriesFromProcedencia(monthly).data, period).data;
+  const procedenciaByPeriod = regroupSeries(
+    buildSeriesFromProcedencia(monthly).months,
+    buildSeriesFromProcedencia(monthly).data,
+    period,
+  ).data;
 
   const lastCohort = cohortRows.length > 0 ? cohortRows[cohortRows.length - 1] : null;
   const lastTotal = rows.length > 0 ? keys.reduce((s, k) => s + Number(rows[rows.length - 1][k] ?? 0), 0) : 0;
@@ -159,14 +148,14 @@ export default function EvolucionSuscripcionesFullWidth({
   }
 
   if (monthly.length === 0) {
-    return <ChartCard title="Evolución de ingresos y suscripciones (B — full width)" subtitle="Sin datos suficientes" />;
+    return <ChartCard title="Evolución de ingresos y suscripciones" subtitle="Sin datos suficientes" />;
   }
 
   return (
     <>
       <ChartCard
-        title="Evolución de ingresos y suscripciones (B — full width)"
-        subtitle="Ingresos por producto o procedencia · altas, bajas y reactivaciones de suscripción"
+        title="Evolución de ingresos y suscripciones"
+        subtitle="Ingresos por producto · altas, bajas y reactivaciones de suscripción"
         dateRange={months.length > 0 ? `${periodLabel(months[0], period)} – ${periodLabel(months[months.length - 1], period)}` : undefined}
         kpiItems={kpiItems}
         toolbar={
@@ -180,11 +169,6 @@ export default function EvolucionSuscripcionesFullWidth({
               ]}
             />
             <div className="flex items-center gap-2 flex-wrap ml-auto">
-              <ToggleGroup
-                value={view}
-                onChange={(v) => { setView(v as View); setHiddenKeys(new Set()); }}
-                options={[{ value: "producto", label: "Producto" }, { value: "procedencia", label: "Procedencia" }]}
-              />
               <ToggleGroup
                 value={period}
                 onChange={(v) => setPeriod(v as Period)}
@@ -212,7 +196,7 @@ export default function EvolucionSuscripcionesFullWidth({
           hiddenKeys={hiddenKeys}
           hoveredLegendKey={null}
           chartType={chartType}
-          view={view}
+          view="producto"
           colorOf={colorOf}
           eventsByMonth={eventsByMonth}
           onBarClick={period === "mes" ? (month, key) => setBarDrawer({ month, key }) : undefined}
@@ -230,7 +214,7 @@ export default function EvolucionSuscripcionesFullWidth({
         <InteractiveLegend
           items={legendTotals.map((t) => ({
             key: t.key,
-            label: legendLabel(t.key),
+            label: t.key,
             color: colorOf(t.key),
             value: fmtEur(t.total),
             helper: pct(legendGrandTotal > 0 ? t.total / legendGrandTotal : 0),
@@ -240,7 +224,7 @@ export default function EvolucionSuscripcionesFullWidth({
           onToggleVisibility={toggleHidden}
         />
 
-        <div className="mt-5 overflow-x-auto">
+        <CollapsibleTable>
           <table className="w-full min-w-max text-xs">
             <thead>
               <tr className="border-b border-navy/[0.07]">
@@ -274,7 +258,7 @@ export default function EvolucionSuscripcionesFullWidth({
               })}
             </tbody>
           </table>
-        </div>
+        </CollapsibleTable>
       </ChartCard>
 
       {barDrawer && (
@@ -284,11 +268,7 @@ export default function EvolucionSuscripcionesFullWidth({
           onClose={() => setBarDrawer(null)}
         >
           <div className="p-3">
-            {barDrawer.key === "Urban" || barDrawer.key === "Interna" ? (
-              <p className="text-xs text-navy/45 text-center py-8 px-4">
-                Los ingresos de Urban Sports Club llegan por transferencia bancaria — no hay datos individuales por alumno.
-              </p>
-            ) : drawerStudents.length === 0 ? (
+            {drawerStudents.length === 0 ? (
               <p className="text-xs text-navy/45 text-center py-8">Sin pagos registrados en Stripe para este producto y mes.</p>
             ) : (
               drawerStudents.map((s, idx) => (
@@ -314,16 +294,12 @@ export default function EvolucionSuscripcionesFullWidth({
           header={
             <div className="flex items-center gap-3">
               <span className="w-3 h-3 rounded-sm shrink-0" style={{ backgroundColor: colorOf(selectedKey) }} />
-              <h2 className="text-base font-semibold text-navy">{legendLabel(selectedKey)}</h2>
+              <h2 className="text-base font-semibold text-navy">{selectedKey}</h2>
             </div>
           }
           onClose={() => setSelectedKey(null)}
         >
-          {view === "procedencia" && selectedKey === "Urban" ? (
-            <p className="text-sm text-navy/45 px-6 py-8">
-              Los ingresos de Urban Sports Club llegan por transferencia bancaria — no hay datos individuales por alumno.
-            </p>
-          ) : selectedDrawerPayments.length === 0 ? (
+          {selectedDrawerPayments.length === 0 ? (
             <p className="text-sm text-navy/45 px-6 py-8">Sin pagos registrados en Stripe para este período.</p>
           ) : (
             selectedDrawerPayments.map((p) => (

@@ -36,7 +36,6 @@ import { subscriptionTiersFromMemberships, computeMrrByTier } from "@/lib/mrr";
 import { getMemberships, getProducts, getCustomers } from "@/lib/momence";
 import { catalogFromMomence, revenueByProductFromStripe, revenueByProductByMonth, addUscToMonthlyRevenue } from "@/lib/productRevenue";
 import { computeSubscriptionCohorts, computeRetentionCohorts } from "@/lib/subscriptionCohort";
-import EvolucionSuscripciones from "./instances/EvolucionSuscripciones";
 import EvolucionSuscripcionesFullWidth from "./instances/EvolucionSuscripcionesFullWidth";
 import RetencionCohorte from "./instances/RetencionCohorte";
 import { loadBusinessEvents } from "@/lib/businessEvents";
@@ -581,24 +580,25 @@ export default async function AnaliticaLoader({
               activeRecurringCount={activeRecurringCount}
               momenceChurn={momenceChurn}
             />
-            <ClientesPaymentsBreakdown
-              succeeded={totalRev}
-              refunded={breakdown.refunded}
-              disputed={breakdown.disputed}
-              failed={breakdown.failed}
-              refundedIds={breakdown.refundedIds}
-              disputedIds={breakdown.disputedIds}
-              failedIds={breakdown.failedIds}
-              customers={customers}
-              periodLabel={periodLabel}
-              excludeSegments={["disputed", "failed"]}
-            />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <ClientesPaymentsBreakdown
+                succeeded={totalRev}
+                refunded={breakdown.refunded}
+                disputed={breakdown.disputed}
+                failed={breakdown.failed}
+                refundedIds={breakdown.refundedIds}
+                disputedIds={breakdown.disputedIds}
+                failedIds={breakdown.failedIds}
+                customers={customers}
+                periodLabel={periodLabel}
+                excludeSegments={["disputed", "failed"]}
+              />
+              <PrimeraCompra summary={firstPurchaseSummary} />
+            </div>
             <EvolucionInscritos data={activeCustomersData} />
-            <EvolucionSuscripciones monthly={monthlyRevenue} cohorts={subscriptionCohorts} events={businessEvents} rawPayments={pMain} />
             <EvolucionSuscripcionesFullWidth monthly={monthlyRevenue} cohorts={subscriptionCohorts} events={businessEvents} rawPayments={pMain} />
             <RetencionCohorte cohorts={retentionCohorts} />
             <ConversionPack summary={conversionSummary} />
-            <PrimeraCompra summary={firstPurchaseSummary} />
           </div>
         </section>
 

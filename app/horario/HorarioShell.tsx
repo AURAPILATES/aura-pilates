@@ -144,16 +144,19 @@ export default function HorarioShell({
           <div className="flex items-center gap-3">
             <MobileNav />
             <span className="text-sm font-bold text-navy uppercase tracking-widest">Horario</span>
-            <div className="hidden sm:flex items-center border border-navy/[0.12] rounded-lg bg-white p-0.5 gap-0.5">
+            <div className="hidden sm:flex items-center gap-1">
               {([{ v: "horario", l: "Horario" }, { v: "analisis", l: "Análisis" }] as { v: Tab; l: string }[]).map(({ v, l }) => (
                 <button
                   key={v}
                   onClick={() => setTab(v)}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                    tab === v ? "bg-navy text-white" : "text-navy/50 hover:text-navy"
+                  className={`relative px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                    tab === v ? "text-navy bg-white border border-navy/[0.15]" : "text-navy/50 hover:text-navy"
                   }`}
                 >
                   {l}
+                  {tab === v && (
+                    <span className="absolute -bottom-2 left-0 right-0 h-px bg-navy" />
+                  )}
                 </button>
               ))}
             </div>
@@ -162,16 +165,19 @@ export default function HorarioShell({
           {/* Right: tabs (mobile) + week nav + view toggle (desktop) */}
           <div className="flex items-center gap-2">
             {/* Tabs — mobile only, right side */}
-            <div className="sm:hidden flex items-center border border-navy/[0.12] rounded-lg bg-white p-0.5 gap-0.5">
+            <div className="sm:hidden flex items-center gap-1">
               {([{ v: "horario", l: "Horario" }, { v: "analisis", l: "Análisis" }] as { v: Tab; l: string }[]).map(({ v, l }) => (
                 <button
                   key={v}
                   onClick={() => setTab(v)}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                    tab === v ? "bg-navy text-white" : "text-navy/50 hover:text-navy"
+                  className={`relative px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                    tab === v ? "text-navy bg-white border border-navy/[0.15]" : "text-navy/50 hover:text-navy"
                   }`}
                 >
                   {l}
+                  {tab === v && (
+                    <span className="absolute -bottom-2 left-0 right-0 h-px bg-navy" />
+                  )}
                 </button>
               ))}
             </div>

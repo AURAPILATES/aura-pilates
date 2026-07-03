@@ -13,7 +13,7 @@ import {
   type TooltipContentProps,
 } from "recharts";
 import type { ConversionCohort, ConversionSummary } from "@/lib/sales";
-import { StaticLegend } from "@/components/charts";
+import { StaticLegend, CollapsibleTable } from "@/components/charts";
 import Drawer from "@/app/components/Drawer";
 import { analyzeCohorts, type CohortAnalysis } from "./conversionAnalysis";
 
@@ -224,7 +224,7 @@ export default function ConversionPackBody({ summary }: { summary: ConversionSum
         </ResponsiveContainer>
       </div>
 
-      <div className="mt-4 overflow-x-auto">
+      <CollapsibleTable>
         <table className="w-full min-w-max text-xs">
           <thead>
             <tr className="border-b border-navy/[0.07]">
@@ -254,7 +254,7 @@ export default function ConversionPackBody({ summary }: { summary: ConversionSum
             ))}
           </tbody>
         </table>
-      </div>
+      </CollapsibleTable>
 
       {selectedCohort && <CohortDrawer cohort={selectedCohort} onClose={() => setSelectedCohort(null)} />}
     </>

@@ -4,7 +4,7 @@ import { useState, type ReactElement } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { BarChart2, Activity, Eye, EyeOff, ChevronRight } from "react-feather";
-import { ChartCard, ChartTypeToggle, ToggleGroup, type MultiKpiItem } from "@/components/charts";
+import { ChartCard, ChartTypeToggle, ToggleGroup, CollapsibleTable, type MultiKpiItem } from "@/components/charts";
 import { pct } from "@/lib/analytics";
 import Drawer from "@/app/components/Drawer";
 import { CategoryIcon } from "../GastosBreakdown";
@@ -321,8 +321,7 @@ export default function DesglosGastosUnificado({
         })}
       </div>
 
-      {/* ── Tabla: categorías/subcategorías en filas, períodos en columnas ──── */}
-      <div className="mt-5 overflow-x-auto">
+      <CollapsibleTable>
         <table className="w-full min-w-max text-xs">
           <thead>
             <tr className="border-b border-navy/[0.07]">
@@ -405,7 +404,7 @@ export default function DesglosGastosUnificado({
             })}
           </tbody>
         </table>
-      </div>
+      </CollapsibleTable>
 
       {selected && selectedInfo && (
         <Drawer

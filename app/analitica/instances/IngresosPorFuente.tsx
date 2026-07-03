@@ -3,7 +3,7 @@
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import { BarChart2, Activity } from "react-feather";
-import { ChartCard, ChartTypeToggle } from "@/components/charts";
+import { ChartCard, ChartTypeToggle, CollapsibleTable } from "@/components/charts";
 import type { IngresosPorFuenteRow } from "./IngresosPorFuenteBody";
 
 const USC_PRICE_STUDIO = 20;  // precio tarifa Aura por clase suelta
@@ -115,7 +115,7 @@ export default function IngresosPorFuente({
         </div>
       </div>
 
-      <div className="mt-5 overflow-x-auto">
+      <CollapsibleTable>
         <table className="w-full min-w-max text-xs">
           <thead>
             <tr className="border-b border-navy/[0.07]">
@@ -150,7 +150,7 @@ export default function IngresosPorFuente({
             </tr>
           </tfoot>
         </table>
-      </div>
+      </CollapsibleTable>
     </ChartCard>
   );
 }

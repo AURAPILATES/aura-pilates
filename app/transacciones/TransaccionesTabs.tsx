@@ -53,7 +53,7 @@ export default function TransaccionesTabs({
 
   return (
     <div>
-      <div className="flex items-center gap-1 border-b border-navy/[0.08] mb-7 pb-1.5">
+      <div className="flex items-center gap-1 border-b border-navy/[0.08] mb-7 pb-2">
         {TABS.map(({ key, label }) => (
           <button
             key={key}
@@ -74,7 +74,7 @@ export default function TransaccionesTabs({
               )}
             </span>
             {tab === key && (
-              <span className="absolute -bottom-1.5 left-0 right-0 h-px bg-navy" />
+              <span className="absolute -bottom-2 left-0 right-0 h-px bg-navy" />
             )}
           </button>
         ))}

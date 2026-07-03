@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import { Clock, TrendingUp } from "react-feather";
 import type { Sale } from "@/lib/sales";
 import type { Transaction } from "@/lib/transactions";
-import { ChartCard, ToggleGroup, Legend } from "@/components/charts";
+import { ChartCard, ToggleGroup, Legend, CollapsibleTable } from "@/components/charts";
 import type { VolumenBrutoRow } from "./VolumenBrutoBody";
 
 const VolumenBrutoBody = dynamic(() => import("./VolumenBrutoBody"), {
@@ -231,8 +231,7 @@ export default function CockpitFinanciero({
         <VolumenBrutoBody data={data} chartType="bar" />
       </div>
 
-      {/* Table */}
-      <div className="mt-5 overflow-x-auto">
+      <CollapsibleTable>
         <table className="w-full min-w-max text-xs">
           <thead>
             <tr className="border-b border-navy/[0.07]">
@@ -258,7 +257,7 @@ export default function CockpitFinanciero({
             })}
           </tbody>
         </table>
-      </div>
+      </CollapsibleTable>
     </ChartCard>
   );
 }

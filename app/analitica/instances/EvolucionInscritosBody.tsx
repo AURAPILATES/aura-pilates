@@ -27,31 +27,19 @@ export default function EvolucionInscritosBody({ data }: { data: ActiveCustomers
   }
 
   return (
-    <div>
-      <div style={{ width: "100%", height: 200 }}>
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} margin={{ top: 16, right: 8, bottom: 0, left: 0 }}>
-            <CartesianGrid strokeDasharray="4 3" stroke="rgba(28,25,23,0.07)" vertical={false} />
-            <XAxis dataKey="label" tick={{ fontSize: 10, fill: "rgba(28,25,23,0.45)" }} tickLine={false} axisLine={false} />
-            <YAxis tick={{ fontSize: 10, fill: "rgba(28,25,23,0.45)" }} tickLine={false} axisLine={false} width={28} />
-            <Tooltip content={ChartTooltip} cursor={{ fill: "rgba(28,25,23,0.04)" }} />
-            <Bar dataKey="subscriptions" stackId="active" fill="#7F77DD" />
-            <Bar dataKey="packs" stackId="active" fill="#AFA9EC" radius={[4, 4, 0, 0]}>
-              <LabelList dataKey="count" position="top" style={{ fontSize: 11, fontWeight: 500, fill: "#1c1917" }} />
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-      <div className="flex items-center gap-4 justify-center mt-2 text-[11px] text-navy/55">
-        <span className="flex items-center gap-1.5">
-          <span className="inline-block w-2.5 h-2.5 rounded-sm" style={{ background: "#7F77DD" }} />
-          Suscripciones
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="inline-block w-2.5 h-2.5 rounded-sm" style={{ background: "#AFA9EC" }} />
-          Packs
-        </span>
-      </div>
+    <div style={{ width: "100%", height: 200 }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={data} margin={{ top: 16, right: 8, bottom: 0, left: 0 }}>
+          <CartesianGrid strokeDasharray="4 3" stroke="rgba(28,25,23,0.07)" vertical={false} />
+          <XAxis dataKey="label" tick={{ fontSize: 10, fill: "rgba(28,25,23,0.45)" }} tickLine={false} axisLine={false} />
+          <YAxis tick={{ fontSize: 10, fill: "rgba(28,25,23,0.45)" }} tickLine={false} axisLine={false} width={28} />
+          <Tooltip content={ChartTooltip} cursor={{ fill: "rgba(28,25,23,0.04)" }} />
+          <Bar dataKey="subscriptions" stackId="active" fill="#7F77DD" />
+          <Bar dataKey="packs" stackId="active" fill="#AFA9EC" radius={[4, 4, 0, 0]}>
+            <LabelList dataKey="count" position="top" style={{ fontSize: 11, fontWeight: 500, fill: "#1c1917" }} />
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
     </div>
   );
 }

@@ -23,3 +23,5 @@ export type { ProportionBarProps, ProportionSegment } from "./ProportionBar";
 
 export { default as CohortTable } from "./CohortTable";
 export type { CohortTableProps, CohortRow } from "./CohortTable";
+
+export { default as CollapsibleTable } from "./CollapsibleTable";

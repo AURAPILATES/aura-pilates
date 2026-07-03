@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import {
-  ResponsiveContainer, ComposedChart, Line, Area, Bar, CartesianGrid, XAxis, YAxis, Tooltip, ReferenceLine,
+  ResponsiveContainer, ComposedChart, Line, Bar, CartesianGrid, XAxis, YAxis, Tooltip, ReferenceLine,
   type TooltipContentProps,
 } from "recharts";
 import type { BusinessEvent, EventCategoria } from "@/lib/businessEvents";
@@ -173,44 +173,24 @@ export default function EvolucionIngresosBody({
             );
           })}
 
-          {chartType === "bar"
-            ? visibleKeys.map((key) => (
-                <Bar
-                  key={key}
-                  dataKey={key}
-                  fill={colorOf(key)}
-                  radius={[2, 2, 0, 0]}
-                  opacity={hoveredLegendKey !== null && hoveredLegendKey !== key ? 0.3 : 1}
-                  cursor={view === "producto" && onBarClick ? "pointer" : undefined}
-                  onClick={
-                    view === "producto" && onBarClick
-                      ? (data: { payload?: EvolucionRow }) => {
-                          if (data.payload) onBarClick(data.payload.month, key);
-                        }
-                      : undefined
-                  }
-                />
-              ))
-            : visibleKeys.map((key) =>
-                view === "procedencia" ? (
-                  <Area
-                    key={`area-${key}`}
-                    type="monotone"
-                    dataKey={key}
-                    stroke="none"
-                    fill={`url(#grad-${key.replace(/\s+/g, "-")})`}
-                  />
-                ) : (
-                  <Area
-                    key={`area-${key}`}
-                    type="monotone"
-                    dataKey={key}
-                    stroke="none"
-                    fill={colorOf(key)}
-                    fillOpacity={hoveredLegendKey !== null && hoveredLegendKey !== key ? 0.02 : 0.06}
-                  />
-                ),
-              )}
+          {chartType === "bar" &&
+            visibleKeys.map((key) => (
+              <Bar
+                key={key}
+                dataKey={key}
+                fill={colorOf(key)}
+                radius={[2, 2, 0, 0]}
+                opacity={hoveredLegendKey !== null && hoveredLegendKey !== key ? 0.3 : 1}
+                cursor={view === "producto" && onBarClick ? "pointer" : undefined}
+                onClick={
+                  view === "producto" && onBarClick
+                    ? (data: { payload?: EvolucionRow }) => {
+                        if (data.payload) onBarClick(data.payload.month, key);
+                      }
+                    : undefined
+                }
+              />
+            ))}
           {chartType === "line" &&
             visibleKeys.map((key) => (
               <Line
