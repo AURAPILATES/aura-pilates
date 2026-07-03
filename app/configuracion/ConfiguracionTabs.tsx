@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import type { Category } from "@/lib/categories";
 import type { BusinessEvent } from "@/lib/businessEvents";
 import type { Contact, ContactStats } from "@/app/transacciones/actions";
+import SectionTabs from "@/app/components/SectionTabs";
 import CategoriasManager from "./CategoriasManager";
 import ContactosManager from "./ContactosManager";
 import HistorialTimeline from "@/app/historial/HistorialTimeline";
@@ -38,27 +39,7 @@ export default function ConfiguracionTabs({ categories, events, categoryCounts, 
 
   return (
     <div>
-      <div className="flex items-center gap-1 border-b border-navy/[0.08] mb-6">
-        {TABS.map(({ key, label }) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => selectTab(key)}
-            className={`relative py-3 text-sm font-medium transition-colors ${
-              tab === key ? "text-navy" : "text-navy/50 hover:text-navy"
-            }`}
-          >
-            <span className={`px-3 py-1 rounded-lg transition-colors ${
-              tab === key ? "bg-navy/[0.06]" : ""
-            }`}>
-              {label}
-            </span>
-            {tab === key && (
-              <span className="absolute bottom-0 left-0 right-0 h-px bg-navy" />
-            )}
-          </button>
-        ))}
-      </div>
+      <SectionTabs className="mb-6" active={tab} onChange={selectTab} tabs={TABS} />
       {tab === "categorias" ? (
         <CategoriasManager categories={categories} categoryCounts={categoryCounts} />
       ) : tab === "contactos" ? (

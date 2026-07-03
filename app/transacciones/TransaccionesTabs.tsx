@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { Transaction } from "@/lib/transactions";
 import type { Category } from "@/lib/categories";
+import SectionTabs from "@/app/components/SectionTabs";
 import TransaccionesList from "./TransaccionesList";
 import RecurrentesList, { type PendingSeriesRow, type ConfirmedExpenseRow } from "./RecurrentesList";
 import type { Contact } from "./actions";
@@ -53,32 +54,15 @@ export default function TransaccionesTabs({
 
   return (
     <div>
-      <div className="flex items-center gap-1 border-b border-navy/[0.08] mb-7 pb-2">
-        {TABS.map(({ key, label }) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => selectTab(key)}
-            className={`relative text-sm font-medium transition-colors rounded-lg ${
-              tab === key
-                ? "text-navy bg-white border border-navy/[0.15]"
-                : "text-navy/50 hover:text-navy"
-            }`}
-          >
-            <span className="flex items-center gap-1.5 px-3 py-1.5">
-              {label}
-              {key === "recurrentes" && pendingRecurring.length > 0 && (
-                <span className="shrink-0 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-warning text-white text-[10px] font-bold px-1">
-                  {pendingRecurring.length}
-                </span>
-              )}
-            </span>
-            {tab === key && (
-              <span className="absolute -bottom-2 left-0 right-0 h-px bg-navy" />
-            )}
-          </button>
-        ))}
-      </div>
+      <SectionTabs
+        className="mb-7"
+        active={tab}
+        onChange={selectTab}
+        tabs={TABS.map((t) => ({
+          ...t,
+          badge: t.key === "recurrentes" ? pendingRecurring.length : undefined,
+        }))}
+      />
 
       {tab === "movimientos" ? (
         <TransaccionesList

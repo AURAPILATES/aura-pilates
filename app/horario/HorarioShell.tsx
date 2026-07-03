@@ -149,14 +149,11 @@ export default function HorarioShell({
                 <button
                   key={v}
                   onClick={() => setTab(v)}
-                  className={`relative px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
                     tab === v ? "text-navy bg-white border border-navy/[0.15]" : "text-navy/50 hover:text-navy"
                   }`}
                 >
                   {l}
-                  {tab === v && (
-                    <span className="absolute -bottom-2 left-0 right-0 h-px bg-navy" />
-                  )}
                 </button>
               ))}
             </div>
@@ -170,14 +167,11 @@ export default function HorarioShell({
                 <button
                   key={v}
                   onClick={() => setTab(v)}
-                  className={`relative px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
                     tab === v ? "text-navy bg-white border border-navy/[0.15]" : "text-navy/50 hover:text-navy"
                   }`}
                 >
                   {l}
-                  {tab === v && (
-                    <span className="absolute -bottom-2 left-0 right-0 h-px bg-navy" />
-                  )}
                 </button>
               ))}
             </div>
