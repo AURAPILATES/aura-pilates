@@ -222,41 +222,83 @@ export default function EvolucionSuscripcionesFullWidth({
           <table className="w-full min-w-max text-xs">
             <thead>
               <tr className="border-b border-navy/[0.07]">
-                <th className="text-left py-2 pr-3 text-navy/45 font-semibold uppercase tracking-wide">Período</th>
-                <th className="text-right py-2 pr-3 text-navy/45 font-semibold uppercase tracking-wide">Ingresos</th>
-                {keys.map((k) => (
-                  <th key={k} className="text-right py-2 pr-3 text-navy/45 font-semibold uppercase tracking-wide whitespace-nowrap">
+                <th className="text-left py-2 pr-3 text-navy/45 font-semibold uppercase tracking-wide">Producto</th>
+                {months.map((m) => (
+                  <th key={m} className="text-right py-2 pr-3 text-navy/45 font-semibold uppercase tracking-wide whitespace-nowrap">
+                    {periodLabel(m, period)}
+                  </th>
+                ))}
+                <th className="text-right py-2 text-navy/45 font-semibold uppercase tracking-wide">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="border-b border-navy/[0.04] bg-navy/[0.025]">
+                <td className="py-2 pr-3 text-navy font-semibold whitespace-nowrap">Ingresos</td>
+                {rows.map((row) => (
+                  <td key={row.month} className="py-2 pr-3 text-right text-navy font-semibold tabular-nums">
+                    {fmtEur(keys.reduce((s, k) => s + Number(row[k] ?? 0), 0))}
+                  </td>
+                ))}
+                <td className="py-2 text-right text-navy font-semibold tabular-nums">{fmtEur(legendGrandTotal)}</td>
+              </tr>
+              {keys.map((k) => (
+                <tr key={k} className="border-b border-navy/[0.04]">
+                  <td className="py-1.5 pl-6 pr-3 text-navy/80 whitespace-nowrap">
                     <span className="inline-flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: colorOf(k) }} />
                       {k}
                     </span>
-                  </th>
+                  </td>
+                  {rows.map((row) => (
+                    <td key={row.month} className="py-1.5 pr-3 text-right text-navy/80 tabular-nums">
+                      {fmtEur(Number(row[k] ?? 0))}
+                    </td>
+                  ))}
+                  <td className="py-1.5 text-right text-navy/80 tabular-nums">
+                    {fmtEur(legendTotals.find((t) => t.key === k)?.total ?? 0)}
+                  </td>
+                </tr>
+              ))}
+              <tr className="border-b border-navy/[0.04]">
+                <td className="py-2 pr-3 text-navy font-semibold whitespace-nowrap">Suscritos activos</td>
+                {months.map((m) => (
+                  <td key={m} className="py-2 pr-3 text-right text-navy tabular-nums">{cohortByPeriod.get(m)?.activeCount ?? "-"}</td>
                 ))}
-                <th className="text-right py-2 pr-3 text-navy/45 font-semibold uppercase tracking-wide">Suscritos</th>
-                <th className="text-right py-2 pr-3 text-navy/45 font-semibold uppercase tracking-wide">Bajas susc.</th>
-                <th className="text-right py-2 pr-3 text-navy/45 font-semibold uppercase tracking-wide">Clientes nuevos</th>
-                <th className="text-right py-2 text-navy/45 font-semibold uppercase tracking-wide">Reactiv.</th>
+                <td className="py-2 text-right text-navy/40 tabular-nums">−</td>
               </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => {
-                const m = row.month;
-                const c = cohortByPeriod.get(m);
-                const total = keys.reduce((s, k) => s + Number(row[k] ?? 0), 0);
-                return (
-                  <tr key={m} className="border-b border-navy/[0.04] last:border-0">
-                    <td className="py-2 pr-3 text-navy/70 whitespace-nowrap">{periodLabel(m, period)}</td>
-                    <td className="py-2 pr-3 text-right text-navy tabular-nums">{fmtEur(total)}</td>
-                    {keys.map((k) => (
-                      <td key={k} className="py-2 pr-3 text-right text-navy tabular-nums">{fmtEur(Number(row[k] ?? 0))}</td>
-                    ))}
-                    <td className="py-2 pr-3 text-right text-navy tabular-nums">{c?.activeCount ?? "-"}</td>
-                    <td className="py-2 pr-3 text-right text-danger font-medium tabular-nums">{c ? `−${c.churned}` : "-"}</td>
-                    <td className="py-2 pr-3 text-right text-success font-medium tabular-nums">{c ? `+${c.newSubs}` : "-"}</td>
-                    <td className="py-2 text-right text-primary font-medium tabular-nums">{c?.reactivated ?? "-"}</td>
-                  </tr>
-                );
-              })}
+              <tr className="border-b border-navy/[0.04]">
+                <td className="py-2 pr-3 text-navy/70 whitespace-nowrap">Bajas susc.</td>
+                {months.map((m) => {
+                  const c = cohortByPeriod.get(m);
+                  return (
+                    <td key={m} className="py-2 pr-3 text-right text-danger font-medium tabular-nums">{c ? `−${c.churned}` : "-"}</td>
+                  );
+                })}
+                <td className="py-2 text-right text-danger font-medium tabular-nums">
+                  −{cohortRows.reduce((s, c) => s + c.churned, 0)}
+                </td>
+              </tr>
+              <tr className="border-b border-navy/[0.04]">
+                <td className="py-2 pr-3 text-navy/70 whitespace-nowrap">Clientes nuevos</td>
+                {months.map((m) => {
+                  const c = cohortByPeriod.get(m);
+                  return (
+                    <td key={m} className="py-2 pr-3 text-right text-success font-medium tabular-nums">{c ? `+${c.newSubs}` : "-"}</td>
+                  );
+                })}
+                <td className="py-2 text-right text-success font-medium tabular-nums">
+                  +{cohortRows.reduce((s, c) => s + c.newSubs, 0)}
+                </td>
+              </tr>
+              <tr className="last:border-0">
+                <td className="py-2 pr-3 text-navy/70 whitespace-nowrap">Reactiv.</td>
+                {months.map((m) => (
+                  <td key={m} className="py-2 pr-3 text-right text-primary font-medium tabular-nums">{cohortByPeriod.get(m)?.reactivated ?? "-"}</td>
+                ))}
+                <td className="py-2 text-right text-primary font-medium tabular-nums">
+                  {cohortRows.reduce((s, c) => s + c.reactivated, 0)}
+                </td>
+              </tr>
             </tbody>
           </table>
         </CollapsibleTable>
