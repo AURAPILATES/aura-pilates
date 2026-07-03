@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState, useTransition } from "react";
 import { Calendar, ChevronDown, ChevronLeft, ChevronRight } from "react-feather";
 import { pad2, resolveCalendarPeriod } from "@/lib/periodCalculation";
 
@@ -257,6 +257,24 @@ function AnaliticaFilterBarInner() {
   const [showCustom, setShowCustom] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
+  // Cambiar de período dispara una navegación que vuelve a pedir datos de Stripe/Momence
+  // en el servidor (puede tardar varios segundos): reflejamos la selección al instante aquí
+  // en vez de esperar a que useSearchParams() se actualice cuando la navegación termine.
+  const [isPending, startTransition] = useTransition();
+  const [optimistic, setOptimistic] = useState<{ period: string; year: string; from: string; to: string } | null>(null);
+
+  useEffect(() => {
+    if (!optimistic) return;
+    if (optimistic.period === period && optimistic.year === String(year) && optimistic.from === customFrom && optimistic.to === customTo) {
+      setOptimistic(null);
+    }
+  }, [optimistic, period, year, customFrom, customTo]);
+
+  const activePeriod = optimistic?.period ?? period;
+  const activeYear = optimistic ? parseInt(optimistic.year) || currentYear : year;
+  const activeFrom = optimistic?.from ?? customFrom;
+  const activeTo = optimistic?.to ?? customTo;
+
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) {
@@ -275,10 +293,14 @@ function AnaliticaFilterBarInner() {
       if (v) params.set(k, v);
       else params.delete(k);
     }
-    router.replace(`${pathname}?${params.toString()}`);
+    startTransition(() => {
+      router.replace(`${pathname}?${params.toString()}`);
+    });
   }
 
   function selectPeriod(newPeriod: string, newYear?: number) {
+    const yearStr = newYear ? String(newYear) : String(activeYear);
+    setOptimistic({ period: newPeriod, year: yearStr, from: "", to: "" });
     update({ period: newPeriod, year: newYear ? String(newYear) : null, from: null, to: null });
     setOpen(false);
     setExpandedYear(null);
@@ -286,81 +308,100 @@ function AnaliticaFilterBarInner() {
   }
 
   function applyCustom(from: string, to: string) {
+    setOptimistic({ period: "custom", year: String(activeYear), from, to });
     update({ period: "custom", from, to, year: null });
     setOpen(false);
     setShowCustom(false);
   }
 
   function step(direction: 1 | -1) {
-    if (period === "all") return;
+    if (activePeriod === "all") return;
 
-    if (period === "custom" && customFrom && customTo) {
-      const durationDays = Math.round((fromISO(customTo).getTime() - fromISO(customFrom).getTime()) / 86400000) + 1;
-      update({
-        from: shiftISODate(customFrom, direction * durationDays),
-        to: shiftISODate(customTo, direction * durationDays),
-      });
+    if (activePeriod === "custom" && activeFrom && activeTo) {
+      const durationDays = Math.round((fromISO(activeTo).getTime() - fromISO(activeFrom).getTime()) / 86400000) + 1;
+      const newFrom = shiftISODate(activeFrom, direction * durationDays);
+      const newTo = shiftISODate(activeTo, direction * durationDays);
+      setOptimistic({ period: "custom", year: String(activeYear), from: newFrom, to: newTo });
+      update({ from: newFrom, to: newTo });
       return;
     }
 
-    if (period === "year") {
-      update({ year: String(year + direction) });
+    if (activePeriod === "year") {
+      const newYear = activeYear + direction;
+      setOptimistic({ period: "year", year: String(newYear), from: "", to: "" });
+      update({ year: String(newYear) });
       return;
     }
 
-    const qMatch = /^q([1-4])$/.exec(period);
+    const qMatch = /^q([1-4])$/.exec(activePeriod);
     if (qMatch) {
       let q = parseInt(qMatch[1]) + direction;
-      let y = year;
+      let y = activeYear;
       if (q < 1) { q = 4; y -= 1; }
       if (q > 4) { q = 1; y += 1; }
+      setOptimistic({ period: `q${q}`, year: String(y), from: "", to: "" });
       update({ period: `q${q}`, year: String(y) });
       return;
     }
 
-    const mMatch = /^month_(\d{2})$/.exec(period);
+    const mMatch = /^month_(\d{2})$/.exec(activePeriod);
     if (mMatch) {
       let m = parseInt(mMatch[1]) + direction;
-      let y = year;
+      let y = activeYear;
       if (m < 1) { m = 12; y -= 1; }
       if (m > 12) { m = 1; y += 1; }
+      setOptimistic({ period: `month_${pad2(m)}`, year: String(y), from: "", to: "" });
       update({ period: `month_${pad2(m)}`, year: String(y) });
     }
   }
 
   const label = resolveCalendarPeriod({
-    period,
-    year: String(year),
+    period: activePeriod,
+    year: String(activeYear),
     compareWith,
-    from: customFrom,
-    to: customTo,
+    from: activeFrom,
+    to: activeTo,
   }).periodLabel;
 
-  const disabled = period === "all";
+  const disabled = activePeriod === "all";
 
   return (
     <div className="flex flex-wrap items-center gap-2 mb-4 pb-4 border-b border-navy/[0.06]">
-      <div className="flex items-center gap-1">
-        <button
-          type="button"
-          onClick={() => step(-1)}
-          disabled={disabled}
-          className="p-1.5 rounded-lg text-navy/40 hover:text-navy hover:bg-navy/[0.05] disabled:opacity-30 disabled:pointer-events-none transition-colors"
-        >
-          <ChevronLeft size={16} />
-        </button>
+      <div ref={ref} className="relative">
+        <div className="flex items-center bg-white border border-navy/[0.13] rounded-xl text-navy overflow-hidden">
+          <button
+            type="button"
+            onClick={() => step(-1)}
+            disabled={disabled}
+            className="p-1.5 text-navy/40 hover:text-navy hover:bg-navy/[0.05] disabled:opacity-30 disabled:pointer-events-none transition-colors"
+          >
+            <ChevronLeft size={16} />
+          </button>
 
-        <div ref={ref} className="relative">
           <button
             type="button"
             onClick={() => setOpen((o) => !o)}
-            className="flex items-center gap-2 bg-white border border-navy/[0.13] rounded-xl px-3 py-1.5 text-sm font-semibold text-navy shadow-sm outline-none cursor-pointer hover:border-navy/25 transition-colors"
+            className="flex items-center gap-2 px-2 py-1.5 text-sm font-semibold outline-none cursor-pointer hover:bg-navy/[0.03] transition-colors"
           >
-            <span>{label}</span>
-            <ChevronDown size={12} className={`text-navy/35 transition-transform ${open ? "rotate-180" : ""}`} />
+            <span className={isPending ? "opacity-50 transition-opacity" : "transition-opacity"}>{label}</span>
+            {isPending ? (
+              <span className="w-2 h-2 rounded-full bg-primary/50 animate-pulse" />
+            ) : (
+              <ChevronDown size={12} className={`text-navy/35 transition-transform ${open ? "rotate-180" : ""}`} />
+            )}
           </button>
 
-          {open && (
+          <button
+            type="button"
+            onClick={() => step(1)}
+            disabled={disabled}
+            className="p-1.5 text-navy/40 hover:text-navy hover:bg-navy/[0.05] disabled:opacity-30 disabled:pointer-events-none transition-colors"
+          >
+            <ChevronRight size={16} />
+          </button>
+        </div>
+
+        {open && (
             <div className="absolute left-0 top-full mt-1.5 z-50 bg-white border border-navy/[0.12] rounded-xl shadow-lg overflow-hidden">
               <div className="flex">
                 <ul className="py-1 min-w-[220px]">
@@ -372,7 +413,7 @@ function AnaliticaFilterBarInner() {
                         className={`w-full flex items-center justify-between gap-3 px-4 py-2 text-sm transition-colors ${
                           expandedYear === y
                             ? "bg-primary/[0.06] text-primary font-medium"
-                            : period !== "all" && period !== "custom" && year === y
+                            : activePeriod !== "all" && activePeriod !== "custom" && activeYear === y
                             ? "text-primary font-medium hover:bg-navy/[0.04]"
                             : "text-navy/70 hover:bg-navy/[0.04] hover:text-navy"
                         }`}
@@ -387,7 +428,7 @@ function AnaliticaFilterBarInner() {
                       type="button"
                       onClick={() => { setShowCustom((s) => !s); setExpandedYear(null); }}
                       className={`w-full flex items-center gap-2 px-4 py-2 text-sm transition-colors ${
-                        showCustom || period === "custom"
+                        showCustom || activePeriod === "custom"
                           ? "text-primary font-medium bg-primary/[0.06]"
                           : "text-navy/70 hover:bg-navy/[0.04] hover:text-navy"
                       }`}
@@ -401,7 +442,7 @@ function AnaliticaFilterBarInner() {
                       type="button"
                       onClick={() => selectPeriod("all")}
                       className={`w-full text-left px-4 py-2 text-sm transition-colors ${
-                        period === "all"
+                        activePeriod === "all"
                           ? "text-primary font-medium bg-primary/[0.06]"
                           : "text-navy/70 hover:bg-navy/[0.04] hover:text-navy"
                       }`}
@@ -413,12 +454,12 @@ function AnaliticaFilterBarInner() {
 
                 {expandedYear && (
                   <ul className="py-1 min-w-[150px] border-l border-navy/[0.08] max-h-80 overflow-y-auto">
-                    <li>
+                    <li className="border-b border-navy/[0.08] pb-1 mb-1">
                       <button
                         type="button"
                         onClick={() => selectPeriod("year", expandedYear)}
                         className={`w-full text-left px-4 py-2 text-sm transition-colors ${
-                          period === "year" && year === expandedYear
+                          activePeriod === "year" && activeYear === expandedYear
                             ? "text-primary font-medium bg-primary/[0.06]"
                             : "text-navy/70 hover:bg-navy/[0.04] hover:text-navy"
                         }`}
@@ -427,12 +468,12 @@ function AnaliticaFilterBarInner() {
                       </button>
                     </li>
                     {QUARTER_VALUES.map((q, i) => (
-                      <li key={q}>
+                      <li key={q} className={i === QUARTER_VALUES.length - 1 ? "border-b border-navy/[0.08] pb-1 mb-1" : undefined}>
                         <button
                           type="button"
                           onClick={() => selectPeriod(q, expandedYear)}
                           className={`w-full text-left px-4 py-2 text-sm transition-colors ${
-                            period === q && year === expandedYear
+                            activePeriod === q && activeYear === expandedYear
                               ? "text-primary font-medium bg-primary/[0.06]"
                               : "text-navy/70 hover:bg-navy/[0.04] hover:text-navy"
                           }`}
@@ -447,7 +488,7 @@ function AnaliticaFilterBarInner() {
                           type="button"
                           onClick={() => selectPeriod(m.value, expandedYear)}
                           className={`w-full text-left px-4 py-2 text-sm transition-colors ${
-                            period === m.value && year === expandedYear
+                            activePeriod === m.value && activeYear === expandedYear
                               ? "text-primary font-medium bg-primary/[0.06]"
                               : "text-navy/70 hover:bg-navy/[0.04] hover:text-navy"
                           }`}
@@ -465,16 +506,6 @@ function AnaliticaFilterBarInner() {
               )}
             </div>
           )}
-        </div>
-
-        <button
-          type="button"
-          onClick={() => step(1)}
-          disabled={disabled}
-          className="p-1.5 rounded-lg text-navy/40 hover:text-navy hover:bg-navy/[0.05] disabled:opacity-30 disabled:pointer-events-none transition-colors"
-        >
-          <ChevronRight size={16} />
-        </button>
       </div>
 
       {/* Compare with — disabled when period is "all" */}
