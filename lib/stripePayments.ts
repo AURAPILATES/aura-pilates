@@ -396,7 +396,7 @@ export const loadPaymentsBreakdown = unstable_cache(
 
 // ── Compatibility shim: convert to Sale shape for existing charts ──────────────
 
-import type { Sale } from "./sales";
+import { normalizeItem, type Sale } from "./sales";
 
 const STRIPE_METHOD_LABEL: Record<string, string> = {
   card: "Tarjeta",
@@ -405,16 +405,26 @@ const STRIPE_METHOD_LABEL: Record<string, string> = {
   link: "Link",
 };
 
+// Categoría/producto derivados del importe (misma inferencia que usa ClientesTable),
+// no de la descripción cruda de Stripe — Momence no pasa metadatos de producto.
+function inferredCategory(type: StripePayment["inferredType"]): string {
+  if (type === "subscription") return "Suscripción";
+  if (type === "pack") return "Paquete";
+  return "Otro";
+}
+
 export function toSales(payments: StripePayment[]): Sale[] {
-  return payments.map((p) => ({
-    category: p.category,
-    item: p.description ?? p.category,
-    paymentDate: p.date,
-    serviceDate: p.date,
-    method: STRIPE_METHOD_LABEL[p.method] ?? p.method,
-    amount: p.amount,
-    tax: 0,
-    email: p.customerEmail,
-    name: p.customerName,
-  }));
+  return payments
+    .filter((p): p is StripePayment & { customerEmail: string } => !!p.customerEmail)
+    .map((p) => ({
+      category: inferredCategory(p.inferredType),
+      item: normalizeItem(p.inferredProduct, p.method),
+      paymentDate: p.date,
+      serviceDate: p.date,
+      method: STRIPE_METHOD_LABEL[p.method] ?? p.method,
+      amount: p.amount,
+      tax: 0,
+      email: p.customerEmail.trim().toLowerCase(),
+      name: p.customerName,
+    }));
 }

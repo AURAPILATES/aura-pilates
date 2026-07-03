@@ -106,12 +106,23 @@ Idea para más adelante: responder preguntas como "¿cuántos clientes vienen 2 
 ---
 
 ### Productos y ventas históricas — Momence (CSV)
-El desglose de ingresos por producto a lo largo del tiempo (breakeven, conversión del pack de bienvenida) usa el export manual, porque la API no tiene un endpoint de ventas/pedidos histórico.
+El breakeven desde el inicio y los ingresos de Urban Sports Club (paga por transferencia, sin fuente en vivo) siguen usando el export manual, porque la API no tiene un endpoint de ventas/pedidos histórico que ya esté habilitado en la cuenta.
 
 - **Qué se usa:** archivo `data/sales.csv` exportado manualmente desde Momence
 - **Qué contiene:** columnas de Categoría, Elemento, Fecha de pago, email del cliente, Método de pago, Valor de la venta
-- **Qué se calcula:** gráfico de donut por producto en Finanzas, breakeven desde el inicio, conversión Pack Benvinguda → Suscripción
+- **Qué se calcula:** breakeven desde el inicio, ingresos de Urban Sports Club
 - **Cómo actualizarlo:** descargar el CSV desde Momence (Informes → Exportar ventas) y reemplazar `data/sales.csv` en el repositorio
+- **Problema conocido (jul 2026):** este CSV es un export manual sin ninguna automatización — si nadie lo reemplaza, se queda desactualizado (detectado porque el gráfico de conversión del Pack Benvinguda no avanzaba). Por eso los dos usos que dependían de este CSV para datos recientes (conversión del pack, "cómo llegan los suscriptores") se migraron a Stripe en tiempo real — ver siguiente sección. Sigue siendo la única fuente para USC y para el breakeven histórico, así que hay que seguir actualizándolo si esas cifras dejan de cuadrar.
+
+---
+
+### Conversión Pack Benvinguda → Suscripción y "cómo llegan los suscriptores" — Stripe (estimación por importe, jul 2026)
+Antes usaban `data/sales.csv`; se migraron a Stripe en tiempo real porque el CSV requería reemplazo manual y se quedaba desactualizado sin avisar (ver arriba). Usan el mismo mecanismo que ya identifica el Pack Benvinguda en la tabla de Clientes (`ClientesTable.tsx`): `lib/stripePayments.ts` infiere el producto de cada cobro comparando el importe con la tabla fija de precios de Momence (`PRODUCT_MAP`), y `toSales()` convierte esos cobros al formato `Sale` que usa `lib/sales.ts` (`benvingudaConversion`, `subscriberFirstPurchase`).
+
+- **Qué se usa:** `stripe.charges.list()` (mismo que el resto de Finanzas) + `inferredProduct`/`inferredType` por importe
+- **Limitación:** es una estimación, igual que el resto de inferencias por importe de este dashboard — un pack o suscripción con cupón/descuento no coincide con el precio exacto y se cae a "Con cupón" (queda fuera de la cohorte), lo que puede sesgar ligeramente la tasa de conversión a la baja
+- **Por qué no se usa el catálogo en vivo de Momence (`catalogFromMomence`) aquí:** ese mecanismo (usado en el gráfico "Por producto") tiene un margen de tolerancia de ±2€ y se recalcula cada vez desde `GET /Memberships`; se descartó por ahora para mantener un único criterio de "qué es Pack Benvinguda" en todo el dashboard (el mismo que ya usa Clientes), no dos heurísticas distintas con resultados potencialmente distintos
+- **Migración pendiente a datos exactos:** la API pública v2 de Momence (`api.docs.momence.com`, distinta del endpoint interno `hostId`+`token` que usa `lib/momence.ts`) tiene un endpoint `GET /api/v2/host/sales` que devuelve cada venta con producto exacto (no inferido), email y fecha — pero está marcado como *"experimental feature, please contact support if you want to utilize this endpoint"* en su propia documentación. Hay que escribir a soporte de Momence para activarlo y crear un cliente OAuth2 en Apps & Integrations → Developer API. También existe `POST /api/v2/host/reports` + `GET /api/v2/host/reports/{reportRunId}` (genera un informe tipo `total-sales` de forma asíncrona) como alternativa. En cuanto Momence lo active, esto sustituiría tanto la estimación por Stripe como el CSV para estos dos gráficos.
 
 ---
 
@@ -162,7 +173,9 @@ Los datos de vacaciones se leen del archivo `data/vacaciones.json`. Para modific
 | Clientes | Stripe (tiempo real) | Automáticamente |
 | Finanzas – ingresos Stripe | Stripe (tiempo real) | Automáticamente |
 | Finanzas – MRR/ARR por suscripción | Momence `Customers` (tiempo real) | Automáticamente |
-| Finanzas – por producto / breakeven / conversión pack | Momence CSV (`data/sales.csv`) | Manual (reemplazar CSV) |
+| Finanzas – por producto | Momence `Memberships` (tiempo real) + Stripe | Automáticamente |
+| Finanzas – breakeven / Urban Sports Club | Momence CSV (`data/sales.csv`) | Manual (reemplazar CSV) |
+| Finanzas – conversión pack / cómo llegan los suscriptores | Stripe, producto inferido por importe (estimación) | Automáticamente |
 | Finanzas – gastos / saldo | CaixaBank CSV/Excel → Supabase | Manual (importar desde la app) |
 | Finanzas – financiación / préstamos | Supabase (tabla `budgets`) | Manual (editar desde la app) |
 | Transacciones | CaixaBank CSV/Excel → Supabase | Manual (importar desde la app) |

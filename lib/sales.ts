@@ -39,7 +39,7 @@ function normalizeCategory(s: string): string {
   return s;
 }
 
-function normalizeItem(item: string, method: string): string {
+export function normalizeItem(item: string, method: string): string {
   if (method === "urban-sports-club") return "Urban";
   if (/^B[^a-zA-Z]/.test(item) && item.includes("sic")) return "Subs bàsic";
   if (item === "Plus") return "Subs plus";

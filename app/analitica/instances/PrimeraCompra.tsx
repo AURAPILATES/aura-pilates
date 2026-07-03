@@ -15,8 +15,8 @@ export default function PrimeraCompra({ summary }: { summary: FirstPurchaseSumma
       title="¿Cómo llegan los suscriptores?"
       subtitle={`Primera compra de los ${totalSubscribers} clientes que alguna vez se suscribieron`}
       dateRange="Histórico completo"
-      dataSource="Momence CSV · primera compra = la de fecha más antigua de cada cliente, sea cual sea el producto"
-      sources={["momence"]}
+      dataSource="Stripe, producto identificado por importe del cobro (estimación) · primera compra = la de fecha más antigua de cada cliente, sea cual sea el producto"
+      sources={["stripe"]}
       lastUpdated="ahora"
     >
       {rows.length === 0 ? (

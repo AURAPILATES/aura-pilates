@@ -34,8 +34,8 @@ export default function ConversionPack({ summary }: { summary: ConversionSummary
         },
       ]}
       chartDescription={`Evolución mensual de la tasa de conversión del Pack Benvinguda, ${fmtPct(rate)} de media`}
-      dataSource="Cohorte = mes de compra del pack · Convertido = suscripción en fecha posterior · Momence + Stripe. Haz clic en un punto o una fila para ver el detalle."
-      sources={["momence", "stripe"]}
+      dataSource="Cohorte = mes de compra del pack · Convertido = suscripción en fecha posterior · Stripe, producto identificado por importe del cobro (estimación: pagos con cupón o descuento pueden quedar fuera). Haz clic en un punto o una fila para ver el detalle."
+      sources={["stripe"]}
       lastUpdated="ahora"
       aiInsight={
         insight.length > 0 && (

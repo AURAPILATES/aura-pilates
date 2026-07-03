@@ -200,8 +200,10 @@ export default async function AnaliticaLoader({
 
   const salesAll = toSales(paymentsAll);
 
-  // Momence CSV: solo se usa para lo histórico (breakeven, conversión del pack) y para
-  // Urban Sports Club, que paga por transferencia bancaria y no tiene fuente en vivo.
+  // Momence CSV: export manual, ya no se actualiza en tiempo real. Solo se usa para
+  // Urban Sports Club (paga por transferencia bancaria, sin fuente en vivo) y para
+  // breakeven histórico. Conversión del pack y "de dónde vienen los suscriptores" usan
+  // salesAll (Stripe + producto inferido por importe, igual que en Clientes) — en vivo.
   const momenceSalesAll = loadSales();
 
   // ── Urban Sports Club: ingresos desde Momence CSV (USC paga por transferencia, no Stripe) ──
@@ -254,10 +256,10 @@ export default async function AnaliticaLoader({
   const breakevenPoints = computeBreakeven(paymentsAll, momenceSalesAll, txnsAll, dbCategories);
 
   // ── Conversión Pack Benvinguda 2x1 → Suscripción ──────────────────────────
-  const conversionSummary = benvingudaConversion(momenceSalesAll);
+  const conversionSummary = benvingudaConversion(salesAll);
 
   // ── ¿De dónde vienen los suscriptores? (primera compra) ───────────────────
-  const firstPurchaseSummary = subscriberFirstPurchase(momenceSalesAll);
+  const firstPurchaseSummary = subscriberFirstPurchase(salesAll);
 
   // ── MRR/ARR por suscripción (suscriptores activos reales en Momence) ──────
   const subscriptionTiers = subscriptionTiersFromMemberships(membershipsAll);
