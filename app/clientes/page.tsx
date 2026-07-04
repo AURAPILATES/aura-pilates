@@ -1,27 +1,14 @@
 export const dynamic = "force-dynamic";
 
 import { Suspense } from "react";
-import ClientesFilterBar from "./ClientesFilterBar";
 import ClientesLoader from "./ClientesLoader";
 import ClientesSkeleton from "./ClientesSkeleton";
 import MobileNav from "@/app/components/MobileNav";
-import { resolvePeriod, pad2 } from "@/lib/periodCalculation";
+import { pad2 } from "@/lib/periodCalculation";
 
-export default async function ClientesPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
-}) {
-  const sp = await searchParams;
+export default async function ClientesPage() {
   const now = new Date();
-
-  const { from: mainFrom, to: mainTo, compFrom, compTo, periodLabel, compDateRange } = resolvePeriod(sp);
-
-  const curMonth  = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}`;
-  const prevMonth = (() => {
-    const d = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`;
-  })();
+  const curMonth = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}`;
 
   return (
     <div>
@@ -33,18 +20,8 @@ export default async function ClientesPage({
       </div>
 
       <div className="p-6 max-w-6xl mx-auto">
-        <ClientesFilterBar />
         <Suspense fallback={<ClientesSkeleton />}>
-          <ClientesLoader
-            mainFrom={mainFrom}
-            mainTo={mainTo}
-            compFrom={compFrom}
-            compTo={compTo}
-            periodLabel={periodLabel}
-            compDateRange={compDateRange}
-            curMonth={curMonth}
-            prevMonth={prevMonth}
-          />
+          <ClientesLoader curMonth={curMonth} />
         </Suspense>
       </div>
     </div>
