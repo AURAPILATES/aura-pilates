@@ -280,22 +280,25 @@ export default function DesglosGastosUnificado({
                             </button>
 
                             {hasChildren && catOpen && (
-                              <div className="pl-7 space-y-0.5">
-                                {c.children.map((ch) => {
-                                  const leafShare = c.total > 0 ? ch.total / c.total : 0;
-                                  return (
-                                    <button
-                                      key={ch.value}
-                                      type="button"
-                                      onClick={() => setSelected({ kind: "subcategory", group, parent: c, leaf: ch })}
-                                      className="w-full flex items-center gap-1.5 py-1.5 text-left rounded-lg px-2 -mx-2 hover:bg-navy/[0.02] transition-colors"
-                                    >
-                                      <span className="flex-1 min-w-0 text-[11.5px] text-navy/75 truncate">{ch.label}</span>
-                                      <span className="text-[11.5px] text-navy/75 tabular-nums text-right shrink-0">{fmtAmount(ch.total)}</span>
-                                      <span className="text-[10.5px] text-navy/45 tabular-nums text-right shrink-0 w-9">{pct(leafShare)}</span>
-                                    </button>
-                                  );
-                                })}
+                              <div className="relative">
+                                <div className="absolute left-[34px] top-0 bottom-0 w-px bg-navy/10" />
+                                <div className="pl-[52px] space-y-0.5">
+                                  {c.children.map((ch) => {
+                                    const leafShare = c.total > 0 ? ch.total / c.total : 0;
+                                    return (
+                                      <button
+                                        key={ch.value}
+                                        type="button"
+                                        onClick={() => setSelected({ kind: "subcategory", group, parent: c, leaf: ch })}
+                                        className="w-full flex items-center gap-1.5 py-1.5 text-left rounded-lg px-2 -mx-2 hover:bg-navy/[0.02] transition-colors"
+                                      >
+                                        <span className="flex-1 min-w-0 text-[11.5px] text-navy/75 truncate">{ch.label}</span>
+                                        <span className="text-[11.5px] text-navy/75 tabular-nums text-right shrink-0">{fmtAmount(ch.total)}</span>
+                                        <span className="text-[10.5px] text-navy/45 tabular-nums text-right shrink-0 w-9">{pct(leafShare)}</span>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
                               </div>
                             )}
                           </div>
