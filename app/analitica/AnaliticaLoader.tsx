@@ -33,7 +33,7 @@ import { computeBreakeven } from "@/lib/breakeven";
 import ConversionPack from "./instances/ConversionPack";
 import { subscriptionTiersFromMemberships, computeMrrByTier } from "@/lib/mrr";
 import { getMemberships, getProducts, getCustomers } from "@/lib/momence";
-import { catalogFromMomence, revenueByProductByMonth, addUscToMonthlyRevenue } from "@/lib/productRevenue";
+import { catalogFromMomence, revenueByProductByMonth } from "@/lib/productRevenue";
 import { computeSubscriptionCohorts, computeRetentionCohorts } from "@/lib/subscriptionCohort";
 import EvolucionSuscripcionesFullWidth from "./instances/EvolucionSuscripcionesFullWidth";
 import RetencionCohorte from "./instances/RetencionCohorte";
@@ -267,7 +267,6 @@ export default async function AnaliticaLoader({
     const m = s.paymentDate.slice(0, 7);
     uscByMonth.set(m, (uscByMonth.get(m) ?? 0) + s.amount);
   }
-  const monthlyRevenue = addUscToMonthlyRevenue(monthlyStripeRevenue, uscByMonth);
 
   // Ingresos por fuente: bruto, comisión y neto de Stripe por mes + USC neto
   const monthlyStripeGrossMap = new Map<string, number>();
@@ -626,7 +625,7 @@ export default async function AnaliticaLoader({
                 <PrimeraCompra summary={firstPurchaseSummary} />
               </div>
               <EvolucionInscritos data={activeCustomersData} />
-              <EvolucionSuscripcionesFullWidth monthly={monthlyRevenue} cohorts={subscriptionCohorts} events={businessEvents} rawPayments={pMain} />
+              <EvolucionSuscripcionesFullWidth monthly={monthlyStripeRevenue} cohorts={subscriptionCohorts} events={businessEvents} rawPayments={pMain} />
               <RetencionCohorte cohorts={retentionCohorts} />
               <ConversionPack summary={conversionSummary} />
             </div>

@@ -128,7 +128,6 @@ export default function EvolucionSuscripcionesFullWidth({
     });
   }
   if (lastCohort) {
-    kpiItems.push({ label: "Suscritos activos", value: String(lastCohort.activeCount) });
     kpiItems.push({
       label: "Altas / Bajas",
       value: (
@@ -171,8 +170,8 @@ export default function EvolucionSuscripcionesFullWidth({
             </div>
           </>
         }
-        dataSource="Ingresos: Stripe + catálogo Momence en vivo (Urban Sports Club desde CSV) · Altas/bajas/reactivaciones identificadas por el patrón de pagos de suscripción en Stripe"
-        sources={["stripe", "momence"]}
+        dataSource="Ingresos de procedencia interna (Stripe) · catálogo Momence en vivo · Altas/bajas/reactivaciones identificadas por el patrón de pagos de suscripción en Stripe"
+        sources={["stripe"]}
         lastUpdated="ahora"
         aiInsight={
           trendSummary.length > 0 && (
