@@ -370,12 +370,12 @@ function AnaliticaFilterBarInner() {
   return (
     <div className="flex flex-col sm:flex-row sm:items-center sm:flex-wrap gap-3 sm:gap-2 mb-4 pb-4 border-b border-navy/[0.06]">
       <div ref={ref} className="relative">
-        <div className="flex items-center bg-white border border-navy/[0.13] rounded-xl text-navy overflow-hidden">
+        <div className="flex items-center bg-white border border-navy/[0.13] rounded-xl text-navy overflow-hidden w-full sm:w-auto">
           <button
             type="button"
             onClick={() => step(-1)}
             disabled={disabled}
-            className="p-1.5 text-navy/40 hover:text-navy hover:bg-navy/[0.05] disabled:opacity-30 disabled:pointer-events-none transition-colors"
+            className="shrink-0 p-1.5 text-navy/40 hover:text-navy hover:bg-navy/[0.05] disabled:opacity-30 disabled:pointer-events-none transition-colors"
           >
             <ChevronLeft size={16} />
           </button>
@@ -383,13 +383,13 @@ function AnaliticaFilterBarInner() {
           <button
             type="button"
             onClick={() => setOpen((o) => !o)}
-            className="flex items-center gap-2 px-2 py-1.5 text-sm font-semibold outline-none cursor-pointer hover:bg-navy/[0.03] transition-colors"
+            className="flex-1 flex items-center justify-center gap-2 px-2 py-1.5 text-sm font-semibold outline-none cursor-pointer hover:bg-navy/[0.03] transition-colors"
           >
             <span className={isPending ? "opacity-50 transition-opacity" : "transition-opacity"}>{label}</span>
             {isPending ? (
               <span className="w-2 h-2 rounded-full bg-primary/50 animate-pulse" />
             ) : (
-              <ChevronDown size={12} className={`text-navy/35 transition-transform ${open ? "rotate-180" : ""}`} />
+              <ChevronDown size={12} className={`shrink-0 text-navy/35 transition-transform ${open ? "rotate-180" : ""}`} />
             )}
           </button>
 
@@ -397,7 +397,7 @@ function AnaliticaFilterBarInner() {
             type="button"
             onClick={() => step(1)}
             disabled={disabled}
-            className="p-1.5 text-navy/40 hover:text-navy hover:bg-navy/[0.05] disabled:opacity-30 disabled:pointer-events-none transition-colors"
+            className="shrink-0 p-1.5 text-navy/40 hover:text-navy hover:bg-navy/[0.05] disabled:opacity-30 disabled:pointer-events-none transition-colors"
           >
             <ChevronRight size={16} />
           </button>
