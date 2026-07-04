@@ -15,13 +15,13 @@ type Props<T extends string> = {
 
 export default function SectionTabs<T extends string>({ tabs, active, onChange, className = "" }: Props<T>) {
   return (
-    <div className={`flex items-center gap-1 border-b border-navy/[0.08] pb-2 ${className}`}>
+    <div className={`flex flex-col sm:flex-row sm:items-center gap-1 border-b border-navy/[0.08] pb-2 ${className}`}>
       {tabs.map(({ key, label, badge }) => (
         <button
           key={key}
           type="button"
           onClick={() => onChange(key)}
-          className={`relative text-sm font-medium transition-colors rounded-lg ${
+          className={`relative w-full sm:w-auto text-left whitespace-nowrap text-sm font-medium transition-colors rounded-lg ${
             active === key
               ? "text-navy bg-white border border-navy/[0.15]"
               : "text-navy/50 hover:text-navy"
@@ -36,7 +36,7 @@ export default function SectionTabs<T extends string>({ tabs, active, onChange, 
             )}
           </span>
           {active === key && (
-            <span className="absolute -bottom-2.5 left-0 right-0 h-px bg-navy" />
+            <span className="hidden sm:block absolute -bottom-2.5 left-0 right-0 h-px bg-navy" />
           )}
         </button>
       ))}

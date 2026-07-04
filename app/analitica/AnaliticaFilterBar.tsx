@@ -61,11 +61,11 @@ function SelectPill({
   children: React.ReactNode;
 }) {
   return (
-    <div className="relative inline-flex items-center">
+    <div className="relative inline-flex items-center w-full sm:w-auto">
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="appearance-none bg-white border border-navy/[0.13] rounded-xl pl-3 pr-7 py-1.5 text-sm font-semibold text-navy shadow-sm outline-none cursor-pointer hover:border-navy/25 transition-colors"
+        className="w-full sm:w-auto appearance-none bg-white border border-navy/[0.13] rounded-xl pl-3 pr-7 py-1.5 text-sm font-semibold text-navy shadow-sm outline-none cursor-pointer hover:border-navy/25 transition-colors"
       >
         {children}
       </select>
@@ -185,26 +185,28 @@ function CalendarRangePicker({
   if (rightMonth > 12) { rightMonth = 1; rightYear += 1; }
 
   return (
-    <div className="border-t border-navy/[0.08] p-4">
-      <div className="flex items-start gap-3">
-        <button type="button" onClick={() => shiftView(-1)} className="p-1 text-navy/40 hover:text-navy transition-colors">
+    <div className="border-t border-navy/[0.08] p-4 w-full sm:w-auto">
+      <div className="flex items-start gap-2 sm:gap-3">
+        <button type="button" onClick={() => shiftView(-1)} className="shrink-0 p-1 text-navy/40 hover:text-navy transition-colors">
           <ChevronLeft size={16} />
         </button>
         <CalendarMonth year={viewYear} month={viewMonth} rangeStart={rangeStart} rangeEnd={rangeEnd} onDayClick={handleDayClick} />
-        <CalendarMonth year={rightYear} month={rightMonth} rangeStart={rangeStart} rangeEnd={rangeEnd} onDayClick={handleDayClick} />
-        <button type="button" onClick={() => shiftView(1)} className="p-1 text-navy/40 hover:text-navy transition-colors">
+        <div className="hidden sm:block flex-1 min-w-[220px]">
+          <CalendarMonth year={rightYear} month={rightMonth} rangeStart={rangeStart} rangeEnd={rangeEnd} onDayClick={handleDayClick} />
+        </div>
+        <button type="button" onClick={() => shiftView(1)} className="shrink-0 p-1 text-navy/40 hover:text-navy transition-colors">
           <ChevronRight size={16} />
         </button>
       </div>
 
-      <div className="flex items-center gap-2 mt-3">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-3">
         <input
           type="date"
           value={rangeStart ? toISO(rangeStart) : ""}
           onChange={(e) => setRangeStart(e.target.value ? fromISO(e.target.value) : null)}
           className="flex-1 text-sm border border-navy/[0.15] rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary/30 text-navy"
         />
-        <span className="text-navy/30">–</span>
+        <span className="text-navy/30 text-center sm:text-left">–</span>
         <input
           type="date"
           value={rangeEnd ? toISO(rangeEnd) : ""}
@@ -366,7 +368,7 @@ function AnaliticaFilterBarInner() {
   const disabled = activePeriod === "all";
 
   return (
-    <div className="flex flex-wrap items-center gap-2 mb-4 pb-4 border-b border-navy/[0.06]">
+    <div className="flex flex-col sm:flex-row sm:items-center sm:flex-wrap gap-3 sm:gap-2 mb-4 pb-4 border-b border-navy/[0.06]">
       <div ref={ref} className="relative">
         <div className="flex items-center bg-white border border-navy/[0.13] rounded-xl text-navy overflow-hidden">
           <button
@@ -402,9 +404,9 @@ function AnaliticaFilterBarInner() {
         </div>
 
         {open && (
-            <div className="absolute left-0 top-full mt-1.5 z-50 bg-white border border-navy/[0.12] rounded-xl shadow-lg overflow-hidden">
-              <div className="flex">
-                <ul className="py-1 min-w-[220px]">
+            <div className="absolute left-0 top-full mt-1.5 z-50 bg-white border border-navy/[0.12] rounded-xl shadow-lg overflow-hidden max-w-[calc(100vw-2rem)] max-h-[70vh] overflow-y-auto">
+              <div className="flex flex-col sm:flex-row">
+                <ul className="py-1 w-full sm:min-w-[220px]">
                   {availableYears.map((y) => (
                     <li key={y}>
                       <button
@@ -452,7 +454,7 @@ function AnaliticaFilterBarInner() {
                 </ul>
 
                 {expandedYear && (
-                  <ul className="py-1 min-w-[150px] border-l border-navy/[0.08] max-h-80 overflow-y-auto">
+                  <ul className="py-1 w-full sm:min-w-[150px] border-t sm:border-t-0 sm:border-l border-navy/[0.08] max-h-80 overflow-y-auto">
                     <li className="border-b border-navy/[0.08] pb-1 mb-1">
                       <button
                         type="button"
@@ -508,7 +510,7 @@ function AnaliticaFilterBarInner() {
       </div>
 
       {/* Compare with — disabled when period is "all" */}
-      <div className={`flex items-center gap-2 sm:ml-auto ${disabled ? "opacity-35 pointer-events-none" : ""}`}>
+      <div className={`flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 sm:ml-auto ${disabled ? "opacity-35 pointer-events-none" : ""}`}>
         <span className="text-[11px] text-navy/40">Comparar con</span>
         <SelectPill value={compareWith} onChange={(v) => update({ compareWith: v })}>
           {COMPARE_OPTIONS.map((opt) => (

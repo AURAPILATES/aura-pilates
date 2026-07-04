@@ -567,7 +567,6 @@ export default async function AnaliticaLoader({
                 transactionsByCategory={transactionsByCategory}
                 totalExpCat={totalExpCat}
                 totalExpCatNoCapex={totalExpCatNoCapex}
-                burnByMonth={Object.fromEntries(burnByMonth)}
                 rangeLabel={txnRangeLabel}
               />
               <PrevisionGastos forecasts={recurringForecasts} categories={dbCategories} avgSuministros={avgSuministros} />

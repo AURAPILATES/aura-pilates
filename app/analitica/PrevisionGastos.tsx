@@ -10,7 +10,7 @@ import type { Category } from "@/lib/categories";
 
 type SortKey = "fecha" | "categoria" | "importe";
 
-type ListItem = RecurringForecast & { variable?: boolean; categoryLabel: string };
+type ListItem = RecurringForecast & { variable?: boolean; categoryLabel: string; categoryColor: string };
 
 const MONTH_ES: Record<string, string> = {
   "01":"ene","02":"feb","03":"mar","04":"abr","05":"may","06":"jun",
@@ -65,24 +65,23 @@ function groupByWeek(items: ListItem[]): { label: string; items: ListItem[]; sub
 
 function ItemRow({ item }: { item: ListItem }) {
   return (
-    <div className="flex items-center justify-between gap-3 py-2.5">
-      <div className="min-w-0">
-        <div className="flex items-center gap-1.5">
-          <p className="text-sm font-medium text-navy truncate">{item.label}</p>
-          {item.variable && (
-            <span className="shrink-0 text-[10px] font-semibold text-warning bg-warning/10 px-1.5 py-0.5 rounded">
-              variable
-            </span>
-          )}
-        </div>
-        <p className="text-xs text-navy/45 truncate">{item.categoryLabel}</p>
-      </div>
-      <div className="text-right shrink-0">
-        <p className="text-sm font-semibold text-navy tabular-nums">{fmt(Math.abs(item.amount))}</p>
-        <p className="text-xs text-navy/40 tabular-nums">
-          {item.variable ? `~${fmtDate(item.nextDate)}` : fmtDate(item.nextDate)}
-        </p>
-      </div>
+    <div className="flex items-center gap-2 py-1.5 px-1.5 -mx-1.5 rounded-md hover:bg-navy/[0.025] transition-colors">
+      <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: item.categoryColor }} />
+      <p className="text-[13px] font-medium text-navy truncate flex-1 min-w-0">{item.label}</p>
+      {item.variable && (
+        <span className="shrink-0 text-[10px] font-semibold text-warning bg-warning/10 px-1.5 py-0.5 rounded">
+          variable
+        </span>
+      )}
+      <span className="hidden sm:block shrink-0 text-[11px] text-navy/45 bg-navy/[0.045] px-1.5 py-0.5 rounded truncate max-w-[110px]">
+        {item.categoryLabel}
+      </span>
+      <span className="text-xs text-navy/40 tabular-nums shrink-0 w-10 text-right">
+        {item.variable ? `~${fmtDate(item.nextDate)}` : fmtDate(item.nextDate)}
+      </span>
+      <span className="text-[13px] font-semibold text-navy tabular-nums shrink-0 w-16 text-right">
+        {fmt(Math.abs(item.amount))}
+      </span>
     </div>
   );
 }
@@ -98,22 +97,30 @@ export default function PrevisionGastos({
 }) {
   const [sort, setSort] = useState<SortKey>("fecha");
 
+  const FALLBACK_COLOR = "#9CA3AF";
+
   function categoryLabel(value: string | null): string {
     if (!value) return "";
     return categories.find((c) => c.value === value)?.label ?? value;
+  }
+
+  function categoryColor(value: string | null): string {
+    if (!value) return FALLBACK_COLOR;
+    return categories.find((c) => c.value === value)?.text_color ?? FALLBACK_COLOR;
   }
 
   const committed    = forecasts.reduce((s, f) => s + Math.abs(f.amount), 0);
   const totalPrevisto = committed + avgSuministros;
 
   const items: ListItem[] = [
-    ...forecasts.map((f) => ({ ...f, categoryLabel: categoryLabel(f.category) })),
+    ...forecasts.map((f) => ({ ...f, categoryLabel: categoryLabel(f.category), categoryColor: categoryColor(f.category) })),
     ...(avgSuministros > 0
       ? [{
           key: "__suministros__",
           label: "Suministros",
           category: "suministros",
           categoryLabel: "Local",
+          categoryColor: categoryColor("suministros"),
           period: "mensual",
           amount: -avgSuministros,
           lastDate: "",
@@ -210,30 +217,24 @@ export default function PrevisionGastos({
 
           {/* Punto 2: agrupación semanal cuando sort = fecha, lista plana en otros modos */}
           {weekGroups ? (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {weekGroups.map((group) => (
                 <div key={group.label}>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[11px] font-semibold text-navy/40 uppercase tracking-wider">{group.label}</span>
-                    <span className="text-[11px] font-semibold text-navy/40 tabular-nums">{fmt(group.subtotal)}</span>
+                  <div className="flex items-center justify-between mb-0.5 px-1.5">
+                    <span className="text-[10.5px] font-semibold text-navy/40 uppercase tracking-wider">{group.label}</span>
+                    <span className="text-[10.5px] font-semibold text-navy/40 tabular-nums">{fmt(group.subtotal)}</span>
                   </div>
-                  <div className="divide-y divide-navy/[0.05]">
+                  <div>
                     {group.items.map((item) => <ItemRow key={item.key} item={item} />)}
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="divide-y divide-navy/[0.05]">
+            <div>
               {sorted.map((item) => <ItemRow key={item.key} item={item} />)}
             </div>
           )}
-
-          {/* Footer total */}
-          <div className="flex items-center justify-between pt-3 mt-3 border-t border-navy/[0.07]">
-            <span className="text-xs text-navy/50">Total previsto · 30 días</span>
-            <span className="text-sm font-semibold text-navy tabular-nums">{fmt(totalPrevisto)}</span>
-          </div>
         </>
       )}
 
