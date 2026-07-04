@@ -23,7 +23,6 @@ import { loadCategoriesCached, type Category } from "@/lib/categories";
 import { loadRecurringExpensesCached, forecastConfirmedExpenses } from "@/lib/recurringExpenses";
 import DesglosGastosUnificado from "./instances/DesglosGastosUnificado";
 import CockpitFinanciero from "./instances/CockpitFinanciero";
-import Ingresos from "./instances/Ingresos";
 import IngresosPorFuente from "./instances/IngresosPorFuente";
 import type { IngresosPorFuenteRow } from "./instances/IngresosPorFuenteBody";
 import EvolucionInscritos from "./instances/EvolucionInscritos";
@@ -34,7 +33,7 @@ import { computeBreakeven } from "@/lib/breakeven";
 import ConversionPack from "./instances/ConversionPack";
 import { subscriptionTiersFromMemberships, computeMrrByTier } from "@/lib/mrr";
 import { getMemberships, getProducts, getCustomers } from "@/lib/momence";
-import { catalogFromMomence, revenueByProductFromStripe, revenueByProductByMonth, addUscToMonthlyRevenue } from "@/lib/productRevenue";
+import { catalogFromMomence, revenueByProductByMonth, addUscToMonthlyRevenue } from "@/lib/productRevenue";
 import { computeSubscriptionCohorts, computeRetentionCohorts } from "@/lib/subscriptionCohort";
 import EvolucionSuscripcionesFullWidth from "./instances/EvolucionSuscripcionesFullWidth";
 import RetencionCohorte from "./instances/RetencionCohorte";
@@ -51,7 +50,6 @@ import SectionHeader from "./SectionHeader";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-const PRODUCT_COLORS = ["#6B7ED6","#9260B8","#D4AA35","#4A7A9B","#4A9870","#D46055","#C46890","#3AA09C"];
 const EXPENSE_COLORS = ["#6B7ED6","#9260B8","#D4AA35","#4A7A9B","#4A9870","#D46055","#C46890","#3AA09C","#8878C0"];
 const BURN_CATS = new Set([
   "Alquiler","Salarios","Seguridad social","Electricidad","Agua","Software","Gestoría y legal",
@@ -184,7 +182,6 @@ export default async function AnaliticaLoader({
 
   // ── Recurrencia (derivada de pagos, no de suscripciones Stripe) ──
   const recurringIds    = recurringCustomerIds(paymentsAll, curMonth);
-  const activeSubsCount = recurringIds.size;
   const realMrr         = estimatedMRR(paymentsAll, curMonth);
 
   // Recurrentes activas: ≥2 pagos en últimos 3 meses Y pagaron en los últimos 30 días
@@ -196,9 +193,6 @@ export default async function AnaliticaLoader({
       .filter((p) => p.customerId && recurringIds.has(p.customerId) && p.date >= thirtyDaysAgoStr)
       .map((p) => p.customerId!)
   ).size;
-
-  const recurrente = pMain.filter((p) => p.customerId && recurringIds.has(p.customerId)).reduce((s, p) => s + p.amount, 0);
-  const puntual    = totalRev - recurrente;
 
   const salesAll = toSales(paymentsAll);
 
@@ -238,9 +232,6 @@ export default async function AnaliticaLoader({
 
   const paymentsBounded = uscLastDate ? pMain.filter((p) => p.date <= uscLastDate) : pMain;
   const productCatalog = catalogFromMomence(membershipsAll, productsAll);
-  const liveProductRevenue = revenueByProductFromStripe(pMain, productCatalog);
-  const byProduct = [...liveProductRevenue].sort((a, b) => b.revenue - a.revenue);
-  const byProductTotal = byProduct.reduce((s, p) => s + p.revenue, 0);
 
   const byMethodBounded = stripeByMethod(paymentsBounded);
 
@@ -385,11 +376,6 @@ export default async function AnaliticaLoader({
   const estGastosMes  = curMonthBurnFromData > 0 ? curMonthBurnFromData : avgMonthlyBurn;
   const isGastosEst   = curMonthBurnFromData === 0;
   const resultadoMes  = (cur + uscCur) - estGastosMes;
-
-  const productSegments = byProduct.map((p, i) => {
-    const share = byProductTotal > 0 ? p.revenue / byProductTotal : 0;
-    return { ...p, share, color: PRODUCT_COLORS[i % PRODUCT_COLORS.length] };
-  });
 
   // ── Fiscal ──
   const today = new Date();
@@ -601,24 +587,10 @@ export default async function AnaliticaLoader({
               stripeFees={stripeFees}
               stripeNet={stripeNet}
               uscGross={uscRevenue}
+              paymentsCount={pMain.length}
               monthly={monthlyByFuente}
               dateRange={periodLabel}
               lastUpdated={liveLastUpdated}
-            />
-            <Ingresos
-              recurrente={recurrente}
-              puntual={puntual}
-              totalRev={totalRev}
-              stripeFees={stripeFees}
-              stripeNet={stripeNet}
-              paymentsCount={pMain.length}
-              activeSubsCount={activeSubsCount}
-              periodLabel={periodLabel}
-              productSegments={productSegments.map((seg) => ({
-                item: seg.item, revenue: seg.revenue, count: seg.count, share: seg.share, color: seg.color,
-              }))}
-              productTotal={byProductTotal}
-              tiers={mrrByTier}
             />
           </div>
         </section>

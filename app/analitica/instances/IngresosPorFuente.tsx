@@ -3,7 +3,8 @@
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import { BarChart2, Activity } from "react-feather";
-import { ChartCard, ChartTypeToggle, CollapsibleTable } from "@/components/charts";
+import { ChartCard, ChartTypeToggle, CollapsibleTable, InteractiveLegend } from "@/components/charts";
+import { pct } from "@/lib/analytics";
 import type { IngresosPorFuenteRow } from "./IngresosPorFuenteBody";
 
 const USC_PRICE_STUDIO = 20;  // precio tarifa Aura por clase suelta
@@ -23,6 +24,7 @@ export default function IngresosPorFuente({
   stripeFees,
   stripeNet,
   uscGross,
+  paymentsCount,
   monthly,
   dateRange,
   lastUpdated,
@@ -31,6 +33,7 @@ export default function IngresosPorFuente({
   stripeFees: number;
   stripeNet: number;
   uscGross: number;
+  paymentsCount: number;
   monthly: IngresosPorFuenteRow[];
   dateRange?: string;
   lastUpdated?: string | null;
@@ -98,22 +101,42 @@ export default function IngresosPorFuente({
               />
             ))}
           </div>
-          <div className="space-y-2.5">
-            {SOURCES.map((s) => (
-              <div key={s.key} className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-1.5 min-w-0">
-                  <span className="w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: s.color }} />
-                  <span className="text-xs text-navy/70 truncate">{s.label}</span>
-                </div>
-                <div className="text-right shrink-0">
-                  <span className="text-xs font-semibold text-navy tabular-nums">{fmtEur(s.value)}</span>
-                  <span className="text-[11px] text-navy/40 ml-1">{totalNet > 0 ? `${Math.round(s.value / totalNet * 100)}%` : "—"}</span>
-                </div>
-              </div>
-            ))}
-          </div>
+          <InteractiveLegend
+            items={SOURCES.map((s) => ({
+              key: s.key,
+              label: s.label,
+              color: s.color,
+              value: fmtEur(s.value),
+              helper: totalNet > 0 ? `${Math.round((s.value / totalNet) * 100)}%` : "—",
+            }))}
+          />
         </div>
       </div>
+
+      {stripeFees > 0 && (
+        <div className="mt-5 border border-navy/[0.07] rounded-xl overflow-hidden">
+          <div className="px-3.5 py-2.5 border-b border-navy/[0.07]">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-navy/50">Comisiones Stripe</p>
+          </div>
+          <div className="grid grid-cols-3 divide-x divide-navy/[0.06]">
+            <div className="px-3.5 py-2.5">
+              <p className="text-[10px] uppercase tracking-wide text-navy/45 mb-0.5">Bruto</p>
+              <p className="text-base font-medium text-navy">{fmtEur(stripeGross)}</p>
+              <p className="text-[11px] text-navy/45">{paymentsCount} cobros</p>
+            </div>
+            <div className="px-3.5 py-2.5">
+              <p className="text-[10px] uppercase tracking-wide text-navy/45 mb-0.5">Comisión</p>
+              <p className="text-base font-medium text-danger">−{fmtEur(stripeFees)}</p>
+              <p className="text-[11px] text-navy/45">{pct(stripeGross > 0 ? stripeFees / stripeGross : 0)} del bruto</p>
+            </div>
+            <div className="px-3.5 py-2.5">
+              <p className="text-[10px] uppercase tracking-wide text-navy/45 mb-0.5">Neto</p>
+              <p className="text-base font-medium text-success">{fmtEur(stripeNet)}</p>
+              <p className="text-[11px] text-navy/45">al banco</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <CollapsibleTable>
         <table className="w-full min-w-max text-xs">
