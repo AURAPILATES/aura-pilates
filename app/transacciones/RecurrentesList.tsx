@@ -64,14 +64,6 @@ function fmtEUR(n: number): string {
   return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(n);
 }
 
-function dueLabel(daysUntil: number | null): { text: string; className: string } {
-  if (daysUntil === null) return { text: "—", className: "text-navy/40" };
-  if (daysUntil < 0) return { text: `vencido hace ${Math.abs(daysUntil)}d`, className: "text-danger font-medium" };
-  if (daysUntil === 0) return { text: "hoy", className: "text-danger font-medium" };
-  if (daysUntil <= 7) return { text: `en ${daysUntil}d`, className: "text-warning" };
-  return { text: `en ${daysUntil}d`, className: "text-navy/50" };
-}
-
 function initials(label: string): string {
   return label.split(" ").filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
 }
@@ -381,31 +373,36 @@ function ConfirmPendingDrawer({ row, period, pick, end, contacts, onClose, onPer
   );
 }
 
-function ConfirmedTableRow({ row, categories, contacts, onOpen }: { row: ConfirmedExpenseRow; categories: Category[]; contacts: Contact[]; onOpen: () => void }) {
+/** Fila de una sola línea (estilo Linear, ver PrevisionGastos.tsx): sin tabla ni fecha de
+ * vencimiento, solo lo estable — contacto, categoría, periodicidad, fiscalidad e importe. */
+function ConfirmedRow({ row, categories, contacts, onOpen }: { row: ConfirmedExpenseRow; categories: Category[]; contacts: Contact[]; onOpen: () => void }) {
   const e = row.expense;
-  const due = dueLabel(row.daysUntil);
   const catLabel = e.category ? categories.find((c) => c.value === e.category) : null;
   const contact = e.contact_id != null ? contacts.find((c) => c.id === e.contact_id) : undefined;
   const label = contact?.label ?? e.label;
+  const dotColor = catLabel?.text_color ?? "#9CA3AF";
 
   return (
-    <tr onClick={onOpen} className="border-b border-navy/[0.04] last:border-0 cursor-pointer hover:bg-navy/[0.02] transition-colors">
-      <td className="px-4 py-2.5">
-        <div className="flex items-center gap-2.5">
-          <ContactAvatar label={label} resolved={!!contact} size={28} />
-          <div className="min-w-0">
-            <p className="text-sm font-medium text-navy truncate">{label}</p>
-            {catLabel && <p className="text-[11px] text-navy/40 truncate">{categoryDisplayLabel(catLabel, categories)}</p>}
-          </div>
-        </div>
-      </td>
-      <td className="px-4 py-2.5 text-sm text-navy/70 capitalize whitespace-nowrap">{e.period}</td>
-      <td className="px-4 py-2.5 text-sm text-navy/70 whitespace-nowrap">IVA {e.iva_rate}% / Ret {e.retencion_rate}%</td>
-      <td className="px-4 py-2.5 text-right whitespace-nowrap">
-        <p className="text-sm font-semibold text-navy tabular-nums">{fmtEUR(Math.abs(e.amount))}</p>
-        <p className={`text-xs tabular-nums ${due.className}`}>{due.text}</p>
-      </td>
-    </tr>
+    <button
+      type="button"
+      onClick={onOpen}
+      className="w-full flex items-center gap-2.5 py-2.5 px-4 hover:bg-navy/[0.025] transition-colors text-left"
+    >
+      <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: dotColor }} />
+      <span className="text-[13px] font-medium text-navy truncate flex-1 min-w-0">{label}</span>
+      {catLabel && (
+        <span className="hidden sm:block shrink-0 text-[11px] text-navy/45 bg-navy/[0.045] px-1.5 py-0.5 rounded truncate max-w-[140px]">
+          {categoryDisplayLabel(catLabel, categories)}
+        </span>
+      )}
+      <span className="hidden md:block shrink-0 text-[11px] text-navy/40 capitalize w-16 text-right">{e.period}</span>
+      <span className="hidden lg:block shrink-0 text-[11px] text-navy/40 w-28 text-right">
+        IVA {e.iva_rate}% / Ret {e.retencion_rate}%
+      </span>
+      <span className="text-[13px] font-semibold text-navy tabular-nums shrink-0 w-20 text-right">
+        {fmtEUR(Math.abs(e.amount))}
+      </span>
+    </button>
   );
 }
 
@@ -418,7 +415,6 @@ function RecurringExpenseDrawer({ row, categories, contacts, onClose, onOpenCont
 }) {
   const e = row.expense;
   const router = useRouter();
-  const due = dueLabel(row.daysUntil);
   const catLabel = e.category ? categories.find((c) => c.value === e.category) : null;
   const contact = e.contact_id != null ? contacts.find((c) => c.id === e.contact_id) : undefined;
   const label = contact?.label ?? e.label;
@@ -486,16 +482,12 @@ function RecurringExpenseDrawer({ row, categories, contacts, onClose, onOpenCont
         )
       }
     >
-      <div className="grid grid-cols-2 gap-3 p-4 border-b border-navy/[0.06]">
-        <div className="bg-navy/[0.02] rounded-xl px-3 py-2.5">
-          <p className="text-[11px] text-navy/40">Importe</p>
-          <p className="text-lg font-semibold text-navy">{fmtEUR(Math.abs(e.amount))}</p>
-        </div>
-        <div className="bg-navy/[0.02] rounded-xl px-3 py-2.5">
-          <p className="text-[11px] text-navy/40">Próximo pago</p>
-          <p className={`text-sm font-semibold ${due.className}`}>{due.text}</p>
-          {row.nextDate && <p className="text-[11px] text-navy/40 mt-0.5">{fmtDate(row.nextDate)}</p>}
-        </div>
+      <div className="p-4 border-b border-navy/[0.06]">
+        <p className="bg-navy/[0.02] rounded-xl px-3 py-2.5 inline-block">
+          <span className="block text-[11px] text-navy/40">Importe</span>
+          <span className="text-lg font-semibold text-navy">{fmtEUR(Math.abs(e.amount))}</span>
+        </p>
+        {row.lastDate && <p className="text-xs text-navy/40 mt-2">Último pago: {fmtDate(row.lastDate)}</p>}
       </div>
 
       <div className="p-4 border-b border-navy/[0.06]">
@@ -715,28 +707,16 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
         {confirmed.length === 0 ? (
           <p className="text-sm text-navy/40 px-4 py-6">Sin gastos recurrentes confirmados todavía.</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-navy/[0.02] border-b border-navy/[0.06]">
-                  <th className="text-left px-4 py-2 text-[11px] text-navy/45 font-semibold uppercase tracking-wide">Contacto / Concepto</th>
-                  <th className="text-left px-4 py-2 text-[11px] text-navy/45 font-semibold uppercase tracking-wide">Periodicidad</th>
-                  <th className="text-left px-4 py-2 text-[11px] text-navy/45 font-semibold uppercase tracking-wide">Configuración fiscal</th>
-                  <th className="text-right px-4 py-2 text-[11px] text-navy/45 font-semibold uppercase tracking-wide">Próximo pago</th>
-                </tr>
-              </thead>
-              <tbody>
-                {confirmed.map((row) => (
-                  <ConfirmedTableRow
-                    key={row.expense.id}
-                    row={row}
-                    categories={categories}
-                    contacts={contacts}
-                    onOpen={() => setOpenConfirmedId(row.expense.id)}
-                  />
-                ))}
-              </tbody>
-            </table>
+          <div className="divide-y divide-navy/[0.05]">
+            {confirmed.map((row) => (
+              <ConfirmedRow
+                key={row.expense.id}
+                row={row}
+                categories={categories}
+                contacts={contacts}
+                onOpen={() => setOpenConfirmedId(row.expense.id)}
+              />
+            ))}
           </div>
         )}
       </SectionCard>

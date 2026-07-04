@@ -81,7 +81,26 @@ export default async function TransaccionesPage(props: {
     pendingGroups.set(groupKey, group);
   }
 
-  const pendingRecurring: PendingSeriesRow[] = [...pendingGroups.values()].map((g) => {
+  // Un gasto ya confirmado puede reaparecer como "detectado" bajo otra key (p. ej. porque el
+  // heurístico agrupó por concepto en vez de por contacto en algunos movimientos antiguos).
+  // Se descarta cualquier grupo pendiente cuyo contacto+importe (o etiqueta+importe si no hay
+  // contacto vinculado) ya coincida con un recurrente confirmado, para no duplicar la fila.
+  const confirmedByContactAmount = new Set<string>();
+  const confirmedByLabelAmount = new Set<string>();
+  for (const e of expenses) {
+    if (e.status !== "confirmed") continue;
+    const amountCents = Math.round(Math.abs(e.amount) * 100);
+    if (e.contact_id != null) confirmedByContactAmount.add(`${e.contact_id}:${amountCents}`);
+    confirmedByLabelAmount.add(`${e.label.toLowerCase()}:${amountCents}`);
+  }
+  function alreadyConfirmed(g: PendingGroup): boolean {
+    const amountCents = Math.round(Math.abs(g.series[0].amount) * 100);
+    if (g.contact && confirmedByContactAmount.has(`${g.contact.id}:${amountCents}`)) return true;
+    const label = (g.contact?.label ?? g.series[0].label).toLowerCase();
+    return confirmedByLabelAmount.has(`${label}:${amountCents}`);
+  }
+
+  const pendingRecurring: PendingSeriesRow[] = [...pendingGroups.values()].filter((g) => !alreadyConfirmed(g)).map((g) => {
     const byRecency = [...g.series].sort((a, b) =>
       b.transactions[b.transactions.length - 1].date.localeCompare(a.transactions[a.transactions.length - 1].date),
     );

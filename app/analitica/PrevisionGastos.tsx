@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { AlertCircle } from "react-feather";
 import { fmt } from "@/lib/analytics";
 import { ChartCard, ToggleGroup } from "@/components/charts";
 import type { RecurringForecast } from "@/lib/recurring";
@@ -94,17 +93,6 @@ export default function PrevisionGastos({
       : []),
   ];
 
-  // Pago más grande (punto 3)
-  const biggest = items.length > 0
-    ? items.reduce((max, i) => Math.abs(i.amount) > Math.abs(max.amount) ? i : max, items[0])
-    : null;
-  const biggestDays = biggest?.daysUntil ?? null;
-  const biggestLabel =
-    biggestDays === null ? null
-    : biggestDays === 0  ? "hoy"
-    : biggestDays === 1  ? "mañana"
-    : `en ${biggestDays} días`;
-
   const sorted = [...items].sort((a, b) => {
     if (sort === "fecha")     return a.nextDate.localeCompare(b.nextDate);
     if (sort === "categoria") return a.categoryLabel.localeCompare(b.categoryLabel) || a.nextDate.localeCompare(b.nextDate);
@@ -146,21 +134,6 @@ export default function PrevisionGastos({
         </p>
       ) : (
         <>
-          {/* Punto 3: pago más grande destacado */}
-          {biggest && biggestLabel && (
-            <div className="flex items-center gap-2 mb-4 px-3 py-2 bg-navy/[0.03] rounded-lg">
-              <AlertCircle size={13} className="shrink-0 text-navy/40" />
-              <span className="text-xs text-navy/60">
-                Mayor pago:{" "}
-                <span className="font-semibold text-navy">{biggest.label}</span>
-                {" · "}
-                <span className="font-semibold text-navy tabular-nums">{fmt(Math.abs(biggest.amount))}</span>
-                {" · "}
-                <span className={biggestDays! <= 1 ? "text-warning font-medium" : ""}>{biggestLabel}</span>
-              </span>
-            </div>
-          )}
-
           {/* Sort toolbar */}
           <div className="flex items-center gap-3 mb-4">
             <span className="text-xs text-navy/45">Ordenar por</span>
