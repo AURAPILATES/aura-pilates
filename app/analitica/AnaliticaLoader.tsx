@@ -588,6 +588,7 @@ export default async function AnaliticaLoader({
                 dateRange={periodLabel}
                 lastUpdated={liveLastUpdated}
               />
+              <EvolucionSuscripcionesFullWidth monthly={monthlyStripeRevenue} cohorts={subscriptionCohorts} events={businessEvents} rawPayments={pMain} />
             </div>
           </section>
         }
@@ -626,7 +627,6 @@ export default async function AnaliticaLoader({
                 <PrimeraCompra summary={firstPurchaseSummary} />
               </div>
               <EvolucionInscritos data={activeCustomersData} />
-              <EvolucionSuscripcionesFullWidth monthly={monthlyStripeRevenue} cohorts={subscriptionCohorts} events={businessEvents} rawPayments={pMain} />
               <RetencionCohorte cohorts={retentionCohorts} />
               <ConversionPack summary={conversionSummary} />
             </div>
