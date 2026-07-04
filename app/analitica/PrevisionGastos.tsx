@@ -12,11 +12,6 @@ type SortKey = "fecha" | "categoria" | "importe";
 
 type ListItem = RecurringForecast & { variable?: boolean; categoryLabel: string; categoryColor: string };
 
-const MONTH_ES: Record<string, string> = {
-  "01":"ene","02":"feb","03":"mar","04":"abr","05":"may","06":"jun",
-  "07":"jul","08":"ago","09":"sep","10":"oct","11":"nov","12":"dic",
-};
-
 function nextMid15(): string {
   const now = new Date();
   const addMonth = now.getDate() >= 15;
@@ -28,39 +23,6 @@ function nextMid15(): string {
 function fmtDate(d: string): string {
   const [, mm, dd] = d.split("-");
   return `${dd}/${mm}`;
-}
-
-function weekLabel(nextDate: string): string {
-  const [y, mm, dd] = nextDate.split("-");
-  const day = parseInt(dd);
-  const mon = MONTH_ES[mm] ?? mm;
-  const yr  = y.slice(2);
-  if (day <= 7)  return `1–7 ${mon} '${yr}`;
-  if (day <= 14) return `8–14 ${mon} '${yr}`;
-  if (day <= 21) return `15–21 ${mon} '${yr}`;
-  return `22–31 ${mon} '${yr}`;
-}
-
-function weekOrder(nextDate: string): string {
-  const [y, mm, dd] = nextDate.split("-");
-  const bucket = parseInt(dd) <= 7 ? "1" : parseInt(dd) <= 14 ? "2" : parseInt(dd) <= 21 ? "3" : "4";
-  return `${y}-${mm}-${bucket}`;
-}
-
-function groupByWeek(items: ListItem[]): { label: string; items: ListItem[]; subtotal: number }[] {
-  const map = new Map<string, ListItem[]>();
-  for (const item of items) {
-    const key = weekOrder(item.nextDate);
-    if (!map.has(key)) map.set(key, []);
-    map.get(key)!.push(item);
-  }
-  return Array.from(map.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([, grpItems]) => ({
-      label: weekLabel(grpItems[0].nextDate),
-      items: grpItems,
-      subtotal: grpItems.reduce((s, i) => s + Math.abs(i.amount), 0),
-    }));
 }
 
 function ItemRow({ item }: { item: ListItem }) {
@@ -149,8 +111,6 @@ export default function PrevisionGastos({
     return Math.abs(b.amount) - Math.abs(a.amount);
   });
 
-  const weekGroups = sort === "fecha" ? groupByWeek(sorted) : null;
-
   return (
     <ChartCard
       title="Previsión de gastos recurrentes"
@@ -215,26 +175,9 @@ export default function PrevisionGastos({
             />
           </div>
 
-          {/* Punto 2: agrupación semanal cuando sort = fecha, lista plana en otros modos */}
-          {weekGroups ? (
-            <div className="space-y-3">
-              {weekGroups.map((group) => (
-                <div key={group.label}>
-                  <div className="flex items-center justify-between mb-0.5 px-1.5">
-                    <span className="text-[10.5px] font-semibold text-navy/40 uppercase tracking-wider">{group.label}</span>
-                    <span className="text-[10.5px] font-semibold text-navy/40 tabular-nums">{fmt(group.subtotal)}</span>
-                  </div>
-                  <div>
-                    {group.items.map((item) => <ItemRow key={item.key} item={item} />)}
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div>
-              {sorted.map((item) => <ItemRow key={item.key} item={item} />)}
-            </div>
-          )}
+          <div>
+            {sorted.map((item) => <ItemRow key={item.key} item={item} />)}
+          </div>
         </>
       )}
 
