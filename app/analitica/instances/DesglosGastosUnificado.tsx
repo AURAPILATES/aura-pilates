@@ -189,120 +189,126 @@ export default function DesglosGastosUnificado({
         )
       }
     >
-      <EvolucionGastosBody groups={groups} period={period} hiddenGroups={hiddenGroups} chartType={chartType} />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div className="lg:col-span-2 min-w-0">
+          <EvolucionGastosBody groups={groups} period={period} hiddenGroups={hiddenGroups} chartType={chartType} />
+        </div>
 
-      {/* ── Resumen: acordeón Grupo → Categoría → Subcategoría ──────────────── */}
-      <div className="flex items-center gap-2 mt-5 mb-2.5">
-        <p className="text-xs font-medium text-navy/55">Resumen</p>
-        <button
-          type="button"
-          onClick={toggleAllResumen}
-          className="flex items-center gap-0.5 text-xs font-medium text-navy/40 hover:text-navy/70 transition-colors"
-        >
-          <ChevronDown size={11} className={`transition-transform duration-200 ${allResumenExpanded ? "rotate-180" : ""}`} />
-          {allResumenExpanded ? "Contraer" : "Desglosar"}
-        </button>
-      </div>
-      <div className="space-y-1">
-        {GROUP_ORDER.map((group) => {
-          const g = groups.find((x) => x.group === group);
-          if (!g || g.total <= 0) return null;
-          const share = totalExpCat > 0 ? g.total / totalExpCat : 0;
-          const isOpen = expandedGroups.has(group);
-          const isHidden = hiddenGroups.has(group);
-          const groupCategories = categories.filter((c) => c.group === group).sort((a, b) => b.total - a.total);
+        {/* ── Resumen: acordeón Grupo → Categoría → Subcategoría ──────────────── */}
+        <div className="lg:col-span-1 min-w-0">
+          <div className="flex items-center gap-2 mb-2.5">
+            <p className="text-xs font-medium text-navy/55">Resumen</p>
+            <button
+              type="button"
+              onClick={toggleAllResumen}
+              className="flex items-center gap-0.5 text-xs font-medium text-navy/40 hover:text-navy/70 transition-colors"
+            >
+              <ChevronDown size={11} className={`transition-transform duration-200 ${allResumenExpanded ? "rotate-180" : ""}`} />
+              {allResumenExpanded ? "Contraer" : "Desglosar"}
+            </button>
+          </div>
+          <div className="space-y-1">
+            {GROUP_ORDER.map((group) => {
+              const g = groups.find((x) => x.group === group);
+              if (!g || g.total <= 0) return null;
+              const share = totalExpCat > 0 ? g.total / totalExpCat : 0;
+              const isOpen = expandedGroups.has(group);
+              const isHidden = hiddenGroups.has(group);
+              const groupCategories = categories.filter((c) => c.group === group).sort((a, b) => b.total - a.total);
 
-          return (
-            <div key={group}>
-              <div
-                className={`flex items-center gap-1.5 rounded-lg px-2 py-1.5 -mx-2 transition-colors ${
-                  isHidden ? "opacity-40" : "hover:bg-navy/[0.02]"
-                }`}
-              >
-                <button
-                  type="button"
-                  onClick={() => toggleExpandedGroup(group)}
-                  className="flex items-center gap-1.5 min-w-0 flex-1 text-left"
-                >
-                  <ChevronRight
-                    size={13}
-                    className={`shrink-0 text-navy/35 transition-transform ${isOpen ? "rotate-90" : ""}`}
-                  />
-                  <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: GROUP_COLORS[group] }} />
-                  <span className={`text-[13px] font-semibold text-navy truncate ${isHidden ? "line-through" : ""}`}>
-                    {GROUP_LABELS[group]}
-                  </span>
-                </button>
-                <span className="text-[13px] font-semibold text-navy tabular-nums text-right shrink-0 w-24">{fmtAmount(g.total)}</span>
-                <span className="text-xs text-navy/50 tabular-nums text-right shrink-0 w-10">{pct(share)}</span>
-                <button
-                  type="button"
-                  onClick={() => toggleHidden(group)}
-                  aria-pressed={!isHidden}
-                  title={isHidden ? "Mostrar en el gráfico" : "Ocultar en el gráfico"}
-                  className="shrink-0 p-1 rounded-full text-navy/35 hover:text-navy hover:bg-navy/[0.06] transition-colors"
-                >
-                  {isHidden ? <EyeOff size={12} /> : <Eye size={12} />}
-                </button>
-              </div>
+              return (
+                <div key={group}>
+                  <div
+                    className={`flex items-center gap-1.5 rounded-lg px-2 py-1.5 -mx-2 transition-colors ${
+                      isHidden ? "opacity-40" : "hover:bg-navy/[0.02]"
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => toggleExpandedGroup(group)}
+                      className="flex items-center gap-1.5 min-w-0 flex-1 text-left"
+                    >
+                      <ChevronRight
+                        size={13}
+                        className={`shrink-0 text-navy/35 transition-transform ${isOpen ? "rotate-90" : ""}`}
+                      />
+                      <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: GROUP_COLORS[group] }} />
+                      <span className={`text-[13px] font-semibold text-navy truncate ${isHidden ? "line-through" : ""}`}>
+                        {GROUP_LABELS[group]}
+                      </span>
+                    </button>
+                    <span className="text-[13px] font-semibold text-navy tabular-nums text-right shrink-0">{fmtAmount(g.total)}</span>
+                    <span className="text-xs text-navy/50 tabular-nums text-right shrink-0 w-10">{pct(share)}</span>
+                    <button
+                      type="button"
+                      onClick={() => toggleHidden(group)}
+                      aria-pressed={!isHidden}
+                      title={isHidden ? "Mostrar en el gráfico" : "Ocultar en el gráfico"}
+                      className="shrink-0 p-1 rounded-full text-navy/35 hover:text-navy hover:bg-navy/[0.06] transition-colors"
+                    >
+                      {isHidden ? <EyeOff size={12} /> : <Eye size={12} />}
+                    </button>
+                  </div>
 
-              {isOpen && (
-                <div className="pl-6 space-y-0.5">
-                  {groupCategories.map((c) => {
-                    const childShare = g.total > 0 ? c.total / g.total : 0;
-                    const hasChildren = c.children.length > 0;
-                    const catOpen = expandedCategories.has(c.key);
-                    return (
-                      <div key={c.key}>
-                        <button
-                          type="button"
-                          onClick={() => setSelected({ kind: "category", group, seg: c })}
-                          className="w-full flex items-center gap-1.5 py-1.5 text-left rounded-lg px-2 -mx-2 hover:bg-navy/[0.02] transition-colors"
-                        >
-                          {hasChildren ? (
-                            <span
-                              onClick={(e) => { e.stopPropagation(); toggleExpandedCategory(c.key); }}
-                              className="shrink-0 w-4 h-4 flex items-center justify-center text-navy/35 hover:text-navy/60 transition-colors"
+                  {isOpen && (
+                    <div className="pl-6 space-y-0.5">
+                      {groupCategories.map((c) => {
+                        const childShare = g.total > 0 ? c.total / g.total : 0;
+                        const hasChildren = c.children.length > 0;
+                        const catOpen = expandedCategories.has(c.key);
+                        return (
+                          <div key={c.key}>
+                            <button
+                              type="button"
+                              onClick={() => setSelected({ kind: "category", group, seg: c })}
+                              className="w-full flex items-center gap-1.5 py-1.5 text-left rounded-lg px-2 -mx-2 hover:bg-navy/[0.02] transition-colors"
                             >
-                              <ChevronRight size={11} className={`transition-transform ${catOpen ? "rotate-90" : ""}`} />
-                            </span>
-                          ) : (
-                            <span className="shrink-0 w-4 h-4" />
-                          )}
-                          <CategoryIcon name={c.label} color={c.color} iconKey={c.iconKey} small />
-                          <span className="flex-1 min-w-0 text-[12.5px] font-medium text-navy truncate">{c.label}</span>
-                          <span className="text-[12.5px] text-navy tabular-nums text-right shrink-0 w-20">{fmtAmount(c.total)}</span>
-                          <span className="text-[11px] text-navy/50 tabular-nums text-right shrink-0 w-9">{pct(childShare)}</span>
-                        </button>
-
-                        {hasChildren && catOpen && (
-                          <div className="pl-7 space-y-0.5">
-                            {c.children.map((ch) => {
-                              const leafShare = c.total > 0 ? ch.total / c.total : 0;
-                              return (
-                                <button
-                                  key={ch.value}
-                                  type="button"
-                                  onClick={() => setSelected({ kind: "subcategory", group, parent: c, leaf: ch })}
-                                  className="w-full flex items-center gap-1.5 py-1.5 text-left rounded-lg px-2 -mx-2 hover:bg-navy/[0.02] transition-colors"
+                              {hasChildren ? (
+                                <span
+                                  onClick={(e) => { e.stopPropagation(); toggleExpandedCategory(c.key); }}
+                                  className="shrink-0 w-4 h-4 flex items-center justify-center text-navy/35 hover:text-navy/60 transition-colors"
                                 >
-                                  <CategoryIcon name={ch.label} color={ch.color} iconKey={ch.iconKey} small />
-                                  <span className="flex-1 min-w-0 text-[11.5px] text-navy/75 truncate">{ch.label}</span>
-                                  <span className="text-[11.5px] text-navy/75 tabular-nums text-right shrink-0 w-20">{fmtAmount(ch.total)}</span>
-                                  <span className="text-[10.5px] text-navy/45 tabular-nums text-right shrink-0 w-9">{pct(leafShare)}</span>
-                                </button>
-                              );
-                            })}
+                                  <ChevronRight size={11} className={`transition-transform ${catOpen ? "rotate-90" : ""}`} />
+                                </span>
+                              ) : (
+                                <span className="shrink-0 w-4 h-4" />
+                              )}
+                              <CategoryIcon name={c.label} color={c.color} iconKey={c.iconKey} small />
+                              <span className="flex-1 min-w-0 text-[12.5px] font-medium text-navy truncate">{c.label}</span>
+                              <span className="text-[12.5px] text-navy tabular-nums text-right shrink-0">{fmtAmount(c.total)}</span>
+                              <span className="text-[11px] text-navy/50 tabular-nums text-right shrink-0 w-9">{pct(childShare)}</span>
+                            </button>
+
+                            {hasChildren && catOpen && (
+                              <div className="pl-7 space-y-0.5">
+                                {c.children.map((ch) => {
+                                  const leafShare = c.total > 0 ? ch.total / c.total : 0;
+                                  return (
+                                    <button
+                                      key={ch.value}
+                                      type="button"
+                                      onClick={() => setSelected({ kind: "subcategory", group, parent: c, leaf: ch })}
+                                      className="w-full flex items-center gap-1.5 py-1.5 text-left rounded-lg px-2 -mx-2 hover:bg-navy/[0.02] transition-colors"
+                                    >
+                                      <CategoryIcon name={ch.label} color={ch.color} iconKey={ch.iconKey} small />
+                                      <span className="flex-1 min-w-0 text-[11.5px] text-navy/75 truncate">{ch.label}</span>
+                                      <span className="text-[11.5px] text-navy/75 tabular-nums text-right shrink-0">{fmtAmount(ch.total)}</span>
+                                      <span className="text-[10.5px] text-navy/45 tabular-nums text-right shrink-0 w-9">{pct(leafShare)}</span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          );
-        })}
+              );
+            })}
+          </div>
+        </div>
       </div>
 
       <CollapsibleTable>
