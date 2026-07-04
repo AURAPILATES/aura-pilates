@@ -41,10 +41,11 @@ import { loadBusinessEvents } from "@/lib/businessEvents";
 import { getMomenceChurn } from "@/lib/subscriberSnapshots";
 import { loadPaymentErrorAcks, isPaymentErrorAcked } from "@/lib/paymentErrorAcks";
 import { ChartCard } from "@/components/charts";
-import { pad2 } from "@/lib/periodCalculation";
+import { pad2, type PeriodSearchParams } from "@/lib/periodCalculation";
 import AnaliticaKPIs from "./AnaliticaKPIs";
 import ClientesPaymentsBreakdown from "@/app/clientes/ClientesPaymentsBreakdown";
 import PrevisionGastos from "./PrevisionGastos";
+import OcupacionTab from "./instances/OcupacionTab";
 import AnaliticaTabs from "./AnaliticaTabs";
 import SectionHeader from "./SectionHeader";
 
@@ -132,10 +133,11 @@ type Props = {
   compTo: string;
   periodLabel: string;
   compDateRange: string;
+  searchParams: PeriodSearchParams;
 };
 
 export default async function AnaliticaLoader({
-  mainFrom, mainTo, compFrom, compTo, periodLabel, compDateRange,
+  mainFrom, mainTo, compFrom, compTo, periodLabel, compDateRange, searchParams,
 }: Props) {
   const now = new Date();
   const curMonth  = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}`;
@@ -681,6 +683,12 @@ export default async function AnaliticaLoader({
               </ChartCard>
               <Financiacion initialBudgets={budgets} spent={budgetSpent} />
             </div>
+          </section>
+        }
+        ocupacion={
+          <section>
+            <SectionHeader id="ocupacion" title="Ocupación" />
+            <OcupacionTab searchParams={searchParams} businessEvents={businessEvents} />
           </section>
         }
       />

@@ -290,7 +290,6 @@ export default function DesglosGastosUnificado({
                                       onClick={() => setSelected({ kind: "subcategory", group, parent: c, leaf: ch })}
                                       className="w-full flex items-center gap-1.5 py-1.5 text-left rounded-lg px-2 -mx-2 hover:bg-navy/[0.02] transition-colors"
                                     >
-                                      <CategoryIcon name={ch.label} color={ch.color} iconKey={ch.iconKey} small />
                                       <span className="flex-1 min-w-0 text-[11.5px] text-navy/75 truncate">{ch.label}</span>
                                       <span className="text-[11.5px] text-navy/75 tabular-nums text-right shrink-0">{fmtAmount(ch.total)}</span>
                                       <span className="text-[10.5px] text-navy/45 tabular-nums text-right shrink-0 w-9">{pct(leafShare)}</span>

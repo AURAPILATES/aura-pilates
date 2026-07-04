@@ -43,15 +43,16 @@ function str(v: string | string[] | undefined, fallback = ""): string {
  */
 export function resolvePeriod(
   sp: PeriodSearchParams,
-  opts: { sinceDate?: string; defaultPeriod?: string } = {},
+  opts: { sinceDate?: string; defaultPeriod?: string; paramPrefix?: string } = {},
 ): ResolvedPeriod {
+  const prefix = opts.paramPrefix ?? "";
   const sinceDate = opts.sinceDate ?? "2026-02-01";
-  const periodParam = str(sp.period, opts.defaultPeriod ?? "30");
-  const customFrom = str(sp.from);
-  const customTo = str(sp.to);
-  const compareParam = str(sp.compareWith, "previous");
-  const cpFrom = str(sp.compareFrom);
-  const cpTo = str(sp.compareTo);
+  const periodParam = str(sp[`${prefix}period`], opts.defaultPeriod ?? "30");
+  const customFrom = str(sp[`${prefix}from`]);
+  const customTo = str(sp[`${prefix}to`]);
+  const compareParam = str(sp[`${prefix}compareWith`], "previous");
+  const cpFrom = str(sp[`${prefix}compareFrom`]);
+  const cpTo = str(sp[`${prefix}compareTo`]);
 
   const todayStr = new Date().toISOString().split("T")[0];
 

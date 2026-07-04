@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  ResponsiveContainer, ComposedChart, Bar, Line, CartesianGrid, XAxis, YAxis, Tooltip, ReferenceLine,
+  ResponsiveContainer, ComposedChart, Bar, Line, CartesianGrid, XAxis, YAxis, Tooltip,
   type TooltipContentProps,
 } from "recharts";
 import type { EconomicGroup } from "@/lib/transactions";
@@ -59,14 +59,10 @@ export default function EvolucionGastosBody({
     return <p className="text-sm text-navy/45 text-center py-10">Sin datos de gastos</p>;
   }
 
-  const averages = Object.fromEntries(
-    GROUP_ORDER.map((g) => [g, rows.reduce((s, r) => s + r[g], 0) / rows.length])
-  ) as Record<EconomicGroup, number>;
-
   return (
     <div style={{ width: "100%", height: 280 }}>
       <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart data={rows} margin={{ top: 16, right: 34, bottom: 0, left: 0 }}>
+        <ComposedChart data={rows} margin={{ top: 16, right: 8, bottom: 0, left: 0 }}>
           <CartesianGrid strokeDasharray="4 3" stroke="rgba(28,25,23,0.07)" vertical={false} />
           <XAxis dataKey="label" tick={{ fontSize: 10, fill: "rgba(28,25,23,0.45)" }} tickLine={false} axisLine={false} />
           <YAxis tickFormatter={fmtTick} tick={{ fontSize: 10, fill: "rgba(28,25,23,0.45)" }} tickLine={false} axisLine={false} width={34} />
@@ -74,16 +70,6 @@ export default function EvolucionGastosBody({
             content={makeTooltip(visibleGroups)}
             cursor={chartType === "bar" ? { fill: "rgba(28,25,23,0.04)" } : { stroke: "rgba(28,25,23,0.2)", strokeDasharray: "4 3" }}
           />
-          {visibleGroups.map((g) => (
-            <ReferenceLine
-              key={`avg-${g}`}
-              y={averages[g]}
-              stroke={GROUP_COLORS[g]}
-              strokeDasharray="4 3"
-              strokeOpacity={0.55}
-              label={{ value: `Ø ${fmtTick(averages[g])}`, position: "right", fontSize: 9, fill: GROUP_COLORS[g] }}
-            />
-          ))}
           {chartType === "bar"
             ? visibleGroups.map((g) => (
                 <Bar key={g} dataKey={g} stackId="a" fill={GROUP_COLORS[g]} radius={[2, 2, 0, 0]} />

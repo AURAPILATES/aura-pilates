@@ -36,6 +36,7 @@ export default async function Analitica(props: {
             compTo={compTo}
             periodLabel={periodLabel}
             compDateRange={compDateRange}
+            searchParams={sp}
           />
         </Suspense>
       </div>

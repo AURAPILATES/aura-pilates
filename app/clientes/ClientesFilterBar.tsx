@@ -6,25 +6,26 @@ import { Suspense } from "react";
 const PRESETS = ["7", "30", "90"] as const;
 type Preset = (typeof PRESETS)[number];
 
-function FilterBarInner({ defaultPeriod = "30" }: { defaultPeriod?: string }) {
+function FilterBarInner({ defaultPeriod = "30", paramPrefix = "" }: { defaultPeriod?: string; paramPrefix?: string }) {
   const router = useRouter();
   const pathname = usePathname();
   const sp = useSearchParams();
+  const key = (k: string) => `${paramPrefix}${k}`;
 
-  const period = sp.get("period") ?? defaultPeriod;
-  const compareWith = sp.get("compareWith") ?? "previous";
-  const customFrom = sp.get("from") ?? "";
-  const customTo = sp.get("to") ?? "";
-  const compareFrom = sp.get("compareFrom") ?? "";
-  const compareTo = sp.get("compareTo") ?? "";
+  const period = sp.get(key("period")) ?? defaultPeriod;
+  const compareWith = sp.get(key("compareWith")) ?? "previous";
+  const customFrom = sp.get(key("from")) ?? "";
+  const customTo = sp.get(key("to")) ?? "";
+  const compareFrom = sp.get(key("compareFrom")) ?? "";
+  const compareTo = sp.get(key("compareTo")) ?? "";
 
   const today = new Date().toISOString().split("T")[0];
 
   function update(changes: Record<string, string>) {
     const params = new URLSearchParams(sp.toString());
     for (const [k, v] of Object.entries(changes)) {
-      if (v) params.set(k, v);
-      else params.delete(k);
+      if (v) params.set(key(k), v);
+      else params.delete(key(k));
     }
     router.replace(`${pathname}?${params.toString()}`);
   }
@@ -130,10 +131,10 @@ function FilterBarInner({ defaultPeriod = "30" }: { defaultPeriod?: string }) {
   );
 }
 
-export default function ClientesFilterBar({ defaultPeriod }: { defaultPeriod?: string }) {
+export default function ClientesFilterBar({ defaultPeriod, paramPrefix }: { defaultPeriod?: string; paramPrefix?: string }) {
   return (
     <Suspense fallback={<div className="h-10 mb-4" />}>
-      <FilterBarInner defaultPeriod={defaultPeriod} />
+      <FilterBarInner defaultPeriod={defaultPeriod} paramPrefix={paramPrefix} />
     </Suspense>
   );
 }

@@ -205,7 +205,7 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
   function ThSort({ col, label, className = "" }: { col: SortKey; label: string; className?: string }) {
     return (
       <th
-        className={`px-5 py-3 text-[11px] font-semibold text-navy/50 uppercase tracking-wider cursor-pointer select-none hover:text-navy/60 transition-colors ${className}`}
+        className={`px-4 py-2.5 text-[11px] font-semibold text-navy/45 uppercase tracking-wider cursor-pointer select-none hover:text-navy/60 transition-colors ${className}`}
         onClick={() => toggleSort(col)}
       >
         {label}
@@ -385,21 +385,21 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
             <thead>
               <tr className="border-b border-navy/[0.06]">
                 <ThSort col="name"            label="Cliente"      className="text-left" />
-                <th className="text-left px-5 py-3 text-[11px] font-semibold text-navy/50 uppercase tracking-wider">Plan</th>
+                <th className="text-left px-4 py-2.5 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Plan</th>
                 <ThSort col="totalSpent"      label="Total"        className="text-right" />
                 <ThSort col="lastPaymentDate" label="Último pago"  className="text-right hidden sm:table-cell" />
-                <th className="text-center px-5 py-3 text-[11px] font-semibold text-navy/50 uppercase tracking-wider">Estado</th>
+                <th className="text-center px-4 py-2.5 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Estado</th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-5 py-12 text-center text-navy/45 text-sm">
+                  <td colSpan={5} className="px-4 py-12 text-center text-navy/45 text-sm">
                     No hay clientes que coincidan con tu búsqueda.
                   </td>
                 </tr>
               ) : (
-                pageRows.map((c, i) => {
+                pageRows.map((c) => {
                   const { status, days } = clientStatus(c);
                   const dSub  = c.daysSinceLastSub  ?? Infinity;
                   const dPack = c.daysSinceLastPack ?? Infinity;
@@ -410,11 +410,9 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
                     <tr
                       key={c.id}
                       onClick={() => setSelected(c)}
-                      className={`border-b border-navy/[0.04] last:border-0 transition-colors cursor-pointer hover:bg-primary/[0.025] ${
-                        status === "baja" ? "bg-danger/[0.04]" : status === "sinpagar" || status === "caducado" ? "bg-warning/[0.04]" : status === "porvencer" ? "bg-amber-50/60" : i % 2 === 0 ? "" : "bg-navy/[0.008]"
-                      }`}
+                      className="border-b border-navy/[0.04] last:border-0 transition-colors cursor-pointer hover:bg-navy/[0.02]"
                     >
-                      <td className="px-5 py-3">
+                      <td className="px-4 py-2.5">
                         <div className="flex items-center gap-1.5">
                           <div className="min-w-0">
                             <p className="font-medium text-navy truncate max-w-[160px]">{c.name ?? "—"}</p>
@@ -423,13 +421,13 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
                           {c.discount && <DiscountBadge discount={c.discount} />}
                         </div>
                       </td>
-                      <td className="px-5 py-3">
+                      <td className="px-4 py-2.5">
                         {(() => {
                           const { label, cls } = planBadgeCfg(planType, c.lastSubProduct, c.lastPackProduct);
                           const showExpiry = planType === "pack" && c.lastPackProduct !== "Clase suelta";
                           return (
                             <div>
-                              <span className={`text-xs ${cls} px-2 py-0.5 rounded-full font-medium`}>{label}</span>
+                              <span className={`text-[11px] ${cls} px-1.5 py-0.5 rounded font-medium`}>{label}</span>
                               {showExpiry && (
                                 <p className="text-[11px] text-navy/40 mt-1">
                                   {(() => {
@@ -443,14 +441,14 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
                           );
                         })()}
                       </td>
-                      <td className="px-5 py-3 text-right">
+                      <td className="px-4 py-2.5 text-right">
                         <p className="font-semibold text-navy tabular-nums">{fmt(c.totalSpent)}</p>
                         <p className="text-[11px] text-navy/40 mt-0.5">{c.paymentCount} pagos</p>
                       </td>
-                      <td className="px-5 py-3 text-right text-navy/55 text-xs hidden sm:table-cell">
+                      <td className="px-4 py-2.5 text-right text-navy/55 text-xs hidden sm:table-cell">
                         {c.lastPaymentDate ? fmtDate(c.lastPaymentDate) : "—"}
                       </td>
-                      <td className="px-5 py-3 text-center">
+                      <td className="px-4 py-2.5 text-center">
                         {status === "baja" ? (
                           <span className="inline-flex items-center gap-1.5 text-xs text-danger font-medium whitespace-nowrap">
                             <span className="w-1.5 h-1.5 rounded-full bg-danger shrink-0 inline-block" />
@@ -486,7 +484,7 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
           </table>
         </div>
         {totalPages > 1 && (
-          <div className="flex items-center justify-between px-5 py-3 border-t border-navy/[0.06]">
+          <div className="flex items-center justify-between px-4 py-3 border-t border-navy/[0.06]">
             <p className="text-xs text-navy/45">
               {safePage * PAGE_SIZE + 1}–{Math.min((safePage + 1) * PAGE_SIZE, filtered.length)} de {filtered.length}
             </p>

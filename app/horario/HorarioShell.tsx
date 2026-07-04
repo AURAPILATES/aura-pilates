@@ -7,14 +7,10 @@ import { groupByDay, occupancyRate, pct } from "@/lib/analytics";
 import HorarioList from "./HorarioList";
 import HorarioCalendar from "./HorarioCalendar";
 import HorarioDrawer from "./HorarioDrawer";
-import HorarioReporting, { type ReportingData } from "./HorarioReporting";
-import ClientesFilterBar from "@/app/clientes/ClientesFilterBar";
 import MobileNav from "@/app/components/MobileNav";
-import SectionTabs from "@/app/components/SectionTabs";
 
 type OccFilter = "all" | "low" | "mid" | "high";
 type View = "lista" | "calendario";
-type Tab = "horario" | "analisis";
 
 function addDays(dateStr: string, n: number): string {
   const d = new Date(dateStr + "T12:00:00");
@@ -56,18 +52,13 @@ export default function HorarioShell({
   hiddenEvents,
   weekMonday,
   initialView,
-  initialTab,
-  reportingData,
 }: {
   events: MomenceEvent[];
   hiddenEvents: MomenceEvent[];
   weekMonday: string;
   initialView: View;
-  initialTab: Tab;
-  reportingData: ReportingData;
 }) {
   const router = useRouter();
-  const [tab,      setTab]      = useState<Tab>(initialTab);
   const [view,     setView]     = useState<View>(initialView);
   const [selected, setSelected] = useState<MomenceEvent | null>(null);
   const [claseFilter,      setClaseFilter]      = useState("all");
@@ -151,16 +142,9 @@ export default function HorarioShell({
       ══════════════════════════════════════════════════════════════════════ */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 pb-16">
 
-        {/* Tabs + week nav / view toggle (horario tab only, desktop) */}
-        <div className="flex items-center justify-between gap-3 mb-6">
-          <SectionTabs
-            active={tab}
-            onChange={setTab}
-            tabs={[{ key: "horario", label: "Horario" }, { key: "analisis", label: "Análisis" }]}
-          />
-
-          {tab === "horario" && (
-            <div className="hidden sm:flex items-center gap-2 shrink-0 pb-2">
+        {/* Week nav / view toggle (desktop) */}
+        <div className="flex items-center justify-end gap-3 mb-6">
+          <div className="hidden sm:flex items-center gap-2 shrink-0 pb-2">
               <div className="flex items-center gap-0.5">
                 <button
                   onClick={() => router.push(`?week=${prevWeek}`)}
@@ -201,23 +185,15 @@ export default function HorarioShell({
                   Lista
                 </button>
               </div>
-            </div>
-          )}
+          </div>
         </div>
 
-        {tab === "horario" && hiddenEvents.length > 0 && (
+        {hiddenEvents.length > 0 && (
           <HiddenEventsPanel events={hiddenEvents} />
         )}
 
         {/* ── MOBILE ─────────────────────────────────────────────────────────── */}
         <div className="sm:hidden">
-          {tab === "analisis" ? (
-            <>
-              <ClientesFilterBar defaultPeriod="30" />
-              <HorarioReporting data={reportingData} />
-            </>
-          ) : (
-            <>
               {/* Week nav */}
               <div className="flex items-center justify-between mb-4">
                 <p className="text-sm text-navy/50">Semana {weekLabel(weekMonday)}</p>
@@ -353,21 +329,10 @@ export default function HorarioShell({
                   })}
                 </div>
               )}
-            </>
-          )}
         </div>
 
         {/* ── DESKTOP ────────────────────────────────────────────────────────── */}
         <div className="hidden sm:block">
-
-          {tab === "analisis" && (
-            <>
-              <ClientesFilterBar defaultPeriod="30" />
-              <HorarioReporting data={reportingData} />
-            </>
-          )}
-
-          {tab === "horario" && (
             <div>
               {/* Stats cards */}
               {events.length === 0 ? (
@@ -442,7 +407,6 @@ export default function HorarioShell({
                 </>
               )}
             </div>
-          )}
         </div>
       </div>
 

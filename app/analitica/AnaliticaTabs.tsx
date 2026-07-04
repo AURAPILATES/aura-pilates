@@ -4,7 +4,7 @@ import { useState, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import SectionTabs from "@/app/components/SectionTabs";
 
-type Tab = "caja" | "gastos" | "ingresos" | "clientes" | "fiscal";
+type Tab = "caja" | "gastos" | "ingresos" | "clientes" | "fiscal" | "ocupacion";
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "caja", label: "Caja y resultado" },
@@ -12,11 +12,12 @@ const TABS: { key: Tab; label: string }[] = [
   { key: "ingresos", label: "Ingresos" },
   { key: "clientes", label: "Clientes" },
   { key: "fiscal", label: "Fiscal y financiación" },
+  { key: "ocupacion", label: "Ocupación" },
 ];
 
 type Props = Record<Tab, ReactNode>;
 
-export default function AnaliticaTabs({ caja, gastos, ingresos, clientes, fiscal }: Props) {
+export default function AnaliticaTabs({ caja, gastos, ingresos, clientes, fiscal, ocupacion }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialTab = TABS.find((t) => t.key === searchParams.get("tab"))?.key ?? "caja";
@@ -27,7 +28,7 @@ export default function AnaliticaTabs({ caja, gastos, ingresos, clientes, fiscal
     router.replace(next === "caja" ? "/analitica" : `/analitica?tab=${next}`, { scroll: false });
   }
 
-  const content: Props = { caja, gastos, ingresos, clientes, fiscal };
+  const content: Props = { caja, gastos, ingresos, clientes, fiscal, ocupacion };
 
   return (
     <div>
