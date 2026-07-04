@@ -2,23 +2,24 @@ import { getEvents } from "@/lib/momence";
 import { saveHistoricalEvents, loadHistoricalEvents } from "@/lib/history";
 import { filterActive } from "@/lib/analytics";
 import { urbanBookingsByHour, urbanBookingsByWeekday } from "@/lib/sales";
-import { resolvePeriod, type PeriodSearchParams } from "@/lib/periodCalculation";
 import type { BusinessEvent } from "@/lib/businessEvents";
-import ClientesFilterBar from "@/app/clientes/ClientesFilterBar";
 import HorarioReporting from "./HorarioReporting";
 
 export default async function OcupacionTab({
-  searchParams,
+  mainFrom,
+  mainTo,
+  compFrom,
+  compTo,
+  periodLabel,
   businessEvents,
 }: {
-  searchParams: PeriodSearchParams;
+  mainFrom: string;
+  mainTo: string;
+  compFrom: string;
+  compTo: string;
+  periodLabel: string;
   businessEvents: BusinessEvent[];
 }) {
-  const { from: mainFrom, to: mainTo, compFrom, compTo, periodLabel } = resolvePeriod(searchParams, {
-    paramPrefix: "oc",
-    defaultPeriod: "30",
-  });
-
   const [liveEvents, historicalEvents] = await Promise.all([
     getEvents(),
     loadHistoricalEvents(),
@@ -42,20 +43,17 @@ export default async function OcupacionTab({
   const uscByWeekday = urbanBookingsByWeekday();
 
   return (
-    <div>
-      <ClientesFilterBar defaultPeriod="30" paramPrefix="oc" />
-      <HorarioReporting
-        data={{
-          main: mainEvents,
-          compare: compareEvents,
-          periodLabel,
-          periodFrom: mainFrom,
-          periodTo: mainTo,
-          uscByHour,
-          uscByWeekday,
-          businessEvents,
-        }}
-      />
-    </div>
+    <HorarioReporting
+      data={{
+        main: mainEvents,
+        compare: compareEvents,
+        periodLabel,
+        periodFrom: mainFrom,
+        periodTo: mainTo,
+        uscByHour,
+        uscByWeekday,
+        businessEvents,
+      }}
+    />
   );
 }

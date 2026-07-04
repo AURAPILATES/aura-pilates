@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { occupancyByWeek } from "@/lib/analytics";
+import { occupancyByWeek, pct } from "@/lib/analytics";
 import { MomenceEvent } from "@/lib/momence";
 import type { BusinessEvent, EventCategoria } from "@/lib/businessEvents";
+import { ChartCard, InteractiveLegend } from "@/components/charts";
 
 // Internal coordinate system for the SVG (bars + line + gridlines only — no text).
 // Text labels are rendered as plain HTML overlays positioned with percentages,
@@ -99,22 +100,29 @@ export default function HorarioOcupacionEvolucion({
 
   const linePoints = data.map((d, i) => `${barCx(i)},${occY(d.occ)}`).join(" ");
 
+  const totalSold     = data.reduce((s, d) => s + d.sold, 0);
+  const totalCapacity = data.reduce((s, d) => s + d.capacity, 0);
+  const totalFree     = totalCapacity - totalSold;
+  const avgOcc        = totalCapacity > 0 ? totalSold / totalCapacity : 0;
+
   if (data.length === 0) {
     return (
-      <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
-        <h3 className="text-sm font-semibold text-navy mb-1">Evolución de la ocupación</h3>
+      <ChartCard title="Evolución de la ocupación" subtitle="Plazas vendidas vs. totales y % de ocupación por semana">
         <p className="text-sm text-navy/45 py-6 text-center">Sin datos suficientes para este período.</p>
-      </div>
+      </ChartCard>
     );
   }
 
   return (
-    <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h3 className="text-sm font-semibold text-navy">Evolución de la ocupación</h3>
-          <p className="text-xs text-navy/45 mt-0.5">Plazas vendidas vs. totales y % de ocupación por semana</p>
-        </div>
+    <ChartCard
+      title="Evolución de la ocupación"
+      subtitle="Plazas vendidas vs. totales y % de ocupación por semana"
+      dataSource="Eventos activos en Momence, agrupados por semana"
+      sources={["momence"]}
+    >
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
+        <div className="lg:col-span-3 min-w-0">
+      <div className="flex items-center justify-end mb-4">
         <div className="flex items-center gap-3 text-[11px] text-navy/55 shrink-0">
           <div className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: "#3B4B9E" }} />
@@ -315,6 +323,22 @@ export default function HorarioOcupacionEvolucion({
           })}
         </div>
       </div>
-    </div>
+        </div>
+
+        <div className="lg:col-span-1 min-w-0">
+          <p className="text-xs font-medium text-navy/55 mb-2.5">Resumen</p>
+          <div className="flex h-3 rounded-full overflow-hidden bg-navy/5 mb-4">
+            <div style={{ flex: `${totalCapacity > 0 ? totalSold / totalCapacity : 0} 0 0%`, backgroundColor: "#3B4B9E" }} />
+            <div style={{ flex: `${totalCapacity > 0 ? totalFree / totalCapacity : 0} 0 0%`, backgroundColor: "#C0C6E8" }} />
+          </div>
+          <InteractiveLegend
+            items={[
+              { key: "sold", label: "Plazas vendidas", color: "#3B4B9E", value: totalSold, helper: pct(avgOcc) },
+              { key: "free", label: "Plazas libres", color: "#C0C6E8", value: totalFree },
+            ]}
+          />
+        </div>
+      </div>
+    </ChartCard>
   );
 }

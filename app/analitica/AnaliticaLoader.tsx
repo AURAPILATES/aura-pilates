@@ -41,7 +41,7 @@ import { loadBusinessEvents } from "@/lib/businessEvents";
 import { getMomenceChurn } from "@/lib/subscriberSnapshots";
 import { loadPaymentErrorAcks, isPaymentErrorAcked } from "@/lib/paymentErrorAcks";
 import { ChartCard } from "@/components/charts";
-import { pad2, type PeriodSearchParams } from "@/lib/periodCalculation";
+import { pad2 } from "@/lib/periodCalculation";
 import AnaliticaKPIs from "./AnaliticaKPIs";
 import ClientesPaymentsBreakdown from "@/app/clientes/ClientesPaymentsBreakdown";
 import PrevisionGastos from "./PrevisionGastos";
@@ -133,11 +133,10 @@ type Props = {
   compTo: string;
   periodLabel: string;
   compDateRange: string;
-  searchParams: PeriodSearchParams;
 };
 
 export default async function AnaliticaLoader({
-  mainFrom, mainTo, compFrom, compTo, periodLabel, compDateRange, searchParams,
+  mainFrom, mainTo, compFrom, compTo, periodLabel, compDateRange,
 }: Props) {
   const now = new Date();
   const curMonth  = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}`;
@@ -688,7 +687,14 @@ export default async function AnaliticaLoader({
         ocupacion={
           <section>
             <SectionHeader id="ocupacion" title="Ocupación" />
-            <OcupacionTab searchParams={searchParams} businessEvents={businessEvents} />
+            <OcupacionTab
+              mainFrom={mainFrom}
+              mainTo={mainTo}
+              compFrom={compFrom}
+              compTo={compTo}
+              periodLabel={periodLabel}
+              businessEvents={businessEvents}
+            />
           </section>
         }
       />
