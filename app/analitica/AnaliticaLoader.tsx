@@ -45,7 +45,7 @@ import { pad2 } from "@/lib/periodCalculation";
 import AnaliticaKPIs from "./AnaliticaKPIs";
 import ClientesPaymentsBreakdown from "@/app/clientes/ClientesPaymentsBreakdown";
 import PrevisionGastos from "./PrevisionGastos";
-import SectionNav from "./SectionNav";
+import AnaliticaTabs from "./AnaliticaTabs";
 import SectionHeader from "./SectionHeader";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -524,172 +524,168 @@ export default async function AnaliticaLoader({
         </div>
       )}
 
-      <SectionNav />
-
-      <div className="space-y-14">
-
-        {/* ── Caja y resultado ── */}
-        <section>
-          <SectionHeader id="caja" title="Caja y resultado" />
-          <div className="space-y-4">
-            <CockpitFinanciero
-              curMonthLabel={monthLabel(curMonth)}
-              prevMonthLabel={prevMonthLabel}
-              curMonthIngresos={cur + uscCur}
-              curMonthGastos={estGastosMes}
-              isGastosEst={isGastosEst}
-              prevMonthIngresos={prevMonthRev}
-              currentBalance={currentBalance}
-              balanceDate={balanceDate}
-              runwayMonths={runwayMonths}
-              avgMonthlyBurn={avgMonthlyBurn}
-              completeBurnMonthsCount={completeBurnMonths.length}
-              ventasPrevistas={avgMonthlyRevenue}
-              gastosComprometidos={gastosComprometidos}
-              sales={salesAll}
-              txns={txnsAll}
-              lastUpdated={liveLastUpdated}
-              nextIvaLabel={nextIvaObligation?.date ?? null}
-              nextIvaQuarter={nextIvaObligation?.quarter ?? null}
-              ivaNeto={nextIvaQuarterData?.ivaNeto ?? 0}
-              ivaSoportado={nextIvaQuarterData?.ivaSoportado ?? 0}
-              ivaRepercutido={nextIvaQuarterData?.ivaRepercutido ?? 0}
-              retenciones={nextIvaQuarterData?.retenciones ?? 0}
-              ivaQuarterClosed={nextIvaQuarterClosed}
-            />
-            <Breakeven points={breakevenPoints} />
-          </div>
-        </section>
-
-        {/* ── Gastos ── */}
-        <section>
-          <SectionHeader id="gastos" title="Gastos" />
-          <div className="space-y-4">
-            <DesglosGastosUnificado
-              groups={expGroupTotals}
-              categories={expByTopCategory}
-              transactionsByCategory={transactionsByCategory}
-              totalExpCat={totalExpCat}
-              totalExpCatNoCapex={totalExpCatNoCapex}
-              burnByMonth={Object.fromEntries(burnByMonth)}
-              rangeLabel={txnRangeLabel}
-            />
-            <PrevisionGastos forecasts={recurringForecasts} categories={dbCategories} avgSuministros={avgSuministros} />
-          </div>
-        </section>
-
-        {/* ── Ingresos ── */}
-        <section>
-          <SectionHeader id="ingresos" title="Ingresos" />
-          <div className="space-y-4">
-            <IngresosPorFuente
-              stripeGross={totalRev}
-              stripeFees={stripeFees}
-              stripeNet={stripeNet}
-              uscGross={uscRevenue}
-              paymentsCount={pMain.length}
-              monthly={monthlyByFuente}
-              dateRange={periodLabel}
-              lastUpdated={liveLastUpdated}
-            />
-          </div>
-        </section>
-
-        {/* ── Clientes ── */}
-        <section>
-          <SectionHeader id="clientes" title="Clientes" />
-          <div className="space-y-4">
-            <AnaliticaKPIs
-              customers={customers}
-              periodLabel={periodLabel}
-              periodFrom={mainFrom}
-              periodTo={mainTo}
-              compDateRange={compDateRange}
-              spendPerClient={spendPerClient}
-              spendPerClientComp={spendPerClientComp}
-              newCustomers={newCustomers}
-              reactivatedCustomers={reactivatedCustomers}
-              convertCandidates={convertCandidates}
-              activeMomenceSubCount={activeMomenceSubCount}
-              activeRecurringCount={activeRecurringCount}
-              momenceChurn={momenceChurn}
-            />
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <ClientesPaymentsBreakdown
-                succeeded={totalRev}
-                refunded={breakdown.refunded}
-                disputed={breakdown.disputed}
-                failed={breakdown.failed}
-                refundedIds={breakdown.refundedIds}
-                disputedIds={breakdown.disputedIds}
-                failedIds={breakdown.failedIds}
+      <AnaliticaTabs
+        caja={
+          <section>
+            <SectionHeader id="caja" title="Caja y resultado" />
+            <div className="space-y-4">
+              <CockpitFinanciero
+                curMonthLabel={monthLabel(curMonth)}
+                prevMonthLabel={prevMonthLabel}
+                curMonthIngresos={cur + uscCur}
+                curMonthGastos={estGastosMes}
+                isGastosEst={isGastosEst}
+                prevMonthIngresos={prevMonthRev}
+                currentBalance={currentBalance}
+                balanceDate={balanceDate}
+                runwayMonths={runwayMonths}
+                avgMonthlyBurn={avgMonthlyBurn}
+                completeBurnMonthsCount={completeBurnMonths.length}
+                ventasPrevistas={avgMonthlyRevenue}
+                gastosComprometidos={gastosComprometidos}
+                sales={salesAll}
+                txns={txnsAll}
+                lastUpdated={liveLastUpdated}
+                nextIvaLabel={nextIvaObligation?.date ?? null}
+                nextIvaQuarter={nextIvaObligation?.quarter ?? null}
+                ivaNeto={nextIvaQuarterData?.ivaNeto ?? 0}
+                ivaSoportado={nextIvaQuarterData?.ivaSoportado ?? 0}
+                ivaRepercutido={nextIvaQuarterData?.ivaRepercutido ?? 0}
+                retenciones={nextIvaQuarterData?.retenciones ?? 0}
+                ivaQuarterClosed={nextIvaQuarterClosed}
+              />
+              <Breakeven points={breakevenPoints} />
+            </div>
+          </section>
+        }
+        gastos={
+          <section>
+            <SectionHeader id="gastos" title="Gastos" />
+            <div className="space-y-4">
+              <DesglosGastosUnificado
+                groups={expGroupTotals}
+                categories={expByTopCategory}
+                transactionsByCategory={transactionsByCategory}
+                totalExpCat={totalExpCat}
+                totalExpCatNoCapex={totalExpCatNoCapex}
+                burnByMonth={Object.fromEntries(burnByMonth)}
+                rangeLabel={txnRangeLabel}
+              />
+              <PrevisionGastos forecasts={recurringForecasts} categories={dbCategories} avgSuministros={avgSuministros} />
+            </div>
+          </section>
+        }
+        ingresos={
+          <section>
+            <SectionHeader id="ingresos" title="Ingresos" />
+            <div className="space-y-4">
+              <IngresosPorFuente
+                stripeGross={totalRev}
+                stripeFees={stripeFees}
+                stripeNet={stripeNet}
+                uscGross={uscRevenue}
+                monthly={monthlyByFuente}
+                dateRange={periodLabel}
+                lastUpdated={liveLastUpdated}
+              />
+            </div>
+          </section>
+        }
+        clientes={
+          <section>
+            <SectionHeader id="clientes" title="Clientes" />
+            <div className="space-y-4">
+              <AnaliticaKPIs
                 customers={customers}
                 periodLabel={periodLabel}
-                excludeSegments={["disputed", "failed"]}
+                periodFrom={mainFrom}
+                periodTo={mainTo}
+                compDateRange={compDateRange}
+                spendPerClient={spendPerClient}
+                spendPerClientComp={spendPerClientComp}
+                newCustomers={newCustomers}
+                reactivatedCustomers={reactivatedCustomers}
+                convertCandidates={convertCandidates}
+                activeMomenceSubCount={activeMomenceSubCount}
+                activeRecurringCount={activeRecurringCount}
+                momenceChurn={momenceChurn}
               />
-              <PrimeraCompra summary={firstPurchaseSummary} />
-            </div>
-            <EvolucionInscritos data={activeCustomersData} />
-            <EvolucionSuscripcionesFullWidth monthly={monthlyRevenue} cohorts={subscriptionCohorts} events={businessEvents} rawPayments={pMain} />
-            <RetencionCohorte cohorts={retentionCohorts} />
-            <ConversionPack summary={conversionSummary} />
-          </div>
-        </section>
-
-        {/* ── Fiscal y financiación ── */}
-        <section>
-          <SectionHeader id="fiscal" title="Fiscal y financiación" />
-          <div className="space-y-4">
-            <ChartCard title="Próximas obligaciones">
-              <div className="space-y-3">
-                {obligations.map(({ label, date, deadline }) => {
-                  const days = daysUntil(deadline);
-                  const badgeClass = days <= 30
-                    ? "bg-danger/10 text-danger"
-                    : days <= 60
-                    ? "bg-warning/10 text-warning"
-                    : "bg-navy/5 text-navy/55";
-                  return (
-                    <div key={label} className="flex items-center justify-between">
-                      <span className="text-sm text-navy">{label}</span>
-                      <div className="flex items-center gap-3">
-                        <span className="text-xs text-navy/45 tabular-nums">
-                          {daysUntil(deadline) <= 0 ? "vence hoy" : `${daysUntil(deadline)} días`}
-                        </span>
-                        <span className={`text-xs font-medium px-2 py-0.5 rounded ${badgeClass}`}>{date}</span>
-                      </div>
-                    </div>
-                  );
-                })}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <ClientesPaymentsBreakdown
+                  succeeded={totalRev}
+                  refunded={breakdown.refunded}
+                  disputed={breakdown.disputed}
+                  failed={breakdown.failed}
+                  refundedIds={breakdown.refundedIds}
+                  disputedIds={breakdown.disputedIds}
+                  failedIds={breakdown.failedIds}
+                  customers={customers}
+                  periodLabel={periodLabel}
+                  excludeSegments={["disputed", "failed"]}
+                />
+                <PrimeraCompra summary={firstPurchaseSummary} />
               </div>
-            </ChartCard>
-            <ChartCard
-              title="IVA soportado y retenciones"
-              subtitle="Según el IVA/retención asignado por contacto al importar (Configuración → Contactos)"
-              sources={["excel"]}
-              lastUpdated={bancoLastUpdated}
-            >
-              {fiscalRows.length === 0 ? (
-                <p className="text-sm text-navy/40">Todavía no hay movimientos con IVA o retención asignados.</p>
-              ) : (
+              <EvolucionInscritos data={activeCustomersData} />
+              <EvolucionSuscripcionesFullWidth monthly={monthlyRevenue} cohorts={subscriptionCohorts} events={businessEvents} rawPayments={pMain} />
+              <RetencionCohorte cohorts={retentionCohorts} />
+              <ConversionPack summary={conversionSummary} />
+            </div>
+          </section>
+        }
+        fiscal={
+          <section>
+            <SectionHeader id="fiscal" title="Fiscal y financiación" />
+            <div className="space-y-4">
+              <ChartCard title="Próximas obligaciones">
                 <div className="space-y-3">
-                  {fiscalRows.map((r) => (
-                    <div key={r.quarter} className="flex items-center justify-between">
-                      <span className="text-sm text-navy">{r.quarter}</span>
-                      <div className="flex items-center gap-4 text-xs text-navy/55">
-                        <span>IVA soportado <strong className="text-navy tabular-nums">{fmt(r.iva)}</strong></span>
-                        <span>Retenciones <strong className="text-navy tabular-nums">{fmt(r.retencion)}</strong></span>
+                  {obligations.map(({ label, date, deadline }) => {
+                    const days = daysUntil(deadline);
+                    const badgeClass = days <= 30
+                      ? "bg-danger/10 text-danger"
+                      : days <= 60
+                      ? "bg-warning/10 text-warning"
+                      : "bg-navy/5 text-navy/55";
+                    return (
+                      <div key={label} className="flex items-center justify-between">
+                        <span className="text-sm text-navy">{label}</span>
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs text-navy/45 tabular-nums">
+                            {daysUntil(deadline) <= 0 ? "vence hoy" : `${daysUntil(deadline)} días`}
+                          </span>
+                          <span className={`text-xs font-medium px-2 py-0.5 rounded ${badgeClass}`}>{date}</span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
-              )}
-            </ChartCard>
-            <Financiacion initialBudgets={budgets} spent={budgetSpent} />
-          </div>
-        </section>
-
-      </div>
+              </ChartCard>
+              <ChartCard
+                title="IVA soportado y retenciones"
+                subtitle="Según el IVA/retención asignado por contacto al importar (Configuración → Contactos)"
+                sources={["excel"]}
+                lastUpdated={bancoLastUpdated}
+              >
+                {fiscalRows.length === 0 ? (
+                  <p className="text-sm text-navy/40">Todavía no hay movimientos con IVA o retención asignados.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {fiscalRows.map((r) => (
+                      <div key={r.quarter} className="flex items-center justify-between">
+                        <span className="text-sm text-navy">{r.quarter}</span>
+                        <div className="flex items-center gap-4 text-xs text-navy/55">
+                          <span>IVA soportado <strong className="text-navy tabular-nums">{fmt(r.iva)}</strong></span>
+                          <span>Retenciones <strong className="text-navy tabular-nums">{fmt(r.retencion)}</strong></span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </ChartCard>
+              <Financiacion initialBudgets={budgets} spent={budgetSpent} />
+            </div>
+          </section>
+        }
+      />
     </>
   );
 }
