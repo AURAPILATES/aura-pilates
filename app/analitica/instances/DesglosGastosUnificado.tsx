@@ -175,6 +175,26 @@ export default function DesglosGastosUnificado({
         ? { label: selected.leaf.label, color: selected.leaf.color, iconKey: selected.leaf.iconKey, total: selected.leaf.total, count: selected.leaf.count }
         : null;
 
+  const openableGroups = GROUP_ORDER.filter((group) => {
+    const g = groups.find((x) => x.group === group);
+    return !!g && g.total > 0;
+  });
+  const openableCategories = categories.filter((c) => c.children.length > 0).map((c) => c.key);
+  const allResumenExpanded =
+    openableGroups.length > 0 &&
+    openableGroups.every((g) => expandedGroups.has(g)) &&
+    openableCategories.every((k) => expandedCategories.has(k));
+
+  function toggleAllResumen() {
+    if (allResumenExpanded) {
+      setExpandedGroups(new Set());
+      setExpandedCategories(new Set());
+    } else {
+      setExpandedGroups(new Set(openableGroups));
+      setExpandedCategories(new Set(openableCategories));
+    }
+  }
+
   const selectedTxns = selected
     ? (selected.kind === "category" ? categoryTxns(selected.seg) : (transactionsByCategory[selected.leaf.value] ?? []))
         .slice()
@@ -219,7 +239,17 @@ export default function DesglosGastosUnificado({
       <EvolucionGastosBody groups={groups} period={period} hiddenGroups={hiddenGroups} chartType={chartType} />
 
       {/* ── Resumen: acordeón Grupo → Categoría → Subcategoría ──────────────── */}
-      <p className="text-xs font-medium text-navy/55 mt-5 mb-2.5">Resumen</p>
+      <div className="flex items-center gap-2 mt-5 mb-2.5">
+        <p className="text-xs font-medium text-navy/55">Resumen</p>
+        <button
+          type="button"
+          onClick={toggleAllResumen}
+          className="flex items-center gap-0.5 text-xs font-medium text-navy/40 hover:text-navy/70 transition-colors"
+        >
+          <ChevronDown size={11} className={`transition-transform duration-200 ${allResumenExpanded ? "rotate-180" : ""}`} />
+          {allResumenExpanded ? "Contraer" : "Desglosar"}
+        </button>
+      </div>
       <div className="space-y-1">
         {GROUP_ORDER.map((group) => {
           const g = groups.find((x) => x.group === group);
