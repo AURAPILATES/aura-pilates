@@ -34,7 +34,7 @@ function FuenteTooltip({ active, payload }: TooltipContentProps) {
       <div className="flex items-center gap-1.5 mb-0.5">
         <span className="w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: COLOR_STRIPE }} />
         <span className="text-navy/55">Stripe</span>
-        <span className="font-semibold text-navy ml-auto">{fmtEur(row.stripeNet)}</span>
+        <span className="font-semibold text-navy ml-auto">{fmtEur(row.stripeGross)}</span>
       </div>
       <div className="flex items-center gap-1.5">
         <span className="w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: COLOR_USC }} />
@@ -64,13 +64,13 @@ export default function IngresosPorFuenteBody({
           <Tooltip content={FuenteTooltip} cursor={chartType === "bar" ? { fill: "rgba(28,25,23,0.04)" } : { stroke: "rgba(28,25,23,0.2)", strokeDasharray: "4 3" }} />
           {chartType === "bar" ? (
             <>
-              <Bar dataKey="stripeNet" name="Stripe" stackId="a" fill={COLOR_STRIPE} radius={[0, 0, 0, 0]} />
-              <Bar dataKey="uscNet"    name="Urban"  stackId="a" fill={COLOR_USC}    radius={[2, 2, 0, 0]} />
+              <Bar dataKey="stripeGross" name="Stripe" stackId="a" fill={COLOR_STRIPE} radius={[0, 0, 0, 0]} />
+              <Bar dataKey="uscNet"      name="Urban"  stackId="a" fill={COLOR_USC}    radius={[2, 2, 0, 0]} />
             </>
           ) : (
             <>
-              <Line type="monotone" dataKey="stripeNet" name="Stripe" stroke={COLOR_STRIPE} strokeWidth={2} dot={{ r: 3, fill: COLOR_STRIPE, stroke: "white", strokeWidth: 1.5 }} activeDot={{ r: 4.5 }} />
-              <Line type="monotone" dataKey="uscNet"    name="Urban"  stroke={COLOR_USC}    strokeWidth={2} dot={{ r: 3, fill: COLOR_USC,    stroke: "white", strokeWidth: 1.5 }} activeDot={{ r: 4.5 }} />
+              <Line type="monotone" dataKey="stripeGross" name="Stripe" stroke={COLOR_STRIPE} strokeWidth={2} dot={{ r: 3, fill: COLOR_STRIPE, stroke: "white", strokeWidth: 1.5 }} activeDot={{ r: 4.5 }} />
+              <Line type="monotone" dataKey="uscNet"      name="Urban"  stroke={COLOR_USC}    strokeWidth={2} dot={{ r: 3, fill: COLOR_USC,    stroke: "white", strokeWidth: 1.5 }} activeDot={{ r: 4.5 }} />
             </>
           )}
         </ComposedChart>

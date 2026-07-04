@@ -40,30 +40,30 @@ export default function IngresosPorFuente({
 }) {
   const [chartType, setChartType] = useState<"bar" | "line">("bar");
 
-  // El CSV de Momence ya registra lo que paga Urban (11 €/clase = neto para Aura)
-  const uscNet   = uscGross;
-  const totalNet = stripeNet + uscNet;
+  // El CSV de Momence ya registra lo que paga Urban (11 €/clase, sin comisión visible para Aura)
+  const uscNet     = uscGross;
+  const totalBruto = stripeGross + uscNet;
 
   const SOURCES = [
-    { key: "stripe", label: "Stripe", color: "#4021c8", value: stripeNet },
+    { key: "stripe", label: "Stripe", color: "#4021c8", value: stripeGross },
     { key: "urban",  label: "Urban",  color: "#F59E0B", value: uscNet },
   ];
 
   return (
     <ChartCard
       title="Ingresos por fuente"
-      subtitle="Importe neto (sin comisiones) por canal de venta"
+      subtitle="Importe bruto (precio de venta, antes de comisión Stripe e impuestos) por canal"
       dateRange={dateRange}
       kpiItems={[
         {
           label: "Ventas totales",
-          value: fmtEur(totalNet),
-          helper: "Stripe neto + Urban",
+          value: fmtEur(totalBruto),
+          helper: "Stripe bruto + Urban",
         },
         {
           label: "Ventas Stripe",
-          value: fmtEur(stripeNet),
-          helper: `Bruto: ${fmtEur(stripeGross)} · comis. ${fmtEur(stripeFees)}`,
+          value: fmtEur(stripeGross),
+          helper: `Neto tras comis.: ${fmtEur(stripeNet)} (−${fmtEur(stripeFees)})`,
         },
         {
           label: "Ventas Urban",
@@ -83,7 +83,7 @@ export default function IngresosPorFuente({
           />
         </div>
       }
-      dataSource="Stripe API (pagos netos) + Urban Sports Club Momence CSV (11 €/clase, ya neto)"
+      dataSource="Stripe API (precio de venta, antes de comisión) + Urban Sports Club Momence CSV (11 €/clase)"
       sources={["stripe", "momence"]}
       lastUpdated={lastUpdated}
     >
@@ -97,7 +97,7 @@ export default function IngresosPorFuente({
             {SOURCES.map((s) => (
               <div
                 key={s.key}
-                style={{ flex: `${totalNet > 0 ? s.value / totalNet : 0} 0 0%`, backgroundColor: s.color }}
+                style={{ flex: `${totalBruto > 0 ? s.value / totalBruto : 0} 0 0%`, backgroundColor: s.color }}
               />
             ))}
           </div>
@@ -107,7 +107,7 @@ export default function IngresosPorFuente({
               label: s.label,
               color: s.color,
               value: fmtEur(s.value),
-              helper: totalNet > 0 ? `${Math.round((s.value / totalNet) * 100)}%` : "—",
+              helper: totalBruto > 0 ? `${Math.round((s.value / totalBruto) * 100)}%` : "—",
             }))}
           />
         </div>
@@ -147,7 +147,7 @@ export default function IngresosPorFuente({
               <th className="text-right py-2 pr-3 text-navy/45 font-semibold uppercase tracking-wide">Comis. Stripe</th>
               <th className="text-right py-2 pr-3 text-navy/45 font-semibold uppercase tracking-wide">Stripe neto</th>
               <th className="text-right py-2 pr-3 text-navy/45 font-semibold uppercase tracking-wide">Urban</th>
-              <th className="text-right py-2 text-navy/45 font-semibold uppercase tracking-wide">Total neto</th>
+              <th className="text-right py-2 text-navy/45 font-semibold uppercase tracking-wide">Total bruto</th>
             </tr>
           </thead>
           <tbody>
@@ -158,7 +158,7 @@ export default function IngresosPorFuente({
                 <td className="py-2 pr-3 text-right text-danger tabular-nums">{row.stripeFees > 0 ? `−${fmtEur(row.stripeFees)}` : "-"}</td>
                 <td className="py-2 pr-3 text-right text-navy tabular-nums">{row.stripeNet > 0 ? fmtEur(row.stripeNet) : "-"}</td>
                 <td className="py-2 pr-3 text-right text-navy tabular-nums">{row.uscNet > 0 ? fmtEur(row.uscNet) : "-"}</td>
-                <td className="py-2 text-right text-navy font-medium tabular-nums">{fmtEur(row.stripeNet + row.uscNet)}</td>
+                <td className="py-2 text-right text-navy font-medium tabular-nums">{fmtEur(row.stripeGross + row.uscNet)}</td>
               </tr>
             ))}
           </tbody>
@@ -169,7 +169,7 @@ export default function IngresosPorFuente({
               <td className="py-2 pr-3 text-right text-danger font-semibold tabular-nums">−{fmtEur(stripeFees)}</td>
               <td className="py-2 pr-3 text-right text-navy font-semibold tabular-nums">{fmtEur(stripeNet)}</td>
               <td className="py-2 pr-3 text-right text-navy font-semibold tabular-nums">{fmtEur(uscGross)}</td>
-              <td className="py-2 text-right text-navy font-semibold tabular-nums">{fmtEur(totalNet)}</td>
+              <td className="py-2 text-right text-navy font-semibold tabular-nums">{fmtEur(totalBruto)}</td>
             </tr>
           </tfoot>
         </table>
