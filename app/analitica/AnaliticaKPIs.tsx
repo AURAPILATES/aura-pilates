@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { AlertTriangle, CreditCard } from "react-feather";
 import { fmt } from "@/lib/analytics";
 import Drawer from "@/app/components/Drawer";
 import { ChartCard, ProportionBar } from "@/components/charts";
 import { hasActiveSub, hasActivePack, isChurned, type EnrichedCustomer } from "@/lib/customerEnrichment";
 import type { MomenceChurnResult } from "@/lib/subscriberSnapshots";
+import { ackPaymentErrorAction } from "@/app/actions/ackPaymentError";
 
 type DrawerKey = "active" | "new" | "altas" | "churn" | "error" | "convert" | "baja_momence" | "alta_momence" | null;
 
@@ -36,7 +38,15 @@ const extIcon = (
   </svg>
 );
 
-function CustomerRowItem({ c, showError }: { c: EnrichedCustomer; showError?: boolean }) {
+function CustomerRowItem({
+  c, showError, onAck, acking, acked,
+}: {
+  c: EnrichedCustomer;
+  showError?: boolean;
+  onAck?: () => void;
+  acking?: boolean;
+  acked?: boolean;
+}) {
   const latestId = c.stripeIds[c.stripeIds.length - 1];
   return (
     <div className="px-6 py-4 flex items-center justify-between gap-4 hover:bg-navy/[0.015] transition-colors">
@@ -53,15 +63,32 @@ function CustomerRowItem({ c, showError }: { c: EnrichedCustomer; showError?: bo
           <p className="text-xs text-danger mt-1">{c.paymentErrorReason}</p>
         )}
       </div>
-      <a
-        href={`https://dashboard.stripe.com/customers/${latestId}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-[#635bff] rounded-lg hover:bg-[#4f46e5] transition-colors"
-      >
-        {extIcon}
-        Stripe
-      </a>
+      <div className="shrink-0 flex flex-col items-end gap-1.5">
+        <a
+          href={`https://dashboard.stripe.com/customers/${latestId}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-[#635bff] rounded-lg hover:bg-[#4f46e5] transition-colors"
+        >
+          {extIcon}
+          Stripe
+        </a>
+        {onAck && (
+          <button
+            type="button"
+            onClick={onAck}
+            disabled={acking || acked}
+            title="Ya hablé con la clienta sobre este cobro fallido: deja de estar aquí como pendiente hasta que falle un cobro nuevo."
+            className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors whitespace-nowrap disabled:cursor-default ${
+              acked
+                ? "border-success/30 bg-success/10 text-success"
+                : "border-navy/15 text-navy/60 hover:text-navy hover:border-navy/30"
+            }`}
+          >
+            {acked ? "Hablado ✓" : acking ? "Guardando…" : "Ya hablé con ella"}
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -86,7 +113,21 @@ export default function AnaliticaKPIs({
   customers, periodLabel, periodFrom, periodTo, compDateRange, spendPerClient, spendPerClientComp,
   newCustomers, reactivatedCustomers, convertCandidates, activeMomenceSubCount, activeRecurringCount, momenceChurn,
 }: Props) {
+  const router = useRouter();
   const [drawer, setDrawer] = useState<DrawerKey>(null);
+  const [ackingId, setAckingId] = useState<string | null>(null);
+  const [ackedIds, setAckedIds] = useState<Set<string>>(new Set());
+
+  async function handleAck(c: EnrichedCustomer) {
+    setAckingId(c.id);
+    try {
+      await ackPaymentErrorAction(c.id, c.paymentErrorDate);
+      setAckedIds((prev) => new Set(prev).add(c.id));
+      router.refresh();
+    } finally {
+      setAckingId(null);
+    }
+  }
 
   const dateRange = `${fmtD(periodFrom)} – ${fmtD(periodTo)}`;
 
@@ -425,7 +466,16 @@ export default function AnaliticaKPIs({
                 {allCustomers.length === 0 && (
                   <p className="px-6 py-12 text-center text-sm text-navy/40">Sin clientes en este grupo.</p>
                 )}
-                {allCustomers.map((c) => <CustomerRowItem key={c.id} c={c} showError={drawer === "error"} />)}
+                {allCustomers.map((c) => (
+                  <CustomerRowItem
+                    key={c.id}
+                    c={c}
+                    showError={drawer === "error"}
+                    onAck={drawer === "error" ? () => handleAck(c) : undefined}
+                    acking={ackingId === c.id}
+                    acked={ackedIds.has(c.id)}
+                  />
+                ))}
               </div>
             )}
           </Drawer>

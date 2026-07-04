@@ -25,6 +25,7 @@ export type StripeCustomer = {
   delinquent: boolean;
   hasPaymentError: boolean; // delinquent OR invoice intentada y no cobrada
   paymentErrorReason: string | null; // motivo legible del último fallo de cobro
+  paymentErrorDate: string | null; // fecha del fallo más reciente, para saber si un "hablado con clienta" sigue vigente
 };
 
 // ── Cached raw customer list from Stripe ──────────────────────────────────────
@@ -136,6 +137,7 @@ export async function loadStripeCustomers(
     delinquent: boolean;
     hasPaymentError: boolean;
     paymentErrorReason: string | null;
+    paymentErrorDate: string | null;
   };
 
   // Último pago exitoso por stripeId (ya tenemos los pagos cargados)
@@ -183,6 +185,7 @@ export async function loadStripeCustomers(
       delinquent: c.delinquent ?? false,
       hasPaymentError,
       paymentErrorReason: hasPaymentError ? (failed?.reason ?? (c.delinquent ? "Cuenta morosa en Stripe" : null)) : null,
+      paymentErrorDate: hasPaymentError ? (failed?.failedAt ?? null) : null,
     });
   }
 
@@ -226,6 +229,7 @@ export async function loadStripeCustomers(
       delinquent:      group.some((r) => r.delinquent),
       hasPaymentError: group.some((r) => r.hasPaymentError),
       paymentErrorReason: group.find((r) => r.hasPaymentError)?.paymentErrorReason ?? null,
+      paymentErrorDate: group.find((r) => r.hasPaymentError)?.paymentErrorDate ?? null,
     };
   }
 

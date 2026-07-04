@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useState, useRef, type ReactNode } from "react";
 import { Book, ChevronDown, Eye, EyeOff, Zap } from "react-feather";
 import DeltaBadge, { type DeltaDirection } from "./DeltaBadge";
 import { SOURCE_LABELS, type SourceKey } from "../icons/SourceIcons";
@@ -60,9 +60,19 @@ export default function ChartCard({
   className = "",
 }: ChartCardProps) {
   const [aiOpen, setAiOpen] = useState(aiInsightDefaultOpen);
+  const [tooltip, setTooltip] = useState<{ text: string; top: number; left: number } | null>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  function showTooltip(e: { currentTarget: HTMLElement }, text: string) {
+    const iconRect = e.currentTarget.getBoundingClientRect();
+    const cardRect = cardRef.current?.getBoundingClientRect();
+    if (!cardRect) return;
+    const maxLeft = (typeof window !== "undefined" ? window.innerWidth : iconRect.left + 216) - 216;
+    setTooltip({ text, top: cardRect.top - 8, left: Math.max(8, Math.min(iconRect.left, maxLeft)) });
+  }
 
   return (
-    <div className={`bg-white border border-navy/[0.07] rounded-2xl overflow-hidden shadow-card ${className}`}>
+    <div ref={cardRef} className={`relative bg-white border border-navy/[0.07] rounded-2xl overflow-hidden shadow-card ${className}`}>
       {/* HEADER */}
       <div className="px-4 sm:px-5 pt-4">
         <div className="flex items-center justify-between gap-2 flex-wrap mb-1">
@@ -108,16 +118,16 @@ export default function ChartCard({
                 <div className="text-[11px] text-navy/50 mb-1 flex items-center gap-1">
                   {item.label}
                   {item.tooltip && (
-                    <div className="relative group/tip shrink-0">
+                    <span
+                      className="shrink-0"
+                      onMouseEnter={(e) => showTooltip(e, item.tooltip!)}
+                      onMouseLeave={() => setTooltip(null)}
+                    >
                       <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" className="text-navy/30 cursor-help">
                         <circle cx="12" cy="12" r="10"/>
                         <path d="M12 16v-4M12 8h.01" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
                       </svg>
-                      <div className="pointer-events-none absolute bottom-full left-0 mb-2 w-52 bg-navy text-white text-[11px] leading-relaxed rounded-xl px-3 py-2.5 opacity-0 group-hover/tip:opacity-100 transition-opacity z-50 shadow-xl normal-case tracking-normal font-normal">
-                        {item.tooltip}
-                        <div className="absolute top-full left-3 border-4 border-transparent border-t-navy" />
-                      </div>
-                    </div>
+                    </span>
                   )}
                 </div>
                 <div className={`text-2xl font-medium leading-tight text-navy ${item.valueClassName ?? ""}`}>
@@ -177,6 +187,18 @@ export default function ChartCard({
             <span />
           )}
           {lastUpdated && <span className="shrink-0 whitespace-nowrap">Última actualización: {lastUpdated}</span>}
+        </div>
+      )}
+
+      {/* Tooltip de kpiItems: posición fija por encima de toda la caja (no del icono), para
+          que nunca tape el título/subtítulo de la propia card */}
+      {tooltip && (
+        <div
+          className="fixed z-50 w-52 -translate-y-full bg-navy text-white text-[11px] leading-relaxed rounded-xl px-3 py-2.5 shadow-xl normal-case tracking-normal font-normal pointer-events-none"
+          style={{ top: tooltip.top, left: tooltip.left }}
+        >
+          {tooltip.text}
+          <div className="absolute top-full left-3 border-4 border-transparent border-t-navy" />
         </div>
       )}
     </div>

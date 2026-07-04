@@ -40,6 +40,7 @@ import EvolucionSuscripcionesFullWidth from "./instances/EvolucionSuscripcionesF
 import RetencionCohorte from "./instances/RetencionCohorte";
 import { loadBusinessEvents } from "@/lib/businessEvents";
 import { getMomenceChurn } from "@/lib/subscriberSnapshots";
+import { loadPaymentErrorAcks, isPaymentErrorAcked } from "@/lib/paymentErrorAcks";
 import { ChartCard } from "@/components/charts";
 import { pad2 } from "@/lib/periodCalculation";
 import AnaliticaKPIs from "./AnaliticaKPIs";
@@ -144,7 +145,7 @@ export default async function AnaliticaLoader({
   const [
     paymentsAll, membershipsAll, productsAll, customersAll,
     txnsAll, dbCategories, budgets, businessEvents, recurringExpenses, breakdown,
-    bancoLastImport, momenceChurn,
+    bancoLastImport, momenceChurn, paymentErrorAcks,
   ] = await Promise.all([
     loadStripePaymentsCached(),
     getMemberships(),
@@ -158,6 +159,7 @@ export default async function AnaliticaLoader({
     loadPaymentsBreakdown(mainFrom, mainTo),
     getLatestImportDate(),
     getMomenceChurn(),
+    loadPaymentErrorAcks(),
   ]);
 
   // Stripe/Momence se leen en vivo en cada carga; el banco depende de la última subida manual de CSV.
@@ -488,10 +490,18 @@ export default async function AnaliticaLoader({
   const mainPayerIds = new Set(pMain.filter((p) => p.customerId).map((p) => p.customerId!));
   const compPayerIds = new Set(pComp.filter((p) => p.customerId).map((p) => p.customerId!));
 
-  const customers = enrichCustomers(stripeCustomersAll, paymentsAll, {
+  const customersRaw = enrichCustomers(stripeCustomersAll, paymentsAll, {
     activeIds: mainPayerIds,
     newCustomerIds: mainNewCustomerIds,
   });
+
+  // Si ya se marcó "hablado con clienta" para este error y no ha fallado un cobro más
+  // reciente desde entonces, deja de contar como error de pago pendiente.
+  const customers = customersRaw.map((c) =>
+    c.hasPaymentError && isPaymentErrorAcked(paymentErrorAcks.get(c.id), c.paymentErrorDate)
+      ? { ...c, hasPaymentError: false }
+      : c,
+  );
 
   // ── Activos por email, deduplicados ──
   const payingCustomers     = customers.filter((c) => c.stripeIds.some((sid) => mainPayerIds.has(sid)));
