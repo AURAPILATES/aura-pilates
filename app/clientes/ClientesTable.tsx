@@ -388,7 +388,7 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
                 <th className="text-left px-4 py-2.5 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Plan</th>
                 <ThSort col="totalSpent"      label="Total"        className="text-right" />
                 <ThSort col="lastPaymentDate" label="Último pago"  className="text-right hidden sm:table-cell" />
-                <th className="text-center px-4 py-2.5 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Estado</th>
+                <th className="text-left px-4 py-2.5 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Estado</th>
               </tr>
             </thead>
             <tbody>
@@ -448,29 +448,29 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
                       <td className="px-4 py-2.5 text-right text-navy/55 text-xs hidden sm:table-cell">
                         {c.lastPaymentDate ? fmtDate(c.lastPaymentDate) : "—"}
                       </td>
-                      <td className="px-4 py-2.5 text-center">
+                      <td className="px-4 py-2.5 text-left">
                         {status === "baja" ? (
-                          <span className="inline-flex items-center gap-1.5 text-xs text-danger font-medium whitespace-nowrap">
+                          <span className="inline-flex items-center gap-1.5 text-xs text-danger font-medium whitespace-nowrap border border-navy/[0.12] bg-white rounded-full px-3 py-1">
                             <span className="w-1.5 h-1.5 rounded-full bg-danger shrink-0 inline-block" />
                             {c.isRecurring ? `Baja · ${days}d` : `Pack vencido · ${days}d`}
                           </span>
                         ) : status === "sinpagar" ? (
-                          <span className="inline-flex items-center gap-1.5 text-xs text-warning font-medium whitespace-nowrap">
+                          <span className="inline-flex items-center gap-1.5 text-xs text-warning font-medium whitespace-nowrap border border-navy/[0.12] bg-white rounded-full px-3 py-1">
                             <span className="w-1.5 h-1.5 rounded-full bg-warning shrink-0 inline-block" />
                             Sin pagar · {days}d tarde
                           </span>
                         ) : status === "caducado" ? (
-                          <span className="inline-flex items-center gap-1.5 text-xs text-warning font-medium whitespace-nowrap">
+                          <span className="inline-flex items-center gap-1.5 text-xs text-warning font-medium whitespace-nowrap border border-navy/[0.12] bg-white rounded-full px-3 py-1">
                             <span className="w-1.5 h-1.5 rounded-full bg-warning shrink-0 inline-block" />
                             Pack vencido · {days}d
                           </span>
                         ) : status === "porvencer" ? (
-                          <span className="inline-flex items-center gap-1.5 text-xs text-amber-500 font-medium whitespace-nowrap">
+                          <span className="inline-flex items-center gap-1.5 text-xs text-amber-500 font-medium whitespace-nowrap border border-navy/[0.12] bg-white rounded-full px-3 py-1">
                             <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0 inline-block" />
                             Vence en {days}d
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1.5 text-xs text-success font-medium">
+                          <span className="inline-flex items-center gap-1.5 text-xs text-success font-medium border border-navy/[0.12] bg-white rounded-full px-3 py-1">
                             <span className="w-1.5 h-1.5 rounded-full bg-success inline-block" />
                             Al día
                           </span>
