@@ -171,6 +171,7 @@ export default async function AnaliticaLoader({
 
   const pMain = paymentsAll.filter((p) => p.date >= mainFrom && p.date <= mainTo);
   const pComp = paymentsAll.filter((p) => p.date >= compFrom && p.date <= compTo);
+  const txnsMain = txnsAll.filter((t) => t.date >= mainFrom && t.date <= mainTo);
 
   const hasSales  = paymentsAll.length > 0;
   const totalRev  = stripeTotalRevenue(pMain);
@@ -240,7 +241,7 @@ export default async function AnaliticaLoader({
   // p.ej. al convertir "Electricidad" en la subcategoría "Luz"), así que el lookup va por value.
   const dbCatByValue = new Map(dbCategories.map((c) => [c.value, c]));
   const dbCatById = new Map(dbCategories.map((c) => [c.id, c]));
-  const expByCategory = expensesByCategoryAll(txnsAll, dbCategories);
+  const expByCategory = expensesByCategoryAll(txnsMain, dbCategories);
   const totalExpCat   = expByCategory.reduce((s, r) => s + r.total, 0);
 
   // ── Budgets / Financiación ────────────────────────────────────────────────
@@ -296,21 +297,8 @@ export default async function AnaliticaLoader({
   const subscriptionCohorts = computeSubscriptionCohorts(paymentsAllBounded, subscriptionTiers, primaryIdMap);
   const retentionCohorts = computeRetentionCohorts(paymentsAllBounded, subscriptionTiers, 4, primaryIdMap);
 
-  // Rango real de transacciones para mostrarlo en el desglose
-  const txnDates = txnsAll.map((t) => t.date).sort();
-  const txnRangeLabel = (() => {
-    if (txnDates.length === 0) return null;
-    const fmt3 = (d: string) => {
-      const [y, m] = d.split("-");
-      return `${MES[parseInt(m, 10) - 1].toLowerCase()} ${y}`;
-    };
-    const from3 = fmt3(txnDates[0]);
-    const to3   = fmt3(txnDates[txnDates.length - 1]);
-    return from3 === to3 ? from3 : `${from3} – ${to3}`;
-  })();
-
   const transactionsByCategory: Record<string, { date: string; amount: number; concept: string; contact: string }[]> = {};
-  for (const t of txnsAll) {
+  for (const t of txnsMain) {
     if (!t.category) continue;
     if (!transactionsByCategory[t.category]) transactionsByCategory[t.category] = [];
     transactionsByCategory[t.category].push({ date: t.date, amount: t.amount, concept: t.concept ?? "", contact: t.contact ?? "" });
@@ -568,7 +556,7 @@ export default async function AnaliticaLoader({
                 transactionsByCategory={transactionsByCategory}
                 totalExpCat={totalExpCat}
                 totalExpCatNoCapex={totalExpCatNoCapex}
-                rangeLabel={txnRangeLabel}
+                rangeLabel={periodLabel}
               />
               <PrevisionGastos forecasts={recurringForecasts} categories={dbCategories} avgSuministros={avgSuministros} />
             </div>

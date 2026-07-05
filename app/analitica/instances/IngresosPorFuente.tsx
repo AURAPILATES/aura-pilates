@@ -41,6 +41,14 @@ export default function IngresosPorFuente({
   const uscNet     = uscGross;
   const totalBruto = stripeGross + uscNet;
 
+  // La tabla desglosa TODO el histórico mensual (no solo el período seleccionado arriba),
+  // así que su fila "Total" debe sumar las filas mostradas, no los KPI del período.
+  const tableStripeGross = monthly.reduce((s, r) => s + r.stripeGross, 0);
+  const tableStripeFees  = monthly.reduce((s, r) => s + r.stripeFees, 0);
+  const tableStripeNet   = monthly.reduce((s, r) => s + r.stripeNet, 0);
+  const tableUscNet      = monthly.reduce((s, r) => s + r.uscNet, 0);
+  const tableTotalBruto  = tableStripeGross + tableUscNet;
+
   const SOURCES = [
     { key: "stripe", label: "Stripe", color: "#4021c8", value: stripeGross },
     { key: "urban",  label: "Urban",  color: "#F59E0B", value: uscNet },
@@ -137,11 +145,11 @@ export default function IngresosPorFuente({
           <tfoot>
             <tr className="border-t border-navy/[0.07] bg-navy/[0.025]">
               <td className="py-2 pr-3 text-navy/55 font-semibold">Total</td>
-              <td className="py-2 pr-3 text-right text-navy font-semibold tabular-nums">{fmtEur(stripeGross)}</td>
-              <td className="py-2 pr-3 text-right text-danger font-semibold tabular-nums">−{fmtEur(stripeFees)}</td>
-              <td className="py-2 pr-3 text-right text-navy font-semibold tabular-nums">{fmtEur(stripeNet)}</td>
-              <td className="py-2 pr-3 text-right text-navy font-semibold tabular-nums">{fmtEur(uscGross)}</td>
-              <td className="py-2 text-right text-navy font-semibold tabular-nums">{fmtEur(totalBruto)}</td>
+              <td className="py-2 pr-3 text-right text-navy font-semibold tabular-nums">{fmtEur(tableStripeGross)}</td>
+              <td className="py-2 pr-3 text-right text-danger font-semibold tabular-nums">−{fmtEur(tableStripeFees)}</td>
+              <td className="py-2 pr-3 text-right text-navy font-semibold tabular-nums">{fmtEur(tableStripeNet)}</td>
+              <td className="py-2 pr-3 text-right text-navy font-semibold tabular-nums">{fmtEur(tableUscNet)}</td>
+              <td className="py-2 text-right text-navy font-semibold tabular-nums">{fmtEur(tableTotalBruto)}</td>
             </tr>
           </tfoot>
         </table>
