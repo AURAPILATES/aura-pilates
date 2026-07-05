@@ -281,15 +281,17 @@ function PendingRow({ row, categories, contacts, pick, selected, onToggleSelecte
   );
 }
 
-function ConfirmPendingDrawer({ row, period, pick, end, contacts, onClose, onPeriodChange, onEndChange, onOpenContactPicker, onConfirm, onIgnore }: {
+function ConfirmPendingDrawer({ row, period, pick, end, name, contacts, onClose, onPeriodChange, onEndChange, onNameChange, onOpenContactPicker, onConfirm, onIgnore }: {
   row: PendingSeriesRow;
   period: string;
   pick: ContactPick;
   end: EndFields;
+  name: string;
   contacts: Contact[];
   onClose: () => void;
   onPeriodChange: (period: string) => void;
   onEndChange: (end: EndFields) => void;
+  onNameChange: (name: string) => void;
   onOpenContactPicker: () => void;
   onConfirm: () => Promise<void>;
   onIgnore: () => Promise<void>;
@@ -311,9 +313,9 @@ function ConfirmPendingDrawer({ row, period, pick, end, contacts, onClose, onPer
       onClose={onClose}
       header={
         <div className="flex items-start gap-3">
-          <ContactAvatar label={label || row.label} resolved={!!pick} size={40} />
+          <ContactAvatar label={name || row.label} resolved={!!pick} size={40} />
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-navy truncate">{row.label}</p>
+            <p className="text-sm font-semibold text-navy truncate">{name || row.label}</p>
             <p className="text-xs text-navy/45 mt-0.5">{row.occurrences} pagos detectados · último {fmtDate(row.lastDate)}</p>
           </div>
         </div>
@@ -337,6 +339,17 @@ function ConfirmPendingDrawer({ row, period, pick, end, contacts, onClose, onPer
         <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-1.5">Importe</p>
         <p className="text-lg font-semibold text-navy">{fmtEUR(Math.abs(row.amount))}</p>
         <p className="text-xs text-navy/40 mt-0.5">detectado {row.period} · {row.occurrences} pagos</p>
+      </div>
+
+      <div className="p-4 border-b border-navy/[0.06]">
+        <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-1.5">Concepto / Nombre</p>
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => onNameChange(e.target.value)}
+          className="w-full px-3 py-2 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40"
+        />
+        <p className="text-xs text-navy/40 mt-2">Puede ser distinto del contacto vinculado.</p>
       </div>
 
       <div className="p-4 border-b border-navy/[0.06]">
@@ -379,7 +392,6 @@ function ConfirmedRow({ row, categories, contacts, onOpen }: { row: ConfirmedExp
   const e = row.expense;
   const catLabel = e.category ? categories.find((c) => c.value === e.category) : null;
   const contact = e.contact_id != null ? contacts.find((c) => c.id === e.contact_id) : undefined;
-  const label = contact?.label ?? e.label;
   const dotColor = catLabel?.text_color ?? "#9CA3AF";
 
   return (
@@ -389,7 +401,10 @@ function ConfirmedRow({ row, categories, contacts, onOpen }: { row: ConfirmedExp
       className="w-full flex items-center gap-2.5 py-2.5 px-4 hover:bg-navy/[0.025] transition-colors text-left"
     >
       <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: dotColor }} />
-      <span className="text-[13px] font-medium text-navy truncate flex-1 min-w-0">{label}</span>
+      <span className="text-[13px] font-medium text-navy truncate flex-1 min-w-0">{e.label}</span>
+      {contact && contact.label !== e.label && (
+        <span className="hidden sm:block shrink-0 text-[11px] text-navy/40 truncate max-w-[120px]">{contact.label}</span>
+      )}
       {catLabel && (
         <span className="hidden sm:block shrink-0 text-[11px] text-navy/45 bg-navy/[0.045] px-1.5 py-0.5 rounded truncate max-w-[140px]">
           {categoryDisplayLabel(catLabel, categories)}
@@ -417,10 +432,23 @@ function RecurringExpenseDrawer({ row, categories, contacts, onClose, onOpenCont
   const router = useRouter();
   const catLabel = e.category ? categories.find((c) => c.value === e.category) : null;
   const contact = e.contact_id != null ? contacts.find((c) => c.id === e.contact_id) : undefined;
-  const label = contact?.label ?? e.label;
+  const contactLabel = contact?.label ?? "Sin vincular";
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [saving, setSaving] = useState(false);
   const [end, setEnd] = useState<EndFields>(() => endFromExpense(e));
+  const [name, setName] = useState(e.label);
+
+  async function changeLabel() {
+    const trimmed = name.trim();
+    if (!trimmed || trimmed === e.label) { setName(e.label); return; }
+    setSaving(true);
+    try {
+      await updateRecurringExpense(e.id, { label: trimmed });
+      router.refresh();
+    } finally {
+      setSaving(false);
+    }
+  }
 
   async function changePeriod(next: string) {
     const days = PERIOD_BUCKETS.find((b) => b.label === next)?.days ?? e.period_days;
@@ -459,9 +487,9 @@ function RecurringExpenseDrawer({ row, categories, contacts, onClose, onOpenCont
       onClose={onClose}
       header={
         <div className="flex items-start gap-3">
-          <ContactAvatar label={label} resolved={!!contact} size={40} />
+          <ContactAvatar label={e.label} resolved={!!contact} size={40} />
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-navy truncate">{label}</p>
+            <p className="text-sm font-semibold text-navy truncate">{e.label}</p>
             {catLabel && <div className="mt-1"><CategoryBadge category={e.category} categories={categories} /></div>}
           </div>
         </div>
@@ -491,12 +519,25 @@ function RecurringExpenseDrawer({ row, categories, contacts, onClose, onOpenCont
       </div>
 
       <div className="p-4 border-b border-navy/[0.06]">
+        <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-1.5">Concepto / Nombre</p>
+        <input
+          type="text"
+          value={name}
+          disabled={saving}
+          onChange={(ev) => setName(ev.target.value)}
+          onBlur={changeLabel}
+          className="w-full px-3 py-2 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40 disabled:opacity-50"
+        />
+        <p className="text-xs text-navy/40 mt-2">Nombre de esta recurrencia — puede ser distinto del contacto vinculado.</p>
+      </div>
+
+      <div className="p-4 border-b border-navy/[0.06]">
         <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-1.5">Contacto vinculado</p>
         <button
           onClick={onOpenContactPicker}
           className="w-full flex items-center justify-between gap-2 px-3 py-2.5 border border-navy/15 rounded-lg hover:border-primary/40 transition-colors text-left"
         >
-          <span className="text-sm text-navy font-medium truncate">{label}</span>
+          <span className="text-sm text-navy font-medium truncate">{contactLabel}</span>
           <span className="text-xs text-primary shrink-0">Cambiar</span>
         </button>
         <p className="text-xs text-navy/40 mt-2">IVA: {e.iva_rate}% · Retención: {e.retencion_rate}% — heredados de la ficha del contacto.</p>
@@ -554,6 +595,7 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
   const [periods, setPeriods] = useState<Record<string, string>>({});
   const [picks, setPicks] = useState<Record<string, ContactPick>>({});
   const [ends, setEnds] = useState<Record<string, EndFields>>({});
+  const [names, setNames] = useState<Record<string, string>>({});
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
   const [openPendingKey, setOpenPendingKey] = useState<string | null>(null);
@@ -571,6 +613,10 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
     return ends[row.keys[0]] ?? defaultEnd();
   }
 
+  function nameFor(row: PendingSeriesRow): string {
+    return names[row.keys[0]] ?? row.label;
+  }
+
   function pickFor(row: PendingSeriesRow): ContactPick {
     if (row.keys[0] in picks) return picks[row.keys[0]];
     return row.matchedContactId != null ? { contactId: row.matchedContactId } : null;
@@ -584,7 +630,7 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
     const end = endFor(row);
     return {
       keys: row.keys,
-      label: row.label,
+      label: nameFor(row),
       category: row.category,
       period,
       period_days: periodDays,
@@ -609,7 +655,7 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
     const period = periodFor(row);
     const periodDays = PERIOD_BUCKETS.find((b) => b.label === period)?.days ?? row.periodDays;
     await recordRecurringExpense(
-      { keys: row.keys, label: row.label, category: row.category, period, period_days: periodDays, amount: row.amount, iva_rate: 0, retencion_rate: 0 },
+      { keys: row.keys, label: nameFor(row), category: row.category, period, period_days: periodDays, amount: row.amount, iva_rate: 0, retencion_rate: 0 },
       "ignored",
     );
     router.refresh();
@@ -735,10 +781,12 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
           period={periodFor(openPendingRow)}
           pick={pickFor(openPendingRow)}
           end={endFor(openPendingRow)}
+          name={nameFor(openPendingRow)}
           contacts={contacts}
           onClose={() => setOpenPendingKey(null)}
           onPeriodChange={(p) => setPeriods((prev) => ({ ...prev, [openPendingRow.keys[0]]: p }))}
           onEndChange={(end) => setEnds((prev) => ({ ...prev, [openPendingRow.keys[0]]: end }))}
+          onNameChange={(n) => setNames((prev) => ({ ...prev, [openPendingRow.keys[0]]: n }))}
           onOpenContactPicker={() => setPickerOpen(true)}
           onConfirm={() => confirmRow(openPendingRow)}
           onIgnore={() => ignoreRow(openPendingRow)}

@@ -1,5 +1,6 @@
 import type { Transaction } from "./transactions";
 import type { Category } from "./categories";
+import { contactKeyFor, matchesPattern } from "./contactRules";
 
 const MONTH_NAMES_RE = /\b(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)\b/g;
 
@@ -147,6 +148,104 @@ export type RecurringForecast = {
   daysUntil: number; // negativo = vencido
   occurrences: number;
 };
+
+export type PendingRecurringGroup = {
+  /** Una fila puede agrupar varias series detectadas que en realidad son el mismo gasto
+   * (mismo contacto + mismo importe, separadas porque parte de los movimientos no tenían el
+   * contacto asignado todavía) — se usa keys[0] como identificador estable de la fila. */
+  keys: string[];
+  label: string;
+  category: string | null;
+  period: string;
+  periodDays: number;
+  amount: number; // negativo
+  occurrences: number;
+  lastDate: string;
+  /** Textos de banco (concepto + más datos, ya limpios) de cada serie agrupada — se guardan
+   * como patrones del contacto al confirmar. */
+  bankPatterns: string[];
+  /** Contacto ya reconocido en el último movimiento de la serie (preselecciona el picker). */
+  matchedContactId: number | null;
+};
+
+type ContactLike = { id: number; label: string; patterns: string[] };
+type RecurringExpenseLike = { key: string; status: string; contact_id: number | null; label: string; amount: number };
+
+/**
+ * Series recurrentes detectadas que todavía no están confirmadas como gasto recurrente.
+ * Fusiona series que en realidad son el mismo gasto (mismo contacto/patrón + importe, pero
+ * key distinta porque parte de los movimientos son anteriores a tener el contacto asignado), y
+ * descarta las que ya están confirmadas bajo otra key (mismo contacto+importe o etiqueta+importe).
+ * Es la fuente única tanto para la lista de la pestaña "Recurrentes" como para el contador de
+ * la sidebar — deben coincidir siempre.
+ */
+export function computePendingRecurring(
+  transactions: Transaction[],
+  categories: Category[],
+  expenses: RecurringExpenseLike[],
+  contacts: ContactLike[],
+): PendingRecurringGroup[] {
+  const series = findRecurringSeries(transactions, categories);
+  const expenseByKey = new Set(expenses.map((e) => e.key));
+
+  function findMatchedContact(bankPattern: string, label: string): ContactLike | undefined {
+    return (
+      contacts.find((c) => c.patterns.some((p) => matchesPattern(bankPattern, p))) ??
+      contacts.find((c) => c.label.toLowerCase() === label.toLowerCase())
+    );
+  }
+
+  type PendingGroup = { keys: string[]; bankPatterns: string[]; contact: ContactLike | undefined; series: RecurringSeries[] };
+  const pendingGroups = new Map<string, PendingGroup>();
+  for (const s of series) {
+    if (expenseByKey.has(s.key)) continue;
+    const last = s.transactions[s.transactions.length - 1];
+    const bankPattern = contactKeyFor(last.concept, last.bank_details);
+    const contact = findMatchedContact(bankPattern, s.label);
+    const amountCents = Math.round(Math.abs(s.amount) * 100);
+    const groupKey = `${contact ? `c:${contact.id}` : `p:${bankPattern}`}:${amountCents}`;
+    const group = pendingGroups.get(groupKey) ?? { keys: [], bankPatterns: [], contact, series: [] };
+    group.keys.push(s.key);
+    group.bankPatterns.push(bankPattern);
+    group.series.push(s);
+    pendingGroups.set(groupKey, group);
+  }
+
+  const confirmedByContactAmount = new Set<string>();
+  const confirmedByLabelAmount = new Set<string>();
+  for (const e of expenses) {
+    if (e.status !== "confirmed") continue;
+    const amountCents = Math.round(Math.abs(e.amount) * 100);
+    if (e.contact_id != null) confirmedByContactAmount.add(`${e.contact_id}:${amountCents}`);
+    confirmedByLabelAmount.add(`${e.label.toLowerCase()}:${amountCents}`);
+  }
+  function alreadyConfirmed(g: PendingGroup): boolean {
+    const amountCents = Math.round(Math.abs(g.series[0].amount) * 100);
+    if (g.contact && confirmedByContactAmount.has(`${g.contact.id}:${amountCents}`)) return true;
+    const label = (g.contact?.label ?? g.series[0].label).toLowerCase();
+    return confirmedByLabelAmount.has(`${label}:${amountCents}`);
+  }
+
+  return [...pendingGroups.values()].filter((g) => !alreadyConfirmed(g)).map((g) => {
+    const byRecency = [...g.series].sort((a, b) =>
+      b.transactions[b.transactions.length - 1].date.localeCompare(a.transactions[a.transactions.length - 1].date),
+    );
+    const primary = byRecency[0];
+    const occurrences = g.series.reduce((sum, s) => sum + s.transactions.length, 0);
+    return {
+      keys: g.keys,
+      label: g.contact?.label ?? primary.label,
+      category: primary.category,
+      period: primary.period,
+      periodDays: primary.periodDays,
+      amount: primary.amount,
+      occurrences,
+      lastDate: primary.transactions[primary.transactions.length - 1].date,
+      bankPatterns: [...new Set(g.bankPatterns)],
+      matchedContactId: g.contact?.id ?? null,
+    };
+  });
+}
 
 /** Ancla a mediodía local: evita que toISOString() (UTC) recorte un día en zonas con offset
  * positivo (ej. Madrid en verano), donde la medianoche local cae en el día anterior en UTC. */

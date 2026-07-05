@@ -2,17 +2,18 @@ import { NextResponse } from "next/server";
 import { loadTransactionsCached } from "@/lib/transactions";
 import { loadRecurringExpensesCached } from "@/lib/recurringExpenses";
 import { loadCategoriesCached } from "@/lib/categories";
-import { findRecurringSeries } from "@/lib/recurring";
+import { computePendingRecurring } from "@/lib/recurring";
+import { getContacts } from "@/app/transacciones/actions";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const [transactions, expenses, categories] = await Promise.all([
+  const [transactions, expenses, categories, contacts] = await Promise.all([
     loadTransactionsCached(null, null),
     loadRecurringExpensesCached(),
     loadCategoriesCached(),
+    getContacts(),
   ]);
-  const expenseKeys = new Set(expenses.map((e) => e.key));
-  const count = findRecurringSeries(transactions, categories).filter((s) => !expenseKeys.has(s.key)).length;
+  const count = computePendingRecurring(transactions, categories, expenses, contacts).length;
   return NextResponse.json({ count });
 }

@@ -2,10 +2,9 @@ import { Suspense } from "react";
 import { loadTransactionsCached } from "@/lib/transactions";
 import { loadCategoriesCached } from "@/lib/categories";
 import { getDateRange } from "@/lib/dateRange";
-import { detectRecurringTransactions, findRecurringSeries, projectNextDate } from "@/lib/recurring";
+import { computePendingRecurring, detectRecurringTransactions, findRecurringSeries, projectNextDate } from "@/lib/recurring";
 import { loadRecurringExpensesCached } from "@/lib/recurringExpenses";
-import { contactKeyFor, matchesPattern } from "@/lib/contactRules";
-import { getContacts, type Contact } from "./actions";
+import { getContacts } from "./actions";
 import TransaccionesTabs from "./TransaccionesTabs";
 import type { ConfirmedExpenseRow, PendingSeriesRow } from "./RecurrentesList";
 import MobileNav from "@/app/components/MobileNav";
@@ -38,7 +37,6 @@ export default async function TransaccionesPage(props: {
   // ── Recurrentes ──
   const series = findRecurringSeries(allTimeTransactions, categories);
   const seriesByKey = new Map(series.map((s) => [s.key, s]));
-  const expenseByKey = new Map(expenses.map((e) => [e.key, e]));
 
   // Filtra gastos ya confirmados/ignorados antes de este fix cuya categoría sea de
   // ingreso (p. ej. "Ingresos Stripe"), para que no sigan apareciendo aunque ya
@@ -49,76 +47,7 @@ export default async function TransaccionesPage(props: {
   const isExpenseRow = (e: { category: string | null }) =>
     !e.category || !nonOperationalLabels.has(e.category);
 
-  // Empareja por patrón bancario (no solo por nombre exacto): la misma serie puede aparecer
-  // dos veces si parte de sus movimientos son anteriores a tener el contacto asignado y
-  // conservan códigos/referencias en el texto — el patrón ya limpio (bankPattern) sí coincide
-  // con los conceptos guardados del contacto aunque la "label" visible todavía no.
-  function findMatchedContact(bankPattern: string, label: string): Contact | undefined {
-    return (
-      contacts.find((c) => c.patterns.some((p) => matchesPattern(bankPattern, p))) ??
-      contacts.find((c) => c.label.toLowerCase() === label.toLowerCase())
-    );
-  }
-
-  // Fusiona en una sola fila las series que en realidad son el mismo gasto recurrente
-  // detectado dos veces (mismo contacto reconocido + mismo importe), típicamente porque parte
-  // de los movimientos son anteriores a tener el contacto asignado y conservan un texto de
-  // banco algo distinto. Si no se fusionaran, cada variante pediría confirmarse por separado
-  // aunque ya apuntaran al mismo contacto.
-  type PendingGroup = { keys: string[]; bankPatterns: string[]; contact: Contact | undefined; series: typeof series };
-  const pendingGroups = new Map<string, PendingGroup>();
-  for (const s of series) {
-    if (expenseByKey.has(s.key)) continue;
-    const last = s.transactions[s.transactions.length - 1];
-    const bankPattern = contactKeyFor(last.concept, last.bank_details);
-    const contact = findMatchedContact(bankPattern, s.label);
-    const amountCents = Math.round(Math.abs(s.amount) * 100);
-    const groupKey = `${contact ? `c:${contact.id}` : `p:${bankPattern}`}:${amountCents}`;
-    const group = pendingGroups.get(groupKey) ?? { keys: [], bankPatterns: [], contact, series: [] };
-    group.keys.push(s.key);
-    group.bankPatterns.push(bankPattern);
-    group.series.push(s);
-    pendingGroups.set(groupKey, group);
-  }
-
-  // Un gasto ya confirmado puede reaparecer como "detectado" bajo otra key (p. ej. porque el
-  // heurístico agrupó por concepto en vez de por contacto en algunos movimientos antiguos).
-  // Se descarta cualquier grupo pendiente cuyo contacto+importe (o etiqueta+importe si no hay
-  // contacto vinculado) ya coincida con un recurrente confirmado, para no duplicar la fila.
-  const confirmedByContactAmount = new Set<string>();
-  const confirmedByLabelAmount = new Set<string>();
-  for (const e of expenses) {
-    if (e.status !== "confirmed") continue;
-    const amountCents = Math.round(Math.abs(e.amount) * 100);
-    if (e.contact_id != null) confirmedByContactAmount.add(`${e.contact_id}:${amountCents}`);
-    confirmedByLabelAmount.add(`${e.label.toLowerCase()}:${amountCents}`);
-  }
-  function alreadyConfirmed(g: PendingGroup): boolean {
-    const amountCents = Math.round(Math.abs(g.series[0].amount) * 100);
-    if (g.contact && confirmedByContactAmount.has(`${g.contact.id}:${amountCents}`)) return true;
-    const label = (g.contact?.label ?? g.series[0].label).toLowerCase();
-    return confirmedByLabelAmount.has(`${label}:${amountCents}`);
-  }
-
-  const pendingRecurring: PendingSeriesRow[] = [...pendingGroups.values()].filter((g) => !alreadyConfirmed(g)).map((g) => {
-    const byRecency = [...g.series].sort((a, b) =>
-      b.transactions[b.transactions.length - 1].date.localeCompare(a.transactions[a.transactions.length - 1].date),
-    );
-    const primary = byRecency[0];
-    const occurrences = g.series.reduce((sum, s) => sum + s.transactions.length, 0);
-    return {
-      keys: g.keys,
-      label: g.contact?.label ?? primary.label,
-      category: primary.category,
-      period: primary.period,
-      periodDays: primary.periodDays,
-      amount: primary.amount,
-      occurrences,
-      lastDate: primary.transactions[primary.transactions.length - 1].date,
-      bankPatterns: [...new Set(g.bankPatterns)],
-      matchedContactId: g.contact?.id ?? null,
-    };
-  });
+  const pendingRecurring: PendingSeriesRow[] = computePendingRecurring(allTimeTransactions, categories, expenses, contacts);
 
   const confirmedRecurring: ConfirmedExpenseRow[] = expenses
     .filter((e) => e.status === "confirmed" && isExpenseRow(e))

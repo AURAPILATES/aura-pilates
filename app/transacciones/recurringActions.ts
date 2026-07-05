@@ -118,6 +118,7 @@ export async function confirmRecurringExpenses(rows: ConfirmRecurringRow[]): Pro
 export async function updateRecurringExpense(
   id: number,
   data: {
+    label?: string;
     amount?: number;
     notes?: string | null;
     period?: string;
