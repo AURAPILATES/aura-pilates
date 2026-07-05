@@ -143,7 +143,7 @@ export default function HorarioShell({
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 pb-16">
 
         {/* Week nav / view toggle (desktop) */}
-        <div className="flex items-center justify-end gap-3 mb-6">
+        <div className="flex items-center justify-start gap-3 mb-6">
           <div className="hidden sm:flex items-center gap-2 shrink-0 pb-2">
               <div className="flex items-center gap-0.5">
                 <button
