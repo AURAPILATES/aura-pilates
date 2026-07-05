@@ -4,6 +4,8 @@ import { Suspense } from "react";
 import AnaliticaFilterBar from "./AnaliticaFilterBar";
 import AnaliticaLoader from "./AnaliticaLoader";
 import AnaliticaSkeleton from "./AnaliticaSkeleton";
+import AnaliticaTabNav from "./AnaliticaTabNav";
+import { AnaliticaTabProvider } from "./AnaliticaTabContext";
 import MobileNav from "@/app/components/MobileNav";
 import { resolveCalendarPeriod } from "@/lib/periodCalculation";
 
@@ -24,19 +26,25 @@ export default async function Analitica(props: {
       </div>
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-8 pb-16">
-        <Suspense fallback={<div className="h-10 mb-4" />}>
-          <AnaliticaFilterBar />
-        </Suspense>
-
         <Suspense fallback={<AnaliticaSkeleton />}>
-          <AnaliticaLoader
-            mainFrom={mainFrom}
-            mainTo={mainTo}
-            compFrom={compFrom}
-            compTo={compTo}
-            periodLabel={periodLabel}
-            compDateRange={compDateRange}
-          />
+          <AnaliticaTabProvider>
+            <AnaliticaTabNav />
+
+            <Suspense fallback={<div className="h-10 mb-4" />}>
+              <AnaliticaFilterBar />
+            </Suspense>
+
+            <Suspense fallback={<AnaliticaSkeleton />}>
+              <AnaliticaLoader
+                mainFrom={mainFrom}
+                mainTo={mainTo}
+                compFrom={compFrom}
+                compTo={compTo}
+                periodLabel={periodLabel}
+                compDateRange={compDateRange}
+              />
+            </Suspense>
+          </AnaliticaTabProvider>
         </Suspense>
       </div>
     </div>

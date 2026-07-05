@@ -47,9 +47,6 @@ export default function AnaliticaSkeleton() {
     <div className="relative">
       <LoadingBadge text="Obteniendo datos de las integraciones…" />
 
-      {/* índice de secciones */}
-      <div className="h-9 w-full bg-navy/[0.04] rounded-lg mb-8 animate-pulse" />
-
       <div className="space-y-14">
         {[0, 1, 2, 3, 4].map((section) => <SectionSkeleton key={section} />)}
       </div>
