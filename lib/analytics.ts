@@ -243,32 +243,67 @@ export function occupancyHeatmap(events: MomenceEvent[]) {
   });
 }
 
-export function occupancyByWeek(events: MomenceEvent[]) {
+export type OccupancyPeriod = "semana" | "mes" | "trimestre" | "año";
+
+const OCC_MONTH_NAMES: Record<string, string> = {
+  "01": "Ene", "02": "Feb", "03": "Mar", "04": "Abr",
+  "05": "May", "06": "Jun", "07": "Jul", "08": "Ago",
+  "09": "Sep", "10": "Oct", "11": "Nov", "12": "Dic",
+};
+
+function isoWeekStart(dateKey: string): string {
+  const d = new Date(dateKey + "T12:00:00");
+  const dow = (d.getDay() + 6) % 7; // 0=Mon
+  d.setDate(d.getDate() - dow);
+  return d.toISOString().split("T")[0];
+}
+
+/** Clave de agrupación para una fecha (YYYY-MM-DD, ya en calendario Madrid) según el período pedido. */
+export function occupancyPeriodKey(dateKey: string, period: OccupancyPeriod): string {
+  const [y, m] = dateKey.split("-");
+  switch (period) {
+    case "semana": return isoWeekStart(dateKey);
+    case "mes": return `${y}-${m}`;
+    case "trimestre": return `${y}-Q${Math.ceil(parseInt(m) / 3)}`;
+    case "año": return y;
+  }
+}
+
+function occupancyPeriodLabel(key: string, period: OccupancyPeriod): string {
+  switch (period) {
+    case "semana": {
+      const [, m, d] = key.split("-");
+      return `${d}/${m}`;
+    }
+    case "mes": {
+      const [y, m] = key.split("-");
+      return `${OCC_MONTH_NAMES[m] ?? m}'${y.slice(2)}`;
+    }
+    case "trimestre": return key.replace("-", " ");
+    case "año": return key;
+  }
+}
+
+export function occupancyByPeriod(events: MomenceEvent[], period: OccupancyPeriod = "semana") {
   const map = new Map<string, { sold: number; capacity: number }>();
   for (const e of filterActive(events)) {
     const dateKey = new Date(e.dateTime).toLocaleDateString("sv-SE", {
       timeZone: "Europe/Madrid",
     });
-    const d = new Date(dateKey + "T12:00:00");
-    const dow = (d.getDay() + 6) % 7; // 0=Mon
-    d.setDate(d.getDate() - dow);
-    const weekKey = d.toISOString().split("T")[0];
-    const prev = map.get(weekKey) ?? { sold: 0, capacity: 0 };
-    map.set(weekKey, { sold: prev.sold + e.ticketsSold, capacity: prev.capacity + e.capacity });
+    const key = occupancyPeriodKey(dateKey, period);
+    const prev = map.get(key) ?? { sold: 0, capacity: 0 };
+    map.set(key, { sold: prev.sold + e.ticketsSold, capacity: prev.capacity + e.capacity });
   }
   return Array.from(map.entries())
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([weekStart, { sold, capacity }]) => {
-      const [, m, day] = weekStart.split("-");
-      return {
-        weekStart,
-        label: `${day}/${m}`,
-        sold,
-        capacity,
-        free: capacity - sold,
-        occ: capacity > 0 ? sold / capacity : 0,
-      };
-    });
+    .map(([key, { sold, capacity }]) => ({
+      key,
+      label: occupancyPeriodLabel(key, period),
+      sold,
+      capacity,
+      free: capacity - sold,
+      occ: capacity > 0 ? sold / capacity : 0,
+    }));
 }
 
 export function fmt(amount: number) {

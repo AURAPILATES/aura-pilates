@@ -2,10 +2,10 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { BarChart2, Activity } from "react-feather";
-import { occupancyByWeek, pct } from "@/lib/analytics";
+import { occupancyByPeriod, occupancyPeriodKey, pct, type OccupancyPeriod } from "@/lib/analytics";
 import { MomenceEvent } from "@/lib/momence";
 import type { BusinessEvent, EventCategoria } from "@/lib/businessEvents";
-import { ChartCard, ChartTypeToggle, StaticLegend, InteractiveLegend } from "@/components/charts";
+import { ChartCard, ChartTypeToggle, ToggleGroup, StaticLegend, InteractiveLegend } from "@/components/charts";
 
 // Internal coordinate system for the SVG (bars + line + gridlines only — no text).
 // Text labels are rendered as plain HTML overlays positioned with percentages,
@@ -41,6 +41,13 @@ function fmtEventDate(iso: string) {
   return `${Number(d)} ${MONTH_LABELS[m]} ${y}`;
 }
 
+const PERIODS: { key: OccupancyPeriod; label: string }[] = [
+  { key: "semana", label: "Semana" },
+  { key: "mes", label: "Mes" },
+  { key: "trimestre", label: "Trimestre" },
+  { key: "año", label: "Año" },
+];
+
 export default function HorarioOcupacionEvolucion({
   events,
   businessEvents,
@@ -51,6 +58,7 @@ export default function HorarioOcupacionEvolucion({
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
   const [hoveredEventId, setHoveredEventId] = useState<string | null>(null);
   const [chartType, setChartType] = useState<"bar" | "line">("bar");
+  const [period, setPeriod] = useState<OccupancyPeriod>("semana");
 
   const [isNarrow, setIsNarrow] = useState(false);
   useEffect(() => {
@@ -60,26 +68,17 @@ export default function HorarioOcupacionEvolucion({
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  const data = useMemo(() => occupancyByWeek(events), [events]);
+  const data = useMemo(() => occupancyByPeriod(events, period), [events, period]);
 
-  const eventsByWeek = useMemo(() => {
+  const eventsByPeriod = useMemo(() => {
     const map = new Map<string, BusinessEvent[]>();
-    if (data.length === 0) return map;
-    const weekStarts = data.map((d) => d.weekStart);
     for (const ev of (businessEvents ?? [])) {
-      let closest: string | null = null;
-      for (const ws of weekStarts) {
-        if (ev.fecha >= ws && (closest === null || ws > closest)) closest = ws;
-      }
-      if (!closest) continue;
-      const nextIdx = weekStarts.indexOf(closest) + 1;
-      const nextWs = weekStarts[nextIdx];
-      if (nextWs && ev.fecha >= nextWs) continue;
-      if (!map.has(closest)) map.set(closest, []);
-      map.get(closest)!.push(ev);
+      const key = occupancyPeriodKey(ev.fecha, period);
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(ev);
     }
     return map;
-  }, [businessEvents, data]);
+  }, [businessEvents, period]);
 
   const maxCapacity = Math.max(...data.map((d) => d.capacity), 1);
   const yMax = Math.ceil(maxCapacity / 10) * 10 || 10;
@@ -109,9 +108,11 @@ export default function HorarioOcupacionEvolucion({
   const totalFree     = totalCapacity - totalSold;
   const avgOcc        = totalCapacity > 0 ? totalSold / totalCapacity : 0;
 
+  const periodLabelLower = PERIODS.find((p) => p.key === period)!.label.toLowerCase();
+
   if (data.length === 0) {
     return (
-      <ChartCard title="Evolución de la ocupación" subtitle="Plazas vendidas vs. totales y % de ocupación por semana">
+      <ChartCard title="Evolución de la ocupación" subtitle={`Plazas vendidas vs. totales y % de ocupación por ${periodLabelLower}`}>
         <p className="text-sm text-navy/45 py-6 text-center">Sin datos suficientes para este período.</p>
       </ChartCard>
     );
@@ -120,27 +121,34 @@ export default function HorarioOcupacionEvolucion({
   return (
     <ChartCard
       title="Evolución de la ocupación"
-      subtitle="Plazas vendidas vs. totales y % de ocupación por semana"
-      dataSource="Eventos activos en Momence, agrupados por semana"
+      subtitle={`Plazas vendidas vs. totales y % de ocupación por ${periodLabelLower}`}
+      dataSource={`Eventos activos en Momence, agrupados por ${periodLabelLower}`}
       sources={["momence"]}
       toolbar={
-        <div className="flex items-center gap-3 flex-wrap">
-          <ChartTypeToggle
-            value={chartType}
-            onChange={(v) => setChartType(v as "bar" | "line")}
-            options={[
-              { value: "bar", label: "Ver como barras", icon: <BarChart2 size={14} /> },
-              { value: "line", label: "Ver como línea", icon: <Activity size={14} /> },
-            ]}
+        <>
+          <div className="flex items-center gap-3 flex-wrap">
+            <ChartTypeToggle
+              value={chartType}
+              onChange={(v) => setChartType(v as "bar" | "line")}
+              options={[
+                { value: "bar", label: "Ver como barras", icon: <BarChart2 size={14} /> },
+                { value: "line", label: "Ver como línea", icon: <Activity size={14} /> },
+              ]}
+            />
+            <StaticLegend
+              items={[
+                { label: "Plazas vendidas", color: "#3B4B9E", swatch: "dot" },
+                { label: "Plazas libres", color: "#C0C6E8", swatch: "dot" },
+                { label: "% ocupación", color: "#43884d", swatch: "line" },
+              ]}
+            />
+          </div>
+          <ToggleGroup
+            value={period}
+            onChange={(v) => setPeriod(v as OccupancyPeriod)}
+            options={PERIODS.map((p) => ({ value: p.key, label: p.label }))}
           />
-          <StaticLegend
-            items={[
-              { label: "Plazas vendidas", color: "#3B4B9E", swatch: "dot" },
-              { label: "Plazas libres", color: "#C0C6E8", swatch: "dot" },
-              { label: "% ocupación", color: "#43884d", swatch: "line" },
-            ]}
-          />
-        </div>
+        </>
       }
     >
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
@@ -178,7 +186,7 @@ export default function HorarioOcupacionEvolucion({
 
             {/* Event annotation lines — behind bars */}
             {data.map((d, i) => {
-              const evs = eventsByWeek.get(d.weekStart) ?? [];
+              const evs = eventsByPeriod.get(d.key) ?? [];
               return evs.map((ev, ei) => {
                 const cx = evs.length > 1 ? barCx(i) + (ei - (evs.length - 1) / 2) * 7 : barCx(i);
                 return (
@@ -202,11 +210,11 @@ export default function HorarioOcupacionEvolucion({
                 const soldH = valH(d.sold);
                 const soldY = valY(d.sold);
                 const freeH = valH(d.capacity) - soldH;
-                const isHov = hoveredKey === d.weekStart;
+                const isHov = hoveredKey === d.key;
                 return (
                   <g
-                    key={d.weekStart}
-                    onMouseEnter={() => setHoveredKey(d.weekStart)}
+                    key={d.key}
+                    onMouseEnter={() => setHoveredKey(d.key)}
                     style={{ cursor: "default" }}
                   >
                     <rect x={x} y={MT} width={barW} height={CHART_H} fill="transparent" />
@@ -225,10 +233,10 @@ export default function HorarioOcupacionEvolucion({
                 <polyline points={capacityLinePoints} fill="none" stroke="#C0C6E8" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
                 <polyline points={soldLinePoints} fill="none" stroke="#3B4B9E" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
                 {data.map((d, i) => (
-                  <g key={d.weekStart} onMouseEnter={() => setHoveredKey(d.weekStart)} style={{ cursor: "default" }}>
+                  <g key={d.key} onMouseEnter={() => setHoveredKey(d.key)} style={{ cursor: "default" }}>
                     <rect x={barX(i)} y={MT} width={barW} height={CHART_H} fill="transparent" />
-                    <circle cx={barCx(i)} cy={valY(d.capacity)} r={hoveredKey === d.weekStart ? 4 : 2.5} fill="#C0C6E8" stroke="white" strokeWidth="1" />
-                    <circle cx={barCx(i)} cy={valY(d.sold)} r={hoveredKey === d.weekStart ? 4 : 2.5} fill="#3B4B9E" stroke="white" strokeWidth="1" />
+                    <circle cx={barCx(i)} cy={valY(d.capacity)} r={hoveredKey === d.key ? 4 : 2.5} fill="#C0C6E8" stroke="white" strokeWidth="1" />
+                    <circle cx={barCx(i)} cy={valY(d.sold)} r={hoveredKey === d.key ? 4 : 2.5} fill="#3B4B9E" stroke="white" strokeWidth="1" />
                   </g>
                 ))}
               </>
@@ -238,16 +246,16 @@ export default function HorarioOcupacionEvolucion({
             <polyline points={linePoints} fill="none" stroke="#43884d" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
             {data.map((d, i) => (
               <circle
-                key={`dot-${d.weekStart}`}
+                key={`dot-${d.key}`}
                 cx={barCx(i)} cy={occY(d.occ)}
-                r={hoveredKey === d.weekStart ? 4 : 2.5}
+                r={hoveredKey === d.key ? 4 : 2.5}
                 fill="#43884d" stroke="white" strokeWidth="1"
               />
             ))}
 
             {/* Hover tooltip */}
             {hoveredKey && (() => {
-              const i = data.findIndex((d) => d.weekStart === hoveredKey);
+              const i = data.findIndex((d) => d.key === hoveredKey);
               if (i === -1) return null;
               const d = data[i];
               const TW = 130, TH = 50;
@@ -270,7 +278,7 @@ export default function HorarioOcupacionEvolucion({
 
             {/* Event markers + tooltips — rendered last (on top) */}
             {data.map((d, i) => {
-              const evs = eventsByWeek.get(d.weekStart) ?? [];
+              const evs = eventsByPeriod.get(d.key) ?? [];
               return evs.map((ev, ei) => {
                 const cx    = evs.length > 1 ? barCx(i) + (ei - (evs.length - 1) / 2) * 7 : barCx(i);
                 const color = EVENT_COLORS[ev.categoria];
@@ -330,7 +338,7 @@ export default function HorarioOcupacionEvolucion({
             if (data.length > 14 && i % 2 === 1) return null; // thin out labels on long ranges
             return (
               <div
-                key={`wk-${d.weekStart}`}
+                key={`wk-${d.key}`}
                 className="absolute text-[10px] text-navy/45 leading-none whitespace-nowrap"
                 style={{
                   left: `${pctX(barCx(i))}%`,
