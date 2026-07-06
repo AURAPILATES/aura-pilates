@@ -15,7 +15,7 @@ type Props<T extends string> = {
 
 export default function SectionTabs<T extends string>({ tabs, active, onChange, className = "" }: Props<T>) {
   return (
-    <div className={`flex items-center gap-1 overflow-x-auto border-b border-navy/[0.08] pb-2 ${className}`}>
+    <div className={`flex flex-wrap items-center gap-1 border-b border-navy/[0.08] pb-2 ${className}`}>
       {tabs.map(({ key, label, badge }) => (
         <button
           key={key}
