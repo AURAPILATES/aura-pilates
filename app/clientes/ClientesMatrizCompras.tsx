@@ -264,27 +264,27 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
             <col />
           </colgroup>
           <thead>
-            <tr className="border-b border-navy/[0.06]">
+            <tr className="bg-navy/[0.02] border-b border-navy/[0.06]">
               <th
                 onClick={() => toggleSort("name")}
-                className="sticky left-0 bg-white text-left pb-2 pr-3 text-[11px] font-semibold text-navy/40 uppercase tracking-wider whitespace-nowrap z-10 min-w-[130px] cursor-pointer select-none hover:text-navy/60"
+                className="sticky left-0 bg-[#fafaf9] text-left pt-2.5 pb-2 pr-3 text-[11px] font-semibold text-navy/45 uppercase tracking-wider whitespace-nowrap z-10 min-w-[130px] cursor-pointer select-none hover:text-navy/60"
               >
                 Cliente{sortArrow("name")}
               </th>
               <th
                 onClick={() => toggleSort("first")}
-                className="sticky left-[130px] bg-white text-center pb-2 px-1 text-[10px] leading-tight font-semibold text-navy/40 uppercase tracking-wide z-10 min-w-[110px] cursor-pointer select-none hover:text-navy/60"
+                className="sticky left-[130px] bg-[#fafaf9] text-center pt-2.5 pb-2 px-1 text-[10px] leading-tight font-semibold text-navy/45 uppercase tracking-wide z-10 min-w-[110px] cursor-pointer select-none hover:text-navy/60"
               >
                 Primera<br />compra{sortArrow("first")}
               </th>
               {months.map((m) => (
-                <th key={m} className="text-center pb-2 px-1 text-[11px] font-semibold text-navy/40 uppercase tracking-wider whitespace-nowrap min-w-[76px]">
+                <th key={m} className="text-center pt-2.5 pb-2 px-1 text-[11px] font-semibold text-navy/45 uppercase tracking-wider whitespace-nowrap min-w-[76px]">
                   {monthLabel(m)}
                 </th>
               ))}
               <th
                 onClick={() => toggleSort("total")}
-                className="sticky right-0 bg-white text-right pb-2 pr-4 text-[11px] font-semibold text-navy/40 uppercase tracking-wider whitespace-nowrap z-10 cursor-pointer select-none hover:text-navy/60"
+                className="sticky right-0 bg-[#fafaf9] text-right pt-2.5 pb-2 pr-4 text-[11px] font-semibold text-navy/45 uppercase tracking-wider whitespace-nowrap z-10 cursor-pointer select-none hover:text-navy/60"
               >
                 Total{sortArrow("total")}
               </th>
@@ -303,7 +303,7 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
                 <tr
                   key={customer.id}
                   onClick={() => setSelected(customer)}
-                  className="border-b border-navy/[0.04] last:border-0 hover:bg-navy/[0.015] transition-colors cursor-pointer"
+                  className="border-b border-navy/[0.04] last:border-0 hover:bg-navy/[0.02] transition-colors cursor-pointer"
                 >
                   <td className="sticky left-0 bg-white py-2 pr-3 font-medium text-navy whitespace-nowrap z-10 max-w-[130px] truncate" title={customer.name ?? customer.email ?? undefined}>
                     {customer.name ?? customer.email ?? "—"}

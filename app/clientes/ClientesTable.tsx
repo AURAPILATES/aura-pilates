@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect, forwardRef, useImperativeHandle } from "react";
 import CustomerDrawer from "./CustomerDrawer";
+import Avatar from "@/app/components/Avatar";
 import { fmt } from "@/lib/analytics";
 import type { StripeCustomer } from "@/lib/stripeCustomers";
 import type { StripePayment } from "@/lib/stripePayments";
@@ -16,9 +17,12 @@ const PAGE_SIZE = 25;
 
 function SortIcon({ active, dir }: { active: boolean; dir: SortDir }) {
   return (
-    <span className={`inline-block ml-1 transition-colors ${active ? "text-primary" : "text-navy/50"}`}>
-      {active && dir === "asc" ? "↑" : "↓"}
-    </span>
+    <svg
+      width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"
+      className={`inline-block ml-1 transition-all ${active ? "opacity-100 text-primary" : "opacity-0 group-hover:opacity-30 text-navy/50"} ${active && dir === "asc" ? "rotate-180" : ""}`}
+    >
+      <polyline points="6 9 12 15 18 9" />
+    </svg>
   );
 }
 
@@ -205,7 +209,7 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
   function ThSort({ col, label, className = "" }: { col: SortKey; label: string; className?: string }) {
     return (
       <th
-        className={`px-4 py-2.5 text-[11px] font-semibold text-navy/45 uppercase tracking-wider cursor-pointer select-none hover:text-navy/60 transition-colors ${className}`}
+        className={`group px-4 py-2.5 text-[11px] font-semibold text-navy/45 uppercase tracking-wider cursor-pointer select-none hover:text-navy/60 transition-colors ${className}`}
         onClick={() => toggleSort(col)}
       >
         {label}
@@ -293,9 +297,12 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
               onClick={() => setSelected(c)}
               className="w-full flex items-center justify-between gap-4 px-5 py-3 hover:bg-primary/[0.025] transition-colors text-left"
             >
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-navy truncate">{c.name ?? "—"}</p>
-                {c.email && <p className="text-xs text-navy/45 truncate">{c.email}</p>}
+              <div className="flex items-center gap-3 min-w-0">
+                <Avatar seed={c.id} initials={initials(c.name, c.email)} size={32} />
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-navy truncate">{c.name ?? "—"}</p>
+                  {c.email && <p className="text-xs text-navy/45 truncate">{c.email}</p>}
+                </div>
               </div>
               <span className="shrink-0 text-sm font-semibold text-navy tabular-nums">{fmt(c.totalSpent)}</span>
             </button>
@@ -383,7 +390,7 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-navy/[0.06]">
+              <tr className="bg-navy/[0.02] border-b border-navy/[0.06]">
                 <ThSort col="name"            label="Cliente"      className="text-left" />
                 <th className="text-left px-4 py-2.5 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Plan</th>
                 <ThSort col="totalSpent"      label="Total"        className="text-right" />
@@ -412,16 +419,19 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
                       onClick={() => setSelected(c)}
                       className="border-b border-navy/[0.04] last:border-0 transition-colors cursor-pointer hover:bg-navy/[0.02]"
                     >
-                      <td className="px-4 py-2.5">
-                        <div className="flex items-center gap-1.5">
-                          <div className="min-w-0">
-                            <p className="font-medium text-navy truncate max-w-[160px]">{c.name ?? "—"}</p>
-                            {c.email && <p className="text-[11px] text-navy/50 truncate max-w-[160px]">{c.email}</p>}
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <Avatar seed={c.id} initials={initials(c.name, c.email)} size={32} />
+                          <div className="min-w-0 flex items-center gap-1.5">
+                            <div className="min-w-0">
+                              <p className="font-medium text-navy truncate max-w-[160px]">{c.name ?? "—"}</p>
+                              {c.email && <p className="text-[11px] text-navy/50 truncate max-w-[160px]">{c.email}</p>}
+                            </div>
+                            {c.discount && <DiscountBadge discount={c.discount} />}
                           </div>
-                          {c.discount && <DiscountBadge discount={c.discount} />}
                         </div>
                       </td>
-                      <td className="px-4 py-2.5">
+                      <td className="px-4 py-3">
                         {(() => {
                           const { label, cls } = planBadgeCfg(planType, c.lastSubProduct, c.lastPackProduct);
                           const showExpiry = planType === "pack" && c.lastPackProduct !== "Clase suelta";
@@ -441,14 +451,14 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
                           );
                         })()}
                       </td>
-                      <td className="px-4 py-2.5 text-right">
+                      <td className="px-4 py-3 text-right">
                         <p className="font-semibold text-navy tabular-nums">{fmt(c.totalSpent)}</p>
                         <p className="text-[11px] text-navy/40 mt-0.5">{c.paymentCount} pagos</p>
                       </td>
-                      <td className="px-4 py-2.5 text-right text-navy/55 text-xs hidden sm:table-cell">
+                      <td className="px-4 py-3 text-right text-navy/55 text-xs hidden sm:table-cell">
                         {c.lastPaymentDate ? fmtDate(c.lastPaymentDate) : "—"}
                       </td>
-                      <td className="px-4 py-2.5 text-left">
+                      <td className="px-4 py-3 text-left">
                         {status === "baja" ? (
                           <span className="inline-flex items-center gap-1.5 text-xs text-danger font-medium whitespace-nowrap border border-navy/[0.12] bg-white rounded-full px-3 py-1">
                             <span className="w-1.5 h-1.5 rounded-full bg-danger shrink-0 inline-block" />

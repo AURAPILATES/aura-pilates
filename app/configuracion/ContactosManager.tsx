@@ -9,8 +9,38 @@ import {
 } from "@/app/transacciones/actions";
 import Drawer from "@/app/components/Drawer";
 import ChipsInput from "@/app/components/ChipsInput";
+import Avatar from "@/app/components/Avatar";
 import { CategoryPill, CategoryBadge } from "@/app/transacciones/TransaccionesList";
 import NewContactDrawer, { AutomationIcon } from "@/app/transacciones/NewContactDrawer";
+
+/** Dominios de marcas reconocibles para mostrar su logo real (favicon de Google) en vez de
+ * iniciales — solo para proveedores habituales de Aura Pilates. El resto cae a iniciales. */
+const KNOWN_DOMAINS: Record<string, string> = {
+  "stripe": "stripe.com",
+  "squarespace": "squarespace.com",
+  "momence": "momence.com",
+  "iberdrola": "iberdrola.com",
+  "urban sports club": "urbansportsclub.com",
+  "caixabank": "caixabank.es",
+  "o2": "o2.es",
+  "vodafone": "vodafone.es",
+  "movistar": "movistar.es",
+  "google": "google.com",
+  "amazon": "amazon.es",
+  "meta": "facebook.com",
+  "facebook": "facebook.com",
+  "instagram": "instagram.com",
+  "canva": "canva.com",
+  "zoom": "zoom.us",
+  "spotify": "spotify.com",
+};
+function knownDomain(label: string): string | null {
+  const key = label.trim().toLowerCase();
+  for (const [needle, domain] of Object.entries(KNOWN_DOMAINS)) {
+    if (key.includes(needle)) return domain;
+  }
+  return null;
+}
 
 const MONTHS_SHORT = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
 function fmtDate(d: string) {
@@ -363,9 +393,14 @@ export default function ContactosManager({ contacts: initialContacts, categories
                   onClick={() => setSelectedId(c.id)}
                   className={`border-b border-navy/[0.04] last:border-0 cursor-pointer hover:bg-navy/[0.02] transition-colors ${selectedId === c.id ? "bg-primary/[0.04]" : ""}`}
                 >
-                  <td className="px-4 py-2.5 font-medium text-navy whitespace-nowrap">{c.label}</td>
-                  <td className="px-4 py-2.5"><CategoryBadge category={c.category} categories={categories} /></td>
-                  <td className="px-4 py-2.5">
+                  <td className="px-4 py-3 font-medium text-navy whitespace-nowrap">
+                    <div className="flex items-center gap-3">
+                      <Avatar seed={c.label} initials={initials(c.label)} logoDomain={knownDomain(c.label)} size={32} />
+                      {c.label}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3"><CategoryBadge category={c.category} categories={categories} /></td>
+                  <td className="px-4 py-3">
                     <div className="flex flex-wrap gap-1">
                       {visiblePatterns.map((p) => (
                         <span key={p} title={p} className="inline-block px-1.5 py-0.5 max-w-[140px] truncate rounded text-[11px] bg-navy/[0.04] text-navy/55">{p}</span>
@@ -373,9 +408,9 @@ export default function ContactosManager({ contacts: initialContacts, categories
                       {extra > 0 && <span className="text-[11px] text-navy/35">+{extra}</span>}
                     </div>
                   </td>
-                  <td className="px-4 py-2.5 text-right text-navy/70 text-xs">{c.ivaRate > 0 ? `${c.ivaRate}%` : <span className="text-navy/30 text-[10px]">-</span>}</td>
-                  <td className="px-4 py-2.5 text-right text-navy/70 text-xs">{c.retencionRate > 0 ? `${c.retencionRate}%` : <span className="text-navy/30 text-[10px]">-</span>}</td>
-                  <td className="px-4 py-2.5 text-right">
+                  <td className="px-4 py-3 text-right text-navy/70 text-xs">{c.ivaRate > 0 ? `${c.ivaRate}%` : <span className="text-navy/30 text-[10px]">-</span>}</td>
+                  <td className="px-4 py-3 text-right text-navy/70 text-xs">{c.retencionRate > 0 ? `${c.retencionRate}%` : <span className="text-navy/30 text-[10px]">-</span>}</td>
+                  <td className="px-4 py-3 text-right">
                     {stats ? (
                       <div className="flex flex-col items-end">
                         <span className="font-medium text-navy">{stats.count}</span>
