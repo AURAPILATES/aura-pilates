@@ -243,9 +243,8 @@ function AnaliticaFilterBarInner() {
 
   const now = new Date();
   const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth() + 1;
 
-  const period = sp.get("period") ?? `month_${pad2(currentMonth)}`;
+  const period = sp.get("period") ?? "all";
   const year = parseInt(sp.get("year") ?? String(currentYear)) || currentYear;
   const compareWith = sp.get("compareWith") ?? "previous";
   const customFrom = sp.get("from") ?? "";

@@ -131,8 +131,7 @@ export function resolveCalendarPeriod(sp: PeriodSearchParams): ResolvedPeriod {
 
   const yearParam = parseInt(str(sp.year, String(currentYear)));
   const year = isNaN(yearParam) ? currentYear : yearParam;
-  const defaultPeriod = `month_${pad2(currentMonth)}`;
-  const periodType = str(sp.period, defaultPeriod);
+  const periodType = str(sp.period, "all");
   const compareWith = str(sp.compareWith, "previous");
 
   let from: string;
