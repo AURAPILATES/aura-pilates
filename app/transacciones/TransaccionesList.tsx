@@ -1409,7 +1409,7 @@ export default function TransaccionesList({
         );
 
         return (
-          <div className="hidden sm:block">
+          <div className="hidden sm:block sm:-mx-6">
             {sortedFiltered.length === 0 ? (
               <div className="bg-white">
                 {headerRow}
