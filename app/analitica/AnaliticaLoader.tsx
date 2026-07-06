@@ -178,8 +178,6 @@ export default async function AnaliticaLoader({
   const stripeFees = stripeTotalFees(pMain);
   const stripeNet  = stripeTotalNet(pMain);
 
-  const cur = stripeRevenueForMonth(paymentsAll, curMonth);
-
   const ticketMedio = pMain.length > 0 ? totalRev / pMain.length : 0;
 
   // ── Recurrencia (derivada de pagos, no de suscripciones Stripe) ──
@@ -208,15 +206,6 @@ export default async function AnaliticaLoader({
   const uscSales   = momenceSalesAll.filter((s) => s.method === "urban-sports-club" && s.paymentDate >= mainFrom && s.paymentDate <= mainTo);
   const uscRevenue = uscSales.reduce((sum, s) => sum + s.amount, 0);
   const uscCount   = uscSales.length;
-  const uscCur  = momenceSalesAll.filter((s) => s.method === "urban-sports-club" && s.paymentDate.startsWith(curMonth)).reduce((sum, s) => sum + s.amount, 0);
-
-  const prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const prevMonth = `${prevMonthDate.getFullYear()}-${pad2(prevMonthDate.getMonth() + 1)}`;
-  const prevMonthRev =
-    stripeRevenueForMonth(paymentsAll, prevMonth) +
-    momenceSalesAll.filter((s) => s.method === "urban-sports-club" && s.paymentDate.startsWith(prevMonth)).reduce((s, x) => s + x.amount, 0);
-  const prevMonthLabel = MES[prevMonthDate.getMonth()].toLowerCase();
-
   const revComp    = stripeTotalRevenue(pComp);
   const uscRevComp = momenceSalesAll.filter((s) =>
     s.method === "urban-sports-club" &&
@@ -358,12 +347,6 @@ export default async function AnaliticaLoader({
   const breakEvenGap = avgMonthlyBurn - avgMonthlyRevenue;
   const clientesNecesarios = breakEvenGap > 0 && ticketMedio > 0
     ? Math.ceil(breakEvenGap / ticketMedio) : null;
-
-  // Resultado mes estimado
-  const curMonthBurnFromData = burnByMonth.get(curMonth) ?? 0;
-  const estGastosMes  = curMonthBurnFromData > 0 ? curMonthBurnFromData : avgMonthlyBurn;
-  const isGastosEst   = curMonthBurnFromData === 0;
-  const resultadoMes  = (cur + uscCur) - estGastosMes;
 
   // ── Fiscal ──
   const today = new Date();
@@ -519,11 +502,6 @@ export default async function AnaliticaLoader({
             <div className="space-y-4">
               <CockpitFinanciero
                 curMonthLabel={monthLabel(curMonth)}
-                prevMonthLabel={prevMonthLabel}
-                curMonthIngresos={cur + uscCur}
-                curMonthGastos={estGastosMes}
-                isGastosEst={isGastosEst}
-                prevMonthIngresos={prevMonthRev}
                 currentBalance={currentBalance}
                 balanceDate={balanceDate}
                 runwayMonths={runwayMonths}

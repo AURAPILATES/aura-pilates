@@ -3,7 +3,7 @@
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { Clock, TrendingUp, FileText } from "react-feather";
+import { TrendingUp, FileText } from "react-feather";
 import type { Sale } from "@/lib/sales";
 import type { Transaction } from "@/lib/transactions";
 import { ChartCard, ToggleGroup, Legend, CollapsibleTable } from "@/components/charts";
@@ -86,11 +86,6 @@ function fmtDate(iso: string): string {
 
 export type CockpitFinancieroProps = {
   curMonthLabel: string;
-  prevMonthLabel: string;
-  curMonthIngresos: number;
-  curMonthGastos: number;
-  isGastosEst: boolean;
-  prevMonthIngresos: number;
   currentBalance: number | null;
   balanceDate: string | null;
   runwayMonths: number | null;
@@ -112,11 +107,6 @@ export type CockpitFinancieroProps = {
 
 export default function CockpitFinanciero({
   curMonthLabel,
-  prevMonthLabel,
-  curMonthIngresos,
-  curMonthGastos,
-  isGastosEst,
-  prevMonthIngresos,
   currentBalance,
   balanceDate,
   runwayMonths,
@@ -137,8 +127,6 @@ export default function CockpitFinanciero({
 }: CockpitFinancieroProps) {
   const [period, setPeriod] = useState<Period>("mes");
 
-  const resultadoMes = curMonthIngresos - curMonthGastos;
-  const revDelta = curMonthIngresos - prevMonthIngresos;
   const saldoProyectado = (currentBalance ?? 0) + ventasPrevistas - gastosComprometidos;
 
   const data = groupData(sales, txns, period);
@@ -152,40 +140,8 @@ export default function CockpitFinanciero({
       sources={["stripe", "momence", "excel"]}
       lastUpdated={lastUpdated}
     >
-      {/* 4-column section */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-navy/[0.07] border border-navy/[0.07] rounded-xl mb-6">
-
-        {/* PASADO */}
-        <div className="p-4">
-          <div className="flex items-center gap-1.5 mb-4">
-            <Clock size={12} className="text-navy/40" />
-            <span className="text-[11px] font-semibold text-navy/40 uppercase tracking-wider">Pasado</span>
-          </div>
-          <div className="mb-4">
-            <div className="text-[11px] font-medium text-navy/45 mb-1">Resultado del mes</div>
-            <div className={`text-[26px] font-medium leading-tight ${resultadoMes >= 0 ? "text-success" : "text-danger"}`}>
-              {resultadoMes >= 0 ? "+" : "−"}{fmt(Math.abs(resultadoMes))}
-            </div>
-            <div className="text-[11px] text-navy/50 mt-0.5">
-              {fmt(curMonthIngresos)} ingresos – {fmt(curMonthGastos)} gastos
-              {isGastosEst ? " (est.)" : ""}
-            </div>
-          </div>
-          <div className="mb-4">
-            <div className="text-[11px] font-medium text-navy/45 mb-1">Ventas</div>
-            <div className="text-[20px] font-medium text-navy leading-tight">{fmt(curMonthIngresos)}</div>
-            <div className={`text-[11px] mt-0.5 ${revDelta < 0 ? "text-danger" : "text-success"}`}>
-              {revDelta >= 0 ? "+" : "−"}{fmt(Math.abs(revDelta))} vs {prevMonthLabel}
-            </div>
-          </div>
-          <div>
-            <div className="text-[11px] font-medium text-navy/45 mb-1">Gastos</div>
-            <div className="text-[20px] font-medium text-navy leading-tight">{fmt(curMonthGastos)}</div>
-            <div className="text-[11px] text-navy/50 mt-0.5">
-              {curMonthLabel}{isGastosEst ? " (est.)" : ""}
-            </div>
-          </div>
-        </div>
+      {/* 3-column section */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-navy/[0.07] border border-navy/[0.07] rounded-xl mb-6">
 
         {/* PRESENTE */}
         <div className="p-4">
