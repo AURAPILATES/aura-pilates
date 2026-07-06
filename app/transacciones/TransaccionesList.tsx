@@ -955,7 +955,7 @@ export default function TransaccionesList({
 
       {/* ── Mobile: Filter drawer ────────────────────────────────────────────── */}
       {showMobileFilters && (
-        <div className="sm:hidden bg-white border border-navy/[0.1] rounded-2xl p-4 mb-3 flex flex-col gap-3 shadow-card">
+        <div className="sm:hidden bg-white border border-navy/[0.07] rounded-2xl p-4 mb-3 flex flex-col gap-3 shadow-card">
           <DateFilter />
           <CategoryMultiFilter selected={catFilters} categories={categories} onChange={setCatFilters} className="w-full" />
           <SelectWrapper>
@@ -1388,7 +1388,7 @@ export default function TransaccionesList({
                 </span>
               </div>
               {/* Caja blanca por día, icono circular de color por movimiento */}
-              <div className="bg-white rounded-2xl overflow-hidden divide-y divide-navy/[0.05]">
+              <div className="bg-white border border-navy/[0.07] shadow-card rounded-2xl overflow-hidden divide-y divide-navy/[0.05]">
                 {dayTxns.map((t) => {
                   const recurringPeriod = recurringPeriods[t.id];
                   const isSelected  = selected.has(t.id);
@@ -1482,7 +1482,7 @@ export default function TransaccionesList({
               key={t.id}
               onClick={() => setDrawerTxnId(t.id)}
               className={`flex items-center gap-4 px-4 py-3.5 border-b border-navy/[0.04] last:border-0 group transition-colors cursor-pointer ${
-                isSelected ? "bg-primary/[0.03]" : "hover:bg-navy/[0.012]"
+                isSelected ? "bg-primary/[0.03]" : "hover:bg-navy/[0.02]"
               }`}
             >
               {/* avatar / checkbox */}
@@ -1613,19 +1613,19 @@ export default function TransaccionesList({
         return (
           <div className="hidden sm:block">
             {sortedFiltered.length === 0 ? (
-              <div className="bg-white border border-navy/[0.06] rounded-2xl overflow-hidden">
+              <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden">
                 {headerRow}
                 <p className="py-12 text-center text-sm text-navy/40">Sin resultados</p>
               </div>
             ) : sortKey ? (
               /* Orden manual activo → lista plana, sin agrupar por mes */
-              <div className={`bg-white border border-navy/[0.06] rounded-2xl overflow-hidden ${isPending ? "opacity-50 pointer-events-none" : ""}`}>
+              <div className={`bg-white border border-navy/[0.07] shadow-card rounded-2xl overflow-hidden ${isPending ? "opacity-50 pointer-events-none" : ""}`}>
                 {headerRow}
                 {sortedFiltered.map(renderRow)}
               </div>
             ) : (
               /* Agrupado por mes, lista continua */
-              <div className={`bg-white border border-navy/[0.06] rounded-2xl overflow-hidden ${isPending ? "opacity-50 pointer-events-none" : ""}`}>
+              <div className={`bg-white border border-navy/[0.07] shadow-card rounded-2xl overflow-hidden ${isPending ? "opacity-50 pointer-events-none" : ""}`}>
                 {headerRow}
                 {byMonth.map(([monthKey, monthTxns]) => {
                   const monthNet = monthTxns.reduce((s, t) => s + t.amount, 0);

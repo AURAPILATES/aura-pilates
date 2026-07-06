@@ -253,7 +253,7 @@ function PendingRow({ row, categories, contacts, pick, selected, onToggleSelecte
   const label = pickToLabel(pick, contacts);
 
   return (
-    <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-navy/[0.015] transition-colors">
+    <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-navy/[0.02] transition-colors">
       <input
         type="checkbox"
         checked={selected}
@@ -398,7 +398,7 @@ function ConfirmedRow({ row, categories, contacts, onOpen }: { row: ConfirmedExp
     <button
       type="button"
       onClick={onOpen}
-      className="w-full flex items-center gap-2.5 py-2.5 px-4 hover:bg-navy/[0.025] transition-colors text-left"
+      className="w-full flex items-center gap-2.5 py-2.5 px-4 hover:bg-navy/[0.02] transition-colors text-left"
     >
       <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: dotColor }} />
       <span className="text-[13px] font-medium text-navy truncate flex-1 min-w-0">{e.label}</span>
