@@ -436,7 +436,7 @@ export default function CategoriasManager({
 
             return (
               <div key={g}>
-                <p className="text-[11px] font-semibold text-navy/45 uppercase tracking-wider mb-3 px-1">
+                <p className="text-[12px] font-semibold text-navy/45 uppercase tracking-wider mb-3 px-1">
                   {GROUP_LABELS[g]}
                 </p>
                 {g === "operational" ? (
@@ -446,7 +446,7 @@ export default function CategoriasManager({
                       if (subItems.length === 0) return null;
                       return (
                         <div key={eg}>
-                          <p className="text-[10px] font-medium text-navy/40 mb-1.5 px-1">
+                          <p className="text-[11px] font-medium text-navy/40 mb-1.5 px-1">
                             {ECONOMIC_LABELS[eg]}
                           </p>
                           {renderItems(subItems)}
