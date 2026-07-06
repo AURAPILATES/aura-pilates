@@ -47,7 +47,7 @@ export default function EvolucionSuscripcionesFullWidth({
   rawPayments?: StripePayment[];
 }) {
   const [period, setPeriod] = useState<Period>("mes");
-  const [chartType, setChartType] = useState<ChartType>("line");
+  const [chartType, setChartType] = useState<ChartType>("bar");
   const [hiddenKeys, setHiddenKeys] = useState<Set<string>>(new Set());
   const [barDrawer, setBarDrawer] = useState<{ month: string; key: string } | null>(null);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
@@ -115,18 +115,14 @@ export default function EvolucionSuscripcionesFullWidth({
   const cohortByPeriod = new Map(cohortRows.map((c) => [c.month, c]));
 
   const lastCohort = cohortRows.length > 0 ? cohortRows[cohortRows.length - 1] : null;
-  const lastTotal = rows.length > 0 ? keys.reduce((s, k) => s + Number(rows[rows.length - 1][k] ?? 0), 0) : 0;
-  const prevTotal = rows.length > 1 ? keys.reduce((s, k) => s + Number(rows[rows.length - 2][k] ?? 0), 0) : 0;
+  // Suma TODOS los productos del último período (no solo los `keys` top-8 mostrados en
+  // el gráfico/leyenda), para que el KPI cuadre con el desglose y las ventas reales.
+  const lastMonthKey = months.length > 0 ? months[months.length - 1] : null;
+  const lastTotal = lastMonthKey
+    ? Array.from((data.get(lastMonthKey) ?? new Map()).values()).reduce((s, v) => s + v, 0)
+    : 0;
 
   const kpiItems: MultiKpiItem[] = [{ label: "Ingresos del período", value: fmtEur(lastTotal) }];
-  if (prevTotal > 0) {
-    const deltaPct = Math.round(((lastTotal - prevTotal) / prevTotal) * 100);
-    kpiItems.push({
-      label: "Variación",
-      value: `${deltaPct > 0 ? "+" : ""}${deltaPct}%`,
-      valueClassName: deltaPct >= 0 ? "text-success" : "text-danger",
-    });
-  }
   if (lastCohort) {
     kpiItems.push({
       label: "Altas / Bajas",
@@ -157,8 +153,8 @@ export default function EvolucionSuscripcionesFullWidth({
               value={chartType}
               onChange={(v) => setChartType(v as ChartType)}
               options={[
-                { value: "line", label: "Ver como línea", icon: <Activity size={14} /> },
                 { value: "bar", label: "Ver como barras", icon: <BarChart2 size={14} /> },
+                { value: "line", label: "Ver como línea", icon: <Activity size={14} /> },
               ]}
             />
             <div className="flex items-center gap-2 flex-wrap ml-auto">
