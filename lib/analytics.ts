@@ -159,11 +159,26 @@ export function groupByDay(events: MomenceEvent[]) {
 }
 
 const WEEKDAY_LABELS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
+const MADRID_WEEKDAY_ORDER = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]; // 0=Lunes, matches WEEKDAY_LABELS
+
+// Momence dateTime is UTC; class times must be read in Europe/Madrid, not the
+// server process timezone (getHours()/getDay() would read UTC on Vercel).
+function madridWeekdayAndHour(dateTime: string) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Europe/Madrid",
+    weekday: "short",
+    hour: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(new Date(dateTime));
+  const weekdayStr = parts.find((p) => p.type === "weekday")!.value;
+  const hour = Number(parts.find((p) => p.type === "hour")!.value);
+  return { weekday: MADRID_WEEKDAY_ORDER.indexOf(weekdayStr), hour };
+}
 
 export function occupancyByHour(events: MomenceEvent[]) {
   const map = new Map<number, { totalOcc: number; count: number }>();
   for (const e of filterActive(events)) {
-    const hour = new Date(e.dateTime).getHours();
+    const { hour } = madridWeekdayAndHour(e.dateTime);
     const occ = e.capacity > 0 ? e.ticketsSold / e.capacity : 0;
     const prev = map.get(hour) ?? { totalOcc: 0, count: 0 };
     map.set(hour, { totalOcc: prev.totalOcc + occ, count: prev.count + 1 });
@@ -181,8 +196,7 @@ export function occupancyByHour(events: MomenceEvent[]) {
 export function occupancyByWeekday(events: MomenceEvent[]) {
   const map = new Map<number, { totalOcc: number; count: number }>();
   for (const e of filterActive(events)) {
-    const d = new Date(e.dateTime);
-    const wd = (d.getDay() + 6) % 7; // 0=Mon
+    const { weekday: wd } = madridWeekdayAndHour(e.dateTime);
     const occ = e.capacity > 0 ? e.ticketsSold / e.capacity : 0;
     const prev = map.get(wd) ?? { totalOcc: 0, count: 0 };
     map.set(wd, { totalOcc: prev.totalOcc + occ, count: prev.count + 1 });
@@ -217,9 +231,7 @@ export function occupancyByTeacher(events: MomenceEvent[]) {
 export function occupancyHeatmap(events: MomenceEvent[]) {
   const map = new Map<string, { totalOcc: number; count: number }>();
   for (const e of filterActive(events)) {
-    const d = new Date(e.dateTime);
-    const wd = (d.getDay() + 6) % 7;
-    const hour = d.getHours();
+    const { weekday: wd, hour } = madridWeekdayAndHour(e.dateTime);
     const key = `${wd}-${hour}`;
     const occ = e.capacity > 0 ? e.ticketsSold / e.capacity : 0;
     const prev = map.get(key) ?? { totalOcc: 0, count: 0 };

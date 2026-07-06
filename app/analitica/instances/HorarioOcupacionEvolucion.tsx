@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
+import { BarChart2, Activity } from "react-feather";
 import { occupancyByWeek, pct } from "@/lib/analytics";
 import { MomenceEvent } from "@/lib/momence";
 import type { BusinessEvent, EventCategoria } from "@/lib/businessEvents";
-import { ChartCard, InteractiveLegend } from "@/components/charts";
+import { ChartCard, ChartTypeToggle, StaticLegend, InteractiveLegend } from "@/components/charts";
 
 // Internal coordinate system for the SVG (bars + line + gridlines only — no text).
 // Text labels are rendered as plain HTML overlays positioned with percentages,
@@ -49,6 +50,7 @@ export default function HorarioOcupacionEvolucion({
 }) {
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
   const [hoveredEventId, setHoveredEventId] = useState<string | null>(null);
+  const [chartType, setChartType] = useState<"bar" | "line">("bar");
 
   const [isNarrow, setIsNarrow] = useState(false);
   useEffect(() => {
@@ -99,6 +101,8 @@ export default function HorarioOcupacionEvolucion({
   function pctY(y: number) { return (y / SVG_H) * 100; }
 
   const linePoints = data.map((d, i) => `${barCx(i)},${occY(d.occ)}`).join(" ");
+  const soldLinePoints     = data.map((d, i) => `${barCx(i)},${valY(d.sold)}`).join(" ");
+  const capacityLinePoints = data.map((d, i) => `${barCx(i)},${valY(d.capacity)}`).join(" ");
 
   const totalSold     = data.reduce((s, d) => s + d.sold, 0);
   const totalCapacity = data.reduce((s, d) => s + d.capacity, 0);
@@ -119,26 +123,28 @@ export default function HorarioOcupacionEvolucion({
       subtitle="Plazas vendidas vs. totales y % de ocupación por semana"
       dataSource="Eventos activos en Momence, agrupados por semana"
       sources={["momence"]}
+      toolbar={
+        <div className="flex items-center gap-3 flex-wrap">
+          <ChartTypeToggle
+            value={chartType}
+            onChange={(v) => setChartType(v as "bar" | "line")}
+            options={[
+              { value: "bar", label: "Ver como barras", icon: <BarChart2 size={14} /> },
+              { value: "line", label: "Ver como línea", icon: <Activity size={14} /> },
+            ]}
+          />
+          <StaticLegend
+            items={[
+              { label: "Plazas vendidas", color: "#3B4B9E", swatch: "dot" },
+              { label: "Plazas libres", color: "#C0C6E8", swatch: "dot" },
+              { label: "% ocupación", color: "#43884d", swatch: "line" },
+            ]}
+          />
+        </div>
+      }
     >
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
         <div className="lg:col-span-3 min-w-0">
-      <div className="flex items-center justify-end mb-4">
-        <div className="flex items-center gap-3 text-[11px] text-navy/55 shrink-0">
-          <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: "#3B4B9E" }} />
-            Plazas vendidas
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: "#C0C6E8" }} />
-            Plazas libres
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-3 h-0.5 rounded-full shrink-0" style={{ backgroundColor: "#43884d" }} />
-            % ocupación
-          </div>
-        </div>
-      </div>
-
       <div className="flex items-stretch gap-2 mb-7">
         {/* Y-axis tick labels (plazas) — plain HTML, fixed CSS font size */}
         <div className="relative w-7 shrink-0">
@@ -189,29 +195,44 @@ export default function HorarioOcupacionEvolucion({
               });
             })}
 
-            {/* Stacked bars: sold (dark) + free (light) = capacity */}
-            {data.map((d, i) => {
-              const x = barX(i);
-              const soldH = valH(d.sold);
-              const soldY = valY(d.sold);
-              const freeH = valH(d.capacity) - soldH;
-              const isHov = hoveredKey === d.weekStart;
-              return (
-                <g
-                  key={d.weekStart}
-                  onMouseEnter={() => setHoveredKey(d.weekStart)}
-                  style={{ cursor: "default" }}
-                >
-                  <rect x={x} y={MT} width={barW} height={CHART_H} fill="transparent" />
-                  {d.capacity > 0 && (
-                    <>
-                      <rect x={x} y={soldY - freeH} width={barW} height={freeH} fill="#C0C6E8" opacity={isHov ? 1 : 0.85} />
-                      <rect x={x} y={soldY} width={barW} height={soldH} fill="#3B4B9E" opacity={isHov ? 1 : 0.85} rx={soldH < 3 ? 0 : 2} />
-                    </>
-                  )}
-                </g>
-              );
-            })}
+            {chartType === "bar" ? (
+              /* Stacked bars: sold (dark) + free (light) = capacity */
+              data.map((d, i) => {
+                const x = barX(i);
+                const soldH = valH(d.sold);
+                const soldY = valY(d.sold);
+                const freeH = valH(d.capacity) - soldH;
+                const isHov = hoveredKey === d.weekStart;
+                return (
+                  <g
+                    key={d.weekStart}
+                    onMouseEnter={() => setHoveredKey(d.weekStart)}
+                    style={{ cursor: "default" }}
+                  >
+                    <rect x={x} y={MT} width={barW} height={CHART_H} fill="transparent" />
+                    {d.capacity > 0 && (
+                      <>
+                        <rect x={x} y={soldY - freeH} width={barW} height={freeH} fill="#C0C6E8" opacity={isHov ? 1 : 0.85} />
+                        <rect x={x} y={soldY} width={barW} height={soldH} fill="#3B4B9E" opacity={isHov ? 1 : 0.85} rx={soldH < 3 ? 0 : 2} />
+                      </>
+                    )}
+                  </g>
+                );
+              })
+            ) : (
+              <>
+                {/* Plazas totales (capacidad) y vendidas como líneas */}
+                <polyline points={capacityLinePoints} fill="none" stroke="#C0C6E8" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+                <polyline points={soldLinePoints} fill="none" stroke="#3B4B9E" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+                {data.map((d, i) => (
+                  <g key={d.weekStart} onMouseEnter={() => setHoveredKey(d.weekStart)} style={{ cursor: "default" }}>
+                    <rect x={barX(i)} y={MT} width={barW} height={CHART_H} fill="transparent" />
+                    <circle cx={barCx(i)} cy={valY(d.capacity)} r={hoveredKey === d.weekStart ? 4 : 2.5} fill="#C0C6E8" stroke="white" strokeWidth="1" />
+                    <circle cx={barCx(i)} cy={valY(d.sold)} r={hoveredKey === d.weekStart ? 4 : 2.5} fill="#3B4B9E" stroke="white" strokeWidth="1" />
+                  </g>
+                ))}
+              </>
+            )}
 
             {/* Occupancy % line */}
             <polyline points={linePoints} fill="none" stroke="#43884d" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
