@@ -10,8 +10,12 @@ import {
 import Drawer from "@/app/components/Drawer";
 import ChipsInput from "@/app/components/ChipsInput";
 import Avatar from "@/app/components/Avatar";
+import SearchInput from "@/app/components/SearchInput";
+import TablePagination from "@/app/components/TablePagination";
 import { CategoryPill, CategoryBadge } from "@/app/transacciones/TransaccionesList";
 import NewContactDrawer, { AutomationIcon } from "@/app/transacciones/NewContactDrawer";
+
+const PAGE_SIZE = 25;
 
 /** Dominios de marcas reconocibles para mostrar su logo real (favicon de Google) en vez de
  * iniciales — solo para proveedores habituales de Aura Pilates. El resto cae a iniciales. */
@@ -254,6 +258,7 @@ export default function ContactosManager({ contacts: initialContacts, categories
   const [cleaning, setCleaning] = useState(false);
   const [cleaned, setCleaned] = useState<{ updated: number; merged: number } | null>(null);
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(0);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [, startTransition] = useTransition();
 
@@ -302,23 +307,18 @@ export default function ContactosManager({ contacts: initialContacts, categories
     return contacts.filter((c) => c.label.toLowerCase().includes(q) || c.patterns.some((p) => p.toLowerCase().includes(q)));
   }, [contacts, search]);
 
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages - 1);
+  const pageRows = filtered.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
+
   const selected = selectedId !== null ? contacts.find((c) => c.id === selectedId) ?? null : null;
 
   return (
     <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden">
-      <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-navy/[0.06]">
-        <div>
-          <p className="text-sm font-semibold text-navy">Contactos</p>
-          <p className="text-xs text-navy/45 mt-0.5">{contacts.length} {contacts.length === 1 ? "contacto" : "contactos"}</p>
-        </div>
+      <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-navy/[0.06]">
+        <p className="text-sm font-semibold text-navy shrink-0">Contactos</p>
         <div className="flex items-center gap-3 shrink-0">
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar contacto…"
-            className="w-44 px-3 py-1.5 text-xs border border-navy/15 rounded-md focus:outline-none focus:border-primary/40"
-          />
+          <SearchInput value={search} onChange={(v) => { setSearch(v); setPage(0); }} placeholder="Buscar contacto…" className="w-56" />
           <button
             onClick={handleCleanup}
             disabled={cleaning}
@@ -337,7 +337,7 @@ export default function ContactosManager({ contacts: initialContacts, categories
           </button>
           <button
             onClick={() => setCreating(true)}
-            className="px-3 py-1.5 text-xs font-semibold bg-navy text-white rounded-md hover:bg-navy/85 transition-colors whitespace-nowrap"
+            className="px-4 py-2 text-sm font-semibold bg-navy text-white rounded-xl hover:bg-navy/85 transition-colors whitespace-nowrap"
           >
             + Nuevo contacto
           </button>
@@ -383,7 +383,7 @@ export default function ContactosManager({ contacts: initialContacts, categories
             </tr>
           </thead>
           <tbody>
-            {filtered.map((c) => {
+            {pageRows.map((c) => {
               const stats = contactStats[c.id];
               const visiblePatterns = c.patterns.slice(0, 2);
               const extra = c.patterns.length - visiblePatterns.length;
@@ -427,6 +427,9 @@ export default function ContactosManager({ contacts: initialContacts, categories
             })}
           </tbody>
         </table>
+      )}
+      {filtered.length > 0 && (
+        <TablePagination page={safePage} totalItems={filtered.length} pageSize={PAGE_SIZE} onPageChange={setPage} />
       )}
     </div>
   );

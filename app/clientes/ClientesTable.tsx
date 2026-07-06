@@ -3,6 +3,8 @@
 import { useState, useMemo, useEffect, forwardRef, useImperativeHandle } from "react";
 import CustomerDrawer from "./CustomerDrawer";
 import Avatar from "@/app/components/Avatar";
+import SearchInput from "@/app/components/SearchInput";
+import TablePagination from "@/app/components/TablePagination";
 import { fmt } from "@/lib/analytics";
 import type { StripeCustomer } from "@/lib/stripeCustomers";
 import type { StripePayment } from "@/lib/stripePayments";
@@ -283,34 +285,11 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
         {/* Search + CSV */}
         <div className="flex items-center gap-2 flex-1">
-          <div className="relative flex-1">
-            <svg
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-navy/45"
-              width="14" height="14" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-            >
-              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-            </svg>
-            <input
-              type="text"
-              placeholder="Buscar por nombre o email…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 text-sm border border-navy/15 rounded-lg bg-white text-navy placeholder:text-navy/45 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition"
-            />
-            {search && (
-              <button
-                onClick={() => setSearch("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-navy/45 hover:text-navy/60 transition-colors"
-              >
-                ✕
-              </button>
-            )}
-          </div>
+          <SearchInput value={search} onChange={setSearch} placeholder="Buscar por nombre o email…" className="flex-1" />
           <button
             onClick={downloadCsv}
             title="Exportar tabla actual a CSV"
-            className="shrink-0 flex items-center justify-center w-9 h-9 text-navy/50 hover:text-navy border border-navy/15 rounded-lg bg-white hover:bg-navy/[0.02] transition-colors"
+            className="shrink-0 flex items-center justify-center w-9 h-9 text-navy/50 hover:text-navy border border-navy/[0.12] rounded-xl bg-white hover:bg-navy/[0.02] transition-colors"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
@@ -319,12 +298,12 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
         </div>
 
         {/* Filter tabs */}
-        <div className="flex items-center border border-navy/[0.12] rounded-lg bg-white p-1 gap-0.5 flex-wrap">
+        <div className="flex items-center border border-navy/[0.12] rounded-xl bg-white p-1 gap-0.5 flex-wrap">
           {filterLabels.map(({ key, label, count }) => (
             <button
               key={key}
               onClick={() => setFilter(key)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap ${
+              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap ${
                 filter === key
                   ? "bg-navy text-white"
                   : "text-navy/55 hover:text-navy"
@@ -342,12 +321,6 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
           ))}
         </div>
       </div>
-
-      {(search || filter !== "all" || activeMonth) && (
-        <p className="text-xs text-navy/50 mb-3">
-          {filtered.length} {filtered.length === 1 ? "cliente" : "clientes"} encontrados
-        </p>
-      )}
 
       {/* Table */}
       {(() => {
@@ -462,38 +435,7 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
             </tbody>
           </table>
         </div>
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t border-navy/[0.06]">
-            <p className="text-xs text-navy/45">
-              {safePage * PAGE_SIZE + 1}–{Math.min((safePage + 1) * PAGE_SIZE, filtered.length)} de {filtered.length}
-            </p>
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => setPage((p) => Math.max(0, p - 1))}
-                disabled={safePage === 0}
-                className="w-7 h-7 flex items-center justify-center rounded-md text-navy/50 hover:text-navy hover:bg-navy/[0.04] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
-              </button>
-              {Array.from({ length: totalPages }, (_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setPage(i)}
-                  className={`w-7 h-7 flex items-center justify-center rounded-md text-xs font-medium transition-colors ${i === safePage ? "bg-navy text-white" : "text-navy/50 hover:text-navy hover:bg-navy/[0.04]"}`}
-                >
-                  {i + 1}
-                </button>
-              ))}
-              <button
-                onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
-                disabled={safePage === totalPages - 1}
-                className="w-7 h-7 flex items-center justify-center rounded-md text-navy/50 hover:text-navy hover:bg-navy/[0.04] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
-              </button>
-            </div>
-          </div>
-        )}
+        <TablePagination page={safePage} totalItems={filtered.length} pageSize={PAGE_SIZE} onPageChange={setPage} />
       </div>
         );
       })()}

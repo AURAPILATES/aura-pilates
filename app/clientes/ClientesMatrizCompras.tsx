@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import type { StripePayment } from "@/lib/stripePayments";
 import type { CustomerRow } from "./ClientesTable";
 import CustomerDrawer from "./CustomerDrawer";
+import SearchInput from "@/app/components/SearchInput";
+import TablePagination from "@/app/components/TablePagination";
 import { fmt } from "@/lib/analytics";
 
 const PRODUCT_FILTERS = ["Bàsic", "Plus", "Pro", "Pack 4 clases", "Pack 8 clases", "Pack Benvinguda", "Clase suelta"];
@@ -55,7 +57,7 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
   const [onlyInactive, setOnlyInactive] = useState(false);
   const [onlyUpsell, setOnlyUpsell] = useState(false);
   const [selected, setSelected] = useState<CustomerRow | null>(null);
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [page, setPage] = useState(0);
 
   const { months, matrix } = useMemo(() => {
     const now = new Date();
@@ -130,10 +132,12 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
   }, [matrix, search, sortKey, sortDir, productFilter, firstPurchaseFilter, onlyInactive, onlyUpsell, lastMonth]);
 
   useEffect(() => {
-    setVisibleCount(PAGE_SIZE);
+    setPage(0);
   }, [search, sortKey, sortDir, productFilter, firstPurchaseFilter, onlyInactive, onlyUpsell]);
 
-  const pageRows = visibleMatrix.slice(0, visibleCount);
+  const totalPages = Math.max(1, Math.ceil(visibleMatrix.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages - 1);
+  const pageRows = visibleMatrix.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
 
   const monthTotals = useMemo(() => {
     const totals: Record<string, number> = {};
@@ -191,17 +195,11 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar cliente…"
-            className="text-xs px-3 py-1.5 rounded-lg border border-navy/[0.1] bg-navy/[0.02] text-navy placeholder:text-navy/35 focus:outline-none focus:ring-1 focus:ring-navy/20 min-w-[160px]"
-          />
+          <SearchInput value={search} onChange={setSearch} placeholder="Buscar cliente…" className="w-44" />
           <select
             value={productFilter}
             onChange={(e) => setProductFilter(e.target.value)}
-            className="text-xs px-2.5 py-1.5 rounded-lg border border-navy/[0.1] bg-navy/[0.02] text-navy focus:outline-none focus:ring-1 focus:ring-navy/20"
+            className="text-sm px-3 py-2 rounded-xl border border-navy/[0.12] bg-white text-navy focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40"
           >
             <option value="">Todos los productos</option>
             {PRODUCT_FILTERS.map((p) => (
@@ -211,7 +209,7 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
           <select
             value={firstPurchaseFilter}
             onChange={(e) => setFirstPurchaseFilter(e.target.value)}
-            className="text-xs px-2.5 py-1.5 rounded-lg border border-navy/[0.1] bg-navy/[0.02] text-navy focus:outline-none focus:ring-1 focus:ring-navy/20"
+            className="text-sm px-3 py-2 rounded-xl border border-navy/[0.12] bg-white text-navy focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40"
           >
             <option value="">Primera compra: todas</option>
             {months.map((m) => (
@@ -221,10 +219,10 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
           <button
             type="button"
             onClick={() => setOnlyInactive((v) => !v)}
-            className={`text-xs px-2.5 py-1.5 rounded-lg border whitespace-nowrap transition-colors ${
+            className={`text-sm px-3 py-2 rounded-xl border whitespace-nowrap transition-colors ${
               onlyInactive
-                ? "border-navy/20 bg-navy/[0.08] text-navy font-medium"
-                : "border-navy/[0.1] bg-navy/[0.02] text-navy/60"
+                ? "border-primary/40 bg-primary/5 text-primary font-medium"
+                : "border-navy/[0.12] bg-white text-navy/60 hover:bg-navy/[0.02]"
             }`}
           >
             Sin compra en {lastMonth ? monthLabel(lastMonth) : "el último mes"}
@@ -233,10 +231,10 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
             type="button"
             onClick={() => setOnlyUpsell((v) => !v)}
             title="Clientes en Bàsic desde hace 3 meses o más que nunca han subido a Plus o Pro"
-            className={`text-xs px-2.5 py-1.5 rounded-lg border whitespace-nowrap transition-colors ${
+            className={`text-sm px-3 py-2 rounded-xl border whitespace-nowrap transition-colors ${
               onlyUpsell
-                ? "border-navy/20 bg-navy/[0.08] text-navy font-medium"
-                : "border-navy/[0.1] bg-navy/[0.02] text-navy/60"
+                ? "border-primary/40 bg-primary/5 text-primary font-medium"
+                : "border-navy/[0.12] bg-white text-navy/60 hover:bg-navy/[0.02]"
             }`}
           >
             Candidatos a upsell
@@ -245,9 +243,9 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
             type="button"
             onClick={downloadCsv}
             title="Exportar vista actual a CSV"
-            className="shrink-0 flex items-center justify-center w-8 h-8 text-navy/50 hover:text-navy border border-navy/[0.1] rounded-lg bg-navy/[0.02] hover:bg-navy/[0.05] transition-colors"
+            className="shrink-0 flex items-center justify-center w-9 h-9 text-navy/50 hover:text-navy border border-navy/[0.12] rounded-xl bg-white hover:bg-navy/[0.02] transition-colors"
           >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
             </svg>
           </button>
@@ -361,17 +359,9 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
           )}
         </table>
       </div>
-      {visibleCount < visibleMatrix.length && (
-        <div className="flex justify-center mt-4">
-          <button
-            type="button"
-            onClick={() => setVisibleCount((v) => v + PAGE_SIZE)}
-            className="text-xs font-medium text-navy/60 hover:text-navy px-4 py-2 rounded-lg border border-navy/[0.1] bg-navy/[0.02] hover:bg-navy/[0.05] transition-colors"
-          >
-            Cargar más ({visibleMatrix.length - visibleCount} restantes)
-          </button>
-        </div>
-      )}
+      <div className="-mx-5 -mb-5 mt-4">
+        <TablePagination page={safePage} totalItems={visibleMatrix.length} pageSize={PAGE_SIZE} onPageChange={setPage} />
+      </div>
       {selected && (
         <CustomerDrawer key={selected.id} customer={selected} payments={payments} onClose={() => setSelected(null)} />
       )}

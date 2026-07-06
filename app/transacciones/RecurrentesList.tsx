@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronRight } from "react-feather";
 import Drawer from "@/app/components/Drawer";
+import TablePagination from "@/app/components/TablePagination";
 import type { Category } from "@/lib/categories";
 import { PERIOD_BUCKETS } from "@/lib/recurring";
 import type { RecurringExpense, RecurringExpenseEndType } from "@/lib/recurringExpenses";
@@ -54,6 +55,8 @@ type Props = {
   categories: Category[];
   contacts: Contact[];
 };
+
+const PAGE_SIZE = 25;
 
 function fmtDate(d: string): string {
   return d.split("-").reverse().join("/");
@@ -611,6 +614,9 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
   const [openPendingKey, setOpenPendingKey] = useState<string | null>(null);
   const [openConfirmedId, setOpenConfirmedId] = useState<number | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [confirmedPage, setConfirmedPage] = useState(0);
+
+  const confirmedPageRows = confirmed.slice(confirmedPage * PAGE_SIZE, (confirmedPage + 1) * PAGE_SIZE);
 
   const openPendingRow = openPendingKey != null ? pending.find((p) => p.keys[0] === openPendingKey) ?? null : null;
   const openConfirmedRow = openConfirmedId != null ? confirmed.find((c) => c.expense.id === openConfirmedId) ?? null : null;
@@ -766,7 +772,7 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
           <>
             <ConfirmedRowHeader />
             <div className="divide-y divide-navy/[0.05]">
-              {confirmed.map((row) => (
+              {confirmedPageRows.map((row) => (
                 <ConfirmedRow
                   key={row.expense.id}
                   row={row}
@@ -776,6 +782,7 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
                 />
               ))}
             </div>
+            <TablePagination page={confirmedPage} totalItems={confirmed.length} pageSize={PAGE_SIZE} onPageChange={setConfirmedPage} />
           </>
         )}
       </SectionCard>

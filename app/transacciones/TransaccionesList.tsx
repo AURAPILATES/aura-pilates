@@ -9,6 +9,8 @@ import { seriesKeyFor } from "@/lib/recurring";
 import type { RecurringExpense } from "@/lib/recurringExpenses";
 import { updateTransactionCategory, updateTransactionConcept, updateTransactionContact, updateTransactionBankDetails, updateTransactionDate, updateTransactionPaymentMethod, softDeleteTransactions, type Contact } from "./actions";
 import DateFilter from "@/app/components/DateFilter";
+import SearchInput from "@/app/components/SearchInput";
+import TablePagination from "@/app/components/TablePagination";
 import ImportButton from "./ImportButton";
 import AddCashModal from "./AddCashModal";
 import PapeleraDrawer from "./PapeleraDrawer";
@@ -576,6 +578,8 @@ type Props = {
   contacts: Contact[];
 };
 
+const PAGE_SIZE = 50;
+
 export default function TransaccionesList({
   transactions, categories, uncategorizedCount, recurringPeriods, recurringExpenses, allMonthKeys, contacts,
 }: Props) {
@@ -608,6 +612,7 @@ export default function TransaccionesList({
   const [directionFilter, setDirectionFilter] = useState<"all" | "in" | "out">("all");
   const [drawerTxnId, setDrawerTxnId] = useState<string | null>(null);
   const drawerTxn = drawerTxnId ? transactions.find((t) => t.id === drawerTxnId) ?? null : null;
+  const [page, setPage] = useState(0);
 
   function toggleSort(key: "date" | "amount" | "concept") {
     if (sortKey === key) {
@@ -694,6 +699,13 @@ export default function TransaccionesList({
     });
   }, [filtered, sortKey, sortDir]);
 
+  // ── Paginación (desktop) — corta sortedFiltered/filtered antes de agrupar por mes,
+  // así cada página tiene siempre PAGE_SIZE movimientos aunque abarque varios meses.
+  useEffect(() => { setPage(0); }, [search, catFilters, originFilter, onlyRecurring, directionFilter, currentRange, sortKey, sortDir]);
+  const totalPages = Math.max(1, Math.ceil(sortedFiltered.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages - 1);
+  const pagedFlat = sortedFiltered.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
+
   // ── Day grouping for mobile ──────────────────────────────────────────────────
   const byDay = useMemo(() => {
     const map = new Map<string, Transaction[]>();
@@ -704,16 +716,16 @@ export default function TransaccionesList({
     return [...map.entries()].sort((a, b) => b[0].localeCompare(a[0]));
   }, [filtered]);
 
-  // ── Month grouping for desktop ─────────────────────────────────────────────
+  // ── Month grouping for desktop — solo de la página actual ──────────────────
   const byMonth = useMemo(() => {
     const map = new Map<string, Transaction[]>();
-    for (const t of filtered) {
+    for (const t of pagedFlat) {
       const key = t.date.slice(0, 7);
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(t);
     }
     return [...map.entries()].sort((a, b) => b[0].localeCompare(a[0]));
-  }, [filtered]);
+  }, [pagedFlat]);
 
   const allFilteredIds = filtered.map((t) => t.id);
   const allSelected    = allFilteredIds.length > 0 && allFilteredIds.every((id) => selected.has(id));
@@ -911,25 +923,11 @@ export default function TransaccionesList({
 
       {/* ── Mobile: Search bar + Filtros ─────────────────────────────────────── */}
       <div className="sm:hidden flex gap-2 mb-3">
-        <div className="relative flex-1">
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-navy/30" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
-          <input
-            type="text"
-            placeholder="Buscar concepto o contacto…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-9 py-2.5 text-sm border border-navy/[0.12] rounded-lg bg-white text-navy placeholder:text-navy/35 outline-none focus:ring-2 focus:ring-primary/20 transition"
-          />
-          {search && (
-            <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-navy/30 hover:text-navy/60">✕</button>
-          )}
-        </div>
+        <SearchInput value={search} onChange={setSearch} placeholder="Buscar concepto o contacto…" className="flex-1" />
         <button
           onClick={() => setShowMobileFilters((v) => !v)}
           title="Filtros"
-          className="relative shrink-0 flex items-center justify-center w-[42px] h-[42px] bg-white border border-navy/[0.12] rounded-lg text-navy"
+          className="relative shrink-0 flex items-center justify-center w-[42px] h-[42px] bg-white border border-navy/[0.12] rounded-xl text-navy"
         >
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/>
@@ -994,19 +992,7 @@ export default function TransaccionesList({
       {/* ── Desktop toolbar ──────────────────────────────────────────────────── */}
       <div className="hidden sm:block">
         <div className="flex items-center gap-2 mb-5">
-          <div className="relative flex-1">
-            <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 text-navy/30" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-            </svg>
-            <input
-              type="text"
-              placeholder="Buscar concepto o contacto…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2.5 text-sm border border-navy/[0.12] rounded-xl bg-white text-navy placeholder:text-navy/35 outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40 transition"
-            />
-            {search && <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-navy/30 hover:text-navy/60">✕</button>}
-          </div>
+          <SearchInput value={search} onChange={setSearch} placeholder="Buscar concepto o contacto…" className="flex-1" />
           <DateFilter />
           <CategoryMultiFilter selected={catFilters} categories={categories} onChange={setCatFilters} />
           <MoreOptionsMenu
@@ -1020,9 +1006,9 @@ export default function TransaccionesList({
           <ImportButton onManual={() => setShowAddCash(true)} />
         </div>
         <div className="flex items-center gap-3 mb-6">
-          {someSelected
-            ? <span className="text-sm text-navy/45">{selected.size} seleccionado{selected.size !== 1 ? "s" : ""}</span>
-            : <span className="text-sm text-navy/45">{filtered.length} movimientos</span>}
+          {someSelected && (
+            <span className="text-sm text-navy/45">{selected.size} seleccionado{selected.size !== 1 ? "s" : ""}</span>
+          )}
           {!someSelected && uncategorizedCount > 0 && (
             <button
               onClick={() => setCatFilters(catFilters.includes("__none__") ? catFilters.filter((v) => v !== "__none__") : [...catFilters, "__none__"])}
@@ -1395,7 +1381,7 @@ export default function TransaccionesList({
         };
 
         const headerRow = (
-          <div className="flex items-center gap-4 px-4 py-3 border-b border-navy/[0.1] group/head">
+          <div className="flex items-center gap-4 px-4 py-3 bg-navy/[0.02] border-b border-navy/[0.06] group/head">
             <div className="w-9 shrink-0 flex items-center pl-[3px]">
               <Checkbox checked={allSelected} onChange={toggleAll} />
             </div>
@@ -1409,7 +1395,7 @@ export default function TransaccionesList({
         );
 
         return (
-          <div className="hidden sm:block">
+          <div className="hidden sm:block bg-white border border-navy/[0.07] shadow-card rounded-[5px] overflow-hidden">
             {sortedFiltered.length === 0 ? (
               <div className="bg-white">
                 {headerRow}
@@ -1419,7 +1405,7 @@ export default function TransaccionesList({
               /* Orden manual activo → lista plana, sin agrupar por mes */
               <div className={`bg-white ${isPending ? "opacity-50 pointer-events-none" : ""}`}>
                 {headerRow}
-                {sortedFiltered.map(renderRow)}
+                {pagedFlat.map(renderRow)}
               </div>
             ) : (
               /* Agrupado por mes, lista continua */
@@ -1444,6 +1430,9 @@ export default function TransaccionesList({
                   );
                 })}
               </div>
+            )}
+            {sortedFiltered.length > 0 && (
+              <TablePagination page={safePage} totalItems={sortedFiltered.length} pageSize={PAGE_SIZE} onPageChange={setPage} />
             )}
           </div>
         );
