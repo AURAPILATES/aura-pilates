@@ -888,8 +888,8 @@ export default function TransaccionesList({
           onClick={() => setDirectionFilter(directionFilter === "in" ? "all" : "in")}
           className={`text-center rounded-xl py-3 px-2 transition-all duration-200 ${
             directionFilter === "in"
-              ? "bg-success/[0.08] border border-success/20 shadow-[0_1px_8px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.8)]"
-              : "bg-white/75 backdrop-blur-xl border border-white/60 shadow-[0_1px_8px_rgba(0,0,0,0.05),inset_0_1px_0_rgba(255,255,255,1)] active:bg-white/90"
+              ? "bg-success/[0.08] border border-success/20 shadow-card"
+              : "bg-white border border-navy/[0.07] shadow-card active:bg-navy/[0.02]"
           }`}
         >
           <p className="text-[9px] font-medium text-navy/35 uppercase tracking-widest leading-none mb-1.5">Entradas</p>
@@ -903,8 +903,8 @@ export default function TransaccionesList({
           onClick={() => setDirectionFilter(directionFilter === "out" ? "all" : "out")}
           className={`text-center rounded-xl py-3 px-2 transition-all duration-200 ${
             directionFilter === "out"
-              ? "bg-[#B85C3A]/[0.08] border border-[#B85C3A]/20 shadow-[0_1px_8px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.8)]"
-              : "bg-white/75 backdrop-blur-xl border border-white/60 shadow-[0_1px_8px_rgba(0,0,0,0.05),inset_0_1px_0_rgba(255,255,255,1)] active:bg-white/90"
+              ? "bg-[#B85C3A]/[0.08] border border-[#B85C3A]/20 shadow-card"
+              : "bg-white border border-navy/[0.07] shadow-card active:bg-navy/[0.02]"
           }`}
         >
           <p className="text-[9px] font-medium text-navy/35 uppercase tracking-widest leading-none mb-1.5">Salidas</p>
@@ -913,7 +913,7 @@ export default function TransaccionesList({
         </button>
 
         {/* Diferencia — no clicable */}
-        <div className="text-center bg-white/75 backdrop-blur-xl border border-white/60 rounded-xl shadow-[0_1px_8px_rgba(0,0,0,0.05),inset_0_1px_0_rgba(255,255,255,1)] py-3 px-2">
+        <div className="text-center bg-white border border-navy/[0.07] rounded-xl shadow-card py-3 px-2">
           <p className="text-[9px] font-medium text-navy/35 uppercase tracking-widest leading-none mb-1.5">Dif.</p>
           <p className={`text-[13px] font-semibold tabular-nums truncate leading-none ${neto >= 0 ? "text-navy" : "text-danger"}`}>
             {neto < 0 && "−"}{fmtAmt(Math.abs(neto))}
