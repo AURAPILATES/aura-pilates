@@ -1285,11 +1285,11 @@ export default function TransaccionesList({
             >
               {/* avatar / checkbox */}
               <div
-                className="relative w-9 h-9 shrink-0 flex items-center justify-center"
+                className="relative w-8 h-8 shrink-0 flex items-center justify-center"
                 onClick={(e) => { e.stopPropagation(); toggleOne(t.id); }}
               >
                 <div className={`absolute inset-0 flex items-center justify-center transition-opacity ${isSelected ? "opacity-0" : "opacity-100 group-hover:opacity-0"}`}>
-                  <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ backgroundColor: accent }}>
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: accent }}>
                     <CatIcon iconKey={iconKey} name={cat?.label ?? primary} color="#fff" size={15} />
                   </div>
                 </div>
