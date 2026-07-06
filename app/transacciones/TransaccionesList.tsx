@@ -1279,7 +1279,7 @@ export default function TransaccionesList({
             <div
               key={t.id}
               onClick={() => setDrawerTxnId(t.id)}
-              className={`flex items-center gap-4 px-4 py-3.5 border-b border-navy/[0.04] last:border-0 group transition-colors cursor-pointer ${
+              className={`flex items-center gap-4 px-4 py-2.5 border-b border-navy/[0.04] last:border-0 group transition-colors cursor-pointer ${
                 isSelected ? "bg-primary/[0.03]" : "hover:bg-navy/[0.02]"
               }`}
             >
@@ -1395,7 +1395,7 @@ export default function TransaccionesList({
         };
 
         const headerRow = (
-          <div className="flex items-center gap-4 px-4 py-3 border-b border-navy/[0.06] bg-navy/[0.02] group/head">
+          <div className="flex items-center gap-4 px-4 py-3 border-b border-navy/[0.1] group/head">
             <div className="w-9 shrink-0 flex items-center pl-[3px]">
               <Checkbox checked={allSelected} onChange={toggleAll} />
             </div>
@@ -1411,19 +1411,19 @@ export default function TransaccionesList({
         return (
           <div className="hidden sm:block">
             {sortedFiltered.length === 0 ? (
-              <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden">
+              <div className="bg-white">
                 {headerRow}
                 <p className="py-12 text-center text-sm text-navy/40">Sin resultados</p>
               </div>
             ) : sortKey ? (
               /* Orden manual activo → lista plana, sin agrupar por mes */
-              <div className={`bg-white border border-navy/[0.07] shadow-card rounded-2xl overflow-hidden ${isPending ? "opacity-50 pointer-events-none" : ""}`}>
+              <div className={`bg-white ${isPending ? "opacity-50 pointer-events-none" : ""}`}>
                 {headerRow}
                 {sortedFiltered.map(renderRow)}
               </div>
             ) : (
               /* Agrupado por mes, lista continua */
-              <div className={`bg-white border border-navy/[0.07] shadow-card rounded-2xl overflow-hidden ${isPending ? "opacity-50 pointer-events-none" : ""}`}>
+              <div className={`bg-white ${isPending ? "opacity-50 pointer-events-none" : ""}`}>
                 {headerRow}
                 {byMonth.map(([monthKey, monthTxns]) => {
                   const monthNet = monthTxns.reduce((s, t) => s + t.amount, 0);
@@ -1433,7 +1433,7 @@ export default function TransaccionesList({
                     + (parseInt(y) !== new Date().getFullYear() ? ` ${y}` : "");
                   return (
                     <div key={monthKey}>
-                      <div className="flex items-baseline justify-between px-5 py-3.5 bg-navy/[0.025] border-y border-navy/[0.07]">
+                      <div className="flex items-baseline justify-between px-4 py-2 bg-navy/[0.025] border-y border-navy/[0.07]">
                         <span className="text-[13px] font-semibold text-navy/60 uppercase tracking-wide">{label}</span>
                         <span className={`text-sm font-semibold tabular-nums ${monthNet < 0 ? "text-danger" : "text-success"}`}>
                           {monthNet < 0 ? "−" : "+"}{fmtAmt(Math.abs(monthNet))}
