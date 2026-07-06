@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { ChevronRight } from "react-feather";
 import Drawer from "@/app/components/Drawer";
 import type { Category } from "@/lib/categories";
-import { categoryDisplayLabel } from "@/lib/categories";
 import { PERIOD_BUCKETS } from "@/lib/recurring";
 import type { RecurringExpense, RecurringExpenseEndType } from "@/lib/recurringExpenses";
 import type { Contact } from "./actions";
@@ -388,11 +387,23 @@ function ConfirmPendingDrawer({ row, period, pick, end, name, contacts, onClose,
 
 /** Fila de una sola línea (estilo Linear, ver PrevisionGastos.tsx): sin tabla ni fecha de
  * vencimiento, solo lo estable — contacto, categoría, periodicidad, fiscalidad e importe. */
+function ConfirmedRowHeader() {
+  return (
+    <div className="hidden sm:flex items-center gap-2.5 py-2.5 px-4 bg-navy/[0.02] border-b border-navy/[0.06]">
+      <span className="text-[11px] font-semibold text-navy/45 uppercase tracking-wider flex-1 min-w-0">Concepto</span>
+      <span className="shrink-0 text-[11px] font-semibold text-navy/45 uppercase tracking-wider max-w-[140px] w-full">Categoría</span>
+      <span className="hidden md:block shrink-0 text-[11px] font-semibold text-navy/45 uppercase tracking-wider w-16 text-right">Periodo</span>
+      <span className="hidden lg:block shrink-0 text-[11px] font-semibold text-navy/45 uppercase tracking-wider w-28 text-right">IVA / Ret</span>
+      <span className="shrink-0 text-[11px] font-semibold text-navy/45 uppercase tracking-wider w-20 text-right">Importe</span>
+    </div>
+  );
+}
+
 function ConfirmedRow({ row, categories, contacts, onOpen }: { row: ConfirmedExpenseRow; categories: Category[]; contacts: Contact[]; onOpen: () => void }) {
   const e = row.expense;
   const catLabel = e.category ? categories.find((c) => c.value === e.category) : null;
   const contact = e.contact_id != null ? contacts.find((c) => c.id === e.contact_id) : undefined;
-  const dotColor = catLabel?.text_color ?? "#9CA3AF";
+  const showContact = contact && contact.label.trim().toLowerCase() !== e.label.trim().toLowerCase();
 
   return (
     <button
@@ -400,14 +411,13 @@ function ConfirmedRow({ row, categories, contacts, onOpen }: { row: ConfirmedExp
       onClick={onOpen}
       className="w-full flex items-center gap-2.5 py-2.5 px-4 hover:bg-navy/[0.02] transition-colors text-left"
     >
-      <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: dotColor }} />
       <span className="text-[13px] font-medium text-navy truncate flex-1 min-w-0">{e.label}</span>
-      {contact && contact.label !== e.label && (
+      {showContact && (
         <span className="hidden sm:block shrink-0 text-[11px] text-navy/40 truncate max-w-[120px]">{contact.label}</span>
       )}
       {catLabel && (
-        <span className="hidden sm:block shrink-0 text-[11px] text-navy/45 bg-navy/[0.045] px-1.5 py-0.5 rounded truncate max-w-[140px]">
-          {categoryDisplayLabel(catLabel, categories)}
+        <span className="hidden sm:block shrink-0 max-w-[140px] w-full truncate">
+          <CategoryBadge category={e.category} categories={categories} />
         </span>
       )}
       <span className="hidden md:block shrink-0 text-[11px] text-navy/40 capitalize w-16 text-right">{e.period}</span>
@@ -753,17 +763,20 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
         {confirmed.length === 0 ? (
           <p className="text-sm text-navy/40 px-4 py-6">Sin gastos recurrentes confirmados todavía.</p>
         ) : (
-          <div className="divide-y divide-navy/[0.05]">
-            {confirmed.map((row) => (
-              <ConfirmedRow
-                key={row.expense.id}
-                row={row}
-                categories={categories}
-                contacts={contacts}
-                onOpen={() => setOpenConfirmedId(row.expense.id)}
-              />
-            ))}
-          </div>
+          <>
+            <ConfirmedRowHeader />
+            <div className="divide-y divide-navy/[0.05]">
+              {confirmed.map((row) => (
+                <ConfirmedRow
+                  key={row.expense.id}
+                  row={row}
+                  categories={categories}
+                  contacts={contacts}
+                  onOpen={() => setOpenConfirmedId(row.expense.id)}
+                />
+              ))}
+            </div>
+          </>
         )}
       </SectionCard>
 

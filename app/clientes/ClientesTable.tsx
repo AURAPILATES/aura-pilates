@@ -160,11 +160,6 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
     }
   }
 
-  const topCustomers = useMemo(
-    () => [...customers].sort((a, b) => b.totalSpent - a.totalSpent).slice(0, 5),
-    [customers],
-  );
-
   const couponStripeIds = useMemo(
     () => new Set(payments.filter((p) => p.inferredType === "coupon" && p.customerId).map((p) => p.customerId!)),
     [payments],
@@ -284,32 +279,6 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
           </button>
         </div>
       )}
-      {/* Top 5 clientes */}
-      <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card mb-6 overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-navy/[0.06]">
-          <p className="text-sm font-semibold text-navy">Principales clientes</p>
-          <p className="text-xs text-navy/40">Por total gastado</p>
-        </div>
-        <div className="divide-y divide-navy/[0.05]">
-          {topCustomers.map((c) => (
-            <button
-              key={c.id}
-              onClick={() => setSelected(c)}
-              className="w-full flex items-center justify-between gap-4 px-5 py-3 hover:bg-primary/[0.025] transition-colors text-left"
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <Avatar seed={c.id} initials={initials(c.name, c.email)} size={32} />
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-navy truncate">{c.name ?? "—"}</p>
-                  {c.email && <p className="text-xs text-navy/45 truncate">{c.email}</p>}
-                </div>
-              </div>
-              <span className="shrink-0 text-sm font-semibold text-navy tabular-nums">{fmt(c.totalSpent)}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
       {/* Controls */}
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
         {/* Search + CSV */}
