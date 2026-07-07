@@ -12,6 +12,8 @@ import ChipsInput from "@/app/components/ChipsInput";
 import Avatar from "@/app/components/Avatar";
 import SearchInput from "@/app/components/SearchInput";
 import TablePagination from "@/app/components/TablePagination";
+import TableBox from "@/app/components/TableBox";
+import TableToolbar from "@/app/components/TableToolbar";
 import { CategoryPill, CategoryBadge } from "@/app/transacciones/TransaccionesList";
 import NewContactDrawer, { AutomationIcon } from "@/app/transacciones/NewContactDrawer";
 
@@ -314,35 +316,32 @@ export default function ContactosManager({ contacts: initialContacts, categories
   const selected = selectedId !== null ? contacts.find((c) => c.id === selectedId) ?? null : null;
 
   return (
-    <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden">
-      <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-navy/[0.06]">
-        <p className="text-sm font-semibold text-navy shrink-0">Contactos</p>
-        <div className="flex items-center gap-3 shrink-0">
-          <SearchInput value={search} onChange={(v) => { setSearch(v); setPage(0); }} placeholder="Buscar contacto…" className="w-56" />
-          <button
-            onClick={handleCleanup}
-            disabled={cleaning}
-            title="Vuelve a limpiar los conceptos ya guardados quitando códigos de operación variables, para que coincidan de forma estable"
-            className="text-xs text-navy/45 hover:text-navy transition-colors disabled:opacity-50 whitespace-nowrap"
-          >
-            {cleaning ? "Limpiando…" : cleaned !== null ? `${cleaned.updated} limpiados, ${cleaned.merged} fusionados` : "Limpiar conceptos"}
-          </button>
-          <button
-            onClick={handleRecompute}
-            disabled={recomputing}
-            title="Vuelve a calcular Contacto a partir de Concepto + Más datos, cruzando con los contactos guardados"
-            className="text-xs text-navy/45 hover:text-navy transition-colors disabled:opacity-50 whitespace-nowrap"
-          >
-            {recomputing ? "Recalculando…" : recomputed !== null ? `${recomputed} movimientos actualizados` : "Recalcular contactos"}
-          </button>
-          <button
-            onClick={() => setCreating(true)}
-            className="px-4 py-2 text-sm font-semibold bg-navy text-white rounded-xl hover:bg-navy/85 transition-colors whitespace-nowrap"
-          >
-            + Nuevo contacto
-          </button>
-        </div>
-      </div>
+    <div>
+      <TableToolbar>
+        <SearchInput value={search} onChange={(v) => { setSearch(v); setPage(0); }} placeholder="Buscar contacto…" className="flex-1 min-w-[200px]" />
+        <button
+          onClick={handleCleanup}
+          disabled={cleaning}
+          title="Vuelve a limpiar los conceptos ya guardados quitando códigos de operación variables, para que coincidan de forma estable"
+          className="text-xs text-navy/45 hover:text-navy transition-colors disabled:opacity-50 whitespace-nowrap"
+        >
+          {cleaning ? "Limpiando…" : cleaned !== null ? `${cleaned.updated} limpiados, ${cleaned.merged} fusionados` : "Limpiar conceptos"}
+        </button>
+        <button
+          onClick={handleRecompute}
+          disabled={recomputing}
+          title="Vuelve a calcular Contacto a partir de Concepto + Más datos, cruzando con los contactos guardados"
+          className="text-xs text-navy/45 hover:text-navy transition-colors disabled:opacity-50 whitespace-nowrap"
+        >
+          {recomputing ? "Recalculando…" : recomputed !== null ? `${recomputed} movimientos actualizados` : "Recalcular contactos"}
+        </button>
+        <button
+          onClick={() => setCreating(true)}
+          className="px-4 py-2 text-sm font-semibold bg-navy text-white rounded-xl hover:bg-navy/85 transition-colors whitespace-nowrap"
+        >
+          + Nuevo contacto
+        </button>
+      </TableToolbar>
 
       {creating && (
         <NewContactDrawer
@@ -366,6 +365,7 @@ export default function ContactosManager({ contacts: initialContacts, categories
         />
       )}
 
+      <TableBox>
       {filtered.length === 0 ? (
         <p className="text-sm text-navy/40 px-4 py-6">
           {contacts.length === 0 ? "Todavía no hay contactos guardados." : "Ningún contacto coincide con la búsqueda."}
@@ -431,6 +431,7 @@ export default function ContactosManager({ contacts: initialContacts, categories
       {filtered.length > 0 && (
         <TablePagination page={safePage} totalItems={filtered.length} pageSize={PAGE_SIZE} onPageChange={setPage} />
       )}
+      </TableBox>
     </div>
   );
 }

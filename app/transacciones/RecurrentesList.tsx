@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ChevronRight } from "react-feather";
 import Drawer from "@/app/components/Drawer";
 import TablePagination from "@/app/components/TablePagination";
+import TableBox from "@/app/components/TableBox";
 import type { Category } from "@/lib/categories";
 import { PERIOD_BUCKETS } from "@/lib/recurring";
 import type { RecurringExpense, RecurringExpenseEndType } from "@/lib/recurringExpenses";
@@ -83,22 +84,6 @@ function ContactAvatar({ label, resolved, size = 36 }: { label: string; resolved
   );
 }
 
-/** Card "sólida" del resto de la app (mismo chrome que ContactosManager/ClientesTable):
- * fondo blanco, borde sutil, esquinas grandes, header con título + acción opcional. */
-function SectionCard({ title, subtitle, action, children }: { title: string; subtitle?: string; action?: React.ReactNode; children: React.ReactNode }) {
-  return (
-    <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden">
-      <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-navy/[0.06]">
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-navy">{title}</p>
-          {subtitle && <p className="text-xs text-navy/45 mt-0.5">{subtitle}</p>}
-        </div>
-        {action && <div className="shrink-0">{action}</div>}
-      </div>
-      {children}
-    </div>
-  );
-}
 
 type ContactPick = { contactId: number } | { newLabel: string } | null;
 
@@ -723,7 +708,7 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
   return (
     <div className="space-y-4">
       {pending.length > 0 && (
-        <SectionCard
+        <TableBox
           title="Gastos detectados"
           subtitle="Vincúlalos a un contacto para aplicar sus impuestos automáticamente."
           action={
@@ -759,10 +744,10 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
               />
             ))}
           </div>
-        </SectionCard>
+        </TableBox>
       )}
 
-      <SectionCard
+      <TableBox
         title="Gastos recurrentes activos"
         subtitle="Próximo pago previsto, IVA deducible y retención aplicable."
       >
@@ -785,14 +770,14 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
             <TablePagination page={confirmedPage} totalItems={confirmed.length} pageSize={PAGE_SIZE} onPageChange={setConfirmedPage} />
           </>
         )}
-      </SectionCard>
+      </TableBox>
 
       {archived.length > 0 && (
-        <SectionCard title="Ignorados / dados de baja" subtitle="No se proyectan en la previsión de cashflow">
+        <TableBox title="Ignorados / dados de baja" subtitle="No se proyectan en la previsión de cashflow">
           <div className="divide-y divide-navy/[0.05]">
             {archived.map((row) => <ArchivedRow key={row.id} row={row} />)}
           </div>
-        </SectionCard>
+        </TableBox>
       )}
 
       {openPendingRow && (

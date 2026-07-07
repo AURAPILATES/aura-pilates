@@ -6,6 +6,8 @@ import type { CustomerRow } from "./ClientesTable";
 import CustomerDrawer from "./CustomerDrawer";
 import SearchInput from "@/app/components/SearchInput";
 import TablePagination from "@/app/components/TablePagination";
+import TableBox from "@/app/components/TableBox";
+import TableToolbar from "@/app/components/TableToolbar";
 import { fmt } from "@/lib/analytics";
 
 const PRODUCT_FILTERS = ["Bàsic", "Plus", "Pro", "Pack 4 clases", "Pack 8 clases", "Pack Benvinguda", "Clase suelta"];
@@ -186,16 +188,9 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
   }
 
   return (
-    <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5 mb-6">
-      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h3 className="text-sm font-semibold text-navy">Compras por cliente y mes</h3>
-          <p className="text-xs text-navy/45 mt-0.5">
-            Todas las compras registradas · cada celda muestra el producto y el importe
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <SearchInput value={search} onChange={setSearch} placeholder="Buscar cliente…" className="w-44" />
+    <div>
+      <TableToolbar>
+        <SearchInput value={search} onChange={setSearch} placeholder="Buscar cliente…" className="w-44" />
           <select
             value={productFilter}
             onChange={(e) => setProductFilter(e.target.value)}
@@ -249,8 +244,8 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
             </svg>
           </button>
-        </div>
-      </div>
+      </TableToolbar>
+      <TableBox>
       <div className="overflow-x-auto">
         <table className="text-xs w-full" style={{ tableLayout: "fixed", borderCollapse: "separate", borderSpacing: 0 }}>
           <colgroup>
@@ -359,9 +354,8 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
           )}
         </table>
       </div>
-      <div className="-mx-5 -mb-5 mt-4">
-        <TablePagination page={safePage} totalItems={visibleMatrix.length} pageSize={PAGE_SIZE} onPageChange={setPage} />
-      </div>
+      <TablePagination page={safePage} totalItems={visibleMatrix.length} pageSize={PAGE_SIZE} onPageChange={setPage} />
+      </TableBox>
       {selected && (
         <CustomerDrawer key={selected.id} customer={selected} payments={payments} onClose={() => setSelected(null)} />
       )}

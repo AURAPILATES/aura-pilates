@@ -5,6 +5,8 @@ import CustomerDrawer from "./CustomerDrawer";
 import Avatar from "@/app/components/Avatar";
 import SearchInput from "@/app/components/SearchInput";
 import TablePagination from "@/app/components/TablePagination";
+import TableBox from "@/app/components/TableBox";
+import TableToolbar from "@/app/components/TableToolbar";
 import { fmt } from "@/lib/analytics";
 import type { StripeCustomer } from "@/lib/stripeCustomers";
 import type { StripePayment } from "@/lib/stripePayments";
@@ -282,9 +284,9 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
         </div>
       )}
       {/* Controls */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-4">
+      <TableToolbar>
         {/* Search + CSV */}
-        <div className="flex items-center gap-2 flex-1">
+        <div className="flex items-center gap-2 flex-1 min-w-[200px]">
           <SearchInput value={search} onChange={setSearch} placeholder="Buscar por nombre o email…" className="flex-1" />
           <button
             onClick={downloadCsv}
@@ -320,7 +322,7 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
             </button>
           ))}
         </div>
-      </div>
+      </TableToolbar>
 
       {/* Table */}
       {(() => {
@@ -328,7 +330,7 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
         const safePage = Math.min(page, Math.max(0, totalPages - 1));
         const pageRows = filtered.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
         return (
-      <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden">
+      <TableBox>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -436,7 +438,7 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
           </table>
         </div>
         <TablePagination page={safePage} totalItems={filtered.length} pageSize={PAGE_SIZE} onPageChange={setPage} />
-      </div>
+      </TableBox>
         );
       })()}
 
