@@ -161,6 +161,20 @@ Todo lo que necesita persistir entre despliegues se guarda en **Supabase** (el f
 
 ---
 
+### Velocidad del dashboard — caché de Stripe/Momence (jul 2026)
+
+**Problema detectado:** Analítica/Finanzas carga en paralelo el histórico completo de cobros de Stripe (`loadStripePaymentsCached`, con `expand: balance_transaction`), la lista completa de clientes de Stripe y de Momence. Estas cachés (`unstable_cache`) duraban 10 min (Stripe) / 5 min (Momence). Como esas listas solo crecen con el tiempo, cada vez que la caché caducaba, la siguiente visita pagaba el coste completo de recorrer todo el historial — sensación de lentitud en Analítica/Finanzas.
+
+**Fix implementado (calentamiento diario, compatible con plan Hobby de Vercel):**
+1. El TTL de estas cachés se subió de 5-10 min a **1 hora** (Stripe: `lib/stripePayments.ts`, `lib/stripeCustomers.ts`) y **30 min** (Momence: `lib/momence.ts`) — menos refetch en frío en general.
+2. Cron diario `/api/cron/warm-cache` (`app/api/cron/warm-cache/route.ts`), a las 6:30 UTC, fuerza la recarga de esas cachés pesadas antes de la hora habitual de apertura, para que la primera persona que entra al dashboard cada día no sea quien paga el refetch completo.
+3. **Por qué no un cron cada pocos minutos:** el plan **Hobby** de Vercel solo permite que cada cron job se dispare **una vez al día** (por eso los crons existentes usan dos entradas de una vez al día cada una, no una cada X minutos). Calentar la caché con más frecuencia requeriría plan Pro.
+4. **Freshness bajo demanda:** los botones de "sincronizar" ya existentes (`app/actions/syncStripe.ts`, `app/actions/syncMomence.ts`) siguen invalidando la caché al momento (`revalidateTag`), así que un TTL más largo no impide ver datos recién importados si se fuerza el refresco manual.
+
+**Pendiente si sigue siendo lento:** si el TTL de 1h resulta insuficiente porque el histórico de Stripe sigue creciendo, la solución de fondo es guardar los pagos de Stripe incrementalmente en Supabase (como ya se hace con `momence_history`) en vez de recorrer todo el historial en cada cache-miss.
+
+---
+
 ### Vacaciones — archivo local
 Los datos de vacaciones se leen del archivo `data/vacaciones.json`. Para modificarlos hay que editar ese archivo directamente.
 

@@ -56,7 +56,7 @@ function describePaymentError(err: Stripe.PaymentIntent.LastPaymentError | null 
 }
 
 // Pagos fallidos en los últimos 30 días: devuelve customerId + fecha y motivo del fallo más reciente
-const fetchFailedPayments = unstable_cache(
+export const fetchFailedPayments = unstable_cache(
   async (): Promise<{ customerId: string; failedAt: string; reason: string | null }[]> => {
     const cutoff = Math.floor(Date.now() / 1000) - 30 * 86400;
     const map = new Map<string, { failedAt: string; reason: string | null }>(); // stripeId → fallo más reciente
@@ -92,10 +92,10 @@ const fetchFailedPayments = unstable_cache(
     return [...map.entries()].map(([customerId, v]) => ({ customerId, failedAt: v.failedAt, reason: v.reason }));
   },
   ["stripe-failed-payments"],
-  { revalidate: 600, tags: ["stripe"] },
+  { revalidate: 3600, tags: ["stripe"] },
 );
 
-const fetchStripeCustomerList = unstable_cache(
+export const fetchStripeCustomerList = unstable_cache(
   async (): Promise<RawCustomer[]> => {
     const result: RawCustomer[] = [];
     for await (const raw of stripe.customers.list({ limit: 100, expand: ["data.discount.coupon"] })) {
@@ -105,7 +105,7 @@ const fetchStripeCustomerList = unstable_cache(
     return result;
   },
   ["stripe-customer-list"],
-  { revalidate: 600, tags: ["stripe"] },
+  { revalidate: 3600, tags: ["stripe"] },
 );
 
 // ─────────────────────────────────────────────────────────────────────────────

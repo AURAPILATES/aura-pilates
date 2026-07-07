@@ -45,7 +45,7 @@ async function fetchMomenceOnce<T>(endpoint: string): Promise<T> {
   let res: Response;
   try {
     res = await fetch(`${BASE_URL}/${endpoint}?${params}`, {
-      next: { revalidate: 300, tags: ["momence"] },
+      next: { revalidate: 1800, tags: ["momence"] },
     });
   } catch (e) {
     throw new Error(`Momence (${endpoint}): sin conexión — ${e instanceof Error ? e.message : String(e)}`);
@@ -125,23 +125,23 @@ export type MomenceVideo = {
 
 export const getEvents = unstable_cache(
   () => fetchMomence<MomenceEvent[]>("Events"),
-  ["momence-events"], { revalidate: 300, tags: ["momence"] },
+  ["momence-events"], { revalidate: 1800, tags: ["momence"] },
 );
 export const getTeachers = unstable_cache(
   () => fetchMomence<MomenceTeacher[]>("Teachers"),
-  ["momence-teachers"], { revalidate: 300, tags: ["momence"] },
+  ["momence-teachers"], { revalidate: 1800, tags: ["momence"] },
 );
 export const getMemberships = unstable_cache(
   () => fetchMomence<MomenceMembership[]>("Memberships"),
-  ["momence-memberships"], { revalidate: 300, tags: ["momence"] },
+  ["momence-memberships"], { revalidate: 1800, tags: ["momence"] },
 );
 export const getProducts = unstable_cache(
   () => fetchMomence<MomenceProduct[]>("Products"),
-  ["momence-products"], { revalidate: 300, tags: ["momence"] },
+  ["momence-products"], { revalidate: 1800, tags: ["momence"] },
 );
 export const getVideos = unstable_cache(
   () => fetchMomence<MomenceVideo[]>("Videos"),
-  ["momence-videos"], { revalidate: 300, tags: ["momence"] },
+  ["momence-videos"], { revalidate: 1800, tags: ["momence"] },
 );
 
 export type MomenceActiveSubscription = {
@@ -186,7 +186,7 @@ async function fetchCustomersPageOnce(page: number, pageSize: number): Promise<C
   });
   let res: Response;
   try {
-    res = await fetch(`${BASE_URL}/Customers?${params}`, { next: { revalidate: 300, tags: ["momence"] } });
+    res = await fetch(`${BASE_URL}/Customers?${params}`, { next: { revalidate: 1800, tags: ["momence"] } });
   } catch (e) {
     throw new Error(`Momence (Customers p${page}): sin conexión — ${e instanceof Error ? e.message : String(e)}`);
   }
@@ -215,5 +215,5 @@ async function _getCustomers(): Promise<MomenceCustomer[]> {
 export const getCustomers = unstable_cache(
   _getCustomers,
   ["momence-customers"],
-  { revalidate: 300, tags: ["momence"] },
+  { revalidate: 1800, tags: ["momence"] },
 );

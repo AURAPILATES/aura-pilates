@@ -311,12 +311,12 @@ export function totalNet(payments: StripePayment[]): number {
   return payments.reduce((s, p) => s + p.net, 0);
 }
 
-// ── Cached loader (10 min, invalidable with revalidateTag('stripe')) ─────────────
+// ── Cached loader (1h, invalidable with revalidateTag('stripe') o el cron de calentamiento) ──
 
 export const loadStripePaymentsCached = unstable_cache(
   () => loadStripePayments(),
   ["stripe-payments"],
-  { revalidate: 600, tags: ["stripe"] },
+  { revalidate: 3600, tags: ["stripe"] },
 );
 
 // ── Resumen de pagos por rango de fechas (reembolsos + disputas + errores) ────
@@ -391,7 +391,7 @@ export const loadPaymentsBreakdown = unstable_cache(
     };
   },
   ["stripe-payments-breakdown"],
-  { revalidate: 600, tags: ["stripe"] },
+  { revalidate: 3600, tags: ["stripe"] },
 );
 
 // ── Compatibility shim: convert to Sale shape for existing charts ──────────────
