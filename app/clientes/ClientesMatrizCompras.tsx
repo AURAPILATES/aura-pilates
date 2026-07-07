@@ -187,6 +187,16 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
     return sortKey === key ? (sortDir === "asc" ? " ▲" : " ▼") : "";
   }
 
+  // Ancho fijo real (no el 100% del contenedor): con table-layout:fixed y w-full, el
+  // navegador reparte cualquier espacio sobrante entre las columnas, "hinchándolas" en
+  // pantallas anchas. Calculamos aquí la suma exacta y se la damos a la tabla y a su
+  // envoltorio, para que ninguna columna se estire más allá de su ancho diseñado.
+  const NAME_COL_W = 130;
+  const FIRST_COL_W = 110;
+  const MONTH_COL_W = 76;
+  const TOTAL_COL_W = 110;
+  const tableWidthPx = NAME_COL_W + FIRST_COL_W + months.length * MONTH_COL_W + TOTAL_COL_W;
+
   return (
     <div>
       <TableToolbar>
@@ -246,15 +256,15 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
           </button>
       </TableToolbar>
       <TableBox>
-      <div className="overflow-x-auto">
-        <table className="text-xs w-full" style={{ tableLayout: "fixed", borderCollapse: "separate", borderSpacing: 0 }}>
+      <div className="overflow-x-auto max-w-full" style={{ width: tableWidthPx }}>
+        <table className="text-xs" style={{ tableLayout: "fixed", borderCollapse: "separate", borderSpacing: 0, width: tableWidthPx }}>
           <colgroup>
-            <col style={{ width: 130 }} />
-            <col style={{ width: 110 }} />
+            <col style={{ width: NAME_COL_W }} />
+            <col style={{ width: FIRST_COL_W }} />
             {months.map((m) => (
-              <col key={m} style={{ width: 76 }} />
+              <col key={m} style={{ width: MONTH_COL_W }} />
             ))}
-            <col style={{ width: 110 }} />
+            <col style={{ width: TOTAL_COL_W }} />
           </colgroup>
           <thead>
             <tr className="bg-navy/[0.02] border-b border-navy/[0.06]">
@@ -298,7 +308,7 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
                   onClick={() => setSelected(customer)}
                   className="border-b border-navy/[0.04] last:border-0 hover:bg-navy/[0.02] transition-colors cursor-pointer"
                 >
-                  <td className="sticky left-0 bg-white py-2 pr-3 font-medium text-navy whitespace-nowrap z-10 max-w-[130px] truncate" title={customer.name ?? customer.email ?? undefined}>
+                  <td className="sticky left-0 bg-white py-2 pr-3 font-medium text-navy whitespace-nowrap z-10 truncate" title={customer.name ?? customer.email ?? undefined}>
                     {customer.name ?? customer.email ?? "—"}
                   </td>
                   <td className="sticky left-[130px] bg-white py-2 px-1 text-center text-navy/60 whitespace-nowrap z-10">
