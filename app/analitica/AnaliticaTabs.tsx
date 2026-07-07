@@ -5,8 +5,8 @@ import { type Tab, useAnaliticaTab } from "./AnaliticaTabContext";
 
 type Props = Record<Tab, ReactNode>;
 
-export default function AnaliticaTabs({ caja, gastos, ingresos, clientes, fiscal, ocupacion }: Props) {
+export default function AnaliticaTabs({ resumen, ingresosGastos, clientes, ocupacion }: Props) {
   const { tab } = useAnaliticaTab();
-  const content: Props = { caja, gastos, ingresos, clientes, fiscal, ocupacion };
+  const content: Props = { resumen, ingresosGastos, clientes, ocupacion };
   return <>{content[tab]}</>;
 }

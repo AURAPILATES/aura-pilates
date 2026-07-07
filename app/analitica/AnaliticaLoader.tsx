@@ -46,6 +46,7 @@ import AnaliticaKPIs from "./AnaliticaKPIs";
 import ClientesPaymentsBreakdown from "@/app/clientes/ClientesPaymentsBreakdown";
 import PrevisionGastos from "./PrevisionGastos";
 import OcupacionTab from "./instances/OcupacionTab";
+import VolumenBruto from "./instances/VolumenBruto";
 import AnaliticaTabs from "./AnaliticaTabs";
 import SectionHeader from "./SectionHeader";
 
@@ -496,9 +497,9 @@ export default async function AnaliticaLoader({
       )}
 
       <AnaliticaTabs
-        caja={
+        resumen={
           <section>
-            <SectionHeader id="caja" title="Caja y resultado" />
+            <SectionHeader id="resumen" title="Resumen" />
             <div className="space-y-4">
               <CockpitFinanciero
                 curMonthLabel={monthLabel(curMonth)}
@@ -509,8 +510,6 @@ export default async function AnaliticaLoader({
                 completeBurnMonthsCount={completeBurnMonths.length}
                 ventasPrevistas={avgMonthlyRevenue}
                 gastosComprometidos={gastosComprometidos}
-                sales={salesAll}
-                txns={txnsAll}
                 lastUpdated={liveLastUpdated}
                 nextIvaLabel={nextIvaObligation?.date ?? null}
                 nextIvaQuarter={nextIvaObligation?.quarter ?? null}
@@ -521,86 +520,6 @@ export default async function AnaliticaLoader({
                 ivaQuarterClosed={nextIvaQuarterClosed}
               />
               <Breakeven points={breakevenPoints} />
-            </div>
-          </section>
-        }
-        gastos={
-          <section>
-            <SectionHeader id="gastos" title="Gastos" />
-            <div className="space-y-4">
-              <DesglosGastosUnificado
-                groups={expGroupTotals}
-                categories={expByTopCategory}
-                transactionsByCategory={transactionsByCategory}
-                totalExpCat={totalExpCat}
-                totalExpCatNoCapex={totalExpCatNoCapex}
-                rangeLabel={periodLabel}
-              />
-              <PrevisionGastos forecasts={recurringForecasts} categories={dbCategories} avgSuministros={avgSuministros} />
-            </div>
-          </section>
-        }
-        ingresos={
-          <section>
-            <SectionHeader id="ingresos" title="Ingresos" />
-            <div className="space-y-4">
-              <IngresosPorFuente
-                stripeGross={totalRev}
-                stripeFees={stripeFees}
-                stripeNet={stripeNet}
-                uscGross={uscRevenue}
-                monthly={monthlyByFuente}
-                dateRange={periodLabel}
-                lastUpdated={liveLastUpdated}
-              />
-              <EvolucionSuscripcionesFullWidth monthly={monthlyStripeRevenue} cohorts={subscriptionCohorts} events={businessEvents} rawPayments={pMain} />
-            </div>
-          </section>
-        }
-        clientes={
-          <section>
-            <SectionHeader id="clientes" title="Clientes" />
-            <div className="space-y-4">
-              <AnaliticaKPIs
-                customers={customers}
-                periodLabel={periodLabel}
-                periodFrom={mainFrom}
-                periodTo={mainTo}
-                compDateRange={compDateRange}
-                spendPerClient={spendPerClient}
-                spendPerClientComp={spendPerClientComp}
-                newCustomers={newCustomers}
-                reactivatedCustomers={reactivatedCustomers}
-                convertCandidates={convertCandidates}
-                activeMomenceSubCount={activeMomenceSubCount}
-                activeRecurringCount={activeRecurringCount}
-                momenceChurn={momenceChurn}
-              />
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <ClientesPaymentsBreakdown
-                  succeeded={totalRev}
-                  refunded={breakdown.refunded}
-                  disputed={breakdown.disputed}
-                  failed={breakdown.failed}
-                  refundedIds={breakdown.refundedIds}
-                  disputedIds={breakdown.disputedIds}
-                  failedIds={breakdown.failedIds}
-                  customers={customers}
-                  periodLabel={periodLabel}
-                  excludeSegments={["disputed", "failed"]}
-                />
-                <PrimeraCompra summary={firstPurchaseSummary} />
-              </div>
-              <EvolucionInscritos data={activeCustomersData} />
-              <RetencionCohorte cohorts={retentionCohorts} />
-              <ConversionPack summary={conversionSummary} />
-            </div>
-          </section>
-        }
-        fiscal={
-          <section>
-            <SectionHeader id="fiscal" title="Fiscal y financiación" />
-            <div className="space-y-4">
               <ChartCard title="Próximas obligaciones">
                 <div className="space-y-3">
                   {obligations.map(({ label, date, deadline }) => {
@@ -647,6 +566,73 @@ export default async function AnaliticaLoader({
                 )}
               </ChartCard>
               <Financiacion initialBudgets={budgets} spent={budgetSpent} />
+            </div>
+          </section>
+        }
+        ingresosGastos={
+          <section>
+            <SectionHeader id="ingresos-gastos" title="Ingresos y gastos" />
+            <div className="space-y-4">
+              <VolumenBruto sales={salesAll} txns={txnsAll} lastUpdated={liveLastUpdated} />
+              <IngresosPorFuente
+                stripeGross={totalRev}
+                stripeFees={stripeFees}
+                stripeNet={stripeNet}
+                uscGross={uscRevenue}
+                monthly={monthlyByFuente}
+                dateRange={periodLabel}
+                lastUpdated={liveLastUpdated}
+              />
+              <EvolucionSuscripcionesFullWidth monthly={monthlyStripeRevenue} cohorts={subscriptionCohorts} events={businessEvents} rawPayments={pMain} />
+              <DesglosGastosUnificado
+                groups={expGroupTotals}
+                categories={expByTopCategory}
+                transactionsByCategory={transactionsByCategory}
+                totalExpCat={totalExpCat}
+                totalExpCatNoCapex={totalExpCatNoCapex}
+                rangeLabel={periodLabel}
+              />
+              <PrevisionGastos forecasts={recurringForecasts} categories={dbCategories} avgSuministros={avgSuministros} />
+            </div>
+          </section>
+        }
+        clientes={
+          <section>
+            <SectionHeader id="clientes" title="Clientes" />
+            <div className="space-y-4">
+              <AnaliticaKPIs
+                customers={customers}
+                periodLabel={periodLabel}
+                periodFrom={mainFrom}
+                periodTo={mainTo}
+                compDateRange={compDateRange}
+                spendPerClient={spendPerClient}
+                spendPerClientComp={spendPerClientComp}
+                newCustomers={newCustomers}
+                reactivatedCustomers={reactivatedCustomers}
+                convertCandidates={convertCandidates}
+                activeMomenceSubCount={activeMomenceSubCount}
+                activeRecurringCount={activeRecurringCount}
+                momenceChurn={momenceChurn}
+              />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <ClientesPaymentsBreakdown
+                  succeeded={totalRev}
+                  refunded={breakdown.refunded}
+                  disputed={breakdown.disputed}
+                  failed={breakdown.failed}
+                  refundedIds={breakdown.refundedIds}
+                  disputedIds={breakdown.disputedIds}
+                  failedIds={breakdown.failedIds}
+                  customers={customers}
+                  periodLabel={periodLabel}
+                  excludeSegments={["disputed", "failed"]}
+                />
+                <PrimeraCompra summary={firstPurchaseSummary} />
+              </div>
+              <EvolucionInscritos data={activeCustomersData} />
+              <RetencionCohorte cohorts={retentionCohorts} />
+              <ConversionPack summary={conversionSummary} />
             </div>
           </section>
         }

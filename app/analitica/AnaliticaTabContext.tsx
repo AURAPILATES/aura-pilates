@@ -3,14 +3,12 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-export type Tab = "caja" | "gastos" | "ingresos" | "clientes" | "fiscal" | "ocupacion";
+export type Tab = "resumen" | "ingresosGastos" | "clientes" | "ocupacion";
 
 export const TABS: { key: Tab; label: string }[] = [
-  { key: "caja", label: "Caja y resultado" },
-  { key: "gastos", label: "Gastos" },
-  { key: "ingresos", label: "Ingresos" },
+  { key: "resumen", label: "Resumen" },
+  { key: "ingresosGastos", label: "Ingresos y gastos" },
   { key: "clientes", label: "Clientes" },
-  { key: "fiscal", label: "Fiscal y financiación" },
   { key: "ocupacion", label: "Ocupación" },
 ];
 
@@ -21,12 +19,12 @@ const AnaliticaTabContext = createContext<{ tab: Tab; selectTab: (next: Tab) => 
 export function AnaliticaTabProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const initialTab = TABS.find((t) => t.key === searchParams.get("tab"))?.key ?? "caja";
+  const initialTab = TABS.find((t) => t.key === searchParams.get("tab"))?.key ?? "resumen";
   const [tab, setTab] = useState<Tab>(initialTab);
 
   function selectTab(next: Tab) {
     setTab(next);
-    router.replace(next === "caja" ? "/analitica" : `/analitica?tab=${next}`, { scroll: false });
+    router.replace(next === "resumen" ? "/analitica" : `/analitica?tab=${next}`, { scroll: false });
   }
 
   return (
