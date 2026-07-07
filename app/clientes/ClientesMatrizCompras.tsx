@@ -254,30 +254,30 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
             {months.map((m) => (
               <col key={m} style={{ width: 76 }} />
             ))}
-            <col />
+            <col style={{ width: 110 }} />
           </colgroup>
           <thead>
             <tr className="bg-navy/[0.02] border-b border-navy/[0.06]">
               <th
                 onClick={() => toggleSort("name")}
-                className="sticky left-0 bg-[#fafaf9] text-left pt-2.5 pb-2 pr-3 text-[11px] font-semibold text-navy/45 uppercase tracking-wider whitespace-nowrap z-10 min-w-[130px] cursor-pointer select-none hover:text-navy/60"
+                className="sticky left-0 bg-[#fafaf9] text-left py-3 pr-3 text-[11px] font-semibold text-navy/45 uppercase tracking-wider whitespace-nowrap z-10 min-w-[130px] cursor-pointer select-none hover:text-navy/60"
               >
                 Cliente{sortArrow("name")}
               </th>
               <th
                 onClick={() => toggleSort("first")}
-                className="sticky left-[130px] bg-[#fafaf9] text-center pt-2.5 pb-2 px-1 text-[10px] leading-tight font-semibold text-navy/45 uppercase tracking-wide z-10 min-w-[110px] cursor-pointer select-none hover:text-navy/60"
+                className="sticky left-[130px] bg-[#fafaf9] text-center py-3 px-1 text-[10px] leading-tight font-semibold text-navy/45 uppercase tracking-wide z-10 min-w-[110px] cursor-pointer select-none hover:text-navy/60"
               >
                 Primera<br />compra{sortArrow("first")}
               </th>
               {months.map((m) => (
-                <th key={m} className="text-center pt-2.5 pb-2 px-1 text-[11px] font-semibold text-navy/45 uppercase tracking-wider whitespace-nowrap min-w-[76px]">
+                <th key={m} className="text-center py-3 px-1 text-[11px] font-semibold text-navy/45 uppercase tracking-wider whitespace-nowrap min-w-[76px]">
                   {monthLabel(m)}
                 </th>
               ))}
               <th
                 onClick={() => toggleSort("total")}
-                className="sticky right-0 bg-[#fafaf9] text-right pt-2.5 pb-2 pr-4 text-[11px] font-semibold text-navy/45 uppercase tracking-wider whitespace-nowrap z-10 cursor-pointer select-none hover:text-navy/60"
+                className="sticky right-0 bg-[#fafaf9] text-right py-3 pr-4 text-[11px] font-semibold text-navy/45 uppercase tracking-wider whitespace-nowrap z-10 cursor-pointer select-none hover:text-navy/60"
               >
                 Total{sortArrow("total")}
               </th>

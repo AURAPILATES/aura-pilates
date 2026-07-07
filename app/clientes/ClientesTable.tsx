@@ -208,7 +208,7 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
   function ThSort({ col, label, className = "" }: { col: SortKey; label: string; className?: string }) {
     return (
       <th
-        className={`group px-4 py-2.5 text-[11px] font-semibold text-navy/45 uppercase tracking-wider cursor-pointer select-none hover:text-navy/60 transition-colors ${className}`}
+        className={`group px-4 py-3 text-[11px] font-semibold text-navy/45 uppercase tracking-wider cursor-pointer select-none hover:text-navy/60 transition-colors ${className}`}
         onClick={() => toggleSort(col)}
       >
         {label}
@@ -336,10 +336,10 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
             <thead>
               <tr className="bg-navy/[0.02] border-b border-navy/[0.06]">
                 <ThSort col="name"            label="Cliente"      className="text-left" />
-                <th className="text-left px-4 py-2.5 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Plan</th>
+                <th className="text-left px-4 py-3 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Plan</th>
                 <ThSort col="totalSpent"      label="Total"        className="text-right" />
                 <ThSort col="lastPaymentDate" label="Último pago"  className="text-right hidden sm:table-cell" />
-                <th className="text-left px-4 py-2.5 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Estado</th>
+                <th className="text-left px-4 py-3 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Estado</th>
               </tr>
             </thead>
             <tbody>

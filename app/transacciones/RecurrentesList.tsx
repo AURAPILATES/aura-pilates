@@ -377,7 +377,7 @@ function ConfirmPendingDrawer({ row, period, pick, end, name, contacts, onClose,
  * vencimiento, solo lo estable — contacto, categoría, periodicidad, fiscalidad e importe. */
 function ConfirmedRowHeader() {
   return (
-    <div className="hidden sm:flex items-center gap-2.5 py-2.5 px-4 bg-navy/[0.02] border-b border-navy/[0.06]">
+    <div className="hidden sm:flex items-center gap-2.5 py-3 px-4 bg-navy/[0.02] border-b border-navy/[0.06]">
       <span className="text-[11px] font-semibold text-navy/45 uppercase tracking-wider flex-1 min-w-0">Concepto</span>
       <span className="shrink-0 text-[11px] font-semibold text-navy/45 uppercase tracking-wider max-w-[140px] w-full">Categoría</span>
       <span className="hidden md:block shrink-0 text-[11px] font-semibold text-navy/45 uppercase tracking-wider w-16 text-right">Periodo</span>

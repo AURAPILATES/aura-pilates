@@ -374,12 +374,12 @@ export default function ContactosManager({ contacts: initialContacts, categories
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-navy/[0.02] border-b border-navy/[0.06]">
-              <th className="text-left px-4 py-2 text-[11px] text-navy/45 font-semibold uppercase tracking-wide">Nombre</th>
-              <th className="text-left px-4 py-2 text-[11px] text-navy/45 font-semibold uppercase tracking-wide">Categoría</th>
-              <th className="text-left px-4 py-2 text-[11px] text-navy/45 font-semibold uppercase tracking-wide">Conceptos bancarios</th>
-              <th className="text-right px-4 py-2 text-[11px] text-navy/45 font-semibold uppercase tracking-wide">IVA</th>
-              <th className="text-right px-4 py-2 text-[11px] text-navy/45 font-semibold uppercase tracking-wide">IRPF</th>
-              <th className="text-right px-4 py-2 text-[11px] text-navy/45 font-semibold uppercase tracking-wide">Movimientos</th>
+              <th className="text-left px-4 py-3 text-[11px] text-navy/45 font-semibold uppercase tracking-wide">Nombre</th>
+              <th className="text-left px-4 py-3 text-[11px] text-navy/45 font-semibold uppercase tracking-wide">Categoría</th>
+              <th className="text-left px-4 py-3 text-[11px] text-navy/45 font-semibold uppercase tracking-wide">Conceptos bancarios</th>
+              <th className="text-right px-4 py-3 text-[11px] text-navy/45 font-semibold uppercase tracking-wide">IVA</th>
+              <th className="text-right px-4 py-3 text-[11px] text-navy/45 font-semibold uppercase tracking-wide">IRPF</th>
+              <th className="text-right px-4 py-3 text-[11px] text-navy/45 font-semibold uppercase tracking-wide">Movimientos</th>
             </tr>
           </thead>
           <tbody>
