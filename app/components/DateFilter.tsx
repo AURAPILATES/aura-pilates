@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { RANGE_OPTIONS, type RangeKey } from "@/lib/dateRange";
+import Button from "@/app/components/Button";
 
 export default function DateFilter() {
   const router       = useRouter();
@@ -144,13 +145,9 @@ export default function DateFilter() {
                 >
                   Volver
                 </button>
-                <button
-                  onClick={applyCustom}
-                  disabled={!fromVal && !toVal}
-                  className="flex-1 text-sm px-3 py-2 rounded-lg bg-primary text-white hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-medium"
-                >
+                <Button onClick={applyCustom} disabled={!fromVal && !toVal} className="flex-1">
                   Aplicar
-                </button>
+                </Button>
               </div>
             </div>
           )}

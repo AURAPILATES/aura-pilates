@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { AlertTriangle } from "react-feather";
+import Button from "@/app/components/Button";
 
 export default function Error({
   error,
@@ -22,12 +23,7 @@ export default function Error({
           <p className="font-semibold">Error al cargar los datos</p>
         </div>
         <p className="text-sm text-navy/70 font-mono break-words">{error.message}</p>
-        <button
-          onClick={reset}
-          className="px-3 py-1.5 rounded-lg bg-navy text-white text-sm hover:bg-navy/90 transition-colors"
-        >
-          Reintentar
-        </button>
+        <Button onClick={reset}>Reintentar</Button>
       </div>
     </div>
   );

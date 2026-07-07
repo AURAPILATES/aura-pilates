@@ -8,6 +8,8 @@ import HorarioList from "./HorarioList";
 import HorarioCalendar from "./HorarioCalendar";
 import HorarioDrawer from "./HorarioDrawer";
 import MobileNav from "@/app/components/MobileNav";
+import { ToggleGroup } from "@/components/charts";
+import SharedSelect from "@/app/components/Select";
 
 type OccFilter = "all" | "low" | "mid" | "high";
 type View = "lista" | "calendario";
@@ -164,27 +166,31 @@ export default function HorarioShell({
                 </button>
               </div>
               <div className="w-px h-5 bg-navy/[0.12]" />
-              <div className="flex border border-navy/[0.08] rounded-lg overflow-hidden bg-white text-xs">
-                <button
-                  onClick={() => setView("calendario")}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 transition-colors ${view === "calendario" ? "bg-navy text-white font-medium" : "text-navy/50 hover:text-navy"}`}
-                >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-                  </svg>
-                  Calendario
-                </button>
-                <button
-                  onClick={() => setView("lista")}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 transition-colors ${view === "lista" ? "bg-navy text-white font-medium" : "text-navy/50 hover:text-navy"}`}
-                >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
-                    <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
-                  </svg>
-                  Lista
-                </button>
-              </div>
+              <ToggleGroup
+                options={[
+                  {
+                    value: "calendario",
+                    label: "Calendario",
+                    icon: (
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                      </svg>
+                    ),
+                  },
+                  {
+                    value: "lista",
+                    label: "Lista",
+                    icon: (
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
+                        <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+                      </svg>
+                    ),
+                  },
+                ]}
+                value={view}
+                onChange={(v) => setView(v as typeof view)}
+              />
           </div>
         </div>
 
@@ -537,20 +543,9 @@ function Select({ value, onChange, options, placeholder }: {
   value: string; onChange: (v: string) => void; options: string[]; placeholder: string;
 }) {
   return (
-    <div className="relative">
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="appearance-none text-sm border border-navy/15 rounded-lg px-3 pr-8 py-2 bg-white outline-none focus:ring-1 focus:ring-primary/20 text-navy cursor-pointer hover:border-navy/30 transition-colors"
-      >
-        <option value="all">{placeholder}</option>
-        {options.slice(1).map((o) => <option key={o} value={o}>{o}</option>)}
-      </select>
-      <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-navy/35">
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
-      </div>
-    </div>
+    <SharedSelect value={value} onChange={(e) => onChange(e.target.value)} className="w-auto">
+      <option value="all">{placeholder}</option>
+      {options.slice(1).map((o) => <option key={o} value={o}>{o}</option>)}
+    </SharedSelect>
   );
 }

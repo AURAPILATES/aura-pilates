@@ -6,6 +6,8 @@ import { economicGroupOf, type EconomicGroup } from "@/lib/economicGroups";
 import { siblingColor } from "@/lib/colorVariants";
 import { createCategory, updateCategory, deleteCategory, reorderCategories, updateCategoryColors } from "./actions";
 import ChipsInput from "@/app/components/ChipsInput";
+import Button from "@/app/components/Button";
+import Select from "@/app/components/Select";
 import { AutomationIcon } from "@/app/transacciones/NewContactDrawer";
 
 const GROUP_LABELS: Record<GroupType, string> = {
@@ -346,15 +348,12 @@ export default function CategoriasManager({
       <div>
         <div className="flex items-center justify-between mb-8">
           <p className="text-sm text-navy/55">{categories.length} categorías</p>
-          <button
-            onClick={openNew}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-navy text-white text-sm font-semibold hover:bg-navy/90 transition-colors shadow-sm"
-          >
+          <Button onClick={openNew} className="flex items-center gap-2">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
             </svg>
             Nueva categoría
-          </button>
+          </Button>
         </div>
 
         <div className="space-y-8">
@@ -629,18 +628,14 @@ export default function CategoriasManager({
                     (la pantalla solo soporta dos niveles y sus hijas dejarían de verse).
                   </p>
                 ) : (
-                  <select
-                    value={form.parent_id ?? ""}
-                    onChange={(e) => handleParentSelect(e.target.value)}
-                    className="w-full text-sm border border-navy/[0.12] rounded-xl px-4 py-3 outline-none focus:border-navy/40 focus:ring-1 focus:ring-navy/20 bg-white text-navy"
-                  >
+                  <Select value={form.parent_id ?? ""} onChange={(e) => handleParentSelect(e.target.value)}>
                     <option value="">— Sin categoría padre —</option>
                     {categories
                       .filter((c) => !c.parent_id && (editor.mode !== "edit" || c.id !== editor.cat.id))
                       .map((c) => (
                         <option key={c.id} value={c.id}>{c.label}</option>
                       ))}
-                  </select>
+                  </Select>
                 )}
               </div>
 
@@ -682,13 +677,9 @@ export default function CategoriasManager({
               >
                 Cancelar
               </button>
-              <button
-                onClick={handleSave}
-                disabled={isPending || !form.label.trim()}
-                className="text-sm font-semibold px-6 py-2.5 rounded-xl bg-navy text-white hover:bg-navy/90 transition-colors disabled:opacity-40 shadow-sm"
-              >
+              <Button onClick={handleSave} disabled={isPending || !form.label.trim()}>
                 {isPending ? "Guardando…" : "Guardar"}
-              </button>
+              </Button>
             </div>
           </div>
         </>

@@ -4,6 +4,8 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Suspense, useEffect, useRef, useState, useTransition } from "react";
 import { ChevronDown, ChevronLeft, ChevronRight } from "react-feather";
 import { pad2, resolveCalendarPeriod } from "@/lib/periodCalculation";
+import Select from "@/app/components/Select";
+import Button from "@/app/components/Button";
 
 const MONTHS = [
   { value: "month_01", label: "Enero" },
@@ -49,29 +51,6 @@ function shiftISODate(iso: string, days: number): string {
   const d = fromISO(iso);
   d.setDate(d.getDate() + days);
   return toISO(d);
-}
-
-function SelectPill({
-  value,
-  onChange,
-  children,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="relative inline-flex items-center w-full sm:w-auto">
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full sm:w-auto appearance-none bg-white border border-navy/[0.13] rounded-xl pl-3 pr-7 py-1.5 text-sm font-semibold text-navy shadow-sm outline-none cursor-pointer hover:border-navy/25 transition-colors"
-      >
-        {children}
-      </select>
-      <ChevronDown size={12} className="absolute right-2 text-navy/35 pointer-events-none" />
-    </div>
-  );
 }
 
 function CalendarMonth({
@@ -223,14 +202,12 @@ function CalendarRangePicker({
         >
           Borrar
         </button>
-        <button
-          type="button"
+        <Button
           disabled={!rangeStart}
           onClick={() => rangeStart && onApply(toISO(rangeStart), toISO(rangeEnd ?? rangeStart))}
-          className="text-sm px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-medium"
         >
           Aplicar
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -511,11 +488,11 @@ function AnaliticaFilterBarInner() {
       {/* Compare with — disabled when period is "all" */}
       <div className={`flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 sm:ml-auto ${disabled ? "opacity-35 pointer-events-none" : ""}`}>
         <span className="text-[11px] text-navy/40">Comparar con</span>
-        <SelectPill value={compareWith} onChange={(v) => update({ compareWith: v })}>
+        <Select value={compareWith} onChange={(e) => update({ compareWith: e.target.value })}>
           {COMPARE_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>{opt.label}</option>
           ))}
-        </SelectPill>
+        </Select>
       </div>
     </div>
   );

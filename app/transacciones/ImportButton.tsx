@@ -1,6 +1,7 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import ImportModal from "./ImportModal";
+import Button from "@/app/components/Button";
 
 export default function ImportButton({
   className = "",
@@ -27,19 +28,24 @@ export default function ImportButton({
   return (
     <>
       <div ref={ref} className={`relative ${className}`}>
-        <button
-          onClick={() => setOpen((v) => !v)}
-          className={
-            compact
-              ? "flex items-center justify-center gap-1.5 px-3 h-9 bg-white text-navy text-[13px] font-medium border border-navy/15 rounded-xl hover:bg-navy/[0.02] transition-colors w-full"
-              : "flex items-center justify-center gap-2 px-4 py-2 bg-navy text-white text-sm font-semibold rounded-xl hover:bg-navy/85 transition-colors shadow-sm w-full"
-          }
-        >
-          <svg width={compact ? "11" : "13"} height={compact ? "11" : "13"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-          </svg>
-          Añadir movimiento
-        </button>
+        {compact ? (
+          <button
+            onClick={() => setOpen((v) => !v)}
+            className="flex items-center justify-center gap-1.5 px-3 h-9 bg-white text-navy text-[13px] font-medium border border-navy/15 rounded-xl hover:bg-navy/[0.02] transition-colors w-full"
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Añadir movimiento
+          </button>
+        ) : (
+          <Button onClick={() => setOpen((v) => !v)} className="flex items-center justify-center gap-2 w-full">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Añadir movimiento
+          </Button>
+        )}
 
         {open && (
           <div className="absolute right-0 top-full mt-1.5 w-56 bg-white border border-navy/[0.1] rounded-xl shadow-lg z-50 overflow-hidden">

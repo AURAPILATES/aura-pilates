@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Drawer from "@/app/components/Drawer";
+import Button from "@/app/components/Button";
+import { ToggleGroup } from "@/components/charts";
 import { useRouter } from "next/navigation";
 import {
   addAusenciasAction,
@@ -284,13 +286,9 @@ function NuevoInstructorModal({
           <button onClick={onClose} className="px-4 py-2.5 text-sm text-navy/55 hover:text-navy transition-colors">
             Cancelar
           </button>
-          <button
-            onClick={handleSubmit}
-            disabled={!nombre.trim() || saving}
-            className="px-6 py-2.5 bg-primary text-white text-sm font-semibold rounded-xl hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-          >
+          <Button onClick={handleSubmit} disabled={!nombre.trim() || saving}>
             {saving ? "Creando…" : "Crear instructor"}
-          </button>
+          </Button>
         </div>
       }
     >
@@ -427,13 +425,9 @@ function AñadirAusenciaModal({
       maxWidth="max-w-xl"
       footer={
         <div className="flex justify-end">
-          <button
-            onClick={handleSolicitar}
-            disabled={newDates.length === 0 || saving}
-            className="px-6 py-2.5 bg-primary text-white text-sm font-semibold rounded-xl hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-          >
+          <Button onClick={handleSolicitar} disabled={newDates.length === 0 || saving}>
             {saving ? "Guardando…" : "Añadir"}
-          </button>
+          </Button>
         </div>
       }
     >
@@ -475,24 +469,16 @@ function AñadirAusenciaModal({
                   <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
                 </svg>
               </div>
-              <div className="flex border border-navy/[0.12] rounded-lg overflow-hidden bg-white text-sm flex-1">
-                {([
-                  { value: "day", label: "Un día" },
-                  { value: "range", label: "Varios días" },
-                ] as { value: DurationType; label: string }[]).map(({ value, label }) => (
-                  <button
-                    key={value}
-                    onClick={() => setDuration(value)}
-                    className={`flex-1 py-2 transition-colors ${
-                      duration === value
-                        ? "bg-primary text-white font-medium"
-                        : "text-navy/55 hover:text-navy hover:bg-navy/5"
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
+              <ToggleGroup
+                options={[
+                  { value: "day", label: "Un día", activeClassName: "bg-primary text-white font-medium" },
+                  { value: "range", label: "Varios días", activeClassName: "bg-primary text-white font-medium" },
+                ]}
+                value={duration}
+                onChange={(v) => setDuration(v as DurationType)}
+                fullWidth
+                className="flex-1"
+              />
             </div>
 
             {/* Date input(s) */}

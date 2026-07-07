@@ -8,6 +8,7 @@ import SearchInput from "@/app/components/SearchInput";
 import TablePagination from "@/app/components/TablePagination";
 import TableBox from "@/app/components/TableBox";
 import TableToolbar from "@/app/components/TableToolbar";
+import Select from "@/app/components/Select";
 import { fmt } from "@/lib/analytics";
 
 const PRODUCT_FILTERS = ["Bàsic", "Plus", "Pro", "Pack 4 clases", "Pack 8 clases", "Pack Benvinguda", "Clase suelta"];
@@ -201,26 +202,18 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
     <div>
       <TableToolbar>
         <SearchInput value={search} onChange={setSearch} placeholder="Buscar cliente…" className="w-44" />
-          <select
-            value={productFilter}
-            onChange={(e) => setProductFilter(e.target.value)}
-            className="text-sm px-3 py-2 rounded-xl border border-navy/[0.12] bg-white text-navy focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40"
-          >
+          <Select value={productFilter} onChange={(e) => setProductFilter(e.target.value)} className="w-auto">
             <option value="">Todos los productos</option>
             {PRODUCT_FILTERS.map((p) => (
               <option key={p} value={p}>{p}</option>
             ))}
-          </select>
-          <select
-            value={firstPurchaseFilter}
-            onChange={(e) => setFirstPurchaseFilter(e.target.value)}
-            className="text-sm px-3 py-2 rounded-xl border border-navy/[0.12] bg-white text-navy focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40"
-          >
+          </Select>
+          <Select value={firstPurchaseFilter} onChange={(e) => setFirstPurchaseFilter(e.target.value)} className="w-auto">
             <option value="">Primera compra: todas</option>
             {months.map((m) => (
               <option key={m} value={m}>{monthLabel(m)}</option>
             ))}
-          </select>
+          </Select>
           <button
             type="button"
             onClick={() => setOnlyInactive((v) => !v)}

@@ -5,6 +5,7 @@ import { contactKeyFor } from "@/lib/contactRules";
 import { createContact, type Contact } from "./actions";
 import Drawer from "@/app/components/Drawer";
 import ChipsInput from "@/app/components/ChipsInput";
+import Button from "@/app/components/Button";
 import { CategoryPill } from "./TransaccionesList";
 
 function AutomationIcon() {
@@ -79,13 +80,9 @@ export default function NewContactDrawer({
           >
             Cancelar
           </button>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="flex-1 py-2.5 text-sm font-semibold bg-navy text-white rounded-lg hover:bg-navy/85 transition-colors disabled:opacity-50"
-          >
+          <Button onClick={handleSave} disabled={saving} className="flex-1">
             {saving ? "Guardando…" : "Guardar contacto"}
-          </button>
+          </Button>
         </div>
       }
     >

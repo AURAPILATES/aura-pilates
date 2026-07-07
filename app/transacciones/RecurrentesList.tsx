@@ -6,6 +6,8 @@ import { ChevronRight } from "react-feather";
 import Drawer from "@/app/components/Drawer";
 import TablePagination from "@/app/components/TablePagination";
 import TableBox from "@/app/components/TableBox";
+import Button from "@/app/components/Button";
+import Select from "@/app/components/Select";
 import type { Category } from "@/lib/categories";
 import { PERIOD_BUCKETS } from "@/lib/recurring";
 import type { RecurringExpense, RecurringExpenseEndType } from "@/lib/recurringExpenses";
@@ -133,16 +135,15 @@ function EndOfRecurrenceFields({ value, onChange, disabled }: { value: EndFields
   return (
     <div>
       <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-1.5">Finaliza</p>
-      <select
+      <Select
         value={value.type}
         disabled={disabled}
         onChange={(e) => onChange({ ...value, type: e.target.value as RecurringExpenseEndType })}
-        className="w-full px-3 py-2 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40 disabled:opacity-50"
       >
         {END_TYPE_OPTIONS.map((o) => (
           <option key={o.value} value={o.value}>{o.label}</option>
         ))}
-      </select>
+      </Select>
       {value.type === "date" && (
         <input
           type="date"
@@ -312,13 +313,9 @@ function ConfirmPendingDrawer({ row, period, pick, end, name, contacts, onClose,
           <button onClick={handleIgnore} disabled={saving} className="text-xs text-navy/40 hover:text-danger transition-colors disabled:opacity-40">
             Ignorar
           </button>
-          <button
-            onClick={handleConfirm}
-            disabled={saving || !pick}
-            className="px-4 py-2.5 text-sm font-semibold text-white bg-navy rounded-lg hover:bg-navy/85 transition-colors disabled:opacity-40"
-          >
+          <Button onClick={handleConfirm} disabled={saving || !pick}>
             Confirmar gasto recurrente
-          </button>
+          </Button>
         </div>
       }
     >
@@ -355,15 +352,11 @@ function ConfirmPendingDrawer({ row, period, pick, end, name, contacts, onClose,
 
       <div className="p-4 border-b border-navy/[0.06]">
         <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-1.5">Periodicidad</p>
-        <select
-          value={period}
-          onChange={(e) => onPeriodChange(e.target.value)}
-          className="w-full px-3 py-2 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40"
-        >
+        <Select value={period} onChange={(e) => onPeriodChange(e.target.value)}>
           {PERIOD_BUCKETS.map((b) => (
             <option key={b.label} value={b.label}>{b.label}</option>
           ))}
-        </select>
+        </Select>
       </div>
 
       <div className="p-4">
@@ -543,16 +536,11 @@ function RecurringExpenseDrawer({ row, categories, contacts, onClose, onOpenCont
 
       <div className="p-4 border-b border-navy/[0.06]">
         <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-1.5">Periodicidad</p>
-        <select
-          value={e.period}
-          disabled={saving}
-          onChange={(ev) => changePeriod(ev.target.value)}
-          className="w-full px-3 py-2 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40 disabled:opacity-50"
-        >
+        <Select value={e.period} disabled={saving} onChange={(ev) => changePeriod(ev.target.value)}>
           {PERIOD_BUCKETS.map((b) => (
             <option key={b.label} value={b.label}>{b.label}</option>
           ))}
-        </select>
+        </Select>
       </div>
 
       <div className="p-4">

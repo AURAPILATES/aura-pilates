@@ -11,6 +11,7 @@ import { updateTransactionCategory, updateTransactionConcept, updateTransactionC
 import DateFilter from "@/app/components/DateFilter";
 import SearchInput from "@/app/components/SearchInput";
 import TablePagination from "@/app/components/TablePagination";
+import Select from "@/app/components/Select";
 import ImportButton from "./ImportButton";
 import AddCashModal from "./AddCashModal";
 import PapeleraDrawer from "./PapeleraDrawer";
@@ -340,21 +341,6 @@ function originLabel(method: string): string {
   return method.charAt(0).toUpperCase() + method.slice(1);
 }
 
-const SELECT_CLS = "appearance-none text-sm border border-navy/15 rounded-lg px-3 pr-8 py-2 bg-white outline-none focus:ring-1 focus:ring-primary/20 text-navy cursor-pointer hover:border-navy/30 transition-colors w-full";
-
-function SelectWrapper({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return (
-    <div className={`relative ${className}`}>
-      {children}
-      <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-navy/35">
-          <polyline points="6 9 12 15 18 9"/>
-        </svg>
-      </div>
-    </div>
-  );
-}
-
 function MobileActionsMenu({ onExport, onPapelera }: { onExport: () => void; onPapelera: () => void }) {
   const [open, setOpen] = useState(false);
   const [dropPos, setDropPos] = useState<{ top: number; left: number } | null>(null);
@@ -484,8 +470,7 @@ function MoreOptionsMenu({
         >
           <div className="px-3 pt-1 pb-2">
             <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1.5">Origen</p>
-            <SelectWrapper>
-              <select value={originFilter} onChange={(e) => setOriginFilter(e.target.value)} className={SELECT_CLS}>
+            <Select value={originFilter} onChange={(e) => setOriginFilter(e.target.value)}>
                 <option value="all">Todos</option>
                 <option value="banco">CaixaBank</option>
                 <option value="efectivo">Efectivo Aura</option>
@@ -493,8 +478,7 @@ function MoreOptionsMenu({
                 <option value="celia">Celia</option>
                 <option value="olga">Olga</option>
                 <option value="carles">Carles</option>
-              </select>
-            </SelectWrapper>
+            </Select>
           </div>
           <div className="border-t border-navy/[0.06] my-1" />
           <button
@@ -944,8 +928,7 @@ export default function TransaccionesList({
         <div className="sm:hidden bg-white border border-navy/[0.07] rounded-2xl p-4 mb-3 flex flex-col gap-3 shadow-card">
           <DateFilter />
           <CategoryMultiFilter selected={catFilters} categories={categories} onChange={setCatFilters} className="w-full" />
-          <SelectWrapper>
-            <select value={originFilter} onChange={(e) => setOriginFilter(e.target.value)} className={SELECT_CLS}>
+          <Select value={originFilter} onChange={(e) => setOriginFilter(e.target.value)}>
               <option value="all">Origen</option>
               <option value="banco">CaixaBank</option>
               <option value="efectivo">Efectivo Aura</option>
@@ -953,8 +936,7 @@ export default function TransaccionesList({
               <option value="celia">Celia</option>
               <option value="olga">Olga</option>
               <option value="carles">Carles</option>
-            </select>
-          </SelectWrapper>
+          </Select>
           <button
             onClick={() => setOnlyRecurring((v) => !v)}
             className={`flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-colors ${

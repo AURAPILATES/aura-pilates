@@ -3,6 +3,8 @@
 import { useState, useMemo } from "react";
 import { MomenceEvent } from "@/lib/momence";
 import { fmt, groupByDay, occupancyRate, pct, totalRevenue } from "@/lib/analytics";
+import SharedSelect from "@/app/components/Select";
+import { ToggleGroup } from "@/components/charts";
 
 type OccFilter = "all" | "low" | "mid" | "high" | "full";
 
@@ -52,29 +54,17 @@ export default function HorarioFilters({ events }: { events: MomenceEvent[] }) {
           options={instructoras}
           label="Instructora"
         />
-        <div className="flex rounded overflow-hidden border border-navy/10 text-sm">
-          {(
-            [
-              { value: "all", label: "Todas" },
-              { value: "low", label: "< 50%" },
-              { value: "mid", label: "50–80%" },
-              { value: "high", label: "> 80%" },
-              { value: "full", label: "Llena" },
-            ] as { value: OccFilter; label: string }[]
-          ).map(({ value, label }) => (
-            <button
-              key={value}
-              onClick={() => setOccFilter(value)}
-              className={`px-3 py-1.5 transition-colors ${
-                occFilter === value
-                  ? "bg-navy text-white"
-                  : "bg-white text-navy/50 hover:text-navy"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+        <ToggleGroup
+          options={[
+            { value: "all", label: "Todas" },
+            { value: "low", label: "< 50%" },
+            { value: "mid", label: "50–80%" },
+            { value: "high", label: "> 80%" },
+            { value: "full", label: "Llena" },
+          ]}
+          value={occFilter}
+          onChange={(v) => setOccFilter(v as OccFilter)}
+        />
         {activeFilters > 0 && (
           <button
             onClick={() => {
@@ -188,17 +178,13 @@ function Select({
   label: string;
 }) {
   return (
-    <select
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className="text-sm border border-navy/10 rounded bg-white text-navy px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary/30"
-    >
+    <SharedSelect value={value} onChange={(e) => onChange(e.target.value)}>
       <option value="all">Todas las {label === "Clase" ? "clases" : "instructoras"}</option>
       {options.slice(1).map((o) => (
         <option key={o} value={o}>
           {o}
         </option>
       ))}
-    </select>
+    </SharedSelect>
   );
 }

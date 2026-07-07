@@ -11,6 +11,7 @@ import Drawer from "@/app/components/Drawer";
 import ChipsInput from "@/app/components/ChipsInput";
 import Avatar from "@/app/components/Avatar";
 import SearchInput from "@/app/components/SearchInput";
+import Button from "@/app/components/Button";
 import TablePagination from "@/app/components/TablePagination";
 import TableBox from "@/app/components/TableBox";
 import TableToolbar from "@/app/components/TableToolbar";
@@ -335,12 +336,9 @@ export default function ContactosManager({ contacts: initialContacts, categories
         >
           {recomputing ? "Recalculando…" : recomputed !== null ? `${recomputed} movimientos actualizados` : "Recalcular contactos"}
         </button>
-        <button
-          onClick={() => setCreating(true)}
-          className="px-4 py-2 text-sm font-semibold bg-navy text-white rounded-xl hover:bg-navy/85 transition-colors whitespace-nowrap"
-        >
+        <Button onClick={() => setCreating(true)} className="whitespace-nowrap">
           + Nuevo contacto
-        </button>
+        </Button>
       </TableToolbar>
 
       {creating && (

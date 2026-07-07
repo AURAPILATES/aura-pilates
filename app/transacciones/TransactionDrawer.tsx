@@ -2,6 +2,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Drawer from "@/app/components/Drawer";
+import Button from "@/app/components/Button";
+import Select from "@/app/components/Select";
 import type { Transaction, PaymentMethod } from "@/lib/transactions";
 import type { Category } from "@/lib/categories";
 import { PERIOD_BUCKETS } from "@/lib/recurring";
@@ -218,29 +220,27 @@ function MarkRecurringControl({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-[11px] text-navy/40 uppercase tracking-wider mb-1">Periodicidad</p>
-              <select
+              <Select
                 value={period}
                 disabled={periodSaving}
                 onChange={(e) => { setPeriod(e.target.value); save({ period: e.target.value }); }}
-                className="w-full text-sm text-navy border border-navy/[0.12] rounded-lg px-2 py-1.5 outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15 transition disabled:opacity-50"
               >
                 {PERIOD_BUCKETS.map((b) => (
                   <option key={b.label} value={b.label}>{b.label}</option>
                 ))}
-              </select>
+              </Select>
             </div>
             <div>
               <p className="text-[11px] text-navy/40 uppercase tracking-wider mb-1">Finaliza</p>
-              <select
+              <Select
                 value={endType}
                 disabled={periodSaving}
                 onChange={(e) => { const v = e.target.value as RecurringExpenseEndType; setEndType(v); save({ endType: v }); }}
-                className="w-full text-sm text-navy border border-navy/[0.12] rounded-lg px-2 py-1.5 outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15 transition disabled:opacity-50"
               >
                 {END_TYPE_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
                 ))}
-              </select>
+              </Select>
             </div>
           </div>
           {endType === "date" && (
@@ -319,12 +319,7 @@ export default function TransactionDrawer({
             </svg>
             Eliminar
           </button>
-          <button
-            onClick={onClose}
-            className="flex-1 py-2.5 text-sm font-semibold bg-navy text-white rounded-lg hover:bg-navy/85 transition-colors"
-          >
-            Guardar
-          </button>
+          <Button onClick={onClose} className="flex-1">Guardar</Button>
         </div>
       }
     >
@@ -394,15 +389,15 @@ export default function TransactionDrawer({
             {editableOrigin ? (
               <div className="flex items-center gap-2">
                 <SourceAvatar method={t.payment_method} size={18} />
-                <select
+                <Select
                   value={t.payment_method}
                   onChange={(e) => onUpdatePaymentMethod(t.id, e.target.value as PaymentMethod)}
-                  className="text-sm text-navy border border-navy/[0.12] rounded-lg px-2 py-1 outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15 transition"
+                  className="flex-1"
                 >
                   {PAYMENT_METHOD_OPTIONS.map((opt) => (
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
                   ))}
-                </select>
+                </Select>
               </div>
             ) : (
               <div className="flex items-center gap-2">

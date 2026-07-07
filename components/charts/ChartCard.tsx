@@ -210,6 +210,10 @@ export default function ChartCard({
 export interface ToggleOption {
   value: string;
   label: string;
+  /** Icono opcional junto al texto (mismo tamaño/color en todos los toggles). */
+  icon?: ReactNode;
+  /** Clase para el estado activo; sobreescribe el estilo navy/blanco por defecto (p.ej. acento semántico verde/rojo). */
+  activeClassName?: string;
 }
 
 export interface ToggleGroupProps {
@@ -217,22 +221,25 @@ export interface ToggleGroupProps {
   value: string;
   onChange: (value: string) => void;
   className?: string;
+  /** Los botones se reparten a partes iguales el ancho del contenedor (p.ej. toggles de formulario). */
+  fullWidth?: boolean;
 }
 
-export function ToggleGroup({ options, value, onChange, className = "" }: ToggleGroupProps) {
+export function ToggleGroup({ options, value, onChange, className = "", fullWidth = false }: ToggleGroupProps) {
   return (
-    <div className={`flex gap-0.5 bg-navy/5 p-[3px] rounded-[10px] ${className}`}>
+    <div className={`flex gap-0.5 bg-navy/5 p-[3px] rounded-[10px] ${fullWidth ? "w-full" : ""} ${className}`}>
       {options.map((opt) => (
         <button
           key={opt.value}
           type="button"
           onClick={() => onChange(opt.value)}
-          className={`px-2.5 py-1 text-xs rounded-[7px] whitespace-nowrap transition-colors ${
+          className={`flex items-center justify-center gap-1.5 px-2.5 py-1 text-xs rounded-[7px] whitespace-nowrap transition-colors ${fullWidth ? "flex-1" : ""} ${
             opt.value === value
-              ? "bg-white text-navy font-medium border border-navy/[0.07] shadow-card"
+              ? opt.activeClassName ?? "bg-white text-navy font-medium border border-navy/[0.07] shadow-card"
               : "text-navy/50 hover:text-navy"
           }`}
         >
+          {opt.icon}
           {opt.label}
         </button>
       ))}

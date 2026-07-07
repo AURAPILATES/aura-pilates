@@ -5,6 +5,9 @@ import { sortCategoriesHierarchical, categoryDisplayLabel } from "@/lib/categori
 import type { PaymentMethod } from "@/lib/transactions";
 import { addCashTransaction } from "./actions";
 import Drawer from "@/app/components/Drawer";
+import Button from "@/app/components/Button";
+import Select from "@/app/components/Select";
+import { ToggleGroup } from "@/components/charts";
 
 const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
   { value: "efectivo", label: "Efectivo Aura" },
@@ -57,30 +60,21 @@ export default function AddCashModal({ categories, onClose }: { categories: Cate
       title="Añadir movimiento manual"
       onClose={onClose}
       footer={
-        <button
-          onClick={handleSave}
-          disabled={!canSave || saving}
-          className="w-full py-2.5 text-sm font-semibold bg-navy text-white rounded-lg hover:bg-navy/85 transition-colors disabled:opacity-40"
-        >
+        <Button onClick={handleSave} disabled={!canSave || saving} className="w-full">
           {saving ? "Guardando…" : "Guardar movimiento"}
-        </button>
+        </Button>
       }
     >
         <div className="px-6 py-5 space-y-4">
-          <div className="flex border border-navy/[0.12] rounded-lg bg-white p-0.5 text-sm">
-            <button
-              onClick={() => setIsIncome(true)}
-              className={`flex-1 py-1.5 rounded-md font-medium transition-colors ${isIncome ? "bg-success text-white" : "text-navy/50 hover:text-navy"}`}
-            >
-              Ingreso
-            </button>
-            <button
-              onClick={() => setIsIncome(false)}
-              className={`flex-1 py-1.5 rounded-md font-medium transition-colors ${!isIncome ? "bg-danger text-white" : "text-navy/50 hover:text-navy"}`}
-            >
-              Gasto
-            </button>
-          </div>
+          <ToggleGroup
+            options={[
+              { value: "income", label: "Ingreso", activeClassName: "bg-success text-white font-medium" },
+              { value: "expense", label: "Gasto", activeClassName: "bg-danger text-white font-medium" },
+            ]}
+            value={isIncome ? "income" : "expense"}
+            onChange={(v) => setIsIncome(v === "income")}
+            fullWidth
+          />
 
           <div>
             <label className="block text-xs text-navy/55 mb-1.5">Fecha</label>
@@ -128,29 +122,21 @@ export default function AddCashModal({ categories, onClose }: { categories: Cate
 
           <div>
             <label className="block text-xs text-navy/55 mb-1.5">Categoría</label>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="w-full border border-navy/[0.12] rounded-lg px-3 py-2 text-sm text-navy focus:outline-none focus:border-primary/40 bg-white"
-            >
+            <Select value={category} onChange={(e) => setCategory(e.target.value)}>
               <option value="">Sin categoría</option>
               {sortCategoriesHierarchical(categories).map((c) => (
                 <option key={c.value} value={c.value}>{categoryDisplayLabel(c, categories)}</option>
               ))}
-            </select>
+            </Select>
           </div>
 
           <div>
             <label className="block text-xs text-navy/55 mb-1.5">Origen del pago</label>
-            <select
-              value={paymentMethod}
-              onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
-              className="w-full border border-navy/[0.12] rounded-lg px-3 py-2 text-sm text-navy focus:outline-none focus:border-primary/40 bg-white"
-            >
+            <Select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}>
               {PAYMENT_METHODS.map((m) => (
                 <option key={m.value} value={m.value}>{m.label}</option>
               ))}
-            </select>
+            </Select>
           </div>
 
           {error && <p className="text-sm text-danger">{error}</p>}

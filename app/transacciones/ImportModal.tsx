@@ -10,6 +10,8 @@ import { contactKeyFor, cleanContactLabel, cleanBankText, matchesPattern, pickId
 import { type Category } from "@/lib/categories";
 import type { PaymentMethod } from "@/lib/transactions";
 import Drawer from "@/app/components/Drawer";
+import Button from "@/app/components/Button";
+import Select from "@/app/components/Select";
 import { CategoryPill } from "./TransaccionesList";
 
 const CASH_ACCOUNTS: { value: PaymentMethod; label: string }[] = [
@@ -555,15 +557,15 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
 
                         {d.action === "attach" ? (
                           <>
-                            <select
+                            <Select
                               value={d.attachToContactId ?? ""}
                               onChange={(e) => updateDraft(d.pattern, { attachToContactId: parseInt(e.target.value, 10) })}
-                              className="w-full mb-3 px-2.5 py-1.5 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40 bg-white"
+                              className="mb-3"
                             >
                               {contacts.map((c) => (
                                 <option key={c.id} value={c.id}>{c.label}</option>
                               ))}
-                            </select>
+                            </Select>
                             <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1.5">Concepto bancario</p>
                             <DraftPatternsEditor
                               patterns={d.bankPatterns}
@@ -631,13 +633,13 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                 >
                   Cambiar archivo
                 </button>
-                <button
+                <Button
                   onClick={() => handleConfirmContacts(state.drafts, state.rows, state.filename)}
                   disabled={savingContacts}
-                  className="flex-1 py-2.5 text-sm font-semibold bg-navy text-white rounded-lg hover:bg-navy/85 transition-colors disabled:opacity-50"
+                  className="flex-1"
                 >
                   {savingContacts ? "Guardando…" : "Continuar"}
-                </button>
+                </Button>
               </div>
             </div>
           )}
@@ -694,15 +696,15 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                 Estos movimientos son en efectivo (no del banco)
               </label>
               {isCash && (
-                <select
+                <Select
                   value={cashAccount}
                   onChange={(e) => setCashAccount(e.target.value as PaymentMethod)}
-                  className="w-full mb-4 px-2.5 py-1.5 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40 bg-white"
+                  className="mb-4"
                 >
                   {CASH_ACCOUNTS.map((a) => (
                     <option key={a.value} value={a.value}>{a.label}</option>
                   ))}
-                </select>
+                </Select>
               )}
               <div className="flex gap-2">
                 <button
@@ -711,12 +713,9 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                 >
                   Cambiar archivo
                 </button>
-                <button
-                  onClick={() => doImport(state.rows)}
-                  className="flex-1 py-2.5 text-sm font-semibold bg-navy text-white rounded-lg hover:bg-navy/85 transition-colors"
-                >
+                <Button onClick={() => doImport(state.rows)} className="flex-1">
                   Importar {state.rows.length} movimientos
-                </button>
+                </Button>
               </div>
             </div>
           )}
@@ -741,12 +740,9 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
               {state.skippedRows.length > 0 && (
                 <p className="text-sm text-navy/45">{state.skippedRows.length} posibles duplicados</p>
               )}
-              <button
-                onClick={onClose}
-                className="mt-5 px-6 py-2 text-sm font-semibold bg-navy text-white rounded-lg hover:bg-navy/85 transition-colors"
-              >
+              <Button onClick={onClose} className="mt-5">
                 Cerrar
-              </button>
+              </Button>
 
               {state.skippedRows.length > 0 && (
                 <div className="mt-5 border border-navy/[0.08] rounded-xl overflow-hidden text-left">

@@ -3,6 +3,8 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Drawer from "@/app/components/Drawer";
+import Button from "@/app/components/Button";
+import Select from "@/app/components/Select";
 import type { BusinessEvent, EventCategoria } from "@/lib/businessEvents";
 import { createBusinessEvent, updateBusinessEvent, deleteBusinessEvent } from "./actions";
 
@@ -76,14 +78,9 @@ function EventForm({
           >
             Cancelar
           </button>
-          <button
-            type="button"
-            onClick={() => onSave(form)}
-            disabled={!form.titulo.trim() || !form.fecha || isPending}
-            className="px-4 py-2 text-sm font-medium bg-navy text-white rounded-lg hover:bg-navy/90 disabled:opacity-40 transition-colors"
-          >
+          <Button onClick={() => onSave(form)} disabled={!form.titulo.trim() || !form.fecha || isPending}>
             {isPending ? "Guardando…" : "Guardar"}
-          </button>
+          </Button>
         </div>
       }
     >
@@ -100,15 +97,11 @@ function EventForm({
           </div>
           <div className="space-y-1">
             <label className="text-xs font-medium text-navy/50 uppercase tracking-wide">Categoría</label>
-            <select
-              value={form.categoria}
-              onChange={(e) => set("categoria", e.target.value as EventCategoria)}
-              className="w-full border border-navy/15 rounded-lg px-3 py-2 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-navy/30 bg-white"
-            >
+            <Select value={form.categoria} onChange={(e) => set("categoria", e.target.value as EventCategoria)}>
               {CATEGORIAS.map((c) => (
                 <option key={c.value} value={c.value}>{c.label}</option>
               ))}
-            </select>
+            </Select>
           </div>
         </div>
 
@@ -241,15 +234,15 @@ export default function HistorialTimeline({ events: initial }: { events: Busines
           ))}
         </div>
 
-        <button
+        <Button
           onClick={() => { setShowForm(true); setEditing(null); setFormError(null); }}
-          className="flex items-center gap-1.5 px-4 py-2 bg-navy text-white text-sm font-medium rounded-lg hover:bg-navy/90 transition-colors shrink-0"
+          className="flex items-center gap-1.5 shrink-0"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
           </svg>
           Registrar evento
-        </button>
+        </Button>
       </div>
 
       {/* Add form */}
