@@ -248,7 +248,7 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
             </svg>
           </button>
       </TableToolbar>
-      <TableBox>
+      <TableBox style={{ width: tableWidthPx, maxWidth: "100%" }}>
       <div className="overflow-x-auto max-w-full" style={{ width: tableWidthPx }}>
         <table className="text-xs" style={{ tableLayout: "fixed", borderCollapse: "separate", borderSpacing: 0, width: tableWidthPx }}>
           <colgroup>
