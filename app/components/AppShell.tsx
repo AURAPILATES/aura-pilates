@@ -1,17 +1,13 @@
-"use client";
-
 import Sidebar from "./Sidebar";
-import { useDesignVersion } from "./DesignVersionContext";
 
-/** Conmuta el chrome de la app entre el diseño clásico y el rediseño en prueba. El sidebar
- * es siempre el clásico (Julia prefirió mantenerlo); el rediseño solo afecta al contenido. */
-export default function AppShell({ children, hankenClassName }: { children: React.ReactNode; hankenClassName: string }) {
-  const { v2 } = useDesignVersion();
-
+/** Chrome de la app: sidebar clásico + contenido. El toggle de diseño (ver
+ * DesignVersionContext) ya no cambia ni el sidebar ni la tipografía — solo el
+ * contenido de cada pantalla decide su propio look vía `useDesignVersion()`. */
+export default function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <>
       <Sidebar />
-      <div className={`sm:pl-[220px] ${v2 ? hankenClassName : ""}`}>{children}</div>
+      <div className="sm:pl-[220px]">{children}</div>
     </>
   );
 }
