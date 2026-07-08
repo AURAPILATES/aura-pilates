@@ -2,13 +2,9 @@ import SearchInputV2 from "@/app/components/v2/SearchInputV2";
 import TablePaginationV2 from "@/app/components/v2/TablePaginationV2";
 import Select from "@/app/components/Select";
 import { IconButtonV2 } from "@/app/components/v2/ButtonsV2";
+import { tableHeadClassV2, tableRowClassV2, tableFootClassV2, gridColsV2 } from "@/app/components/v2/tableStylesV2";
 import { fmt } from "@/lib/analytics";
 import { PRODUCT_FILTERS, monthLabel, productAbbr, productColor, type MatrixRow, type SortKey } from "./ClientesMatrizCompras";
-
-const NAME_COL_W = 130;
-const FIRST_COL_W = 110;
-const MONTH_COL_W = 76;
-const TOTAL_COL_W = 110;
 
 type Props = {
   search: string;
@@ -47,11 +43,14 @@ export default function ClientesMatrizComprasV2({
   onlyInactive, onToggleOnlyInactive, onlyUpsell, onToggleOnlyUpsell, lastMonth, months, rows,
   sortKey, sortDir, onToggleSort, monthTotals, grandTotal, totalCount, page, pageSize, onPageChange, onRowClick, onExportCsv,
 }: Props) {
-  const tableWidthPx = NAME_COL_W + FIRST_COL_W + months.length * MONTH_COL_W + TOTAL_COL_W;
+  // Columnas flexibles: la tabla ocupa siempre el 100% del ancho disponible (como el resto
+  // de tablas del diseño nuevo); solo si hay tantos meses que no caben con un mínimo legible
+  // (64px) aparece scroll horizontal, en vez de encogerse hasta ser ilegible.
+  const cols = `2fr 1.1fr repeat(${months.length}, minmax(64px, 1fr)) 1.1fr`;
 
   return (
-    <div className="flex flex-col items-center">
-      <div className="w-full flex items-center gap-[9px] flex-wrap">
+    <div>
+      <div className="flex items-center gap-[9px] flex-wrap">
         <SearchInputV2 value={search} onChange={onSearchChange} placeholder="Buscar cliente…" className="min-w-[200px] flex-1" />
         <Select variant="v2" value={productFilter} onChange={(e) => onProductFilterChange(e.target.value)} className="w-auto">
           <option value="">Todos los productos</option>
@@ -91,74 +90,50 @@ export default function ClientesMatrizComprasV2({
         </IconButtonV2>
       </div>
 
-      <div className="mt-[18px] overflow-x-auto max-w-full" style={{ width: tableWidthPx }}>
-        <table className="text-xs" style={{ tableLayout: "fixed", borderCollapse: "separate", borderSpacing: 0, width: tableWidthPx }}>
-          <colgroup>
-            <col style={{ width: NAME_COL_W }} />
-            <col style={{ width: FIRST_COL_W }} />
+      <div className="mt-[18px] overflow-x-auto">
+        <div>
+          <div className={tableHeadClassV2} style={gridColsV2(cols)}>
+            <span className="cursor-pointer select-none" onClick={() => onToggleSort("name")}>
+              Cliente{sortArrow(sortKey === "name", sortDir)}
+            </span>
+            <span className="cursor-pointer select-none" onClick={() => onToggleSort("first")}>
+              Primera compra{sortArrow(sortKey === "first", sortDir)}
+            </span>
             {months.map((m) => (
-              <col key={m} style={{ width: MONTH_COL_W }} />
+              <span key={m} className="text-center whitespace-nowrap">{monthLabel(m)}</span>
             ))}
-            <col style={{ width: TOTAL_COL_W }} />
-          </colgroup>
-          <thead>
-            <tr className="border-b border-[#ececef]">
-              <th
-                onClick={() => onToggleSort("name")}
-                className="sticky left-0 bg-white text-left py-2.5 pr-3 text-[10.5px] font-semibold text-[#a1a1aa] uppercase tracking-wide whitespace-nowrap z-10 cursor-pointer select-none hover:text-[#71717a]"
-              >
-                Cliente{sortArrow(sortKey === "name", sortDir)}
-              </th>
-              <th
-                onClick={() => onToggleSort("first")}
-                className="sticky left-[130px] bg-white text-center py-2.5 px-1 text-[10px] leading-tight font-semibold text-[#a1a1aa] uppercase tracking-wide z-10 cursor-pointer select-none hover:text-[#71717a]"
-              >
-                Primera<br />compra{sortArrow(sortKey === "first", sortDir)}
-              </th>
-              {months.map((m) => (
-                <th key={m} className="text-center py-2.5 px-1 text-[10.5px] font-semibold text-[#a1a1aa] uppercase tracking-wide whitespace-nowrap">
-                  {monthLabel(m)}
-                </th>
-              ))}
-              <th
-                onClick={() => onToggleSort("total")}
-                className="sticky right-0 bg-white text-right py-2.5 pr-1 text-[10.5px] font-semibold text-[#a1a1aa] uppercase tracking-wide z-10 cursor-pointer select-none hover:text-[#71717a]"
-              >
-                Total{sortArrow(sortKey === "total", sortDir)}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length === 0 && (
-              <tr>
-                <td colSpan={months.length + 3} className="py-6 text-center text-[#a1a1aa]">
-                  Sin resultados
-                </td>
-              </tr>
-            )}
-            {rows.map(({ customer, byMonth, totalPaid, firstPurchase }) => (
-              <tr
+            <span className="text-right cursor-pointer select-none" onClick={() => onToggleSort("total")}>
+              Total{sortArrow(sortKey === "total", sortDir)}
+            </span>
+          </div>
+
+          {rows.length === 0 ? (
+            <div className="py-6 text-center text-[#a1a1aa] text-sm">Sin resultados</div>
+          ) : (
+            rows.map(({ customer, byMonth, totalPaid, firstPurchase }) => (
+              <div
                 key={customer.id}
                 onClick={() => onRowClick(customer)}
-                className="border-t border-[#f4f4f4] hover:bg-[#fafafb] transition-colors cursor-pointer"
+                className={`${tableRowClassV2} cursor-pointer`}
+                style={gridColsV2(cols)}
               >
-                <td className="sticky left-0 bg-white py-2 pr-3 font-semibold text-[#18181b] whitespace-nowrap z-10 truncate" title={customer.name ?? customer.email ?? undefined}>
+                <p className="font-semibold text-[#18181b] truncate text-[13.5px]" title={customer.name ?? customer.email ?? undefined}>
                   {customer.name ?? customer.email ?? "—"}
-                </td>
-                <td className="sticky left-[130px] bg-white py-2 px-1 text-center text-[#71717a] whitespace-nowrap z-10">
+                </p>
+                <p className="text-center text-[#71717a] text-[12.5px] whitespace-nowrap">
                   {firstPurchase ? monthLabel(firstPurchase.slice(0, 7)) : "—"}
-                </td>
+                </p>
                 {months.map((m) => {
                   const purchases = byMonth[m];
                   if (!purchases || purchases.length === 0) {
-                    return <td key={m} className="py-1.5 px-1 text-center" />;
+                    return <div key={m} />;
                   }
                   const products = [...new Map(purchases.map((p) => [p.product, p])).keys()];
                   const total = purchases.reduce((s, p) => s + p.amount, 0);
                   const colorCls = productColor(products[0]);
                   return (
-                    <td key={m} className="py-1.5 px-1 text-center">
-                      <div className={`rounded-[8px] px-1.5 py-1 flex flex-col items-center gap-0.5 ${colorCls} min-w-[68px]`}>
+                    <div key={m} className="flex justify-center">
+                      <div className={`rounded-[8px] px-1.5 py-1 flex flex-col items-center gap-0.5 ${colorCls} min-w-[64px]`}>
                         {products.map((prod) => (
                           <span key={prod} className="text-[10px] font-semibold leading-tight">
                             {productAbbr(prod)}
@@ -166,38 +141,30 @@ export default function ClientesMatrizComprasV2({
                         ))}
                         <span className="text-[9px] opacity-60 leading-tight font-medium">{fmt(total)}</span>
                       </div>
-                    </td>
+                    </div>
                   );
                 })}
-                <td className="sticky right-0 bg-white py-2 pr-1 text-right whitespace-nowrap z-10">
-                  <span className="text-[11px] font-semibold text-[#18181b] tabular-nums">{fmt(totalPaid)}</span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-          {rows.length > 0 && (
-            <tfoot>
-              <tr className="border-t border-[#ececef]">
-                <td className="sticky left-0 bg-white py-2 pr-3 font-semibold text-[#71717a] text-[10.5px] uppercase tracking-wide z-10">
-                  Total
-                </td>
-                <td className="sticky left-[130px] bg-white z-10" />
-                {months.map((m) => (
-                  <td key={m} className="py-2 px-1 text-center text-[10.5px] font-semibold text-[#71717a] tabular-nums">
-                    {monthTotals[m] > 0 ? fmt(monthTotals[m]) : "—"}
-                  </td>
-                ))}
-                <td className="sticky right-0 bg-white py-2 pr-1 text-right z-10">
-                  <span className="text-[10.5px] font-bold text-[#18181b] tabular-nums">{fmt(grandTotal)}</span>
-                </td>
-              </tr>
-            </tfoot>
+                <p className="text-right font-semibold text-[#18181b] text-[13.5px] tabular-nums">{fmt(totalPaid)}</p>
+              </div>
+            ))
           )}
-        </table>
+
+          {rows.length > 0 && (
+            <div className={tableRowClassV2} style={gridColsV2(cols)}>
+              <p className="font-semibold text-[#71717a] text-[10.5px] uppercase tracking-wide">Total</p>
+              <div />
+              {months.map((m) => (
+                <p key={m} className="text-center text-[10.5px] font-semibold text-[#71717a] tabular-nums">
+                  {monthTotals[m] > 0 ? fmt(monthTotals[m]) : "—"}
+                </p>
+              ))}
+              <p className="text-right text-[10.5px] font-bold text-[#18181b] tabular-nums">{fmt(grandTotal)}</p>
+            </div>
+          )}
+        </div>
       </div>
-      <div className="w-full" style={{ maxWidth: tableWidthPx }}>
-        <TablePaginationV2 page={page} totalItems={totalCount} pageSize={pageSize} onPageChange={onPageChange} />
-      </div>
+      {rows.length === 0 && <div className={tableFootClassV2} />}
+      <TablePaginationV2 page={page} totalItems={totalCount} pageSize={pageSize} onPageChange={onPageChange} />
     </div>
   );
 }
