@@ -19,10 +19,11 @@ import TransactionDrawer from "./TransactionDrawer";
 import { CatIcon } from "./catIcons";
 import { useDesignVersion } from "@/app/components/DesignVersionContext";
 import TransaccionesListV2 from "./TransaccionesListV2";
+import TransaccionesMobileV2 from "./TransaccionesMobileV2";
 
 export const MONTHS_ES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
 
-function fmtDayLabel(dateStr: string): string {
+export function fmtDayLabel(dateStr: string): string {
   const today = new Date().toISOString().split("T")[0];
   const yest  = new Date(Date.now() - 86_400_000).toISOString().split("T")[0];
   if (dateStr === today) return "Hoy";
@@ -922,8 +923,8 @@ export default function TransaccionesList({
         </div>
       </div>
 
-      {/* ── Mobile: KPIs ── */}
-      <div className="sm:hidden grid grid-cols-3 gap-2 mb-5">
+      {/* ── Mobile: KPIs (clásico; en v2 se sustituye por TransaccionesMobileV2) ── */}
+      <div className={`${v2 ? "hidden" : "sm:hidden"} grid grid-cols-3 gap-2 mb-5`}>
         {/* Entradas — clicable */}
         <button
           type="button"
@@ -963,8 +964,8 @@ export default function TransaccionesList({
         </div>
       </div>
 
-      {/* ── Mobile: Search bar + Filtros ─────────────────────────────────────── */}
-      <div className="sm:hidden flex gap-2 mb-3">
+      {/* ── Mobile: Search bar + Filtros (clásico) ── */}
+      <div className={`${v2 ? "hidden" : "sm:hidden"} flex gap-2 mb-3`}>
         <SearchInput value={search} onChange={setSearch} placeholder="Buscar concepto o contacto…" className="flex-1" />
         <button
           onClick={() => setShowMobileFilters((v) => !v)}
@@ -982,7 +983,7 @@ export default function TransaccionesList({
       </div>
 
       {/* ── Mobile: Filter drawer ────────────────────────────────────────────── */}
-      {showMobileFilters && (
+      {showMobileFilters && !v2 && (
         <div className="sm:hidden bg-white border border-navy/[0.07] rounded-2xl p-4 mb-3 flex flex-col gap-3 shadow-card">
           <DateFilter />
           <CategoryMultiFilter selected={catFilters} categories={categories} onChange={setCatFilters} className="w-full" />
@@ -1011,8 +1012,8 @@ export default function TransaccionesList({
         </div>
       )}
 
-      {/* ── Mobile: Alert banner ─────────────────────────────────────────────── */}
-      {uncategorizedCount > 0 && (
+      {/* ── Mobile: Alert banner (clásico) ── */}
+      {uncategorizedCount > 0 && !v2 && (
         <button
           onClick={() => setCatFilters(catFilters.includes("__none__") ? catFilters.filter((v) => v !== "__none__") : [...catFilters, "__none__"])}
           className="sm:hidden w-full flex items-center gap-2 px-4 py-2.5 mb-3 rounded-xl bg-warning/10 border border-warning/20 text-navy/70 text-sm font-medium text-left"
@@ -1064,8 +1065,8 @@ export default function TransaccionesList({
         </div>
       </div>
 
-      {/* ── Mobile: toolbar ────────────────────────────────────────────────── */}
-      <div className="sm:hidden mb-3">
+      {/* ── Mobile: toolbar (clásico) ── */}
+      <div className={`${v2 ? "hidden" : "sm:hidden"} mb-3`}>
         {(catFilters.length > 0 || originFilter !== "all" || onlyRecurring || directionFilter !== "all" || currentRange !== "all" || search !== "") && (
           <div className="flex items-center mb-3">
             <button
@@ -1162,8 +1163,8 @@ export default function TransaccionesList({
         </div>
       )}
 
-      {/* ── Mobile: month strip (sticky), cápsula estilo Apple Photos ───────── */}
-      <div className="sm:hidden sticky top-[45px] z-20 -mx-2 px-2 pt-2 pb-3 bg-app-bg">
+      {/* ── Mobile: month strip (clásico), cápsula estilo Apple Photos ───────── */}
+      <div className={`${v2 ? "hidden" : "sm:hidden"} sticky top-[45px] z-20 -mx-2 px-2 pt-2 pb-3 bg-app-bg`}>
         <div className="flex gap-0.5 p-1 rounded-full bg-navy/[0.05] overflow-x-auto scrollbar-none">
           <button
             onClick={() => router.push(pathname)}
@@ -1192,8 +1193,8 @@ export default function TransaccionesList({
         </div>
       </div>
 
-      {/* ── Mobile: day-grouped list, estilo Revolut (icono circular de color) ── */}
-      <div className="sm:hidden space-y-5 mt-4 mx-1">
+      {/* ── Mobile: day-grouped list (clásico) — en v2 se sustituye por TransaccionesMobileV2 ── */}
+      <div className={`${v2 ? "hidden" : "sm:hidden"} space-y-5 mt-4 mx-1`}>
         {filtered.length === 0 && (
           <p className="py-10 text-center text-sm text-navy/45">Sin resultados</p>
         )}
@@ -1274,6 +1275,25 @@ export default function TransaccionesList({
           );
         })}
       </div>
+
+      {/* ── Mobile: estilo Factorial (solo cuando el diseño nuevo está activo) ── */}
+      {v2 && (
+        <div className="sm:hidden -mx-2 px-2 py-2" style={{ background: "#f4f4f6" }}>
+          <TransaccionesMobileV2
+            search={search}
+            onSearchChange={setSearch}
+            directionFilter={directionFilter}
+            onDirectionFilterChange={setDirectionFilter}
+            totalIn={totalIn}
+            totalOut={totalOut}
+            neto={neto}
+            byDay={byDay}
+            categories={categories}
+            recurringPeriods={recurringPeriods}
+            onRowClick={(id) => setDrawerTxnId(id)}
+          />
+        </div>
+      )}
 
       {/* ── Desktop: lista estilo Revolut (misma identidad visual que mobile) ── */}
       {(() => {
