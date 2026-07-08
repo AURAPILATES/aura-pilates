@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronRight } from "react-feather";
 import Drawer from "@/app/components/Drawer";
@@ -228,58 +228,51 @@ function ContactPickerDrawer({ contacts, title, onPick, onClose }: {
   );
 }
 
-function PendingRow({ row, categories, contacts, pick, selected, onToggleSelected, onOpen }: {
+function PendingRow({ row, categories, contacts, pick, onOpen }: {
   row: PendingSeriesRow;
   categories: Category[];
   contacts: Contact[];
   pick: ContactPick;
-  selected: boolean;
-  onToggleSelected: (checked: boolean) => void;
   onOpen: () => void;
 }) {
   const catLabel = row.category ? categories.find((c) => c.value === row.category) : null;
   const label = pickToLabel(pick, contacts);
 
   return (
-    <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-navy/[0.02] transition-colors">
-      <input
-        type="checkbox"
-        checked={selected}
-        onChange={(e) => onToggleSelected(e.target.checked)}
-        onClick={(e) => e.stopPropagation()}
-        className="w-4 h-4 rounded border-navy/[0.25] accent-navy shrink-0"
-      />
-      <button onClick={onOpen} className="flex items-center gap-3 flex-1 min-w-0 text-left">
-        <ContactAvatar label={label || row.label} resolved={!!pick} />
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-navy truncate">{row.label}</p>
-          <p className="text-xs text-navy/45 truncate mt-0.5">
-            {row.period} · {row.occurrences} pagos · último {fmtDate(row.lastDate)} · {fmtEUR(Math.abs(row.amount))}
-          </p>
-        </div>
-        {catLabel && <CategoryBadge category={row.category} categories={categories} />}
-        {(!pick || label !== row.label) && (
-          <span className={`text-xs font-medium px-2.5 py-1 rounded-full whitespace-nowrap shrink-0 ${pick ? "bg-primary/10 text-primary" : "bg-navy/[0.05] text-navy/40"}`}>
-            {pick ? label : "Sin vincular"}
-          </span>
-        )}
-        <ChevronRight size={16} className="text-navy/25 shrink-0" />
-      </button>
-    </div>
+    <button onClick={onOpen} className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-navy/[0.02] transition-colors text-left">
+      <ContactAvatar label={label || row.label} resolved={!!pick} />
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium text-navy truncate">{row.label}</p>
+        <p className="text-xs text-navy/45 truncate mt-0.5">
+          {row.period} · {row.occurrences} pagos · último {fmtDate(row.lastDate)} · {fmtEUR(Math.abs(row.amount))}
+        </p>
+      </div>
+      {catLabel && <CategoryBadge category={row.category} categories={categories} />}
+      {(!pick || label !== row.label) && (
+        <span className={`text-xs font-medium px-2.5 py-1 rounded-full whitespace-nowrap shrink-0 ${pick ? "bg-primary/10 text-primary" : "bg-navy/[0.05] text-navy/40"}`}>
+          {pick ? label : "Sin vincular"}
+        </span>
+      )}
+      <ChevronRight size={16} className="text-navy/25 shrink-0" />
+    </button>
   );
 }
 
-function ConfirmPendingDrawer({ row, period, pick, end, name, contacts, onClose, onPeriodChange, onEndChange, onNameChange, onOpenContactPicker, onConfirm, onIgnore }: {
+function ConfirmPendingDrawer({ row, period, pick, end, name, ivaRate, retencionRate, contacts, onClose, onPeriodChange, onEndChange, onNameChange, onIvaRateChange, onRetencionRateChange, onOpenContactPicker, onConfirm, onIgnore }: {
   row: PendingSeriesRow;
   period: string;
   pick: ContactPick;
   end: EndFields;
   name: string;
+  ivaRate: number;
+  retencionRate: number;
   contacts: Contact[];
   onClose: () => void;
   onPeriodChange: (period: string) => void;
   onEndChange: (end: EndFields) => void;
   onNameChange: (name: string) => void;
+  onIvaRateChange: (rate: number) => void;
+  onRetencionRateChange: (rate: number) => void;
   onOpenContactPicker: () => void;
   onConfirm: () => Promise<void>;
   onIgnore: () => Promise<void>;
@@ -347,6 +340,36 @@ function ConfirmPendingDrawer({ row, period, pick, end, name, contacts, onClose,
           </span>
           <ChevronRight size={14} className="text-navy/30 shrink-0" />
         </button>
+      </div>
+
+      <div className="p-4 border-b border-navy/[0.06]">
+        <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-1.5">IVA y retención</p>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="text-xs text-navy/40">IVA %</label>
+            <input
+              type="number"
+              min="0"
+              max="100"
+              step="0.01"
+              value={ivaRate}
+              onChange={(e) => onIvaRateChange(parseFloat(e.target.value) || 0)}
+              className="w-full mt-1 px-3 py-2 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40 tabular-nums"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-navy/40">Retención %</label>
+            <input
+              type="number"
+              min="0"
+              max="100"
+              step="0.01"
+              value={retencionRate}
+              onChange={(e) => onRetencionRateChange(parseFloat(e.target.value) || 0)}
+              className="w-full mt-1 px-3 py-2 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40 tabular-nums"
+            />
+          </div>
+        </div>
         <p className="text-xs text-navy/40 mt-2">{pickToInfo(pick, contacts)}</p>
       </div>
 
@@ -428,6 +451,27 @@ function RecurringExpenseDrawer({ row, categories, contacts, onClose, onOpenCont
   const [saving, setSaving] = useState(false);
   const [end, setEnd] = useState<EndFields>(() => endFromExpense(e));
   const [name, setName] = useState(e.label);
+  const [ivaRate, setIvaRate] = useState(e.iva_rate);
+  const [retencionRate, setRetencionRate] = useState(e.retencion_rate);
+
+  /** Tras re-vincular el contacto (ver onOpenContactPicker) el IVA/retención llegan
+   * actualizados por props — se resincroniza aquí en vez de sobreescribirlos en silencio, así
+   * el usuario los ve y puede corregirlos antes de que se apliquen a la previsión. */
+  useEffect(() => {
+    setIvaRate(e.iva_rate);
+    setRetencionRate(e.retencion_rate);
+  }, [e.iva_rate, e.retencion_rate]);
+
+  async function changeRates(nextIva: number, nextRetencion: number) {
+    if (nextIva === e.iva_rate && nextRetencion === e.retencion_rate) return;
+    setSaving(true);
+    try {
+      await updateRecurringExpense(e.id, { iva_rate: nextIva, retencion_rate: nextRetencion });
+      router.refresh();
+    } finally {
+      setSaving(false);
+    }
+  }
 
   async function changeLabel() {
     const trimmed = name.trim();
@@ -531,7 +575,41 @@ function RecurringExpenseDrawer({ row, categories, contacts, onClose, onOpenCont
           <span className="text-sm text-navy font-medium truncate">{contactLabel}</span>
           <span className="text-xs text-primary shrink-0">Cambiar</span>
         </button>
-        <p className="text-xs text-navy/40 mt-2">IVA: {e.iva_rate}% · Retención: {e.retencion_rate}% — heredados de la ficha del contacto.</p>
+      </div>
+
+      <div className="p-4 border-b border-navy/[0.06]">
+        <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-1.5">IVA y retención</p>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="text-xs text-navy/40">IVA %</label>
+            <input
+              type="number"
+              min="0"
+              max="100"
+              step="0.01"
+              value={ivaRate}
+              disabled={saving}
+              onChange={(ev) => setIvaRate(parseFloat(ev.target.value) || 0)}
+              onBlur={() => changeRates(ivaRate, retencionRate)}
+              className="w-full mt-1 px-3 py-2 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40 tabular-nums disabled:opacity-50"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-navy/40">Retención %</label>
+            <input
+              type="number"
+              min="0"
+              max="100"
+              step="0.01"
+              value={retencionRate}
+              disabled={saving}
+              onChange={(ev) => setRetencionRate(parseFloat(ev.target.value) || 0)}
+              onBlur={() => changeRates(ivaRate, retencionRate)}
+              className="w-full mt-1 px-3 py-2 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40 tabular-nums disabled:opacity-50"
+            />
+          </div>
+        </div>
+        <p className="text-xs text-navy/40 mt-2">Se autocompletan al vincular un contacto — corrígelos si esta recurrencia concreta es distinta.</p>
       </div>
 
       <div className="p-4 border-b border-navy/[0.06]">
@@ -582,8 +660,8 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
   const [picks, setPicks] = useState<Record<string, ContactPick>>({});
   const [ends, setEnds] = useState<Record<string, EndFields>>({});
   const [names, setNames] = useState<Record<string, string>>({});
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [bulkBusy, setBulkBusy] = useState(false);
+  const [ivaRates, setIvaRates] = useState<Record<string, number>>({});
+  const [retencionRates, setRetencionRates] = useState<Record<string, number>>({});
   const [openPendingKey, setOpenPendingKey] = useState<string | null>(null);
   const [openConfirmedId, setOpenConfirmedId] = useState<number | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -611,6 +689,26 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
     return row.matchedContactId != null ? { contactId: row.matchedContactId } : null;
   }
 
+  /** Por defecto hereda el IVA/retención del contacto vinculado, pero el usuario puede
+   * corregirlos en el drawer antes de confirmar (ver ivaRates/retencionRates). */
+  function ivaRateFor(row: PendingSeriesRow): number {
+    if (row.keys[0] in ivaRates) return ivaRates[row.keys[0]];
+    const pick = pickFor(row);
+    if (pick && "contactId" in pick) {
+      return contacts.find((c) => c.id === pick.contactId)?.ivaRate ?? 0;
+    }
+    return 0;
+  }
+
+  function retencionRateFor(row: PendingSeriesRow): number {
+    if (row.keys[0] in retencionRates) return retencionRates[row.keys[0]];
+    const pick = pickFor(row);
+    if (pick && "contactId" in pick) {
+      return contacts.find((c) => c.id === pick.contactId)?.retencionRate ?? 0;
+    }
+    return 0;
+  }
+
   function buildConfirmRow(row: PendingSeriesRow): ConfirmRecurringRow | null {
     const pick = pickFor(row);
     if (!pick) return null;
@@ -627,6 +725,8 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
       bankPatterns: row.bankPatterns,
       contactId: "contactId" in pick ? pick.contactId : null,
       newContactLabel: "newLabel" in pick ? pick.newLabel : null,
+      ivaRate: ivaRateFor(row),
+      retencionRate: retencionRateFor(row),
       endType: end.type,
       endDate: end.type === "date" ? end.date || null : null,
       endCount: end.type === "count" ? parseInt(end.count, 10) || null : null,
@@ -650,35 +750,6 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
     router.refresh();
   }
 
-  async function confirmSelected() {
-    const rows = pending
-      .filter((p) => selected.has(p.keys[0]))
-      .map(buildConfirmRow)
-      .filter((r): r is ConfirmRecurringRow => r != null);
-    if (!rows.length) return;
-    setBulkBusy(true);
-    try {
-      await confirmRecurringExpenses(rows);
-      setSelected(new Set());
-      router.refresh();
-    } finally {
-      setBulkBusy(false);
-    }
-  }
-
-  function toggleAll(checked: boolean) {
-    setSelected(checked ? new Set(pending.map((p) => p.keys[0])) : new Set());
-  }
-
-  function toggleOne(key: string, checked: boolean) {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (checked) next.add(key);
-      else next.delete(key);
-      return next;
-    });
-  }
-
   async function handlePickerPick(result: ContactPickResult) {
     if (openPendingRow) {
       const pick = resultToPick(result);
@@ -690,34 +761,13 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
     }
   }
 
-  const allSelected = pending.length > 0 && pending.every((p) => selected.has(p.keys[0]));
-  const selectableCount = pending.filter((p) => selected.has(p.keys[0]) && pickFor(p) != null).length;
-
   return (
     <div className="space-y-4">
       {pending.length > 0 && (
         <TableBox
           title="Gastos detectados"
           subtitle="Vincúlalos a un contacto para aplicar sus impuestos automáticamente."
-          action={
-            <button
-              onClick={confirmSelected}
-              disabled={bulkBusy || selectableCount === 0}
-              className="px-3 py-1.5 text-xs font-semibold bg-navy text-white rounded-md hover:bg-navy/85 transition-colors disabled:opacity-40 whitespace-nowrap"
-            >
-              Confirmar seleccionados{selectableCount > 0 ? ` (${selectableCount})` : ""}
-            </button>
-          }
         >
-          <label className="flex items-center gap-2 px-4 py-2 border-b border-navy/[0.06] bg-navy/[0.012] cursor-pointer">
-            <input
-              type="checkbox"
-              checked={allSelected}
-              onChange={(e) => toggleAll(e.target.checked)}
-              className="w-4 h-4 rounded border-navy/[0.25] accent-navy"
-            />
-            <span className="text-xs text-navy/45">Seleccionar todos</span>
-          </label>
           <div className="divide-y divide-navy/[0.05]">
             {pending.map((row) => (
               <PendingRow
@@ -726,8 +776,6 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
                 categories={categories}
                 contacts={contacts}
                 pick={pickFor(row)}
-                selected={selected.has(row.keys[0])}
-                onToggleSelected={(checked) => toggleOne(row.keys[0], checked)}
                 onOpen={() => setOpenPendingKey(row.keys[0])}
               />
             ))}
@@ -775,11 +823,15 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
           pick={pickFor(openPendingRow)}
           end={endFor(openPendingRow)}
           name={nameFor(openPendingRow)}
+          ivaRate={ivaRateFor(openPendingRow)}
+          retencionRate={retencionRateFor(openPendingRow)}
           contacts={contacts}
           onClose={() => setOpenPendingKey(null)}
           onPeriodChange={(p) => setPeriods((prev) => ({ ...prev, [openPendingRow.keys[0]]: p }))}
           onEndChange={(end) => setEnds((prev) => ({ ...prev, [openPendingRow.keys[0]]: end }))}
           onNameChange={(n) => setNames((prev) => ({ ...prev, [openPendingRow.keys[0]]: n }))}
+          onIvaRateChange={(r) => setIvaRates((prev) => ({ ...prev, [openPendingRow.keys[0]]: r }))}
+          onRetencionRateChange={(r) => setRetencionRates((prev) => ({ ...prev, [openPendingRow.keys[0]]: r }))}
           onOpenContactPicker={() => setPickerOpen(true)}
           onConfirm={() => confirmRow(openPendingRow)}
           onIgnore={() => ignoreRow(openPendingRow)}

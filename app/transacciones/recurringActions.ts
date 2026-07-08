@@ -49,16 +49,21 @@ export type ConfirmRecurringRow = {
   bankPatterns: string[];
   contactId: number | null;
   newContactLabel: string | null;
+  /** IVA/retención tal y como quedan tras validarlos en el drawer de confirmación — parten del
+   * contacto por defecto pero el usuario puede corregirlos para esta recurrencia concreta. */
+  ivaRate: number;
+  retencionRate: number;
   endType: "never" | "date" | "count";
   endDate: string | null;
   endCount: number | null;
 };
 
-/** Confirma uno o varios gastos detectados vinculándolos a un Contacto: el IVA/Retención se
- * hereda de su ficha (ver contacts en migrations/011_contacts.sql) en vez de teclearse a mano.
- * Si el contacto no existe todavía, lo crea. En ambos casos registra/asegura los patrones
- * bancarios y aplica el contacto a los movimientos ya importados que coincidan (ver
- * resolveOrCreateContact y applyPatternsToTransactions en ./actions). */
+/** Confirma uno o varios gastos detectados vinculándolos a un Contacto: el IVA/Retención parten
+ * de su ficha (ver contacts en migrations/011_contacts.sql) pero se guardan tal y como llegan en
+ * `row` — el usuario los valida/corrige fila a fila en el drawer antes de confirmar. Si el
+ * contacto no existe todavía, lo crea. En ambos casos registra/asegura los patrones bancarios y
+ * aplica el contacto a los movimientos ya importados que coincidan (ver resolveOrCreateContact y
+ * applyPatternsToTransactions en ./actions). */
 export async function confirmRecurringExpenses(rows: ConfirmRecurringRow[]): Promise<void> {
   if (!rows.length) return;
   const supabase = createServerClient();
@@ -94,8 +99,8 @@ export async function confirmRecurringExpenses(rows: ConfirmRecurringRow[]): Pro
           period: row.period,
           period_days: row.period_days,
           amount: row.amount,
-          iva_rate: contact.iva_rate,
-          retencion_rate: contact.retencion_rate,
+          iva_rate: row.ivaRate,
+          retencion_rate: row.retencionRate,
           contact_id: contact.id,
           status: "confirmed",
           end_type: row.endType,
@@ -123,6 +128,8 @@ export async function updateRecurringExpense(
     notes?: string | null;
     period?: string;
     period_days?: number;
+    iva_rate?: number;
+    retencion_rate?: number;
     end_type?: "never" | "date" | "count";
     end_date?: string | null;
     end_count?: number | null;
