@@ -4,6 +4,8 @@ import { useEffect, useState, useRef } from "react";
 import ClientesTable, { type ClientesTableHandle, type CustomerRow } from "./ClientesTable";
 import ClientesMatrizCompras from "./ClientesMatrizCompras";
 import SectionTabs, { type SectionTab } from "@/app/components/SectionTabs";
+import SectionTabsV2 from "@/app/components/v2/SectionTabsV2";
+import { useDesignVersion } from "@/app/components/DesignVersionContext";
 import type { StripePayment } from "@/lib/stripePayments";
 
 type Props = {
@@ -23,12 +25,17 @@ export default function ClientesShell({ customers, payments }: Props) {
   const [mounted, setMounted] = useState<Record<Tab, boolean>>({ estado: true, compras: false });
   const [activeMonth, setActiveMonth] = useState<string | null>(null);
   const tableRef = useRef<ClientesTableHandle>(null);
+  const { v2 } = useDesignVersion();
 
   useEffect(() => { setMounted((m) => ({ ...m, [tab]: true })); }, [tab]);
 
   return (
     <>
-      <SectionTabs className="mb-5" active={tab} onChange={setTab} tabs={TABS} />
+      {v2 ? (
+        <SectionTabsV2 className="mb-5" active={tab} onChange={setTab} tabs={TABS} />
+      ) : (
+        <SectionTabs className="mb-5" active={tab} onChange={setTab} tabs={TABS} />
+      )}
 
       {mounted.estado && (
         <div className={tab === "estado" ? "" : "hidden"}>

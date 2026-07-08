@@ -14,6 +14,8 @@ import type { RecurringExpense, RecurringExpenseEndType } from "@/lib/recurringE
 import type { Contact } from "./actions";
 import { CategoryBadge } from "./TransaccionesList";
 import type { ContactPickResult } from "./ContactPicker";
+import { useDesignVersion } from "@/app/components/DesignVersionContext";
+import RecurrentesListV2 from "./RecurrentesListV2";
 import {
   recordRecurringExpense,
   confirmRecurringExpenses,
@@ -61,11 +63,11 @@ type Props = {
 
 const PAGE_SIZE = 25;
 
-function fmtDate(d: string): string {
+export function fmtDate(d: string): string {
   return d.split("-").reverse().join("/");
 }
 
-function fmtEUR(n: number): string {
+export function fmtEUR(n: number): string {
   return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(n);
 }
 
@@ -75,7 +77,7 @@ function initials(label: string): string {
 
 /** Avatar circular consistente con el resto de la app (ver iniciales en ContactDetailDrawer de
  * Configuración > Contactos): coloreado cuando hay un contacto vinculado, neutro si no. */
-function ContactAvatar({ label, resolved, size = 36 }: { label: string; resolved: boolean; size?: number }) {
+export function ContactAvatar({ label, resolved, size = 36 }: { label: string; resolved: boolean; size?: number }) {
   return (
     <div
       className={`shrink-0 rounded-full flex items-center justify-center font-semibold ${resolved ? "bg-primary/10 text-primary" : "bg-navy/[0.05] text-navy/30"}`}
@@ -87,14 +89,14 @@ function ContactAvatar({ label, resolved, size = 36 }: { label: string; resolved
 }
 
 
-type ContactPick = { contactId: number } | { newLabel: string } | null;
+export type ContactPick = { contactId: number } | { newLabel: string } | null;
 
 function resultToPick(result: ContactPickResult): ContactPick {
   if ("contactId" in result) return { contactId: result.contactId };
   return result.newLabel ? { newLabel: result.newLabel } : null;
 }
 
-function pickToLabel(pick: ContactPick, contacts: Contact[]): string {
+export function pickToLabel(pick: ContactPick, contacts: Contact[]): string {
   if (!pick) return "";
   if ("contactId" in pick) return contacts.find((c) => c.id === pick.contactId)?.label ?? "";
   return pick.newLabel;
@@ -666,6 +668,7 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
   const [openConfirmedId, setOpenConfirmedId] = useState<number | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [confirmedPage, setConfirmedPage] = useState(0);
+  const { v2 } = useDesignVersion();
 
   const confirmedPageRows = confirmed.slice(confirmedPage * PAGE_SIZE, (confirmedPage + 1) * PAGE_SIZE);
 
@@ -763,6 +766,22 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
 
   return (
     <div className="space-y-4">
+      {v2 ? (
+        <RecurrentesListV2
+          pending={pending}
+          confirmed={confirmed}
+          confirmedPageRows={confirmedPageRows}
+          categories={categories}
+          contacts={contacts}
+          pickFor={pickFor}
+          onOpenPending={(row) => setOpenPendingKey(row.keys[0])}
+          onOpenConfirmed={(row) => setOpenConfirmedId(row.expense.id)}
+          confirmedPage={confirmedPage}
+          pageSize={PAGE_SIZE}
+          onConfirmedPageChange={setConfirmedPage}
+        />
+      ) : (
+      <>
       {pending.length > 0 && (
         <TableBox
           title="Gastos detectados"
@@ -807,6 +826,8 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
           </>
         )}
       </TableBox>
+      </>
+      )}
 
       {archived.length > 0 && (
         <TableBox title="Ignorados / dados de baja" subtitle="No se proyectan en la previsión de cashflow">

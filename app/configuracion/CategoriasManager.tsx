@@ -9,6 +9,8 @@ import ChipsInput from "@/app/components/ChipsInput";
 import Button from "@/app/components/Button";
 import Select from "@/app/components/Select";
 import { AutomationIcon } from "@/app/transacciones/NewContactDrawer";
+import { useDesignVersion } from "@/app/components/DesignVersionContext";
+import CategoriasManagerV2 from "./CategoriasManagerV2";
 
 const GROUP_LABELS: Record<GroupType, string> = {
   operational: "Operacional",
@@ -120,7 +122,7 @@ const NAME_TO_KEY: Record<string, string> = {
   "Traspasos internos": "repeat",
 };
 
-function CategoryIcon({ iconKey, name, color, size = 40 }: { iconKey: string; name?: string; color: string; size?: number }) {
+export function CategoryIcon({ iconKey, name, color, size = 40 }: { iconKey: string; name?: string; color: string; size?: number }) {
   const key = ICON_MAP.has(iconKey) ? iconKey : (name ? (NAME_TO_KEY[name] ?? "package") : "package");
   const path = ICON_MAP.get(key) ?? ICON_MAP.get("package")!;
   return (
@@ -192,6 +194,7 @@ export default function CategoriasManager({
   const [isPending, startTransition] = useTransition();
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
+  const { v2 } = useDesignVersion();
   const editorHasChildren =
     editor?.mode === "edit" && categories.some((c) => c.parent_id === editor.cat.id);
 
@@ -342,9 +345,49 @@ export default function CategoriasManager({
     });
   }
 
+  // Lista aplanada para la vista v2 (una entrada por caja/subgrupo, en el mismo orden que
+  // renderItems() usa abajo para la vista clásica) — evita duplicar el algoritmo de agrupado.
+  const displayGroups: { sectionLabel?: string; subsectionLabel?: string; ordered: Category[] }[] = [];
+  for (const g of GROUP_ORDER) {
+    const items = categories.filter((c) => c.group_type === g || (g === "operational" && !KNOWN_GROUPS.has(c.group_type)));
+    if (items.length === 0) continue;
+    if (g === "operational") {
+      let firstInSection = true;
+      for (const eg of ECONOMIC_ORDER) {
+        const subItems = items.filter((c) => economicGroupOf(c.label, c.economic_group) === eg);
+        if (subItems.length === 0) continue;
+        displayGroups.push({
+          sectionLabel: firstInSection ? GROUP_LABELS[g] : undefined,
+          subsectionLabel: ECONOMIC_LABELS[eg],
+          ordered: byParentOrdered(subItems),
+        });
+        firstInSection = false;
+      }
+    } else {
+      displayGroups.push({ sectionLabel: GROUP_LABELS[g], ordered: byParentOrdered(items) });
+    }
+  }
+
   return (
     <div className="relative">
       {/* ── Lista ── */}
+      {v2 ? (
+        <CategoriasManagerV2
+          totalCategories={categories.length}
+          groups={displayGroups}
+          totalCount={totalCount}
+          draggedId={draggedId}
+          dragOverId={dragOverId}
+          onDragStart={setDraggedId}
+          onDragOver={setDragOverId}
+          onDragLeave={(id) => setDragOverId((cur) => (cur === id ? null : cur))}
+          onDrop={handleDrop}
+          onDragEnd={() => { setDraggedId(null); setDragOverId(null); }}
+          onNewCategory={openNew}
+          onEditCategory={openEdit}
+          onViewTransactions={(cat) => router.push(`/transacciones?categoria=${encodeURIComponent(cat.value)}`)}
+        />
+      ) : (
       <div>
         <div className="flex items-center justify-between mb-8">
           <p className="text-sm text-navy/55">{categories.length} categorías</p>
@@ -461,6 +504,7 @@ export default function CategoriasManager({
           })}
         </div>
       </div>
+      )}
 
       {/* ── Editor panel ── */}
       {editor && (

@@ -17,6 +17,8 @@ import TableBox from "@/app/components/TableBox";
 import TableToolbar from "@/app/components/TableToolbar";
 import { CategoryPill, CategoryBadge } from "@/app/transacciones/TransaccionesList";
 import NewContactDrawer, { AutomationIcon } from "@/app/transacciones/NewContactDrawer";
+import { useDesignVersion } from "@/app/components/DesignVersionContext";
+import ContactosManagerV2 from "./ContactosManagerV2";
 
 const PAGE_SIZE = 25;
 
@@ -41,7 +43,7 @@ const KNOWN_DOMAINS: Record<string, string> = {
   "zoom": "zoom.us",
   "spotify": "spotify.com",
 };
-function knownDomain(label: string): string | null {
+export function knownDomain(label: string): string | null {
   const key = label.trim().toLowerCase();
   for (const [needle, domain] of Object.entries(KNOWN_DOMAINS)) {
     if (key.includes(needle)) return domain;
@@ -50,14 +52,14 @@ function knownDomain(label: string): string | null {
 }
 
 const MONTHS_SHORT = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
-function fmtDate(d: string) {
+export function fmtDate(d: string) {
   const [y, m, day] = d.split("-");
   return `${parseInt(day)} ${MONTHS_SHORT[parseInt(m) - 1]} ${y}`;
 }
-function fmtAmt(n: number) {
+export function fmtAmt(n: number) {
   return Math.abs(n).toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
 }
-function initials(label: string) {
+export function initials(label: string) {
   return label.split(" ").filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
 }
 
@@ -315,6 +317,50 @@ export default function ContactosManager({ contacts: initialContacts, categories
   const pageRows = filtered.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
 
   const selected = selectedId !== null ? contacts.find((c) => c.id === selectedId) ?? null : null;
+  const { v2 } = useDesignVersion();
+
+  if (v2) {
+    return (
+      <>
+        <ContactosManagerV2
+          search={search}
+          onSearchChange={(v) => { setSearch(v); setPage(0); }}
+          rows={pageRows}
+          totalCount={filtered.length}
+          page={safePage}
+          pageSize={PAGE_SIZE}
+          onPageChange={setPage}
+          categories={categories}
+          contactStats={contactStats}
+          onRowClick={(id) => setSelectedId(id)}
+          onNewContact={() => setCreating(true)}
+          onRecompute={handleRecompute}
+          recomputing={recomputing}
+          recomputed={recomputed}
+        />
+        {creating && (
+          <NewContactDrawer
+            categories={categories}
+            onCancel={() => setCreating(false)}
+            onCreated={(contact) => {
+              setContacts((prev) => [contact, ...prev]);
+              setCreating(false);
+            }}
+          />
+        )}
+        {selected && (
+          <ContactDetailDrawer
+            contact={selected}
+            categories={categories}
+            stats={contactStats[selected.id]}
+            onChange={(patch) => patchContact(selected.id, patch)}
+            onRemove={() => removeContact(selected.id)}
+            onClose={() => setSelectedId(null)}
+          />
+        )}
+      </>
+    );
+  }
 
   return (
     <div>

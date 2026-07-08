@@ -10,17 +10,19 @@ import TableBox from "@/app/components/TableBox";
 import TableToolbar from "@/app/components/TableToolbar";
 import Select from "@/app/components/Select";
 import { fmt } from "@/lib/analytics";
+import { useDesignVersion } from "@/app/components/DesignVersionContext";
+import ClientesMatrizComprasV2 from "./ClientesMatrizComprasV2";
 
-const PRODUCT_FILTERS = ["Bàsic", "Plus", "Pro", "Pack 4 clases", "Pack 8 clases", "Pack Benvinguda", "Clase suelta"];
+export const PRODUCT_FILTERS = ["Bàsic", "Plus", "Pro", "Pack 4 clases", "Pack 8 clases", "Pack Benvinguda", "Clase suelta"];
 
 const MONTHS_ES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 
-function monthLabel(ym: string): string {
+export function monthLabel(ym: string): string {
   const [y, m] = ym.split("-");
   return `${MONTHS_ES[parseInt(m, 10) - 1]} ${y.slice(2)}`;
 }
 
-function productAbbr(product: string): string {
+export function productAbbr(product: string): string {
   if (product === "Bàsic")            return "Bàsic";
   if (product === "Plus")             return "Plus";
   if (product === "Pro")              return "Pro";
@@ -31,7 +33,7 @@ function productAbbr(product: string): string {
   return "Otro";
 }
 
-function productColor(product: string): string {
+export function productColor(product: string): string {
   if (product === "Bàsic" || product === "Plus" || product === "Pro")
     return "bg-violet-50 text-violet-600";
   if (product === "Pack Benvinguda")
@@ -48,7 +50,16 @@ type Props = {
   payments: StripePayment[];
 };
 
-type SortKey = "name" | "total" | "first";
+export type MatrixRow = {
+  customer: CustomerRow;
+  byMonth: Record<string, Array<{ product: string; amount: number }>>;
+  totalPaid: number;
+  products: Set<string>;
+  firstPurchase: string | null;
+  isUpsellCandidate: boolean;
+};
+
+export type SortKey = "name" | "total" | "first";
 const PAGE_SIZE = 30;
 
 export default function ClientesMatrizCompras({ customers, payments }: Props) {
@@ -61,6 +72,7 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
   const [onlyUpsell, setOnlyUpsell] = useState(false);
   const [selected, setSelected] = useState<CustomerRow | null>(null);
   const [page, setPage] = useState(0);
+  const { v2 } = useDesignVersion();
 
   const { months, matrix } = useMemo(() => {
     const now = new Date();
@@ -197,6 +209,42 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
   const MONTH_COL_W = 76;
   const TOTAL_COL_W = 110;
   const tableWidthPx = NAME_COL_W + FIRST_COL_W + months.length * MONTH_COL_W + TOTAL_COL_W;
+
+  if (v2) {
+    return (
+      <>
+        <ClientesMatrizComprasV2
+          search={search}
+          onSearchChange={setSearch}
+          productFilter={productFilter}
+          onProductFilterChange={setProductFilter}
+          firstPurchaseFilter={firstPurchaseFilter}
+          onFirstPurchaseFilterChange={setFirstPurchaseFilter}
+          onlyInactive={onlyInactive}
+          onToggleOnlyInactive={() => setOnlyInactive((v) => !v)}
+          onlyUpsell={onlyUpsell}
+          onToggleOnlyUpsell={() => setOnlyUpsell((v) => !v)}
+          lastMonth={lastMonth}
+          months={months}
+          rows={pageRows}
+          sortKey={sortKey}
+          sortDir={sortDir}
+          onToggleSort={toggleSort}
+          monthTotals={monthTotals}
+          grandTotal={grandTotal}
+          totalCount={visibleMatrix.length}
+          page={safePage}
+          pageSize={PAGE_SIZE}
+          onPageChange={setPage}
+          onRowClick={setSelected}
+          onExportCsv={downloadCsv}
+        />
+        {selected && (
+          <CustomerDrawer key={selected.id} customer={selected} payments={payments} onClose={() => setSelected(null)} />
+        )}
+      </>
+    );
+  }
 
   return (
     <div className="flex flex-col items-center">

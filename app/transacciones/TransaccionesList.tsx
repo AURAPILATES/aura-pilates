@@ -17,8 +17,10 @@ import AddCashModal from "./AddCashModal";
 import PapeleraDrawer from "./PapeleraDrawer";
 import TransactionDrawer from "./TransactionDrawer";
 import { CatIcon } from "./catIcons";
+import { useDesignVersion } from "@/app/components/DesignVersionContext";
+import TransaccionesListV2 from "./TransaccionesListV2";
 
-const MONTHS_ES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+export const MONTHS_ES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
 
 function fmtDayLabel(dateStr: string): string {
   const today = new Date().toISOString().split("T")[0];
@@ -30,18 +32,18 @@ function fmtDayLabel(dateStr: string): string {
 }
 
 const MONTHS_SHORT = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
-function fmtDate(d: string) {
+export function fmtDate(d: string) {
   const [y, m, day] = d.split("-");
   return `${parseInt(day)} ${MONTHS_SHORT[parseInt(m) - 1]} ${y}`;
 }
 
-function fmtAmt(n: number) {
+export function fmtAmt(n: number) {
   return Math.abs(n).toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
 }
 
-const CAT_FALLBACK = { emoji: "package", bg: "#F8FAFC", color: "#94A3B8" };
-const FALLBACK_COLOR = { in: "#4e8c68", out: "#1c1917" };
-const FALLBACK_ICON = { in: "trending-up", out: "package" };
+export const CAT_FALLBACK = { emoji: "package", bg: "#F8FAFC", color: "#94A3B8" };
+export const FALLBACK_COLOR = { in: "#4e8c68", out: "#1c1917" };
+export const FALLBACK_ICON = { in: "trending-up", out: "package" };
 
 // ── Source avatar ─────────────────────────────────────────────────────────────
 const SOCIO_INITIALS: Record<string, { initials: string; bg: string; color: string }> = {
@@ -110,7 +112,7 @@ function EditConfirmButtons({ onConfirm, onCancel, small = false }: { onConfirm:
 }
 
 // ── Custom checkbox ────────────────────────────────────────────────────────────
-function Checkbox({ checked, onChange }: { checked: boolean; onChange: () => void }) {
+export function Checkbox({ checked, onChange }: { checked: boolean; onChange: () => void }) {
   return (
     <div
       onClick={(e) => { e.stopPropagation(); onChange(); }}
@@ -127,7 +129,7 @@ function Checkbox({ checked, onChange }: { checked: boolean; onChange: () => voi
   );
 }
 
-function CategoryMultiFilter({
+export function CategoryMultiFilter({
   selected, categories, onChange, className = "",
 }: {
   selected: string[]; categories: Category[]; onChange: (cats: string[]) => void; className?: string;
@@ -335,7 +337,7 @@ export function CategoryPill({ category, categories, onChange, hideIcon = false 
   );
 }
 
-function OriginIcon({ method, size = 12 }: { method: string; size?: number }) {
+export function OriginIcon({ method, size = 12 }: { method: string; size?: number }) {
   if (method === "banco") {
     return <img src="/Caixabank logo.png" alt="CaixaBank" width={size} height={size} className="shrink-0 object-contain" />;
   }
@@ -354,7 +356,7 @@ function OriginIcon({ method, size = 12 }: { method: string; size?: number }) {
   );
 }
 
-function originLabel(method: string): string {
+export function originLabel(method: string): string {
   if (method === "banco") return "CaixaBank";
   if (method === "efectivo") return "Efectivo Aura";
   return method.charAt(0).toUpperCase() + method.slice(1);
@@ -429,7 +431,7 @@ function MobileActionsMenu({ onExport, onPapelera }: { onExport: () => void; onP
   );
 }
 
-function MoreOptionsMenu({
+export function MoreOptionsMenu({
   onlyRecurring, setOnlyRecurring, originFilter, setOriginFilter, onExport, onPapelera,
 }: {
   onlyRecurring: boolean;
@@ -537,7 +539,7 @@ function MoreOptionsMenu({
   );
 }
 
-type SortKey = "date" | "amount" | "concept";
+export type SortKey = "date" | "amount" | "concept";
 
 function SortableHeader({
   label, sortKey, align, className = "", currentKey, dir, onClick,
@@ -616,6 +618,7 @@ export default function TransaccionesList({
   const [drawerTxnId, setDrawerTxnId] = useState<string | null>(null);
   const drawerTxn = drawerTxnId ? transactions.find((t) => t.id === drawerTxnId) ?? null : null;
   const [page, setPage] = useState(0);
+  const { v2 } = useDesignVersion();
 
   function toggleSort(key: "date" | "amount" | "concept") {
     if (sortKey === key) {
@@ -831,8 +834,44 @@ export default function TransaccionesList({
 
   return (
     <div>
-      {/* ── Desktop: KPIs ── */}
-      <div className="hidden sm:block mb-8">
+      {/* ── Desktop: KPIs + toolbar + tabla (v2 los sustituye por completo) ── */}
+      {v2 && (
+        <TransaccionesListV2
+          categories={categories}
+          uncategorizedCount={uncategorizedCount}
+          search={search}
+          onSearchChange={setSearch}
+          catFilters={catFilters}
+          onCatFiltersChange={setCatFilters}
+          originFilter={originFilter}
+          onOriginFilterChange={setOriginFilter}
+          onlyRecurring={onlyRecurring}
+          onToggleOnlyRecurring={() => setOnlyRecurring((v) => !v)}
+          directionFilter={directionFilter}
+          onDirectionFilterChange={setDirectionFilter}
+          totalIn={totalIn}
+          totalOut={totalOut}
+          neto={neto}
+          someSelected={someSelected}
+          sortKey={sortKey}
+          sortDir={sortDir}
+          onToggleSort={toggleSort}
+          byMonth={byMonth}
+          selected={selected}
+          onToggleOne={toggleOne}
+          onRowClick={(id) => setDrawerTxnId(id)}
+          onExportCsv={exportCSV}
+          onAddCash={() => setShowAddCash(true)}
+          onPapelera={() => setShowPapelera(true)}
+          page={safePage}
+          totalItems={sortedFiltered.length}
+          pageSize={PAGE_SIZE}
+          onPageChange={setPage}
+          recurringPeriods={recurringPeriods}
+          onCategoryChange={handleCategoryChange}
+        />
+      )}
+      <div className={`${v2 ? "hidden" : "hidden sm:block"} mb-8`}>
         <div className="flex items-stretch gap-3">
           {/* Entradas — clicable */}
           <button
@@ -990,8 +1029,8 @@ export default function TransaccionesList({
       )}
 
 
-      {/* ── Desktop toolbar ──────────────────────────────────────────────────── */}
-      <div className="hidden sm:block">
+      {/* ── Desktop toolbar (oculta en v2 — ya viene dentro de TransaccionesListV2) ── */}
+      <div className={v2 ? "hidden" : "hidden sm:block"}>
         <div className="flex items-center gap-2 mb-5">
           <SearchInput value={search} onChange={setSearch} placeholder="Buscar concepto o contacto…" className="flex-1" />
           <DateFilter />
@@ -1369,7 +1408,7 @@ export default function TransaccionesList({
         );
 
         return (
-          <div className="hidden sm:block bg-white border border-navy/[0.07] shadow-card rounded-[5px] overflow-hidden">
+          <div className={`${v2 ? "hidden" : "hidden sm:block"} bg-white border border-navy/[0.07] shadow-card rounded-[5px] overflow-hidden`}>
             {sortedFiltered.length === 0 ? (
               <div className="bg-white">
                 {headerRow}

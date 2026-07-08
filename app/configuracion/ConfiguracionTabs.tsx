@@ -6,6 +6,8 @@ import type { Category } from "@/lib/categories";
 import type { BusinessEvent } from "@/lib/businessEvents";
 import type { Contact, ContactStats } from "@/app/transacciones/actions";
 import SectionTabs from "@/app/components/SectionTabs";
+import SectionTabsV2 from "@/app/components/v2/SectionTabsV2";
+import { useDesignVersion } from "@/app/components/DesignVersionContext";
 import CategoriasManager from "./CategoriasManager";
 import ContactosManager from "./ContactosManager";
 import HistorialTimeline from "@/app/historial/HistorialTimeline";
@@ -31,6 +33,7 @@ export default function ConfiguracionTabs({ categories, events, categoryCounts, 
   const searchParams = useSearchParams();
   const initialTab = (["contactos", "historial"] as const).find((t) => t === searchParams.get("tab")) ?? "categorias";
   const [tab, setTab] = useState<Tab>(initialTab);
+  const { v2 } = useDesignVersion();
 
   function selectTab(next: Tab) {
     setTab(next);
@@ -39,7 +42,11 @@ export default function ConfiguracionTabs({ categories, events, categoryCounts, 
 
   return (
     <div>
-      <SectionTabs className="mb-6" active={tab} onChange={selectTab} tabs={TABS} />
+      {v2 ? (
+        <SectionTabsV2 className="mb-6" active={tab} onChange={selectTab} tabs={TABS} />
+      ) : (
+        <SectionTabs className="mb-6" active={tab} onChange={selectTab} tabs={TABS} />
+      )}
       {tab === "categorias" ? (
         <CategoriasManager categories={categories} categoryCounts={categoryCounts} />
       ) : tab === "contactos" ? (

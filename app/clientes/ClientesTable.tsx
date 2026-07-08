@@ -8,15 +8,17 @@ import TablePagination from "@/app/components/TablePagination";
 import TableBox from "@/app/components/TableBox";
 import TableToolbar from "@/app/components/TableToolbar";
 import { fmt } from "@/lib/analytics";
+import { useDesignVersion } from "@/app/components/DesignVersionContext";
+import ClientesTableV2 from "./ClientesTableV2";
 import type { StripeCustomer } from "@/lib/stripeCustomers";
 import type { StripePayment } from "@/lib/stripePayments";
 
 export type CustomerRow = StripeCustomer & { daysSinceLastSub?: number | null; daysSinceLastPack?: number | null; lastPackProduct?: string | null; lastSubProduct?: string | null; isActive?: boolean; isNew?: boolean };
 export type ClientesTableHandle = { openCustomer: (id: string) => void };
 
-type SortKey = "totalSpent" | "lastPaymentDate" | "name";
-type SortDir = "asc" | "desc";
-type Filter  = "all" | "recurring" | "occasional" | "discount" | "error";
+export type SortKey = "totalSpent" | "lastPaymentDate" | "name";
+export type SortDir = "asc" | "desc";
+export type Filter  = "all" | "recurring" | "occasional" | "discount" | "error";
 const PAGE_SIZE = 25;
 
 function SortIcon({ active, dir }: { active: boolean; dir: SortDir }) {
@@ -145,6 +147,7 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
   const [sortDir,  setSortDir]  = useState<SortDir>("desc");
   const [selected, setSelected] = useState<CustomerRow | null>(null);
   const [page, setPage] = useState(0);
+  const { v2 } = useDesignVersion();
 
   useEffect(() => { setPage(0); }, [search, filter, activeMonth]);
 
@@ -261,6 +264,10 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
 
   const MES: Record<string, string> = { "01":"Ene","02":"Feb","03":"Mar","04":"Abr","05":"May","06":"Jun","07":"Jul","08":"Ago","09":"Sep","10":"Oct","11":"Nov","12":"Dic" };
 
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const safePage = Math.min(page, Math.max(0, totalPages - 1));
+  const pageRows = filtered.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
+
   return (
     <div>
       {activeMonth && (
@@ -283,6 +290,26 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
           </button>
         </div>
       )}
+      {v2 ? (
+        <ClientesTableV2
+          search={search}
+          onSearchChange={setSearch}
+          filter={filter}
+          onFilterChange={setFilter}
+          filterLabels={filterLabels}
+          sortKey={sortKey}
+          sortDir={sortDir}
+          onToggleSort={toggleSort}
+          rows={pageRows}
+          totalCount={filtered.length}
+          page={safePage}
+          pageSize={PAGE_SIZE}
+          onPageChange={setPage}
+          onRowClick={setSelected}
+          onExportCsv={downloadCsv}
+        />
+      ) : (
+      <>
       {/* Controls */}
       <TableToolbar>
         {/* Search + CSV */}
@@ -325,11 +352,6 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
       </TableToolbar>
 
       {/* Table */}
-      {(() => {
-        const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
-        const safePage = Math.min(page, Math.max(0, totalPages - 1));
-        const pageRows = filtered.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
-        return (
       <TableBox>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -439,8 +461,8 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
         </div>
         <TablePagination page={safePage} totalItems={filtered.length} pageSize={PAGE_SIZE} onPageChange={setPage} />
       </TableBox>
-        );
-      })()}
+      </>
+      )}
 
       {selected && (
         <CustomerDrawer key={selected.id} customer={selected} payments={payments} onClose={() => setSelected(null)} />

@@ -3,8 +3,9 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { RANGE_OPTIONS, type RangeKey } from "@/lib/dateRange";
 import Button from "@/app/components/Button";
+import { PrimaryButtonV2 } from "@/app/components/v2/ButtonsV2";
 
-export default function DateFilter() {
+export default function DateFilter({ variant = "classic" }: { variant?: "classic" | "v2" }) {
   const router       = useRouter();
   const pathname     = usePathname();
   const searchParams = useSearchParams();
@@ -76,7 +77,11 @@ export default function DateFilter() {
           setOpen(next);
           if (next) setShowCustom(current === "custom");
         }}
-        className="flex items-center gap-2 px-3 py-2 text-sm font-medium border border-navy/[0.12] rounded-xl bg-white text-navy hover:bg-navy/[0.03] transition-colors"
+        className={
+          variant === "v2"
+            ? "flex items-center gap-2 px-3 py-2 text-[13.5px] font-medium border border-[#e6e6ea] rounded-[10px] bg-white text-[#3f3f46] hover:bg-[#18181b]/[0.02] transition-colors whitespace-nowrap"
+            : "flex items-center gap-2 px-3 py-2 text-sm font-medium border border-navy/[0.12] rounded-xl bg-white text-navy hover:bg-navy/[0.03] transition-colors"
+        }
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <rect x="3" y="4" width="18" height="18" rx="2"/>
@@ -95,7 +100,7 @@ export default function DateFilter() {
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full mt-1.5 z-50 bg-white border border-navy/[0.12] rounded-xl shadow-lg overflow-hidden min-w-[210px]">
+        <div className={`absolute left-0 top-full mt-1.5 z-50 bg-white shadow-lg overflow-hidden min-w-[210px] ${variant === "v2" ? "border border-[#e6e6ea] rounded-[10px]" : "border border-navy/[0.12] rounded-xl"}`}>
           {!showCustom ? (
             <ul className="py-1">
               {RANGE_OPTIONS.map(({ key, label }) => (
@@ -104,8 +109,8 @@ export default function DateFilter() {
                     onClick={() => selectRange(key)}
                     className={`w-full text-left px-4 py-2 text-sm transition-colors ${
                       current === key
-                        ? "bg-primary/[0.08] text-primary font-medium"
-                        : "text-navy/70 hover:bg-navy/[0.04] hover:text-navy"
+                        ? variant === "v2" ? "bg-[#18181b]/[0.05] text-[#18181b] font-medium" : "bg-primary/[0.08] text-primary font-medium"
+                        : variant === "v2" ? "text-[#3f3f46] hover:bg-[#18181b]/[0.04]" : "text-navy/70 hover:bg-navy/[0.04] hover:text-navy"
                     }`}
                   >
                     {label}
@@ -141,13 +146,19 @@ export default function DateFilter() {
               <div className="flex gap-2 pt-1">
                 <button
                   onClick={() => setShowCustom(false)}
-                  className="flex-1 text-sm px-3 py-2 rounded-lg border border-navy/[0.12] text-navy/60 hover:bg-navy/[0.03] transition-colors"
+                  className={`flex-1 text-sm px-3 py-2 transition-colors ${variant === "v2" ? "rounded-[10px] border border-[#e6e6ea] text-[#52525b] hover:bg-[#18181b]/[0.02]" : "rounded-lg border border-navy/[0.12] text-navy/60 hover:bg-navy/[0.03]"}`}
                 >
                   Volver
                 </button>
-                <Button onClick={applyCustom} disabled={!fromVal && !toVal} className="flex-1">
-                  Aplicar
-                </Button>
+                {variant === "v2" ? (
+                  <PrimaryButtonV2 onClick={applyCustom} disabled={!fromVal && !toVal} className="flex-1">
+                    Aplicar
+                  </PrimaryButtonV2>
+                ) : (
+                  <Button onClick={applyCustom} disabled={!fromVal && !toVal} className="flex-1">
+                    Aplicar
+                  </Button>
+                )}
               </div>
             </div>
           )}
