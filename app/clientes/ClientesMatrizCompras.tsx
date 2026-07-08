@@ -199,7 +199,7 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
   const tableWidthPx = NAME_COL_W + FIRST_COL_W + months.length * MONTH_COL_W + TOTAL_COL_W;
 
   return (
-    <div>
+    <div className="flex flex-col items-center">
       <TableToolbar>
         <SearchInput value={search} onChange={setSearch} placeholder="Buscar cliente…" className="w-44" />
           <Select value={productFilter} onChange={(e) => setProductFilter(e.target.value)} className="w-auto">
