@@ -1007,9 +1007,6 @@ export default function TransaccionesList({
           <ImportButton onManual={() => setShowAddCash(true)} />
         </div>
         <div className="flex items-center gap-3 mb-6">
-          {someSelected && (
-            <span className="text-sm text-navy/45">{selected.size} seleccionado{selected.size !== 1 ? "s" : ""}</span>
-          )}
           {!someSelected && uncategorizedCount > 0 && (
             <button
               onClick={() => setCatFilters(catFilters.includes("__none__") ? catFilters.filter((v) => v !== "__none__") : [...catFilters, "__none__"])}
@@ -1071,7 +1068,7 @@ export default function TransaccionesList({
 
       {/* ── Bulk selection bar ─────────────────────────────────────────────── */}
       {someSelected && (
-        <div className="fixed bottom-[10px] sm:bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1.5 sm:gap-3 px-2.5 sm:px-5 py-2.5 sm:py-3 bg-navy rounded-2xl shadow-2xl border border-white/10 max-w-[calc(100vw-1.5rem)] sm:max-w-none sm:min-w-max">
+        <div className="fixed left-0 right-0 bottom-0 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:bottom-6 z-50 flex items-center gap-1.5 sm:gap-3 px-4 sm:px-5 pt-2.5 sm:py-3 pb-[calc(0.625rem_+_env(safe-area-inset-bottom))] sm:pb-3 bg-navy rounded-t-[5px] sm:rounded-[5px] shadow-2xl border border-white/10 sm:min-w-max">
           <span className="text-xs sm:text-sm font-semibold text-white shrink-0 whitespace-nowrap">
             <span className="sm:hidden">{selected.size} sel.</span>
             <span className="hidden sm:inline">{selected.size} seleccionada{selected.size !== 1 ? "s" : ""}</span>
@@ -1083,7 +1080,7 @@ export default function TransaccionesList({
               <button
                 onClick={applyBulkDelete}
                 disabled={isPending}
-                className="text-xs sm:text-sm font-semibold px-3 sm:px-4 py-1.5 rounded-lg bg-danger text-white disabled:opacity-40 hover:bg-danger/85 transition-colors shrink-0 whitespace-nowrap"
+                className="text-xs sm:text-sm font-semibold px-3 sm:px-4 py-1.5 rounded-[5px] bg-danger text-white disabled:opacity-40 hover:bg-danger/85 transition-colors shrink-0 whitespace-nowrap"
               >
                 Confirmar
               </button>
@@ -1094,7 +1091,7 @@ export default function TransaccionesList({
               <select
                 value={bulkCat}
                 onChange={(e) => setBulkCat(e.target.value)}
-                className="text-xs sm:text-sm rounded-lg px-2 sm:px-3 py-1.5 bg-white/10 text-white border border-white/20 outline-none focus:border-white/40 w-24 sm:w-auto sm:min-w-48 shrink-0 cursor-pointer"
+                className="text-xs sm:text-sm rounded-[5px] px-2 sm:px-3 py-1.5 bg-white/10 text-white border border-white/20 outline-none focus:border-white/40 w-24 sm:w-auto sm:min-w-48 shrink-0 cursor-pointer"
               >
                 <option value="" disabled>Cambiar categoría…</option>
                 <option value="__null__" className="text-navy bg-white">Sin categoría</option>
@@ -1105,7 +1102,7 @@ export default function TransaccionesList({
               <button
                 onClick={applyBulkCategory}
                 disabled={!bulkCat || isPending}
-                className="text-xs sm:text-sm font-semibold px-2.5 sm:px-4 py-1.5 rounded-lg bg-white text-navy disabled:opacity-40 hover:bg-white/90 transition-colors shrink-0 whitespace-nowrap"
+                className="text-xs sm:text-sm font-semibold px-2.5 sm:px-4 py-1.5 rounded-[5px] bg-white text-navy disabled:opacity-40 hover:bg-white/90 transition-colors shrink-0 whitespace-nowrap"
               >
                 Aplicar
               </button>
@@ -1113,7 +1110,7 @@ export default function TransaccionesList({
               <button
                 onClick={() => setDeleteConfirm(true)}
                 title="Eliminar"
-                className="flex items-center gap-1.5 text-xs sm:text-sm font-semibold px-2.5 sm:px-3 py-1.5 rounded-lg bg-danger text-white hover:bg-danger/85 transition-colors shrink-0"
+                className="flex items-center gap-1.5 text-xs sm:text-sm font-semibold px-2.5 sm:px-3 py-1.5 rounded-[5px] bg-danger text-white hover:bg-danger/85 transition-colors shrink-0"
               >
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/>
