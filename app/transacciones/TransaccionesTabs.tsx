@@ -62,11 +62,14 @@ export default function TransaccionesTabs({
 
   return (
     <div>
-      {v2 ? (
-        <SectionTabsV2 className="mb-7" active={tab} onChange={selectTab} tabs={tabsWithBadge} />
-      ) : (
-        <SectionTabs className="mb-7" active={tab} onChange={selectTab} tabs={tabsWithBadge} />
+      {v2 && (
+        <div className="hidden sm:block">
+          <SectionTabsV2 className="mb-7" active={tab} onChange={selectTab} tabs={tabsWithBadge} />
+        </div>
       )}
+      <div className={v2 ? "sm:hidden" : ""}>
+        <SectionTabs className="mb-7" active={tab} onChange={selectTab} tabs={tabsWithBadge} />
+      </div>
 
       {tab === "movimientos" ? (
         <TransaccionesList

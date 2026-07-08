@@ -31,11 +31,14 @@ export default function ClientesShell({ customers, payments }: Props) {
 
   return (
     <>
-      {v2 ? (
-        <SectionTabsV2 className="mb-5" active={tab} onChange={setTab} tabs={TABS} />
-      ) : (
-        <SectionTabs className="mb-5" active={tab} onChange={setTab} tabs={TABS} />
+      {v2 && (
+        <div className="hidden sm:block">
+          <SectionTabsV2 className="mb-5" active={tab} onChange={setTab} tabs={TABS} />
+        </div>
       )}
+      <div className={v2 ? "sm:hidden" : ""}>
+        <SectionTabs className="mb-5" active={tab} onChange={setTab} tabs={TABS} />
+      </div>
 
       {mounted.estado && (
         <div className={tab === "estado" ? "" : "hidden"}>

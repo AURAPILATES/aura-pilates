@@ -210,44 +210,40 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
   const TOTAL_COL_W = 110;
   const tableWidthPx = NAME_COL_W + FIRST_COL_W + months.length * MONTH_COL_W + TOTAL_COL_W;
 
-  if (v2) {
-    return (
-      <>
-        <ClientesMatrizComprasV2
-          search={search}
-          onSearchChange={setSearch}
-          productFilter={productFilter}
-          onProductFilterChange={setProductFilter}
-          firstPurchaseFilter={firstPurchaseFilter}
-          onFirstPurchaseFilterChange={setFirstPurchaseFilter}
-          onlyInactive={onlyInactive}
-          onToggleOnlyInactive={() => setOnlyInactive((v) => !v)}
-          onlyUpsell={onlyUpsell}
-          onToggleOnlyUpsell={() => setOnlyUpsell((v) => !v)}
-          lastMonth={lastMonth}
-          months={months}
-          rows={pageRows}
-          sortKey={sortKey}
-          sortDir={sortDir}
-          onToggleSort={toggleSort}
-          monthTotals={monthTotals}
-          grandTotal={grandTotal}
-          totalCount={visibleMatrix.length}
-          page={safePage}
-          pageSize={PAGE_SIZE}
-          onPageChange={setPage}
-          onRowClick={setSelected}
-          onExportCsv={downloadCsv}
-        />
-        {selected && (
-          <CustomerDrawer key={selected.id} customer={selected} payments={payments} onClose={() => setSelected(null)} />
-        )}
-      </>
-    );
-  }
-
   return (
     <div className="flex flex-col items-center">
+      {v2 && (
+        <div className="hidden sm:block w-full">
+          <ClientesMatrizComprasV2
+            search={search}
+            onSearchChange={setSearch}
+            productFilter={productFilter}
+            onProductFilterChange={setProductFilter}
+            firstPurchaseFilter={firstPurchaseFilter}
+            onFirstPurchaseFilterChange={setFirstPurchaseFilter}
+            onlyInactive={onlyInactive}
+            onToggleOnlyInactive={() => setOnlyInactive((v) => !v)}
+            onlyUpsell={onlyUpsell}
+            onToggleOnlyUpsell={() => setOnlyUpsell((v) => !v)}
+            lastMonth={lastMonth}
+            months={months}
+            rows={pageRows}
+            sortKey={sortKey}
+            sortDir={sortDir}
+            onToggleSort={toggleSort}
+            monthTotals={monthTotals}
+            grandTotal={grandTotal}
+            totalCount={visibleMatrix.length}
+            page={safePage}
+            pageSize={PAGE_SIZE}
+            onPageChange={setPage}
+            onRowClick={setSelected}
+            onExportCsv={downloadCsv}
+          />
+        </div>
+      )}
+      {/* En móvil siempre se ve la tabla clásica (scroll horizontal), aunque el diseño nuevo esté activo */}
+      <div className={v2 ? "sm:hidden w-full flex flex-col items-center" : "contents"}>
       <TableToolbar>
         <SearchInput value={search} onChange={setSearch} placeholder="Buscar cliente…" className="w-44" />
           <Select value={productFilter} onChange={(e) => setProductFilter(e.target.value)} className="w-auto">
@@ -407,6 +403,7 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
       </div>
       <TablePagination page={safePage} totalItems={visibleMatrix.length} pageSize={PAGE_SIZE} onPageChange={setPage} />
       </TableBox>
+      </div>
       {selected && (
         <CustomerDrawer key={selected.id} customer={selected} payments={payments} onClose={() => setSelected(null)} />
       )}

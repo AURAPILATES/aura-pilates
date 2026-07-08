@@ -371,24 +371,27 @@ export default function CategoriasManager({
   return (
     <div className="relative">
       {/* ── Lista ── */}
-      {v2 ? (
-        <CategoriasManagerV2
-          totalCategories={categories.length}
-          groups={displayGroups}
-          totalCount={totalCount}
-          draggedId={draggedId}
-          dragOverId={dragOverId}
-          onDragStart={setDraggedId}
-          onDragOver={setDragOverId}
-          onDragLeave={(id) => setDragOverId((cur) => (cur === id ? null : cur))}
-          onDrop={handleDrop}
-          onDragEnd={() => { setDraggedId(null); setDragOverId(null); }}
-          onNewCategory={openNew}
-          onEditCategory={openEdit}
-          onViewTransactions={(cat) => router.push(`/transacciones?categoria=${encodeURIComponent(cat.value)}`)}
-        />
-      ) : (
-      <div>
+      {v2 && (
+        <div className="hidden sm:block">
+          <CategoriasManagerV2
+            totalCategories={categories.length}
+            groups={displayGroups}
+            totalCount={totalCount}
+            draggedId={draggedId}
+            dragOverId={dragOverId}
+            onDragStart={setDraggedId}
+            onDragOver={setDragOverId}
+            onDragLeave={(id) => setDragOverId((cur) => (cur === id ? null : cur))}
+            onDrop={handleDrop}
+            onDragEnd={() => { setDraggedId(null); setDragOverId(null); }}
+            onNewCategory={openNew}
+            onEditCategory={openEdit}
+            onViewTransactions={(cat) => router.push(`/transacciones?categoria=${encodeURIComponent(cat.value)}`)}
+          />
+        </div>
+      )}
+      {/* En móvil siempre se ve la lista clásica, aunque el diseño nuevo esté activo */}
+      <div className={v2 ? "sm:hidden" : ""}>
         <div className="flex items-center justify-between mb-8">
           <p className="text-sm text-navy/55">{categories.length} categorías</p>
           <Button onClick={openNew} className="flex items-center gap-2">
@@ -504,7 +507,6 @@ export default function CategoriasManager({
           })}
         </div>
       </div>
-      )}
 
       {/* ── Editor panel ── */}
       {editor && (

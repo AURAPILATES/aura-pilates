@@ -319,51 +319,30 @@ export default function ContactosManager({ contacts: initialContacts, categories
   const selected = selectedId !== null ? contacts.find((c) => c.id === selectedId) ?? null : null;
   const { v2 } = useDesignVersion();
 
-  if (v2) {
-    return (
-      <>
-        <ContactosManagerV2
-          search={search}
-          onSearchChange={(v) => { setSearch(v); setPage(0); }}
-          rows={pageRows}
-          totalCount={filtered.length}
-          page={safePage}
-          pageSize={PAGE_SIZE}
-          onPageChange={setPage}
-          categories={categories}
-          contactStats={contactStats}
-          onRowClick={(id) => setSelectedId(id)}
-          onNewContact={() => setCreating(true)}
-          onRecompute={handleRecompute}
-          recomputing={recomputing}
-          recomputed={recomputed}
-        />
-        {creating && (
-          <NewContactDrawer
-            categories={categories}
-            onCancel={() => setCreating(false)}
-            onCreated={(contact) => {
-              setContacts((prev) => [contact, ...prev]);
-              setCreating(false);
-            }}
-          />
-        )}
-        {selected && (
-          <ContactDetailDrawer
-            contact={selected}
-            categories={categories}
-            stats={contactStats[selected.id]}
-            onChange={(patch) => patchContact(selected.id, patch)}
-            onRemove={() => removeContact(selected.id)}
-            onClose={() => setSelectedId(null)}
-          />
-        )}
-      </>
-    );
-  }
-
   return (
     <div>
+      {v2 && (
+        <div className="hidden sm:block">
+          <ContactosManagerV2
+            search={search}
+            onSearchChange={(v) => { setSearch(v); setPage(0); }}
+            rows={pageRows}
+            totalCount={filtered.length}
+            page={safePage}
+            pageSize={PAGE_SIZE}
+            onPageChange={setPage}
+            categories={categories}
+            contactStats={contactStats}
+            onRowClick={(id) => setSelectedId(id)}
+            onNewContact={() => setCreating(true)}
+            onRecompute={handleRecompute}
+            recomputing={recomputing}
+            recomputed={recomputed}
+          />
+        </div>
+      )}
+      {/* En móvil siempre se ve la tabla clásica, aunque el diseño nuevo esté activo */}
+      <div className={v2 ? "sm:hidden" : ""}>
       <TableToolbar>
         <SearchInput value={search} onChange={(v) => { setSearch(v); setPage(0); }} placeholder="Buscar contacto…" className="flex-1 min-w-[200px]" />
         <button
@@ -386,28 +365,6 @@ export default function ContactosManager({ contacts: initialContacts, categories
           + Nuevo contacto
         </Button>
       </TableToolbar>
-
-      {creating && (
-        <NewContactDrawer
-          categories={categories}
-          onCancel={() => setCreating(false)}
-          onCreated={(contact) => {
-            setContacts((prev) => [contact, ...prev]);
-            setCreating(false);
-          }}
-        />
-      )}
-
-      {selected && (
-        <ContactDetailDrawer
-          contact={selected}
-          categories={categories}
-          stats={contactStats[selected.id]}
-          onChange={(patch) => patchContact(selected.id, patch)}
-          onRemove={() => removeContact(selected.id)}
-          onClose={() => setSelectedId(null)}
-        />
-      )}
 
       <TableBox>
       {filtered.length === 0 ? (
@@ -476,6 +433,29 @@ export default function ContactosManager({ contacts: initialContacts, categories
         <TablePagination page={safePage} totalItems={filtered.length} pageSize={PAGE_SIZE} onPageChange={setPage} />
       )}
       </TableBox>
+      </div>
+
+      {creating && (
+        <NewContactDrawer
+          categories={categories}
+          onCancel={() => setCreating(false)}
+          onCreated={(contact) => {
+            setContacts((prev) => [contact, ...prev]);
+            setCreating(false);
+          }}
+        />
+      )}
+
+      {selected && (
+        <ContactDetailDrawer
+          contact={selected}
+          categories={categories}
+          stats={contactStats[selected.id]}
+          onChange={(patch) => patchContact(selected.id, patch)}
+          onRemove={() => removeContact(selected.id)}
+          onClose={() => setSelectedId(null)}
+        />
+      )}
     </div>
   );
 }

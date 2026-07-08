@@ -766,25 +766,28 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
 
   return (
     <div className="space-y-4">
-      {v2 ? (
-        <RecurrentesListV2
-          pending={pending}
-          confirmed={confirmed}
-          confirmedPageRows={confirmedPageRows}
-          categories={categories}
-          contacts={contacts}
-          pickFor={pickFor}
-          ivaRateFor={ivaRateFor}
-          retencionRateFor={retencionRateFor}
-          onOpenPending={(row) => setOpenPendingKey(row.keys[0])}
-          onOpenConfirmed={(row) => setOpenConfirmedId(row.expense.id)}
-          onConfirmRow={confirmRow}
-          confirmedPage={confirmedPage}
-          pageSize={PAGE_SIZE}
-          onConfirmedPageChange={setConfirmedPage}
-        />
-      ) : (
-      <>
+      {v2 && (
+        <div className="hidden sm:block">
+          <RecurrentesListV2
+            pending={pending}
+            confirmed={confirmed}
+            confirmedPageRows={confirmedPageRows}
+            categories={categories}
+            contacts={contacts}
+            pickFor={pickFor}
+            ivaRateFor={ivaRateFor}
+            retencionRateFor={retencionRateFor}
+            onOpenPending={(row) => setOpenPendingKey(row.keys[0])}
+            onOpenConfirmed={(row) => setOpenConfirmedId(row.expense.id)}
+            onConfirmRow={confirmRow}
+            confirmedPage={confirmedPage}
+            pageSize={PAGE_SIZE}
+            onConfirmedPageChange={setConfirmedPage}
+          />
+        </div>
+      )}
+      {/* En móvil siempre se ve la lista clásica (responsive), aunque el diseño nuevo esté activo */}
+      <div className={v2 ? "sm:hidden space-y-4" : "contents"}>
       {pending.length > 0 && (
         <TableBox
           title="Gastos detectados"
@@ -829,8 +832,7 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
           </>
         )}
       </TableBox>
-      </>
-      )}
+      </div>
 
       {archived.length > 0 && (
         <TableBox title="Ignorados / dados de baja" subtitle="No se proyectan en la previsión de cashflow">

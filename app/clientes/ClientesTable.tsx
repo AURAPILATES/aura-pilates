@@ -290,26 +290,29 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
           </button>
         </div>
       )}
-      {v2 ? (
-        <ClientesTableV2
-          search={search}
-          onSearchChange={setSearch}
-          filter={filter}
-          onFilterChange={setFilter}
-          filterLabels={filterLabels}
-          sortKey={sortKey}
-          sortDir={sortDir}
-          onToggleSort={toggleSort}
-          rows={pageRows}
-          totalCount={filtered.length}
-          page={safePage}
-          pageSize={PAGE_SIZE}
-          onPageChange={setPage}
-          onRowClick={setSelected}
-          onExportCsv={downloadCsv}
-        />
-      ) : (
-      <>
+      {v2 && (
+        <div className="hidden sm:block">
+          <ClientesTableV2
+            search={search}
+            onSearchChange={setSearch}
+            filter={filter}
+            onFilterChange={setFilter}
+            filterLabels={filterLabels}
+            sortKey={sortKey}
+            sortDir={sortDir}
+            onToggleSort={toggleSort}
+            rows={pageRows}
+            totalCount={filtered.length}
+            page={safePage}
+            pageSize={PAGE_SIZE}
+            onPageChange={setPage}
+            onRowClick={setSelected}
+            onExportCsv={downloadCsv}
+          />
+        </div>
+      )}
+      {/* En móvil siempre se ve la tabla clásica (responsive), aunque el diseño nuevo esté activo */}
+      <div className={v2 ? "sm:hidden" : ""}>
       {/* Controls */}
       <TableToolbar>
         {/* Search + CSV */}
@@ -461,8 +464,7 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
         </div>
         <TablePagination page={safePage} totalItems={filtered.length} pageSize={PAGE_SIZE} onPageChange={setPage} />
       </TableBox>
-      </>
-      )}
+      </div>
 
       {selected && (
         <CustomerDrawer key={selected.id} customer={selected} payments={payments} onClose={() => setSelected(null)} />

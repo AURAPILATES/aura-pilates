@@ -42,11 +42,14 @@ export default function ConfiguracionTabs({ categories, events, categoryCounts, 
 
   return (
     <div>
-      {v2 ? (
-        <SectionTabsV2 className="mb-6" active={tab} onChange={selectTab} tabs={TABS} />
-      ) : (
-        <SectionTabs className="mb-6" active={tab} onChange={selectTab} tabs={TABS} />
+      {v2 && (
+        <div className="hidden sm:block">
+          <SectionTabsV2 className="mb-6" active={tab} onChange={selectTab} tabs={TABS} />
+        </div>
       )}
+      <div className={v2 ? "sm:hidden" : ""}>
+        <SectionTabs className="mb-6" active={tab} onChange={selectTab} tabs={TABS} />
+      </div>
       {tab === "categorias" ? (
         <CategoriasManager categories={categories} categoryCounts={categoryCounts} />
       ) : tab === "contactos" ? (

@@ -834,8 +834,9 @@ export default function TransaccionesList({
 
   return (
     <div>
-      {/* ── Desktop: KPIs + toolbar + tabla (v2 los sustituye por completo) ── */}
+      {/* ── Desktop: KPIs + toolbar + tabla (v2 los sustituye por completo; en móvil siempre clásico) ── */}
       {v2 && (
+        <div className="hidden sm:block">
         <TransaccionesListV2
           categories={categories}
           uncategorizedCount={uncategorizedCount}
@@ -870,6 +871,7 @@ export default function TransaccionesList({
           recurringPeriods={recurringPeriods}
           onCategoryChange={handleCategoryChange}
         />
+        </div>
       )}
       <div className={`${v2 ? "hidden" : "hidden sm:block"} mb-8`}>
         <div className="flex items-stretch gap-3">
