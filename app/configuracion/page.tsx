@@ -19,12 +19,12 @@ export default async function ConfiguracionPage() {
   return (
     <div>
       <div className="sticky top-0 z-20 bg-app-bg/95 backdrop-blur-sm border-b border-navy/[0.06]">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-[45px] flex items-center gap-3">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-5 h-[45px] flex items-center gap-3">
           <MobileNav />
           <h1 className="text-sm font-bold text-navy uppercase tracking-widest">Configuración</h1>
         </div>
       </div>
-      <main className="max-w-6xl mx-auto px-6 pt-3 pb-16">
+      <main className="max-w-[1600px] mx-auto px-5 pt-5 pb-16">
         <ConfiguracionTabs categories={categories} events={events} categoryCounts={categoryCounts} contacts={contacts} contactStats={contactStats} />
       </main>
     </div>

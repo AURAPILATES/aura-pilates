@@ -140,7 +140,7 @@ export default function TransaccionesListV2({
       )}
 
       {/* Tabla suelta agrupada por mes */}
-      <div className="mt-[18px]">
+      <div className="mt-[24px]">
         <div className={tableHeadClassV2} style={gridColsV2(COLS)}>
           <span />
           <span

@@ -90,7 +90,7 @@ export default function ClientesMatrizComprasV2({
         </IconButtonV2>
       </div>
 
-      <div className="mt-[18px] overflow-x-auto">
+      <div className="mt-[24px] overflow-x-auto">
         <div>
           <div className={tableHeadClassV2} style={gridColsV2(cols)}>
             <span className="cursor-pointer select-none" onClick={() => onToggleSort("name")}>

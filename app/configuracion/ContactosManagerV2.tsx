@@ -5,6 +5,7 @@ import Avatar from "@/app/components/Avatar";
 import SearchInputV2 from "@/app/components/v2/SearchInputV2";
 import TablePaginationV2 from "@/app/components/v2/TablePaginationV2";
 import { PrimaryButtonV2 } from "@/app/components/v2/ButtonsV2";
+import TaxBadgeV2 from "@/app/components/v2/TaxBadgeV2";
 import { tableHeadClassV2, tableRowClassV2, gridColsV2 } from "@/app/components/v2/tableStylesV2";
 import { knownDomain, initials, fmtDate as fmtContactDate } from "./ContactosManager";
 
@@ -53,7 +54,7 @@ export default function ContactosManagerV2({
         </PrimaryButtonV2>
       </div>
 
-      <div className="mt-[18px]">
+      <div className="mt-[24px]">
         <div className={tableHeadClassV2} style={gridColsV2(COLS)}>
           <span>Nombre</span>
           <span>Categoría</span>
@@ -69,6 +70,7 @@ export default function ContactosManagerV2({
           rows.map((c) => {
             const stats = contactStats[c.id];
             const lastDate = stats?.latest?.[0]?.date;
+            const bothMissing = !(c.ivaRate > 0) && !(c.retencionRate > 0);
             return (
               <div
                 key={c.id}
@@ -78,11 +80,11 @@ export default function ContactosManagerV2({
               >
                 <div className="flex items-center gap-[11px] min-w-0">
                   <Avatar seed={c.label} initials={initials(c.label)} logoDomain={knownDomain(c.label)} size={30} />
-                  <p className="text-[13.5px] font-semibold text-[#18181b] truncate">{c.label}</p>
+                  <p className="text-[13.5px] font-medium text-[#18181b] truncate">{c.label}</p>
                 </div>
                 <div><CategoryBadge category={c.category} categories={categories} /></div>
-                <p className="text-[12.5px] text-[#3f3f46]">{c.ivaRate > 0 ? `${c.ivaRate}%` : "—"}</p>
-                <p className="text-[12.5px] text-[#3f3f46]">{c.retencionRate > 0 ? `${c.retencionRate}%` : "—"}</p>
+                <div><TaxBadgeV2 value={c.ivaRate} isError={bothMissing} /></div>
+                <div><TaxBadgeV2 value={c.retencionRate} isError={bothMissing} /></div>
                 <p className="text-[13px] font-semibold text-[#18181b]">{stats?.count ?? "—"}</p>
                 <p className="text-right text-[12.5px] text-[#71717a]">{lastDate ? fmtContactDate(lastDate) : "—"}</p>
               </div>

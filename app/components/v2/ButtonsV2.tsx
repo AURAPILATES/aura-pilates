@@ -6,7 +6,7 @@ export function PrimaryButtonV2({ className = "", type = "button", ...props }: B
   return (
     <button
       type={type}
-      className={`px-4 py-2.5 text-[13.5px] font-semibold text-white bg-[#18181b] rounded-[10px] hover:bg-[#18181b]/85 transition-colors disabled:opacity-40 whitespace-nowrap ${className}`}
+      className={`px-3.5 py-2 text-[11.5px] font-semibold text-white bg-[#18181b] rounded-[10px] hover:bg-[#18181b]/85 transition-colors disabled:opacity-40 whitespace-nowrap ${className}`}
       {...props}
     />
   );

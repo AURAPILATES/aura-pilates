@@ -60,7 +60,7 @@ export default function ClientesTableV2({
         options={filterLabels.map((f) => ({ ...f, countTone: f.key === "error" ? "danger" as const : "warning" as const }))}
       />
 
-      <div className="mt-[18px]">
+      <div className="mt-[24px]">
         <div className={tableHeadClassV2} style={gridColsV2(COLS)}>
           <span className="flex items-center cursor-pointer select-none" onClick={() => onToggleSort("name")}>
             Cliente<SortArrowV2 active={sortKey === "name"} dir={sortDir} />

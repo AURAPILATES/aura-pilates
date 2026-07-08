@@ -774,8 +774,11 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
           categories={categories}
           contacts={contacts}
           pickFor={pickFor}
+          ivaRateFor={ivaRateFor}
+          retencionRateFor={retencionRateFor}
           onOpenPending={(row) => setOpenPendingKey(row.keys[0])}
           onOpenConfirmed={(row) => setOpenConfirmedId(row.expense.id)}
+          onConfirmRow={confirmRow}
           confirmedPage={confirmedPage}
           pageSize={PAGE_SIZE}
           onConfirmedPageChange={setConfirmedPage}
