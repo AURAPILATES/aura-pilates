@@ -335,6 +335,25 @@ export function CategoryPill({ category, categories, onChange, hideIcon = false 
   );
 }
 
+function OriginIcon({ method, size = 12 }: { method: string; size?: number }) {
+  if (method === "banco") {
+    return <img src="/Caixabank logo.png" alt="CaixaBank" width={size} height={size} className="shrink-0 object-contain" />;
+  }
+  if (method === "efectivo") {
+    return (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#B45309" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+        <rect x="2" y="6" width="20" height="14" rx="2"/><circle cx="12" cy="13" r="3"/><path d="M6 10h.01M18 10h.01"/>
+      </svg>
+    );
+  }
+  const color = SOCIO_INITIALS[method]?.color ?? "#64748B";
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+      <circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"/>
+    </svg>
+  );
+}
+
 function originLabel(method: string): string {
   if (method === "banco") return "CaixaBank";
   if (method === "efectivo") return "Efectivo Aura";
@@ -1190,19 +1209,7 @@ export default function TransaccionesList({
                         <div className="flex items-center gap-1.5 mt-1 overflow-x-auto scrollbar-none" onClick={(e) => e.stopPropagation()}>
                           <CategoryPill category={t.category} categories={categories} onChange={(cat) => handleCategoryChange(t.id, cat)} hideIcon />
                           <span className="shrink-0 inline-flex items-center gap-1 text-xs text-navy/35 whitespace-nowrap">
-                            {t.payment_method === "efectivo" ? (
-                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                                <rect x="2" y="6" width="20" height="14" rx="2"/><circle cx="12" cy="13" r="3"/><path d="M6 10h.01M18 10h.01"/>
-                              </svg>
-                            ) : t.payment_method === "banco" ? (
-                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                                <path d="M3 21h18M4 21V10l8-6 8 6v11M9 21v-6h6v6"/>
-                              </svg>
-                            ) : (
-                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                                <circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"/>
-                              </svg>
-                            )}
+                            <OriginIcon method={t.payment_method} />
                             {originLabel(t.payment_method)}
                           </span>
                           {recurringPeriod && (
@@ -1314,29 +1321,17 @@ export default function TransaccionesList({
                 )}
               </div>
 
-              {/* origen */}
-              <div className="w-[110px] shrink-0 flex items-center gap-1.5 text-navy/40">
-                {t.payment_method === "efectivo" ? (
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                    <rect x="2" y="6" width="20" height="14" rx="2"/><circle cx="12" cy="13" r="3"/><path d="M6 10h.01M18 10h.01"/>
-                  </svg>
-                ) : t.payment_method === "banco" ? (
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                    <path d="M3 21h18M4 21V10l8-6 8 6v11M9 21v-6h6v6"/>
-                  </svg>
-                ) : (
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                    <circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"/>
-                  </svg>
-                )}
-                <span className="text-xs leading-none whitespace-nowrap truncate">{originLabel(t.payment_method)}</span>
-              </div>
-
               {/* contacto */}
               <div className="w-[140px] shrink-0 overflow-hidden">
                 <span className={`text-xs truncate block ${t.contact ? "text-navy/55" : "text-navy/30"}`}>
                   {t.contact || "Sin asignar"}
                 </span>
+              </div>
+
+              {/* origen */}
+              <div className="w-[110px] shrink-0 flex items-center gap-1.5 text-navy/40">
+                <OriginIcon method={t.payment_method} />
+                <span className="text-xs leading-none whitespace-nowrap truncate">{originLabel(t.payment_method)}</span>
               </div>
 
               {/* categoría */}
@@ -1368,8 +1363,8 @@ export default function TransaccionesList({
               <Checkbox checked={allSelected} onChange={toggleAll} />
             </div>
             <SortableHeader label="Concepto" sortKey="concept" align="left" className="flex-1" currentKey={sortKey} dir={sortDir} onClick={toggleSort} />
-            <div className="w-[110px] shrink-0 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Origen</div>
             <div className="w-[140px] shrink-0 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Contacto</div>
+            <div className="w-[110px] shrink-0 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Origen</div>
             <div className="w-[170px] shrink-0 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Categoría</div>
             <SortableHeader label="Fecha" sortKey="date" align="right" className="w-[90px]" currentKey={sortKey} dir={sortDir} onClick={toggleSort} />
             <SortableHeader label="Importe / Saldo" sortKey="amount" align="right" className="w-[120px]" currentKey={sortKey} dir={sortDir} onClick={toggleSort} />
