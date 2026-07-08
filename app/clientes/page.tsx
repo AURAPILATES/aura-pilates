@@ -13,13 +13,13 @@ export default async function ClientesPage() {
   return (
     <div>
       <div className="sticky top-0 z-20 bg-app-bg/95 backdrop-blur-sm border-b border-navy/[0.06]">
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-5 h-[45px] flex items-center gap-3">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 h-[45px] flex items-center gap-3">
           <MobileNav />
           <h1 className="text-sm font-bold text-navy uppercase tracking-widest">Clientes</h1>
         </div>
       </div>
 
-      <div className="pt-8 px-5 pb-6 max-w-[1600px] mx-auto">
+      <div className="pt-8 px-6 pb-6 max-w-[1600px] mx-auto">
         <Suspense fallback={<ClientesSkeleton />}>
           <ClientesLoader curMonth={curMonth} />
         </Suspense>
