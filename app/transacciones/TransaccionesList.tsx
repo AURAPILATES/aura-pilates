@@ -858,8 +858,6 @@ export default function TransaccionesList({
           sortDir={sortDir}
           onToggleSort={toggleSort}
           byMonth={byMonth}
-          selected={selected}
-          onToggleOne={toggleOne}
           onRowClick={(id) => setDrawerTxnId(id)}
           onExportCsv={exportCSV}
           onAddCash={() => setShowAddCash(true)}

@@ -4,14 +4,14 @@ import DateFilter from "@/app/components/DateFilter";
 import SearchInputV2 from "@/app/components/v2/SearchInputV2";
 import TablePaginationV2 from "@/app/components/v2/TablePaginationV2";
 import { PrimaryButtonV2 } from "@/app/components/v2/ButtonsV2";
-import { tableHeadClassV2, tableRowClassV2, tableGroupClassV2, tableFootClassV2, gridColsV2 } from "@/app/components/v2/tableStylesV2";
+import { tableHeadClassV2, tableRowClassV2, tableFootClassV2, gridColsV2 } from "@/app/components/v2/tableStylesV2";
 import {
-  MoreOptionsMenu, Checkbox, OriginIcon, originLabel, CategoryPill, CategoryMultiFilter,
+  MoreOptionsMenu, OriginIcon, originLabel, CategoryPill, CategoryMultiFilter,
   fmtAmt, fmtDate, CAT_FALLBACK, MONTHS_ES, type SortKey,
 } from "./TransaccionesList";
 import { CatIcon } from "./catIcons";
 
-const COLS = "20px 1.9fr .95fr 1.1fr .7fr .95fr";
+const COLS = "2.1fr .95fr 1.1fr .7fr .95fr";
 
 type Props = {
   categories: Category[];
@@ -34,8 +34,6 @@ type Props = {
   sortDir: "asc" | "desc";
   onToggleSort: (k: SortKey) => void;
   byMonth: [string, Transaction[]][];
-  selected: Set<string>;
-  onToggleOne: (id: string) => void;
   onRowClick: (id: string) => void;
   onExportCsv: () => void;
   onAddCash: () => void;
@@ -63,7 +61,7 @@ export default function TransaccionesListV2({
   categories, uncategorizedCount, search, onSearchChange, catFilters, onCatFiltersChange,
   originFilter, onOriginFilterChange, onlyRecurring, onToggleOnlyRecurring,
   directionFilter, onDirectionFilterChange, totalIn, totalOut, neto, someSelected,
-  sortKey, sortDir, onToggleSort, byMonth, selected, onToggleOne, onRowClick,
+  sortKey, sortDir, onToggleSort, byMonth, onRowClick,
   onExportCsv, onAddCash, onPapelera, page, totalItems, pageSize, onPageChange, recurringPeriods,
   onCategoryChange,
 }: Props) {
@@ -142,7 +140,6 @@ export default function TransaccionesListV2({
       {/* Tabla suelta agrupada por mes */}
       <div className="mt-[24px]">
         <div className={tableHeadClassV2} style={gridColsV2(COLS)}>
-          <span />
           <span
             className="flex items-center cursor-pointer select-none"
             onClick={() => onToggleSort("concept")}
@@ -169,15 +166,14 @@ export default function TransaccionesListV2({
             const label = monthName.toUpperCase() + (parseInt(y) !== new Date().getFullYear() ? ` ${y}` : "");
             return (
               <div key={monthKey}>
-                <div className={tableGroupClassV2}>
-                  <span>{label}</span>
-                  <span className={monthNet < 0 ? "text-[#b53e0d]" : "text-[#16a34a]"}>
+                <div className="flex items-baseline justify-between px-3 py-2 bg-[#18181b]/[0.025] border-y border-[#ececef]">
+                  <span className="text-[12.5px] font-semibold text-[#71717a] uppercase tracking-wide">{label}</span>
+                  <span className={`text-[13px] font-semibold tabular-nums ${monthNet < 0 ? "text-[#b53e0d]" : "text-[#16a34a]"}`}>
                     {monthNet < 0 ? "−" : "+"}{fmtAmt(Math.abs(monthNet))}
                   </span>
                 </div>
                 {monthTxns.map((t) => {
                   const recurringPeriod = recurringPeriods[t.id];
-                  const isSelected = selected.has(t.id);
                   const primary = t.contact || t.concept || "—";
                   const secondary = t.contact && t.concept && t.concept !== t.contact ? t.concept : null;
                   const cat = t.category ? categories.find((c) => c.value === t.category) : undefined;
@@ -186,13 +182,10 @@ export default function TransaccionesListV2({
                   return (
                     <div
                       key={t.id}
-                      className={`${tableRowClassV2} cursor-pointer ${isSelected ? "bg-[#18181b]/[0.03]" : ""}`}
+                      className={`${tableRowClassV2} cursor-pointer`}
                       style={gridColsV2(COLS)}
                       onClick={() => onRowClick(t.id)}
                     >
-                      <span onClick={(e) => { e.stopPropagation(); onToggleOne(t.id); }}>
-                        <Checkbox checked={isSelected} onChange={() => onToggleOne(t.id)} />
-                      </span>
                       <div className="flex items-center gap-[10px] min-w-0">
                         <span className="w-[30px] h-[30px] shrink-0 rounded-[8px] flex items-center justify-center" style={{ backgroundColor: accent }}>
                           <CatIcon iconKey={iconKey} name={cat?.label ?? primary} color="#fff" size={14} />
