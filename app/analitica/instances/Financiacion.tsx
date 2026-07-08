@@ -73,7 +73,7 @@ export default function Financiacion({
             <button
               onClick={handleSave}
               disabled={saving}
-              className="text-xs text-white bg-primary px-3 py-1.5 rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors font-medium"
+              className="text-xs text-white bg-navy px-3 py-1.5 rounded-lg hover:bg-navy/85 disabled:opacity-50 transition-colors font-medium"
             >
               {saving ? "Guardando…" : "Guardar"}
             </button>

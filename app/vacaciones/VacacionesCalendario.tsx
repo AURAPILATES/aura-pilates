@@ -722,7 +722,7 @@ function PersonCard({
               </button>
               <button
                 onClick={() => setShowAddModal(true)}
-                className="flex items-center gap-1 text-xs text-white bg-primary px-2.5 py-1 rounded-lg hover:bg-primary/90 transition-colors"
+                className="flex items-center gap-1 text-xs text-white bg-navy px-2.5 py-1 rounded-lg hover:bg-navy/85 transition-colors"
               >
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
