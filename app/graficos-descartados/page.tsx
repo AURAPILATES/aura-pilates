@@ -22,7 +22,7 @@ export default async function GraficosDescartadosPage({
         </div>
       </div>
 
-      <div className="px-4 sm:px-6 pt-6 pb-16 max-w-[1600px] mx-auto">
+      <div className="px-4 sm:px-6 pt-8 pb-16 max-w-[1600px] mx-auto">
         <p className="text-sm text-navy/45 mb-6">
           Gráficos retirados de Horario · Análisis. Se mantienen aquí por si hace falta consultarlos.
         </p>

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Drawer from "@/app/components/Drawer";
 import Button from "@/app/components/Button";
 import { PrimaryButtonV2 } from "@/app/components/v2/ButtonsV2";
+import FilterPillGroupV2 from "@/app/components/v2/FilterPillGroupV2";
 import Select from "@/app/components/Select";
 import type { BusinessEvent, EventCategoria } from "@/lib/businessEvents";
 import { createBusinessEvent, updateBusinessEvent, deleteBusinessEvent } from "./actions";
@@ -209,31 +210,15 @@ export default function HistorialTimeline({ events: initial }: { events: Busines
     <div className="space-y-6">
       {/* Header row */}
       <div className="flex items-start sm:items-center justify-between gap-3 flex-wrap">
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => setFilterCat("todas")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-              filterCat === "todas"
-                ? "bg-navy text-white border-navy"
-                : "bg-white text-navy/55 border-navy/15 hover:border-navy/30"
-            }`}
-          >
-            Todas
-          </button>
-          {CATEGORIAS.map((c) => (
-            <button
-              key={c.value}
-              onClick={() => setFilterCat(c.value)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-                filterCat === c.value
-                  ? `${c.bg} ${c.color} border-current`
-                  : "bg-white text-navy/55 border-navy/15 hover:border-navy/30"
-              }`}
-            >
-              {c.label}
-            </button>
-          ))}
-        </div>
+        <FilterPillGroupV2
+          className="flex-1 min-w-0"
+          active={filterCat}
+          onChange={setFilterCat}
+          options={[
+            { key: "todas" as const, label: "Todas" },
+            ...CATEGORIAS.map((c) => ({ key: c.value, label: c.label })),
+          ]}
+        />
 
         <PrimaryButtonV2
           onClick={() => { setShowForm(true); setEditing(null); setFormError(null); }}

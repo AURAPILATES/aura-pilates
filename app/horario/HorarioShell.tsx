@@ -142,7 +142,7 @@ export default function HorarioShell({
       {/* ══════════════════════════════════════════════════════════════════════
           CONTENT
       ══════════════════════════════════════════════════════════════════════ */}
-      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 pt-6 pb-16">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 pt-8 pb-16">
 
         {/* Week nav / view toggle (desktop) */}
         <div className="hidden sm:flex items-center justify-start gap-3 mb-6">

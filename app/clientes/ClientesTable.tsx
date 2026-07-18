@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect, forwardRef, useImperativeHandle } from "react";
 import CustomerDrawer from "./CustomerDrawer";
 import ClientesTableV2 from "./ClientesTableV2";
+import { productAbbr } from "./ClientesMatrizCompras";
 import type { StripeCustomer } from "@/lib/stripeCustomers";
 import type { StripePayment } from "@/lib/stripePayments";
 
@@ -11,7 +12,7 @@ export type ClientesTableHandle = { openCustomer: (id: string) => void };
 
 export type SortKey = "totalSpent" | "lastPaymentDate" | "name";
 export type SortDir = "asc" | "desc";
-export type Filter  = "all" | "recurring" | "occasional" | "discount" | "error";
+export type Filter  = "all" | "recurring" | "occasional" | "discount" | "error" | "delayed";
 const PAGE_SIZE = 25;
 
 export function fmtDate(d: string) {
@@ -141,6 +142,11 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
 
   const discountCount = customers.filter(hasDiscount).length;
   const errorCount    = customers.filter((c) => c.hasPaymentError).length;
+  const isDelayed = (c: CustomerRow) => {
+    const { status } = clientStatus(c);
+    return status === "sinpagar" || status === "caducado";
+  };
+  const delayedCount = customers.filter(isDelayed).length;
 
   const activeMonthIds = useMemo(() => {
     if (!activeMonth) return null;
@@ -158,10 +164,17 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
         if (filter === "occasional"  &&  c.isRecurring)   return false;
         if (filter === "discount"    && !hasDiscount(c))   return false;
         if (filter === "error"       && !c.hasPaymentError)  return false;
+        if (filter === "delayed"     && !isDelayed(c))       return false;
         if (!q) return true;
+        const dSub  = c.daysSinceLastSub  ?? Infinity;
+        const dPack = c.daysSinceLastPack ?? Infinity;
+        const planType    = dSub <= dPack && dSub < Infinity ? "sub" : dPack < Infinity ? "pack" : "session";
+        const planProduct = planType === "sub" ? c.lastSubProduct : planType === "pack" ? c.lastPackProduct : null;
+        const planText    = planProduct ? `${planProduct} ${productAbbr(planProduct)}`.toLowerCase() : "por sesión";
         return (
           c.name?.toLowerCase().includes(q) ||
-          c.email?.toLowerCase().includes(q)
+          c.email?.toLowerCase().includes(q) ||
+          planText.includes(q)
         );
       })
       .sort((a, b) => {
@@ -211,6 +224,7 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
     { key: "all",        label: "Todos" },
     { key: "recurring",  label: "Recurrentes" },
     { key: "occasional", label: "Ocasionales" },
+    { key: "delayed",    label: "Retraso en renovar", count: delayedCount },
     { key: "discount",   label: "Descuento", count: discountCount },
     { key: "error",      label: "Error de pago", count: errorCount },
   ];

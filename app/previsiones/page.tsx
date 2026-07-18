@@ -15,7 +15,7 @@ export default function PrevisionesPage() {
         </div>
       </div>
 
-      <div className="px-4 sm:px-6 pt-6 pb-16 max-w-[1600px] mx-auto">
+      <div className="px-4 sm:px-6 pt-8 pb-16 max-w-[1600px] mx-auto">
         <Suspense fallback={<PrevisionesSkeleton />}>
           <PrevisionesLoader />
         </Suspense>

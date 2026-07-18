@@ -77,7 +77,7 @@ export default async function TransaccionesPage(props: {
       </div>
 
       {/* ── Content ── */}
-      <div className="px-2 sm:px-6 pt-7 sm:pt-10 pb-16 max-w-[1600px] mx-auto">
+      <div className="px-2 sm:px-6 pt-8 pb-16 max-w-[1600px] mx-auto">
         <Suspense fallback={null}>
           <TransaccionesTabs
             transactions={transactions}

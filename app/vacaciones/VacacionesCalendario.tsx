@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import Drawer from "@/app/components/Drawer";
 import Button from "@/app/components/Button";
+import { PrimaryButtonV2 } from "@/app/components/v2/ButtonsV2";
+import FilterPillGroupV2 from "@/app/components/v2/FilterPillGroupV2";
 import { ToggleGroup } from "@/components/charts";
 import { useRouter } from "next/navigation";
 import {
@@ -1297,41 +1299,31 @@ export default function VacacionesCalendario({
       )}
 
       {/* Filtro + Nuevo instructor */}
-      <div className="flex flex-wrap items-center gap-3">
-        <span className="text-xs text-navy/55">Ver:</span>
-        <div className="flex items-center border border-navy/[0.12] rounded-lg bg-white p-0.5 gap-0.5">
-          {[{ key: "todas", label: "Todas" }, ...personas.map((p) => ({ key: p.id, label: p.nombre }))].map(
-            ({ key, label }) => (
-              <button
-                key={key}
-                onClick={() => setFiltro(key)}
-                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                  filtro === key ? "bg-navy text-white" : "text-navy/50 hover:text-navy"
-                }`}
-              >
-                {label}
-              </button>
-            )
-          )}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-2.5">
+          <span className="text-xs text-navy/55 shrink-0">Ver:</span>
+          <FilterPillGroupV2
+            active={filtro}
+            onChange={setFiltro}
+            options={[{ key: "todas", label: "Todas" }, ...personas.map((p) => ({ key: p.id, label: p.nombre }))]}
+          />
         </div>
-        <button
-          onClick={() => setShowNuevoModal(true)}
-          className="flex items-center gap-1.5 text-xs text-primary border border-primary/30 hover:bg-primary/5 px-3 py-1.5 rounded-lg transition-colors"
-        >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-          </svg>
-          Nuevo instructor
-        </button>
-        <button
-          onClick={openArchivados}
-          className="flex items-center gap-1.5 text-xs text-navy/45 hover:text-navy/70 border border-navy/[0.10] hover:bg-navy/[0.03] px-3 py-1.5 rounded-lg transition-colors"
-        >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/>
-          </svg>
-          Archivados
-        </button>
+        <div className="flex items-center gap-2.5">
+          <button
+            type="button"
+            onClick={openArchivados}
+            className="flex items-center gap-[7px] border border-[#e6e6ea] rounded-[10px] px-[13px] py-2.5 text-[13.5px] font-medium text-[#3f3f46] bg-white hover:bg-[#18181b]/[0.02] transition-colors whitespace-nowrap"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/>
+            </svg>
+            Archivados
+          </button>
+          <PrimaryButtonV2 onClick={() => setShowNuevoModal(true)} className="flex items-center gap-[7px]">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
+            Nuevo instructor
+          </PrimaryButtonV2>
+        </div>
       </div>
 
       {/* Sugerencias */}
