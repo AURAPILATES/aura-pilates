@@ -61,27 +61,29 @@ export default function ClientesTableV2({
       />
 
       <div className="mt-[24px]">
-        <div className={tableHeadClassV2} style={gridColsV2(COLS)}>
-          <span
-            className={`flex items-center cursor-pointer select-none ${sortKey === "name" ? "text-[#18181b]" : ""}`}
-            onClick={() => onToggleSort("name")}
-          >
-            Cliente<SortArrowV2 active={sortKey === "name"} dir={sortDir} />
-          </span>
-          <span>Plan</span>
-          <span
-            className={`flex items-center cursor-pointer select-none ${sortKey === "totalSpent" ? "text-[#18181b]" : ""}`}
-            onClick={() => onToggleSort("totalSpent")}
-          >
-            Total<SortArrowV2 active={sortKey === "totalSpent"} dir={sortDir} />
-          </span>
-          <span
-            className={`flex items-center cursor-pointer select-none ${sortKey === "lastPaymentDate" ? "text-[#18181b]" : ""}`}
-            onClick={() => onToggleSort("lastPaymentDate")}
-          >
-            Último pago<SortArrowV2 active={sortKey === "lastPaymentDate"} dir={sortDir} />
-          </span>
-          <span>Estado</span>
+        <div className="hidden sm:block">
+          <div className={tableHeadClassV2} style={gridColsV2(COLS)}>
+            <span
+              className={`flex items-center cursor-pointer select-none ${sortKey === "name" ? "text-[#18181b]" : ""}`}
+              onClick={() => onToggleSort("name")}
+            >
+              Cliente<SortArrowV2 active={sortKey === "name"} dir={sortDir} />
+            </span>
+            <span>Plan</span>
+            <span
+              className={`flex items-center cursor-pointer select-none ${sortKey === "totalSpent" ? "text-[#18181b]" : ""}`}
+              onClick={() => onToggleSort("totalSpent")}
+            >
+              Total<SortArrowV2 active={sortKey === "totalSpent"} dir={sortDir} />
+            </span>
+            <span
+              className={`flex items-center cursor-pointer select-none ${sortKey === "lastPaymentDate" ? "text-[#18181b]" : ""}`}
+              onClick={() => onToggleSort("lastPaymentDate")}
+            >
+              Último pago<SortArrowV2 active={sortKey === "lastPaymentDate"} dir={sortDir} />
+            </span>
+            <span>Estado</span>
+          </div>
         </div>
 
         {rows.length === 0 ? (
@@ -104,34 +106,62 @@ export default function ClientesTableV2({
                 ? { color: "#d4a017", label: `Vence en ${days}d` }
                 : { color: "#16a34a", label: "Al día" };
             return (
-              <div
-                key={c.id}
-                onClick={() => onRowClick(c)}
-                className={`${tableRowClassV2} cursor-pointer`}
-                style={gridColsV2(COLS)}
-              >
-                <div className="flex items-center gap-[11px] min-w-0">
-                  <Avatar seed={c.id} initials={initials(c.name, c.email)} size={30} />
-                  <div className="min-w-0">
-                    <p className="text-[14px] font-semibold text-[#18181b] truncate">{c.name ?? "—"}</p>
-                    {c.email && <p className="text-[12px] text-[#a1a1aa] truncate">{c.email}</p>}
+              <div key={c.id}>
+                {/* Fila escritorio */}
+                <div className="hidden sm:block">
+                  <div
+                    onClick={() => onRowClick(c)}
+                    className={`${tableRowClassV2} cursor-pointer`}
+                    style={gridColsV2(COLS)}
+                  >
+                    <div className="flex items-center gap-[11px] min-w-0">
+                      <Avatar seed={c.id} initials={initials(c.name, c.email)} size={30} />
+                      <div className="min-w-0">
+                        <p className="text-[14px] font-semibold text-[#18181b] truncate">{c.name ?? "—"}</p>
+                        {c.email && <p className="text-[12px] text-[#a1a1aa] truncate">{c.email}</p>}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="inline-block px-[11px] py-1 rounded-[8px] bg-[#f3effc] text-[#7c3aed] text-[12.5px] font-medium whitespace-nowrap">
+                        {planLabel}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="text-[14px] font-semibold text-[#18181b]">{fmt(c.totalSpent)}</p>
+                      <p className="text-[11px] text-[#a1a1aa]">{c.paymentCount} pagos</p>
+                    </div>
+                    <div className="text-[13px] text-[#71717a]">{c.lastPaymentDate ? fmtDate(c.lastPaymentDate) : "—"}</div>
+                    <div>
+                      <span className="inline-flex items-center gap-[7px] border border-[#e6e6ea] rounded-full px-[11px] py-[3px] text-[12.5px] font-medium text-[#3f3f46] whitespace-nowrap">
+                        <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: statusCfg.color }} />
+                        {statusCfg.label}
+                      </span>
+                    </div>
                   </div>
                 </div>
-                <div>
-                  <span className="inline-block px-[11px] py-1 rounded-[8px] bg-[#f3effc] text-[#7c3aed] text-[12.5px] font-medium whitespace-nowrap">
-                    {planLabel}
-                  </span>
-                </div>
-                <div>
-                  <p className="text-[14px] font-semibold text-[#18181b]">{fmt(c.totalSpent)}</p>
-                  <p className="text-[11px] text-[#a1a1aa]">{c.paymentCount} pagos</p>
-                </div>
-                <div className="text-[13px] text-[#71717a]">{c.lastPaymentDate ? fmtDate(c.lastPaymentDate) : "—"}</div>
-                <div>
-                  <span className="inline-flex items-center gap-[7px] border border-[#e6e6ea] rounded-full px-[11px] py-[3px] text-[12.5px] font-medium text-[#3f3f46] whitespace-nowrap">
-                    <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: statusCfg.color }} />
-                    {statusCfg.label}
-                  </span>
+
+                {/* Fila móvil */}
+                <div
+                  onClick={() => onRowClick(c)}
+                  className="sm:hidden flex items-center gap-[10px] py-[10px] border-t border-[#f4f4f4] cursor-pointer active:bg-[#fafafb]"
+                >
+                  <Avatar seed={c.id} initials={initials(c.name, c.email)} size={32} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[14px] font-semibold text-[#18181b] truncate">{c.name ?? "—"}</p>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className="inline-block px-[7px] py-[1px] rounded-[6px] bg-[#f3effc] text-[#7c3aed] text-[11px] font-medium whitespace-nowrap">
+                        {planLabel}
+                      </span>
+                      <span className="inline-flex items-center gap-1 text-[11px] text-[#71717a] whitespace-nowrap">
+                        <span className="w-[5px] h-[5px] rounded-full shrink-0" style={{ background: statusCfg.color }} />
+                        {statusCfg.label}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-[14px] font-semibold text-[#18181b]">{fmt(c.totalSpent)}</p>
+                    <p className="text-[11px] text-[#a1a1aa]">{c.paymentCount} pagos</p>
+                  </div>
                 </div>
               </div>
             );

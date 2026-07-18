@@ -4,8 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronRight } from "react-feather";
 import Drawer from "@/app/components/Drawer";
-import TablePagination from "@/app/components/TablePagination";
-import TableBox from "@/app/components/TableBox";
 import Button from "@/app/components/Button";
 import Select from "@/app/components/Select";
 import type { Category } from "@/lib/categories";
@@ -21,7 +19,6 @@ import {
   updateRecurringExpense,
   relinkRecurringExpenseContact,
   setRecurringExpenseStatus,
-  deleteRecurringExpense,
   type ConfirmRecurringRow,
 } from "./recurringActions";
 
@@ -229,36 +226,6 @@ function ContactPickerDrawer({ contacts, title, onPick, onClose }: {
   );
 }
 
-function PendingRow({ row, categories, contacts, pick, onOpen }: {
-  row: PendingSeriesRow;
-  categories: Category[];
-  contacts: Contact[];
-  pick: ContactPick;
-  onOpen: () => void;
-}) {
-  const catLabel = row.category ? categories.find((c) => c.value === row.category) : null;
-  const label = pickToLabel(pick, contacts);
-
-  return (
-    <button onClick={onOpen} className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-navy/[0.02] transition-colors text-left">
-      <ContactAvatar label={label || row.label} resolved={!!pick} />
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-navy truncate">{row.label}</p>
-        <p className="text-xs text-navy/45 truncate mt-0.5">
-          {row.period} · {row.occurrences} pagos · último {fmtDate(row.lastDate)} · {fmtEUR(Math.abs(row.amount))}
-        </p>
-      </div>
-      {catLabel && <CategoryBadge category={row.category} categories={categories} />}
-      {(!pick || label !== row.label) && (
-        <span className={`text-xs font-medium px-2.5 py-1 rounded-full whitespace-nowrap shrink-0 ${pick ? "bg-primary/10 text-primary" : "bg-navy/[0.05] text-navy/40"}`}>
-          {pick ? label : "Sin vincular"}
-        </span>
-      )}
-      <ChevronRight size={16} className="text-navy/25 shrink-0" />
-    </button>
-  );
-}
-
 function ConfirmPendingDrawer({ row, period, pick, end, name, ivaRate, retencionRate, contacts, onClose, onPeriodChange, onEndChange, onNameChange, onIvaRateChange, onRetencionRateChange, onOpenContactPicker, onConfirm, onIgnore }: {
   row: PendingSeriesRow;
   period: string;
@@ -387,52 +354,6 @@ function ConfirmPendingDrawer({ row, period, pick, end, name, ivaRate, retencion
         <EndOfRecurrenceFields value={end} onChange={onEndChange} />
       </div>
     </Drawer>
-  );
-}
-
-/** Fila de una sola línea (estilo Linear, ver PrevisionGastos.tsx): sin tabla ni fecha de
- * vencimiento, solo lo estable — contacto, categoría, periodicidad, fiscalidad e importe. */
-function ConfirmedRowHeader() {
-  return (
-    <div className="hidden sm:flex items-center gap-2.5 py-3 px-4 bg-navy/[0.02] border-b border-navy/[0.06]">
-      <span className="text-[11px] font-semibold text-navy/45 uppercase tracking-wider flex-1 min-w-0">Concepto</span>
-      <span className="shrink-0 text-[11px] font-semibold text-navy/45 uppercase tracking-wider max-w-[140px] w-full">Categoría</span>
-      <span className="hidden md:block shrink-0 text-[11px] font-semibold text-navy/45 uppercase tracking-wider w-16 text-right">Periodo</span>
-      <span className="hidden lg:block shrink-0 text-[11px] font-semibold text-navy/45 uppercase tracking-wider w-28 text-right">IVA / Ret</span>
-      <span className="shrink-0 text-[11px] font-semibold text-navy/45 uppercase tracking-wider w-20 text-right">Importe</span>
-    </div>
-  );
-}
-
-function ConfirmedRow({ row, categories, contacts, onOpen }: { row: ConfirmedExpenseRow; categories: Category[]; contacts: Contact[]; onOpen: () => void }) {
-  const e = row.expense;
-  const catLabel = e.category ? categories.find((c) => c.value === e.category) : null;
-  const contact = e.contact_id != null ? contacts.find((c) => c.id === e.contact_id) : undefined;
-  const showContact = contact && contact.label.trim().toLowerCase() !== e.label.trim().toLowerCase();
-
-  return (
-    <button
-      type="button"
-      onClick={onOpen}
-      className="w-full flex items-center gap-2.5 py-2.5 px-4 hover:bg-navy/[0.02] transition-colors text-left"
-    >
-      <span className="text-[13px] font-medium text-navy truncate flex-1 min-w-0">{e.label}</span>
-      {showContact && (
-        <span className="hidden sm:block shrink-0 text-[11px] text-navy/40 truncate max-w-[120px]">{contact.label}</span>
-      )}
-      {catLabel && (
-        <span className="hidden sm:block shrink-0 max-w-[140px] w-full truncate">
-          <CategoryBadge category={e.category} categories={categories} />
-        </span>
-      )}
-      <span className="hidden md:block shrink-0 text-[11px] text-navy/40 capitalize w-16 text-right">{e.period}</span>
-      <span className="hidden lg:block shrink-0 text-[11px] text-navy/40 w-28 text-right">
-        IVA {e.iva_rate}% / Ret {e.retencion_rate}%
-      </span>
-      <span className="text-[13px] font-semibold text-navy tabular-nums shrink-0 w-20 text-right">
-        {fmtEUR(Math.abs(e.amount))}
-      </span>
-    </button>
   );
 }
 
@@ -629,32 +550,6 @@ function RecurringExpenseDrawer({ row, categories, contacts, onClose, onOpenCont
   );
 }
 
-function ArchivedRow({ row }: { row: RecurringExpense }) {
-  const router = useRouter();
-  async function reactivate() {
-    await setRecurringExpenseStatus(row.id, "confirmed");
-    router.refresh();
-  }
-  async function remove() {
-    await deleteRecurringExpense(row.id);
-    router.refresh();
-  }
-  return (
-    <div className="flex items-center justify-between gap-3 px-4 py-2.5">
-      <div className="min-w-0">
-        <p className="text-sm font-medium text-navy/60 truncate">{row.label}</p>
-        <p className="text-xs text-navy/40 truncate">
-          {row.status === "ignored" ? "Ignorado" : "Dado de baja"} · {fmtEUR(Math.abs(row.amount))} · {row.period}
-        </p>
-      </div>
-      <div className="flex items-center gap-3 shrink-0">
-        <button onClick={reactivate} className="text-xs text-navy/50 hover:text-navy transition-colors">Reactivar</button>
-        <button onClick={remove} className="text-xs text-navy/40 hover:text-danger transition-colors">Eliminar</button>
-      </div>
-    </div>
-  );
-}
-
 export default function GastosRecurrentesList({ pending, confirmed, archived, categories, contacts }: Props) {
   const router = useRouter();
   const [periods, setPeriods] = useState<Record<string, string>>({});
@@ -764,80 +659,23 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
 
   return (
     <div className="space-y-4">
-      <div className="hidden sm:block">
-        <RecurrentesListV2
-          pending={pending}
-          confirmed={confirmed}
-          confirmedPageRows={confirmedPageRows}
-          categories={categories}
-          contacts={contacts}
-          pickFor={pickFor}
-          ivaRateFor={ivaRateFor}
-          retencionRateFor={retencionRateFor}
-          onOpenPending={(row) => setOpenPendingKey(row.keys[0])}
-          onOpenConfirmed={(row) => setOpenConfirmedId(row.expense.id)}
-          onConfirmRow={confirmRow}
-          confirmedPage={confirmedPage}
-          pageSize={PAGE_SIZE}
-          onConfirmedPageChange={setConfirmedPage}
-        />
-      </div>
-      {/* En móvil siempre se ve la lista clásica (responsive) */}
-      <div className="sm:hidden space-y-4">
-      {pending.length > 0 && (
-        <TableBox
-          title="Gastos detectados"
-          subtitle="Vincúlalos a un contacto para aplicar sus impuestos automáticamente."
-        >
-          <div className="divide-y divide-navy/[0.05]">
-            {pending.map((row) => (
-              <PendingRow
-                key={row.keys[0]}
-                row={row}
-                categories={categories}
-                contacts={contacts}
-                pick={pickFor(row)}
-                onOpen={() => setOpenPendingKey(row.keys[0])}
-              />
-            ))}
-          </div>
-        </TableBox>
-      )}
-
-      <TableBox
-        title="Gastos recurrentes activos"
-        subtitle="Próximo pago previsto, IVA deducible y retención aplicable."
-      >
-        {confirmed.length === 0 ? (
-          <p className="text-sm text-navy/40 px-4 py-6">Sin gastos recurrentes confirmados todavía.</p>
-        ) : (
-          <>
-            <ConfirmedRowHeader />
-            <div className="divide-y divide-navy/[0.05]">
-              {confirmedPageRows.map((row) => (
-                <ConfirmedRow
-                  key={row.expense.id}
-                  row={row}
-                  categories={categories}
-                  contacts={contacts}
-                  onOpen={() => setOpenConfirmedId(row.expense.id)}
-                />
-              ))}
-            </div>
-            <TablePagination page={confirmedPage} totalItems={confirmed.length} pageSize={PAGE_SIZE} onPageChange={setConfirmedPage} />
-          </>
-        )}
-      </TableBox>
-      </div>
-
-      {archived.length > 0 && (
-        <TableBox title="Ignorados / dados de baja" subtitle="No se proyectan en la previsión de cashflow">
-          <div className="divide-y divide-navy/[0.05]">
-            {archived.map((row) => <ArchivedRow key={row.id} row={row} />)}
-          </div>
-        </TableBox>
-      )}
-
+      <RecurrentesListV2
+        pending={pending}
+        confirmed={confirmed}
+        confirmedPageRows={confirmedPageRows}
+        archived={archived}
+        categories={categories}
+        contacts={contacts}
+        pickFor={pickFor}
+        ivaRateFor={ivaRateFor}
+        retencionRateFor={retencionRateFor}
+        onOpenPending={(row) => setOpenPendingKey(row.keys[0])}
+        onOpenConfirmed={(row) => setOpenConfirmedId(row.expense.id)}
+        onConfirmRow={confirmRow}
+        confirmedPage={confirmedPage}
+        pageSize={PAGE_SIZE}
+        onConfirmedPageChange={setConfirmedPage}
+      />
       {openPendingRow && (
         <ConfirmPendingDrawer
           row={openPendingRow}

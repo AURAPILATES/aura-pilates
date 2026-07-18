@@ -4,12 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import type { StripePayment } from "@/lib/stripePayments";
 import type { CustomerRow } from "./ClientesTable";
 import CustomerDrawer from "./CustomerDrawer";
-import SearchInput from "@/app/components/SearchInput";
-import TablePagination from "@/app/components/TablePagination";
-import TableBox from "@/app/components/TableBox";
-import TableToolbar from "@/app/components/TableToolbar";
-import Select from "@/app/components/Select";
-import { fmt } from "@/lib/analytics";
 import ClientesMatrizComprasV2 from "./ClientesMatrizComprasV2";
 
 export const PRODUCT_FILTERS = ["Bàsic", "Plus", "Pro", "Pack 4 clases", "Pack 8 clases", "Pack Benvinguda", "Clase suelta"];
@@ -204,220 +198,36 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
     }
   }
 
-  function sortArrow(key: SortKey) {
-    return sortKey === key ? (sortDir === "asc" ? " ▲" : " ▼") : "";
-  }
-
-  // Ancho fijo real (no el 100% del contenedor): con table-layout:fixed y w-full, el
-  // navegador reparte cualquier espacio sobrante entre las columnas, "hinchándolas" en
-  // pantallas anchas. Calculamos aquí la suma exacta y se la damos a la tabla y a su
-  // envoltorio, para que ninguna columna se estire más allá de su ancho diseñado.
-  const NAME_COL_W = 130;
-  const FIRST_COL_W = 110;
-  const MONTH_COL_W = 76;
-  const TOTAL_COL_W = 110;
-  const tableWidthPx = NAME_COL_W + FIRST_COL_W + months.length * MONTH_COL_W + TOTAL_COL_W;
-
   return (
     <div className="flex flex-col items-center">
-      <div className="hidden sm:block w-full">
-        <ClientesMatrizComprasV2
-            search={search}
-            onSearchChange={setSearch}
-            productFilter={productFilter}
-            onProductFilterChange={setProductFilter}
-            firstPurchaseFilter={firstPurchaseFilter}
-            onFirstPurchaseFilterChange={setFirstPurchaseFilter}
-            purchaseCountFilter={purchaseCountFilter}
-            onPurchaseCountFilterChange={setPurchaseCountFilter}
-            onlyInactive={onlyInactive}
-            onToggleOnlyInactive={() => setOnlyInactive((v) => !v)}
-            onlyUpsell={onlyUpsell}
-            onToggleOnlyUpsell={() => setOnlyUpsell((v) => !v)}
-            lastMonth={lastMonth}
-            months={months}
-            rows={pageRows}
-            sortKey={sortKey}
-            sortDir={sortDir}
-            onToggleSort={toggleSort}
-            monthTotals={monthTotals}
-            grandTotal={grandTotal}
-            totalCount={visibleMatrix.length}
-            page={safePage}
-            pageSize={PAGE_SIZE}
-            onPageChange={setPage}
-            onRowClick={setSelected}
-          onExportCsv={downloadCsv}
-        />
-      </div>
-      {/* En móvil siempre se ve la tabla clásica (scroll horizontal) */}
-      <div className="sm:hidden w-full flex flex-col items-center">
-      <TableToolbar>
-        <SearchInput value={search} onChange={setSearch} placeholder="Buscar cliente…" className="w-44" />
-          <Select value={productFilter} onChange={(e) => setProductFilter(e.target.value)} className="w-auto">
-            <option value="">Todos los productos</option>
-            {PRODUCT_FILTERS.map((p) => (
-              <option key={p} value={p}>{p}</option>
-            ))}
-          </Select>
-          <Select value={firstPurchaseFilter} onChange={(e) => setFirstPurchaseFilter(e.target.value)} className="w-auto">
-            <option value="">Primera compra: todas</option>
-            {months.map((m) => (
-              <option key={m} value={m}>{monthLabel(m)}</option>
-            ))}
-          </Select>
-          <Select value={purchaseCountFilter} onChange={(e) => setPurchaseCountFilter(e.target.value)} className="w-auto">
-            <option value="">Nº de compras: todas</option>
-            {PURCHASE_COUNT_FILTERS.map((n) => (
-              <option key={n} value={n}>{n} compra{n === "1" ? "" : "s"}</option>
-            ))}
-          </Select>
-          <button
-            type="button"
-            onClick={() => setOnlyInactive((v) => !v)}
-            className={`text-sm px-3 py-2 rounded-xl border whitespace-nowrap transition-colors ${
-              onlyInactive
-                ? "border-primary/40 bg-primary/5 text-primary font-medium"
-                : "border-navy/[0.12] bg-white text-navy/60 hover:bg-navy/[0.02]"
-            }`}
-          >
-            Sin compra en {lastMonth ? monthLabel(lastMonth) : "el último mes"}
-          </button>
-          <button
-            type="button"
-            onClick={() => setOnlyUpsell((v) => !v)}
-            title="Clientes en Bàsic desde hace 3 meses o más que nunca han subido a Plus o Pro"
-            className={`text-sm px-3 py-2 rounded-xl border whitespace-nowrap transition-colors ${
-              onlyUpsell
-                ? "border-primary/40 bg-primary/5 text-primary font-medium"
-                : "border-navy/[0.12] bg-white text-navy/60 hover:bg-navy/[0.02]"
-            }`}
-          >
-            Candidatos a upsell
-          </button>
-          <button
-            type="button"
-            onClick={downloadCsv}
-            title="Exportar vista actual a CSV"
-            className="shrink-0 flex items-center justify-center w-9 h-9 text-navy/50 hover:text-navy border border-navy/[0.12] rounded-xl bg-white hover:bg-navy/[0.02] transition-colors"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
-          </button>
-      </TableToolbar>
-      <TableBox className="mx-auto" style={{ width: tableWidthPx, maxWidth: "100%" }}>
-      <div className="overflow-x-auto max-w-full" style={{ width: tableWidthPx }}>
-        <table className="text-xs" style={{ tableLayout: "fixed", borderCollapse: "separate", borderSpacing: 0, width: tableWidthPx }}>
-          <colgroup>
-            <col style={{ width: NAME_COL_W }} />
-            <col style={{ width: FIRST_COL_W }} />
-            {months.map((m) => (
-              <col key={m} style={{ width: MONTH_COL_W }} />
-            ))}
-            <col style={{ width: TOTAL_COL_W }} />
-          </colgroup>
-          <thead>
-            <tr className="bg-navy/[0.02] border-b border-navy/[0.06]">
-              <th
-                onClick={() => toggleSort("name")}
-                className="sticky left-0 bg-[#fafaf9] text-left py-3 pr-3 text-[11px] font-semibold text-navy/45 uppercase tracking-wider whitespace-nowrap z-10 min-w-[130px] cursor-pointer select-none hover:text-navy/60"
-              >
-                Cliente{sortArrow("name")}
-              </th>
-              <th
-                onClick={() => toggleSort("first")}
-                className="sticky left-[130px] bg-[#fafaf9] text-center py-3 px-1 text-[10px] leading-tight font-semibold text-navy/45 uppercase tracking-wide z-10 min-w-[110px] cursor-pointer select-none hover:text-navy/60"
-              >
-                Primera<br />compra{sortArrow("first")}
-              </th>
-              {months.map((m) => (
-                <th key={m} className="text-center py-3 px-1 text-[11px] font-semibold text-navy/45 uppercase tracking-wider whitespace-nowrap min-w-[76px]">
-                  {monthLabel(m)}
-                </th>
-              ))}
-              <th
-                onClick={() => toggleSort("total")}
-                className="sticky right-0 bg-[#fafaf9] text-right py-3 pr-4 text-[11px] font-semibold text-navy/45 uppercase tracking-wider whitespace-nowrap z-10 cursor-pointer select-none hover:text-navy/60"
-              >
-                Total{sortArrow("total")}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {visibleMatrix.length === 0 && (
-              <tr>
-                <td colSpan={months.length + 3} className="py-6 text-center text-navy/40">
-                  Sin resultados
-                </td>
-              </tr>
-            )}
-            {pageRows.map(({ customer, byMonth, totalPaid, firstPurchase }) => {
-              return (
-                <tr
-                  key={customer.id}
-                  onClick={() => setSelected(customer)}
-                  className="border-b border-navy/[0.04] last:border-0 hover:bg-navy/[0.02] transition-colors cursor-pointer"
-                >
-                  <td className="sticky left-0 bg-white py-2 pr-3 font-medium text-navy whitespace-nowrap z-10 truncate" title={customer.name ?? customer.email ?? undefined}>
-                    {customer.name ?? customer.email ?? "—"}
-                  </td>
-                  <td className="sticky left-[130px] bg-white py-2 px-1 text-center text-navy/60 whitespace-nowrap z-10">
-                    {firstPurchase ? monthLabel(firstPurchase.slice(0, 7)) : "—"}
-                  </td>
-                  {months.map((m) => {
-                    const purchases = byMonth[m];
-                    if (!purchases || purchases.length === 0) {
-                      return <td key={m} className="py-1.5 px-1 text-center" />;
-                    }
-                    const products = [...new Map(purchases.map((p) => [p.product, p])).keys()];
-                    const total = purchases.reduce((s, p) => s + p.amount, 0);
-                    const colorCls = productColor(products[0]);
-                    return (
-                      <td key={m} className="py-1.5 px-1 text-center">
-                        <div className={`rounded-lg px-1.5 py-1 flex flex-col items-center gap-0.5 ${colorCls} min-w-[68px]`}>
-                          {products.map((prod) => (
-                            <span key={prod} className="text-[10px] font-semibold leading-tight">
-                              {productAbbr(prod)}
-                            </span>
-                          ))}
-                          <span className="text-[9px] opacity-60 leading-tight font-medium">
-                            {fmt(total)}
-                          </span>
-                        </div>
-                      </td>
-                    );
-                  })}
-                  <td className="sticky right-0 bg-white py-2 pr-4 text-right whitespace-nowrap z-10">
-                    <span className="text-[11px] font-semibold text-navy tabular-nums">{fmt(totalPaid)}</span>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-          {visibleMatrix.length > 0 && (
-            <tfoot>
-              <tr className="border-t border-navy/[0.08]">
-                <td className="sticky left-0 bg-white py-2 pr-3 font-semibold text-navy/70 text-[11px] uppercase tracking-wider z-10">
-                  Total
-                </td>
-                <td className="sticky left-[130px] bg-white z-10" />
-                {months.map((m) => (
-                  <td key={m} className="py-2 px-1 text-center text-[11px] font-semibold text-navy/70 tabular-nums">
-                    {monthTotals[m] > 0 ? fmt(monthTotals[m]) : "—"}
-                  </td>
-                ))}
-                <td className="sticky right-0 bg-white py-2 pr-4 text-right z-10">
-                  <span className="text-[11px] font-bold text-navy tabular-nums">{fmt(grandTotal)}</span>
-                </td>
-              </tr>
-            </tfoot>
-          )}
-        </table>
-      </div>
-      <TablePagination page={safePage} totalItems={visibleMatrix.length} pageSize={PAGE_SIZE} onPageChange={setPage} />
-      </TableBox>
-      </div>
+      <ClientesMatrizComprasV2
+        search={search}
+        onSearchChange={setSearch}
+        productFilter={productFilter}
+        onProductFilterChange={setProductFilter}
+        firstPurchaseFilter={firstPurchaseFilter}
+        onFirstPurchaseFilterChange={setFirstPurchaseFilter}
+        purchaseCountFilter={purchaseCountFilter}
+        onPurchaseCountFilterChange={setPurchaseCountFilter}
+        onlyInactive={onlyInactive}
+        onToggleOnlyInactive={() => setOnlyInactive((v) => !v)}
+        onlyUpsell={onlyUpsell}
+        onToggleOnlyUpsell={() => setOnlyUpsell((v) => !v)}
+        lastMonth={lastMonth}
+        months={months}
+        rows={pageRows}
+        sortKey={sortKey}
+        sortDir={sortDir}
+        onToggleSort={toggleSort}
+        monthTotals={monthTotals}
+        grandTotal={grandTotal}
+        totalCount={visibleMatrix.length}
+        page={safePage}
+        pageSize={PAGE_SIZE}
+        onPageChange={setPage}
+        onRowClick={setSelected}
+        onExportCsv={downloadCsv}
+      />
       {selected && (
         <CustomerDrawer key={selected.id} customer={selected} payments={payments} onClose={() => setSelected(null)} />
       )}

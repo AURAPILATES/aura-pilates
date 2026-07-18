@@ -9,13 +9,7 @@ import {
 } from "@/app/transacciones/actions";
 import Drawer from "@/app/components/Drawer";
 import ChipsInput from "@/app/components/ChipsInput";
-import Avatar from "@/app/components/Avatar";
-import SearchInput from "@/app/components/SearchInput";
-import Button from "@/app/components/Button";
-import TablePagination from "@/app/components/TablePagination";
-import TableBox from "@/app/components/TableBox";
-import TableToolbar from "@/app/components/TableToolbar";
-import { CategoryPill, CategoryBadge } from "@/app/transacciones/TransaccionesList";
+import { CategoryPill } from "@/app/transacciones/TransaccionesList";
 import NewContactDrawer, { AutomationIcon } from "@/app/transacciones/NewContactDrawer";
 import ContactosManagerV2 from "./ContactosManagerV2";
 
@@ -319,119 +313,25 @@ export default function ContactosManager({ contacts: initialContacts, categories
 
   return (
     <div>
-      <div className="hidden sm:block">
-        <ContactosManagerV2
-          search={search}
-          onSearchChange={(v) => { setSearch(v); setPage(0); }}
-          rows={pageRows}
-          totalCount={filtered.length}
-          page={safePage}
-          pageSize={PAGE_SIZE}
-          onPageChange={setPage}
-          categories={categories}
-          contactStats={contactStats}
-          onRowClick={(id) => setSelectedId(id)}
-          onNewContact={() => setCreating(true)}
-          onRecompute={handleRecompute}
-          recomputing={recomputing}
-          recomputed={recomputed}
-        />
-      </div>
-      {/* En móvil siempre se ve la tabla clásica */}
-      <div className="sm:hidden">
-      <TableToolbar>
-        <SearchInput value={search} onChange={(v) => { setSearch(v); setPage(0); }} placeholder="Buscar contacto…" className="flex-1 min-w-[200px]" />
-        <button
-          onClick={handleCleanup}
-          disabled={cleaning}
-          title="Vuelve a limpiar los conceptos ya guardados quitando códigos de operación variables, para que coincidan de forma estable"
-          className="text-xs text-navy/45 hover:text-navy transition-colors disabled:opacity-50 whitespace-nowrap"
-        >
-          {cleaning ? "Limpiando…" : cleaned !== null ? `${cleaned.updated} limpiados, ${cleaned.merged} fusionados` : "Limpiar conceptos"}
-        </button>
-        <button
-          onClick={handleRecompute}
-          disabled={recomputing}
-          title="Vuelve a calcular Contacto a partir de Concepto + Más datos, cruzando con los contactos guardados"
-          className="text-xs text-navy/45 hover:text-navy transition-colors disabled:opacity-50 whitespace-nowrap"
-        >
-          {recomputing ? "Recalculando…" : recomputed !== null ? `${recomputed} movimientos actualizados` : "Recalcular contactos"}
-        </button>
-        <Button onClick={() => setCreating(true)} className="whitespace-nowrap">
-          + Nuevo contacto
-        </Button>
-      </TableToolbar>
-
-      <TableBox>
-      {filtered.length === 0 ? (
-        <p className="text-sm text-navy/40 px-4 py-6">
-          {contacts.length === 0 ? "Todavía no hay contactos guardados." : "Ningún contacto coincide con la búsqueda."}
-        </p>
-      ) : (
-        <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-navy/[0.02] border-b border-navy/[0.06]">
-              <th className="text-left px-4 py-3 text-[11px] text-navy/45 font-semibold uppercase tracking-wide">Nombre</th>
-              <th className="text-left px-4 py-3 text-[11px] text-navy/45 font-semibold uppercase tracking-wide">Categoría</th>
-              <th className="text-left px-4 py-3 text-[11px] text-navy/45 font-semibold uppercase tracking-wide">Conceptos bancarios</th>
-              <th className="text-right px-4 py-3 text-[11px] text-navy/45 font-semibold uppercase tracking-wide">IVA</th>
-              <th className="text-right px-4 py-3 text-[11px] text-navy/45 font-semibold uppercase tracking-wide">IRPF</th>
-              <th className="text-right px-4 py-3 text-[11px] text-navy/45 font-semibold uppercase tracking-wide">Movimientos</th>
-            </tr>
-          </thead>
-          <tbody>
-            {pageRows.map((c) => {
-              const stats = contactStats[c.id];
-              const visiblePatterns = c.patterns.slice(0, 2);
-              const extra = c.patterns.length - visiblePatterns.length;
-              return (
-                <tr
-                  key={c.id}
-                  onClick={() => setSelectedId(c.id)}
-                  className={`border-b border-navy/[0.04] last:border-0 cursor-pointer hover:bg-navy/[0.02] transition-colors ${selectedId === c.id ? "bg-primary/[0.04]" : ""}`}
-                >
-                  <td className="px-4 py-3 font-medium text-navy whitespace-nowrap">
-                    <div className="flex items-center gap-3">
-                      <Avatar seed={c.label} initials={initials(c.label)} logoDomain={knownDomain(c.label)} size={32} />
-                      {c.label}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3"><CategoryBadge category={c.category} categories={categories} /></td>
-                  <td className="px-4 py-3">
-                    <div className="flex flex-wrap gap-1">
-                      {visiblePatterns.map((p) => (
-                        <span key={p} title={p} className="inline-block px-1.5 py-0.5 max-w-[140px] truncate rounded text-[11px] bg-navy/[0.04] text-navy/55">{p}</span>
-                      ))}
-                      {extra > 0 && <span className="text-[11px] text-navy/35">+{extra}</span>}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-right text-navy/70 text-xs">{c.ivaRate > 0 ? `${c.ivaRate}%` : <span className="text-navy/30 text-[10px]">-</span>}</td>
-                  <td className="px-4 py-3 text-right text-navy/70 text-xs">{c.retencionRate > 0 ? `${c.retencionRate}%` : <span className="text-navy/30 text-[10px]">-</span>}</td>
-                  <td className="px-4 py-3 text-right">
-                    {stats ? (
-                      <div className="flex flex-col items-end">
-                        <span className="font-medium text-navy">{stats.count}</span>
-                        <span className={`text-[11px] ${stats.total >= 0 ? "text-success" : "text-navy/40"}`}>
-                          {stats.total >= 0 ? "+" : "−"}{fmtAmt(stats.total)}
-                        </span>
-                      </div>
-                    ) : (
-                      <span className="text-navy/30">—</span>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-        </div>
-      )}
-      {filtered.length > 0 && (
-        <TablePagination page={safePage} totalItems={filtered.length} pageSize={PAGE_SIZE} onPageChange={setPage} />
-      )}
-      </TableBox>
-      </div>
+      <ContactosManagerV2
+        search={search}
+        onSearchChange={(v) => { setSearch(v); setPage(0); }}
+        rows={pageRows}
+        totalCount={filtered.length}
+        page={safePage}
+        pageSize={PAGE_SIZE}
+        onPageChange={setPage}
+        categories={categories}
+        contactStats={contactStats}
+        onRowClick={(id) => setSelectedId(id)}
+        onNewContact={() => setCreating(true)}
+        onCleanup={handleCleanup}
+        cleaning={cleaning}
+        cleaned={cleaned}
+        onRecompute={handleRecompute}
+        recomputing={recomputing}
+        recomputed={recomputed}
+      />
 
       {creating && (
         <NewContactDrawer

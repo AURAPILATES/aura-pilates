@@ -1,7 +1,11 @@
+"use client";
+
+import { useState } from "react";
 import SearchInputV2 from "@/app/components/v2/SearchInputV2";
 import TablePaginationV2 from "@/app/components/v2/TablePaginationV2";
 import Select from "@/app/components/Select";
 import { IconButtonV2 } from "@/app/components/v2/ButtonsV2";
+import FiltersToggleButtonV2 from "@/app/components/v2/FiltersToggleButtonV2";
 import { tableHeadClassV2, tableRowClassV2, tableFootClassV2, gridColsV2 } from "@/app/components/v2/tableStylesV2";
 import { fmt } from "@/lib/analytics";
 import { PRODUCT_FILTERS, PURCHASE_COUNT_FILTERS, monthLabel, productAbbr, productColor, type MatrixRow, type SortKey } from "./ClientesMatrizCompras";
@@ -46,57 +50,62 @@ export default function ClientesMatrizComprasV2({
   onlyInactive, onToggleOnlyInactive, onlyUpsell, onToggleOnlyUpsell, lastMonth, months, rows,
   sortKey, sortDir, onToggleSort, monthTotals, grandTotal, totalCount, page, pageSize, onPageChange, onRowClick, onExportCsv,
 }: Props) {
-  // Columnas flexibles: la tabla ocupa siempre el 100% del ancho disponible (como el resto
-  // de tablas del diseño nuevo); solo si hay tantos meses que no caben con un mínimo legible
-  // (64px) aparece scroll horizontal, en vez de encogerse hasta ser ilegible.
-  const cols = `2fr 1.1fr repeat(${months.length}, minmax(64px, 1fr)) 1.1fr`;
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  // Columnas flexibles con mínimo legible: la tabla ocupa el 100% del ancho disponible en
+  // escritorio, y si no caben con ese mínimo (más probable en móvil) el contenedor hace
+  // scroll horizontal en vez de encoger las columnas hasta ser ilegibles.
+  const cols = `minmax(140px,2fr) minmax(90px,1.1fr) repeat(${months.length}, minmax(64px, 1fr)) minmax(90px,1.1fr)`;
+  const filtersActive = !!productFilter || !!firstPurchaseFilter || !!purchaseCountFilter || onlyInactive || onlyUpsell;
 
   return (
     <div>
       <div className="flex items-center gap-[9px] flex-wrap">
-        <SearchInputV2 value={search} onChange={onSearchChange} placeholder="Buscar cliente…" className="min-w-[200px] flex-1" />
-        <Select variant="v2" value={productFilter} onChange={(e) => onProductFilterChange(e.target.value)} className="w-auto">
-          <option value="">Todos los productos</option>
-          {PRODUCT_FILTERS.map((p) => (
-            <option key={p} value={p}>{p}</option>
-          ))}
-        </Select>
-        <Select variant="v2" value={firstPurchaseFilter} onChange={(e) => onFirstPurchaseFilterChange(e.target.value)} className="w-auto">
-          <option value="">Primera compra: todas</option>
-          {months.map((m) => (
-            <option key={m} value={m}>{monthLabel(m)}</option>
-          ))}
-        </Select>
-        <Select variant="v2" value={purchaseCountFilter} onChange={(e) => onPurchaseCountFilterChange(e.target.value)} className="w-auto">
-          <option value="">Nº de compras: todas</option>
-          {PURCHASE_COUNT_FILTERS.map((n) => (
-            <option key={n} value={n}>{n} compra{n === "1" ? "" : "s"}</option>
-          ))}
-        </Select>
-        <button
-          type="button"
-          onClick={onToggleOnlyInactive}
-          className={`text-[13px] px-[13px] py-2 rounded-[10px] border whitespace-nowrap transition-colors ${
-            onlyInactive ? "border-[#18181b] bg-[#18181b] text-white font-medium" : "border-[#e6e6ea] bg-white text-[#3f3f46] hover:bg-[#18181b]/[0.02]"
-          }`}
-        >
-          Sin compra en {lastMonth ? monthLabel(lastMonth) : "el último mes"}
-        </button>
-        <button
-          type="button"
-          onClick={onToggleOnlyUpsell}
-          title="Clientes en Bàsic desde hace 3 meses o más que nunca han subido a Plus o Pro"
-          className={`text-[13px] px-[13px] py-2 rounded-[10px] border whitespace-nowrap transition-colors ${
-            onlyUpsell ? "border-[#18181b] bg-[#18181b] text-white font-medium" : "border-[#e6e6ea] bg-white text-[#3f3f46] hover:bg-[#18181b]/[0.02]"
-          }`}
-        >
-          Candidatos a upsell
-        </button>
-        <IconButtonV2 onClick={onExportCsv} title="Exportar vista actual a CSV">
+        <SearchInputV2 value={search} onChange={onSearchChange} placeholder="Buscar cliente…" className="min-w-[160px] flex-1" />
+        <FiltersToggleButtonV2 open={filtersOpen} active={filtersActive} onClick={() => setFiltersOpen((v) => !v)} />
+        <IconButtonV2 onClick={onExportCsv} title="Exportar vista actual a CSV" className="sm:order-2">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
             <path d="M12 4v10M8 11l4 4 4-4M5 19h14" />
           </svg>
         </IconButtonV2>
+        <div className={`${filtersOpen ? "flex" : "hidden"} sm:flex sm:order-1 items-center gap-[9px] flex-wrap w-full sm:w-auto`}>
+          <Select variant="v2" value={productFilter} onChange={(e) => onProductFilterChange(e.target.value)} className="w-auto">
+            <option value="">Todos los productos</option>
+            {PRODUCT_FILTERS.map((p) => (
+              <option key={p} value={p}>{p}</option>
+            ))}
+          </Select>
+          <Select variant="v2" value={firstPurchaseFilter} onChange={(e) => onFirstPurchaseFilterChange(e.target.value)} className="w-auto">
+            <option value="">Primera compra: todas</option>
+            {months.map((m) => (
+              <option key={m} value={m}>{monthLabel(m)}</option>
+            ))}
+          </Select>
+          <Select variant="v2" value={purchaseCountFilter} onChange={(e) => onPurchaseCountFilterChange(e.target.value)} className="w-auto">
+            <option value="">Nº de compras: todas</option>
+            {PURCHASE_COUNT_FILTERS.map((n) => (
+              <option key={n} value={n}>{n} compra{n === "1" ? "" : "s"}</option>
+            ))}
+          </Select>
+          <button
+            type="button"
+            onClick={onToggleOnlyInactive}
+            className={`text-[13px] px-[13px] py-2 rounded-[10px] border whitespace-nowrap transition-colors ${
+              onlyInactive ? "border-[#18181b] bg-[#18181b] text-white font-medium" : "border-[#e6e6ea] bg-white text-[#3f3f46] hover:bg-[#18181b]/[0.02]"
+            }`}
+          >
+            Sin compra en {lastMonth ? monthLabel(lastMonth) : "el último mes"}
+          </button>
+          <button
+            type="button"
+            onClick={onToggleOnlyUpsell}
+            title="Clientes en Bàsic desde hace 3 meses o más que nunca han subido a Plus o Pro"
+            className={`text-[13px] px-[13px] py-2 rounded-[10px] border whitespace-nowrap transition-colors ${
+              onlyUpsell ? "border-[#18181b] bg-[#18181b] text-white font-medium" : "border-[#e6e6ea] bg-white text-[#3f3f46] hover:bg-[#18181b]/[0.02]"
+            }`}
+          >
+            Candidatos a upsell
+          </button>
+        </div>
       </div>
 
       <div className="mt-[24px] overflow-x-auto">

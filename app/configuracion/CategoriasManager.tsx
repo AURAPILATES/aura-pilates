@@ -369,140 +369,21 @@ export default function CategoriasManager({
   return (
     <div className="relative">
       {/* ── Lista ── */}
-      <div className="hidden sm:block">
-        <CategoriasManagerV2
-          totalCategories={categories.length}
-          groups={displayGroups}
-          totalCount={totalCount}
-          draggedId={draggedId}
-          dragOverId={dragOverId}
-          onDragStart={setDraggedId}
-          onDragOver={setDragOverId}
-          onDragLeave={(id) => setDragOverId((cur) => (cur === id ? null : cur))}
-          onDrop={handleDrop}
-          onDragEnd={() => { setDraggedId(null); setDragOverId(null); }}
-          onNewCategory={openNew}
-          onEditCategory={openEdit}
-          onViewTransactions={(cat) => router.push(`/transacciones?categoria=${encodeURIComponent(cat.value)}`)}
-        />
-      </div>
-      {/* En móvil siempre se ve la lista clásica */}
-      <div className="sm:hidden">
-        <div className="flex items-center justify-between mb-8">
-          <p className="text-sm text-navy/55">{categories.length} categorías</p>
-          <Button onClick={openNew} className="flex items-center gap-2">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-            </svg>
-            Nueva categoría
-          </Button>
-        </div>
-
-        <div className="space-y-8">
-          {GROUP_ORDER.map((g) => {
-            const items = categories.filter((c) =>
-              c.group_type === g ||
-              (g === "operational" && !KNOWN_GROUPS.has(c.group_type))
-            );
-            if (items.length === 0) return null;
-
-            const renderItems = (rawList: Category[]) => {
-              const ordered = byParentOrdered(rawList);
-
-              return (
-                <div className="bg-white border border-navy/[0.08] rounded-2xl shadow-card overflow-hidden">
-                  {ordered.map((cat, i) => {
-                    const isActive = editor?.mode === "edit" && editor.cat.id === cat.id;
-                    const isSub = !!cat.parent_id;
-                    const isDragging = draggedId === cat.id;
-                    const isDragOver = dragOverId === cat.id && draggedId !== null && draggedId !== cat.id;
-                    return (
-                      <div
-                        key={cat.id}
-                        draggable
-                        onDragStart={() => setDraggedId(cat.id)}
-                        onDragOver={(e) => { e.preventDefault(); setDragOverId(cat.id); }}
-                        onDragLeave={() => setDragOverId((id) => (id === cat.id ? null : id))}
-                        onDrop={(e) => { e.preventDefault(); handleDrop(ordered, cat.id); }}
-                        onDragEnd={() => { setDraggedId(null); setDragOverId(null); }}
-                        className={`flex items-center transition-colors ${
-                          i < ordered.length - 1 ? "border-b border-navy/[0.05]" : ""
-                        } ${isActive ? "bg-navy/[0.04]" : ""} ${isDragOver ? "bg-primary/[0.06]" : ""} ${isDragging ? "opacity-40" : ""}`}
-                      >
-                        <span className="pl-3 pr-0.5 text-navy/25 cursor-grab active:cursor-grabbing shrink-0" title="Arrastrar para reordenar">
-                          <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor">
-                            <circle cx="2.5" cy="2.5" r="1.4"/><circle cx="7.5" cy="2.5" r="1.4"/>
-                            <circle cx="2.5" cy="8" r="1.4"/><circle cx="7.5" cy="8" r="1.4"/>
-                            <circle cx="2.5" cy="13.5" r="1.4"/><circle cx="7.5" cy="13.5" r="1.4"/>
-                          </svg>
-                        </span>
-                        <button
-                          onClick={() => openEdit(cat)}
-                          className={`flex-1 flex items-center gap-4 pr-2 py-3.5 transition-colors text-left hover:bg-navy/[0.015] min-w-0 ${isSub ? "pl-6" : "pl-1"}`}
-                        >
-                          <CategoryIcon iconKey={cat.emoji} name={cat.label} color={cat.text_color} size={isSub ? 32 : 40} />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-navy">{cat.label}</p>
-                            {cat.auto_keywords && (
-                              <p className="text-[11px] text-navy/40 mt-0.5 truncate">{cat.auto_keywords}</p>
-                            )}
-                          </div>
-                        </button>
-                        <span className="shrink-0 text-[11px] text-navy/40 tabular-nums whitespace-nowrap">
-                          {totalCount(cat)} trx
-                        </span>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            router.push(`/transacciones?categoria=${encodeURIComponent(cat.value)}`);
-                          }}
-                          title={`Ver movimientos de "${cat.label}"`}
-                          className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-navy/35 hover:text-navy hover:bg-navy/[0.06] transition-colors"
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                          </svg>
-                        </button>
-                        <span className="shrink-0 w-8 h-8 mr-2 flex items-center justify-center text-navy/25">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="9 18 15 12 9 6"/>
-                          </svg>
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              );
-            };
-
-            return (
-              <div key={g}>
-                <p className="text-[12px] font-semibold text-navy/45 uppercase tracking-wider mb-3 px-1">
-                  {GROUP_LABELS[g]}
-                </p>
-                {g === "operational" ? (
-                  <div className="space-y-4">
-                    {ECONOMIC_ORDER.map((eg) => {
-                      const subItems = items.filter((c) => economicGroupOf(c.label, c.economic_group) === eg);
-                      if (subItems.length === 0) return null;
-                      return (
-                        <div key={eg}>
-                          <p className="text-[11px] font-medium text-navy/40 mb-1.5 px-1">
-                            {ECONOMIC_LABELS[eg]}
-                          </p>
-                          {renderItems(subItems)}
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  renderItems(items)
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      <CategoriasManagerV2
+        totalCategories={categories.length}
+        groups={displayGroups}
+        totalCount={totalCount}
+        draggedId={draggedId}
+        dragOverId={dragOverId}
+        onDragStart={setDraggedId}
+        onDragOver={setDragOverId}
+        onDragLeave={(id) => setDragOverId((cur) => (cur === id ? null : cur))}
+        onDrop={handleDrop}
+        onDragEnd={() => { setDraggedId(null); setDragOverId(null); }}
+        onNewCategory={openNew}
+        onEditCategory={openEdit}
+        onViewTransactions={(cat) => router.push(`/transacciones?categoria=${encodeURIComponent(cat.value)}`)}
+      />
 
       {/* ── Editor panel ── */}
       {editor && (

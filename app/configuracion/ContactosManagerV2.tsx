@@ -23,6 +23,9 @@ type Props = {
   contactStats: Record<number, ContactStats>;
   onRowClick: (id: number) => void;
   onNewContact: () => void;
+  onCleanup: () => void;
+  cleaning: boolean;
+  cleaned: { updated: number; merged: number } | null;
   onRecompute: () => void;
   recomputing: boolean;
   recomputed: number | null;
@@ -30,12 +33,21 @@ type Props = {
 
 export default function ContactosManagerV2({
   search, onSearchChange, rows, totalCount, page, pageSize, onPageChange,
-  categories, contactStats, onRowClick, onNewContact, onRecompute, recomputing, recomputed,
+  categories, contactStats, onRowClick, onNewContact, onCleanup, cleaning, cleaned, onRecompute, recomputing, recomputed,
 }: Props) {
   return (
     <div>
-      <div className="flex items-center gap-[10px]">
-        <SearchInputV2 value={search} onChange={onSearchChange} placeholder="Buscar contacto…" className="flex-1" />
+      <div className="flex items-center gap-[10px] flex-wrap">
+        <SearchInputV2 value={search} onChange={onSearchChange} placeholder="Buscar contacto…" className="flex-1 min-w-[160px]" />
+        <button
+          type="button"
+          onClick={onCleanup}
+          disabled={cleaning}
+          title="Vuelve a limpiar los conceptos ya guardados quitando códigos de operación variables, para que coincidan de forma estable"
+          className="flex items-center gap-[7px] border border-[#e6e6ea] rounded-[10px] px-[13px] py-2.5 text-[13.5px] font-medium text-[#3f3f46] bg-white hover:bg-[#18181b]/[0.02] transition-colors disabled:opacity-50 whitespace-nowrap"
+        >
+          {cleaning ? "Limpiando…" : cleaned !== null ? `${cleaned.updated} limpiados, ${cleaned.merged} fusionados` : "Limpiar conceptos"}
+        </button>
         <button
           type="button"
           onClick={onRecompute}
@@ -55,13 +67,15 @@ export default function ContactosManagerV2({
       </div>
 
       <div className="mt-[24px]">
-        <div className={tableHeadClassV2} style={gridColsV2(COLS)}>
-          <span>Nombre</span>
-          <span>Categoría</span>
-          <span>IVA</span>
-          <span>IRPF</span>
-          <span>Movim.</span>
-          <span className="text-right">Últ. mov.</span>
+        <div className="hidden sm:block">
+          <div className={tableHeadClassV2} style={gridColsV2(COLS)}>
+            <span>Nombre</span>
+            <span>Categoría</span>
+            <span>IVA</span>
+            <span>IRPF</span>
+            <span>Movim.</span>
+            <span className="text-right">Últ. mov.</span>
+          </div>
         </div>
 
         {rows.length === 0 ? (
@@ -72,21 +86,45 @@ export default function ContactosManagerV2({
             const lastDate = stats?.latest?.[0]?.date;
             const bothMissing = !(c.ivaRate > 0) && !(c.retencionRate > 0);
             return (
-              <div
-                key={c.id}
-                onClick={() => onRowClick(c.id)}
-                className={`${tableRowClassV2} cursor-pointer`}
-                style={gridColsV2(COLS)}
-              >
-                <div className="flex items-center gap-[11px] min-w-0">
-                  <Avatar seed={c.label} initials={initials(c.label)} logoDomain={knownDomain(c.label)} size={30} />
-                  <p className="text-[13.5px] font-medium text-[#18181b] truncate">{c.label}</p>
+              <div key={c.id}>
+                {/* Fila escritorio */}
+                <div className="hidden sm:block">
+                  <div
+                    onClick={() => onRowClick(c.id)}
+                    className={`${tableRowClassV2} cursor-pointer`}
+                    style={gridColsV2(COLS)}
+                  >
+                    <div className="flex items-center gap-[11px] min-w-0">
+                      <Avatar seed={c.label} initials={initials(c.label)} logoDomain={knownDomain(c.label)} size={30} />
+                      <p className="text-[13.5px] font-medium text-[#18181b] truncate">{c.label}</p>
+                    </div>
+                    <div><CategoryBadge category={c.category} categories={categories} /></div>
+                    <div><TaxBadgeV2 value={c.ivaRate} isError={bothMissing} /></div>
+                    <div><TaxBadgeV2 value={c.retencionRate} isError={bothMissing} /></div>
+                    <p className="text-[13px] font-semibold text-[#18181b]">{stats?.count ?? "—"}</p>
+                    <p className="text-right text-[12.5px] text-[#71717a]">{lastDate ? fmtContactDate(lastDate) : "—"}</p>
+                  </div>
                 </div>
-                <div><CategoryBadge category={c.category} categories={categories} /></div>
-                <div><TaxBadgeV2 value={c.ivaRate} isError={bothMissing} /></div>
-                <div><TaxBadgeV2 value={c.retencionRate} isError={bothMissing} /></div>
-                <p className="text-[13px] font-semibold text-[#18181b]">{stats?.count ?? "—"}</p>
-                <p className="text-right text-[12.5px] text-[#71717a]">{lastDate ? fmtContactDate(lastDate) : "—"}</p>
+
+                {/* Fila móvil */}
+                <div
+                  onClick={() => onRowClick(c.id)}
+                  className="sm:hidden flex items-center gap-[10px] py-[10px] border-t border-[#f4f4f4] cursor-pointer active:bg-[#fafafb]"
+                >
+                  <Avatar seed={c.label} initials={initials(c.label)} logoDomain={knownDomain(c.label)} size={32} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[14px] font-medium text-[#18181b] truncate">{c.label}</p>
+                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                      <CategoryBadge category={c.category} categories={categories} />
+                      <TaxBadgeV2 value={c.ivaRate} isError={bothMissing} />
+                      <TaxBadgeV2 value={c.retencionRate} isError={bothMissing} />
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-[13px] font-semibold text-[#18181b]">{stats?.count ?? "—"}</p>
+                    <p className="text-[11px] text-[#a1a1aa]">{lastDate ? fmtContactDate(lastDate) : "—"}</p>
+                  </div>
+                </div>
               </div>
             );
           })
