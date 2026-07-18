@@ -52,8 +52,8 @@ export default function ClientesMatrizComprasV2({
 }: Props) {
   const [filtersOpen, setFiltersOpen] = useState(false);
   // En móvil hay demasiadas columnas de mes para que quepan sin scroll horizontal ilegible:
-  // por defecto se muestran solo los últimos 2 meses + Total, con un botón para "Ampliar"
-  // y ver la matriz completa (esa vista sí exige scroll horizontal, es lo esperable).
+  // por defecto se muestra solo el último mes + Total, con un botón para "Ampliar" y ver la
+  // matriz completa (esa vista sí exige scroll horizontal, es lo esperable).
   const [isMobile, setIsMobile] = useState(false);
   const [expanded, setExpanded] = useState(false);
   useEffect(() => {
@@ -64,7 +64,7 @@ export default function ClientesMatrizComprasV2({
     return () => mq.removeEventListener("change", handler);
   }, []);
   const collapsed = isMobile && !expanded;
-  const visibleMonths = collapsed ? months.slice(-2) : months;
+  const visibleMonths = collapsed ? months.slice(-1) : months;
   const showFirstPurchase = !collapsed;
   // Columnas flexibles con mínimo legible: la tabla ocupa el 100% del ancho disponible en
   // escritorio, y si no caben con ese mínimo (más probable en móvil expandido) el contenedor
@@ -130,7 +130,7 @@ export default function ClientesMatrizComprasV2({
             onClick={() => setExpanded((v) => !v)}
             className="text-[12px] font-medium text-[#18181b] underline underline-offset-2"
           >
-            {expanded ? "Ver resumen (últimos 2 meses)" : `Ver todos los meses (${months.length})`}
+            {expanded ? "Ver resumen (último mes)" : `Ver todos los meses (${months.length})`}
           </button>
         </div>
       )}
