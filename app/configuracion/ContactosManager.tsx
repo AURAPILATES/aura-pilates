@@ -8,6 +8,7 @@ import {
   addPatternToContact, removeContactPattern, recomputeContactsFromBankDetails, cleanupContactPatterns,
 } from "@/app/transacciones/actions";
 import Drawer from "@/app/components/Drawer";
+import Button from "@/app/components/Button";
 import ChipsInput from "@/app/components/ChipsInput";
 import { CategoryPill } from "@/app/transacciones/TransaccionesList";
 import NewContactDrawer, { AutomationIcon } from "@/app/transacciones/NewContactDrawer";
@@ -135,39 +136,47 @@ function ContactDetailDrawer({ contact, categories, stats, onChange, onRemove, o
     <Drawer
       onClose={onClose}
       header={
-        <div className="flex items-start gap-3">
+        <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-semibold shrink-0">
             {initials(contact.label)}
           </div>
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-navy truncate">{contact.label}</p>
-            <div className="mt-1">
-              <CategoryPill category={contact.category} categories={categories} onChange={(cat) => onChange({ category: cat })} />
-            </div>
-          </div>
+          <p className="text-sm font-semibold text-navy truncate">{contact.label}</p>
         </div>
       }
       footer={
-        <div className="flex items-center justify-between gap-2">
-          <button
-            onClick={handleApply}
-            disabled={applying}
-            title="Aplicar este contacto a movimientos ya importados que coincidan con sus conceptos"
-            className="text-xs text-primary hover:text-primary/75 transition-colors disabled:opacity-40 whitespace-nowrap"
-          >
-            {applying ? "Aplicando…" : applied !== null ? `${applied} actualizados` : "Aplicar a existentes"}
-          </button>
-          {confirmDelete ? (
+        confirmDelete ? (
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-sm text-navy/60">¿Eliminar este contacto?</p>
             <div className="flex items-center gap-2">
-              <button onClick={() => setConfirmDelete(false)} className="text-xs text-navy/40 hover:text-navy transition-colors">Cancelar</button>
-              <button onClick={onRemove} className="text-xs font-semibold text-danger hover:text-danger/80 transition-colors">Confirmar</button>
+              <button onClick={() => setConfirmDelete(false)} className="px-4 py-2.5 text-sm text-navy/60 border border-navy/15 rounded-lg hover:bg-navy/[0.03] transition-colors">
+                Cancelar
+              </button>
+              <button onClick={onRemove} className="px-4 py-2.5 text-sm font-semibold text-white bg-danger rounded-lg hover:bg-danger/85 transition-colors">
+                Confirmar
+              </button>
             </div>
-          ) : (
-            <button onClick={() => setConfirmDelete(true)} className="text-xs text-navy/35 hover:text-danger transition-colors">
-              Eliminar contacto
+          </div>
+        ) : (
+          <div className="flex gap-3">
+            <button
+              onClick={() => setConfirmDelete(true)}
+              className="flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-danger border border-danger/20 rounded-lg hover:bg-danger/5 transition-colors"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+              </svg>
+              Eliminar
             </button>
-          )}
-        </div>
+            <Button
+              onClick={handleApply}
+              disabled={applying}
+              className="flex-1"
+              title="Aplica este contacto a movimientos ya importados que coincidan con sus conceptos"
+            >
+              {applying ? "Guardando…" : applied !== null ? `${applied} actualizados` : "Guardar"}
+            </Button>
+          </div>
+        )
       }
     >
       <div>
@@ -203,6 +212,11 @@ function ContactDetailDrawer({ contact, categories, stats, onChange, onRemove, o
               IRPF <RateInput value={contact.retencionRate} onSave={(v) => onChange({ retencionRate: v })} />%
             </label>
           </div>
+        </div>
+
+        <div className="p-4 border-b border-navy/[0.06]">
+          <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-2">Categoría</p>
+          <CategoryPill category={contact.category} categories={categories} onChange={(cat) => onChange({ category: cat })} />
         </div>
 
         <div className="p-4 border-b border-navy/[0.06]">
@@ -258,7 +272,40 @@ export default function ContactosManager({ contacts: initialContacts, categories
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [, startTransition] = useTransition();
+
+  function toggleSelectContact(id: number) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  async function bulkDeleteContacts() {
+    const ids = Array.from(selectedIds);
+    setContacts((prev) => prev.filter((c) => !selectedIds.has(c.id)));
+    setSelectedIds(new Set());
+    await Promise.all(ids.map((id) => deleteContact(id)));
+    router.refresh();
+  }
+
+  async function bulkSetIvaContacts(rate: number) {
+    const ids = Array.from(selectedIds);
+    setContacts((prev) => prev.map((c) => (selectedIds.has(c.id) ? { ...c, ivaRate: rate } : c)));
+    setSelectedIds(new Set());
+    await Promise.all(ids.map((id) => updateContact(id, { ivaRate: rate })));
+    router.refresh();
+  }
+
+  async function bulkSetRetencionContacts(rate: number) {
+    const ids = Array.from(selectedIds);
+    setContacts((prev) => prev.map((c) => (selectedIds.has(c.id) ? { ...c, retencionRate: rate } : c)));
+    setSelectedIds(new Set());
+    await Promise.all(ids.map((id) => updateContact(id, { retencionRate: rate })));
+    router.refresh();
+  }
 
   async function handleRecompute() {
     setRecomputing(true);
@@ -331,6 +378,12 @@ export default function ContactosManager({ contacts: initialContacts, categories
         onRecompute={handleRecompute}
         recomputing={recomputing}
         recomputed={recomputed}
+        selectedIds={selectedIds}
+        onToggleSelect={toggleSelectContact}
+        onClearSelection={() => setSelectedIds(new Set())}
+        onBulkDelete={bulkDeleteContacts}
+        onBulkSetIva={bulkSetIvaContacts}
+        onBulkSetRetencion={bulkSetRetencionContacts}
       />
 
       {creating && (

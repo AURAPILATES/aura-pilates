@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { Category } from "@/lib/categories";
 import type { Contact, ContactStats } from "@/app/transacciones/actions";
 import { CategoryBadge } from "@/app/transacciones/TransaccionesList";
@@ -29,11 +30,93 @@ type Props = {
   onRecompute: () => void;
   recomputing: boolean;
   recomputed: number | null;
+  selectedIds: Set<number>;
+  onToggleSelect: (id: number) => void;
+  onClearSelection: () => void;
+  onBulkDelete: () => void;
+  onBulkSetIva: (rate: number) => void;
+  onBulkSetRetencion: (rate: number) => void;
 };
+
+/** Barra flotante de acciones masivas, centrada abajo — aparece al seleccionar filas en la
+ * tabla de escritorio (checkbox al hover, ver Avatar/checkbox en cada fila). */
+function BulkActionBarV2({
+  count, onClear, onDelete, onSetIva, onSetRetencion,
+}: {
+  count: number;
+  onClear: () => void;
+  onDelete: () => void;
+  onSetIva: (rate: number) => void;
+  onSetRetencion: (rate: number) => void;
+}) {
+  const [mode, setMode] = useState<"idle" | "iva" | "retencion" | "delete">("idle");
+  const [draft, setDraft] = useState("");
+
+  function submitRate() {
+    const v = parseFloat(draft.replace(",", ".")) || 0;
+    if (mode === "iva") onSetIva(v);
+    if (mode === "retencion") onSetRetencion(v);
+    setMode("idle");
+    setDraft("");
+  }
+
+  return (
+    <div className="fixed left-1/2 bottom-6 -translate-x-1/2 z-30 flex items-center gap-2 bg-[#18181b] text-white rounded-[14px] shadow-lg pl-4 pr-2 py-2">
+      <span className="text-[13px] font-medium whitespace-nowrap">{count} seleccionado{count !== 1 ? "s" : ""}</span>
+      <div className="w-px h-5 bg-white/15 shrink-0" />
+      {mode === "iva" || mode === "retencion" ? (
+        <div className="flex items-center gap-1.5">
+          <span className="text-[12px] text-white/60 whitespace-nowrap">{mode === "iva" ? "IVA" : "IRPF"} %</span>
+          <input
+            autoFocus
+            type="text"
+            inputMode="decimal"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") submitRate(); if (e.key === "Escape") setMode("idle"); }}
+            className="w-14 px-2 py-1 text-[13px] text-[#18181b] rounded-[7px] focus:outline-none"
+          />
+          <button type="button" onClick={submitRate} className="text-[12px] font-semibold text-[#18181b] bg-white hover:bg-white/85 rounded-[7px] px-2.5 py-1.5 transition-colors whitespace-nowrap">
+            Aplicar
+          </button>
+          <button type="button" onClick={() => setMode("idle")} className="text-white/50 hover:text-white text-[12px] px-1">
+            Cancelar
+          </button>
+        </div>
+      ) : mode === "delete" ? (
+        <div className="flex items-center gap-1.5">
+          <span className="text-[12px] text-white/70 whitespace-nowrap">¿Eliminar {count}?</span>
+          <button type="button" onClick={onDelete} className="text-[12px] font-semibold text-white bg-[#dc2626] hover:bg-[#dc2626]/85 rounded-[7px] px-2.5 py-1.5 transition-colors whitespace-nowrap">
+            Sí, eliminar
+          </button>
+          <button type="button" onClick={() => setMode("idle")} className="text-white/50 hover:text-white text-[12px] px-1">
+            Cancelar
+          </button>
+        </div>
+      ) : (
+        <div className="flex items-center gap-1">
+          <button type="button" onClick={() => setMode("iva")} className="text-[12.5px] font-medium text-white/85 hover:text-white hover:bg-white/10 rounded-[7px] px-2.5 py-1.5 transition-colors whitespace-nowrap">
+            Cambiar IVA
+          </button>
+          <button type="button" onClick={() => setMode("retencion")} className="text-[12.5px] font-medium text-white/85 hover:text-white hover:bg-white/10 rounded-[7px] px-2.5 py-1.5 transition-colors whitespace-nowrap">
+            Cambiar IRPF
+          </button>
+          <button type="button" onClick={() => setMode("delete")} className="text-[12.5px] font-medium text-[#f87171] hover:text-white hover:bg-[#dc2626]/30 rounded-[7px] px-2.5 py-1.5 transition-colors whitespace-nowrap">
+            Eliminar
+          </button>
+        </div>
+      )}
+      <button type="button" onClick={onClear} title="Cancelar selección" className="ml-1 w-6 h-6 flex items-center justify-center shrink-0 text-white/40 hover:text-white transition-colors">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+  );
+}
 
 export default function ContactosManagerV2({
   search, onSearchChange, rows, totalCount, page, pageSize, onPageChange,
   categories, contactStats, onRowClick, onNewContact, onCleanup, cleaning, cleaned, onRecompute, recomputing, recomputed,
+  selectedIds, onToggleSelect, onClearSelection, onBulkDelete, onBulkSetIva, onBulkSetRetencion,
 }: Props) {
   return (
     <div>
@@ -85,17 +168,33 @@ export default function ContactosManagerV2({
             const stats = contactStats[c.id];
             const lastDate = stats?.latest?.[0]?.date;
             const bothMissing = !(c.ivaRate > 0) && !(c.retencionRate > 0);
+            const isSelected = selectedIds.has(c.id);
             return (
               <div key={c.id}>
                 {/* Fila escritorio */}
                 <div className="hidden sm:block">
                   <div
                     onClick={() => onRowClick(c.id)}
-                    className={`${tableRowClassV2} cursor-pointer`}
+                    className={`${tableRowClassV2} cursor-pointer group`}
                     style={gridColsV2(COLS)}
                   >
                     <div className="flex items-center gap-[11px] min-w-0">
-                      <Avatar seed={c.label} initials={initials(c.label)} logoDomain={knownDomain(c.label)} size={30} />
+                      <span className="relative shrink-0 w-[30px] h-[30px]">
+                        <span className={isSelected ? "hidden" : "block group-hover:hidden"}>
+                          <Avatar seed={c.label} initials={initials(c.label)} logoDomain={knownDomain(c.label)} size={30} />
+                        </span>
+                        <label
+                          onClick={(e) => e.stopPropagation()}
+                          className={`${isSelected ? "flex" : "hidden group-hover:flex"} items-center justify-center w-[30px] h-[30px] cursor-pointer`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => onToggleSelect(c.id)}
+                            className="w-[17px] h-[17px] rounded-[5px] border-[#d4d4d8] text-[#18181b] focus:ring-[#18181b]/20 cursor-pointer"
+                          />
+                        </label>
+                      </span>
                       <p className="text-[13.5px] font-medium text-[#18181b] truncate">{c.label}</p>
                     </div>
                     <div><CategoryBadge category={c.category} categories={categories} /></div>
@@ -133,6 +232,16 @@ export default function ContactosManagerV2({
           <TablePaginationV2 page={page} totalItems={totalCount} pageSize={pageSize} onPageChange={onPageChange} />
         )}
       </div>
+
+      {selectedIds.size > 0 && (
+        <BulkActionBarV2
+          count={selectedIds.size}
+          onClear={onClearSelection}
+          onDelete={onBulkDelete}
+          onSetIva={onBulkSetIva}
+          onSetRetencion={onBulkSetRetencion}
+        />
+      )}
     </div>
   );
 }

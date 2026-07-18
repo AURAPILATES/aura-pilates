@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Category } from "@/lib/categories";
 import type { RecurringExpense } from "@/lib/recurringExpenses";
@@ -8,6 +9,7 @@ import type { PendingSeriesRow, ConfirmedExpenseRow, ContactPick } from "./Recur
 import { fmtEUR, pickToLabel } from "./RecurrentesList";
 import { CategoryBadge } from "./TransaccionesList";
 import { setRecurringExpenseStatus, deleteRecurringExpense } from "./recurringActions";
+import Drawer from "@/app/components/Drawer";
 import TablePaginationV2 from "@/app/components/v2/TablePaginationV2";
 import TaxBadgeV2 from "@/app/components/v2/TaxBadgeV2";
 import { tableHeadClassV2, tableRowClassV2, tableGroupClassV2, gridColsV2 } from "@/app/components/v2/tableStylesV2";
@@ -43,16 +45,20 @@ function ArchivedRowV2({ row }: { row: RecurringExpense }) {
     router.refresh();
   }
   return (
-    <div className="flex items-center justify-between gap-3 py-[9px] border-t border-[#f4f4f4]">
+    <div className="px-6 py-4 flex items-center justify-between gap-4">
       <div className="min-w-0">
-        <p className="text-[13.5px] font-medium text-[#71717a] truncate">{row.label}</p>
-        <p className="text-[11.5px] text-[#a1a1aa] truncate">
+        <p className="text-sm font-semibold text-navy truncate">{row.label}</p>
+        <p className="text-xs text-navy/45 mt-0.5">
           {row.status === "ignored" ? "Ignorado" : "Dado de baja"} · {fmtEUR(Math.abs(row.amount))} · {row.period}
         </p>
       </div>
-      <div className="flex items-center gap-3 shrink-0">
-        <button type="button" onClick={reactivate} className="text-[12.5px] text-[#71717a] hover:text-[#18181b] transition-colors">Reactivar</button>
-        <button type="button" onClick={remove} className="text-[12.5px] text-[#a1a1aa] hover:text-[#dc2626] transition-colors">Eliminar</button>
+      <div className="flex items-center gap-2 shrink-0">
+        <button onClick={reactivate} className="text-xs font-semibold text-primary border border-primary/30 hover:bg-primary/5 px-3 py-1.5 rounded-lg transition-colors">
+          Reactivar
+        </button>
+        <button onClick={remove} className="text-xs font-semibold text-danger/70 border border-danger/20 hover:bg-danger/5 px-3 py-1.5 rounded-lg transition-colors">
+          Eliminar
+        </button>
       </div>
     </div>
   );
@@ -62,8 +68,40 @@ export default function RecurrentesListV2({
   pending, confirmed, confirmedPageRows, archived, categories, contacts, pickFor, ivaRateFor, retencionRateFor,
   onOpenPending, onOpenConfirmed, onConfirmRow, confirmedPage, pageSize, onConfirmedPageChange,
 }: Props) {
+  const [showArchived, setShowArchived] = useState(false);
+
   return (
-    <div className="mt-[24px]">
+    <div>
+      <div className="flex items-center justify-end">
+        <button
+          type="button"
+          onClick={() => setShowArchived(true)}
+          className="flex items-center gap-[7px] border border-[#e6e6ea] rounded-[10px] px-[13px] py-2.5 text-[13.5px] font-medium text-[#3f3f46] bg-white hover:bg-[#18181b]/[0.02] transition-colors whitespace-nowrap"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="21 8 21 21 3 21 3 8" /><rect x="1" y="3" width="22" height="5" /><line x1="10" y1="12" x2="14" y2="12" />
+          </svg>
+          Archivados{archived.length > 0 ? ` (${archived.length})` : ""}
+        </button>
+      </div>
+
+      {showArchived && (
+        <Drawer
+          title="Recurrentes archivados"
+          subtitle="Ignorados o dados de baja — no se proyectan en la previsión de cashflow"
+          onClose={() => setShowArchived(false)}
+        >
+          {archived.length === 0 ? (
+            <p className="px-6 py-8 text-sm text-navy/40 text-center">Sin recurrentes archivados</p>
+          ) : (
+            <div className="divide-y divide-navy/[0.05]">
+              {archived.map((row) => <ArchivedRowV2 key={row.id} row={row} />)}
+            </div>
+          )}
+        </Drawer>
+      )}
+
+      <div className="mt-[24px]">
       <div className="hidden sm:block">
         <div className={tableHeadClassV2} style={gridColsV2(COLS)}>
           <span>Concepto</span>
@@ -233,16 +271,7 @@ export default function RecurrentesListV2({
       {confirmed.length > 0 && (
         <TablePaginationV2 page={confirmedPage} totalItems={confirmed.length} pageSize={pageSize} onPageChange={onConfirmedPageChange} />
       )}
-
-      {archived.length > 0 && (
-        <div className="mt-[28px] border border-[#ececef] rounded-[14px] px-4 py-3">
-          <p className="text-[13px] font-semibold text-[#18181b]">Ignorados / dados de baja</p>
-          <p className="text-[11.5px] text-[#a1a1aa] mt-0.5">No se proyectan en la previsión de cashflow</p>
-          <div>
-            {archived.map((row) => <ArchivedRowV2 key={row.id} row={row} />)}
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 }
