@@ -294,7 +294,7 @@ export default function TransaccionesListV2({
 
                       {/* Fila móvil */}
                       <div
-                        className="sm:hidden flex items-center gap-[10px] px-2 py-[10px] border-t border-[#f4f4f4] cursor-pointer active:bg-[#fafafb]"
+                        className="sm:hidden flex items-start gap-[10px] px-2 py-[10px] border-t border-[#f4f4f4] cursor-pointer active:bg-[#fafafb]"
                         onClick={() => onRowClick(t.id)}
                       >
                         <span className="w-[32px] h-[32px] shrink-0 rounded-[10px] flex items-center justify-center" style={{ backgroundColor: accent }}>
@@ -312,13 +312,13 @@ export default function TransaccionesListV2({
                           {secondary && <p className="text-[12px] text-[#71717a] truncate mt-0.5">{secondary}</p>}
                           <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                             <CategoryBadge category={t.category} categories={categories} hideIcon />
-                            <span className="text-[11px] text-[#a1a1aa] whitespace-nowrap">{fmtDate(t.date)}</span>
                           </div>
                         </div>
                         <div className="text-right shrink-0">
                           <p className={`text-[14px] font-semibold ${t.amount > 0 ? "text-[#16a34a]" : "text-[#18181b]"}`}>
                             {t.amount > 0 ? "+" : "−"}{fmtAmt(t.amount)}
                           </p>
+                          <p className="text-[11px] text-[#a1a1aa] whitespace-nowrap mt-0.5">{fmtDate(t.date)}</p>
                         </div>
                       </div>
                     </div>
