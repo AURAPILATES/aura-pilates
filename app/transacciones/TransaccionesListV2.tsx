@@ -9,7 +9,7 @@ import TablePaginationV2 from "@/app/components/v2/TablePaginationV2";
 import FiltersToggleButtonV2 from "@/app/components/v2/FiltersToggleButtonV2";
 import { tableHeadClassV2, tableRowClassV2, tableFootClassV2, gridColsV2 } from "@/app/components/v2/tableStylesV2";
 import {
-  MoreOptionsMenu, OriginIcon, originLabel, CategoryPill, CategoryMultiFilter,
+  MoreOptionsMenu, OriginIcon, originLabel, CategoryPill, CategoryBadge, CategoryMultiFilter,
   fmtAmt, fmtDate, CAT_FALLBACK, MONTHS_ES, type SortKey,
 } from "./TransaccionesList";
 import { CatIcon } from "./catIcons";
@@ -192,8 +192,8 @@ export default function TransaccionesListV2({
 
       {/* Móvil: franja de meses (sticky), navega a cada grupo del mes */}
       {byMonth.length > 0 && (
-        <div className="sm:hidden sticky top-[45px] z-20 -mx-2 px-2 pt-3 pb-2 bg-app-bg">
-          <div className="flex gap-0.5 p-1 rounded-full bg-[#18181b]/[0.05] overflow-x-auto scrollbar-none">
+        <div className="sm:hidden sticky top-[45px] z-20 -mx-2 px-2 pt-3 pb-2 bg-app-bg overflow-x-auto scrollbar-none">
+          <div className="inline-flex max-w-full gap-0.5 p-1 rounded-full bg-[#18181b]/[0.05]">
             {byMonth.map(([monthKey]) => {
               const [y, m] = monthKey.split("-");
               const label = MONTHS_ES[parseInt(m) - 1].slice(0, 3);
@@ -325,9 +325,11 @@ export default function TransaccionesListV2({
                               </svg>
                             )}
                           </div>
-                          <p className="text-[11.5px] text-[#a1a1aa] truncate mt-0.5">
-                            {cat?.label ?? "Sin categoría"} · {fmtDate(t.date)}
-                          </p>
+                          {secondary && <p className="text-[12px] text-[#71717a] truncate mt-0.5">{secondary}</p>}
+                          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                            <CategoryBadge category={t.category} categories={categories} hideIcon />
+                            <span className="text-[11px] text-[#a1a1aa] whitespace-nowrap">{fmtDate(t.date)}</span>
+                          </div>
                         </div>
                         <div className="text-right shrink-0">
                           <p className={`text-[14px] font-semibold ${t.amount > 0 ? "text-[#16a34a]" : "text-[#18181b]"}`}>
