@@ -176,7 +176,10 @@ export default function RecurrentesListV2({
       ) : (
         confirmedPageRows.map((row) => {
           const e = row.expense;
-          const bothMissing = !(e.iva_rate > 0) && !(e.retencion_rate > 0);
+          const contact = e.contact_id != null ? contacts.find((c) => c.id === e.contact_id) : undefined;
+          const ivaRate = contact?.ivaRate ?? 0;
+          const retRate = contact?.retencionRate ?? 0;
+          const bothMissing = !(ivaRate > 0) && !(retRate > 0);
           return (
             <div key={e.id}>
               {/* Fila escritorio */}
@@ -190,8 +193,8 @@ export default function RecurrentesListV2({
                   <div>{e.category && <CategoryBadge category={e.category} categories={categories} />}</div>
                   <p className="text-[12.5px] text-[#71717a] capitalize">{e.period}</p>
                   <div className="flex items-center gap-1.5">
-                    <TaxBadgeV2 value={e.iva_rate} isError={bothMissing} />
-                    <TaxBadgeV2 value={e.retencion_rate} isError={bothMissing} />
+                    <TaxBadgeV2 value={ivaRate} isError={bothMissing} />
+                    <TaxBadgeV2 value={retRate} isError={bothMissing} />
                   </div>
                   <p className="text-right text-[13.5px] font-semibold text-[#18181b]">{fmtEUR(Math.abs(e.amount))}</p>
                   <div className="flex justify-end">

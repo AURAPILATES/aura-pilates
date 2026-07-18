@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronRight } from "react-feather";
 import Drawer from "@/app/components/Drawer";
@@ -226,7 +226,7 @@ function ContactPickerDrawer({ contacts, title, onPick, onClose }: {
   );
 }
 
-function ConfirmPendingDrawer({ row, period, pick, end, name, ivaRate, retencionRate, contacts, onClose, onPeriodChange, onEndChange, onNameChange, onIvaRateChange, onRetencionRateChange, onOpenContactPicker, onConfirm, onIgnore }: {
+function ConfirmPendingDrawer({ row, period, pick, end, name, ivaRate, retencionRate, contacts, onClose, onPeriodChange, onEndChange, onNameChange, onOpenContactPicker, onConfirm, onIgnore }: {
   row: PendingSeriesRow;
   period: string;
   pick: ContactPick;
@@ -239,8 +239,6 @@ function ConfirmPendingDrawer({ row, period, pick, end, name, ivaRate, retencion
   onPeriodChange: (period: string) => void;
   onEndChange: (end: EndFields) => void;
   onNameChange: (name: string) => void;
-  onIvaRateChange: (rate: number) => void;
-  onRetencionRateChange: (rate: number) => void;
   onOpenContactPicker: () => void;
   onConfirm: () => Promise<void>;
   onIgnore: () => Promise<void>;
@@ -315,30 +313,14 @@ function ConfirmPendingDrawer({ row, period, pick, end, name, ivaRate, retencion
         <div className="grid grid-cols-2 gap-2">
           <div>
             <label className="text-xs text-navy/40">IVA %</label>
-            <input
-              type="number"
-              min="0"
-              max="100"
-              step="0.01"
-              value={ivaRate}
-              onChange={(e) => onIvaRateChange(parseFloat(e.target.value) || 0)}
-              className="w-full mt-1 px-3 py-2 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40 tabular-nums"
-            />
+            <p className="w-full mt-1 px-3 py-2 text-sm text-navy bg-navy/[0.03] rounded-lg tabular-nums">{ivaRate}%</p>
           </div>
           <div>
             <label className="text-xs text-navy/40">Retención %</label>
-            <input
-              type="number"
-              min="0"
-              max="100"
-              step="0.01"
-              value={retencionRate}
-              onChange={(e) => onRetencionRateChange(parseFloat(e.target.value) || 0)}
-              className="w-full mt-1 px-3 py-2 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40 tabular-nums"
-            />
+            <p className="w-full mt-1 px-3 py-2 text-sm text-navy bg-navy/[0.03] rounded-lg tabular-nums">{retencionRate}%</p>
           </div>
         </div>
-        <p className="text-xs text-navy/40 mt-2">{pickToInfo(pick, contacts)}</p>
+        <p className="text-xs text-navy/40 mt-2">{pickToInfo(pick, contacts)} Se edita en Configuración › Contactos.</p>
       </div>
 
       <div className="p-4 border-b border-navy/[0.06]">
@@ -373,27 +355,8 @@ function RecurringExpenseDrawer({ row, categories, contacts, onClose, onOpenCont
   const [saving, setSaving] = useState(false);
   const [end, setEnd] = useState<EndFields>(() => endFromExpense(e));
   const [name, setName] = useState(e.label);
-  const [ivaRate, setIvaRate] = useState(e.iva_rate);
-  const [retencionRate, setRetencionRate] = useState(e.retencion_rate);
-
-  /** Tras re-vincular el contacto (ver onOpenContactPicker) el IVA/retención llegan
-   * actualizados por props — se resincroniza aquí en vez de sobreescribirlos en silencio, así
-   * el usuario los ve y puede corregirlos antes de que se apliquen a la previsión. */
-  useEffect(() => {
-    setIvaRate(e.iva_rate);
-    setRetencionRate(e.retencion_rate);
-  }, [e.iva_rate, e.retencion_rate]);
-
-  async function changeRates(nextIva: number, nextRetencion: number) {
-    if (nextIva === e.iva_rate && nextRetencion === e.retencion_rate) return;
-    setSaving(true);
-    try {
-      await updateRecurringExpense(e.id, { iva_rate: nextIva, retencion_rate: nextRetencion });
-      router.refresh();
-    } finally {
-      setSaving(false);
-    }
-  }
+  const ivaRate = contact?.ivaRate ?? 0;
+  const retencionRate = contact?.retencionRate ?? 0;
 
   async function changeLabel() {
     const trimmed = name.trim();
@@ -504,34 +467,16 @@ function RecurringExpenseDrawer({ row, categories, contacts, onClose, onOpenCont
         <div className="grid grid-cols-2 gap-2">
           <div>
             <label className="text-xs text-navy/40">IVA %</label>
-            <input
-              type="number"
-              min="0"
-              max="100"
-              step="0.01"
-              value={ivaRate}
-              disabled={saving}
-              onChange={(ev) => setIvaRate(parseFloat(ev.target.value) || 0)}
-              onBlur={() => changeRates(ivaRate, retencionRate)}
-              className="w-full mt-1 px-3 py-2 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40 tabular-nums disabled:opacity-50"
-            />
+            <p className="w-full mt-1 px-3 py-2 text-sm text-navy bg-navy/[0.03] rounded-lg tabular-nums">{ivaRate}%</p>
           </div>
           <div>
             <label className="text-xs text-navy/40">Retención %</label>
-            <input
-              type="number"
-              min="0"
-              max="100"
-              step="0.01"
-              value={retencionRate}
-              disabled={saving}
-              onChange={(ev) => setRetencionRate(parseFloat(ev.target.value) || 0)}
-              onBlur={() => changeRates(ivaRate, retencionRate)}
-              className="w-full mt-1 px-3 py-2 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40 tabular-nums disabled:opacity-50"
-            />
+            <p className="w-full mt-1 px-3 py-2 text-sm text-navy bg-navy/[0.03] rounded-lg tabular-nums">{retencionRate}%</p>
           </div>
         </div>
-        <p className="text-xs text-navy/40 mt-2">Se autocompletan al vincular un contacto — corrígelos si esta recurrencia concreta es distinta.</p>
+        <p className="text-xs text-navy/40 mt-2">
+          {contact ? `Heredado de ${contact.label}.` : "Sin contacto vinculado."} Se edita en Configuración › Contactos.
+        </p>
       </div>
 
       <div className="p-4 border-b border-navy/[0.06]">
@@ -556,8 +501,6 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
   const [picks, setPicks] = useState<Record<string, ContactPick>>({});
   const [ends, setEnds] = useState<Record<string, EndFields>>({});
   const [names, setNames] = useState<Record<string, string>>({});
-  const [ivaRates, setIvaRates] = useState<Record<string, number>>({});
-  const [retencionRates, setRetencionRates] = useState<Record<string, number>>({});
   const [openPendingKey, setOpenPendingKey] = useState<string | null>(null);
   const [openConfirmedId, setOpenConfirmedId] = useState<number | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -585,10 +528,9 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
     return row.matchedContactId != null ? { contactId: row.matchedContactId } : null;
   }
 
-  /** Por defecto hereda el IVA/retención del contacto vinculado, pero el usuario puede
-   * corregirlos en el drawer antes de confirmar (ver ivaRates/retencionRates). */
+  /** Siempre hereda el IVA/retención del contacto vinculado — no editable por recurrencia,
+   * para que un cambio en la ficha del contacto se refleje sin desincronizarse. */
   function ivaRateFor(row: PendingSeriesRow): number {
-    if (row.keys[0] in ivaRates) return ivaRates[row.keys[0]];
     const pick = pickFor(row);
     if (pick && "contactId" in pick) {
       return contacts.find((c) => c.id === pick.contactId)?.ivaRate ?? 0;
@@ -597,7 +539,6 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
   }
 
   function retencionRateFor(row: PendingSeriesRow): number {
-    if (row.keys[0] in retencionRates) return retencionRates[row.keys[0]];
     const pick = pickFor(row);
     if (pick && "contactId" in pick) {
       return contacts.find((c) => c.id === pick.contactId)?.retencionRate ?? 0;
@@ -690,8 +631,6 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
           onPeriodChange={(p) => setPeriods((prev) => ({ ...prev, [openPendingRow.keys[0]]: p }))}
           onEndChange={(end) => setEnds((prev) => ({ ...prev, [openPendingRow.keys[0]]: end }))}
           onNameChange={(n) => setNames((prev) => ({ ...prev, [openPendingRow.keys[0]]: n }))}
-          onIvaRateChange={(r) => setIvaRates((prev) => ({ ...prev, [openPendingRow.keys[0]]: r }))}
-          onRetencionRateChange={(r) => setRetencionRates((prev) => ({ ...prev, [openPendingRow.keys[0]]: r }))}
           onOpenContactPicker={() => setPickerOpen(true)}
           onConfirm={() => confirmRow(openPendingRow)}
           onIgnore={() => ignoreRow(openPendingRow)}
