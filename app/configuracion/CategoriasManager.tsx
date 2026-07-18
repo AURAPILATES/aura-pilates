@@ -9,7 +9,6 @@ import ChipsInput from "@/app/components/ChipsInput";
 import Button from "@/app/components/Button";
 import Select from "@/app/components/Select";
 import { AutomationIcon } from "@/app/transacciones/NewContactDrawer";
-import { useDesignVersion } from "@/app/components/DesignVersionContext";
 import CategoriasManagerV2 from "./CategoriasManagerV2";
 
 const GROUP_LABELS: Record<GroupType, string> = {
@@ -194,7 +193,6 @@ export default function CategoriasManager({
   const [isPending, startTransition] = useTransition();
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
-  const { v2 } = useDesignVersion();
   const editorHasChildren =
     editor?.mode === "edit" && categories.some((c) => c.parent_id === editor.cat.id);
 
@@ -371,27 +369,25 @@ export default function CategoriasManager({
   return (
     <div className="relative">
       {/* ── Lista ── */}
-      {v2 && (
-        <div className="hidden sm:block">
-          <CategoriasManagerV2
-            totalCategories={categories.length}
-            groups={displayGroups}
-            totalCount={totalCount}
-            draggedId={draggedId}
-            dragOverId={dragOverId}
-            onDragStart={setDraggedId}
-            onDragOver={setDragOverId}
-            onDragLeave={(id) => setDragOverId((cur) => (cur === id ? null : cur))}
-            onDrop={handleDrop}
-            onDragEnd={() => { setDraggedId(null); setDragOverId(null); }}
-            onNewCategory={openNew}
-            onEditCategory={openEdit}
-            onViewTransactions={(cat) => router.push(`/transacciones?categoria=${encodeURIComponent(cat.value)}`)}
-          />
-        </div>
-      )}
-      {/* En móvil siempre se ve la lista clásica, aunque el diseño nuevo esté activo */}
-      <div className={v2 ? "sm:hidden" : ""}>
+      <div className="hidden sm:block">
+        <CategoriasManagerV2
+          totalCategories={categories.length}
+          groups={displayGroups}
+          totalCount={totalCount}
+          draggedId={draggedId}
+          dragOverId={dragOverId}
+          onDragStart={setDraggedId}
+          onDragOver={setDragOverId}
+          onDragLeave={(id) => setDragOverId((cur) => (cur === id ? null : cur))}
+          onDrop={handleDrop}
+          onDragEnd={() => { setDraggedId(null); setDragOverId(null); }}
+          onNewCategory={openNew}
+          onEditCategory={openEdit}
+          onViewTransactions={(cat) => router.push(`/transacciones?categoria=${encodeURIComponent(cat.value)}`)}
+        />
+      </div>
+      {/* En móvil siempre se ve la lista clásica */}
+      <div className="sm:hidden">
         <div className="flex items-center justify-between mb-8">
           <p className="text-sm text-navy/55">{categories.length} categorías</p>
           <Button onClick={openNew} className="flex items-center gap-2">

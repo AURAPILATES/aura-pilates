@@ -10,7 +10,6 @@ import TableBox from "@/app/components/TableBox";
 import TableToolbar from "@/app/components/TableToolbar";
 import Select from "@/app/components/Select";
 import { fmt } from "@/lib/analytics";
-import { useDesignVersion } from "@/app/components/DesignVersionContext";
 import ClientesMatrizComprasV2 from "./ClientesMatrizComprasV2";
 
 export const PRODUCT_FILTERS = ["Bàsic", "Plus", "Pro", "Pack 4 clases", "Pack 8 clases", "Pack Benvinguda", "Clase suelta"];
@@ -76,7 +75,6 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
   const [onlyUpsell, setOnlyUpsell] = useState(false);
   const [selected, setSelected] = useState<CustomerRow | null>(null);
   const [page, setPage] = useState(0);
-  const { v2 } = useDesignVersion();
 
   const { months, matrix } = useMemo(() => {
     const now = new Date();
@@ -222,9 +220,8 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
 
   return (
     <div className="flex flex-col items-center">
-      {v2 && (
-        <div className="hidden sm:block w-full">
-          <ClientesMatrizComprasV2
+      <div className="hidden sm:block w-full">
+        <ClientesMatrizComprasV2
             search={search}
             onSearchChange={setSearch}
             productFilter={productFilter}
@@ -250,12 +247,11 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
             pageSize={PAGE_SIZE}
             onPageChange={setPage}
             onRowClick={setSelected}
-            onExportCsv={downloadCsv}
-          />
-        </div>
-      )}
-      {/* En móvil siempre se ve la tabla clásica (scroll horizontal), aunque el diseño nuevo esté activo */}
-      <div className={v2 ? "sm:hidden w-full flex flex-col items-center" : "contents"}>
+          onExportCsv={downloadCsv}
+        />
+      </div>
+      {/* En móvil siempre se ve la tabla clásica (scroll horizontal) */}
+      <div className="sm:hidden w-full flex flex-col items-center">
       <TableToolbar>
         <SearchInput value={search} onChange={setSearch} placeholder="Buscar cliente…" className="w-44" />
           <Select value={productFilter} onChange={(e) => setProductFilter(e.target.value)} className="w-auto">

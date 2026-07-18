@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, DM_Mono, Playfair_Display } from "next/font/google";
 import AppShell from "./components/AppShell";
-import { DesignVersionProvider } from "./components/DesignVersionContext";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
@@ -20,9 +19,7 @@ export default function RootLayout({
   return (
     <html lang="es" className={`${inter.variable} ${dmMono.variable} ${playfair.variable}`}>
       <body className="bg-app-bg text-navy antialiased">
-        <DesignVersionProvider>
-          <AppShell>{children}</AppShell>
-        </DesignVersionProvider>
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

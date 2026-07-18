@@ -6,7 +6,6 @@ import type { Transaction } from "@/lib/transactions";
 import type { Category } from "@/lib/categories";
 import SectionTabs from "@/app/components/SectionTabs";
 import SectionTabsV2 from "@/app/components/v2/SectionTabsV2";
-import { useDesignVersion } from "@/app/components/DesignVersionContext";
 import TransaccionesList from "./TransaccionesList";
 import RecurrentesList, { type PendingSeriesRow, type ConfirmedExpenseRow } from "./RecurrentesList";
 import type { Contact } from "./actions";
@@ -48,7 +47,6 @@ export default function TransaccionesTabs({
   const searchParams = useSearchParams();
   const initialTab = searchParams.get("tab") === "recurrentes" ? "recurrentes" : "movimientos";
   const [tab, setTab] = useState<Tab>(initialTab);
-  const { v2 } = useDesignVersion();
 
   function selectTab(next: Tab) {
     setTab(next);
@@ -62,12 +60,10 @@ export default function TransaccionesTabs({
 
   return (
     <div>
-      {v2 && (
-        <div className="hidden sm:block">
-          <SectionTabsV2 className="mb-7" active={tab} onChange={selectTab} tabs={tabsWithBadge} />
-        </div>
-      )}
-      <div className={v2 ? "sm:hidden" : ""}>
+      <div className="hidden sm:block">
+        <SectionTabsV2 className="mb-7" active={tab} onChange={selectTab} tabs={tabsWithBadge} />
+      </div>
+      <div className="sm:hidden">
         <SectionTabs className="mb-7" active={tab} onChange={selectTab} tabs={tabsWithBadge} />
       </div>
 

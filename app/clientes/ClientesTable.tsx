@@ -8,7 +8,6 @@ import TablePagination from "@/app/components/TablePagination";
 import TableBox from "@/app/components/TableBox";
 import TableToolbar from "@/app/components/TableToolbar";
 import { fmt } from "@/lib/analytics";
-import { useDesignVersion } from "@/app/components/DesignVersionContext";
 import ClientesTableV2 from "./ClientesTableV2";
 import type { StripeCustomer } from "@/lib/stripeCustomers";
 import type { StripePayment } from "@/lib/stripePayments";
@@ -147,7 +146,6 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
   const [sortDir,  setSortDir]  = useState<SortDir>("desc");
   const [selected, setSelected] = useState<CustomerRow | null>(null);
   const [page, setPage] = useState(0);
-  const { v2 } = useDesignVersion();
 
   useEffect(() => { setPage(0); }, [search, filter, activeMonth]);
 
@@ -290,29 +288,27 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
           </button>
         </div>
       )}
-      {v2 && (
-        <div className="hidden sm:block">
-          <ClientesTableV2
-            search={search}
-            onSearchChange={setSearch}
-            filter={filter}
-            onFilterChange={setFilter}
-            filterLabels={filterLabels}
-            sortKey={sortKey}
-            sortDir={sortDir}
-            onToggleSort={toggleSort}
-            rows={pageRows}
-            totalCount={filtered.length}
-            page={safePage}
-            pageSize={PAGE_SIZE}
-            onPageChange={setPage}
-            onRowClick={setSelected}
-            onExportCsv={downloadCsv}
-          />
-        </div>
-      )}
-      {/* En móvil siempre se ve la tabla clásica (responsive), aunque el diseño nuevo esté activo */}
-      <div className={v2 ? "sm:hidden" : ""}>
+      <div className="hidden sm:block">
+        <ClientesTableV2
+          search={search}
+          onSearchChange={setSearch}
+          filter={filter}
+          onFilterChange={setFilter}
+          filterLabels={filterLabels}
+          sortKey={sortKey}
+          sortDir={sortDir}
+          onToggleSort={toggleSort}
+          rows={pageRows}
+          totalCount={filtered.length}
+          page={safePage}
+          pageSize={PAGE_SIZE}
+          onPageChange={setPage}
+          onRowClick={setSelected}
+          onExportCsv={downloadCsv}
+        />
+      </div>
+      {/* En móvil siempre se ve la tabla clásica (responsive) */}
+      <div className="sm:hidden">
       {/* Controls */}
       <TableToolbar>
         {/* Search + CSV */}

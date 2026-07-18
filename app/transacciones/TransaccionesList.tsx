@@ -7,7 +7,7 @@ import type { Category } from "@/lib/categories";
 import { sortCategoriesHierarchical, categoryDisplayLabel } from "@/lib/categories";
 import { seriesKeyFor } from "@/lib/recurring";
 import type { RecurringExpense } from "@/lib/recurringExpenses";
-import { updateTransactionCategory, updateTransactionConcept, updateTransactionContact, updateTransactionBankDetails, updateTransactionDate, updateTransactionPaymentMethod, softDeleteTransactions, type Contact } from "./actions";
+import { updateTransactionCategory, updateTransactionConcept, updateTransactionBankDetails, updateTransactionDate, updateTransactionPaymentMethod, softDeleteTransactions, type Contact } from "./actions";
 import DateFilter from "@/app/components/DateFilter";
 import SearchInput from "@/app/components/SearchInput";
 import TablePagination from "@/app/components/TablePagination";
@@ -17,7 +17,6 @@ import AddCashModal from "./AddCashModal";
 import PapeleraDrawer from "./PapeleraDrawer";
 import TransactionDrawer from "./TransactionDrawer";
 import { CatIcon } from "./catIcons";
-import { useDesignVersion } from "@/app/components/DesignVersionContext";
 import TransaccionesListV2 from "./TransaccionesListV2";
 
 export const MONTHS_ES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
@@ -79,35 +78,6 @@ export function SourceAvatar({ method, size = 22 }: { method: string; size?: num
   const imgSize = Math.round(size * 16 / 22);
   return (
     <img src="/Caixabank logo.png" alt="CaixaBank" width={imgSize} height={imgSize} className="shrink-0 object-contain" />
-  );
-}
-
-// ── Inline edit confirm/cancel ─────────────────────────────────────────────────
-function EditConfirmButtons({ onConfirm, onCancel, small = false }: { onConfirm: () => void; onCancel: () => void; small?: boolean }) {
-  const size = small ? 18 : 20;
-  return (
-    <div className="flex items-center gap-0.5 shrink-0">
-      <button
-        onClick={onConfirm}
-        title="Guardar"
-        className="flex items-center justify-center rounded-full text-success/70 hover:bg-success/10 hover:text-success transition-colors"
-        style={{ width: size, height: size }}
-      >
-        <svg width={small ? 11 : 12} height={small ? 11 : 12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="20 6 9 17 4 12" />
-        </svg>
-      </button>
-      <button
-        onClick={onCancel}
-        title="Cancelar"
-        className="flex items-center justify-center rounded-full text-navy/35 hover:bg-navy/[0.06] hover:text-navy/60 transition-colors"
-        style={{ width: size, height: size }}
-      >
-        <svg width={small ? 10 : 11} height={small ? 10 : 11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-        </svg>
-      </button>
-    </div>
   );
 }
 
@@ -541,38 +511,6 @@ export function MoreOptionsMenu({
 
 export type SortKey = "date" | "amount" | "concept";
 
-function SortableHeader({
-  label, sortKey, align, className = "", currentKey, dir, onClick,
-}: {
-  label: string;
-  sortKey: SortKey;
-  align: "left" | "right";
-  className?: string;
-  currentKey: SortKey | null;
-  dir: "asc" | "desc";
-  onClick: (key: SortKey) => void;
-}) {
-  const isActive = currentKey === sortKey;
-  return (
-    <div
-      onClick={() => onClick(sortKey)}
-      className={`${align === "right" ? "text-right" : "text-left"} ${className} text-[11px] font-semibold uppercase tracking-wider cursor-pointer select-none transition-colors ${
-        isActive ? "text-navy" : "text-navy/45 hover:text-navy/70"
-      }`}
-    >
-      <span className={`inline-flex items-center gap-1 ${align === "right" ? "flex-row-reverse" : ""}`}>
-        {label}
-        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"
-          className={`shrink-0 transition-opacity ${isActive ? "opacity-100" : "opacity-0 group-hover/head:opacity-30"}`}
-          style={{ transform: isActive && dir === "asc" ? "rotate(180deg)" : undefined }}
-        >
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
-      </span>
-    </div>
-  );
-}
-
 type Props = {
   transactions: Transaction[];
   categories: Category[];
@@ -603,8 +541,6 @@ export default function TransaccionesList({
   const [originFilter, setOriginFilter] = useState("all");
   const [showMobileFilters,  setShowMobileFilters]  = useState(false);
   const [mobileSelectMode,   setMobileSelectMode]   = useState(false);
-  const [editingField, setEditingField] = useState<{ id: string; field: "contact" | "concept" } | null>(null);
-  const [editValue, setEditValue] = useState("");
   const [selected,     setSelected]     = useState<Set<string>>(new Set());
   const [bulkCat,      setBulkCat]      = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState(false);
@@ -618,7 +554,6 @@ export default function TransaccionesList({
   const [drawerTxnId, setDrawerTxnId] = useState<string | null>(null);
   const drawerTxn = drawerTxnId ? transactions.find((t) => t.id === drawerTxnId) ?? null : null;
   const [page, setPage] = useState(0);
-  const { v2 } = useDesignVersion();
 
   function toggleSort(key: "date" | "amount" | "concept") {
     if (sortKey === key) {
@@ -734,8 +669,6 @@ export default function TransaccionesList({
     return [...map.entries()].sort((a, b) => b[0].localeCompare(a[0]));
   }, [pagedFlat]);
 
-  const allFilteredIds = filtered.map((t) => t.id);
-  const allSelected    = allFilteredIds.length > 0 && allFilteredIds.every((id) => selected.has(id));
   const someSelected   = selected.size > 0;
 
   const kpiBase  = someSelected ? baseFiltered.filter((t) => selected.has(t.id)) : baseFiltered;
@@ -743,10 +676,6 @@ export default function TransaccionesList({
   const totalOut = kpiBase.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
   const neto     = totalIn - totalOut;
 
-
-  function toggleAll() {
-    setSelected(allSelected ? new Set() : new Set(allFilteredIds));
-  }
   function toggleOne(id: string) {
     setSelected((prev) => {
       const next = new Set(prev);
@@ -785,30 +714,6 @@ export default function TransaccionesList({
   function handleDeleteOne(id: string) {
     startTransition(async () => { await softDeleteTransactions([id]); });
   }
-  function startEditing(t: Transaction, which: "primary" | "secondary") {
-    if (which === "primary") {
-      if (t.contact != null) {
-        setEditingField({ id: t.id, field: "contact" });
-        setEditValue(t.contact);
-      } else {
-        setEditingField({ id: t.id, field: "concept" });
-        setEditValue(t.concept ?? "");
-      }
-    } else {
-      setEditingField({ id: t.id, field: "concept" });
-      setEditValue(t.concept ?? "");
-    }
-  }
-  function saveEdit() {
-    if (!editingField) return;
-    const { id, field } = editingField;
-    const val = editValue;
-    startTransition(async () => {
-      if (field === "contact") await updateTransactionContact(id, val);
-      else await updateTransactionConcept(id, val);
-    });
-    setEditingField(null);
-  }
 
   function exportCSV() {
     const cols = ["fecha", "concepto", "contacto", "categoría", "importe", "saldo", "notas"];
@@ -835,9 +740,8 @@ export default function TransaccionesList({
 
   return (
     <div>
-      {/* ── Desktop: KPIs + toolbar + tabla (v2 los sustituye por completo; en móvil siempre clásico) ── */}
-      {v2 && (
-        <div className="hidden sm:block">
+      {/* ── Desktop: KPIs + toolbar + tabla ── */}
+      <div className="hidden sm:block">
         <TransaccionesListV2
           categories={categories}
           uncategorizedCount={uncategorizedCount}
@@ -870,59 +774,7 @@ export default function TransaccionesList({
           recurringPeriods={recurringPeriods}
           onCategoryChange={handleCategoryChange}
         />
-        </div>
-      )}
-      <div className={`${v2 ? "hidden" : "hidden sm:block"} mb-8`}>
-        <div className="flex items-stretch gap-3">
-          {/* Entradas — clicable */}
-          <button
-            type="button"
-            onClick={() => setDirectionFilter(directionFilter === "in" ? "all" : "in")}
-            className={`flex-1 min-w-[130px] text-left rounded-2xl px-6 py-5 transition-all duration-200 ${
-              directionFilter === "in"
-                ? "bg-success/[0.08] border border-success/20 shadow-card"
-                : "bg-white border border-navy/[0.07] shadow-card hover:bg-navy/[0.02]"
-            }`}
-          >
-            <p className="text-[10px] font-medium text-navy/35 uppercase tracking-widest leading-none mb-3">Entradas</p>
-            <p className="text-[22px] font-semibold text-success tabular-nums leading-none">{fmtAmt(totalIn)}</p>
-            <p className={`text-[10px] text-success/60 mt-2.5 ${directionFilter === "in" ? "" : "invisible"}`}>activo ×</p>
-          </button>
-
-          {/* Salidas — clicable */}
-          <button
-            type="button"
-            onClick={() => setDirectionFilter(directionFilter === "out" ? "all" : "out")}
-            className={`flex-1 min-w-[130px] text-left rounded-2xl px-6 py-5 transition-all duration-200 ${
-              directionFilter === "out"
-                ? "bg-[#B85C3A]/[0.08] border border-[#B85C3A]/20 shadow-card"
-                : "bg-white border border-navy/[0.07] shadow-card hover:bg-navy/[0.02]"
-            }`}
-          >
-            <p className="text-[10px] font-medium text-navy/35 uppercase tracking-widest leading-none mb-3">Salidas</p>
-            <p className="text-[22px] font-semibold text-[#B85C3A] tabular-nums leading-none">{fmtAmt(totalOut)}</p>
-            <p className={`text-[10px] text-[#B85C3A]/60 mt-2.5 ${directionFilter === "out" ? "" : "invisible"}`}>activo ×</p>
-          </button>
-
-          {/* Diferencia — no clicable */}
-          <div className="flex-1 min-w-[130px] bg-white border border-navy/[0.07] rounded-2xl shadow-card px-6 py-5">
-            <p className="text-[10px] font-medium text-navy/35 uppercase tracking-widest leading-none mb-3">
-              {someSelected ? "Neto selección" : "Diferencia"}
-            </p>
-            <div className="flex items-baseline gap-2 leading-none">
-              <p className={`text-[22px] font-semibold tabular-nums ${neto >= 0 ? "text-navy" : "text-danger"}`}>
-                {neto < 0 && "−"}{fmtAmt(Math.abs(neto))}
-              </p>
-              {!someSelected && totalIn > 0 && (
-                <span className="text-[11px] text-navy/30">
-                  margen {(neto / totalIn * 100).toFixed(1).replace(".", ",")}%
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
       </div>
-
       {/* ── Mobile: KPIs (clásico, también con v2 activo) ── */}
       <div className="sm:hidden grid grid-cols-3 gap-2 mb-5">
         {/* Entradas — clicable */}
@@ -1029,41 +881,6 @@ export default function TransaccionesList({
         </button>
       )}
 
-
-      {/* ── Desktop toolbar (oculta en v2 — ya viene dentro de TransaccionesListV2) ── */}
-      <div className={v2 ? "hidden" : "hidden sm:block"}>
-        <div className="flex items-center gap-2 mb-5">
-          <SearchInput value={search} onChange={setSearch} placeholder="Buscar concepto o contacto…" className="flex-1" />
-          <DateFilter />
-          <CategoryMultiFilter selected={catFilters} categories={categories} onChange={setCatFilters} />
-          <MoreOptionsMenu
-            onlyRecurring={onlyRecurring}
-            setOnlyRecurring={setOnlyRecurring}
-            originFilter={originFilter}
-            setOriginFilter={setOriginFilter}
-            onExport={exportCSV}
-            onPapelera={() => setShowPapelera(true)}
-          />
-          <ImportButton onManual={() => setShowAddCash(true)} />
-        </div>
-        <div className="flex items-center gap-3 mb-6">
-          {!someSelected && uncategorizedCount > 0 && (
-            <button
-              onClick={() => setCatFilters(catFilters.includes("__none__") ? catFilters.filter((v) => v !== "__none__") : [...catFilters, "__none__"])}
-              className="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-warning/10 text-warning/80 hover:bg-warning/15 transition-colors"
-            >
-              <span>⚠</span><span>{uncategorizedCount} sin etiquetar</span>
-            </button>
-          )}
-          {isPending && <span className="text-xs text-primary/60">Guardando…</span>}
-          {(catFilters.length > 0 || originFilter !== "all" || onlyRecurring || directionFilter !== "all" || currentRange !== "all" || search !== "") && (
-            <button
-              onClick={() => { setCatFilters([]); setOriginFilter("all"); setOnlyRecurring(false); setDirectionFilter("all"); setSearch(""); if (currentRange !== "all") router.push(pathname); }}
-              className="text-xs text-navy/45 hover:text-navy underline whitespace-nowrap"
-            >Eliminar filtros</button>
-          )}
-        </div>
-      </div>
 
       {/* ── Mobile: toolbar (clásico) ── */}
       <div className="sm:hidden mb-3">
@@ -1279,182 +1096,6 @@ export default function TransaccionesList({
           <TablePagination page={safePage} totalItems={sortedFiltered.length} pageSize={PAGE_SIZE} onPageChange={setPage} />
         )}
       </div>
-
-      {/* ── Desktop: lista estilo Revolut (misma identidad visual que mobile) ── */}
-      {(() => {
-        const renderRow = (t: Transaction) => {
-          const recurringPeriod = recurringPeriods[t.id];
-          const isSelected = selected.has(t.id);
-          const primary    = t.contact || t.concept || "—";
-          const secondary  = t.contact && t.concept && t.concept !== t.contact ? t.concept : null;
-          const cat        = t.category ? categories.find((c) => c.value === t.category) : undefined;
-          const accent     = cat ? cat.text_color : CAT_FALLBACK.color;
-          const iconKey    = cat ? cat.emoji : CAT_FALLBACK.emoji;
-
-          return (
-            <div
-              key={t.id}
-              onClick={() => setDrawerTxnId(t.id)}
-              className={`flex items-center gap-4 px-4 py-2.5 border-b border-navy/[0.04] last:border-0 group transition-colors cursor-pointer ${
-                isSelected ? "bg-primary/[0.03]" : "hover:bg-navy/[0.02]"
-              }`}
-            >
-              {/* avatar / checkbox */}
-              <div
-                className="relative w-8 h-8 shrink-0 flex items-center justify-center"
-                onClick={(e) => { e.stopPropagation(); toggleOne(t.id); }}
-              >
-                <div className={`absolute inset-0 flex items-center justify-center transition-opacity ${isSelected ? "opacity-0" : "opacity-100 group-hover:opacity-0"}`}>
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: accent }}>
-                    <CatIcon iconKey={iconKey} name={cat?.label ?? primary} color="#fff" size={15} />
-                  </div>
-                </div>
-                <div className={`absolute inset-0 flex items-center justify-center transition-opacity ${isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}>
-                  <Checkbox checked={isSelected} onChange={() => toggleOne(t.id)} />
-                </div>
-              </div>
-
-              {/* concepto */}
-              <div className="flex-1 min-w-0" onClick={(e) => e.stopPropagation()}>
-                {editingField?.id === t.id && editingField.field === (t.contact != null ? "contact" : "concept") ? (
-                  <div className="flex items-center gap-2">
-                    <input
-                      autoFocus type="text" value={editValue}
-                      onChange={(e) => setEditValue(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") setEditingField(null); }}
-                      className="text-[13px] font-medium text-navy bg-navy/[0.04] rounded-md px-1.5 -mx-1.5 outline-none ring-1 ring-navy/10 focus:ring-navy/20 w-full"
-                    />
-                    <EditConfirmButtons onConfirm={saveEdit} onCancel={() => setEditingField(null)} />
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
-                    <span
-                      className="text-[13px] font-medium text-navy truncate cursor-pointer hover:text-navy/70 transition-colors"
-                      onClick={() => startEditing(t, "primary")}
-                    >{primary}</span>
-                    {recurringPeriod && (
-                      <span className="shrink-0 inline-flex items-center gap-1 text-[11px] text-primary/60 font-medium whitespace-nowrap">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15"/>
-                        </svg>
-                        {recurringPeriod}
-                      </span>
-                    )}
-                  </div>
-                )}
-                {secondary && (
-                  editingField?.id === t.id && editingField.field === "concept" && t.contact != null ? (
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <input
-                        autoFocus type="text" value={editValue}
-                        onChange={(e) => setEditValue(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") setEditingField(null); }}
-                        className="text-xs text-navy/60 bg-navy/[0.04] rounded-md px-1.5 -mx-1.5 outline-none ring-1 ring-navy/10 focus:ring-navy/20 w-full"
-                      />
-                      <EditConfirmButtons onConfirm={saveEdit} onCancel={() => setEditingField(null)} small />
-                    </div>
-                  ) : (
-                    <p
-                      className="text-xs text-navy/40 truncate mt-0.5 cursor-pointer hover:text-navy/60 transition-colors"
-                      onClick={() => startEditing(t, "secondary")}
-                    >{secondary}</p>
-                  )
-                )}
-              </div>
-
-              {/* contacto */}
-              <div className="w-[140px] shrink-0 overflow-hidden">
-                <span className={`text-xs truncate block ${t.contact ? "text-navy/55" : "text-navy/30"}`}>
-                  {t.contact || "Sin asignar"}
-                </span>
-              </div>
-
-              {/* origen */}
-              <div className="w-[110px] shrink-0 flex items-center gap-1.5 text-navy/40">
-                <OriginIcon method={t.payment_method} />
-                <span className="text-xs leading-none whitespace-nowrap truncate">{originLabel(t.payment_method)}</span>
-              </div>
-
-              {/* categoría */}
-              <div className="w-[170px] shrink-0" onClick={(e) => e.stopPropagation()}>
-                <CategoryPill category={t.category} categories={categories} onChange={(cat) => handleCategoryChange(t.id, cat)} />
-              </div>
-
-              {/* fecha */}
-              <div className="w-[90px] shrink-0 text-right">
-                <span className="text-xs text-navy/45 tabular-nums whitespace-nowrap">{fmtDate(t.date)}</span>
-              </div>
-
-              {/* importe */}
-              <div className="w-[120px] shrink-0 text-right">
-                <span className={`text-sm font-semibold tabular-nums ${t.amount > 0 ? "text-success" : "text-navy/75"}`}>
-                  {t.amount > 0 ? "+" : "−"}{fmtAmt(t.amount)}
-                </span>
-                {t.balance != null && (
-                  <p className="text-[10px] text-navy/40 tabular-nums mt-0.5">{fmtAmt(t.balance)}</p>
-                )}
-              </div>
-            </div>
-          );
-        };
-
-        const headerRow = (
-          <div className="flex items-center gap-4 px-4 py-3 bg-navy/[0.02] border-b border-navy/[0.06] group/head">
-            <div className="w-9 shrink-0 flex items-center pl-[3px]">
-              <Checkbox checked={allSelected} onChange={toggleAll} />
-            </div>
-            <SortableHeader label="Concepto" sortKey="concept" align="left" className="flex-1" currentKey={sortKey} dir={sortDir} onClick={toggleSort} />
-            <div className="w-[140px] shrink-0 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Contacto</div>
-            <div className="w-[110px] shrink-0 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Origen</div>
-            <div className="w-[170px] shrink-0 text-[11px] font-semibold text-navy/45 uppercase tracking-wider">Categoría</div>
-            <SortableHeader label="Fecha" sortKey="date" align="right" className="w-[90px]" currentKey={sortKey} dir={sortDir} onClick={toggleSort} />
-            <SortableHeader label="Importe / Saldo" sortKey="amount" align="right" className="w-[120px]" currentKey={sortKey} dir={sortDir} onClick={toggleSort} />
-          </div>
-        );
-
-        return (
-          <div className={`${v2 ? "hidden" : "hidden sm:block"} bg-white border border-navy/[0.07] shadow-card rounded-[5px] overflow-hidden`}>
-            {sortedFiltered.length === 0 ? (
-              <div className="bg-white">
-                {headerRow}
-                <p className="py-12 text-center text-sm text-navy/40">Sin resultados</p>
-              </div>
-            ) : sortKey ? (
-              /* Orden manual activo → lista plana, sin agrupar por mes */
-              <div className={`bg-white ${isPending ? "opacity-50 pointer-events-none" : ""}`}>
-                {headerRow}
-                {pagedFlat.map(renderRow)}
-              </div>
-            ) : (
-              /* Agrupado por mes, lista continua */
-              <div className={`bg-white ${isPending ? "opacity-50 pointer-events-none" : ""}`}>
-                {headerRow}
-                {byMonth.map(([monthKey, monthTxns]) => {
-                  const monthNet = monthTxns.reduce((s, t) => s + t.amount, 0);
-                  const [y, m] = monthKey.split("-");
-                  const monthName = MONTHS_ES[parseInt(m) - 1];
-                  const label = monthName.charAt(0).toUpperCase() + monthName.slice(1)
-                    + (parseInt(y) !== new Date().getFullYear() ? ` ${y}` : "");
-                  return (
-                    <div key={monthKey}>
-                      <div className="flex items-baseline justify-between px-4 py-2 bg-navy/[0.025] border-y border-navy/[0.07]">
-                        <span className="text-[13px] font-semibold text-navy/60 uppercase tracking-wide">{label}</span>
-                        <span className={`text-sm font-semibold tabular-nums ${monthNet < 0 ? "text-danger" : "text-success"}`}>
-                          {monthNet < 0 ? "−" : "+"}{fmtAmt(Math.abs(monthNet))}
-                        </span>
-                      </div>
-                      {monthTxns.map(renderRow)}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-            {sortedFiltered.length > 0 && (
-              <TablePagination page={safePage} totalItems={sortedFiltered.length} pageSize={PAGE_SIZE} onPageChange={setPage} />
-            )}
-          </div>
-        );
-      })()}
 
       {showAddCash && (
         <AddCashModal categories={categories} onClose={() => setShowAddCash(false)} />

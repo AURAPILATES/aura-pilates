@@ -17,7 +17,6 @@ import TableBox from "@/app/components/TableBox";
 import TableToolbar from "@/app/components/TableToolbar";
 import { CategoryPill, CategoryBadge } from "@/app/transacciones/TransaccionesList";
 import NewContactDrawer, { AutomationIcon } from "@/app/transacciones/NewContactDrawer";
-import { useDesignVersion } from "@/app/components/DesignVersionContext";
 import ContactosManagerV2 from "./ContactosManagerV2";
 
 const PAGE_SIZE = 25;
@@ -317,32 +316,29 @@ export default function ContactosManager({ contacts: initialContacts, categories
   const pageRows = filtered.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
 
   const selected = selectedId !== null ? contacts.find((c) => c.id === selectedId) ?? null : null;
-  const { v2 } = useDesignVersion();
 
   return (
     <div>
-      {v2 && (
-        <div className="hidden sm:block">
-          <ContactosManagerV2
-            search={search}
-            onSearchChange={(v) => { setSearch(v); setPage(0); }}
-            rows={pageRows}
-            totalCount={filtered.length}
-            page={safePage}
-            pageSize={PAGE_SIZE}
-            onPageChange={setPage}
-            categories={categories}
-            contactStats={contactStats}
-            onRowClick={(id) => setSelectedId(id)}
-            onNewContact={() => setCreating(true)}
-            onRecompute={handleRecompute}
-            recomputing={recomputing}
-            recomputed={recomputed}
-          />
-        </div>
-      )}
-      {/* En móvil siempre se ve la tabla clásica, aunque el diseño nuevo esté activo */}
-      <div className={v2 ? "sm:hidden" : ""}>
+      <div className="hidden sm:block">
+        <ContactosManagerV2
+          search={search}
+          onSearchChange={(v) => { setSearch(v); setPage(0); }}
+          rows={pageRows}
+          totalCount={filtered.length}
+          page={safePage}
+          pageSize={PAGE_SIZE}
+          onPageChange={setPage}
+          categories={categories}
+          contactStats={contactStats}
+          onRowClick={(id) => setSelectedId(id)}
+          onNewContact={() => setCreating(true)}
+          onRecompute={handleRecompute}
+          recomputing={recomputing}
+          recomputed={recomputed}
+        />
+      </div>
+      {/* En móvil siempre se ve la tabla clásica */}
+      <div className="sm:hidden">
       <TableToolbar>
         <SearchInput value={search} onChange={(v) => { setSearch(v); setPage(0); }} placeholder="Buscar contacto…" className="flex-1 min-w-[200px]" />
         <button

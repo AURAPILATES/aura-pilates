@@ -14,7 +14,6 @@ import type { RecurringExpense, RecurringExpenseEndType } from "@/lib/recurringE
 import type { Contact } from "./actions";
 import { CategoryBadge } from "./TransaccionesList";
 import type { ContactPickResult } from "./ContactPicker";
-import { useDesignVersion } from "@/app/components/DesignVersionContext";
 import RecurrentesListV2 from "./RecurrentesListV2";
 import {
   recordRecurringExpense,
@@ -668,7 +667,6 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
   const [openConfirmedId, setOpenConfirmedId] = useState<number | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [confirmedPage, setConfirmedPage] = useState(0);
-  const { v2 } = useDesignVersion();
 
   const confirmedPageRows = confirmed.slice(confirmedPage * PAGE_SIZE, (confirmedPage + 1) * PAGE_SIZE);
 
@@ -766,28 +764,26 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
 
   return (
     <div className="space-y-4">
-      {v2 && (
-        <div className="hidden sm:block">
-          <RecurrentesListV2
-            pending={pending}
-            confirmed={confirmed}
-            confirmedPageRows={confirmedPageRows}
-            categories={categories}
-            contacts={contacts}
-            pickFor={pickFor}
-            ivaRateFor={ivaRateFor}
-            retencionRateFor={retencionRateFor}
-            onOpenPending={(row) => setOpenPendingKey(row.keys[0])}
-            onOpenConfirmed={(row) => setOpenConfirmedId(row.expense.id)}
-            onConfirmRow={confirmRow}
-            confirmedPage={confirmedPage}
-            pageSize={PAGE_SIZE}
-            onConfirmedPageChange={setConfirmedPage}
-          />
-        </div>
-      )}
-      {/* En móvil siempre se ve la lista clásica (responsive), aunque el diseño nuevo esté activo */}
-      <div className={v2 ? "sm:hidden space-y-4" : "contents"}>
+      <div className="hidden sm:block">
+        <RecurrentesListV2
+          pending={pending}
+          confirmed={confirmed}
+          confirmedPageRows={confirmedPageRows}
+          categories={categories}
+          contacts={contacts}
+          pickFor={pickFor}
+          ivaRateFor={ivaRateFor}
+          retencionRateFor={retencionRateFor}
+          onOpenPending={(row) => setOpenPendingKey(row.keys[0])}
+          onOpenConfirmed={(row) => setOpenConfirmedId(row.expense.id)}
+          onConfirmRow={confirmRow}
+          confirmedPage={confirmedPage}
+          pageSize={PAGE_SIZE}
+          onConfirmedPageChange={setConfirmedPage}
+        />
+      </div>
+      {/* En móvil siempre se ve la lista clásica (responsive) */}
+      <div className="sm:hidden space-y-4">
       {pending.length > 0 && (
         <TableBox
           title="Gastos detectados"

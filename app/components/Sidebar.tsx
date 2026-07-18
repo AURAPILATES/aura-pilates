@@ -4,7 +4,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import SyncStatusPanel from "./SyncStatusPanel";
-import DesignVersionToggle from "./DesignVersionToggle";
 import { usePendingRecurringCount } from "./usePendingRecurringCount";
 import { navGroups, IconSettings } from "./sidebarNav";
 
@@ -68,7 +67,6 @@ export default function Sidebar() {
 
       {/* Settings */}
       <div className="px-3 py-4 border-t border-navy/[0.06] space-y-0.5">
-        <DesignVersionToggle />
         <Link
           href="/configuracion"
           className={`flex items-center gap-[9px] px-3 py-2.5 rounded-lg text-[13px] font-medium transition-colors ${
