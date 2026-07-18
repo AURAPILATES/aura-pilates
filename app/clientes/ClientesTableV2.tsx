@@ -62,14 +62,23 @@ export default function ClientesTableV2({
 
       <div className="mt-[24px]">
         <div className={tableHeadClassV2} style={gridColsV2(COLS)}>
-          <span className="flex items-center cursor-pointer select-none" onClick={() => onToggleSort("name")}>
+          <span
+            className={`flex items-center cursor-pointer select-none ${sortKey === "name" ? "text-[#18181b]" : ""}`}
+            onClick={() => onToggleSort("name")}
+          >
             Cliente<SortArrowV2 active={sortKey === "name"} dir={sortDir} />
           </span>
           <span>Plan</span>
-          <span className="flex items-center cursor-pointer select-none" onClick={() => onToggleSort("totalSpent")}>
+          <span
+            className={`flex items-center cursor-pointer select-none ${sortKey === "totalSpent" ? "text-[#18181b]" : ""}`}
+            onClick={() => onToggleSort("totalSpent")}
+          >
             Total<SortArrowV2 active={sortKey === "totalSpent"} dir={sortDir} />
           </span>
-          <span className="flex items-center cursor-pointer select-none" onClick={() => onToggleSort("lastPaymentDate")}>
+          <span
+            className={`flex items-center cursor-pointer select-none ${sortKey === "lastPaymentDate" ? "text-[#18181b]" : ""}`}
+            onClick={() => onToggleSort("lastPaymentDate")}
+          >
             Último pago<SortArrowV2 active={sortKey === "lastPaymentDate"} dir={sortDir} />
           </span>
           <span>Estado</span>

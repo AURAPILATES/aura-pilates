@@ -4,7 +4,7 @@ import Select from "@/app/components/Select";
 import { IconButtonV2 } from "@/app/components/v2/ButtonsV2";
 import { tableHeadClassV2, tableRowClassV2, tableFootClassV2, gridColsV2 } from "@/app/components/v2/tableStylesV2";
 import { fmt } from "@/lib/analytics";
-import { PRODUCT_FILTERS, monthLabel, productAbbr, productColor, type MatrixRow, type SortKey } from "./ClientesMatrizCompras";
+import { PRODUCT_FILTERS, PURCHASE_COUNT_FILTERS, monthLabel, productAbbr, productColor, type MatrixRow, type SortKey } from "./ClientesMatrizCompras";
 
 type Props = {
   search: string;
@@ -13,6 +13,8 @@ type Props = {
   onProductFilterChange: (v: string) => void;
   firstPurchaseFilter: string;
   onFirstPurchaseFilterChange: (v: string) => void;
+  purchaseCountFilter: string;
+  onPurchaseCountFilterChange: (v: string) => void;
   onlyInactive: boolean;
   onToggleOnlyInactive: () => void;
   onlyUpsell: boolean;
@@ -40,6 +42,7 @@ function sortArrow(active: boolean, dir: "asc" | "desc") {
 
 export default function ClientesMatrizComprasV2({
   search, onSearchChange, productFilter, onProductFilterChange, firstPurchaseFilter, onFirstPurchaseFilterChange,
+  purchaseCountFilter, onPurchaseCountFilterChange,
   onlyInactive, onToggleOnlyInactive, onlyUpsell, onToggleOnlyUpsell, lastMonth, months, rows,
   sortKey, sortDir, onToggleSort, monthTotals, grandTotal, totalCount, page, pageSize, onPageChange, onRowClick, onExportCsv,
 }: Props) {
@@ -62,6 +65,12 @@ export default function ClientesMatrizComprasV2({
           <option value="">Primera compra: todas</option>
           {months.map((m) => (
             <option key={m} value={m}>{monthLabel(m)}</option>
+          ))}
+        </Select>
+        <Select variant="v2" value={purchaseCountFilter} onChange={(e) => onPurchaseCountFilterChange(e.target.value)} className="w-auto">
+          <option value="">Nº de compras: todas</option>
+          {PURCHASE_COUNT_FILTERS.map((n) => (
+            <option key={n} value={n}>{n} compra{n === "1" ? "" : "s"}</option>
           ))}
         </Select>
         <button
@@ -93,16 +102,25 @@ export default function ClientesMatrizComprasV2({
       <div className="mt-[24px] overflow-x-auto">
         <div>
           <div className={tableHeadClassV2} style={gridColsV2(cols)}>
-            <span className="cursor-pointer select-none" onClick={() => onToggleSort("name")}>
+            <span
+              className={`cursor-pointer select-none ${sortKey === "name" ? "text-[#18181b]" : ""}`}
+              onClick={() => onToggleSort("name")}
+            >
               Cliente{sortArrow(sortKey === "name", sortDir)}
             </span>
-            <span className="cursor-pointer select-none" onClick={() => onToggleSort("first")}>
+            <span
+              className={`cursor-pointer select-none ${sortKey === "first" ? "text-[#18181b]" : ""}`}
+              onClick={() => onToggleSort("first")}
+            >
               Primera compra{sortArrow(sortKey === "first", sortDir)}
             </span>
             {months.map((m) => (
               <span key={m} className="text-center whitespace-nowrap">{monthLabel(m)}</span>
             ))}
-            <span className="text-right cursor-pointer select-none" onClick={() => onToggleSort("total")}>
+            <span
+              className={`text-right cursor-pointer select-none ${sortKey === "total" ? "text-[#18181b]" : ""}`}
+              onClick={() => onToggleSort("total")}
+            >
               Total{sortArrow(sortKey === "total", sortDir)}
             </span>
           </div>

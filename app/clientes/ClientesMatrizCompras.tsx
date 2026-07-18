@@ -57,7 +57,10 @@ export type MatrixRow = {
   products: Set<string>;
   firstPurchase: string | null;
   isUpsellCandidate: boolean;
+  purchaseCount: number;
 };
+
+export const PURCHASE_COUNT_FILTERS = ["1", "2", "3", "4", "5+"];
 
 export type SortKey = "name" | "total" | "first";
 const PAGE_SIZE = 30;
@@ -68,6 +71,7 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [productFilter, setProductFilter] = useState<string>("");
   const [firstPurchaseFilter, setFirstPurchaseFilter] = useState<string>("");
+  const [purchaseCountFilter, setPurchaseCountFilter] = useState<string>("");
   const [onlyInactive, setOnlyInactive] = useState(false);
   const [onlyUpsell, setOnlyUpsell] = useState(false);
   const [selected, setSelected] = useState<CustomerRow | null>(null);
@@ -88,6 +92,7 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
       const byMonth: Record<string, Array<{ product: string; amount: number }>> = {};
       let totalPaid = 0;
       let firstPurchase: string | null = null;
+      let purchaseCount = 0;
       const products = new Set<string>();
       for (const p of payments) {
         if (!p.customerId || !c.stripeIds.includes(p.customerId)) continue;
@@ -95,13 +100,14 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
         if (!byMonth[m]) byMonth[m] = [];
         byMonth[m].push({ product: p.inferredProduct, amount: p.amount });
         totalPaid += p.amount;
+        purchaseCount += 1;
         products.add(p.inferredProduct);
         if (!firstPurchase || p.date < firstPurchase) firstPurchase = p.date;
       }
       const monthsPurchased = Object.keys(byMonth).length;
       const isUpsellCandidate =
         products.has("Bàsic") && !products.has("Plus") && !products.has("Pro") && monthsPurchased >= 3;
-      return { customer: c, byMonth, totalPaid, products, firstPurchase, isUpsellCandidate };
+      return { customer: c, byMonth, totalPaid, products, firstPurchase, isUpsellCandidate, purchaseCount };
     });
 
     return { months, matrix };
@@ -111,13 +117,16 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
 
   const visibleMatrix = useMemo(() => {
     const q = search.trim().toLowerCase();
-    let rows = matrix.filter(({ customer, products, byMonth, firstPurchase, isUpsellCandidate }) => {
+    let rows = matrix.filter(({ customer, products, byMonth, firstPurchase, isUpsellCandidate, purchaseCount }) => {
       if (q) {
         const label = (customer.name ?? customer.email ?? "").toLowerCase();
         if (!label.includes(q)) return false;
       }
       if (productFilter && !products.has(productFilter)) return false;
       if (firstPurchaseFilter && firstPurchase?.slice(0, 7) !== firstPurchaseFilter) return false;
+      if (purchaseCountFilter) {
+        if (purchaseCountFilter === "5+" ? purchaseCount < 5 : purchaseCount !== Number(purchaseCountFilter)) return false;
+      }
       if (onlyInactive && byMonth[lastMonth]?.length) return false;
       if (onlyUpsell && !isUpsellCandidate) return false;
       return true;
@@ -144,11 +153,11 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
     });
 
     return rows;
-  }, [matrix, search, sortKey, sortDir, productFilter, firstPurchaseFilter, onlyInactive, onlyUpsell, lastMonth]);
+  }, [matrix, search, sortKey, sortDir, productFilter, firstPurchaseFilter, purchaseCountFilter, onlyInactive, onlyUpsell, lastMonth]);
 
   useEffect(() => {
     setPage(0);
-  }, [search, sortKey, sortDir, productFilter, firstPurchaseFilter, onlyInactive, onlyUpsell]);
+  }, [search, sortKey, sortDir, productFilter, firstPurchaseFilter, purchaseCountFilter, onlyInactive, onlyUpsell]);
 
   const totalPages = Math.max(1, Math.ceil(visibleMatrix.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages - 1);
@@ -165,11 +174,12 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
   const grandTotal = useMemo(() => visibleMatrix.reduce((sum, row) => sum + row.totalPaid, 0), [visibleMatrix]);
 
   function downloadCsv() {
-    const header = ["Cliente", "Email", "Primera compra", ...months.map(monthLabel), "Total"];
-    const rows = visibleMatrix.map(({ customer, byMonth, totalPaid, firstPurchase }) => [
+    const header = ["Cliente", "Email", "Primera compra", "Nº compras", ...months.map(monthLabel), "Total"];
+    const rows = visibleMatrix.map(({ customer, byMonth, totalPaid, firstPurchase, purchaseCount }) => [
       customer.name ?? "",
       customer.email ?? "",
       firstPurchase ?? "",
+      String(purchaseCount),
       ...months.map((m) => (byMonth[m]?.reduce((s, p) => s + p.amount, 0) ?? 0).toFixed(2)),
       totalPaid.toFixed(2),
     ]);
@@ -221,6 +231,8 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
             onProductFilterChange={setProductFilter}
             firstPurchaseFilter={firstPurchaseFilter}
             onFirstPurchaseFilterChange={setFirstPurchaseFilter}
+            purchaseCountFilter={purchaseCountFilter}
+            onPurchaseCountFilterChange={setPurchaseCountFilter}
             onlyInactive={onlyInactive}
             onToggleOnlyInactive={() => setOnlyInactive((v) => !v)}
             onlyUpsell={onlyUpsell}
@@ -256,6 +268,12 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
             <option value="">Primera compra: todas</option>
             {months.map((m) => (
               <option key={m} value={m}>{monthLabel(m)}</option>
+            ))}
+          </Select>
+          <Select value={purchaseCountFilter} onChange={(e) => setPurchaseCountFilter(e.target.value)} className="w-auto">
+            <option value="">Nº de compras: todas</option>
+            {PURCHASE_COUNT_FILTERS.map((n) => (
+              <option key={n} value={n}>{n} compra{n === "1" ? "" : "s"}</option>
             ))}
           </Select>
           <button
