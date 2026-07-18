@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import type { Transaction } from "@/lib/transactions";
 import type { Category } from "@/lib/categories";
 import DateFilter from "@/app/components/DateFilter";
@@ -30,6 +30,10 @@ type Props = {
   onToggleOnlyRecurring: () => void;
   directionFilter: "all" | "in" | "out";
   onDirectionFilterChange: (v: "all" | "in" | "out") => void;
+  amountMin: string;
+  onAmountMinChange: (v: string) => void;
+  amountMax: string;
+  onAmountMaxChange: (v: string) => void;
   totalIn: number;
   totalOut: number;
   neto: number;
@@ -63,13 +67,20 @@ function SortArrowV2({ active, dir }: { active: boolean; dir: "asc" | "desc" }) 
 export default function TransaccionesListV2({
   categories, uncategorizedCount, search, onSearchChange, catFilters, onCatFiltersChange,
   originFilter, onOriginFilterChange, onlyRecurring, onToggleOnlyRecurring,
-  directionFilter, onDirectionFilterChange, totalIn, totalOut, neto,
+  directionFilter, onDirectionFilterChange,
+  amountMin, onAmountMinChange, amountMax, onAmountMaxChange,
+  totalIn, totalOut, neto,
   sortKey, sortDir, onToggleSort, byMonth, onRowClick,
   onExportCsv, onAddCash, onPapelera, page, totalItems, pageSize, onPageChange, recurringPeriods,
   onCategoryChange,
 }: Props) {
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const filtersActive = catFilters.length > 0 || onlyRecurring || originFilter !== "all";
+  const monthRefs = useRef(new Map<string, HTMLDivElement>());
+  const filtersActive = catFilters.length > 0 || onlyRecurring || originFilter !== "all" || amountMin !== "" || amountMax !== "";
+
+  function scrollToMonth(key: string) {
+    monthRefs.current.get(key)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 
   return (
     <div className="mb-8">
@@ -112,7 +123,7 @@ export default function TransaccionesListV2({
       <div className="flex items-center gap-[10px] flex-wrap">
         <SearchInputV2 value={search} onChange={onSearchChange} placeholder="Buscar concepto o contacto…" className="flex-1 min-w-[140px]" />
         <FiltersToggleButtonV2 open={filtersOpen} active={filtersActive} onClick={() => setFiltersOpen((v) => !v)} />
-        <ImportButton onManual={onAddCash} className="sm:order-2" />
+        <ImportButton onManual={onAddCash} className="hidden sm:block sm:order-2" />
         <div className={`${filtersOpen ? "flex" : "hidden"} sm:flex sm:order-1 items-center gap-[10px] flex-wrap w-full sm:w-auto`}>
           <DateFilter variant="v2" />
           <CategoryMultiFilter selected={catFilters} categories={categories} onChange={onCatFiltersChange} />
@@ -121,14 +132,34 @@ export default function TransaccionesListV2({
             setOnlyRecurring={onToggleOnlyRecurring}
             originFilter={originFilter}
             setOriginFilter={onOriginFilterChange}
+            amountMin={amountMin}
+            setAmountMin={onAmountMinChange}
+            amountMax={amountMax}
+            setAmountMax={onAmountMaxChange}
             onExport={onExportCsv}
             onPapelera={onPapelera}
           />
         </div>
       </div>
 
+      {/* Móvil: Añadir movimiento + sin etiquetar, uno al lado del otro */}
+      <div className="sm:hidden flex items-stretch gap-[10px] mt-3">
+        <ImportButton onManual={onAddCash} className="flex-1" />
+        {uncategorizedCount > 0 && (
+          <button
+            onClick={() => onCatFiltersChange(catFilters.includes("__none__") ? catFilters.filter((v) => v !== "__none__") : [...catFilters, "__none__"])}
+            className="flex-1 inline-flex items-center justify-center gap-[7px] bg-[#fef3e2] text-[#b45309] border border-[#f6dcb8] rounded-[8px] px-3 py-2.5 text-[12.5px] font-medium whitespace-nowrap"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+              <path d="M12 3l9 16H3z" /><path d="M12 10v4M12 17v.5" />
+            </svg>
+            {uncategorizedCount} sin etiquetar
+          </button>
+        )}
+      </div>
+
       {uncategorizedCount > 0 && (
-        <div className="mt-3">
+        <div className="hidden sm:block mt-3">
           <button
             onClick={() => onCatFiltersChange(catFilters.includes("__none__") ? catFilters.filter((v) => v !== "__none__") : [...catFilters, "__none__"])}
             className="inline-flex items-center gap-[7px] bg-[#fef3e2] text-[#b45309] border border-[#f6dcb8] rounded-full px-3 py-[5px] text-[12.5px] font-medium"
@@ -138,6 +169,28 @@ export default function TransaccionesListV2({
             </svg>
             {uncategorizedCount} sin etiquetar
           </button>
+        </div>
+      )}
+
+      {/* Móvil: franja de meses (sticky), navega a cada grupo del mes */}
+      {byMonth.length > 0 && (
+        <div className="sm:hidden sticky top-[45px] z-20 -mx-2 px-2 pt-3 pb-2 bg-app-bg">
+          <div className="flex gap-0.5 p-1 rounded-full bg-[#18181b]/[0.05] overflow-x-auto scrollbar-none">
+            {byMonth.map(([monthKey]) => {
+              const [y, m] = monthKey.split("-");
+              const label = MONTHS_ES[parseInt(m) - 1].slice(0, 3);
+              const showYear = parseInt(y) !== new Date().getFullYear();
+              return (
+                <button
+                  key={monthKey}
+                  onClick={() => scrollToMonth(monthKey)}
+                  className="shrink-0 px-3.5 py-1.5 rounded-full text-[13px] capitalize whitespace-nowrap text-[#3f3f46] font-medium hover:bg-white hover:shadow-card transition-colors"
+                >
+                  {label}{showYear && <span className="text-[10px] ml-0.5 opacity-60">{y}</span>}
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
 
@@ -177,7 +230,11 @@ export default function TransaccionesListV2({
             const monthName = MONTHS_ES[parseInt(m) - 1];
             const label = monthName.toUpperCase() + (parseInt(y) !== new Date().getFullYear() ? ` ${y}` : "");
             return (
-              <div key={monthKey}>
+              <div
+                key={monthKey}
+                ref={(el) => { if (el) monthRefs.current.set(monthKey, el); else monthRefs.current.delete(monthKey); }}
+                className="scroll-mt-[104px]"
+              >
                 <div className="flex items-baseline justify-between px-2 py-2 bg-[#18181b]/[0.025] border-y border-[#ececef]">
                   <span className="text-[12.5px] font-semibold text-[#71717a] uppercase tracking-wide">{label}</span>
                   <span className={`text-[13px] font-semibold tabular-nums ${monthNet < 0 ? "text-[#b53e0d]" : "text-[#16a34a]"}`}>

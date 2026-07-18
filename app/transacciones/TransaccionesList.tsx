@@ -329,12 +329,17 @@ export function originLabel(method: string): string {
 }
 
 export function MoreOptionsMenu({
-  onlyRecurring, setOnlyRecurring, originFilter, setOriginFilter, onExport, onPapelera,
+  onlyRecurring, setOnlyRecurring, originFilter, setOriginFilter,
+  amountMin, setAmountMin, amountMax, setAmountMax, onExport, onPapelera,
 }: {
   onlyRecurring: boolean;
   setOnlyRecurring: (v: boolean | ((prev: boolean) => boolean)) => void;
   originFilter: string;
   setOriginFilter: (v: string) => void;
+  amountMin: string;
+  setAmountMin: (v: string) => void;
+  amountMax: string;
+  setAmountMax: (v: string) => void;
   onExport: () => void;
   onPapelera: () => void;
 }) {
@@ -363,7 +368,7 @@ export function MoreOptionsMenu({
     setOpen((v) => !v);
   }
 
-  const hasActive = onlyRecurring || originFilter !== "all";
+  const hasActive = onlyRecurring || originFilter !== "all" || amountMin !== "" || amountMax !== "";
 
   return (
     <div ref={wrapRef} className="relative">
@@ -397,6 +402,29 @@ export function MoreOptionsMenu({
                 <option value="olga">Olga</option>
                 <option value="carles">Carles</option>
             </Select>
+          </div>
+          <div className="border-t border-navy/[0.06] my-1" />
+          <div className="px-3 pt-1 pb-2">
+            <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1.5">Importe</p>
+            <div className="flex items-center gap-1.5">
+              <input
+                type="number"
+                inputMode="decimal"
+                placeholder="Mín."
+                value={amountMin}
+                onChange={(e) => setAmountMin(e.target.value)}
+                className="w-full min-w-0 px-2 py-1.5 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40"
+              />
+              <span className="text-navy/30 text-xs shrink-0">–</span>
+              <input
+                type="number"
+                inputMode="decimal"
+                placeholder="Máx."
+                value={amountMax}
+                onChange={(e) => setAmountMax(e.target.value)}
+                className="w-full min-w-0 px-2 py-1.5 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40"
+              />
+            </div>
           </div>
           <div className="border-t border-navy/[0.06] my-1" />
           <button
@@ -469,6 +497,8 @@ export default function TransaccionesList({
   const [showAddCash, setShowAddCash] = useState(false);
   const [onlyRecurring, setOnlyRecurring] = useState(false);
   const [directionFilter, setDirectionFilter] = useState<"all" | "in" | "out">("all");
+  const [amountMin, setAmountMin] = useState("");
+  const [amountMax, setAmountMax] = useState("");
   const [drawerTxnId, setDrawerTxnId] = useState<string | null>(null);
   const drawerTxn = drawerTxnId ? transactions.find((t) => t.id === drawerTxnId) ?? null : null;
   const [page, setPage] = useState(0);
@@ -511,9 +541,15 @@ export default function TransaccionesList({
     return true;
   });
 
+  const min = amountMin !== "" ? parseFloat(amountMin) : null;
+  const max = amountMax !== "" ? parseFloat(amountMax) : null;
+
   const filtered = baseFiltered.filter((t) => {
     if (directionFilter === "in" && t.amount <= 0) return false;
     if (directionFilter === "out" && t.amount >= 0) return false;
+    const abs = Math.abs(t.amount);
+    if (min != null && !Number.isNaN(min) && abs < min) return false;
+    if (max != null && !Number.isNaN(max) && abs > max) return false;
     return true;
   });
 
@@ -531,7 +567,7 @@ export default function TransaccionesList({
 
   // ── Paginación (desktop) — corta sortedFiltered/filtered antes de agrupar por mes,
   // así cada página tiene siempre PAGE_SIZE movimientos aunque abarque varios meses.
-  useEffect(() => { setPage(0); }, [search, catFilters, originFilter, onlyRecurring, directionFilter, currentRange, sortKey, sortDir]);
+  useEffect(() => { setPage(0); }, [search, catFilters, originFilter, onlyRecurring, directionFilter, amountMin, amountMax, currentRange, sortKey, sortDir]);
   const totalPages = Math.max(1, Math.ceil(sortedFiltered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages - 1);
   const pagedFlat = sortedFiltered.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
@@ -608,6 +644,10 @@ export default function TransaccionesList({
         onToggleOnlyRecurring={() => setOnlyRecurring((v) => !v)}
         directionFilter={directionFilter}
         onDirectionFilterChange={setDirectionFilter}
+        amountMin={amountMin}
+        onAmountMinChange={setAmountMin}
+        amountMax={amountMax}
+        onAmountMaxChange={setAmountMax}
         totalIn={totalIn}
         totalOut={totalOut}
         neto={neto}
