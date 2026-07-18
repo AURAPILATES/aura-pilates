@@ -30,9 +30,6 @@ export default async function TransaccionesPage(props: {
 
   const uncategorizedCount = transactions.filter((t) => !t.category).length;
   const recurringPeriods   = Object.fromEntries(detectRecurringTransactions(transactions, categories));
-  const allMonthKeys = [...new Set(allTimeTransactions.map((t) => t.date.slice(0, 7)))]
-    .sort()
-    .reverse();
 
   // ── Recurrentes ──
   const series = findRecurringSeries(allTimeTransactions, categories);
@@ -88,7 +85,6 @@ export default async function TransaccionesPage(props: {
             uncategorizedCount={uncategorizedCount}
             recurringPeriods={recurringPeriods}
             recurringExpenses={expenses}
-            allMonthKeys={allMonthKeys}
             contacts={contacts}
             pendingRecurring={pendingRecurring}
             confirmedRecurring={confirmedRecurring}

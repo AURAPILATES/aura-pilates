@@ -1,8 +1,12 @@
+"use client";
+
+import { useState } from "react";
 import type { Transaction } from "@/lib/transactions";
 import type { Category } from "@/lib/categories";
 import DateFilter from "@/app/components/DateFilter";
 import SearchInputV2 from "@/app/components/v2/SearchInputV2";
 import TablePaginationV2 from "@/app/components/v2/TablePaginationV2";
+import FiltersToggleButtonV2 from "@/app/components/v2/FiltersToggleButtonV2";
 import { tableHeadClassV2, tableRowClassV2, tableFootClassV2, gridColsV2 } from "@/app/components/v2/tableStylesV2";
 import {
   MoreOptionsMenu, OriginIcon, originLabel, CategoryPill, CategoryMultiFilter,
@@ -29,7 +33,6 @@ type Props = {
   totalIn: number;
   totalOut: number;
   neto: number;
-  someSelected: boolean;
   sortKey: SortKey | null;
   sortDir: "asc" | "desc";
   onToggleSort: (k: SortKey) => void;
@@ -60,67 +63,71 @@ function SortArrowV2({ active, dir }: { active: boolean; dir: "asc" | "desc" }) 
 export default function TransaccionesListV2({
   categories, uncategorizedCount, search, onSearchChange, catFilters, onCatFiltersChange,
   originFilter, onOriginFilterChange, onlyRecurring, onToggleOnlyRecurring,
-  directionFilter, onDirectionFilterChange, totalIn, totalOut, neto, someSelected,
+  directionFilter, onDirectionFilterChange, totalIn, totalOut, neto,
   sortKey, sortDir, onToggleSort, byMonth, onRowClick,
   onExportCsv, onAddCash, onPapelera, page, totalItems, pageSize, onPageChange, recurringPeriods,
   onCategoryChange,
 }: Props) {
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const filtersActive = catFilters.length > 0 || onlyRecurring || originFilter !== "all";
+
   return (
     <div className="mb-8">
       {/* KPIs */}
-      <div className="grid grid-cols-3 gap-3 mb-[18px]">
+      <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-[18px]">
         <button
           type="button"
           onClick={() => onDirectionFilterChange(directionFilter === "in" ? "all" : "in")}
-          className={`text-left border rounded-[14px] px-4 py-[13px] transition-colors ${
+          className={`text-left border rounded-[14px] px-3 sm:px-4 py-[11px] sm:py-[13px] min-w-0 transition-colors ${
             directionFilter === "in" ? "border-[#16a34a]/30 bg-[#16a34a]/[0.05]" : "border-[#ececef] bg-white"
           }`}
         >
-          <p className="text-[10.5px] tracking-wide uppercase text-[#a1a1aa] font-semibold">Entradas</p>
-          <p className="text-[22px] font-bold text-[#0d8037] mt-[5px] tracking-tight">{fmtAmt(totalIn)}</p>
+          <p className="text-[10px] sm:text-[10.5px] tracking-wide uppercase text-[#a1a1aa] font-semibold truncate">Entradas</p>
+          <p className="text-[15px] sm:text-[22px] font-bold text-[#0d8037] mt-[5px] tracking-tight truncate">{fmtAmt(totalIn)}</p>
         </button>
         <button
           type="button"
           onClick={() => onDirectionFilterChange(directionFilter === "out" ? "all" : "out")}
-          className={`text-left border rounded-[14px] px-4 py-[13px] transition-colors ${
+          className={`text-left border rounded-[14px] px-3 sm:px-4 py-[11px] sm:py-[13px] min-w-0 transition-colors ${
             directionFilter === "out" ? "border-[#b53e0d]/30 bg-[#b53e0d]/[0.05]" : "border-[#ececef] bg-white"
           }`}
         >
-          <p className="text-[10.5px] tracking-wide uppercase text-[#a1a1aa] font-semibold">Salidas</p>
-          <p className="text-[22px] font-bold text-[#b53e0d] mt-[5px] tracking-tight">{fmtAmt(totalOut)}</p>
+          <p className="text-[10px] sm:text-[10.5px] tracking-wide uppercase text-[#a1a1aa] font-semibold truncate">Salidas</p>
+          <p className="text-[15px] sm:text-[22px] font-bold text-[#b53e0d] mt-[5px] tracking-tight truncate">{fmtAmt(totalOut)}</p>
         </button>
-        <div className="border border-[#ececef] rounded-[14px] px-4 py-[13px] bg-white">
-          <p className="text-[10.5px] tracking-wide uppercase text-[#a1a1aa] font-semibold">
-            {someSelected ? "Neto selección" : "Diferencia"}
-          </p>
+        <div className="border border-[#ececef] rounded-[14px] px-3 sm:px-4 py-[11px] sm:py-[13px] bg-white min-w-0">
+          <p className="text-[10px] sm:text-[10.5px] tracking-wide uppercase text-[#a1a1aa] font-semibold truncate">Diferencia</p>
           <div className="flex items-baseline gap-1.5 mt-[5px]">
-            <span className={`text-[22px] font-bold tracking-tight ${neto >= 0 ? "text-[#18181b]" : "text-[#b53e0d]"}`}>
+            <span className={`text-[15px] sm:text-[22px] font-bold tracking-tight truncate ${neto >= 0 ? "text-[#18181b]" : "text-[#b53e0d]"}`}>
               {neto < 0 && "−"}{fmtAmt(Math.abs(neto))}
             </span>
-            {!someSelected && totalIn > 0 && (
-              <span className="text-[11.5px] text-[#a1a1aa]">margen {(neto / totalIn * 100).toFixed(1).replace(".", ",")}%</span>
+            {totalIn > 0 && (
+              <span className="hidden sm:inline text-[11.5px] text-[#a1a1aa] whitespace-nowrap">margen {(neto / totalIn * 100).toFixed(1).replace(".", ",")}%</span>
             )}
           </div>
         </div>
       </div>
 
       {/* Toolbar */}
-      <div className="flex items-center gap-[10px]">
-        <SearchInputV2 value={search} onChange={onSearchChange} placeholder="Buscar concepto o contacto…" className="flex-1" />
-        <DateFilter variant="v2" />
-        <CategoryMultiFilter selected={catFilters} categories={categories} onChange={onCatFiltersChange} />
-        <MoreOptionsMenu
-          onlyRecurring={onlyRecurring}
-          setOnlyRecurring={onToggleOnlyRecurring}
-          originFilter={originFilter}
-          setOriginFilter={onOriginFilterChange}
-          onExport={onExportCsv}
-          onPapelera={onPapelera}
-        />
-        <ImportButton onManual={onAddCash} />
+      <div className="flex items-center gap-[10px] flex-wrap">
+        <SearchInputV2 value={search} onChange={onSearchChange} placeholder="Buscar concepto o contacto…" className="flex-1 min-w-[140px]" />
+        <FiltersToggleButtonV2 open={filtersOpen} active={filtersActive} onClick={() => setFiltersOpen((v) => !v)} />
+        <ImportButton onManual={onAddCash} className="sm:order-2" />
+        <div className={`${filtersOpen ? "flex" : "hidden"} sm:flex sm:order-1 items-center gap-[10px] flex-wrap w-full sm:w-auto`}>
+          <DateFilter variant="v2" />
+          <CategoryMultiFilter selected={catFilters} categories={categories} onChange={onCatFiltersChange} />
+          <MoreOptionsMenu
+            onlyRecurring={onlyRecurring}
+            setOnlyRecurring={onToggleOnlyRecurring}
+            originFilter={originFilter}
+            setOriginFilter={onOriginFilterChange}
+            onExport={onExportCsv}
+            onPapelera={onPapelera}
+          />
+        </div>
       </div>
 
-      {uncategorizedCount > 0 && !someSelected && (
+      {uncategorizedCount > 0 && (
         <div className="mt-3">
           <button
             onClick={() => onCatFiltersChange(catFilters.includes("__none__") ? catFilters.filter((v) => v !== "__none__") : [...catFilters, "__none__"])}
@@ -136,27 +143,29 @@ export default function TransaccionesListV2({
 
       {/* Tabla suelta agrupada por mes */}
       <div className="mt-[24px]">
-        <div className={`${tableHeadClassV2} px-2`} style={gridColsV2(COLS)}>
-          <span
-            className={`flex items-center cursor-pointer select-none ${sortKey === "concept" ? "text-[#18181b]" : ""}`}
-            onClick={() => onToggleSort("concept")}
-          >
-            Concepto<SortArrowV2 active={sortKey === "concept"} dir={sortDir} />
-          </span>
-          <span>Origen</span>
-          <span>Categoría</span>
-          <span
-            className={`flex items-center cursor-pointer select-none ${sortKey === "date" ? "text-[#18181b]" : ""}`}
-            onClick={() => onToggleSort("date")}
-          >
-            Fecha<SortArrowV2 active={sortKey === "date"} dir={sortDir} />
-          </span>
-          <span
-            className={`flex items-center justify-end cursor-pointer select-none ${sortKey === "amount" ? "text-[#18181b]" : ""}`}
-            onClick={() => onToggleSort("amount")}
-          >
-            Importe / Saldo<SortArrowV2 active={sortKey === "amount"} dir={sortDir} />
-          </span>
+        <div className="hidden sm:block">
+          <div className={`${tableHeadClassV2} px-2`} style={gridColsV2(COLS)}>
+            <span
+              className={`flex items-center cursor-pointer select-none ${sortKey === "concept" ? "text-[#18181b]" : ""}`}
+              onClick={() => onToggleSort("concept")}
+            >
+              Concepto<SortArrowV2 active={sortKey === "concept"} dir={sortDir} />
+            </span>
+            <span>Origen</span>
+            <span>Categoría</span>
+            <span
+              className={`flex items-center cursor-pointer select-none ${sortKey === "date" ? "text-[#18181b]" : ""}`}
+              onClick={() => onToggleSort("date")}
+            >
+              Fecha<SortArrowV2 active={sortKey === "date"} dir={sortDir} />
+            </span>
+            <span
+              className={`flex items-center justify-end cursor-pointer select-none ${sortKey === "amount" ? "text-[#18181b]" : ""}`}
+              onClick={() => onToggleSort("amount")}
+            >
+              Importe / Saldo<SortArrowV2 active={sortKey === "amount"} dir={sortDir} />
+            </span>
+          </div>
         </div>
 
         {byMonth.length === 0 ? (
@@ -183,41 +192,73 @@ export default function TransaccionesListV2({
                   const accent = cat ? cat.text_color : CAT_FALLBACK.color;
                   const iconKey = cat ? cat.emoji : CAT_FALLBACK.emoji;
                   return (
-                    <div
-                      key={t.id}
-                      className={`${tableRowClassV2} px-2 cursor-pointer`}
-                      style={gridColsV2(COLS)}
-                      onClick={() => onRowClick(t.id)}
-                    >
-                      <div className="flex items-center gap-[10px] min-w-0">
-                        <span className="w-[30px] h-[30px] shrink-0 rounded-[8px] flex items-center justify-center" style={{ backgroundColor: accent }}>
-                          <CatIcon iconKey={iconKey} name={cat?.label ?? primary} color="#fff" size={14} />
+                    <div key={t.id}>
+                      {/* Fila escritorio */}
+                      <div className="hidden sm:block">
+                        <div
+                          className={`${tableRowClassV2} px-2 cursor-pointer`}
+                          style={gridColsV2(COLS)}
+                          onClick={() => onRowClick(t.id)}
+                        >
+                          <div className="flex items-center gap-[10px] min-w-0">
+                            <span className="w-[30px] h-[30px] shrink-0 rounded-[8px] flex items-center justify-center" style={{ backgroundColor: accent }}>
+                              <CatIcon iconKey={iconKey} name={cat?.label ?? primary} color="#fff" size={14} />
+                            </span>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <p className="text-[13.5px] font-semibold text-[#18181b] truncate">{primary}</p>
+                                {recurringPeriod && (
+                                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#18181b" strokeOpacity=".35" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                                    <path d="M1 4v6h6M23 20v-6h-6" /><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15" />
+                                  </svg>
+                                )}
+                              </div>
+                              {secondary && <p className="text-[11px] text-[#a1a1aa] truncate">{secondary}</p>}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-[12px] text-[#71717a] min-w-0">
+                            <OriginIcon method={t.payment_method} />
+                            <span className="truncate">{originLabel(t.payment_method)}</span>
+                          </div>
+                          <div onClick={(e) => e.stopPropagation()}>
+                            <CategoryPill category={t.category} categories={categories} onChange={(cat) => onCategoryChange(t.id, cat)} />
+                          </div>
+                          <div className="text-[12.5px] text-[#71717a] whitespace-nowrap">{fmtDate(t.date)}</div>
+                          <div className="text-right">
+                            <p className={`text-[13.5px] font-semibold ${t.amount > 0 ? "text-[#16a34a]" : "text-[#18181b]"}`}>
+                              {t.amount > 0 ? "+" : "−"}{fmtAmt(t.amount)}
+                            </p>
+                            {t.balance != null && <p className="text-[11px] text-[#a1a1aa]">{fmtAmt(t.balance)}</p>}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Fila móvil */}
+                      <div
+                        className="sm:hidden flex items-center gap-[10px] px-2 py-[10px] border-t border-[#f4f4f4] cursor-pointer active:bg-[#fafafb]"
+                        onClick={() => onRowClick(t.id)}
+                      >
+                        <span className="w-[32px] h-[32px] shrink-0 rounded-[10px] flex items-center justify-center" style={{ backgroundColor: accent }}>
+                          <CatIcon iconKey={iconKey} name={cat?.label ?? primary} color="#fff" size={15} />
                         </span>
-                        <div className="min-w-0">
+                        <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5 min-w-0">
-                            <p className="text-[13.5px] font-semibold text-[#18181b] truncate">{primary}</p>
+                            <p className="text-[14px] font-semibold text-[#18181b] truncate">{primary}</p>
                             {recurringPeriod && (
                               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#18181b" strokeOpacity=".35" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
                                 <path d="M1 4v6h6M23 20v-6h-6" /><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15" />
                               </svg>
                             )}
                           </div>
-                          {secondary && <p className="text-[11px] text-[#a1a1aa] truncate">{secondary}</p>}
+                          <p className="text-[11.5px] text-[#a1a1aa] truncate mt-0.5">
+                            {cat?.label ?? "Sin categoría"} · {fmtDate(t.date)}
+                          </p>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-[12px] text-[#71717a] min-w-0">
-                        <OriginIcon method={t.payment_method} />
-                        <span className="truncate">{originLabel(t.payment_method)}</span>
-                      </div>
-                      <div onClick={(e) => e.stopPropagation()}>
-                        <CategoryPill category={t.category} categories={categories} onChange={(cat) => onCategoryChange(t.id, cat)} />
-                      </div>
-                      <div className="text-[12.5px] text-[#71717a] whitespace-nowrap">{fmtDate(t.date)}</div>
-                      <div className="text-right">
-                        <p className={`text-[13.5px] font-semibold ${t.amount > 0 ? "text-[#16a34a]" : "text-[#18181b]"}`}>
-                          {t.amount > 0 ? "+" : "−"}{fmtAmt(t.amount)}
-                        </p>
-                        {t.balance != null && <p className="text-[11px] text-[#a1a1aa]">{fmtAmt(t.balance)}</p>}
+                        <div className="text-right shrink-0">
+                          <p className={`text-[14px] font-semibold ${t.amount > 0 ? "text-[#16a34a]" : "text-[#18181b]"}`}>
+                            {t.amount > 0 ? "+" : "−"}{fmtAmt(t.amount)}
+                          </p>
+                        </div>
                       </div>
                     </div>
                   );

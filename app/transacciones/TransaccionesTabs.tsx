@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { Transaction } from "@/lib/transactions";
 import type { Category } from "@/lib/categories";
-import SectionTabs from "@/app/components/SectionTabs";
 import SectionTabsV2 from "@/app/components/v2/SectionTabsV2";
 import TransaccionesList from "./TransaccionesList";
 import RecurrentesList, { type PendingSeriesRow, type ConfirmedExpenseRow } from "./RecurrentesList";
@@ -24,7 +23,6 @@ type Props = {
   uncategorizedCount: number;
   recurringPeriods: Record<string, string>;
   recurringExpenses: RecurringExpense[];
-  allMonthKeys: string[];
   contacts: Contact[];
   pendingRecurring: PendingSeriesRow[];
   confirmedRecurring: ConfirmedExpenseRow[];
@@ -37,7 +35,6 @@ export default function TransaccionesTabs({
   uncategorizedCount,
   recurringPeriods,
   recurringExpenses,
-  allMonthKeys,
   contacts,
   pendingRecurring,
   confirmedRecurring,
@@ -60,12 +57,7 @@ export default function TransaccionesTabs({
 
   return (
     <div>
-      <div className="hidden sm:block">
-        <SectionTabsV2 className="mb-7" active={tab} onChange={selectTab} tabs={tabsWithBadge} />
-      </div>
-      <div className="sm:hidden">
-        <SectionTabs className="mb-7" active={tab} onChange={selectTab} tabs={tabsWithBadge} />
-      </div>
+      <SectionTabsV2 className="mb-7" active={tab} onChange={selectTab} tabs={tabsWithBadge} />
 
       {tab === "movimientos" ? (
         <TransaccionesList
@@ -74,7 +66,6 @@ export default function TransaccionesTabs({
           uncategorizedCount={uncategorizedCount}
           recurringPeriods={recurringPeriods}
           recurringExpenses={recurringExpenses}
-          allMonthKeys={allMonthKeys}
           contacts={contacts}
         />
       ) : (

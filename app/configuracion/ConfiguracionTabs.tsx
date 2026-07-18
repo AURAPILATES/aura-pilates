@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import type { Category } from "@/lib/categories";
 import type { BusinessEvent } from "@/lib/businessEvents";
 import type { Contact, ContactStats } from "@/app/transacciones/actions";
-import SectionTabs from "@/app/components/SectionTabs";
 import SectionTabsV2 from "@/app/components/v2/SectionTabsV2";
 import CategoriasManager from "./CategoriasManager";
 import ContactosManager from "./ContactosManager";
@@ -40,12 +39,7 @@ export default function ConfiguracionTabs({ categories, events, categoryCounts, 
 
   return (
     <div>
-      <div className="hidden sm:block">
-        <SectionTabsV2 className="mb-6" active={tab} onChange={selectTab} tabs={TABS} />
-      </div>
-      <div className="sm:hidden">
-        <SectionTabs className="mb-6" active={tab} onChange={selectTab} tabs={TABS} />
-      </div>
+      <SectionTabsV2 className="mb-6" active={tab} onChange={selectTab} tabs={TABS} />
       {tab === "categorias" ? (
         <CategoriasManager categories={categories} categoryCounts={categoryCounts} />
       ) : tab === "contactos" ? (

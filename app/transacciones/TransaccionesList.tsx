@@ -1,18 +1,14 @@
 "use client";
 import { useState, useTransition, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import type { Transaction, PaymentMethod } from "@/lib/transactions";
 import type { Category } from "@/lib/categories";
 import { sortCategoriesHierarchical, categoryDisplayLabel } from "@/lib/categories";
 import { seriesKeyFor } from "@/lib/recurring";
 import type { RecurringExpense } from "@/lib/recurringExpenses";
 import { updateTransactionCategory, updateTransactionConcept, updateTransactionBankDetails, updateTransactionDate, updateTransactionPaymentMethod, softDeleteTransactions, type Contact } from "./actions";
-import DateFilter from "@/app/components/DateFilter";
-import SearchInput from "@/app/components/SearchInput";
-import TablePagination from "@/app/components/TablePagination";
 import Select from "@/app/components/Select";
-import ImportButton from "./ImportButton";
 import AddCashModal from "./AddCashModal";
 import PapeleraDrawer from "./PapeleraDrawer";
 import TransactionDrawer from "./TransactionDrawer";
@@ -332,75 +328,6 @@ export function originLabel(method: string): string {
   return method.charAt(0).toUpperCase() + method.slice(1);
 }
 
-function MobileActionsMenu({ onExport, onPapelera }: { onExport: () => void; onPapelera: () => void }) {
-  const [open, setOpen] = useState(false);
-  const [dropPos, setDropPos] = useState<{ top: number; left: number } | null>(null);
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const dropRef = useRef<HTMLDivElement>(null);
-  const btnRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    function handle(e: MouseEvent) {
-      if (!wrapRef.current?.contains(e.target as Node) && !dropRef.current?.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handle);
-    return () => document.removeEventListener("mousedown", handle);
-  }, [open]);
-
-  function handleToggle() {
-    if (!open && btnRef.current) {
-      const rect = btnRef.current.getBoundingClientRect();
-      setDropPos({ top: rect.bottom + 4, left: rect.right - 170 });
-    }
-    setOpen((v) => !v);
-  }
-
-  return (
-    <div ref={wrapRef} className="relative shrink-0">
-      <button
-        ref={btnRef}
-        onClick={handleToggle}
-        title="Más acciones"
-        className="shrink-0 flex items-center justify-center w-[42px] h-[42px] text-navy/55 border border-navy/[0.12] rounded-lg bg-white hover:bg-navy/[0.02] hover:text-navy transition-colors"
-      >
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/><circle cx="5" cy="12" r="1.5"/>
-        </svg>
-      </button>
-      {open && dropPos && createPortal(
-        <div
-          ref={dropRef}
-          className="fixed z-[9999] bg-white border border-navy/10 rounded-xl shadow-xl py-1"
-          style={{ top: dropPos.top, left: dropPos.left, width: "170px" }}
-        >
-          <button
-            onClick={() => { onExport(); setOpen(false); }}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-navy/60 hover:bg-navy/[0.04] transition-colors"
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
-            Exportar CSV
-          </button>
-          <button
-            onClick={() => { onPapelera(); setOpen(false); }}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-navy/60 hover:bg-navy/[0.04] transition-colors"
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/>
-            </svg>
-            Papelera
-          </button>
-        </div>,
-        document.body
-      )}
-    </div>
-  );
-}
-
 export function MoreOptionsMenu({
   onlyRecurring, setOnlyRecurring, originFilter, setOriginFilter, onExport, onPapelera,
 }: {
@@ -517,20 +444,16 @@ type Props = {
   uncategorizedCount: number;
   recurringPeriods: Record<string, string>;
   recurringExpenses: RecurringExpense[];
-  allMonthKeys: string[];
   contacts: Contact[];
 };
 
 const PAGE_SIZE = 50;
 
 export default function TransaccionesList({
-  transactions, categories, uncategorizedCount, recurringPeriods, recurringExpenses, allMonthKeys, contacts,
+  transactions, categories, uncategorizedCount, recurringPeriods, recurringExpenses, contacts,
 }: Props) {
-  const router       = useRouter();
-  const pathname     = usePathname();
   const searchParams = useSearchParams();
   const currentRange = searchParams.get("range") ?? "all";
-  const customFrom   = searchParams.get("from") ?? "";
 
   const [search,      setSearch]      = useState("");
   const [catFilters,  setCatFilters]  = useState<string[]>(() => {
@@ -539,13 +462,8 @@ export default function TransaccionesList({
     return [cat];
   });
   const [originFilter, setOriginFilter] = useState("all");
-  const [showMobileFilters,  setShowMobileFilters]  = useState(false);
-  const [mobileSelectMode,   setMobileSelectMode]   = useState(false);
-  const [selected,     setSelected]     = useState<Set<string>>(new Set());
-  const [bulkCat,      setBulkCat]      = useState("");
-  const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [showPapelera,  setShowPapelera]  = useState(false);
-  const [isPending,    startTransition] = useTransition();
+  const [, startTransition] = useTransition();
   const [sortKey, setSortKey] = useState<"date" | "amount" | "concept" | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [showAddCash, setShowAddCash] = useState(false);
@@ -562,35 +480,6 @@ export default function TransaccionesList({
       setSortKey(key);
       setSortDir(key === "concept" ? "asc" : "desc");
     }
-  }
-
-
-  // ── Month strip — solo meses con datos (independiente del filtro activo) ────
-  const monthStrip = useMemo(() => {
-    return allMonthKeys.map((key) => {
-      const m = parseInt(key.slice(5)) - 1;
-      return { key, label: MONTHS_ES[m], year: parseInt(key.slice(0, 4)) };
-    });
-  }, [allMonthKeys]);
-
-  const activeMonth = useMemo(() => {
-    if (currentRange === "custom" && customFrom) return customFrom.slice(0, 7);
-    if (currentRange === "month") {
-      const now = new Date();
-      return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-    }
-    return null;
-  }, [currentRange, customFrom]);
-
-  const activeMonthRef = useRef<HTMLButtonElement>(null);
-  useEffect(() => {
-    activeMonthRef.current?.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" });
-  }, [activeMonth]);
-
-  function goToMonth(key: string) {
-    const [y, m] = key.split("-");
-    const lastDay = new Date(parseInt(y), parseInt(m), 0).getDate();
-    router.push(`${pathname}?range=custom&from=${key}-01&to=${key}-${String(lastDay).padStart(2, "0")}`);
   }
 
 
@@ -647,18 +536,7 @@ export default function TransaccionesList({
   const safePage = Math.min(page, totalPages - 1);
   const pagedFlat = sortedFiltered.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
 
-  // ── Day grouping for mobile — sobre pagedFlat (no filtered) para que el móvil
-  // también pagine de PAGE_SIZE en PAGE_SIZE en vez de listar todo sin cortar.
-  const byDay = useMemo(() => {
-    const map = new Map<string, Transaction[]>();
-    for (const t of pagedFlat) {
-      if (!map.has(t.date)) map.set(t.date, []);
-      map.get(t.date)!.push(t);
-    }
-    return [...map.entries()].sort((a, b) => b[0].localeCompare(a[0]));
-  }, [pagedFlat]);
-
-  // ── Month grouping for desktop — solo de la página actual ──────────────────
+  // ── Month grouping — solo de la página actual ───────────────────────────────
   const byMonth = useMemo(() => {
     const map = new Map<string, Transaction[]>();
     for (const t of pagedFlat) {
@@ -669,33 +547,10 @@ export default function TransaccionesList({
     return [...map.entries()].sort((a, b) => b[0].localeCompare(a[0]));
   }, [pagedFlat]);
 
-  const someSelected   = selected.size > 0;
-
-  const kpiBase  = someSelected ? baseFiltered.filter((t) => selected.has(t.id)) : baseFiltered;
-  const totalIn  = kpiBase.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0);
-  const totalOut = kpiBase.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
+  const totalIn  = baseFiltered.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0);
+  const totalOut = baseFiltered.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
   const neto     = totalIn - totalOut;
 
-  function toggleOne(id: string) {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
-  }
-  function clearSelection() { setSelected(new Set()); setBulkCat(""); setDeleteConfirm(false); }
-  async function applyBulkDelete() {
-    const ids = [...selected];
-    startTransition(async () => { await softDeleteTransactions(ids); });
-    clearSelection();
-  }
-  function applyBulkCategory() {
-    if (!bulkCat) return;
-    const ids = [...selected];
-    const cat = bulkCat === "__null__" ? null : bulkCat;
-    startTransition(async () => { await Promise.all(ids.map((id) => updateTransactionCategory(id, cat))); });
-    clearSelection();
-  }
   function handleCategoryChange(id: string, category: string | null) {
     startTransition(() => updateTransactionCategory(id, category));
   }
@@ -740,362 +595,37 @@ export default function TransaccionesList({
 
   return (
     <div>
-      {/* ── Desktop: KPIs + toolbar + tabla ── */}
-      <div className="hidden sm:block">
-        <TransaccionesListV2
-          categories={categories}
-          uncategorizedCount={uncategorizedCount}
-          search={search}
-          onSearchChange={setSearch}
-          catFilters={catFilters}
-          onCatFiltersChange={setCatFilters}
-          originFilter={originFilter}
-          onOriginFilterChange={setOriginFilter}
-          onlyRecurring={onlyRecurring}
-          onToggleOnlyRecurring={() => setOnlyRecurring((v) => !v)}
-          directionFilter={directionFilter}
-          onDirectionFilterChange={setDirectionFilter}
-          totalIn={totalIn}
-          totalOut={totalOut}
-          neto={neto}
-          someSelected={someSelected}
-          sortKey={sortKey}
-          sortDir={sortDir}
-          onToggleSort={toggleSort}
-          byMonth={byMonth}
-          onRowClick={(id) => setDrawerTxnId(id)}
-          onExportCsv={exportCSV}
-          onAddCash={() => setShowAddCash(true)}
-          onPapelera={() => setShowPapelera(true)}
-          page={safePage}
-          totalItems={sortedFiltered.length}
-          pageSize={PAGE_SIZE}
-          onPageChange={setPage}
-          recurringPeriods={recurringPeriods}
-          onCategoryChange={handleCategoryChange}
-        />
-      </div>
-      {/* ── Mobile: KPIs (clásico, también con v2 activo) ── */}
-      <div className="sm:hidden grid grid-cols-3 gap-2 mb-5">
-        {/* Entradas — clicable */}
-        <button
-          type="button"
-          onClick={() => setDirectionFilter(directionFilter === "in" ? "all" : "in")}
-          className={`text-center rounded-xl py-3 px-2 transition-all duration-200 ${
-            directionFilter === "in"
-              ? "bg-success/[0.08] border border-success/20 shadow-card"
-              : "bg-white border border-navy/[0.07] shadow-card active:bg-navy/[0.02]"
-          }`}
-        >
-          <p className="text-[9px] font-medium text-navy/35 uppercase tracking-widest leading-none mb-1.5">Entradas</p>
-          <p className="text-[13px] font-semibold text-success tabular-nums truncate leading-none">{fmtAmt(totalIn)}</p>
-          <p className={`text-[8px] text-success/55 mt-1 ${directionFilter === "in" ? "" : "invisible"}`}>activo ×</p>
-        </button>
-
-        {/* Salidas — clicable */}
-        <button
-          type="button"
-          onClick={() => setDirectionFilter(directionFilter === "out" ? "all" : "out")}
-          className={`text-center rounded-xl py-3 px-2 transition-all duration-200 ${
-            directionFilter === "out"
-              ? "bg-[#B85C3A]/[0.08] border border-[#B85C3A]/20 shadow-card"
-              : "bg-white border border-navy/[0.07] shadow-card active:bg-navy/[0.02]"
-          }`}
-        >
-          <p className="text-[9px] font-medium text-navy/35 uppercase tracking-widest leading-none mb-1.5">Salidas</p>
-          <p className="text-[13px] font-semibold text-[#B85C3A] tabular-nums truncate leading-none">{fmtAmt(totalOut)}</p>
-          <p className={`text-[8px] text-[#B85C3A]/55 mt-1 ${directionFilter === "out" ? "" : "invisible"}`}>activo ×</p>
-        </button>
-
-        {/* Diferencia — no clicable */}
-        <div className="text-center bg-white border border-navy/[0.07] rounded-xl shadow-card py-3 px-2">
-          <p className="text-[9px] font-medium text-navy/35 uppercase tracking-widest leading-none mb-1.5">Dif.</p>
-          <p className={`text-[13px] font-semibold tabular-nums truncate leading-none ${neto >= 0 ? "text-navy" : "text-danger"}`}>
-            {neto < 0 && "−"}{fmtAmt(Math.abs(neto))}
-          </p>
-        </div>
-      </div>
-
-      {/* ── Mobile: Search bar + Filtros (clásico) ── */}
-      <div className="sm:hidden flex gap-2 mb-3">
-        <SearchInput value={search} onChange={setSearch} placeholder="Buscar concepto o contacto…" className="flex-1" />
-        <button
-          onClick={() => setShowMobileFilters((v) => !v)}
-          title="Filtros"
-          className="relative shrink-0 flex items-center justify-center w-[42px] h-[42px] bg-white border border-navy/[0.12] rounded-xl text-navy"
-        >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/>
-          </svg>
-          {(catFilters.length > 0 || originFilter !== "all" || onlyRecurring || currentRange !== "all" || directionFilter !== "all") && (
-            <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-primary" />
-          )}
-        </button>
-        <MobileActionsMenu onExport={exportCSV} onPapelera={() => setShowPapelera(true)} />
-      </div>
-
-      {/* ── Mobile: Filter drawer ────────────────────────────────────────────── */}
-      {showMobileFilters && (
-        <div className="sm:hidden bg-white border border-navy/[0.07] rounded-2xl p-4 mb-3 flex flex-col gap-3 shadow-card">
-          <DateFilter />
-          <CategoryMultiFilter selected={catFilters} categories={categories} onChange={setCatFilters} className="w-full" />
-          <Select value={originFilter} onChange={(e) => setOriginFilter(e.target.value)}>
-              <option value="all">Origen</option>
-              <option value="banco">CaixaBank</option>
-              <option value="efectivo">Efectivo Aura</option>
-              <option value="victor">Víctor</option>
-              <option value="celia">Celia</option>
-              <option value="olga">Olga</option>
-              <option value="carles">Carles</option>
-          </Select>
-          <button
-            onClick={() => setOnlyRecurring((v) => !v)}
-            className={`flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-colors ${
-              onlyRecurring
-                ? "bg-navy text-white border-navy"
-                : "bg-white text-navy/55 border-navy/15"
-            }`}
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15"/>
-            </svg>
-            Solo recurrentes
-          </button>
-        </div>
-      )}
-
-      {/* ── Mobile: Alert banner (clásico) ── */}
-      {uncategorizedCount > 0 && (
-        <button
-          onClick={() => setCatFilters(catFilters.includes("__none__") ? catFilters.filter((v) => v !== "__none__") : [...catFilters, "__none__"])}
-          className="sm:hidden w-full flex items-center gap-2 px-4 py-2.5 mb-3 rounded-xl bg-warning/10 border border-warning/20 text-navy/70 text-sm font-medium text-left"
-        >
-          <span className="shrink-0 w-2 h-2 rounded-full bg-warning" />
-          <span className="flex-1">{uncategorizedCount} sin clasificar</span>
-          <span className="flex items-center gap-1 text-warning font-semibold whitespace-nowrap">
-            Revisar
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
-            </svg>
-          </span>
-        </button>
-      )}
-
-
-      {/* ── Mobile: toolbar (clásico) ── */}
-      <div className="sm:hidden mb-3">
-        {(catFilters.length > 0 || originFilter !== "all" || onlyRecurring || directionFilter !== "all" || currentRange !== "all" || search !== "") && (
-          <div className="flex items-center mb-3">
-            <button
-              onClick={() => {
-                setCatFilters([]);
-                setOriginFilter("all");
-                setOnlyRecurring(false);
-                setDirectionFilter("all");
-                setSearch("");
-                if (currentRange !== "all") router.push(pathname);
-              }}
-              className="text-xs text-navy/55 hover:text-navy underline"
-            >
-              Eliminar filtros
-            </button>
-          </div>
-        )}
-        <div className="flex items-stretch gap-2">
-          <ImportButton compact className="flex-1" onManual={() => setShowAddCash(true)} />
-          <button
-            onClick={() => { setMobileSelectMode((v) => { if (v) clearSelection(); return !v; }); }}
-            className={`shrink-0 flex items-center justify-center gap-1.5 w-[124px] h-9 text-[13px] font-medium px-4 rounded-xl border transition-colors ${
-              mobileSelectMode
-                ? "bg-navy text-white border-navy"
-                : "bg-white text-navy border-navy/15 hover:bg-navy/[0.02]"
-            }`}
-          >
-            <span className={`w-3.5 h-3.5 rounded-[3px] border flex items-center justify-center shrink-0 transition-colors ${
-              mobileSelectMode ? "bg-white border-white" : "border-navy/35"
-            }`}>
-              <svg width="9" height="7" viewBox="0 0 9 7" fill="none">
-                <polyline points="1,3.5 3.5,6 8,1" stroke={mobileSelectMode ? "#1c1917" : "currentColor"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={mobileSelectMode ? "" : "text-navy/35"}/>
-              </svg>
-            </span>
-            {mobileSelectMode ? "Cancelar" : "Seleccionar"}
-          </button>
-        </div>
-      </div>
-
-      {/* ── Bulk selection bar ─────────────────────────────────────────────── */}
-      {someSelected && (
-        <div className="fixed left-0 right-0 bottom-0 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 sm:bottom-6 z-50 flex items-center gap-1.5 sm:gap-3 px-4 sm:px-5 pt-2.5 sm:py-3 pb-[calc(0.625rem_+_env(safe-area-inset-bottom))] sm:pb-3 bg-navy rounded-t-[5px] sm:rounded-[5px] shadow-2xl border border-white/10 sm:min-w-max">
-          <span className="text-xs sm:text-sm font-semibold text-white shrink-0 whitespace-nowrap">
-            <span className="sm:hidden">{selected.size} sel.</span>
-            <span className="hidden sm:inline">{selected.size} seleccionada{selected.size !== 1 ? "s" : ""}</span>
-          </span>
-          <div className="w-px h-4 bg-white/20 shrink-0" />
-          {deleteConfirm ? (
-            <>
-              <span className="text-xs sm:text-sm text-white/70 shrink-0 whitespace-nowrap">¿Eliminar {selected.size}?</span>
-              <button
-                onClick={applyBulkDelete}
-                disabled={isPending}
-                className="text-xs sm:text-sm font-semibold px-3 sm:px-4 py-1.5 rounded-[5px] bg-danger text-white disabled:opacity-40 hover:bg-danger/85 transition-colors shrink-0 whitespace-nowrap"
-              >
-                Confirmar
-              </button>
-              <button onClick={() => setDeleteConfirm(false)} className="text-xs sm:text-sm text-white/50 hover:text-white/80 px-1 shrink-0 whitespace-nowrap">Cancelar</button>
-            </>
-          ) : (
-            <>
-              <select
-                value={bulkCat}
-                onChange={(e) => setBulkCat(e.target.value)}
-                className="text-xs sm:text-sm rounded-[5px] px-2 sm:px-3 py-1.5 bg-white/10 text-white border border-white/20 outline-none focus:border-white/40 w-24 sm:w-auto sm:min-w-48 shrink-0 cursor-pointer"
-              >
-                <option value="" disabled>Cambiar categoría…</option>
-                <option value="__null__" className="text-navy bg-white">Sin categoría</option>
-                {sortCategoriesHierarchical(categories).map((c) => (
-                  <option key={c.value} value={c.value} className="text-navy bg-white">{categoryDisplayLabel(c, categories)}</option>
-                ))}
-              </select>
-              <button
-                onClick={applyBulkCategory}
-                disabled={!bulkCat || isPending}
-                className="text-xs sm:text-sm font-semibold px-2.5 sm:px-4 py-1.5 rounded-[5px] bg-white text-navy disabled:opacity-40 hover:bg-white/90 transition-colors shrink-0 whitespace-nowrap"
-              >
-                Aplicar
-              </button>
-              <div className="w-px h-4 bg-white/20 shrink-0" />
-              <button
-                onClick={() => setDeleteConfirm(true)}
-                title="Eliminar"
-                className="flex items-center gap-1.5 text-xs sm:text-sm font-semibold px-2.5 sm:px-3 py-1.5 rounded-[5px] bg-danger text-white hover:bg-danger/85 transition-colors shrink-0"
-              >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/>
-                </svg>
-                <span className="hidden sm:inline">Eliminar</span>
-              </button>
-              <button onClick={clearSelection} className="text-sm text-white/50 hover:text-white/80 px-1 shrink-0">✕</button>
-            </>
-          )}
-        </div>
-      )}
-
-      {/* ── Mobile: month strip (clásico), cápsula estilo Apple Photos ───────── */}
-      <div className="sm:hidden sticky top-[45px] z-20 -mx-2 px-2 pt-2 pb-3 bg-app-bg">
-        <div className="flex gap-0.5 p-1 rounded-full bg-navy/[0.05] overflow-x-auto scrollbar-none">
-          <button
-            onClick={() => router.push(pathname)}
-            className={`shrink-0 px-3.5 py-1.5 rounded-full text-sm transition-colors whitespace-nowrap ${
-              !activeMonth ? "bg-white text-navy font-semibold shadow-card" : "text-navy/45 hover:text-navy/70"
-            }`}
-          >
-            Todo
-          </button>
-          {monthStrip.map(({ key, label, year }) => {
-            const isActive = key === activeMonth;
-            const showYear = year !== new Date().getFullYear();
-            return (
-              <button
-                key={key}
-                ref={isActive ? activeMonthRef : undefined}
-                onClick={() => goToMonth(key)}
-                className={`shrink-0 px-3.5 py-1.5 rounded-full text-sm transition-colors capitalize whitespace-nowrap ${
-                  isActive ? "bg-white text-navy font-semibold shadow-card" : "text-navy/45 hover:text-navy/70"
-                }`}
-              >
-                {label}{showYear && <span className="text-[10px] ml-0.5 opacity-60">{year}</span>}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* ── Mobile: day-grouped list (clásico) — se mantiene también con v2 activo; Julia
-          prefiere el móvil clásico de Movimientos al piloto de estilo Factorial ── */}
-      <div className="sm:hidden space-y-5 mt-4 mx-1">
-        {filtered.length === 0 && (
-          <p className="py-10 text-center text-sm text-navy/45">Sin resultados</p>
-        )}
-        {byDay.map(([date, dayTxns]) => {
-          const dayNet = dayTxns.reduce((s, t) => s + t.amount, 0);
-          return (
-            <div key={date}>
-              {/* Day header — total siempre gris */}
-              <div className="flex items-baseline justify-between mb-2 px-2">
-                <span className="text-sm font-semibold text-navy">{fmtDayLabel(date)}</span>
-                <span className="text-xs tabular-nums text-navy/40 pr-1">
-                  {dayNet < 0 ? "−" : "+"}{fmtAmt(Math.abs(dayNet))}
-                </span>
-              </div>
-              {/* Caja blanca por día, icono circular de color por movimiento */}
-              <div className="bg-white border border-navy/[0.07] shadow-card rounded-2xl overflow-hidden divide-y divide-navy/[0.05]">
-                {dayTxns.map((t) => {
-                  const recurringPeriod = recurringPeriods[t.id];
-                  const isSelected  = selected.has(t.id);
-                  const primary     = t.contact || t.concept || "—";
-                  const secondary   = t.contact && t.concept && t.concept !== t.contact ? t.concept : null;
-                  const cat         = t.category ? categories.find((c) => c.value === t.category) : undefined;
-                  const accent      = cat?.text_color ?? (t.amount > 0 ? FALLBACK_COLOR.in : FALLBACK_COLOR.out);
-                  const iconKey     = cat?.emoji ?? (t.amount > 0 ? FALLBACK_ICON.in : FALLBACK_ICON.out);
-                  return (
-                    <div
-                      key={t.id}
-                      className={`flex items-start gap-3 p-3 transition-colors ${isSelected ? "bg-primary/[0.035]" : ""}`}
-                    >
-                      <div
-                        className="flex items-center gap-2.5 shrink-0 cursor-pointer"
-                        onClick={() => { if (mobileSelectMode) toggleOne(t.id); else setDrawerTxnId(t.id); }}
-                      >
-                        {mobileSelectMode && (
-                          <Checkbox checked={isSelected} onChange={() => toggleOne(t.id)} />
-                        )}
-                        <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: accent }}>
-                          <CatIcon iconKey={iconKey} name={cat?.label ?? primary} color="#fff" size={17} />
-                        </div>
-                      </div>
-                      <div
-                        className="flex-1 min-w-0 cursor-pointer"
-                        onClick={() => { if (mobileSelectMode) toggleOne(t.id); else setDrawerTxnId(t.id); }}
-                      >
-                        <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
-                          <span className="text-[15px] font-semibold text-navy truncate">{primary}</span>
-                        </div>
-                        {secondary && <p className="text-xs text-navy/40 truncate">{secondary}</p>}
-                        <div className="flex items-center gap-1.5 mt-1 overflow-x-auto scrollbar-none" onClick={(e) => e.stopPropagation()}>
-                          <CategoryPill category={t.category} categories={categories} onChange={(cat) => handleCategoryChange(t.id, cat)} hideIcon />
-                          <span className="shrink-0 inline-flex items-center gap-1 text-xs text-navy/35 whitespace-nowrap">
-                            <OriginIcon method={t.payment_method} />
-                            {originLabel(t.payment_method)}
-                          </span>
-                          {recurringPeriod && (
-                            <span className="shrink-0 inline-flex items-center gap-1 text-[11px] text-primary/60 font-medium whitespace-nowrap">
-                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15"/>
-                              </svg>
-                              {recurringPeriod}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="shrink-0 text-right">
-                        <p className={`text-sm font-semibold tabular-nums ${t.amount > 0 ? "text-success" : "text-navy"}`}>
-                          {t.amount > 0 ? "+" : "−"}{fmtAmt(t.amount)}
-                        </p>
-                        {t.balance != null && (
-                          <p className="text-[11px] text-navy/35 tabular-nums mt-0.5">{fmtAmt(t.balance)}</p>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
-        {filtered.length > 0 && (
-          <TablePagination page={safePage} totalItems={sortedFiltered.length} pageSize={PAGE_SIZE} onPageChange={setPage} />
-        )}
-      </div>
+      <TransaccionesListV2
+        categories={categories}
+        uncategorizedCount={uncategorizedCount}
+        search={search}
+        onSearchChange={setSearch}
+        catFilters={catFilters}
+        onCatFiltersChange={setCatFilters}
+        originFilter={originFilter}
+        onOriginFilterChange={setOriginFilter}
+        onlyRecurring={onlyRecurring}
+        onToggleOnlyRecurring={() => setOnlyRecurring((v) => !v)}
+        directionFilter={directionFilter}
+        onDirectionFilterChange={setDirectionFilter}
+        totalIn={totalIn}
+        totalOut={totalOut}
+        neto={neto}
+        sortKey={sortKey}
+        sortDir={sortDir}
+        onToggleSort={toggleSort}
+        byMonth={byMonth}
+        onRowClick={(id) => setDrawerTxnId(id)}
+        onExportCsv={exportCSV}
+        onAddCash={() => setShowAddCash(true)}
+        onPapelera={() => setShowPapelera(true)}
+        page={safePage}
+        totalItems={sortedFiltered.length}
+        pageSize={PAGE_SIZE}
+        onPageChange={setPage}
+        recurringPeriods={recurringPeriods}
+        onCategoryChange={handleCategoryChange}
+      />
 
       {showAddCash && (
         <AddCashModal categories={categories} onClose={() => setShowAddCash(false)} />

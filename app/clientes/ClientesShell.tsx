@@ -3,8 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import ClientesTable, { type ClientesTableHandle, type CustomerRow } from "./ClientesTable";
 import ClientesMatrizCompras from "./ClientesMatrizCompras";
-import SectionTabs, { type SectionTab } from "@/app/components/SectionTabs";
-import SectionTabsV2 from "@/app/components/v2/SectionTabsV2";
+import SectionTabsV2, { type SectionTabV2 } from "@/app/components/v2/SectionTabsV2";
 import type { StripePayment } from "@/lib/stripePayments";
 
 type Props = {
@@ -14,7 +13,7 @@ type Props = {
 
 type Tab = "estado" | "compras";
 
-const TABS: SectionTab<Tab>[] = [
+const TABS: SectionTabV2<Tab>[] = [
   { key: "estado",  label: "Estado de clientes" },
   { key: "compras", label: "Historial de compras" },
 ];
@@ -29,12 +28,7 @@ export default function ClientesShell({ customers, payments }: Props) {
 
   return (
     <>
-      <div className="hidden sm:block">
-        <SectionTabsV2 className="mb-5" active={tab} onChange={setTab} tabs={TABS} />
-      </div>
-      <div className="sm:hidden">
-        <SectionTabs className="mb-5" active={tab} onChange={setTab} tabs={TABS} />
-      </div>
+      <SectionTabsV2 className="mb-5" active={tab} onChange={setTab} tabs={TABS} />
 
       {mounted.estado && (
         <div className={tab === "estado" ? "" : "hidden"}>
