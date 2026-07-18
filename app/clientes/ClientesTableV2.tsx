@@ -5,7 +5,8 @@ import FilterPillGroupV2 from "@/app/components/v2/FilterPillGroupV2";
 import { IconButtonV2 } from "@/app/components/v2/ButtonsV2";
 import { tableHeadClassV2, tableRowClassV2, gridColsV2 } from "@/app/components/v2/tableStylesV2";
 import { fmt } from "@/lib/analytics";
-import { clientStatus, planBadgeCfg, initials, fmtDate, type CustomerRow, type Filter, type SortKey, type SortDir } from "./ClientesTable";
+import { clientStatus, initials, fmtDate, type CustomerRow, type Filter, type SortKey, type SortDir } from "./ClientesTable";
+import { productAbbr, productColor } from "./ClientesMatrizCompras";
 
 const COLS = "2.4fr 1.2fr .8fr 1fr .9fr";
 
@@ -94,7 +95,9 @@ export default function ClientesTableV2({
             const dSub = c.daysSinceLastSub ?? Infinity;
             const dPack = c.daysSinceLastPack ?? Infinity;
             const planType = dSub <= dPack && dSub < Infinity ? "sub" : dPack < Infinity ? "pack" : "session";
-            const { label: planLabel } = planBadgeCfg(planType, c.lastSubProduct, c.lastPackProduct);
+            const planProduct = planType === "sub" ? c.lastSubProduct : planType === "pack" ? c.lastPackProduct : null;
+            const planLabel = planProduct ? productAbbr(planProduct) : "Por sesión";
+            const planColorCls = planProduct ? productColor(planProduct) : "bg-navy/[0.05] text-navy/50";
             const statusCfg =
               status === "baja"
                 ? { color: "#dc2626", label: c.isRecurring ? `Baja · ${days}d` : `Pack vencido · ${days}d` }
@@ -122,7 +125,7 @@ export default function ClientesTableV2({
                       </div>
                     </div>
                     <div>
-                      <span className="inline-block px-[11px] py-1 rounded-[8px] bg-[#f3effc] text-[#7c3aed] text-[12.5px] font-medium whitespace-nowrap">
+                      <span className={`inline-block px-[11px] py-1 rounded-[8px] text-[12.5px] font-medium whitespace-nowrap ${planColorCls}`}>
                         {planLabel}
                       </span>
                     </div>
@@ -149,7 +152,7 @@ export default function ClientesTableV2({
                   <div className="flex-1 min-w-0">
                     <p className="text-[14px] font-semibold text-[#18181b] truncate">{c.name ?? "—"}</p>
                     <div className="flex items-center gap-1.5 mt-0.5">
-                      <span className="inline-block px-[7px] py-[1px] rounded-[6px] bg-[#f3effc] text-[#7c3aed] text-[11px] font-medium whitespace-nowrap">
+                      <span className={`inline-block px-[7px] py-[1px] rounded-[6px] text-[11px] font-medium whitespace-nowrap ${planColorCls}`}>
                         {planLabel}
                       </span>
                       <span className="inline-flex items-center gap-1 text-[11px] text-[#71717a] whitespace-nowrap">
