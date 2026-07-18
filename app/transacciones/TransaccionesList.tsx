@@ -19,7 +19,6 @@ import TransactionDrawer from "./TransactionDrawer";
 import { CatIcon } from "./catIcons";
 import { useDesignVersion } from "@/app/components/DesignVersionContext";
 import TransaccionesListV2 from "./TransaccionesListV2";
-import TransaccionesMobileV2 from "./TransaccionesMobileV2";
 
 export const MONTHS_ES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
 
@@ -924,8 +923,8 @@ export default function TransaccionesList({
         </div>
       </div>
 
-      {/* ── Mobile: KPIs (clásico; en v2 se sustituye por TransaccionesMobileV2) ── */}
-      <div className={`${v2 ? "hidden" : "sm:hidden"} grid grid-cols-3 gap-2 mb-5`}>
+      {/* ── Mobile: KPIs (clásico, también con v2 activo) ── */}
+      <div className="sm:hidden grid grid-cols-3 gap-2 mb-5">
         {/* Entradas — clicable */}
         <button
           type="button"
@@ -966,7 +965,7 @@ export default function TransaccionesList({
       </div>
 
       {/* ── Mobile: Search bar + Filtros (clásico) ── */}
-      <div className={`${v2 ? "hidden" : "sm:hidden"} flex gap-2 mb-3`}>
+      <div className="sm:hidden flex gap-2 mb-3">
         <SearchInput value={search} onChange={setSearch} placeholder="Buscar concepto o contacto…" className="flex-1" />
         <button
           onClick={() => setShowMobileFilters((v) => !v)}
@@ -984,7 +983,7 @@ export default function TransaccionesList({
       </div>
 
       {/* ── Mobile: Filter drawer ────────────────────────────────────────────── */}
-      {showMobileFilters && !v2 && (
+      {showMobileFilters && (
         <div className="sm:hidden bg-white border border-navy/[0.07] rounded-2xl p-4 mb-3 flex flex-col gap-3 shadow-card">
           <DateFilter />
           <CategoryMultiFilter selected={catFilters} categories={categories} onChange={setCatFilters} className="w-full" />
@@ -1014,7 +1013,7 @@ export default function TransaccionesList({
       )}
 
       {/* ── Mobile: Alert banner (clásico) ── */}
-      {uncategorizedCount > 0 && !v2 && (
+      {uncategorizedCount > 0 && (
         <button
           onClick={() => setCatFilters(catFilters.includes("__none__") ? catFilters.filter((v) => v !== "__none__") : [...catFilters, "__none__"])}
           className="sm:hidden w-full flex items-center gap-2 px-4 py-2.5 mb-3 rounded-xl bg-warning/10 border border-warning/20 text-navy/70 text-sm font-medium text-left"
@@ -1067,7 +1066,7 @@ export default function TransaccionesList({
       </div>
 
       {/* ── Mobile: toolbar (clásico) ── */}
-      <div className={`${v2 ? "hidden" : "sm:hidden"} mb-3`}>
+      <div className="sm:hidden mb-3">
         {(catFilters.length > 0 || originFilter !== "all" || onlyRecurring || directionFilter !== "all" || currentRange !== "all" || search !== "") && (
           <div className="flex items-center mb-3">
             <button
@@ -1165,7 +1164,7 @@ export default function TransaccionesList({
       )}
 
       {/* ── Mobile: month strip (clásico), cápsula estilo Apple Photos ───────── */}
-      <div className={`${v2 ? "hidden" : "sm:hidden"} sticky top-[45px] z-20 -mx-2 px-2 pt-2 pb-3 bg-app-bg`}>
+      <div className="sm:hidden sticky top-[45px] z-20 -mx-2 px-2 pt-2 pb-3 bg-app-bg">
         <div className="flex gap-0.5 p-1 rounded-full bg-navy/[0.05] overflow-x-auto scrollbar-none">
           <button
             onClick={() => router.push(pathname)}
@@ -1194,8 +1193,9 @@ export default function TransaccionesList({
         </div>
       </div>
 
-      {/* ── Mobile: day-grouped list (clásico) — en v2 se sustituye por TransaccionesMobileV2 ── */}
-      <div className={`${v2 ? "hidden" : "sm:hidden"} space-y-5 mt-4 mx-1`}>
+      {/* ── Mobile: day-grouped list (clásico) — se mantiene también con v2 activo; Julia
+          prefiere el móvil clásico de Movimientos al piloto de estilo Factorial ── */}
+      <div className="sm:hidden space-y-5 mt-4 mx-1">
         {filtered.length === 0 && (
           <p className="py-10 text-center text-sm text-navy/45">Sin resultados</p>
         )}
@@ -1279,30 +1279,6 @@ export default function TransaccionesList({
           <TablePagination page={safePage} totalItems={sortedFiltered.length} pageSize={PAGE_SIZE} onPageChange={setPage} />
         )}
       </div>
-
-      {/* ── Mobile: estilo Factorial (solo cuando el diseño nuevo está activo) ── */}
-      {v2 && (
-        <div className="sm:hidden -mx-2 px-2 py-2" style={{ background: "#f4f4f6" }}>
-          <TransaccionesMobileV2
-            search={search}
-            onSearchChange={setSearch}
-            directionFilter={directionFilter}
-            onDirectionFilterChange={setDirectionFilter}
-            totalIn={totalIn}
-            totalOut={totalOut}
-            neto={neto}
-            byDay={byDay}
-            categories={categories}
-            recurringPeriods={recurringPeriods}
-            onRowClick={(id) => setDrawerTxnId(id)}
-            onManual={() => setShowAddCash(true)}
-            page={safePage}
-            totalItems={sortedFiltered.length}
-            pageSize={PAGE_SIZE}
-            onPageChange={setPage}
-          />
-        </div>
-      )}
 
       {/* ── Desktop: lista estilo Revolut (misma identidad visual que mobile) ── */}
       {(() => {
