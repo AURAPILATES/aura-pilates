@@ -255,7 +255,6 @@ export default function RecurrentesListV2({
           <span className="w-[7px] h-[7px] rounded-full bg-[#16a34a]" />
           ACTIVOS
         </span>
-        <span className="text-[#a1a1aa] font-normal normal-case">{confirmed.length}</span>
       </div>
       {confirmed.length === 0 ? (
         <p className="text-sm text-[#a1a1aa] py-6">
