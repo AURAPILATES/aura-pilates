@@ -505,8 +505,24 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
   const [openConfirmedId, setOpenConfirmedId] = useState<number | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [confirmedPage, setConfirmedPage] = useState(0);
+  const [search, setSearch] = useState("");
 
-  const confirmedPageRows = confirmed.slice(confirmedPage * PAGE_SIZE, (confirmedPage + 1) * PAGE_SIZE);
+  const q = search.trim().toLowerCase();
+  const filteredPending = useMemo(
+    () => (q ? pending.filter((p) => p.label.toLowerCase().includes(q)) : pending),
+    [pending, q],
+  );
+  const filteredConfirmed = useMemo(
+    () => (q ? confirmed.filter((c) => c.expense.label.toLowerCase().includes(q)) : confirmed),
+    [confirmed, q],
+  );
+
+  function handleSearchChange(value: string) {
+    setSearch(value);
+    setConfirmedPage(0);
+  }
+
+  const confirmedPageRows = filteredConfirmed.slice(confirmedPage * PAGE_SIZE, (confirmedPage + 1) * PAGE_SIZE);
 
   const openPendingRow = openPendingKey != null ? pending.find((p) => p.keys[0] === openPendingKey) ?? null : null;
   const openConfirmedRow = openConfirmedId != null ? confirmed.find((c) => c.expense.id === openConfirmedId) ?? null : null;
@@ -601,12 +617,14 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
   return (
     <div className="space-y-4">
       <RecurrentesListV2
-        pending={pending}
-        confirmed={confirmed}
+        pending={filteredPending}
+        confirmed={filteredConfirmed}
         confirmedPageRows={confirmedPageRows}
         archived={archived}
         categories={categories}
         contacts={contacts}
+        search={search}
+        onSearchChange={handleSearchChange}
         pickFor={pickFor}
         ivaRateFor={ivaRateFor}
         retencionRateFor={retencionRateFor}

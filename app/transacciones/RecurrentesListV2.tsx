@@ -13,6 +13,7 @@ import { setRecurringExpenseStatus, deleteRecurringExpense } from "./recurringAc
 import Drawer from "@/app/components/Drawer";
 import TablePaginationV2 from "@/app/components/v2/TablePaginationV2";
 import TaxBadgeV2 from "@/app/components/v2/TaxBadgeV2";
+import SearchInputV2 from "@/app/components/v2/SearchInputV2";
 import { IconButtonV2 } from "@/app/components/v2/ButtonsV2";
 import { tableHeadClassV2, tableRowClassV2, tableGroupClassV2, gridColsV2 } from "@/app/components/v2/tableStylesV2";
 
@@ -46,6 +47,8 @@ type Props = {
   archived: RecurringExpense[];
   categories: Category[];
   contacts: Contact[];
+  search: string;
+  onSearchChange: (v: string) => void;
   pickFor: (row: PendingSeriesRow) => ContactPick;
   ivaRateFor: (row: PendingSeriesRow) => number;
   retencionRateFor: (row: PendingSeriesRow) => number;
@@ -88,14 +91,15 @@ function ArchivedRowV2({ row }: { row: RecurringExpense }) {
 }
 
 export default function RecurrentesListV2({
-  pending, confirmed, confirmedPageRows, archived, categories, contacts, pickFor, ivaRateFor, retencionRateFor,
+  pending, confirmed, confirmedPageRows, archived, categories, contacts, search, onSearchChange, pickFor, ivaRateFor, retencionRateFor,
   onOpenPending, onOpenConfirmed, onConfirmRow, confirmedPage, pageSize, onConfirmedPageChange,
 }: Props) {
   const [showArchived, setShowArchived] = useState(false);
 
   return (
     <div>
-      <div className="flex items-center justify-end">
+      <div className="flex items-center gap-[9px]">
+        <SearchInputV2 value={search} onChange={onSearchChange} placeholder="Buscar recurrente…" className="min-w-[160px] flex-1" />
         <IconButtonV2
           onClick={() => setShowArchived(true)}
           title={`Archivados${archived.length > 0 ? ` (${archived.length})` : ""}`}
@@ -244,7 +248,9 @@ export default function RecurrentesListV2({
         <span className="text-[#a1a1aa] font-normal normal-case">{confirmed.length}</span>
       </div>
       {confirmed.length === 0 ? (
-        <p className="text-sm text-[#a1a1aa] py-6">Sin gastos recurrentes confirmados todavía.</p>
+        <p className="text-sm text-[#a1a1aa] py-6">
+          {search.trim() ? "Sin resultados" : "Sin gastos recurrentes confirmados todavía."}
+        </p>
       ) : (
         confirmedPageRows.map((row) => {
           const e = row.expense;
