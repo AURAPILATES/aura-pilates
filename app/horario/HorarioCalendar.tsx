@@ -3,7 +3,7 @@
 import { useMemo, memo } from "react";
 import { MomenceEvent } from "@/lib/momence";
 
-const SLOT_PX = 110;     // px per hour slot
+const SLOT_PX = 92;      // px per hour slot
 const SEP_PX = 36;       // px for the gap-separator row
 const DAY_LABELS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 
@@ -227,10 +227,10 @@ export default memo(function HorarioCalendar({
                     <button
                       key={e.id}
                       onClick={() => onSelect(e)}
-                      className={`absolute left-1 right-1 rounded-xl border text-left overflow-hidden hover:brightness-[0.97] active:scale-[0.99] transition-all flex flex-col justify-between ${style.card}`}
+                      className={`absolute left-1 right-1 rounded-xl border text-left overflow-hidden hover:brightness-[0.97] active:scale-[0.99] transition-all ${style.card}`}
                       style={{ top: `${topPx + 2}px`, height: `${heightPx}px` }}
                     >
-                      <div className="px-2.5 pt-2 flex-1 min-h-0 overflow-hidden">
+                      <div className="px-2.5 pt-2 pb-2 overflow-hidden">
                         <div className="flex items-center justify-between mb-0.5">
                           <span className="text-[10px] font-semibold text-navy/55 font-mono">{e.ticketsSold}/{e.capacity}</span>
                           <span className={`text-[10px] font-bold ${style.pct}`}>{pctVal}%</span>
@@ -239,14 +239,12 @@ export default memo(function HorarioCalendar({
                         {heightPx > 55 && e.teacher && (
                           <p className="text-[10px] text-navy/50 truncate mt-0.5">{e.teacher}</p>
                         )}
-                      </div>
-                      {heightPx > 50 && (
-                        <div className="px-2.5 pb-2 mt-1">
-                          <div className="h-[3px] rounded-full bg-black/10 overflow-hidden">
+                        {heightPx > 50 && (
+                          <div className="h-[3px] rounded-full bg-black/10 overflow-hidden mt-1.5">
                             <div className={`h-full rounded-full ${style.bar}`} style={{ width: `${pctVal}%` }} />
                           </div>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </button>
                   );
                 })}
