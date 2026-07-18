@@ -145,8 +145,8 @@ export default function HorarioShell({
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 pb-16">
 
         {/* Week nav / view toggle (desktop) */}
-        <div className="flex items-center justify-start gap-3 mb-6">
-          <div className="hidden sm:flex items-center gap-2 shrink-0 pb-2">
+        <div className="hidden sm:flex items-center justify-start gap-3 mb-6">
+          <div className="flex items-center gap-2 shrink-0 pb-2">
               <div className="flex items-center gap-0.5">
                 <button
                   onClick={() => router.push(`?week=${prevWeek}`)}
@@ -155,7 +155,7 @@ export default function HorarioShell({
                 >
                   {chevLeft}
                 </button>
-                <span className="text-xs font-semibold text-navy px-2 min-w-[110px] text-center">
+                <span className="text-[14px] font-semibold text-navy px-2 min-w-[110px] text-center">
                   Semana {weekLabel(weekMonday)}
                 </span>
                 <button
@@ -279,26 +279,8 @@ export default function HorarioShell({
               </div>
 
               {/* Occ filter pills */}
-              <div className="flex gap-1.5 overflow-x-auto pb-1 mb-4 scrollbar-none">
-                {([
-                  { value: "all",  label: "Todas",      dot: "bg-navy/25" },
-                  { value: "low",  label: "Por llenar", dot: "bg-[#c03828]" },
-                  { value: "mid",  label: "A medias",   dot: "bg-[#a38540]" },
-                  { value: "high", label: "Llenas",     dot: "bg-[#4e8a5d]" },
-                ] as { value: OccFilter; label: string; dot: string }[]).map(({ value, label, dot }) => (
-                  <button
-                    key={value}
-                    onClick={() => setOccFilter(value)}
-                    className={`shrink-0 flex items-center gap-1.5 px-3 py-1 text-xs rounded-full border transition-colors ${
-                      occFilter === value
-                        ? "bg-navy text-white border-navy"
-                        : "bg-white text-navy/60 border-navy/[0.12] hover:text-navy"
-                    }`}
-                  >
-                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${occFilter === value ? "bg-white/60" : dot}`} />
-                    {label}
-                  </button>
-                ))}
+              <div className="mb-4">
+                <OccFilterGroup occFilter={occFilter} onChange={setOccFilter} />
               </div>
 
               {/* All days — continuous scroll */}
@@ -361,27 +343,7 @@ export default function HorarioShell({
               <div className="flex flex-wrap items-center gap-2.5 mb-5">
                 <Select value={claseFilter}       onChange={setClaseFilter}       options={clases}       placeholder="Todas las clases" />
                 <Select value={instructoraFilter}  onChange={setInstructoraFilter}  options={instructoras}  placeholder="Todas las instructoras" />
-                <div className="flex items-center gap-0.5 bg-navy/5 p-[3px] rounded-[10px]">
-                  {([
-                    { value: "all",  label: "Todas",      dot: "bg-navy/25" },
-                    { value: "low",  label: "Por llenar", dot: "bg-[#c03828]" },
-                    { value: "mid",  label: "A medias",   dot: "bg-[#a38540]" },
-                    { value: "high", label: "Llenas",     dot: "bg-[#4e8a5d]" },
-                  ] as { value: OccFilter; label: string; dot: string }[]).map(({ value, label, dot }) => (
-                    <button
-                      key={value}
-                      onClick={() => setOccFilter(value)}
-                      className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-[7px] whitespace-nowrap transition-colors ${
-                        occFilter === value
-                          ? "bg-white text-navy font-medium border border-navy/[0.07] shadow-card"
-                          : "text-navy/50 hover:text-navy"
-                      }`}
-                    >
-                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dot}`} />
-                      {label}
-                    </button>
-                  ))}
-                </div>
+                <OccFilterGroup occFilter={occFilter} onChange={setOccFilter} />
                 {hasFilters && (
                   <button
                     onClick={() => { setClaseFilter("all"); setInstructoraFilter("all"); setOccFilter("all"); }}
@@ -513,7 +475,7 @@ function KpiCard({ label, value, valueColor = "text-navy", tooltip }: {
   label: string; value: string; valueColor?: string; tooltip?: string;
 }) {
   return (
-    <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card px-4 py-3">
+    <div className="bg-white border border-[#ececef] rounded-[14px] px-4 py-3">
       <div className="flex items-center gap-1 mb-1">
         <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider leading-tight">{label}</p>
         {tooltip && (
@@ -535,6 +497,35 @@ function KpiCard({ label, value, valueColor = "text-navy", tooltip }: {
         )}
       </div>
       <p className={`text-2xl font-semibold tabular-nums ${valueColor}`}>{value}</p>
+    </div>
+  );
+}
+
+/** Segmentado Todas/Por llenar/A medias/Llenas — mismo componente en escritorio y móvil. */
+function OccFilterGroup({ occFilter, onChange }: { occFilter: OccFilter; onChange: (v: OccFilter) => void }) {
+  return (
+    <div className="overflow-x-auto scrollbar-none">
+      <div className="inline-flex items-center gap-0.5 bg-navy/5 p-[3px] rounded-[10px] w-max min-w-full sm:min-w-0">
+        {([
+          { value: "all",  label: "Todas",      dot: "bg-navy/25" },
+          { value: "low",  label: "Por llenar", dot: "bg-[#c03828]" },
+          { value: "mid",  label: "A medias",   dot: "bg-[#a38540]" },
+          { value: "high", label: "Llenas",     dot: "bg-[#4e8a5d]" },
+        ] as { value: OccFilter; label: string; dot: string }[]).map(({ value, label, dot }) => (
+          <button
+            key={value}
+            onClick={() => onChange(value)}
+            className={`shrink-0 flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-[7px] whitespace-nowrap transition-colors ${
+              occFilter === value
+                ? "bg-white text-navy font-medium border border-navy/[0.07]"
+                : "text-navy/50 hover:text-navy"
+            }`}
+          >
+            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dot}`} />
+            {label}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

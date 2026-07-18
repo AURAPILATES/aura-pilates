@@ -102,14 +102,14 @@ export default memo(function HorarioCalendar({
 
   if (events.length === 0) {
     return (
-      <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-16 text-center text-navy/35 text-sm">
+      <div className="bg-white border border-[#ececef] rounded-[10px] p-16 text-center text-navy/35 text-sm">
         No hay clases esta semana.
       </div>
     );
   }
 
   return (
-    <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden">
+    <div className="bg-white border border-[#ececef] rounded-[10px] overflow-hidden">
       {/* Day headers */}
       <div className="grid border-b border-navy/[0.08] bg-navy/[0.03]" style={{ gridTemplateColumns: "52px repeat(7, 1fr)" }}>
         <div className="border-r border-navy/[0.07]" />
@@ -170,7 +170,7 @@ export default memo(function HorarioCalendar({
                       className="absolute left-0 right-0 border-b border-navy/[0.06] flex items-start justify-end pr-2 pt-1.5"
                       style={{ top: `${hourMap.get(h)}px`, height: `${SLOT_PX}px` }}
                     >
-                      <span className="text-[11px] text-navy/30 font-mono">
+                      <span className="text-[12px] text-navy/30 font-mono">
                         {String(h).padStart(2, "0")}:00
                       </span>
                     </div>
@@ -222,12 +222,6 @@ export default memo(function HorarioCalendar({
                   const occ = e.capacity > 0 ? e.ticketsSold / e.capacity : 0;
                   const pctVal = Math.round(occ * 100);
                   const style = occStyle(occ);
-                  const d = new Date(e.dateTime);
-                  const timeStr = d.toLocaleTimeString("es-ES", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    timeZone: "Europe/Madrid",
-                  });
 
                   return (
                     <button
@@ -238,15 +232,12 @@ export default memo(function HorarioCalendar({
                     >
                       <div className="px-2.5 pt-2 flex-1 min-h-0 overflow-hidden">
                         <div className="flex items-center justify-between mb-0.5">
-                          <span className="text-[10px] font-semibold text-navy/55 font-mono">{timeStr}</span>
+                          <span className="text-[10px] font-semibold text-navy/55 font-mono">{e.ticketsSold}/{e.capacity}</span>
                           <span className={`text-[10px] font-bold ${style.pct}`}>{pctVal}%</span>
                         </div>
                         <p className="text-xs font-bold text-navy leading-tight truncate">{e.title}</p>
                         {heightPx > 55 && e.teacher && (
                           <p className="text-[10px] text-navy/50 truncate mt-0.5">{e.teacher}</p>
-                        )}
-                        {heightPx > 70 && (
-                          <p className="text-[10px] text-navy/50 mt-0.5">{e.ticketsSold}/{e.capacity}</p>
                         )}
                       </div>
                       {heightPx > 50 && (
