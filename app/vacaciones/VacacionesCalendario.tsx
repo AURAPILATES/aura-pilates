@@ -210,7 +210,7 @@ function SugerenciasBlock({ personas, festivos }: { personas: Persona[]; festivo
   };
 
   return (
-    <div className="bg-white border border-navy/[0.08] rounded-xl divide-y divide-navy/[0.06]">
+    <div className="bg-white border border-[#ececef] rounded-[14px] divide-y divide-navy/[0.06]">
       {suggestions.map((s, i) => (
         <div key={i} className="flex items-start gap-2.5 px-4 py-2.5">
           <span className={`shrink-0 mt-1.5 w-1.5 h-1.5 rounded-full ${dot[s.type]}`} />
@@ -706,7 +706,7 @@ function PersonCard({
           onAdd={onAdd}
         />
       )}
-      <div className={`bg-white border ${colors.border} rounded shadow-card overflow-hidden flex flex-col`}>
+      <div className={`bg-white border ${colors.border} rounded-[14px] overflow-hidden flex flex-col`}>
         {/* Header */}
         <div className="px-5 pt-5 pb-4 border-b border-navy/5">
           <div className="flex items-center justify-between mb-4">
@@ -968,7 +968,7 @@ function AnnualCalendar({
         }).filter((p) => p.days.length > 0);
 
         return (
-          <div key={month} className="bg-white border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden">
+          <div key={month} className="bg-white border border-[#ececef] rounded-[14px] overflow-hidden">
             <div className="px-4 pt-4 pb-2">
               <p className="text-xs font-semibold text-navy/50 uppercase tracking-wider">{monthName}</p>
             </div>
@@ -1075,7 +1075,7 @@ function GanttView({
   });
 
   return (
-    <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-5">
+    <div className="bg-white border border-[#ececef] rounded-[14px] p-5">
       <div className="flex mb-3">
         <div className="w-24 shrink-0" />
         <div className="flex-1 grid grid-cols-12 gap-1">
