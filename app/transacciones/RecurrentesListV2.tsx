@@ -13,6 +13,7 @@ import { setRecurringExpenseStatus, deleteRecurringExpense } from "./recurringAc
 import Drawer from "@/app/components/Drawer";
 import TablePaginationV2 from "@/app/components/v2/TablePaginationV2";
 import TaxBadgeV2 from "@/app/components/v2/TaxBadgeV2";
+import { IconButtonV2 } from "@/app/components/v2/ButtonsV2";
 import { tableHeadClassV2, tableRowClassV2, tableGroupClassV2, gridColsV2 } from "@/app/components/v2/tableStylesV2";
 
 const COLS = "2.1fr 1.2fr 1.1fr .9fr .9fr 1fr";
@@ -95,16 +96,14 @@ export default function RecurrentesListV2({
   return (
     <div>
       <div className="flex items-center justify-end">
-        <button
-          type="button"
+        <IconButtonV2
           onClick={() => setShowArchived(true)}
-          className="flex items-center gap-[7px] border border-[#e6e6ea] rounded-[10px] px-[13px] py-2.5 text-[13.5px] font-medium text-[#3f3f46] bg-white hover:bg-[#18181b]/[0.02] transition-colors whitespace-nowrap"
+          title={`Archivados${archived.length > 0 ? ` (${archived.length})` : ""}`}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="21 8 21 21 3 21 3 8" /><rect x="1" y="3" width="22" height="5" /><line x1="10" y1="12" x2="14" y2="12" />
           </svg>
-          Archivados{archived.length > 0 ? ` (${archived.length})` : ""}
-        </button>
+        </IconButtonV2>
       </div>
 
       {showArchived && (

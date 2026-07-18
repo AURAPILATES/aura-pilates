@@ -222,11 +222,9 @@ export default function HistorialTimeline({ events: initial }: { events: Busines
 
         <PrimaryButtonV2
           onClick={() => { setShowForm(true); setEditing(null); setFormError(null); }}
-          className="flex items-center gap-[7px] shrink-0"
-        >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
-          Registrar evento
-        </PrimaryButtonV2>
+          label="Registrar evento"
+          icon={<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>}
+        />
       </div>
 
       {/* Add form */}

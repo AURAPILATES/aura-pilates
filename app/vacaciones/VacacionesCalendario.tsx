@@ -1298,24 +1298,24 @@ export default function VacacionesCalendario({
         />
       )}
 
-      {/* Nuevo instructor / Archivados */}
-      <div className="flex items-center justify-end gap-3 flex-wrap">
-        <div className="flex items-center gap-2.5">
-          <IconButtonV2 onClick={openArchivados} title="Archivados">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/>
-            </svg>
-          </IconButtonV2>
-          <PrimaryButtonV2 onClick={() => setShowNuevoModal(true)} className="flex items-center gap-[7px] h-[38px]">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
-            Nuevo instructor
-          </PrimaryButtonV2>
-        </div>
-      </div>
-
-      {/* Sugerencias */}
+      {/* Sugerencias + Nuevo instructor / Archivados (comparten fila: la acción vive junto al
+          primer contenido de la pantalla, no suelta en una fila propia) */}
       <section>
-        <h2 className="text-xs font-semibold text-navy/55 uppercase tracking-widest mb-3">Sugerencias</h2>
+        <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
+          <h2 className="text-xs font-semibold text-navy/55 uppercase tracking-widest">Sugerencias</h2>
+          <div className="flex items-center gap-2.5">
+            <IconButtonV2 onClick={openArchivados} title="Archivados">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/>
+              </svg>
+            </IconButtonV2>
+            <PrimaryButtonV2
+              onClick={() => setShowNuevoModal(true)}
+              label="Nuevo instructor"
+              icon={<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>}
+            />
+          </div>
+        </div>
         <SugerenciasBlock personas={personas} festivos={festivos} />
       </section>
 

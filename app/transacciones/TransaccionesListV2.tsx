@@ -141,7 +141,7 @@ export default function TransaccionesListV2({
       <div className="flex items-center gap-[10px] flex-wrap">
         <SearchInputV2 value={search} onChange={onSearchChange} placeholder="Buscar concepto o contacto…" className="flex-1 min-w-[140px]" />
         <FiltersToggleButtonV2 open={filtersOpen} active={filtersActive} onClick={() => setFiltersOpen((v) => !v)} />
-        <ImportButton onManual={onAddCash} className="hidden sm:block sm:order-2" />
+        <ImportButton v2 onManual={onAddCash} className="sm:order-2" />
         <div className={`${filtersOpen ? "flex" : "hidden"} sm:flex sm:order-1 items-center gap-[10px] flex-wrap w-full sm:w-auto`}>
           <DateFilter variant="v2" />
           <CategoryMultiFilter selected={catFilters} categories={categories} onChange={onCatFiltersChange} />
@@ -160,24 +160,8 @@ export default function TransaccionesListV2({
         </div>
       </div>
 
-      {/* Móvil: Añadir movimiento + sin etiquetar, uno al lado del otro */}
-      <div className="sm:hidden flex items-stretch gap-[10px] mt-3">
-        <ImportButton onManual={onAddCash} className="flex-1" />
-        {uncategorizedCount > 0 && (
-          <button
-            onClick={() => onCatFiltersChange(catFilters.includes("__none__") ? catFilters.filter((v) => v !== "__none__") : [...catFilters, "__none__"])}
-            className="flex-1 inline-flex items-center justify-center gap-[7px] bg-[#fef3e2] text-[#b45309] border border-[#f6dcb8] rounded-[8px] px-3 py-2.5 text-[12.5px] font-medium whitespace-nowrap"
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-              <path d="M12 3l9 16H3z" /><path d="M12 10v4M12 17v.5" />
-            </svg>
-            {uncategorizedCount} sin etiquetar
-          </button>
-        )}
-      </div>
-
       {uncategorizedCount > 0 && (
-        <div className="hidden sm:block mt-3">
+        <div className="mt-3">
           <button
             onClick={() => onCatFiltersChange(catFilters.includes("__none__") ? catFilters.filter((v) => v !== "__none__") : [...catFilters, "__none__"])}
             className="inline-flex items-center gap-[7px] bg-[#fef3e2] text-[#b45309] border border-[#f6dcb8] rounded-full px-3 py-[5px] text-[12.5px] font-medium"
