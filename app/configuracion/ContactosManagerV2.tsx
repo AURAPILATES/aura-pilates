@@ -30,6 +30,8 @@ type Props = {
   onRecompute: () => void;
   recomputing: boolean;
   recomputed: number | null;
+  pendingRecomputeCount: number;
+  pendingCleanupCount: number;
   selectedIds: Set<number>;
   onToggleSelect: (id: number) => void;
   onClearSelection: () => void;
@@ -116,38 +118,51 @@ function BulkActionBarV2({
 export default function ContactosManagerV2({
   search, onSearchChange, rows, totalCount, page, pageSize, onPageChange,
   categories, contactStats, onRowClick, onNewContact, onCleanup, cleaning, cleaned, onRecompute, recomputing, recomputed,
+  pendingRecomputeCount, pendingCleanupCount,
   selectedIds, onToggleSelect, onClearSelection, onBulkDelete, onBulkSetIva, onBulkSetRetencion,
 }: Props) {
   return (
     <div>
       <div className="flex items-center gap-[10px] flex-wrap">
         <SearchInputV2 value={search} onChange={onSearchChange} placeholder="Buscar contacto…" className="flex-1 min-w-[160px]" />
-        <button
-          type="button"
-          onClick={onCleanup}
-          disabled={cleaning}
-          title="Vuelve a limpiar los conceptos ya guardados quitando códigos de operación variables, para que coincidan de forma estable"
-          className="flex items-center gap-[7px] border border-[#e6e6ea] rounded-[10px] px-[13px] py-2.5 text-[13.5px] font-medium text-[#3f3f46] bg-white hover:bg-[#18181b]/[0.02] transition-colors disabled:opacity-50 whitespace-nowrap"
-        >
-          {cleaning ? "Limpiando…" : cleaned !== null ? `${cleaned.updated} limpiados, ${cleaned.merged} fusionados` : "Limpiar conceptos"}
-        </button>
-        <button
-          type="button"
-          onClick={onRecompute}
-          disabled={recomputing}
-          title="Vuelve a calcular Contacto a partir de Concepto + Más datos, cruzando con los contactos guardados"
-          className="flex items-center gap-[7px] border border-[#e6e6ea] rounded-[10px] px-[13px] py-2.5 text-[13.5px] font-medium text-[#3f3f46] bg-white hover:bg-[#18181b]/[0.02] transition-colors disabled:opacity-50 whitespace-nowrap"
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M20 11a8 8 0 0 0-14-4M4 5v3h3" /><path d="M4 13a8 8 0 0 0 14 4M20 19v-3h-3" />
-          </svg>
-          {recomputing ? "Recalculando…" : recomputed !== null ? `${recomputed} actualizados` : "Recalcular"}
-        </button>
         <PrimaryButtonV2 onClick={onNewContact} className="flex items-center gap-[7px]">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
           Nuevo contacto
         </PrimaryButtonV2>
       </div>
+
+      {(pendingCleanupCount > 0 || pendingRecomputeCount > 0) && (
+        <div className="mt-3 flex items-center gap-2 flex-wrap">
+          {pendingCleanupCount > 0 && (
+            <button
+              type="button"
+              onClick={onCleanup}
+              disabled={cleaning}
+              title="Vuelve a limpiar los conceptos ya guardados quitando códigos de operación variables, para que coincidan de forma estable"
+              className="inline-flex items-center gap-[7px] bg-[#fef3e2] text-[#b45309] border border-[#f6dcb8] rounded-full px-3 py-[5px] text-[12.5px] font-medium disabled:opacity-50"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 3l9 16H3z" /><path d="M12 10v4M12 17v.5" />
+              </svg>
+              {cleaning ? "Limpiando…" : cleaned !== null ? `${cleaned.updated} limpiados, ${cleaned.merged} fusionados` : `${pendingCleanupCount} conceptos por limpiar`}
+            </button>
+          )}
+          {pendingRecomputeCount > 0 && (
+            <button
+              type="button"
+              onClick={onRecompute}
+              disabled={recomputing}
+              title="Vuelve a calcular Contacto a partir de Concepto + Más datos, cruzando con los contactos guardados"
+              className="inline-flex items-center gap-[7px] bg-[#fef3e2] text-[#b45309] border border-[#f6dcb8] rounded-full px-3 py-[5px] text-[12.5px] font-medium disabled:opacity-50"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 3l9 16H3z" /><path d="M12 10v4M12 17v.5" />
+              </svg>
+              {recomputing ? "Recalculando…" : recomputed !== null ? `${recomputed} actualizados` : `${pendingRecomputeCount} movimientos con contacto desactualizado`}
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="mt-[24px]">
         <div className="hidden sm:block">

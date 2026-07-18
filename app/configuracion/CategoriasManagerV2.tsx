@@ -1,5 +1,6 @@
 import type { Category } from "@/lib/categories";
 import { CategoryIcon } from "./CategoriasManager";
+import SearchInputV2 from "@/app/components/v2/SearchInputV2";
 import { PrimaryButtonV2 } from "@/app/components/v2/ButtonsV2";
 
 type DisplayGroup = { sectionLabel?: string; subsectionLabel?: string; ordered: Category[] };
@@ -8,6 +9,8 @@ type Props = {
   totalCategories: number;
   groups: DisplayGroup[];
   totalCount: (cat: Category) => number;
+  search: string;
+  onSearchChange: (v: string) => void;
   draggedId: string | null;
   dragOverId: string | null;
   onDragStart: (id: string) => void;
@@ -21,14 +24,14 @@ type Props = {
 };
 
 export default function CategoriasManagerV2({
-  totalCategories, groups, totalCount, draggedId, dragOverId,
+  totalCategories, groups, totalCount, search, onSearchChange, draggedId, dragOverId,
   onDragStart, onDragOver, onDragLeave, onDrop, onDragEnd,
   onNewCategory, onEditCategory, onViewTransactions,
 }: Props) {
   return (
     <div>
-      <div className="flex items-center justify-between">
-        <p className="text-[12.5px] text-[#a1a1aa]">{totalCategories} categorías</p>
+      <div className="flex items-center gap-[10px]">
+        <SearchInputV2 value={search} onChange={onSearchChange} placeholder="Buscar categoría…" className="flex-1 min-w-[160px]" />
         <PrimaryButtonV2 onClick={onNewCategory} className="flex items-center gap-[7px]">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
           Nueva categoría
@@ -36,6 +39,9 @@ export default function CategoriasManagerV2({
       </div>
 
       <div className="mt-[14px]">
+        {groups.length === 0 && (
+          <div className="py-12 text-center text-[#a1a1aa] text-sm">Ninguna categoría coincide con la búsqueda.</div>
+        )}
         {groups.map((group, gi) => (
           <div key={gi}>
             {group.sectionLabel && (

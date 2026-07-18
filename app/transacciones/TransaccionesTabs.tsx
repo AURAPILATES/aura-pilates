@@ -57,7 +57,7 @@ export default function TransaccionesTabs({
 
   return (
     <div>
-      <SectionTabsV2 className="mb-7" active={tab} onChange={selectTab} tabs={tabsWithBadge} />
+      <SectionTabsV2 className="mb-[18px]" active={tab} onChange={selectTab} tabs={tabsWithBadge} />
 
       {tab === "movimientos" ? (
         <TransaccionesList

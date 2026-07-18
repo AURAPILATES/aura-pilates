@@ -257,10 +257,12 @@ function ContactDetailDrawer({ contact, categories, stats, onChange, onRemove, o
   );
 }
 
-export default function ContactosManager({ contacts: initialContacts, categories, contactStats }: {
+export default function ContactosManager({ contacts: initialContacts, categories, contactStats, pendingRecomputeCount, pendingCleanupCount }: {
   contacts: Contact[];
   categories: Category[];
   contactStats: Record<number, ContactStats>;
+  pendingRecomputeCount: number;
+  pendingCleanupCount: number;
 }) {
   const router = useRouter();
   const [contacts, setContacts] = useState(initialContacts);
@@ -313,6 +315,7 @@ export default function ContactosManager({ contacts: initialContacts, categories
     try {
       const { updated } = await recomputeContactsFromBankDetails();
       setRecomputed(updated);
+      router.refresh();
     } finally {
       setRecomputing(false);
     }
@@ -378,6 +381,8 @@ export default function ContactosManager({ contacts: initialContacts, categories
         onRecompute={handleRecompute}
         recomputing={recomputing}
         recomputed={recomputed}
+        pendingRecomputeCount={pendingRecomputeCount}
+        pendingCleanupCount={pendingCleanupCount}
         selectedIds={selectedIds}
         onToggleSelect={toggleSelectContact}
         onClearSelection={() => setSelectedIds(new Set())}

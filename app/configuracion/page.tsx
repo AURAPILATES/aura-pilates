@@ -1,19 +1,21 @@
 import { loadCategories } from "@/lib/categories";
 import { loadBusinessEvents } from "@/lib/businessEvents";
 import { loadCategoryCounts } from "@/lib/transactions";
-import { getContacts, getContactsStats } from "@/app/transacciones/actions";
+import { getContacts, getContactsStats, recomputeContactsFromBankDetails, cleanupContactPatterns } from "@/app/transacciones/actions";
 import ConfiguracionTabs from "./ConfiguracionTabs";
 import MobileNav from "@/app/components/MobileNav";
 
 export const dynamic = "force-dynamic";
 
 export default async function ConfiguracionPage() {
-  const [categories, events, categoryCounts, contacts, contactStats] = await Promise.all([
+  const [categories, events, categoryCounts, contacts, contactStats, pendingRecompute, pendingCleanup] = await Promise.all([
     loadCategories(),
     loadBusinessEvents(),
     loadCategoryCounts(),
     getContacts(),
     getContactsStats(),
+    recomputeContactsFromBankDetails(true),
+    cleanupContactPatterns(true),
   ]);
 
   return (
@@ -25,7 +27,15 @@ export default async function ConfiguracionPage() {
         </div>
       </div>
       <main className="max-w-[1600px] mx-auto px-6 pt-8 pb-16">
-        <ConfiguracionTabs categories={categories} events={events} categoryCounts={categoryCounts} contacts={contacts} contactStats={contactStats} />
+        <ConfiguracionTabs
+          categories={categories}
+          events={events}
+          categoryCounts={categoryCounts}
+          contacts={contacts}
+          contactStats={contactStats}
+          pendingRecomputeCount={pendingRecompute.updated}
+          pendingCleanupCount={pendingCleanup.updated + pendingCleanup.merged}
+        />
       </main>
     </div>
   );

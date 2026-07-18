@@ -24,9 +24,11 @@ type Props = {
   categoryCounts: Record<string, number>;
   contacts: Contact[];
   contactStats: Record<number, ContactStats>;
+  pendingRecomputeCount: number;
+  pendingCleanupCount: number;
 };
 
-export default function ConfiguracionTabs({ categories, events, categoryCounts, contacts, contactStats }: Props) {
+export default function ConfiguracionTabs({ categories, events, categoryCounts, contacts, contactStats, pendingRecomputeCount, pendingCleanupCount }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialTab = (["contactos", "historial"] as const).find((t) => t === searchParams.get("tab")) ?? "categorias";
@@ -43,7 +45,13 @@ export default function ConfiguracionTabs({ categories, events, categoryCounts, 
       {tab === "categorias" ? (
         <CategoriasManager categories={categories} categoryCounts={categoryCounts} />
       ) : tab === "contactos" ? (
-        <ContactosManager contacts={contacts} categories={categories} contactStats={contactStats} />
+        <ContactosManager
+          contacts={contacts}
+          categories={categories}
+          contactStats={contactStats}
+          pendingRecomputeCount={pendingRecomputeCount}
+          pendingCleanupCount={pendingCleanupCount}
+        />
       ) : (
         <HistorialTimeline events={events} />
       )}

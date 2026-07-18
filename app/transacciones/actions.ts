@@ -280,7 +280,7 @@ export async function applyContactToExisting(contactId: number): Promise<{ updat
  * separar "Más datos" (texto crudo del banco) de "Contacto" (lo que nosotros asignamos) —
  * antes de eso, "contact" mezclaba ambos. Es idempotente: se puede volver a ejecutar sin
  * riesgo si se añaden contactos o patrones nuevos más adelante. */
-export async function recomputeContactsFromBankDetails(): Promise<{ updated: number }> {
+export async function recomputeContactsFromBankDetails(dryRun = false): Promise<{ updated: number }> {
   const supabase = createServerClient();
   const [{ data: txns }, patternMap] = await Promise.all([
     supabase.from("transactions").select("id, concept, bank_details, contact").is("deleted_at", null),
@@ -295,6 +295,11 @@ export async function recomputeContactsFromBankDetails(): Promise<{ updated: num
     const key = newContact ?? " ";
     if (!idsByNewContact.has(key)) idsByNewContact.set(key, []);
     idsByNewContact.get(key)!.push(t.id);
+  }
+
+  if (dryRun) {
+    const total = [...idsByNewContact.values()].reduce((s, ids) => s + ids.length, 0);
+    return { updated: total };
   }
 
   let updated = 0;
@@ -314,7 +319,7 @@ export async function recomputeContactsFromBankDetails(): Promise<{ updated: num
  * reglas actuales de cleanBankText, por si se crearon antes de afinarlas y arrastran un
  * código variable (ej. una referencia de operación) que les impide volver a coincidir.
  * Si dos patrones distintos limpian al mismo resultado, se fusionan en uno. */
-export async function cleanupContactPatterns(): Promise<{ updated: number; merged: number }> {
+export async function cleanupContactPatterns(dryRun = false): Promise<{ updated: number; merged: number }> {
   const supabase = createServerClient();
   let updated = 0;
   let merged = 0;
@@ -328,10 +333,11 @@ export async function cleanupContactPatterns(): Promise<{ updated: number; merge
     const dupKey = `${row.contact_id}:${next}`;
     const { data: clash } = await supabase.from("contact_concepts").select("id").eq("pattern", next).maybeSingle();
     if (seen.has(dupKey) || clash) {
-      await supabase.from("contact_concepts").delete().eq("id", row.id);
+      if (!dryRun) await supabase.from("contact_concepts").delete().eq("id", row.id);
       merged++;
       continue;
     }
+    if (dryRun) { updated++; seen.set(dupKey, row.id); continue; }
     const { error } = await supabase.from("contact_concepts").update({ pattern: next }).eq("id", row.id);
     if (!error) { updated++; seen.set(dupKey, row.id); }
   }
@@ -341,8 +347,9 @@ export async function cleanupContactPatterns(): Promise<{ updated: number; merge
     const next = recleanPattern(row.pattern);
     if (next === row.pattern) continue;
     const { data: clash } = await supabase.from("ignored_contact_patterns").select("pattern").eq("pattern", next).maybeSingle();
-    await supabase.from("ignored_contact_patterns").delete().eq("pattern", row.pattern);
+    if (!dryRun) await supabase.from("ignored_contact_patterns").delete().eq("pattern", row.pattern);
     if (!clash) {
+      if (dryRun) { updated++; continue; }
       const { error } = await supabase.from("ignored_contact_patterns").insert({ pattern: next });
       if (!error) updated++;
     } else {

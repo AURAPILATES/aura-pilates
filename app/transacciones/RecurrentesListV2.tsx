@@ -7,14 +7,36 @@ import type { RecurringExpense } from "@/lib/recurringExpenses";
 import type { Contact } from "./actions";
 import type { PendingSeriesRow, ConfirmedExpenseRow, ContactPick } from "./RecurrentesList";
 import { fmtEUR, pickToLabel } from "./RecurrentesList";
-import { CategoryBadge } from "./TransaccionesList";
+import { CategoryBadge, CAT_FALLBACK } from "./TransaccionesList";
+import { CatIcon } from "./catIcons";
 import { setRecurringExpenseStatus, deleteRecurringExpense } from "./recurringActions";
 import Drawer from "@/app/components/Drawer";
 import TablePaginationV2 from "@/app/components/v2/TablePaginationV2";
 import TaxBadgeV2 from "@/app/components/v2/TaxBadgeV2";
 import { tableHeadClassV2, tableRowClassV2, tableGroupClassV2, gridColsV2 } from "@/app/components/v2/tableStylesV2";
 
-const COLS = "2.2fr 1.4fr .85fr 1.1fr .9fr 1fr";
+const COLS = "2.1fr 1.2fr 1.1fr .9fr .9fr 1fr";
+
+const DAY_NAMES_ES = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+
+/** "lunes"/"martes"… para periodos semanales/quincenales, "día N" para el resto (mensual,
+ * bimestral, trimestral…) — a partir del último pago detectado. */
+function periodDayDetail(period: string, lastDate: string | null | undefined): string | null {
+  if (!lastDate) return null;
+  const d = new Date(lastDate + "T12:00:00");
+  const p = period.toLowerCase();
+  if (p === "semanal" || p === "quincenal") return DAY_NAMES_ES[d.getDay()];
+  return `día ${d.getDate()}`;
+}
+
+function iconFor(categories: Category[], categoryValue: string | null) {
+  const cat = categoryValue ? categories.find((c) => c.value === categoryValue) : undefined;
+  return {
+    accent: cat ? cat.text_color : CAT_FALLBACK.color,
+    iconKey: cat ? cat.emoji : CAT_FALLBACK.emoji,
+    label: cat?.label,
+  };
+}
 
 type Props = {
   pending: PendingSeriesRow[];
@@ -106,7 +128,7 @@ export default function RecurrentesListV2({
         <div className={tableHeadClassV2} style={gridColsV2(COLS)}>
           <span>Concepto</span>
           <span>Categoría</span>
-          <span>Periodo</span>
+          <span>Periodicidad</span>
           <span>IVA / Ret</span>
           <span className="text-right">Importe</span>
           <span className="text-right">Estado</span>
@@ -127,6 +149,8 @@ export default function RecurrentesListV2({
             const linked = !!pick;
             const ivaRate = ivaRateFor(row);
             const retRate = retencionRateFor(row);
+            const icon = iconFor(categories, row.category);
+            const dayDetail = periodDayDetail(row.period, row.lastDate);
             return (
               <div key={row.keys[0]}>
                 {/* Fila escritorio */}
@@ -136,9 +160,17 @@ export default function RecurrentesListV2({
                     className={`${tableRowClassV2} cursor-pointer`}
                     style={gridColsV2(COLS)}
                   >
-                    <p className="text-[13.5px] font-medium text-[#18181b] truncate">{row.label}</p>
+                    <div className="flex items-center gap-[10px] min-w-0">
+                      <span className="w-[30px] h-[30px] shrink-0 rounded-[8px] flex items-center justify-center" style={{ backgroundColor: icon.accent }}>
+                        <CatIcon iconKey={icon.iconKey} name={icon.label ?? row.label} color="#fff" size={14} />
+                      </span>
+                      <p className="text-[13.5px] font-medium text-[#18181b] truncate">{row.label}</p>
+                    </div>
                     <div>{row.category && <CategoryBadge category={row.category} categories={categories} />}</div>
-                    <p className="text-[12.5px] text-[#71717a] capitalize">{row.period}</p>
+                    <div>
+                      <p className="text-[12.5px] text-[#71717a] capitalize">{row.period}</p>
+                      {dayDetail && <p className="text-[11px] text-[#a1a1aa] capitalize">{dayDetail}</p>}
+                    </div>
                     <div className="flex items-center gap-1.5">
                       <TaxBadgeV2 value={ivaRate} isError={false} />
                       <TaxBadgeV2 value={retRate} isError={false} />
@@ -171,11 +203,14 @@ export default function RecurrentesListV2({
                   onClick={() => onOpenPending(row)}
                   className="sm:hidden flex items-center gap-[10px] py-[10px] border-t border-[#f4f4f4] cursor-pointer active:bg-[#fafafb]"
                 >
+                  <span className="w-[32px] h-[32px] shrink-0 rounded-[10px] flex items-center justify-center" style={{ backgroundColor: icon.accent }}>
+                    <CatIcon iconKey={icon.iconKey} name={icon.label ?? row.label} color="#fff" size={15} />
+                  </span>
                   <div className="flex-1 min-w-0">
                     <p className="text-[14px] font-medium text-[#18181b] truncate">{row.label}</p>
                     <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                       {row.category && <CategoryBadge category={row.category} categories={categories} />}
-                      <span className="text-[11.5px] text-[#71717a] capitalize">{row.period}</span>
+                      <span className="text-[11.5px] text-[#71717a] capitalize">{row.period}{dayDetail ? ` · ${dayDetail}` : ""}</span>
                     </div>
                   </div>
                   <div className="text-right shrink-0">
@@ -218,6 +253,8 @@ export default function RecurrentesListV2({
           const ivaRate = contact?.ivaRate ?? 0;
           const retRate = contact?.retencionRate ?? 0;
           const bothMissing = !(ivaRate > 0) && !(retRate > 0);
+          const icon = iconFor(categories, e.category);
+          const dayDetail = periodDayDetail(e.period, row.lastDate);
           return (
             <div key={e.id}>
               {/* Fila escritorio */}
@@ -227,9 +264,17 @@ export default function RecurrentesListV2({
                   className={`${tableRowClassV2} cursor-pointer`}
                   style={gridColsV2(COLS)}
                 >
-                  <p className="text-[13.5px] font-medium text-[#18181b] truncate">{e.label}</p>
+                  <div className="flex items-center gap-[10px] min-w-0">
+                    <span className="w-[30px] h-[30px] shrink-0 rounded-[8px] flex items-center justify-center" style={{ backgroundColor: icon.accent }}>
+                      <CatIcon iconKey={icon.iconKey} name={icon.label ?? e.label} color="#fff" size={14} />
+                    </span>
+                    <p className="text-[13.5px] font-medium text-[#18181b] truncate">{e.label}</p>
+                  </div>
                   <div>{e.category && <CategoryBadge category={e.category} categories={categories} />}</div>
-                  <p className="text-[12.5px] text-[#71717a] capitalize">{e.period}</p>
+                  <div>
+                    <p className="text-[12.5px] text-[#71717a] capitalize">{e.period}</p>
+                    {dayDetail && <p className="text-[11px] text-[#a1a1aa] capitalize">{dayDetail}</p>}
+                  </div>
                   <div className="flex items-center gap-1.5">
                     <TaxBadgeV2 value={ivaRate} isError={bothMissing} />
                     <TaxBadgeV2 value={retRate} isError={bothMissing} />
@@ -249,6 +294,9 @@ export default function RecurrentesListV2({
                 onClick={() => onOpenConfirmed(row)}
                 className="sm:hidden flex items-center gap-[10px] py-[10px] border-t border-[#f4f4f4] cursor-pointer active:bg-[#fafafb]"
               >
+                <span className="w-[32px] h-[32px] shrink-0 rounded-[10px] flex items-center justify-center" style={{ backgroundColor: icon.accent }}>
+                  <CatIcon iconKey={icon.iconKey} name={icon.label ?? e.label} color="#fff" size={15} />
+                </span>
                 <div className="flex-1 min-w-0">
                   <p className="text-[14px] font-medium text-[#18181b] truncate">{e.label}</p>
                   <div className="flex items-center gap-1.5 mt-1 flex-wrap">
@@ -257,7 +305,7 @@ export default function RecurrentesListV2({
                 </div>
                 <div className="text-right shrink-0">
                   <p className="text-[14px] font-semibold text-[#18181b]">{fmtEUR(Math.abs(e.amount))}</p>
-                  <p className="text-[11.5px] text-[#71717a] capitalize mt-0.5">{e.period}</p>
+                  <p className="text-[11.5px] text-[#71717a] capitalize mt-0.5">{e.period}{dayDetail ? ` · ${dayDetail}` : ""}</p>
                 </div>
               </div>
             </div>

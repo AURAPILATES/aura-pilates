@@ -193,6 +193,7 @@ export default function CategoriasManager({
   const [isPending, startTransition] = useTransition();
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
   const editorHasChildren =
     editor?.mode === "edit" && categories.some((c) => c.parent_id === editor.cat.id);
 
@@ -343,11 +344,25 @@ export default function CategoriasManager({
     });
   }
 
+  // Filtro de búsqueda: mantiene visible el padre de cualquier hijo que coincida, para no
+  // perder el contexto de jerarquía aunque el propio padre no coincida con el texto buscado.
+  const q = search.trim().toLowerCase();
+  const filteredCategories = q
+    ? (() => {
+        const directMatch = (c: Category) =>
+          c.label.toLowerCase().includes(q) || (c.auto_keywords ?? "").toLowerCase().includes(q);
+        const matchedIds = new Set(categories.filter(directMatch).map((c) => c.id));
+        return categories.filter(
+          (c) => directMatch(c) || categories.some((child) => child.parent_id === c.id && matchedIds.has(child.id)),
+        );
+      })()
+    : categories;
+
   // Lista aplanada para la vista v2 (una entrada por caja/subgrupo, en el mismo orden que
   // renderItems() usa abajo para la vista clásica) — evita duplicar el algoritmo de agrupado.
   const displayGroups: { sectionLabel?: string; subsectionLabel?: string; ordered: Category[] }[] = [];
   for (const g of GROUP_ORDER) {
-    const items = categories.filter((c) => c.group_type === g || (g === "operational" && !KNOWN_GROUPS.has(c.group_type)));
+    const items = filteredCategories.filter((c) => c.group_type === g || (g === "operational" && !KNOWN_GROUPS.has(c.group_type)));
     if (items.length === 0) continue;
     if (g === "operational") {
       let firstInSection = true;
@@ -373,6 +388,8 @@ export default function CategoriasManager({
         totalCategories={categories.length}
         groups={displayGroups}
         totalCount={totalCount}
+        search={search}
+        onSearchChange={setSearch}
         draggedId={draggedId}
         dragOverId={dragOverId}
         onDragStart={setDraggedId}
