@@ -9,9 +9,8 @@ const DAY_LABELS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 
 type OccStyle = { card: string; pct: string; bar: string };
 function occStyle(occ: number): OccStyle {
-  if (occ >= 0.8) return { card: "bg-[#e8efe5] border-[#c8dcc3]", pct: "text-[#3d7048]", bar: "bg-[#4e8a5d]" };
-  if (occ >= 0.6) return { card: "bg-[#f2ede0] border-[#ddd0b0]", pct: "text-[#8b7230]", bar: "bg-[#a38540]" };
-  if (occ >= 0.4) return { card: "bg-[#f5ece0] border-[#e0ceae]", pct: "text-[#b06020]", bar: "bg-[#c07030]" };
+  if (occ >= 1.0) return { card: "bg-[#e8efe5] border-[#c8dcc3]", pct: "text-[#3d7048]", bar: "bg-[#4e8a5d]" };
+  if (occ >= 0.5) return { card: "bg-[#f2ede0] border-[#ddd0b0]", pct: "text-[#8b7230]", bar: "bg-[#a38540]" };
   return { card: "bg-[#f5e2de] border-[#e0c0b8]", pct: "text-[#b03020]", bar: "bg-[#c03828]" };
 }
 

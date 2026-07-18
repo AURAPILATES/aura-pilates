@@ -5,17 +5,15 @@ import { pct } from "@/lib/analytics";
 import Drawer from "@/app/components/Drawer";
 
 function occColors(occ: number) {
-  if (occ >= 0.8) return { badge: "bg-success/10 text-success", bar: "bg-success" };
-  if (occ >= 0.6) return { badge: "bg-primary/10 text-primary", bar: "bg-primary" };
-  if (occ >= 0.4) return { badge: "bg-warning/10 text-warning", bar: "bg-warning" };
+  if (occ >= 1.0) return { badge: "bg-success/10 text-success", bar: "bg-success" };
+  if (occ >= 0.5) return { badge: "bg-warning/10 text-warning", bar: "bg-warning" };
   return { badge: "bg-danger/10 text-danger", bar: "bg-danger" };
 }
 
 function occLabel(occ: number) {
-  if (occ >= 0.8) return "Llena";
-  if (occ >= 0.6) return "A medias";
-  if (occ >= 0.4) return "Por llenar";
-  return "Pocas plazas";
+  if (occ >= 1.0) return "Llena";
+  if (occ >= 0.5) return "A medias";
+  return "Por llenar";
 }
 
 export default function HorarioDrawer({

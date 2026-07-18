@@ -40,10 +40,9 @@ function occText(occ: number) {
 }
 
 function getOccStatus(occ: number) {
-  if (occ >= 1.0) return { label: "✓ Llena",    bg: "bg-[#eaf4ee]", text: "text-[#4e8a5d]", border: "border-l-[#4e8a5d]", dot: "bg-[#4e8a5d]" };
-  if (occ >= 0.8) return { label: "Casi llena", bg: "bg-[#fdf0e5]", text: "text-[#c07030]", border: "border-l-[#c07030]", dot: "bg-[#c07030]" };
-  if (occ >= 0.5) return { label: "A medias",   bg: "bg-[#f5f0e0]", text: "text-[#a38540]", border: "border-l-[#a38540]", dot: "bg-[#a38540]" };
-  return             { label: "Por llenar",  bg: "bg-[#fdecea]", text: "text-[#c03828]", border: "border-l-[#c03828]", dot: "bg-[#c03828]" };
+  if (occ >= 1.0) return { label: "✓ Llena",   bg: "bg-[#eaf4ee]", text: "text-[#4e8a5d]", border: "border-l-[#4e8a5d]", dot: "bg-[#4e8a5d]" };
+  if (occ >= 0.5) return { label: "A medias",  bg: "bg-[#f5f0e0]", text: "text-[#a38540]", border: "border-l-[#a38540]", dot: "bg-[#a38540]" };
+  return             { label: "Por llenar", bg: "bg-[#fdecea]", text: "text-[#c03828]", border: "border-l-[#c03828]", dot: "bg-[#c03828]" };
 }
 
 const MIN_WEEK    = "2026-06-15";
@@ -103,8 +102,8 @@ export default function HorarioShell({
       if (instructoraFilter !== "all" && e.teacher !== instructoraFilter) return false;
       const occ = e.capacity > 0 ? e.ticketsSold / e.capacity : 0;
       if (occFilter === "low"  && occ >= 0.5) return false;
-      if (occFilter === "mid"  && (occ < 0.5 || occ >= 0.8)) return false;
-      if (occFilter === "high" && occ < 0.8) return false;
+      if (occFilter === "mid"  && (occ < 0.5 || occ >= 1.0)) return false;
+      if (occFilter === "high" && occ < 1.0) return false;
       return true;
     }),
     [events, claseFilter, instructoraFilter, occFilter],

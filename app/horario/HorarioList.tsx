@@ -7,13 +7,13 @@ import { pct, occupancyRate } from "@/lib/analytics";
 type DayGroup = { dateKey: string; label: string; events: MomenceEvent[] };
 
 function occText(occ: number) {
-  if (occ >= 0.8) return "text-[#4e8a5d]";
+  if (occ >= 1.0) return "text-[#4e8a5d]";
   if (occ >= 0.5) return "text-[#a38540]";
   return "text-[#c03828]";
 }
 
 function occBarColor(occ: number) {
-  if (occ >= 0.8) return "bg-[#4e8a5d]";
+  if (occ >= 1.0) return "bg-[#4e8a5d]";
   if (occ >= 0.5) return "bg-[#a38540]";
   return "bg-[#c03828]";
 }
