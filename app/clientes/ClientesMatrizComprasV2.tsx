@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import SearchInputV2 from "@/app/components/v2/SearchInputV2";
 import TablePaginationV2 from "@/app/components/v2/TablePaginationV2";
 import Select from "@/app/components/Select";
@@ -51,10 +51,25 @@ export default function ClientesMatrizComprasV2({
   sortKey, sortDir, onToggleSort, monthTotals, grandTotal, totalCount, page, pageSize, onPageChange, onRowClick, onExportCsv,
 }: Props) {
   const [filtersOpen, setFiltersOpen] = useState(false);
+  // En móvil hay demasiadas columnas de mes para que quepan sin scroll horizontal ilegible:
+  // por defecto se muestran solo los últimos 2 meses + Total, con un botón para "Ampliar"
+  // y ver la matriz completa (esa vista sí exige scroll horizontal, es lo esperable).
+  const [isMobile, setIsMobile] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 639px)");
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+  const collapsed = isMobile && !expanded;
+  const visibleMonths = collapsed ? months.slice(-2) : months;
+  const showFirstPurchase = !collapsed;
   // Columnas flexibles con mínimo legible: la tabla ocupa el 100% del ancho disponible en
-  // escritorio, y si no caben con ese mínimo (más probable en móvil) el contenedor hace
-  // scroll horizontal en vez de encoger las columnas hasta ser ilegibles.
-  const cols = `minmax(140px,2fr) minmax(90px,1.1fr) repeat(${months.length}, minmax(64px, 1fr)) minmax(90px,1.1fr)`;
+  // escritorio, y si no caben con ese mínimo (más probable en móvil expandido) el contenedor
+  // hace scroll horizontal en vez de encoger las columnas hasta ser ilegibles.
+  const cols = `minmax(140px,2fr) ${showFirstPurchase ? "minmax(90px,1.1fr) " : ""}repeat(${visibleMonths.length}, minmax(64px, 1fr)) minmax(90px,1.1fr)`;
   const filtersActive = !!productFilter || !!firstPurchaseFilter || !!purchaseCountFilter || onlyInactive || onlyUpsell;
 
   return (
@@ -108,7 +123,19 @@ export default function ClientesMatrizComprasV2({
         </div>
       </div>
 
-      <div className="mt-[24px] overflow-x-auto">
+      {isMobile && (
+        <div className="flex justify-end mt-3">
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            className="text-[12px] font-medium text-[#18181b] underline underline-offset-2"
+          >
+            {expanded ? "Ver resumen (últimos 2 meses)" : `Ver todos los meses (${months.length})`}
+          </button>
+        </div>
+      )}
+
+      <div className={`overflow-x-auto ${isMobile ? "mt-2" : "mt-[24px]"}`}>
         <div>
           <div className={tableHeadClassV2} style={gridColsV2(cols)}>
             <span
@@ -117,13 +144,15 @@ export default function ClientesMatrizComprasV2({
             >
               Cliente{sortArrow(sortKey === "name", sortDir)}
             </span>
-            <span
-              className={`cursor-pointer select-none ${sortKey === "first" ? "text-[#18181b]" : ""}`}
-              onClick={() => onToggleSort("first")}
-            >
-              Primera compra{sortArrow(sortKey === "first", sortDir)}
-            </span>
-            {months.map((m) => (
+            {showFirstPurchase && (
+              <span
+                className={`cursor-pointer select-none ${sortKey === "first" ? "text-[#18181b]" : ""}`}
+                onClick={() => onToggleSort("first")}
+              >
+                Primera compra{sortArrow(sortKey === "first", sortDir)}
+              </span>
+            )}
+            {visibleMonths.map((m) => (
               <span key={m} className="text-center whitespace-nowrap">{monthLabel(m)}</span>
             ))}
             <span
@@ -147,10 +176,12 @@ export default function ClientesMatrizComprasV2({
                 <p className="font-semibold text-[#18181b] truncate text-[13.5px]" title={customer.name ?? customer.email ?? undefined}>
                   {customer.name ?? customer.email ?? "—"}
                 </p>
-                <p className="text-center text-[#71717a] text-[12.5px] whitespace-nowrap">
-                  {firstPurchase ? monthLabel(firstPurchase.slice(0, 7)) : "—"}
-                </p>
-                {months.map((m) => {
+                {showFirstPurchase && (
+                  <p className="text-center text-[#71717a] text-[12.5px] whitespace-nowrap">
+                    {firstPurchase ? monthLabel(firstPurchase.slice(0, 7)) : "—"}
+                  </p>
+                )}
+                {visibleMonths.map((m) => {
                   const purchases = byMonth[m];
                   if (!purchases || purchases.length === 0) {
                     return <div key={m} />;
@@ -179,8 +210,8 @@ export default function ClientesMatrizComprasV2({
           {rows.length > 0 && (
             <div className={tableRowClassV2} style={gridColsV2(cols)}>
               <p className="font-semibold text-[#71717a] text-[10.5px] uppercase tracking-wide">Total</p>
-              <div />
-              {months.map((m) => (
+              {showFirstPurchase && <div />}
+              {visibleMonths.map((m) => (
                 <p key={m} className="text-center text-[10.5px] font-semibold text-[#71717a] tabular-nums">
                   {monthTotals[m] > 0 ? fmt(monthTotals[m]) : "—"}
                 </p>
