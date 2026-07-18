@@ -231,8 +231,15 @@ export default function ContactosManagerV2({
                     <p className="text-[14px] font-medium text-[#18181b] truncate">{c.label}</p>
                     <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                       <CategoryBadge category={c.category} categories={categories} />
-                      <TaxBadgeV2 value={c.ivaRate} isError={bothMissing} />
-                      <TaxBadgeV2 value={c.retencionRate} isError={bothMissing} />
+                      {bothMissing ? (
+                        <TaxBadgeV2 value={0} isError />
+                      ) : (
+                        <span className="inline-flex items-center bg-[#f2f2f4] text-[#52525b] rounded-[6px] px-[7px] py-[2px] text-[11px] font-medium whitespace-nowrap">
+                          {[c.ivaRate > 0 ? `IVA ${c.ivaRate}%` : null, c.retencionRate > 0 ? `IRPF ${c.retencionRate}%` : null]
+                            .filter(Boolean)
+                            .join(" | ")}
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div className="text-right shrink-0">
