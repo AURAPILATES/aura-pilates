@@ -7,6 +7,7 @@ import DateFilter from "@/app/components/DateFilter";
 import SearchInputV2 from "@/app/components/v2/SearchInputV2";
 import TablePaginationV2 from "@/app/components/v2/TablePaginationV2";
 import FiltersToggleButtonV2 from "@/app/components/v2/FiltersToggleButtonV2";
+import ClearFiltersButtonV2 from "@/app/components/v2/ClearFiltersButtonV2";
 import { tableHeadClassV2, tableRowClassV2, tableFootClassV2, gridColsV2 } from "@/app/components/v2/tableStylesV2";
 import {
   MoreOptionsMenu, OriginIcon, originLabel, CategoryPill, CategoryBadge, CategoryMultiFilter,
@@ -87,6 +88,17 @@ export default function TransaccionesListV2({
   const [filtersOpen, setFiltersOpen] = useState(false);
   const monthRefs = useRef(new Map<string, HTMLDivElement>());
   const filtersActive = catFilters.length > 0 || onlyRecurring || originFilter !== "all" || amountMin !== "" || amountMax !== "";
+  const activeFilterCount =
+    (catFilters.length > 0 ? 1 : 0) + (onlyRecurring ? 1 : 0) + (originFilter !== "all" ? 1 : 0) +
+    (amountMin !== "" || amountMax !== "" ? 1 : 0) + (directionFilter !== "all" ? 1 : 0);
+  function clearFilters() {
+    onCatFiltersChange([]);
+    if (onlyRecurring) onToggleOnlyRecurring();
+    onOriginFilterChange("all");
+    onAmountMinChange("");
+    onAmountMaxChange("");
+    onDirectionFilterChange("all");
+  }
 
   function scrollToMonth(key: string) {
     monthRefs.current.get(key)?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -157,8 +169,17 @@ export default function TransaccionesListV2({
             onExport={onExportCsv}
             onPapelera={onPapelera}
           />
+          {activeFilterCount >= 2 && (
+            <ClearFiltersButtonV2 onClick={clearFilters} className="hidden sm:flex" />
+          )}
         </div>
       </div>
+
+      {activeFilterCount >= 2 && (
+        <div className="sm:hidden mt-2">
+          <ClearFiltersButtonV2 onClick={clearFilters} />
+        </div>
+      )}
 
       {uncategorizedCount > 0 && (
         <div className="mt-3">
