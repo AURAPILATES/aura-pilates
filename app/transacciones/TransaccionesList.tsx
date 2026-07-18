@@ -502,6 +502,16 @@ export default function TransaccionesList({
   const [drawerTxnId, setDrawerTxnId] = useState<string | null>(null);
   const drawerTxn = drawerTxnId ? transactions.find((t) => t.id === drawerTxnId) ?? null : null;
   const [page, setPage] = useState(0);
+  // En móvil no hay paginador (la franja de meses necesita ver todos los meses a la vez para
+  // poder saltar a cualquiera), así que ahí se muestra la lista completa sin cortar por página.
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 639px)");
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
 
   function toggleSort(key: "date" | "amount" | "concept") {
     if (sortKey === key) {
@@ -570,7 +580,7 @@ export default function TransaccionesList({
   useEffect(() => { setPage(0); }, [search, catFilters, originFilter, onlyRecurring, directionFilter, amountMin, amountMax, currentRange, sortKey, sortDir]);
   const totalPages = Math.max(1, Math.ceil(sortedFiltered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages - 1);
-  const pagedFlat = sortedFiltered.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
+  const pagedFlat = isMobile ? sortedFiltered : sortedFiltered.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
 
   // ── Month grouping — solo de la página actual ───────────────────────────────
   const byMonth = useMemo(() => {

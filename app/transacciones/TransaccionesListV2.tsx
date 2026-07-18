@@ -197,7 +197,7 @@ export default function TransaccionesListV2({
       )}
 
       {/* Tabla suelta agrupada por mes */}
-      <div className="mt-[24px]">
+      <div className="mt-2 sm:mt-[24px]">
         <div className="hidden sm:block">
           <div className={`${tableHeadClassV2} px-2`} style={gridColsV2(COLS)}>
             <span
@@ -329,7 +329,9 @@ export default function TransaccionesListV2({
           })
         )}
         {byMonth.length > 0 && (
-          <TablePaginationV2 page={page} totalItems={totalItems} pageSize={pageSize} onPageChange={onPageChange} />
+          <div className="hidden sm:block">
+            <TablePaginationV2 page={page} totalItems={totalItems} pageSize={pageSize} onPageChange={onPageChange} />
+          </div>
         )}
         {byMonth.length === 0 && <div className={tableFootClassV2} />}
       </div>
