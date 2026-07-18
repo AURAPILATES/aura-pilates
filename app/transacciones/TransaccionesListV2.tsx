@@ -53,6 +53,16 @@ type Props = {
   onCategoryChange: (id: string, category: string | null) => void;
 };
 
+/** Versión abreviada para las tarjetas KPI en móvil, donde "100.036,34 €" se corta —
+ * p. ej. "63,6k €" en vez de "63.641,05 €". */
+function fmtAmtCompact(n: number): string {
+  const abs = Math.abs(n);
+  if (abs >= 1000) {
+    return (abs / 1000).toLocaleString("es-ES", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + "k €";
+  }
+  return fmtAmt(abs);
+}
+
 function SortArrowV2({ active, dir }: { active: boolean; dir: "asc" | "desc" }) {
   return (
     <svg
@@ -94,7 +104,10 @@ export default function TransaccionesListV2({
           }`}
         >
           <p className="text-[10px] sm:text-[10.5px] tracking-wide uppercase text-[#a1a1aa] font-semibold truncate">Entradas</p>
-          <p className="text-[15px] sm:text-[22px] font-bold text-[#0d8037] mt-[5px] tracking-tight truncate">{fmtAmt(totalIn)}</p>
+          <p className="text-[15px] sm:text-[22px] font-bold text-[#0d8037] mt-[5px] tracking-tight truncate">
+            <span className="sm:hidden">{fmtAmtCompact(totalIn)}</span>
+            <span className="hidden sm:inline">{fmtAmt(totalIn)}</span>
+          </p>
         </button>
         <button
           type="button"
@@ -104,13 +117,18 @@ export default function TransaccionesListV2({
           }`}
         >
           <p className="text-[10px] sm:text-[10.5px] tracking-wide uppercase text-[#a1a1aa] font-semibold truncate">Salidas</p>
-          <p className="text-[15px] sm:text-[22px] font-bold text-[#b53e0d] mt-[5px] tracking-tight truncate">{fmtAmt(totalOut)}</p>
+          <p className="text-[15px] sm:text-[22px] font-bold text-[#b53e0d] mt-[5px] tracking-tight truncate">
+            <span className="sm:hidden">{fmtAmtCompact(totalOut)}</span>
+            <span className="hidden sm:inline">{fmtAmt(totalOut)}</span>
+          </p>
         </button>
         <div className="border border-[#ececef] rounded-[14px] px-3 sm:px-4 py-[11px] sm:py-[13px] bg-white min-w-0">
           <p className="text-[10px] sm:text-[10.5px] tracking-wide uppercase text-[#a1a1aa] font-semibold truncate">Diferencia</p>
           <div className="flex items-baseline gap-1.5 mt-[5px]">
             <span className={`text-[15px] sm:text-[22px] font-bold tracking-tight truncate ${neto >= 0 ? "text-[#18181b]" : "text-[#b53e0d]"}`}>
-              {neto < 0 && "−"}{fmtAmt(Math.abs(neto))}
+              {neto < 0 && "−"}
+              <span className="sm:hidden">{fmtAmtCompact(neto)}</span>
+              <span className="hidden sm:inline">{fmtAmt(Math.abs(neto))}</span>
             </span>
             {totalIn > 0 && (
               <span className="hidden sm:inline text-[11.5px] text-[#a1a1aa] whitespace-nowrap">margen {(neto / totalIn * 100).toFixed(1).replace(".", ",")}%</span>

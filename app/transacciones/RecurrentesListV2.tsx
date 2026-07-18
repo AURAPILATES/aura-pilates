@@ -253,15 +253,11 @@ export default function RecurrentesListV2({
                   <p className="text-[14px] font-medium text-[#18181b] truncate">{e.label}</p>
                   <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                     {e.category && <CategoryBadge category={e.category} categories={categories} />}
-                    <span className="text-[11.5px] text-[#71717a] capitalize">{e.period}</span>
                   </div>
                 </div>
                 <div className="text-right shrink-0">
                   <p className="text-[14px] font-semibold text-[#18181b]">{fmtEUR(Math.abs(e.amount))}</p>
-                  <span className="inline-flex items-center gap-1 text-[#16a34a] text-[11px] font-medium whitespace-nowrap mt-0.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#16a34a]" />
-                    Activo
-                  </span>
+                  <p className="text-[11.5px] text-[#71717a] capitalize mt-0.5">{e.period}</p>
                 </div>
               </div>
             </div>
