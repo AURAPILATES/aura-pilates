@@ -242,10 +242,6 @@ export default function ContactosManagerV2({
                       )}
                     </div>
                   </div>
-                  <div className="text-right shrink-0">
-                    <p className="text-[13px] font-semibold text-[#18181b]">{stats?.count ?? "—"}</p>
-                    <p className="text-[11px] text-[#a1a1aa]">{lastDate ? fmtContactDate(lastDate) : "—"}</p>
-                  </div>
                 </div>
               </div>
             );
