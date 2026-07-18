@@ -1187,6 +1187,8 @@ export default function VacacionesCalendario({
   const [filtro, setFiltro] = useState<string>("todas");
   const [showNuevoModal, setShowNuevoModal] = useState(false);
   const [showArchivados, setShowArchivados] = useState(false);
+  const [showSugerencias, setShowSugerencias] = useState(false);
+  const suggestionsCount = generateSuggestions(personas, festivos).length;
   const [archivados, setArchivados] = useState<{ id: string; nombre: string; inicio_contrato: string; dias_totales: number }[]>([]);
   const [loadingArchivados, setLoadingArchivados] = useState(false);
   const [unarchivingId, setUnarchivingId] = useState<string | null>(null);
@@ -1298,12 +1300,20 @@ export default function VacacionesCalendario({
         />
       )}
 
-      {/* Sugerencias + Nuevo instructor / Archivados (comparten fila: la acción vive junto al
-          primer contenido de la pantalla, no suelta en una fila propia) */}
+      {/* Instructores + Sugerencias / Archivados / Nuevo instructor (comparten fila: la acción
+          vive junto al primer contenido de la pantalla, no suelta en una fila propia) */}
       <section>
         <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
-          <h2 className="text-xs font-semibold text-navy/55 uppercase tracking-widest">Sugerencias</h2>
+          <h2 className="text-xs font-semibold text-navy/55 uppercase tracking-widest">Instructores</h2>
           <div className="flex items-center gap-2.5">
+            <IconButtonV2 onClick={() => setShowSugerencias(true)} title="Sugerencias" className="relative">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 18h6" /><path d="M10 22h4" /><path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z" />
+              </svg>
+              {suggestionsCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#b45309] border border-white" />
+              )}
+            </IconButtonV2>
             <IconButtonV2 onClick={openArchivados} title="Archivados">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/>
@@ -1316,8 +1326,19 @@ export default function VacacionesCalendario({
             />
           </div>
         </div>
-        <SugerenciasBlock personas={personas} festivos={festivos} />
       </section>
+
+      {showSugerencias && (
+        <Drawer title="Sugerencias" onClose={() => setShowSugerencias(false)}>
+          <div className="p-4">
+            {suggestionsCount === 0 ? (
+              <p className="text-sm text-navy/40 text-center py-8">Sin sugerencias por ahora.</p>
+            ) : (
+              <SugerenciasBlock personas={personas} festivos={festivos} />
+            )}
+          </div>
+        </Drawer>
+      )}
 
       {/* Drawer de archivados */}
       {showArchivados && (
