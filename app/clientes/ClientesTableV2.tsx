@@ -3,10 +3,12 @@ import SearchInputV2 from "@/app/components/v2/SearchInputV2";
 import TablePaginationV2 from "@/app/components/v2/TablePaginationV2";
 import FilterPillGroupV2 from "@/app/components/v2/FilterPillGroupV2";
 import { IconButtonV2 } from "@/app/components/v2/ButtonsV2";
+import Select from "@/app/components/Select";
+import ClearFiltersButtonV2 from "@/app/components/v2/ClearFiltersButtonV2";
 import { tableHeadClassV2, tableRowClassV2, gridColsV2 } from "@/app/components/v2/tableStylesV2";
 import { fmt } from "@/lib/analytics";
-import { clientStatus, initials, fmtDate, type CustomerRow, type Filter, type SortKey, type SortDir } from "./ClientesTable";
-import { productAbbr, productColor } from "./ClientesMatrizCompras";
+import { clientStatus, initials, fmtDate, SESSION_PLAN, type CustomerRow, type Filter, type SortKey, type SortDir } from "./ClientesTable";
+import { productAbbr, productColor, PRODUCT_FILTERS } from "./ClientesMatrizCompras";
 
 const COLS = "2.4fr 1.2fr .8fr 1fr .9fr";
 
@@ -16,6 +18,8 @@ type Props = {
   filter: Filter;
   onFilterChange: (f: Filter) => void;
   filterLabels: { key: Filter; label: string; count?: number }[];
+  planFilter: string;
+  onPlanFilterChange: (v: string) => void;
   sortKey: SortKey;
   sortDir: SortDir;
   onToggleSort: (k: SortKey) => void;
@@ -40,13 +44,26 @@ function SortArrowV2({ active, dir }: { active: boolean; dir: SortDir }) {
 }
 
 export default function ClientesTableV2({
-  search, onSearchChange, filter, onFilterChange, filterLabels,
+  search, onSearchChange, filter, onFilterChange, filterLabels, planFilter, onPlanFilterChange,
   sortKey, sortDir, onToggleSort, rows, totalCount, page, pageSize, onPageChange, onRowClick, onExportCsv,
 }: Props) {
+  const activeFilterCount = (filter !== "all" ? 1 : 0) + (planFilter ? 1 : 0);
+  function clearFilters() {
+    onFilterChange("all");
+    onPlanFilterChange("");
+  }
+
   return (
     <div>
-      <div className="flex items-center gap-2.5">
-        <SearchInputV2 value={search} onChange={onSearchChange} placeholder="Buscar por nombre o email…" className="flex-1" />
+      <div className="flex items-center gap-2.5 flex-wrap">
+        <SearchInputV2 value={search} onChange={onSearchChange} placeholder="Buscar por nombre o email…" className="flex-1 min-w-[160px]" />
+        <Select variant="v2" value={planFilter} onChange={(e) => onPlanFilterChange(e.target.value)} className="w-auto">
+          <option value="">Plan actual: todos</option>
+          {PRODUCT_FILTERS.map((p) => (
+            <option key={p} value={p}>{p}</option>
+          ))}
+          <option value={SESSION_PLAN}>Por sesión</option>
+        </Select>
         <IconButtonV2 onClick={onExportCsv} title="Exportar tabla actual a CSV">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
             <path d="M12 4v10M8 11l4 4 4-4M5 19h14" />
@@ -54,12 +71,22 @@ export default function ClientesTableV2({
         </IconButtonV2>
       </div>
 
-      <FilterPillGroupV2
-        className="mt-3"
-        active={filter}
-        onChange={onFilterChange}
-        options={filterLabels.map((f) => ({ ...f, countTone: f.key === "error" ? "danger" as const : "warning" as const }))}
-      />
+      {activeFilterCount >= 2 && (
+        <div className="sm:hidden mt-2">
+          <ClearFiltersButtonV2 onClick={clearFilters} />
+        </div>
+      )}
+
+      <div className="flex items-center justify-between gap-2.5 mt-3">
+        <FilterPillGroupV2
+          active={filter}
+          onChange={onFilterChange}
+          options={filterLabels.map((f) => ({ ...f, countTone: f.key === "error" ? "danger" as const : "warning" as const }))}
+        />
+        {activeFilterCount >= 2 && (
+          <ClearFiltersButtonV2 onClick={clearFilters} className="hidden sm:flex" />
+        )}
+      </div>
 
       <div className="mt-[24px]">
         <div className="hidden sm:block">

@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect, forwardRef, useImperativeHandle } from "react";
 import CustomerDrawer from "./CustomerDrawer";
 import ClientesTableV2 from "./ClientesTableV2";
-import { productAbbr } from "./ClientesMatrizCompras";
+import { productAbbr, PRODUCT_FILTERS } from "./ClientesMatrizCompras";
 import type { StripeCustomer } from "@/lib/stripeCustomers";
 import type { StripePayment } from "@/lib/stripePayments";
 
@@ -88,6 +88,20 @@ export function planBadgeCfg(planType: "sub" | "pack" | "session", lastSubProduc
   return { label: "Por sesión", cls: "bg-navy/[0.06] text-navy/55" };
 }
 
+/** Valor de filtro para clientes sin suscripción ni pack en curso (pagan por sesión suelta). */
+export const SESSION_PLAN = "__session__";
+
+/** Producto del plan vigente (la suscripción o pack más reciente): el mismo criterio que ya
+ * usaba la búsqueda por texto, extraído para reutilizarlo en el filtro "Plan actual". */
+export function currentPlanProduct(c: CustomerRow): string {
+  const dSub  = c.daysSinceLastSub  ?? Infinity;
+  const dPack = c.daysSinceLastPack ?? Infinity;
+  const planType = dSub <= dPack && dSub < Infinity ? "sub" : dPack < Infinity ? "pack" : "session";
+  if (planType === "sub")  return c.lastSubProduct  ?? SESSION_PLAN;
+  if (planType === "pack") return c.lastPackProduct ?? SESSION_PLAN;
+  return SESSION_PLAN;
+}
+
 export function initials(name: string | null, email: string | null): string {
   if (name) {
     const parts = name.trim().split(/\s+/);
@@ -110,12 +124,13 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
 ) {
   const [search,   setSearch]   = useState("");
   const [filter,   setFilter]   = useState<Filter>("all");
+  const [planFilter, setPlanFilter] = useState("");
   const [sortKey,  setSortKey]  = useState<SortKey>("totalSpent");
   const [sortDir,  setSortDir]  = useState<SortDir>("desc");
   const [selected, setSelected] = useState<CustomerRow | null>(null);
   const [page, setPage] = useState(0);
 
-  useEffect(() => { setPage(0); }, [search, filter, activeMonth]);
+  useEffect(() => { setPage(0); }, [search, filter, planFilter, activeMonth]);
 
   useImperativeHandle(ref, () => ({
     openCustomer(id: string) {
@@ -165,6 +180,7 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
         if (filter === "discount"    && !hasDiscount(c))   return false;
         if (filter === "error"       && !c.hasPaymentError)  return false;
         if (filter === "delayed"     && !isDelayed(c))       return false;
+        if (planFilter && currentPlanProduct(c) !== planFilter) return false;
         if (!q) return true;
         const dSub  = c.daysSinceLastSub  ?? Infinity;
         const dPack = c.daysSinceLastPack ?? Infinity;
@@ -184,7 +200,7 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
         else                                    diff = (a.name ?? "").localeCompare(b.name ?? "", "es");
         return sortDir === "desc" ? -diff : diff;
       });
-  }, [customers, search, filter, sortKey, sortDir, activeMonthIds]);
+  }, [customers, search, filter, planFilter, sortKey, sortDir, activeMonthIds]);
 
   function downloadCsv() {
     const rows = [
@@ -263,6 +279,8 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
         filter={filter}
         onFilterChange={setFilter}
         filterLabels={filterLabels}
+        planFilter={planFilter}
+        onPlanFilterChange={setPlanFilter}
         sortKey={sortKey}
         sortDir={sortDir}
         onToggleSort={toggleSort}

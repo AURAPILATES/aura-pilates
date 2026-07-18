@@ -6,6 +6,7 @@ import TablePaginationV2 from "@/app/components/v2/TablePaginationV2";
 import Select from "@/app/components/Select";
 import { IconButtonV2 } from "@/app/components/v2/ButtonsV2";
 import FiltersToggleButtonV2 from "@/app/components/v2/FiltersToggleButtonV2";
+import ClearFiltersButtonV2 from "@/app/components/v2/ClearFiltersButtonV2";
 import { tableHeadClassV2, tableRowClassV2, tableFootClassV2, gridColsV2 } from "@/app/components/v2/tableStylesV2";
 import { fmt } from "@/lib/analytics";
 import { PRODUCT_FILTERS, PURCHASE_COUNT_FILTERS, monthLabel, productAbbr, productColor, type MatrixRow, type SortKey } from "./ClientesMatrizCompras";
@@ -71,6 +72,16 @@ export default function ClientesMatrizComprasV2({
   // hace scroll horizontal en vez de encoger las columnas hasta ser ilegibles.
   const cols = `minmax(140px,2fr) ${showFirstPurchase ? "minmax(90px,1.1fr) " : ""}repeat(${visibleMonths.length}, minmax(64px, 1fr)) minmax(90px,1.1fr)`;
   const filtersActive = !!productFilter || !!firstPurchaseFilter || !!purchaseCountFilter || onlyInactive || onlyUpsell;
+  const activeFilterCount =
+    (productFilter ? 1 : 0) + (firstPurchaseFilter ? 1 : 0) + (purchaseCountFilter ? 1 : 0) +
+    (onlyInactive ? 1 : 0) + (onlyUpsell ? 1 : 0);
+  function clearFilters() {
+    onProductFilterChange("");
+    onFirstPurchaseFilterChange("");
+    onPurchaseCountFilterChange("");
+    if (onlyInactive) onToggleOnlyInactive();
+    if (onlyUpsell) onToggleOnlyUpsell();
+  }
 
   return (
     <div>
@@ -120,11 +131,20 @@ export default function ClientesMatrizComprasV2({
           >
             Candidatos a upsell
           </button>
+          {activeFilterCount >= 2 && (
+            <ClearFiltersButtonV2 onClick={clearFilters} className="hidden sm:flex" />
+          )}
         </div>
       </div>
 
+      {activeFilterCount >= 2 && (
+        <div className="sm:hidden mt-2">
+          <ClearFiltersButtonV2 onClick={clearFilters} />
+        </div>
+      )}
+
       {isMobile && (
-        <div className="flex justify-end mt-3">
+        <div className="flex justify-start mt-3">
           <button
             type="button"
             onClick={() => setExpanded((v) => !v)}
