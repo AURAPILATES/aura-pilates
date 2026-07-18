@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronRight } from "react-feather";
 import Drawer from "@/app/components/Drawer";
@@ -506,6 +506,16 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
   const [pickerOpen, setPickerOpen] = useState(false);
   const [confirmedPage, setConfirmedPage] = useState(0);
   const [search, setSearch] = useState("");
+  // En móvil no hay paginador (lista corta, no aporta cortarla en páginas), así que ahí se
+  // muestran todos los confirmados de golpe.
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 639px)");
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
 
   const q = search.trim().toLowerCase();
   const filteredPending = useMemo(
@@ -522,7 +532,9 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
     setConfirmedPage(0);
   }
 
-  const confirmedPageRows = filteredConfirmed.slice(confirmedPage * PAGE_SIZE, (confirmedPage + 1) * PAGE_SIZE);
+  const confirmedPageRows = isMobile
+    ? filteredConfirmed
+    : filteredConfirmed.slice(confirmedPage * PAGE_SIZE, (confirmedPage + 1) * PAGE_SIZE);
 
   const openPendingRow = openPendingKey != null ? pending.find((p) => p.keys[0] === openPendingKey) ?? null : null;
   const openConfirmedRow = openConfirmedId != null ? confirmed.find((c) => c.expense.id === openConfirmedId) ?? null : null;

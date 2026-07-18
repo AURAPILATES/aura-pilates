@@ -31,6 +31,16 @@ function periodDayDetail(period: string, lastDate: string | null | undefined): s
   return `día ${d.getDate()}`;
 }
 
+/** Importe con signo y color, igual que en Movimientos: verde "+" para ingresos, oscuro "−"
+ * para gastos (la mayoría de recurrentes) — en vez de mostrar siempre el valor absoluto. */
+function SignedAmount({ amount, className = "" }: { amount: number; className?: string }) {
+  return (
+    <span className={`${amount > 0 ? "text-[#16a34a]" : "text-[#18181b]"} ${className}`}>
+      {amount > 0 ? "+" : "−"}{fmtEUR(Math.abs(amount))}
+    </span>
+  );
+}
+
 function iconFor(categories: Category[], categoryValue: string | null) {
   const cat = categoryValue ? categories.find((c) => c.value === categoryValue) : undefined;
   return {
@@ -126,7 +136,7 @@ export default function RecurrentesListV2({
         </Drawer>
       )}
 
-      <div className="mt-[24px]">
+      <div className="mt-2 sm:mt-[24px]">
       <div className="hidden sm:block">
         <div className={tableHeadClassV2} style={gridColsV2(COLS)}>
           <span>Concepto</span>
@@ -178,7 +188,7 @@ export default function RecurrentesListV2({
                       <TaxBadgeV2 value={ivaRate} isError={false} />
                       <TaxBadgeV2 value={retRate} isError={false} />
                     </div>
-                    <p className="text-right text-[13.5px] font-semibold text-[#18181b]">{fmtEUR(Math.abs(row.amount))}</p>
+                    <p className="text-right text-[13.5px] font-semibold"><SignedAmount amount={row.amount} /></p>
                     <div className="flex justify-end">
                       {linked ? (
                         <button
@@ -217,7 +227,7 @@ export default function RecurrentesListV2({
                     </div>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-[14px] font-semibold text-[#18181b]">{fmtEUR(Math.abs(row.amount))}</p>
+                    <p className="text-[14px] font-semibold"><SignedAmount amount={row.amount} /></p>
                     {linked ? (
                       <button
                         type="button"
@@ -284,7 +294,7 @@ export default function RecurrentesListV2({
                     <TaxBadgeV2 value={ivaRate} isError={bothMissing} />
                     <TaxBadgeV2 value={retRate} isError={bothMissing} />
                   </div>
-                  <p className="text-right text-[13.5px] font-semibold text-[#18181b]">{fmtEUR(Math.abs(e.amount))}</p>
+                  <p className="text-right text-[13.5px] font-semibold"><SignedAmount amount={e.amount} /></p>
                   <div className="flex justify-end">
                     <span className="inline-flex items-center gap-1.5 text-[#16a34a] text-[12.5px] font-medium whitespace-nowrap">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#16a34a]" />
@@ -309,7 +319,7 @@ export default function RecurrentesListV2({
                   </div>
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="text-[14px] font-semibold text-[#18181b]">{fmtEUR(Math.abs(e.amount))}</p>
+                  <p className="text-[14px] font-semibold"><SignedAmount amount={e.amount} /></p>
                   <p className="text-[11.5px] text-[#71717a] capitalize mt-0.5">{e.period}{dayDetail ? ` · ${dayDetail}` : ""}</p>
                 </div>
               </div>
@@ -318,7 +328,9 @@ export default function RecurrentesListV2({
         })
       )}
       {confirmed.length > 0 && (
-        <TablePaginationV2 page={confirmedPage} totalItems={confirmed.length} pageSize={pageSize} onPageChange={onConfirmedPageChange} />
+        <div className="hidden sm:block">
+          <TablePaginationV2 page={confirmedPage} totalItems={confirmed.length} pageSize={pageSize} onPageChange={onConfirmedPageChange} />
+        </div>
       )}
       </div>
     </div>
