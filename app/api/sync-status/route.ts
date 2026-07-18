@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getLatestImportDate } from "@/lib/transactions";
 import { getLatestSyncRuns } from "@/lib/syncRuns";
+import { sanitizeErrorMessage } from "@/lib/sanitizeErrorMessage";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +30,7 @@ async function checkStripe() {
     return { ok: true, checkedAt, error: null };
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Error";
-    return { ok: false, checkedAt, error: msg.slice(0, 60) };
+    return { ok: false, checkedAt, error: sanitizeErrorMessage(msg).slice(0, 60) };
   }
 }
 
@@ -52,7 +53,7 @@ export async function GET() {
     ? {
         ok: false,
         checkedAt: failedRun.ranAt,
-        error: `Último snapshot falló: ${failedRun.error}`,
+        error: sanitizeErrorMessage(`Último snapshot falló: ${failedRun.error}`),
       }
     : momence;
 

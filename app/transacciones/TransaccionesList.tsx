@@ -713,15 +713,16 @@ export default function TransaccionesList({
   const safePage = Math.min(page, totalPages - 1);
   const pagedFlat = sortedFiltered.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
 
-  // ── Day grouping for mobile ──────────────────────────────────────────────────
+  // ── Day grouping for mobile — sobre pagedFlat (no filtered) para que el móvil
+  // también pagine de PAGE_SIZE en PAGE_SIZE en vez de listar todo sin cortar.
   const byDay = useMemo(() => {
     const map = new Map<string, Transaction[]>();
-    for (const t of filtered) {
+    for (const t of pagedFlat) {
       if (!map.has(t.date)) map.set(t.date, []);
       map.get(t.date)!.push(t);
     }
     return [...map.entries()].sort((a, b) => b[0].localeCompare(a[0]));
-  }, [filtered]);
+  }, [pagedFlat]);
 
   // ── Month grouping for desktop — solo de la página actual ──────────────────
   const byMonth = useMemo(() => {
@@ -1274,6 +1275,9 @@ export default function TransaccionesList({
             </div>
           );
         })}
+        {filtered.length > 0 && (
+          <TablePagination page={safePage} totalItems={sortedFiltered.length} pageSize={PAGE_SIZE} onPageChange={setPage} />
+        )}
       </div>
 
       {/* ── Mobile: estilo Factorial (solo cuando el diseño nuevo está activo) ── */}
@@ -1291,6 +1295,11 @@ export default function TransaccionesList({
             categories={categories}
             recurringPeriods={recurringPeriods}
             onRowClick={(id) => setDrawerTxnId(id)}
+            onManual={() => setShowAddCash(true)}
+            page={safePage}
+            totalItems={sortedFiltered.length}
+            pageSize={PAGE_SIZE}
+            onPageChange={setPage}
           />
         </div>
       )}

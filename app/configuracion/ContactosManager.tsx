@@ -372,6 +372,7 @@ export default function ContactosManager({ contacts: initialContacts, categories
           {contacts.length === 0 ? "Todavía no hay contactos guardados." : "Ningún contacto coincide con la búsqueda."}
         </p>
       ) : (
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-navy/[0.02] border-b border-navy/[0.06]">
@@ -428,6 +429,7 @@ export default function ContactosManager({ contacts: initialContacts, categories
             })}
           </tbody>
         </table>
+        </div>
       )}
       {filtered.length > 0 && (
         <TablePagination page={safePage} totalItems={filtered.length} pageSize={PAGE_SIZE} onPageChange={setPage} />

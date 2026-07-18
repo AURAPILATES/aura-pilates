@@ -1,8 +1,10 @@
 import type { Transaction } from "@/lib/transactions";
 import type { Category } from "@/lib/categories";
 import { MobileCardV2, MobileIconSquircleV2, MobileChevronButtonV2, MobileSearchBarV2 } from "@/app/components/v2/mobile/MobileV2";
+import TablePaginationV2 from "@/app/components/v2/TablePaginationV2";
 import { fmtAmt, fmtDayLabel, OriginIcon, originLabel, FALLBACK_COLOR, FALLBACK_ICON } from "./TransaccionesList";
 import { CatIcon } from "./catIcons";
+import ImportButton from "./ImportButton";
 
 type Props = {
   search: string;
@@ -16,11 +18,16 @@ type Props = {
   categories: Category[];
   recurringPeriods: Record<string, string>;
   onRowClick: (id: string) => void;
+  onManual: () => void;
+  page: number;
+  totalItems: number;
+  pageSize: number;
+  onPageChange: (p: number) => void;
 };
 
 export default function TransaccionesMobileV2({
   search, onSearchChange, directionFilter, onDirectionFilterChange, totalIn, totalOut, neto,
-  byDay, categories, recurringPeriods, onRowClick,
+  byDay, categories, recurringPeriods, onRowClick, onManual, page, totalItems, pageSize, onPageChange,
 }: Props) {
   return (
     <div>
@@ -56,6 +63,10 @@ export default function TransaccionesMobileV2({
       </div>
 
       <MobileSearchBarV2 value={search} onChange={onSearchChange} placeholder="Buscar concepto o contacto…" />
+
+      <div className="mt-3">
+        <ImportButton compact className="w-full" onManual={onManual} />
+      </div>
 
       <div className="space-y-5 mt-4">
         {byDay.length === 0 && (
@@ -117,6 +128,10 @@ export default function TransaccionesMobileV2({
           );
         })}
       </div>
+
+      {byDay.length > 0 && (
+        <TablePaginationV2 page={page} totalItems={totalItems} pageSize={pageSize} onPageChange={onPageChange} />
+      )}
     </div>
   );
 }

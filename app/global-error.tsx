@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import Button from "@/app/components/Button";
+import { sanitizeErrorMessage } from "@/lib/sanitizeErrorMessage";
 
 export default function GlobalError({
   error,
@@ -20,7 +21,7 @@ export default function GlobalError({
         <div className="flex items-center justify-center min-h-screen px-6">
           <div className="max-w-lg w-full rounded-2xl border border-red-200 bg-red-50 p-6 space-y-3">
             <p className="font-semibold text-red-600">Error inesperado</p>
-            <p className="text-sm text-navy/70 font-mono break-words">{error.message}</p>
+            <p className="text-sm text-navy/70 font-mono break-words">{sanitizeErrorMessage(error.message)}</p>
             <Button onClick={reset}>Reintentar</Button>
           </div>
         </div>

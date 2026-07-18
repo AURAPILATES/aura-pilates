@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { AlertTriangle } from "react-feather";
 import Button from "@/app/components/Button";
+import { sanitizeErrorMessage } from "@/lib/sanitizeErrorMessage";
 
 export default function Error({
   error,
@@ -22,7 +23,7 @@ export default function Error({
           <AlertTriangle size={18} />
           <p className="font-semibold">Error al cargar los datos</p>
         </div>
-        <p className="text-sm text-navy/70 font-mono break-words">{error.message}</p>
+        <p className="text-sm text-navy/70 font-mono break-words">{sanitizeErrorMessage(error.message)}</p>
         <Button onClick={reset}>Reintentar</Button>
       </div>
     </div>

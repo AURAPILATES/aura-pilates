@@ -3,13 +3,13 @@ import type { Category } from "@/lib/categories";
 import DateFilter from "@/app/components/DateFilter";
 import SearchInputV2 from "@/app/components/v2/SearchInputV2";
 import TablePaginationV2 from "@/app/components/v2/TablePaginationV2";
-import { PrimaryButtonV2 } from "@/app/components/v2/ButtonsV2";
 import { tableHeadClassV2, tableRowClassV2, tableFootClassV2, gridColsV2 } from "@/app/components/v2/tableStylesV2";
 import {
   MoreOptionsMenu, OriginIcon, originLabel, CategoryPill, CategoryMultiFilter,
   fmtAmt, fmtDate, CAT_FALLBACK, MONTHS_ES, type SortKey,
 } from "./TransaccionesList";
 import { CatIcon } from "./catIcons";
+import ImportButton from "./ImportButton";
 
 const COLS = "2.1fr .95fr 1.1fr .7fr .95fr";
 
@@ -117,10 +117,7 @@ export default function TransaccionesListV2({
           onExport={onExportCsv}
           onPapelera={onPapelera}
         />
-        <PrimaryButtonV2 onClick={onAddCash} className="flex items-center gap-[7px]">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
-          Añadir movimiento
-        </PrimaryButtonV2>
+        <ImportButton onManual={onAddCash} />
       </div>
 
       {uncategorizedCount > 0 && !someSelected && (
@@ -139,19 +136,25 @@ export default function TransaccionesListV2({
 
       {/* Tabla suelta agrupada por mes */}
       <div className="mt-[24px]">
-        <div className={tableHeadClassV2} style={gridColsV2(COLS)}>
+        <div className={`${tableHeadClassV2} px-2`} style={gridColsV2(COLS)}>
           <span
-            className="flex items-center cursor-pointer select-none"
+            className={`flex items-center cursor-pointer select-none ${sortKey === "concept" ? "text-[#18181b]" : ""}`}
             onClick={() => onToggleSort("concept")}
           >
             Concepto<SortArrowV2 active={sortKey === "concept"} dir={sortDir} />
           </span>
           <span>Origen</span>
           <span>Categoría</span>
-          <span className="flex items-center cursor-pointer select-none" onClick={() => onToggleSort("date")}>
+          <span
+            className={`flex items-center cursor-pointer select-none ${sortKey === "date" ? "text-[#18181b]" : ""}`}
+            onClick={() => onToggleSort("date")}
+          >
             Fecha<SortArrowV2 active={sortKey === "date"} dir={sortDir} />
           </span>
-          <span className="flex items-center justify-end cursor-pointer select-none" onClick={() => onToggleSort("amount")}>
+          <span
+            className={`flex items-center justify-end cursor-pointer select-none ${sortKey === "amount" ? "text-[#18181b]" : ""}`}
+            onClick={() => onToggleSort("amount")}
+          >
             Importe / Saldo<SortArrowV2 active={sortKey === "amount"} dir={sortDir} />
           </span>
         </div>
@@ -166,7 +169,7 @@ export default function TransaccionesListV2({
             const label = monthName.toUpperCase() + (parseInt(y) !== new Date().getFullYear() ? ` ${y}` : "");
             return (
               <div key={monthKey}>
-                <div className="flex items-baseline justify-between px-3 py-2 bg-[#18181b]/[0.025] border-y border-[#ececef]">
+                <div className="flex items-baseline justify-between px-2 py-2 bg-[#18181b]/[0.025] border-y border-[#ececef]">
                   <span className="text-[12.5px] font-semibold text-[#71717a] uppercase tracking-wide">{label}</span>
                   <span className={`text-[13px] font-semibold tabular-nums ${monthNet < 0 ? "text-[#b53e0d]" : "text-[#16a34a]"}`}>
                     {monthNet < 0 ? "−" : "+"}{fmtAmt(Math.abs(monthNet))}
@@ -182,7 +185,7 @@ export default function TransaccionesListV2({
                   return (
                     <div
                       key={t.id}
-                      className={`${tableRowClassV2} cursor-pointer`}
+                      className={`${tableRowClassV2} px-2 cursor-pointer`}
                       style={gridColsV2(COLS)}
                       onClick={() => onRowClick(t.id)}
                     >
