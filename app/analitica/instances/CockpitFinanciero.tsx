@@ -62,10 +62,10 @@ export default function CockpitFinanciero({
       lastUpdated={lastUpdated}
     >
       {/* 3-column section */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-navy/[0.07] border border-navy/[0.07] rounded-xl mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-[#ececef]">
 
         {/* PRESENTE */}
-        <div className="p-4">
+        <div className="p-4 sm:pl-0">
           <div className="flex items-center gap-1.5 mb-4">
             <span className="w-2 h-2 rounded-full bg-primary shrink-0" />
             <span className="text-[11px] font-semibold text-primary uppercase tracking-wider">Presente</span>
@@ -124,7 +124,7 @@ export default function CockpitFinanciero({
         </div>
 
         {/* FUTURO */}
-        <div className="p-4">
+        <div className="p-4 sm:pr-0">
           <div className="flex items-center gap-1.5 mb-4">
             <TrendingUp size={12} className="text-navy/40" />
             <span className="text-[11px] font-semibold text-navy/40 uppercase tracking-wider">Futuro</span>

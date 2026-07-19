@@ -108,13 +108,13 @@ export default function DesglosGastosUnificado({
   const insight =
     capexShare > 0.3
       ? [
-          `La inversión (CapEx) representa el ${pct(capexShare)} del total y no se repetirá cada mes.`,
+          `La inversión representa el ${pct(capexShare)} del total y no se repetirá cada mes.`,
         ]
       : [];
 
   const kpiItems: MultiKpiItem[] = [
     { label: "Total período", value: fmtAmount(totalExpCat) },
-    { label: "Coste operativo", value: fmtAmount(totalExpCatNoCapex), helper: "Personal + OpEx · excluye CapEx" },
+    { label: "Coste operativo", value: fmtAmount(totalExpCatNoCapex), helper: "Personal + operativo, sin inversión" },
   ];
 
   function categoryTxns(seg: TopExpenseSeg): Txn[] {
@@ -157,7 +157,7 @@ export default function DesglosGastosUnificado({
   return (
     <ChartCard
       title="Desglose de gastos"
-      subtitle="Personal, gasto operativo (OpEx) e inversión (CapEx), con detalle por categoría y subcategoría"
+      subtitle="Personal, operativo e inversión, con detalle por categoría y subcategoría"
       dateRange={rangeLabel ?? undefined}
       kpiItems={kpiItems}
       toolbar={
@@ -425,7 +425,7 @@ export default function DesglosGastosUnificado({
           footer={
             <Link
               href={`/transacciones?categoria=${encodeURIComponent(selected.kind === "category" ? selected.seg.key : selected.leaf.value)}`}
-              className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-navy/20 bg-white text-sm font-medium text-navy hover:border-navy/40 transition-colors"
+              className="flex items-center justify-center gap-2 w-full py-2.5 rounded-[10px] border border-[#e6e6ea] bg-white text-sm font-medium text-navy hover:bg-[#fafafb] transition-colors"
             >
               Ver transacciones
             </Link>

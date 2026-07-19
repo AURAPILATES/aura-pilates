@@ -344,9 +344,9 @@ function AnaliticaFilterBarInner() {
   const disabled = activePeriod === "all";
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center sm:flex-wrap gap-3 sm:gap-2 mb-4 pb-4 border-b border-navy/[0.06]">
+    <div className="flex flex-col sm:flex-row sm:items-center sm:flex-wrap gap-3 sm:gap-2 mb-4 pb-4 border-b border-[#ececef]">
       <div ref={ref} className="relative">
-        <div className="flex items-center bg-white border border-navy/[0.13] rounded-xl text-navy overflow-hidden w-full sm:w-auto">
+        <div className="flex items-center bg-white border border-[#e6e6ea] rounded-[10px] text-navy overflow-hidden w-full sm:w-auto">
           <button
             type="button"
             onClick={() => step(-1)}
@@ -380,7 +380,7 @@ function AnaliticaFilterBarInner() {
         </div>
 
         {open && (
-            <div className="absolute left-0 top-full mt-1.5 z-50 bg-white border border-navy/[0.12] rounded-xl shadow-lg overflow-hidden max-w-[calc(100vw-2rem)] max-h-[70vh] overflow-y-auto">
+            <div className="absolute left-0 top-full mt-1.5 z-50 bg-white border border-[#e6e6ea] rounded-[10px] shadow-lg overflow-hidden max-w-[calc(100vw-2rem)] max-h-[70vh] overflow-y-auto">
               <div className="flex flex-col sm:flex-row">
                 <ul className="py-1 w-full sm:min-w-[220px]">
                   {availableYears.map((y) => (

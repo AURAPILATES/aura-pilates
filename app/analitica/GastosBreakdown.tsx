@@ -18,8 +18,8 @@ type TopCategory = {
 
 const GROUP_LABELS: Record<EconomicGroup, string> = {
   personal: "Personal",
-  operational: "Gasto operativo (OpEx)",
-  capex: "Inversión (CapEx)",
+  operational: "Operativo",
+  capex: "Inversión",
 };
 
 const GROUP_ORDER: EconomicGroup[] = ["personal", "operational", "capex"];

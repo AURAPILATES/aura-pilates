@@ -20,7 +20,7 @@ function makeTooltip(visibleGroups: EconomicGroup[]) {
     if (!active || !payload?.length) return null;
     const row = payload[0].payload as Row;
     return (
-      <div className="bg-white border border-navy/[0.07] rounded-lg shadow-card px-3 py-2 text-xs min-w-[170px]">
+      <div className="bg-white border border-[#e6e6ea] rounded-[10px] shadow-lg px-3 py-2 text-xs min-w-[170px]">
         <p className="font-semibold text-navy mb-1.5">{row.label}</p>
         {visibleGroups.map((g) => (
           <div key={g} className="flex items-center gap-1.5 mb-0.5 last:mb-0">

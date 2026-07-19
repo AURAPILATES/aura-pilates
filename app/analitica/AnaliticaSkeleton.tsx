@@ -1,6 +1,6 @@
 function CardSkeleton() {
   return (
-    <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-4 sm:p-5 animate-pulse">
+    <div className="bg-white border border-[#ececef] rounded-[14px] p-4 sm:p-5 animate-pulse">
       <div className="h-2 w-16 bg-navy/10 rounded mb-3" />
       <div className="h-2 w-10 bg-navy/[0.07] rounded mb-2" />
       <div className="h-7 w-20 bg-navy/10 rounded mb-2" />
@@ -11,10 +11,10 @@ function CardSkeleton() {
 
 function ChartSkeleton({ height = "h-[180px]" }: { height?: string }) {
   return (
-    <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-4 sm:p-6 animate-pulse">
+    <div className="bg-white border border-[#ececef] rounded-[14px] p-4 sm:p-6 animate-pulse">
       <div className="h-2.5 w-28 bg-navy/10 rounded mb-1.5" />
       <div className="h-2 w-44 bg-navy/[0.07] rounded mb-5" />
-      <div className={`${height} bg-navy/[0.05] rounded-xl`} />
+      <div className={`${height} bg-navy/[0.05] rounded-[10px]`} />
     </div>
   );
 }

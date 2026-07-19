@@ -10,8 +10,8 @@ export type GroupTotal = { group: EconomicGroup; total: number; count: number; t
 
 export const GROUP_LABELS: Record<EconomicGroup, string> = {
   personal: "Personal",
-  operational: "Gasto operativo (OpEx)",
-  capex: "Inversión (CapEx)",
+  operational: "Operativo",
+  capex: "Inversión",
 };
 
 export const GROUP_COLORS: Record<EconomicGroup, string> = {

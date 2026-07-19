@@ -33,7 +33,7 @@ function ConversionTooltip({ active, payload }: TooltipContentProps) {
   if (!active || !payload?.length) return null;
   const c = payload[0].payload as CohortAnalysis;
   return (
-    <div className="bg-white border border-navy/[0.07] rounded-lg shadow-card px-3 py-2 text-xs max-w-[220px]">
+    <div className="bg-white border border-[#e6e6ea] rounded-[10px] shadow-lg px-3 py-2 text-xs max-w-[220px]">
       <p className="font-semibold text-navy mb-1">{c.label}</p>
       <p className="text-navy/55">{c.converted} / {c.buyers} convertidos</p>
       <p className="font-semibold" style={{ color: c.unreliable ? DANGER : PRIMARY }}>{fmtPct(c.rate)}</p>

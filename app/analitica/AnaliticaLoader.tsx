@@ -490,7 +490,7 @@ export default async function AnaliticaLoader({
   return (
     <>
       {!hasSales && (
-        <div className="bg-warning/10 border border-warning/30 rounded p-4 text-sm text-warning mb-6">
+        <div className="bg-warning/10 border border-warning/30 rounded-[10px] p-4 text-sm text-warning mb-6">
           Sin datos de ventas. Copia el CSV de Momence a{" "}
           <code className="font-mono bg-warning/10 px-1 rounded text-xs">data/sales.csv</code>.
         </div>
