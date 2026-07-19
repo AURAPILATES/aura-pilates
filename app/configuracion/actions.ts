@@ -1,6 +1,7 @@
 "use server";
 import { createServerClient } from "@/lib/supabase";
 import { revalidatePath, revalidateTag } from "next/cache";
+import { applyCategoryKeywordsToTransactions } from "@/app/transacciones/actions";
 
 type CategoryInput = {
   value: string;
@@ -24,6 +25,7 @@ export async function createCategory(data: CategoryInput) {
   const supabase = createServerClient();
   const { error } = await supabase.from("categories").insert(data);
   if (error) throw new Error(error.message);
+  await applyCategoryKeywordsToTransactions(data.value, data.auto_keywords);
   revalidateAll();
 }
 
@@ -44,6 +46,7 @@ export async function updateCategory(id: string, data: CategoryInput) {
   }
   const { error } = await supabase.from("categories").update(data).eq("id", id);
   if (error) throw new Error(error.message);
+  await applyCategoryKeywordsToTransactions(data.value, data.auto_keywords);
   revalidateAll();
 }
 

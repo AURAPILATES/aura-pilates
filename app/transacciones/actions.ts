@@ -190,6 +190,9 @@ export async function updateContact(
   if (patch.retencionRate !== undefined) update.retencion_rate = patch.retencionRate;
   const { error } = await supabase.from("contacts").update(update).eq("id", id);
   if (error) throw new Error(error.message);
+  if (patch.category !== undefined || patch.ivaRate !== undefined || patch.retencionRate !== undefined) {
+    await applyContactToExisting(id);
+  }
 }
 
 export async function deleteContact(id: number): Promise<void> {
@@ -256,6 +259,46 @@ export async function applyPatternsToTransactions(
     .in("id", matchingIds);
   if (error) throw new Error(error.message);
   return matchingIds.length;
+}
+
+/** Reaplica los "conceptos bancarios" (auto_keywords) de una categoría a los movimientos ya
+ * importados que todavía no tienen categoría: cualquiera cuyo concepto/"más datos" contenga
+ * alguno de esos textos pasa a tener esa categoría. Se usa al crear o editar una categoría desde
+ * Configuración, para que añadir un concepto nuevo no se quede solo aplicando a futuras
+ * importaciones. Solo toca movimientos sin categoría todavía: si ya tienen una (puesta a mano o
+ * por un contacto, ver applyContactToExisting) no se sobrescribe. */
+export async function applyCategoryKeywordsToTransactions(
+  categoryValue: string,
+  autoKeywords: string | null,
+): Promise<{ updated: number }> {
+  const keywords = (autoKeywords ?? "")
+    .split(",")
+    .map((k) => k.trim().toLowerCase())
+    .filter(Boolean);
+  if (!keywords.length) return { updated: 0 };
+
+  const supabase = createServerClient();
+  const { data: txns } = await supabase
+    .from("transactions")
+    .select("id, concept, bank_details")
+    .is("deleted_at", null)
+    .is("category", null);
+
+  const matchingIds = (txns ?? [])
+    .filter((t: { id: string; concept: string | null; bank_details: string | null }) => {
+      const hay = `${t.concept ?? ""} ${t.bank_details ?? ""}`.toLowerCase();
+      return keywords.some((kw) => hay.includes(kw));
+    })
+    .map((t: { id: string }) => t.id);
+  if (!matchingIds.length) return { updated: 0 };
+
+  const { error } = await supabase
+    .from("transactions")
+    .update({ category: categoryValue })
+    .in("id", matchingIds);
+  if (error) throw new Error(error.message);
+  revalidateTag("transactions");
+  return { updated: matchingIds.length };
 }
 
 /** Aplica retroactivamente los datos de un contacto a los movimientos ya importados que
