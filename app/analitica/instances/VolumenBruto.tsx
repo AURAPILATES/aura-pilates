@@ -13,11 +13,9 @@ const VolumenBrutoBody = dynamic(() => import("./VolumenBrutoBody"), {
   loading: () => <div className="h-[220px] rounded-lg bg-navy/[0.04] animate-pulse" />,
 });
 
-type Period = "dia" | "semana" | "mes" | "trimestre" | "año";
+type Period = "mes" | "trimestre" | "año";
 
 const PERIODS: { key: Period; label: string }[] = [
-  { key: "dia", label: "Día" },
-  { key: "semana", label: "Semana" },
   { key: "mes", label: "Mes" },
   { key: "trimestre", label: "Trimestre" },
   { key: "año", label: "Año" },
@@ -35,21 +33,9 @@ const EXPENSE_CATS = new Set([
   "Local", "Otros", "Inversión", "Material y maquinaria", "Mobiliario", "Reforma",
 ]);
 
-function isoWeek(dateStr: string): string {
-  const d = new Date(dateStr + "T00:00:00");
-  const dow = (d.getDay() + 6) % 7;
-  const thu = new Date(d);
-  thu.setDate(d.getDate() - dow + 3);
-  const jan1 = new Date(thu.getFullYear(), 0, 1);
-  const week = Math.ceil(((thu.getTime() - jan1.getTime()) / 86400000 + 1) / 7);
-  return `${thu.getFullYear()}-W${String(week).padStart(2, "0")}`;
-}
-
 function getPeriodKey(date: string, period: Period): string {
   const [y, m] = date.split("-");
   switch (period) {
-    case "dia": return date;
-    case "semana": return isoWeek(date);
     case "mes": return `${y}-${m}`;
     case "trimestre": return `${y}-Q${Math.ceil(parseInt(m) / 3)}`;
     case "año": return y;
@@ -58,14 +44,6 @@ function getPeriodKey(date: string, period: Period): string {
 
 function formatLabel(key: string, period: Period): string {
   switch (period) {
-    case "dia": {
-      const [, m, d] = key.split("-");
-      return `${d}/${m}`;
-    }
-    case "semana": {
-      const [y, w] = key.split("-");
-      return `${w}'${y.slice(2)}`;
-    }
     case "mes": {
       const [y, m] = key.split("-");
       return `${MONTH_NAMES[m] ?? m}'${y.slice(2)}`;

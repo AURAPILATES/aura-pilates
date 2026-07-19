@@ -213,9 +213,9 @@ export function detectChurn(payments: StripePayment[], referenceDate?: string): 
 
 // Días de vigencia tras el pago, por producto, para considerar al cliente "activo"
 const ACTIVE_WINDOW_DAYS: Record<string, number> = {
-  "Bàsic": 45,
-  "Plus": 45,
-  "Pro": 45,
+  "Bàsic": 31,
+  "Plus": 31,
+  "Pro": 31,
   "Pack Benvinguda": 15,
   "Pack 4 clases": 90,
   "Pack 8 clases": 90,
@@ -233,7 +233,7 @@ export type ActiveCustomersRow = {
 /**
  * Clientes activos a cierre de cada mes: el último pago de cada cliente sigue
  * vigente en la fecha de cierre del mes según la ventana de caducidad de su producto
- * (suscripciones 45 días, packs 15–90 días según tipo). Los cupones/importes no
+ * (suscripciones 31 días, packs 15–90 días según tipo). Los cupones/importes no
  * reconocidos no cuentan al no tener ventana de vigencia definida.
  *
  * Un cliente con suscripción Y pack vigentes a la vez se cuenta solo en

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import { BarChart2, Activity } from "react-feather";
-import { ChartCard, ChartTypeToggle, CollapsibleTable, InteractiveLegend } from "@/components/charts";
+import { ChartCard, ChartTypeToggle, ToggleGroup, CollapsibleTable, InteractiveLegend } from "@/components/charts";
 import type { IngresosPorFuenteRow } from "./IngresosPorFuenteBody";
 
 const USC_PRICE_STUDIO = 20;  // precio tarifa Aura por clase suelta
@@ -14,8 +14,37 @@ const IngresosPorFuenteBody = dynamic(() => import("./IngresosPorFuenteBody"), {
   loading: () => <div className="h-[240px] rounded-lg bg-navy/[0.04] animate-pulse" />,
 });
 
+type Period = "mes" | "trimestre" | "año";
+
+const PERIODS: { key: Period; label: string }[] = [
+  { key: "mes", label: "Mes" },
+  { key: "trimestre", label: "Trimestre" },
+  { key: "año", label: "Año" },
+];
+
 function fmtEur(v: number) {
   return Math.round(v).toLocaleString("de-DE", { maximumFractionDigits: 0 }) + " €";
+}
+
+/** El histórico llega agregado por mes; para trimestre/año se vuelve a agrupar sumando los
+ * meses que caen en cada bloque, en vez de pedir los datos ya agregados así al servidor. */
+function groupByPeriod(rows: IngresosPorFuenteRow[], period: Period): IngresosPorFuenteRow[] {
+  if (period === "mes") return rows;
+  const map = new Map<string, IngresosPorFuenteRow>();
+  for (const r of rows) {
+    const [y, m] = r.month.split("-");
+    const key = period === "año" ? y : `${y}-Q${Math.ceil(parseInt(m) / 3)}`;
+    const existing = map.get(key);
+    map.set(key, {
+      month: key,
+      label: period === "año" ? y : key.replace("-", " "),
+      stripeGross: (existing?.stripeGross ?? 0) + r.stripeGross,
+      stripeFees:  (existing?.stripeFees  ?? 0) + r.stripeFees,
+      stripeNet:   (existing?.stripeNet   ?? 0) + r.stripeNet,
+      uscNet:      (existing?.uscNet      ?? 0) + r.uscNet,
+    });
+  }
+  return Array.from(map.values()).sort((a, b) => a.month.localeCompare(b.month));
 }
 
 export default function IngresosPorFuente({
@@ -36,13 +65,17 @@ export default function IngresosPorFuente({
   lastUpdated?: string | null;
 }) {
   const [chartType, setChartType] = useState<"bar" | "line">("bar");
+  const [period, setPeriod] = useState<Period>("mes");
 
   // El CSV de Momence ya registra lo que paga Urban (11 €/clase, sin comisión visible para Aura)
   const uscNet     = uscGross;
   const totalBruto = stripeGross + uscNet;
 
-  // La tabla desglosa TODO el histórico mensual (no solo el período seleccionado arriba),
-  // así que su fila "Total" debe sumar las filas mostradas, no los KPI del período.
+  const grouped = groupByPeriod(monthly, period);
+
+  // La tabla desglosa TODO el histórico (no solo el período seleccionado arriba), así que su
+  // fila "Total" debe sumar las filas mostradas, no los KPI del período — el total no cambia
+  // al reagrupar por trimestre/año, así que se calcula siempre sobre el detalle mensual.
   const tableStripeGross = monthly.reduce((s, r) => s + r.stripeGross, 0);
   const tableStripeFees  = monthly.reduce((s, r) => s + r.stripeFees, 0);
   const tableStripeNet   = monthly.reduce((s, r) => s + r.stripeNet, 0);
@@ -77,7 +110,7 @@ export default function IngresosPorFuente({
         },
       ]}
       toolbar={
-        <div className="flex items-center gap-3 w-full">
+        <div className="flex items-center justify-between gap-3 w-full flex-wrap">
           <ChartTypeToggle
             value={chartType}
             onChange={(v) => setChartType(v as "bar" | "line")}
@@ -85,6 +118,11 @@ export default function IngresosPorFuente({
               { value: "bar",  label: "Ver como barras", icon: <BarChart2 size={14} /> },
               { value: "line", label: "Ver como línea",  icon: <Activity  size={14} /> },
             ]}
+          />
+          <ToggleGroup
+            value={period}
+            onChange={(v) => setPeriod(v as Period)}
+            options={PERIODS.map((p) => ({ value: p.key, label: p.label }))}
           />
         </div>
       }
@@ -94,7 +132,7 @@ export default function IngresosPorFuente({
     >
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
         <div className="lg:col-span-3 min-w-0">
-          <IngresosPorFuenteBody data={monthly} chartType={chartType} />
+          <IngresosPorFuenteBody data={grouped} chartType={chartType} />
         </div>
         <div className="lg:col-span-1 min-w-0">
           <p className="text-xs font-medium text-navy/55 mb-2.5">Resumen</p>
@@ -122,7 +160,7 @@ export default function IngresosPorFuente({
         <table className="w-full min-w-max text-xs">
           <thead>
             <tr className="border-b border-navy/[0.07]">
-              <th className="text-left py-2 pr-3 text-navy/45 font-semibold uppercase tracking-wide">Mes</th>
+              <th className="text-left py-2 pr-3 text-navy/45 font-semibold uppercase tracking-wide">Período</th>
               <th className="text-right py-2 pr-3 text-navy/45 font-semibold uppercase tracking-wide">Stripe bruto</th>
               <th className="text-right py-2 pr-3 text-navy/45 font-semibold uppercase tracking-wide">Comis. Stripe</th>
               <th className="text-right py-2 pr-3 text-navy/45 font-semibold uppercase tracking-wide">Stripe neto</th>
@@ -131,7 +169,7 @@ export default function IngresosPorFuente({
             </tr>
           </thead>
           <tbody>
-            {monthly.map((row) => (
+            {grouped.map((row) => (
               <tr key={row.month} className="border-b border-navy/[0.04]">
                 <td className="py-2 pr-3 text-navy/70 whitespace-nowrap">{row.label}</td>
                 <td className="py-2 pr-3 text-right text-navy tabular-nums">{row.stripeGross > 0 ? fmtEur(row.stripeGross) : "-"}</td>

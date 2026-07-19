@@ -13,7 +13,7 @@ function ChartTooltip({ active, payload }: TooltipContentProps) {
       <p className="text-navy/70">Packs: {row.packs}</p>
       <p className="text-navy font-medium mt-1">{row.count} clientes activos</p>
       <p className="text-navy/45 mt-2 leading-snug">
-        Cliente con pago vigente al cierre de mes: suscripción (Bàsic/Plus/Pro) en los últimos 45 días,
+        Cliente con pago vigente al cierre de mes: suscripción (Bàsic/Plus/Pro) en los últimos 31 días,
         o pack en su ventana de validez (Benvinguda 15d, clase suelta 30d, packs de clases 90d).
         Con suscripción y pack a la vez, cuenta como suscripción.
       </p>

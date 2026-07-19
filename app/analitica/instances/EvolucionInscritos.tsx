@@ -42,7 +42,7 @@ export default function EvolucionInscritos({ data }: { data: ActiveCustomersRow[
           valueClassName: vsPrevPct === null ? "text-navy/50" : vsPrevPct >= 0 ? "text-success" : "text-danger",
         },
       ]}
-      dataSource="Suscripción (vigencia 45 días) o pack (15–90 días según tipo) según último pago en Stripe"
+      dataSource="Suscripción (vigencia 31 días) o pack (15–90 días según tipo) según último pago en Stripe"
       sources={["stripe"]}
       lastUpdated="ahora"
     >

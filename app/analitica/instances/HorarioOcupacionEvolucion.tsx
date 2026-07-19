@@ -180,7 +180,7 @@ export default function HorarioOcupacionEvolucion({
               const y = tickY(v);
               return (
                 <line key={v} x1={0} y1={y} x2={SVG_W} y2={y}
-                  stroke="#1c191714" strokeWidth="1" strokeDasharray={v === 0 ? "none" : "3 3"} />
+                  stroke="#1c191714" strokeWidth="1" strokeDasharray={v === 0 ? "none" : "3 3"} vectorEffect="non-scaling-stroke" />
               );
             })}
 
@@ -198,6 +198,7 @@ export default function HorarioOcupacionEvolucion({
                     strokeDasharray="3 3"
                     opacity="0.4"
                     pointerEvents="none"
+                    vectorEffect="non-scaling-stroke"
                   />
                 );
               });
@@ -230,63 +231,37 @@ export default function HorarioOcupacionEvolucion({
             ) : (
               <>
                 {/* Plazas totales (capacidad) y vendidas como líneas */}
-                <polyline points={capacityLinePoints} fill="none" stroke="#C0C6E8" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
-                <polyline points={soldLinePoints} fill="none" stroke="#3B4B9E" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+                <polyline points={capacityLinePoints} fill="none" stroke="#C0C6E8" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+                <polyline points={soldLinePoints} fill="none" stroke="#3B4B9E" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
                 {data.map((d, i) => (
                   <g key={d.key} onMouseEnter={() => setHoveredKey(d.key)} style={{ cursor: "default" }}>
                     <rect x={barX(i)} y={MT} width={barW} height={CHART_H} fill="transparent" />
-                    <circle cx={barCx(i)} cy={valY(d.capacity)} r={hoveredKey === d.key ? 4 : 2.5} fill="#C0C6E8" stroke="white" strokeWidth="1" />
-                    <circle cx={barCx(i)} cy={valY(d.sold)} r={hoveredKey === d.key ? 4 : 2.5} fill="#3B4B9E" stroke="white" strokeWidth="1" />
+                    <circle cx={barCx(i)} cy={valY(d.capacity)} r={hoveredKey === d.key ? 4 : 2.5} fill="#C0C6E8" stroke="white" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+                    <circle cx={barCx(i)} cy={valY(d.sold)} r={hoveredKey === d.key ? 4 : 2.5} fill="#3B4B9E" stroke="white" strokeWidth="1" vectorEffect="non-scaling-stroke" />
                   </g>
                 ))}
               </>
             )}
 
             {/* Occupancy % line */}
-            <polyline points={linePoints} fill="none" stroke="#43884d" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+            <polyline points={linePoints} fill="none" stroke="#43884d" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
             {data.map((d, i) => (
               <circle
                 key={`dot-${d.key}`}
                 cx={barCx(i)} cy={occY(d.occ)}
                 r={hoveredKey === d.key ? 4 : 2.5}
                 fill="#43884d" stroke="white" strokeWidth="1"
+                vectorEffect="non-scaling-stroke"
               />
             ))}
 
-            {/* Hover tooltip */}
-            {hoveredKey && (() => {
-              const i = data.findIndex((d) => d.key === hoveredKey);
-              if (i === -1) return null;
-              const d = data[i];
-              const TW = 130, TH = 50;
-              const cx = barCx(i);
-              const flipL = cx + TW + 10 > SVG_W;
-              const tx = flipL ? cx - TW - 10 : cx + 10;
-              const ty = Math.max(MT, Math.min(occY(d.occ), valY(d.sold)) - 10);
-              return (
-                <g pointerEvents="none">
-                  <rect x={tx} y={ty} width={TW} height={TH} rx="6"
-                    fill="white" stroke="#E2E8F0" strokeWidth="1"
-                    style={{ filter: "drop-shadow(0 2px 6px rgba(15,23,42,0.10))" }}
-                  />
-                  <text x={tx + 8} y={ty + 14} fontSize="9" fontWeight="700" fill="#0F172A">{d.label}</text>
-                  <text x={tx + 8} y={ty + 28} fontSize="8.5" fill="#64748B">{d.sold}/{d.capacity} plazas</text>
-                  <text x={tx + 8} y={ty + 41} fontSize="8.5" fontWeight="600" fill="#43884d">{Math.round(d.occ * 100)}% ocupación</text>
-                </g>
-              );
-            })()}
-
-            {/* Event markers + tooltips — rendered last (on top) */}
+            {/* Event markers — rendered last (on top); tooltip content is an HTML overlay below */}
             {data.map((d, i) => {
               const evs = eventsByPeriod.get(d.key) ?? [];
               return evs.map((ev, ei) => {
                 const cx    = evs.length > 1 ? barCx(i) + (ei - (evs.length - 1) / 2) * 7 : barCx(i);
                 const color = EVENT_COLORS[ev.categoria];
                 const isHov = hoveredEventId === ev.id;
-                const EV_TW = 170;
-                const EV_TH = ev.descripcion ? 50 : 38;
-                const flipL = cx + EV_TW + 10 > SVG_W;
-                const tx    = flipL ? cx - EV_TW - 10 : cx + 10;
 
                 return (
                   <g
@@ -303,35 +278,72 @@ export default function HorarioOcupacionEvolucion({
                       stroke="white"
                       strokeWidth={isHov ? 1.5 : 1}
                       opacity={isHov ? 1 : 0.8}
+                      vectorEffect="non-scaling-stroke"
                     />
-                    {isHov && (
-                      <g pointerEvents="none">
-                        <rect x={tx} y={MT} width={EV_TW} height={EV_TH} rx="6"
-                          fill="white" stroke="#E2E8F0" strokeWidth="1"
-                          style={{ filter: "drop-shadow(0 2px 6px rgba(15,23,42,0.10))" }}
-                        />
-                        <circle cx={tx + 12} cy={MT + 11} r="3" fill={color} />
-                        <text x={tx + 20} y={MT + 14} fontSize="8" fontWeight="600" fill={color}>
-                          {EVENT_LABELS[ev.categoria]}
-                        </text>
-                        <text x={tx + EV_TW - 8} y={MT + 14} fontSize="7.5" fill="#94A3B8" textAnchor="end">
-                          {fmtEventDate(ev.fecha)}
-                        </text>
-                        <text x={tx + 8} y={MT + 26} fontSize="8.5" fontWeight="600" fill="#0F172A">
-                          {ev.titulo.length > 24 ? ev.titulo.slice(0, 24) + "…" : ev.titulo}
-                        </text>
-                        {ev.descripcion && (
-                          <text x={tx + 8} y={MT + 38} fontSize="7.5" fill="#64748B">
-                            {ev.descripcion.length > 30 ? ev.descripcion.slice(0, 30) + "…" : ev.descripcion}
-                          </text>
-                        )}
-                      </g>
-                    )}
                   </g>
                 );
               });
             })}
           </svg>
+
+          {/* Hover tooltip — plain HTML overlay positioned by %, so text stays a real CSS px
+              size instead of scaling with the SVG viewBox (same reasoning as the axis/week
+              labels below: avoids the thicker-lines/oversized-text look vs. the Recharts-based
+              charts elsewhere in Analítica). */}
+          {hoveredKey && (() => {
+            const i = data.findIndex((d) => d.key === hoveredKey);
+            if (i === -1) return null;
+            const d = data[i];
+            const cx = barCx(i);
+            const anchorY = Math.min(valY(d.sold), occY(d.occ));
+            const flipL = pctX(cx) > 70;
+            return (
+              <div
+                className="absolute z-10 bg-white border border-[#e6e6ea] rounded-[10px] shadow-lg px-3 py-2 text-xs leading-snug pointer-events-none whitespace-nowrap"
+                style={{
+                  left: `${pctX(cx)}%`,
+                  top: `${pctY(anchorY)}%`,
+                  transform: `translate(${flipL ? "calc(-100% - 8px)" : "8px"}, -100%)`,
+                }}
+              >
+                <p className="font-semibold text-navy">{d.label}</p>
+                <p className="text-navy/60 mt-0.5">{d.sold}/{d.capacity} plazas</p>
+                <p className="text-[#43884d] font-semibold mt-0.5">{Math.round(d.occ * 100)}% ocupación</p>
+              </div>
+            );
+          })()}
+
+          {/* Event tooltip — same HTML-overlay reasoning as the hover tooltip above */}
+          {data.map((d, i) => {
+            const evs = eventsByPeriod.get(d.key) ?? [];
+            return evs.map((ev, ei) => {
+              if (hoveredEventId !== ev.id) return null;
+              const cx = evs.length > 1 ? barCx(i) + (ei - (evs.length - 1) / 2) * 7 : barCx(i);
+              const color = EVENT_COLORS[ev.categoria];
+              const flipL = pctX(cx) > 70;
+              return (
+                <div
+                  key={`evtip-${ev.id}`}
+                  className="absolute z-20 bg-white border border-[#e6e6ea] rounded-[10px] shadow-lg px-3 py-2 text-xs leading-snug pointer-events-none max-w-[200px]"
+                  style={{
+                    left: `${pctX(cx)}%`,
+                    top: `${pctY(MT)}%`,
+                    transform: `translate(${flipL ? "calc(-100% - 8px)" : "8px"}, 0%)`,
+                  }}
+                >
+                  <div className="flex items-center gap-2 justify-between">
+                    <span className="flex items-center gap-1.5 font-semibold" style={{ color }}>
+                      <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                      {EVENT_LABELS[ev.categoria]}
+                    </span>
+                    <span className="text-navy/40 shrink-0">{fmtEventDate(ev.fecha)}</span>
+                  </div>
+                  <p className="font-semibold text-navy mt-1">{ev.titulo}</p>
+                  {ev.descripcion && <p className="text-navy/55 mt-0.5">{ev.descripcion}</p>}
+                </div>
+              );
+            });
+          })}
 
           {/* Week labels — plain HTML, fixed CSS font size */}
           {data.map((d, i) => {
@@ -363,7 +375,7 @@ export default function HorarioOcupacionEvolucion({
           <InteractiveLegend
             items={[
               { key: "sold", label: "Plazas vendidas", color: "#3B4B9E", value: totalSold, helper: pct(avgOcc) },
-              { key: "free", label: "Plazas libres", color: "#C0C6E8", value: totalFree },
+              { key: "free", label: "Plazas libres", color: "#C0C6E8", value: totalFree, helper: pct(totalCapacity > 0 ? totalFree / totalCapacity : 0) },
             ]}
           />
         </div>

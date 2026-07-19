@@ -54,8 +54,8 @@ export default function Breakeven({ points }: { points: BreakevenPoint[] }) {
           />
         </>
       }
-      dataSource="Ingresos: Stripe + Urban Sports Club · Gastos: operacionales + inversión inicial"
-      sources={["stripe"]}
+      dataSource="Ingresos: Stripe + Urban Sports Club (Momence) · Gastos: exportación bancaria CaixaBank, incluye la inversión inicial"
+      sources={["stripe", "momence", "excel"]}
       lastUpdated="ahora"
     >
       <BreakevenBody points={points} view={view} />
