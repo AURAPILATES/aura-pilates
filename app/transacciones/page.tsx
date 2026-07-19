@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { loadTransactionsCached } from "@/lib/transactions";
 import { loadCategoriesCached } from "@/lib/categories";
 import { getDateRange } from "@/lib/dateRange";
-import { computePendingRecurring, detectRecurringTransactions, findRecurringSeries, projectNextDate } from "@/lib/recurring";
+import { computePendingRecurring, detectRecurringTransactions, findRecurringSeries, projectNextDate, seriesKeyFor } from "@/lib/recurring";
 import { loadRecurringExpensesCached } from "@/lib/recurringExpenses";
 import { getContacts } from "./actions";
 import TransaccionesTabs from "./TransaccionesTabs";
@@ -30,6 +30,20 @@ export default async function TransaccionesPage(props: {
 
   const uncategorizedCount = transactions.filter((t) => !t.category).length;
   const recurringPeriods   = Object.fromEntries(detectRecurringTransactions(transactions, categories));
+
+  // El heurístico de arriba solo detecta series con 2+ pagos ya importados y separación
+  // regular; un gasto confirmado a mano (createRecurringExpenseFromTransaction) puede no
+  // cumplir eso (p. ej. un único pago hasta ahora) y aun así debe verse como recurrente en
+  // el icono/filtro de Movimientos, no solo en la pestaña "Recurrentes".
+  const confirmedPeriodByKey = new Map(
+    expenses.filter((e) => e.status === "confirmed").map((e) => [e.key, e.period]),
+  );
+  for (const t of transactions) {
+    if (recurringPeriods[t.id]) continue;
+    const key = seriesKeyFor(t);
+    const period = key ? confirmedPeriodByKey.get(key) : undefined;
+    if (period) recurringPeriods[t.id] = period;
+  }
 
   // ── Recurrentes ──
   const series = findRecurringSeries(allTimeTransactions, categories);
