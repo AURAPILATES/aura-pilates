@@ -1,6 +1,8 @@
 import Stripe from "stripe";
 import { unstable_cache } from "next/cache";
 import { stripe } from "./stripe";
+import { getMemberships, getProducts } from "./momence";
+import { catalogFromMomence } from "./productRevenue";
 
 export type StripePayment = {
   id: string;
@@ -18,7 +20,10 @@ export type StripePayment = {
   inferredType: "subscription" | "pack" | "coupon" | "unknown";
 };
 
-// Mapa de importes → producto (precios Momence a jun 2026)
+// Nombres/tipos de producto de referencia — estables, no cambian cuando sube un precio.
+// El IMPORTE de cada uno se resuelve en vivo contra el catálogo de Momence (ver
+// getPricingReport más abajo); el valor de aquí solo se usa como respaldo si Momence no
+// responde o si ese nombre ya no existe en su catálogo. Última revisión manual: jun 2026.
 const PRODUCT_MAP: Array<{ amount: number; name: string; type: "subscription" | "pack" }> = [
   { amount: 75,  name: "Bàsic",           type: "subscription" },
   { amount: 140, name: "Plus",            type: "subscription" },
@@ -29,8 +34,53 @@ const PRODUCT_MAP: Array<{ amount: number; name: string; type: "subscription" | 
   { amount: 20,  name: "Clase suelta",    type: "pack" },
 ];
 
-function inferProduct(amount: number): { name: string; type: "subscription" | "pack" | "coupon" | "unknown" } {
-  const match = PRODUCT_MAP.find((p) => Math.abs(p.amount - amount) < 1);
+export type PricingRow = {
+  name: string;
+  type: "subscription" | "pack";
+  fallbackPrice: number;
+  livePrice: number | null;
+  /** El precio realmente usado para identificar cobros de Stripe ahora mismo: el de Momence
+   * si se ha encontrado ese nombre en su catálogo, si no el de respaldo del código. */
+  price: number;
+};
+
+/** Compara los precios de referencia del código con el catálogo en vivo de Momence
+ * (membresías + productos), por nombre exacto. Vista de solo lectura en Configuración →
+ * Precios y también la fuente que usa loadStripePayments para identificar cada cobro. */
+export const getPricingReport = unstable_cache(
+  async (): Promise<PricingRow[]> => {
+    let catalog: { name: string; price: number }[] = [];
+    try {
+      const [memberships, products] = await Promise.all([getMemberships(), getProducts()]);
+      catalog = catalogFromMomence(memberships, products);
+    } catch {
+      // Momence caído o sin credenciales: seguimos con los precios de respaldo del código.
+    }
+    return PRODUCT_MAP.map((entry) => {
+      const live = catalog.find((c) => c.name === entry.name);
+      return {
+        name: entry.name,
+        type: entry.type,
+        fallbackPrice: entry.amount,
+        livePrice: live ? live.price : null,
+        price: live ? live.price : entry.amount,
+      };
+    });
+  },
+  ["stripe-pricing-report"],
+  { revalidate: 1800, tags: ["momence"] },
+);
+
+async function resolveProductMap(): Promise<typeof PRODUCT_MAP> {
+  const report = await getPricingReport();
+  return report.map((r) => ({ amount: r.price, name: r.name, type: r.type }));
+}
+
+function inferProduct(
+  amount: number,
+  map: typeof PRODUCT_MAP,
+): { name: string; type: "subscription" | "pack" | "coupon" | "unknown" } {
+  const match = map.find((p) => Math.abs(p.amount - amount) < 1);
   return match ? { name: match.name, type: match.type } : { name: "Con cupón", type: "coupon" };
 }
 
@@ -75,6 +125,7 @@ export async function loadStripePayments(
   };
 
   const payments: StripePayment[] = [];
+  const productMap = await resolveProductMap();
 
   for await (const charge of stripe.charges.list(params)) {
     if (charge.status !== "succeeded") continue;
@@ -82,7 +133,7 @@ export async function loadStripePayments(
     const fee = bt ? bt.fee / 100 : 0;
     const net = bt ? bt.net / 100 : toEuros(charge.amount, charge.currency);
     const amountEur = toEuros(charge.amount, charge.currency);
-    const inferred  = inferProduct(amountEur);
+    const inferred  = inferProduct(amountEur, productMap);
     payments.push({
       id: charge.id,
       amount: amountEur,

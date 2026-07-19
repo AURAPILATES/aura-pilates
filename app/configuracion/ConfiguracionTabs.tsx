@@ -5,17 +5,20 @@ import { useRouter, useSearchParams } from "next/navigation";
 import type { Category } from "@/lib/categories";
 import type { BusinessEvent } from "@/lib/businessEvents";
 import type { Contact, ContactStats } from "@/app/transacciones/actions";
+import type { PricingRow } from "@/lib/stripePayments";
 import SectionTabsV2 from "@/app/components/v2/SectionTabsV2";
 import CategoriasManager from "./CategoriasManager";
 import ContactosManager from "./ContactosManager";
 import HistorialTimeline from "@/app/historial/HistorialTimeline";
+import PreciosViewer from "./PreciosViewer";
 
-type Tab = "categorias" | "contactos" | "historial";
+type Tab = "categorias" | "contactos" | "historial" | "precios";
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "categorias", label: "Categorías" },
   { key: "contactos", label: "Contactos" },
   { key: "historial", label: "Historial" },
+  { key: "precios", label: "Precios" },
 ];
 
 type Props = {
@@ -26,12 +29,13 @@ type Props = {
   contactStats: Record<number, ContactStats>;
   pendingRecomputeCount: number;
   pendingCleanupCount: number;
+  pricingRows: PricingRow[];
 };
 
-export default function ConfiguracionTabs({ categories, events, categoryCounts, contacts, contactStats, pendingRecomputeCount, pendingCleanupCount }: Props) {
+export default function ConfiguracionTabs({ categories, events, categoryCounts, contacts, contactStats, pendingRecomputeCount, pendingCleanupCount, pricingRows }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const initialTab = (["contactos", "historial"] as const).find((t) => t === searchParams.get("tab")) ?? "categorias";
+  const initialTab = (["contactos", "historial", "precios"] as const).find((t) => t === searchParams.get("tab")) ?? "categorias";
   const [tab, setTab] = useState<Tab>(initialTab);
 
   function selectTab(next: Tab) {
@@ -52,6 +56,8 @@ export default function ConfiguracionTabs({ categories, events, categoryCounts, 
           pendingRecomputeCount={pendingRecomputeCount}
           pendingCleanupCount={pendingCleanupCount}
         />
+      ) : tab === "precios" ? (
+        <PreciosViewer rows={pricingRows} />
       ) : (
         <HistorialTimeline events={events} />
       )}
