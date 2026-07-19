@@ -60,6 +60,7 @@ export default function DesglosGastosUnificado({
   totalExpCat,
   totalExpCatNoCapex,
   rangeLabel,
+  lastUpdated,
 }: {
   groups: GroupTotal[];
   categories: TopExpenseSeg[];
@@ -67,6 +68,7 @@ export default function DesglosGastosUnificado({
   totalExpCat: number;
   totalExpCatNoCapex: number;
   rangeLabel?: string | null;
+  lastUpdated?: string | null;
 }) {
   const [period, setPeriod] = useState<Period>("mes");
   const [chartType, setChartType] = useState<"bar" | "line">("bar");
@@ -181,6 +183,7 @@ export default function DesglosGastosUnificado({
       }
       dataSource="Exportación bancaria CaixaBank · excluye aportaciones de socios y préstamo"
       sources={["excel"]}
+      lastUpdated={lastUpdated}
       aiInsight={
         insight.length > 0 && (
           <div className="space-y-1">

@@ -54,6 +54,7 @@ export default function IngresosPorFuente({
   uscGross,
   monthly,
   dateRange,
+  uscLastDateLabel,
   lastUpdated,
 }: {
   stripeGross: number;
@@ -62,6 +63,10 @@ export default function IngresosPorFuente({
   uscGross: number;
   monthly: IngresosPorFuenteRow[];
   dateRange?: string;
+  /** Última fecha con datos reales de Urban en el CSV manual de Momence — Stripe se recorta a
+   * esta misma fecha en este gráfico (y solo en este) para que la comparación entre ambas
+   * fuentes no muestre meses donde solo tenemos un lado. */
+  uscLastDateLabel?: string | null;
   lastUpdated?: string | null;
 }) {
   const [chartType, setChartType] = useState<"bar" | "line">("bar");
@@ -126,10 +131,19 @@ export default function IngresosPorFuente({
           />
         </div>
       }
-      dataSource="Stripe API (precio de venta, antes de comisión) + Urban Sports Club Momence CSV (11 €/clase)"
+      dataSource={
+        uscLastDateLabel
+          ? `Stripe API (precio de venta, antes de comisión) + Urban Sports Club Momence CSV (11 €/clase, exportación manual). Stripe se recorta hasta ${uscLastDateLabel} para igualar la última fecha con datos reales de Urban — hay ingresos de Stripe más recientes que no se muestran aquí.`
+          : "Stripe API (precio de venta, antes de comisión) + Urban Sports Club Momence CSV (11 €/clase, exportación manual)"
+      }
       sources={["stripe", "momence"]}
       lastUpdated={lastUpdated}
     >
+      {uscLastDateLabel && (
+        <p className="text-[11px] text-warning bg-warning/10 rounded-[8px] px-2.5 py-1.5 mb-4">
+          Urban solo tiene datos hasta el {uscLastDateLabel} (exportación manual) — Stripe se recorta a la misma fecha para que la comparación no sea engañosa. Sube un CSV nuevo de Momence para ver el período completo.
+        </p>
+      )}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
         <div className="lg:col-span-3 min-w-0">
           <IngresosPorFuenteBody data={grouped} chartType={chartType} />

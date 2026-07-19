@@ -15,7 +15,7 @@ function fmtEur(v: number) {
   return sign + Math.abs(v).toLocaleString("es-ES", { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + " €";
 }
 
-export default function Breakeven({ points }: { points: BreakevenPoint[] }) {
+export default function Breakeven({ points, lastUpdated }: { points: BreakevenPoint[]; lastUpdated?: string | null }) {
   const [view, setView] = useState<"bruto" | "neto">("bruto");
 
   if (points.length === 0) {
@@ -54,9 +54,9 @@ export default function Breakeven({ points }: { points: BreakevenPoint[] }) {
           />
         </>
       }
-      dataSource="Ingresos: Stripe + Urban Sports Club (Momence) · Gastos: exportación bancaria CaixaBank, incluye la inversión inicial"
+      dataSource="Ingresos: Stripe + Urban Sports Club (Momence), en vivo · Gastos: exportación bancaria CaixaBank, incluye la inversión inicial — la fecha de actualización de esta tarjeta es la del banco, el lado que limita lo al día que está el resultado"
       sources={["stripe", "momence", "excel"]}
-      lastUpdated="ahora"
+      lastUpdated={lastUpdated}
     >
       <BreakevenBody points={points} view={view} />
     </ChartCard>

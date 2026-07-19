@@ -214,7 +214,7 @@ export default function HorarioReporting({ data }: { data: ReportingData }) {
           title={`Urban Sports Club · ${uscTotal} reservas`}
           subtitle="Reservas por franja horaria y día de la semana"
           dataSource="Exportación CSV de Momence (Urban Sports Club paga por transferencia, sin fuente en vivo)"
-          sources={["excel"]}
+          sources={["momence"]}
         >
           <div className="grid grid-cols-2 gap-6">
             <div>

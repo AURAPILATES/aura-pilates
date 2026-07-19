@@ -250,9 +250,13 @@ export default async function AnaliticaLoader({
   const subscriptionTiers = subscriptionTiersFromMemberships(membershipsAll);
   const mrrByTier = computeMrrByTier(customersAll, subscriptionTiers);
 
-  // ── Evolución de ingresos + altas/bajas/reactivaciones (histórico completo) ──
-  const paymentsAllBounded = uscLastDate ? paymentsAll.filter((p) => p.date <= uscLastDate) : paymentsAll;
-  const monthlyStripeRevenue = revenueByProductByMonth(paymentsAllBounded, productCatalog);
+  // ── Evolución de ingresos + altas/bajas/reactivaciones (histórico completo, solo Stripe) ──
+  // Antes se recortaba TODO paymentsAll a uscLastDate "para que Stripe y Urban cubran el mismo
+  // período" — pero estos tres usos son 100% Stripe (Urban no aparece en ninguno), así que ese
+  // recorte solo servía para tirar datos de Stripe recientes cada vez que el CSV manual de Urban
+  // se quedaba desactualizado. Solo "Ingresos por fuente" (más abajo) compara Stripe vs. Urban de
+  // verdad, así que es el único que sigue acotado a uscLastDate.
+  const monthlyStripeRevenue = revenueByProductByMonth(paymentsAll, productCatalog);
   const uscByMonth = new Map<string, number>();
   for (const s of momenceSalesAll) {
     if (s.method !== "urban-sports-club") continue;
@@ -260,11 +264,14 @@ export default async function AnaliticaLoader({
     uscByMonth.set(m, (uscByMonth.get(m) ?? 0) + s.amount);
   }
 
-  // Ingresos por fuente: bruto, comisión y neto de Stripe por mes + USC neto
+  // Ingresos por fuente: bruto, comisión y neto de Stripe por mes + USC neto — acotado a
+  // uscLastDate para que la comparación Stripe vs. Urban no muestre meses donde solo tenemos
+  // un lado (ver uscLastDateLabel, mostrado en la propia tarjeta para que el recorte sea visible).
+  const paymentsBoundedToUsc = uscLastDate ? paymentsAll.filter((p) => p.date <= uscLastDate) : paymentsAll;
   const monthlyStripeGrossMap = new Map<string, number>();
   const monthlyStripeFeesMap  = new Map<string, number>();
   const monthlyStripeNetMap   = new Map<string, number>();
-  for (const p of paymentsAllBounded) {
+  for (const p of paymentsBoundedToUsc) {
     const m = p.date.slice(0, 7);
     monthlyStripeGrossMap.set(m, (monthlyStripeGrossMap.get(m) ?? 0) + p.amount);
     monthlyStripeFeesMap.set(m,  (monthlyStripeFeesMap.get(m)  ?? 0) + p.fee);
@@ -284,8 +291,8 @@ export default async function AnaliticaLoader({
     };
   });
 
-  const subscriptionCohorts = computeSubscriptionCohorts(paymentsAllBounded, subscriptionTiers, primaryIdMap);
-  const retentionCohorts = computeRetentionCohorts(paymentsAllBounded, subscriptionTiers, 4, primaryIdMap);
+  const subscriptionCohorts = computeSubscriptionCohorts(paymentsAll, subscriptionTiers, primaryIdMap);
+  const retentionCohorts = computeRetentionCohorts(paymentsAll, subscriptionTiers, 4, primaryIdMap);
 
   const transactionsByCategory: Record<string, { date: string; amount: number; concept: string; contact: string }[]> = {};
   for (const t of txnsMain) {
@@ -510,7 +517,7 @@ export default async function AnaliticaLoader({
                 completeBurnMonthsCount={completeBurnMonths.length}
                 ventasPrevistas={avgMonthlyRevenue}
                 gastosComprometidos={gastosComprometidos}
-                lastUpdated={liveLastUpdated}
+                lastUpdated={bancoLastUpdated}
                 nextIvaLabel={nextIvaObligation?.date ?? null}
                 nextIvaQuarter={nextIvaObligation?.quarter ?? null}
                 ivaNeto={nextIvaQuarterData?.ivaNeto ?? 0}
@@ -519,7 +526,7 @@ export default async function AnaliticaLoader({
                 retenciones={nextIvaQuarterData?.retenciones ?? 0}
                 ivaQuarterClosed={nextIvaQuarterClosed}
               />
-              <Breakeven points={breakevenPoints} />
+              <Breakeven points={breakevenPoints} lastUpdated={bancoLastUpdated} />
               <ChartCard title="Próximas obligaciones">
                 <div className="space-y-3">
                   {obligations.map(({ label, date, deadline }) => {
@@ -573,7 +580,7 @@ export default async function AnaliticaLoader({
           <section>
             <SectionHeader id="ingresos-gastos" title="Ingresos y gastos" />
             <div className="space-y-4">
-              <VolumenBruto sales={salesAll} txns={txnsAll} lastUpdated={liveLastUpdated} />
+              <VolumenBruto sales={salesAll} txns={txnsAll} lastUpdated={bancoLastUpdated} />
               <IngresosPorFuente
                 stripeGross={totalRev}
                 stripeFees={stripeFees}
@@ -581,7 +588,8 @@ export default async function AnaliticaLoader({
                 uscGross={uscRevenue}
                 monthly={monthlyByFuente}
                 dateRange={periodLabel}
-                lastUpdated={liveLastUpdated}
+                uscLastDateLabel={uscLastDateLabel}
+                lastUpdated={uscLastDateLabel ? `Urban al día ${uscLastDateLabel}` : liveLastUpdated}
               />
               <EvolucionSuscripcionesFullWidth monthly={monthlyStripeRevenue} cohorts={subscriptionCohorts} events={businessEvents} rawPayments={pMain} />
               <DesglosGastosUnificado
@@ -591,6 +599,7 @@ export default async function AnaliticaLoader({
                 totalExpCat={totalExpCat}
                 totalExpCatNoCapex={totalExpCatNoCapex}
                 rangeLabel={periodLabel}
+                lastUpdated={bancoLastUpdated}
               />
               <PrevisionGastos forecasts={recurringForecasts} categories={dbCategories} avgSuministros={avgSuministros} />
             </div>

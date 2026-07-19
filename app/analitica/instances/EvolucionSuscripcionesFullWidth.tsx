@@ -166,7 +166,7 @@ export default function EvolucionSuscripcionesFullWidth({
             </div>
           </>
         }
-        dataSource="Ingresos de procedencia interna (Stripe) · catálogo Momence en vivo · Altas/bajas/reactivaciones identificadas por el patrón de pagos de suscripción en Stripe"
+        dataSource="Solo Stripe — no incluye Urban Sports Club. Producto identificado contra el catálogo de precios en vivo de Momence · altas/bajas/reactivaciones por patrón de pagos de suscripción en Stripe"
         sources={["stripe"]}
         lastUpdated="ahora"
         aiInsight={

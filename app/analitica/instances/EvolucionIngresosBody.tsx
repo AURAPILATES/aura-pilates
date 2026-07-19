@@ -82,19 +82,20 @@ function EventDots({ viewBox, evs, hoveredEventId, onHover }: EventDotProps) {
             <circle cx={cx} cy={viewBox.y} r={isHov ? 5 : 3.5} fill={EVENT_COLORS[ev.categoria]} stroke="white" strokeWidth={isHov ? 1.5 : 1} />
             {isHov && (
               <g pointerEvents="none">
-                <rect x={cx + 8} y={viewBox.y! - 6} width={180} height={ev.descripcion ? 56 : 40} rx="6" fill="white" stroke="rgba(28,25,23,0.1)" />
-                <circle cx={cx + 22} cy={viewBox.y! + 8} r="3.5" fill={EVENT_COLORS[ev.categoria]} />
-                <text x={cx + 30} y={viewBox.y! + 11} fontSize="9" fontWeight="600" fill={EVENT_COLORS[ev.categoria]}>
+                <rect x={cx + 8} y={viewBox.y! - 8} width={210} height={ev.descripcion ? 68 : 50} rx="10"
+                  fill="white" stroke="#e6e6ea" style={{ filter: "drop-shadow(0 4px 16px rgba(0,0,0,0.12))" }} />
+                <circle cx={cx + 24} cy={viewBox.y! + 12} r="4" fill={EVENT_COLORS[ev.categoria]} />
+                <text x={cx + 33} y={viewBox.y! + 16} fontSize="12" fontWeight="600" fill={EVENT_COLORS[ev.categoria]}>
                   {EVENT_LABELS[ev.categoria]}
                 </text>
-                <text x={cx + 180} y={viewBox.y! + 11} fontSize="8.5" fill="#94A3B8" textAnchor="end">
+                <text x={cx + 210} y={viewBox.y! + 16} fontSize="11.5" fill="#a1a1aa" textAnchor="end">
                   {fmtEventDate(ev.fecha)}
                 </text>
-                <text x={cx + 16} y={viewBox.y! + 26} fontSize="9.5" fontWeight="600" fill="#0F172A">
+                <text x={cx + 18} y={viewBox.y! + 34} fontSize="13" fontWeight="600" fill="#18181b">
                   {ev.titulo.length > 26 ? ev.titulo.slice(0, 26) + "…" : ev.titulo}
                 </text>
                 {ev.descripcion && (
-                  <text x={cx + 16} y={viewBox.y! + 41} fontSize="8.5" fill="#64748B">
+                  <text x={cx + 18} y={viewBox.y! + 51} fontSize="11.5" fill="#71717a">
                     {ev.descripcion.length > 32 ? ev.descripcion.slice(0, 32) + "…" : ev.descripcion}
                   </text>
                 )}
