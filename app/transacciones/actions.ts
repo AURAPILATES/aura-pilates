@@ -101,16 +101,17 @@ export type Contact = {
   category: string | null;
   ivaRate: number;
   retencionRate: number;
+  noTax: boolean;
   patterns: string[];
 };
 
-type ContactRow = { id: number; label: string; category: string | null; iva_rate: number; retencion_rate: number; contact_concepts: { pattern: string }[] };
+type ContactRow = { id: number; label: string; category: string | null; iva_rate: number; retencion_rate: number; no_tax: boolean; contact_concepts: { pattern: string }[] };
 
 export async function getContacts(): Promise<Contact[]> {
   const supabase = createServerClient();
   const { data, error } = await supabase
     .from("contacts")
-    .select("id, label, category, iva_rate, retencion_rate, contact_concepts(pattern)")
+    .select("id, label, category, iva_rate, retencion_rate, no_tax, contact_concepts(pattern)")
     .order("label", { ascending: true });
   if (error) throw new Error(error.message);
   return ((data ?? []) as ContactRow[]).map((c) => ({
@@ -119,6 +120,7 @@ export async function getContacts(): Promise<Contact[]> {
     category: c.category,
     ivaRate: c.iva_rate,
     retencionRate: c.retencion_rate,
+    noTax: c.no_tax,
     patterns: c.contact_concepts.map((cc) => cc.pattern),
   }));
 }
@@ -155,13 +157,14 @@ export async function createContact(input: {
   category: string | null;
   ivaRate: number;
   retencionRate: number;
+  noTax?: boolean;
   patterns: string[];
 }): Promise<Contact> {
   const supabase = createServerClient();
   const { data: contact, error } = await supabase
     .from("contacts")
-    .insert({ label: input.label, category: input.category, iva_rate: input.ivaRate, retencion_rate: input.retencionRate })
-    .select("id, label, category, iva_rate, retencion_rate")
+    .insert({ label: input.label, category: input.category, iva_rate: input.ivaRate, retencion_rate: input.retencionRate, no_tax: input.noTax ?? false })
+    .select("id, label, category, iva_rate, retencion_rate, no_tax")
     .single();
   if (error) throw new Error(error.message);
 
@@ -174,13 +177,13 @@ export async function createContact(input: {
   }
   return {
     id: contact.id, label: contact.label, category: contact.category,
-    ivaRate: contact.iva_rate, retencionRate: contact.retencion_rate, patterns,
+    ivaRate: contact.iva_rate, retencionRate: contact.retencion_rate, noTax: contact.no_tax, patterns,
   };
 }
 
 export async function updateContact(
   id: number,
-  patch: { label?: string; category?: string | null; ivaRate?: number; retencionRate?: number },
+  patch: { label?: string; category?: string | null; ivaRate?: number; retencionRate?: number; noTax?: boolean },
 ): Promise<void> {
   const supabase = createServerClient();
   const update: Record<string, unknown> = { updated_at: new Date().toISOString() };
@@ -188,6 +191,7 @@ export async function updateContact(
   if (patch.category !== undefined) update.category = patch.category;
   if (patch.ivaRate !== undefined) update.iva_rate = patch.ivaRate;
   if (patch.retencionRate !== undefined) update.retencion_rate = patch.retencionRate;
+  if (patch.noTax !== undefined) update.no_tax = patch.noTax;
   const { error } = await supabase.from("contacts").update(update).eq("id", id);
   if (error) throw new Error(error.message);
   if (patch.category !== undefined || patch.ivaRate !== undefined || patch.retencionRate !== undefined) {

@@ -108,7 +108,7 @@ function ContactDetailDrawer({ contact, categories, stats, onChange, onRemove, o
   contact: Contact;
   categories: Category[];
   stats: ContactStats | undefined;
-  onChange: (patch: Partial<{ label: string; category: string | null; ivaRate: number; retencionRate: number; patterns: string[] }>) => void;
+  onChange: (patch: Partial<{ label: string; category: string | null; ivaRate: number; retencionRate: number; noTax: boolean; patterns: string[] }>) => void;
   onRemove: () => void;
   onClose: () => void;
 }) {
@@ -212,6 +212,15 @@ function ContactDetailDrawer({ contact, categories, stats, onChange, onRemove, o
               IRPF <RateInput value={contact.retencionRate} onSave={(v) => onChange({ retencionRate: v })} />%
             </label>
           </div>
+          <label className="flex items-center gap-2 text-xs text-navy/55 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={contact.noTax}
+              onChange={(e) => onChange({ noTax: e.target.checked })}
+              className="w-[15px] h-[15px] rounded-[4px] border-navy/25 text-primary focus:ring-primary/20 cursor-pointer"
+            />
+            Sin IVA ni retenciones
+          </label>
         </div>
 
         <div className="p-4 border-b border-navy/[0.06]">
@@ -333,13 +342,14 @@ export default function ContactosManager({ contacts: initialContacts, categories
     }
   }
 
-  function patchContact(id: number, patch: Partial<{ label: string; category: string | null; ivaRate: number; retencionRate: number; patterns: string[] }>) {
+  function patchContact(id: number, patch: Partial<{ label: string; category: string | null; ivaRate: number; retencionRate: number; noTax: boolean; patterns: string[] }>) {
     setContacts((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)));
-    const rest: { label?: string; category?: string | null; ivaRate?: number; retencionRate?: number } = {};
+    const rest: { label?: string; category?: string | null; ivaRate?: number; retencionRate?: number; noTax?: boolean } = {};
     if (patch.label !== undefined) rest.label = patch.label;
     if (patch.category !== undefined) rest.category = patch.category;
     if (patch.ivaRate !== undefined) rest.ivaRate = patch.ivaRate;
     if (patch.retencionRate !== undefined) rest.retencionRate = patch.retencionRate;
+    if (patch.noTax !== undefined) rest.noTax = patch.noTax;
     if (Object.keys(rest).length) startTransition(() => { updateContact(id, rest); });
   }
 

@@ -183,7 +183,7 @@ export default function ContactosManagerV2({
           rows.map((c) => {
             const stats = contactStats[c.id];
             const lastDate = stats?.latest?.[0]?.date;
-            const bothMissing = !(c.ivaRate > 0) && !(c.retencionRate > 0);
+            const bothMissing = !c.noTax && !(c.ivaRate > 0) && !(c.retencionRate > 0);
             const isSelected = selectedIds.has(c.id);
             return (
               <div key={c.id}>
@@ -214,8 +214,8 @@ export default function ContactosManagerV2({
                       <p className="text-[13.5px] font-medium text-[#18181b] truncate">{c.label}</p>
                     </div>
                     <div><CategoryBadge category={c.category} categories={categories} /></div>
-                    <div><TaxBadgeV2 value={c.ivaRate} isError={bothMissing} /></div>
-                    <div><TaxBadgeV2 value={c.retencionRate} isError={bothMissing} /></div>
+                    <div><TaxBadgeV2 value={c.ivaRate} isError={bothMissing} zeroIsExplicit={c.noTax} /></div>
+                    <div><TaxBadgeV2 value={c.retencionRate} isError={bothMissing} zeroIsExplicit={c.noTax} /></div>
                     <p className="text-[13px] font-semibold text-[#18181b]">{stats?.count ?? "—"}</p>
                     <p className="text-right text-[12.5px] text-[#71717a]">{lastDate ? fmtContactDate(lastDate) : "—"}</p>
                   </div>
@@ -233,6 +233,10 @@ export default function ContactosManagerV2({
                       <CategoryBadge category={c.category} categories={categories} />
                       {bothMissing ? (
                         <TaxBadgeV2 value={0} isError />
+                      ) : c.noTax ? (
+                        <span className="inline-flex items-center bg-[#f2f2f4] text-[#52525b] rounded-[6px] px-[7px] py-[2px] text-[11px] font-medium whitespace-nowrap">
+                          Sin IVA ni retenciones
+                        </span>
                       ) : (
                         <span className="inline-flex items-center bg-[#f2f2f4] text-[#52525b] rounded-[6px] px-[7px] py-[2px] text-[11px] font-medium whitespace-nowrap">
                           {[c.ivaRate > 0 ? `IVA ${c.ivaRate}%` : null, c.retencionRate > 0 ? `IRPF ${c.retencionRate}%` : null]

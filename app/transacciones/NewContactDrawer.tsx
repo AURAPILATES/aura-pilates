@@ -43,6 +43,7 @@ export default function NewContactDrawer({
   const [category, setCategory] = useState<string | null>(initialCategory);
   const [ivaRate, setIvaRate] = useState(String(initialIvaRate));
   const [retencionRate, setRetencionRate] = useState(String(initialRetencionRate));
+  const [noTax, setNoTax] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -57,6 +58,7 @@ export default function NewContactDrawer({
         category,
         ivaRate: parseFloat(ivaRate.replace(",", ".")) || 0,
         retencionRate: parseFloat(retencionRate.replace(",", ".")) || 0,
+        noTax,
         patterns,
       });
       onCreated(contact);
@@ -128,6 +130,15 @@ export default function NewContactDrawer({
             />
           </div>
         </div>
+        <label className="flex items-center gap-2 text-xs text-navy/55 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={noTax}
+            onChange={(e) => setNoTax(e.target.checked)}
+            className="w-[15px] h-[15px] rounded-[4px] border-navy/25 text-primary focus:ring-primary/20 cursor-pointer"
+          />
+          Sin IVA ni retenciones
+        </label>
         {error && <p className="text-xs text-danger">{error}</p>}
       </div>
     </Drawer>
