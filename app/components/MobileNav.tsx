@@ -132,7 +132,7 @@ export default function MobileNav() {
               alt="Aura Pilates Studio"
               height={32}
               width={120}
-              className="h-8 w-auto"
+              className="h-8 w-auto dark:invert"
               priority
             />
           </Link>
