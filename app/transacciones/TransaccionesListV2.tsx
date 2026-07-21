@@ -288,7 +288,7 @@ export default function TransaccionesListV2({
                               <div className="flex items-center gap-1.5 min-w-0">
                                 <p className="text-[13.5px] font-semibold text-navy truncate">{primary}</p>
                                 {recurringPeriod && (
-                                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#18181b" strokeOpacity=".35" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-navy/35">
                                     <path d="M1 4v6h6M23 20v-6h-6" /><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15" />
                                   </svg>
                                 )}
@@ -325,7 +325,7 @@ export default function TransaccionesListV2({
                           <div className="flex items-center gap-1.5 min-w-0">
                             <p className="text-[14px] font-semibold text-navy truncate">{primary}</p>
                             {recurringPeriod && (
-                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#18181b" strokeOpacity=".35" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-navy/35">
                                 <path d="M1 4v6h6M23 20v-6h-6" /><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15" />
                               </svg>
                             )}

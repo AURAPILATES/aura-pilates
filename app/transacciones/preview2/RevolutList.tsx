@@ -20,7 +20,7 @@ function fmtAmt(n: number) {
   return Math.abs(n).toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
 }
 
-const FALLBACK_COLOR = { in: "#4e8c68", out: "#1c1917" };
+const FALLBACK_COLOR = { in: "var(--color-income)", out: "var(--color-navy)" };
 const FALLBACK_ICON = { in: "trending-up", out: "package" };
 
 function bankLabel(method: string) {

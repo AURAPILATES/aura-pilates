@@ -168,7 +168,7 @@ export default function GastosBreakdown({
         <div className="relative w-[220px] h-[220px]">
           <svg viewBox="0 0 200 200" width="220" height="220">
             {/* Track ring */}
-            <circle cx={CX} cy={CY} r={R} fill="none" stroke="#F0F2FA" strokeWidth={SW} />
+            <circle cx={CX} cy={CY} r={R} fill="none" stroke="var(--color-border)" strokeWidth={SW} />
 
             {/* Segments — rotated to start at top */}
             <g transform={`rotate(-90, ${CX}, ${CY})`}>

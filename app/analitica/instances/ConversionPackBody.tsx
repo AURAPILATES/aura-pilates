@@ -17,8 +17,8 @@ import { StaticLegend, CollapsibleTable } from "@/components/charts";
 import Drawer from "@/app/components/Drawer";
 import { analyzeCohorts, type CohortAnalysis } from "./conversionAnalysis";
 
-const PRIMARY = "#4021c8";
-const DANGER = "#B85C6E";
+const PRIMARY = "var(--color-primary)";
+const DANGER = "var(--color-danger)";
 
 function fmtPct(v: number) {
   return `${(v * 100).toFixed(1)}%`;
@@ -59,9 +59,9 @@ function XAxisTick({
   const row = rowsByLabel.get(payload.value);
   return (
     <g transform={`translate(${x},${y})`}>
-      <text x={0} y={0} dy={10} textAnchor="middle" fontSize={10} fill="rgba(28,25,23,0.45)">{payload.value}</text>
+      <text x={0} y={0} dy={10} textAnchor="middle" fontSize={10} fill="color-mix(in srgb, var(--color-navy) 45%, transparent)">{payload.value}</text>
       {row && (
-        <text x={0} y={0} dy={23} textAnchor="middle" fontSize={9} fill={row.unreliable ? DANGER : "rgba(28,25,23,0.35)"}>
+        <text x={0} y={0} dy={23} textAnchor="middle" fontSize={9} fill={row.unreliable ? DANGER : "color-mix(in srgb, var(--color-navy) 35%, transparent)"}>
           {`n=${row.buyers}`}
         </text>
       )}
@@ -141,7 +141,7 @@ export default function ConversionPackBody({ summary }: { summary: ConversionSum
       <div style={{ width: "100%", height: 220 }}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartRows} margin={{ top: 8, right: 28, bottom: 0, left: 0 }}>
-            <CartesianGrid strokeDasharray="4 3" stroke="rgba(28,25,23,0.07)" vertical={false} />
+            <CartesianGrid strokeDasharray="4 3" stroke="color-mix(in srgb, var(--color-navy) 7%, transparent)" vertical={false} />
             <XAxis
               dataKey="label"
               height={34}
@@ -152,7 +152,7 @@ export default function ConversionPackBody({ summary }: { summary: ConversionSum
             <YAxis
               domain={[0, 1]}
               tickFormatter={fmtPct}
-              tick={{ fontSize: 10, fill: "rgba(28,25,23,0.45)" }}
+              tick={{ fontSize: 10, fill: "color-mix(in srgb, var(--color-navy) 45%, transparent)" }}
               tickLine={false}
               axisLine={false}
               width={42}

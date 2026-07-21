@@ -67,24 +67,24 @@ export default function BreakevenBody({ points, view }: { points: BreakevenPoint
     <div style={{ width: "100%", height: 220 }}>
       <ResponsiveContainer width="100%" height="100%">
         <ComposedChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
-          <CartesianGrid strokeDasharray="4 3" stroke="rgba(28,25,23,0.07)" vertical={false} />
-          <XAxis dataKey="label" tick={{ fontSize: 10, fill: "rgba(28,25,23,0.45)" }} tickLine={false} axisLine={false} />
-          <YAxis tickFormatter={fmtTick} tick={{ fontSize: 10, fill: "rgba(28,25,23,0.45)" }} tickLine={false} axisLine={false} width={40} />
-          <Tooltip content={makeTooltip(view)} cursor={{ stroke: "rgba(28,25,23,0.2)", strokeDasharray: "4 3" }} />
+          <CartesianGrid strokeDasharray="4 3" stroke="color-mix(in srgb, var(--color-navy) 7%, transparent)" vertical={false} />
+          <XAxis dataKey="label" tick={{ fontSize: 10, fill: "color-mix(in srgb, var(--color-navy) 45%, transparent)" }} tickLine={false} axisLine={false} />
+          <YAxis tickFormatter={fmtTick} tick={{ fontSize: 10, fill: "color-mix(in srgb, var(--color-navy) 45%, transparent)" }} tickLine={false} axisLine={false} width={40} />
+          <Tooltip content={makeTooltip(view)} cursor={{ stroke: "color-mix(in srgb, var(--color-navy) 20%, transparent)", strokeDasharray: "4 3" }} />
           {isBreakeven && (
-            <ReferenceLine x={points[breakevenIdx].label} stroke="#43884d" strokeDasharray="3 3" />
+            <ReferenceLine x={points[breakevenIdx].label} stroke="var(--color-income)" strokeDasharray="3 3" />
           )}
           {view === "bruto" ? (
             <>
-              <Line type="monotone" dataKey="cumRevenue" stroke="#43884d" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="cumExpenses" stroke="#f44854" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="cumRevenue" stroke="var(--color-income)" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="cumExpenses" stroke="var(--color-danger)" strokeWidth={2} dot={false} />
             </>
           ) : (
             <>
-              <ReferenceLine y={0} stroke="rgba(28,25,23,0.3)" />
-              <Area type="monotone" dataKey="netPos" stroke="none" fill="#43884d" fillOpacity={0.12} />
-              <Area type="monotone" dataKey="netNeg" stroke="none" fill="#f44854" fillOpacity={0.12} />
-              <Line type="monotone" dataKey="cumNet" stroke="#1c1917" strokeWidth={2} dot={false} />
+              <ReferenceLine y={0} stroke="color-mix(in srgb, var(--color-navy) 30%, transparent)" />
+              <Area type="monotone" dataKey="netPos" stroke="none" fill="var(--color-income)" fillOpacity={0.12} />
+              <Area type="monotone" dataKey="netNeg" stroke="none" fill="var(--color-danger)" fillOpacity={0.12} />
+              <Line type="monotone" dataKey="cumNet" stroke="var(--color-navy)" strokeWidth={2} dot={false} />
             </>
           )}
         </ComposedChart>

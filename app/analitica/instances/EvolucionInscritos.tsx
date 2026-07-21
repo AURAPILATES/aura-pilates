@@ -20,8 +20,8 @@ export default function EvolucionInscritos({ data }: { data: ActiveCustomersRow[
   const vsPrevPct = prev && prev.count > 0 ? Math.round(((last.count - prev.count) / prev.count) * 100) : null;
 
   const COMPOSITION = [
-    { key: "subscriptions", label: "Suscripciones", color: "#7F77DD", value: last.subscriptions },
-    { key: "packs", label: "Packs", color: "#AFA9EC", value: last.packs },
+    { key: "subscriptions", label: "Suscripciones", color: "var(--chart-violet-1)", value: last.subscriptions },
+    { key: "packs", label: "Packs", color: "var(--chart-violet-2)", value: last.packs },
   ];
   const compositionTotal = last.count;
 

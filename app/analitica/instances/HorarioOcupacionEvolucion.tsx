@@ -137,8 +137,8 @@ export default function HorarioOcupacionEvolucion({
             />
             <StaticLegend
               items={[
-                { label: "Plazas vendidas", color: "#3B4B9E", swatch: "dot" },
-                { label: "Plazas libres", color: "#C0C6E8", swatch: "dot" },
+                { label: "Plazas vendidas", color: "var(--chart-blue-1)", swatch: "dot" },
+                { label: "Plazas libres", color: "var(--chart-blue-2)", swatch: "dot" },
                 { label: "% ocupación", color: "#43884d", swatch: "line" },
               ]}
             />
@@ -180,7 +180,7 @@ export default function HorarioOcupacionEvolucion({
               const y = tickY(v);
               return (
                 <line key={v} x1={0} y1={y} x2={SVG_W} y2={y}
-                  stroke="#1c191714" strokeWidth="1" strokeDasharray={v === 0 ? "none" : "3 3"} vectorEffect="non-scaling-stroke" />
+                  stroke="color-mix(in srgb, var(--color-navy) 8%, transparent)" strokeWidth="1" strokeDasharray={v === 0 ? "none" : "3 3"} vectorEffect="non-scaling-stroke" />
               );
             })}
 
@@ -221,8 +221,8 @@ export default function HorarioOcupacionEvolucion({
                     <rect x={x} y={MT} width={barW} height={CHART_H} fill="transparent" />
                     {d.capacity > 0 && (
                       <>
-                        <rect x={x} y={soldY - freeH} width={barW} height={freeH} fill="#C0C6E8" opacity={isHov ? 1 : 0.85} />
-                        <rect x={x} y={soldY} width={barW} height={soldH} fill="#3B4B9E" opacity={isHov ? 1 : 0.85} rx={soldH < 3 ? 0 : 2} />
+                        <rect x={x} y={soldY - freeH} width={barW} height={freeH} fill="var(--chart-blue-2)" opacity={isHov ? 1 : 0.85} />
+                        <rect x={x} y={soldY} width={barW} height={soldH} fill="var(--chart-blue-1)" opacity={isHov ? 1 : 0.85} rx={soldH < 3 ? 0 : 2} />
                       </>
                     )}
                   </g>
@@ -231,26 +231,26 @@ export default function HorarioOcupacionEvolucion({
             ) : (
               <>
                 {/* Plazas totales (capacidad) y vendidas como líneas */}
-                <polyline points={capacityLinePoints} fill="none" stroke="#C0C6E8" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-                <polyline points={soldLinePoints} fill="none" stroke="#3B4B9E" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+                <polyline points={capacityLinePoints} fill="none" stroke="var(--chart-blue-2)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+                <polyline points={soldLinePoints} fill="none" stroke="var(--chart-blue-1)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
                 {data.map((d, i) => (
                   <g key={d.key} onMouseEnter={() => setHoveredKey(d.key)} style={{ cursor: "default" }}>
                     <rect x={barX(i)} y={MT} width={barW} height={CHART_H} fill="transparent" />
-                    <circle cx={barCx(i)} cy={valY(d.capacity)} r={hoveredKey === d.key ? 4 : 2.5} fill="#C0C6E8" stroke="var(--color-card)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
-                    <circle cx={barCx(i)} cy={valY(d.sold)} r={hoveredKey === d.key ? 4 : 2.5} fill="#3B4B9E" stroke="var(--color-card)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+                    <circle cx={barCx(i)} cy={valY(d.capacity)} r={hoveredKey === d.key ? 4 : 2.5} fill="var(--chart-blue-2)" stroke="var(--color-card)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+                    <circle cx={barCx(i)} cy={valY(d.sold)} r={hoveredKey === d.key ? 4 : 2.5} fill="var(--chart-blue-1)" stroke="var(--color-card)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
                   </g>
                 ))}
               </>
             )}
 
             {/* Occupancy % line */}
-            <polyline points={linePoints} fill="none" stroke="#43884d" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+            <polyline points={linePoints} fill="none" stroke="var(--color-income)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
             {data.map((d, i) => (
               <circle
                 key={`dot-${d.key}`}
                 cx={barCx(i)} cy={occY(d.occ)}
                 r={hoveredKey === d.key ? 4 : 2.5}
-                fill="#43884d" stroke="var(--color-card)" strokeWidth="1"
+                fill="var(--color-income)" stroke="var(--color-card)" strokeWidth="1"
                 vectorEffect="non-scaling-stroke"
               />
             ))}
@@ -369,13 +369,13 @@ export default function HorarioOcupacionEvolucion({
         <div className="lg:col-span-1 min-w-0">
           <p className="text-xs font-medium text-navy/55 mb-2.5">Resumen</p>
           <div className="flex h-3 rounded-full overflow-hidden bg-navy/5 mb-4">
-            <div style={{ flex: `${totalCapacity > 0 ? totalSold / totalCapacity : 0} 0 0%`, backgroundColor: "#3B4B9E" }} />
-            <div style={{ flex: `${totalCapacity > 0 ? totalFree / totalCapacity : 0} 0 0%`, backgroundColor: "#C0C6E8" }} />
+            <div style={{ flex: `${totalCapacity > 0 ? totalSold / totalCapacity : 0} 0 0%`, backgroundColor: "var(--chart-blue-1)" }} />
+            <div style={{ flex: `${totalCapacity > 0 ? totalFree / totalCapacity : 0} 0 0%`, backgroundColor: "var(--chart-blue-2)" }} />
           </div>
           <InteractiveLegend
             items={[
-              { key: "sold", label: "Plazas vendidas", color: "#3B4B9E", value: totalSold, helper: pct(avgOcc) },
-              { key: "free", label: "Plazas libres", color: "#C0C6E8", value: totalFree, helper: pct(totalCapacity > 0 ? totalFree / totalCapacity : 0) },
+              { key: "sold", label: "Plazas vendidas", color: "var(--chart-blue-1)", value: totalSold, helper: pct(avgOcc) },
+              { key: "free", label: "Plazas libres", color: "var(--chart-blue-2)", value: totalFree, helper: pct(totalCapacity > 0 ? totalFree / totalCapacity : 0) },
             ]}
           />
         </div>

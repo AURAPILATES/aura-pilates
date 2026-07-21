@@ -58,7 +58,7 @@ export default function PrevisionGastos({
 }) {
   const [sort, setSort] = useState<SortKey>("fecha");
 
-  const FALLBACK_COLOR = "#9CA3AF";
+  const FALLBACK_COLOR = "var(--color-faint)";
 
   function categoryLabel(value: string | null): string {
     if (!value) return "";

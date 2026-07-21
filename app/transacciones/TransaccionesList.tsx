@@ -36,8 +36,8 @@ export function fmtAmt(n: number) {
   return Math.abs(n).toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
 }
 
-export const CAT_FALLBACK = { emoji: "package", bg: "#F8FAFC", color: "#94A3B8" };
-export const FALLBACK_COLOR = { in: "#4e8c68", out: "#1c1917" };
+export const CAT_FALLBACK = { emoji: "package", bg: "var(--color-subtle)", color: "var(--color-faint)" };
+export const FALLBACK_COLOR = { in: "var(--color-income)", out: "var(--color-navy)" };
 export const FALLBACK_ICON = { in: "trending-up", out: "package" };
 
 // ── Source avatar ─────────────────────────────────────────────────────────────

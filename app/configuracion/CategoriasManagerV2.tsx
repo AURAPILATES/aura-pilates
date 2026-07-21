@@ -69,7 +69,7 @@ export default function CategoriasManagerV2({
                   } ${isDragging ? "opacity-40" : ""}`}
                   style={{ paddingLeft: isSub ? 28 : 0 }}
                 >
-                  <svg width="10" height="16" viewBox="0 0 10 16" fill="#d4d4d8" className="shrink-0 cursor-grab active:cursor-grabbing">
+                  <svg width="10" height="16" viewBox="0 0 10 16" fill="var(--color-faint)" className="shrink-0 cursor-grab active:cursor-grabbing">
                     <circle cx="2.5" cy="3" r="1.3" /><circle cx="7.5" cy="3" r="1.3" />
                     <circle cx="2.5" cy="8" r="1.3" /><circle cx="7.5" cy="8" r="1.3" />
                     <circle cx="2.5" cy="13" r="1.3" /><circle cx="7.5" cy="13" r="1.3" />

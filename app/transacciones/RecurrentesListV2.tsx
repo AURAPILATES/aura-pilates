@@ -209,9 +209,12 @@ export default function RecurrentesListV2({
                           Confirmar
                         </button>
                       ) : (
-                        <span className="inline-flex items-center gap-1.5 bg-subtle text-muted rounded-full px-[11px] py-1 text-[12px] font-medium whitespace-nowrap">
-                          Sin vincular
-                        </span>
+                        <div className="text-right">
+                          <span className="inline-flex items-center gap-1.5 bg-subtle text-muted rounded-full px-[11px] py-1 text-[12px] font-medium whitespace-nowrap">
+                            Sin vincular
+                          </span>
+                          <p className="text-[11px] text-faint italic mt-1">Vincula un contacto para confirmarlo</p>
+                        </div>
                       )}
                     </div>
                   </div>

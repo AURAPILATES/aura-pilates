@@ -58,7 +58,7 @@ function fmtAmt(n: number) {
   return Math.abs(n).toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
 }
 
-const FALLBACK_COLOR = { in: "#4e8c68", out: "#1c1917" };
+const FALLBACK_COLOR = { in: "var(--color-income)", out: "var(--color-navy)" };
 
 function rgba(hex: string, alpha: number) {
   const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);

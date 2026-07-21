@@ -30,13 +30,13 @@ export default function EvolucionInscritosBody({ data }: { data: ActiveCustomers
     <div style={{ width: "100%", height: 200 }}>
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} margin={{ top: 16, right: 8, bottom: 0, left: 0 }}>
-          <CartesianGrid strokeDasharray="4 3" stroke="rgba(28,25,23,0.07)" vertical={false} />
-          <XAxis dataKey="label" tick={{ fontSize: 10, fill: "rgba(28,25,23,0.45)" }} tickLine={false} axisLine={false} />
-          <YAxis tick={{ fontSize: 10, fill: "rgba(28,25,23,0.45)" }} tickLine={false} axisLine={false} width={28} />
-          <Tooltip content={ChartTooltip} cursor={{ fill: "rgba(28,25,23,0.04)" }} />
-          <Bar dataKey="subscriptions" stackId="active" fill="#7F77DD" />
-          <Bar dataKey="packs" stackId="active" fill="#AFA9EC" radius={[4, 4, 0, 0]}>
-            <LabelList dataKey="count" position="top" style={{ fontSize: 11, fontWeight: 500, fill: "#1c1917" }} />
+          <CartesianGrid strokeDasharray="4 3" stroke="color-mix(in srgb, var(--color-navy) 7%, transparent)" vertical={false} />
+          <XAxis dataKey="label" tick={{ fontSize: 10, fill: "color-mix(in srgb, var(--color-navy) 45%, transparent)" }} tickLine={false} axisLine={false} />
+          <YAxis tick={{ fontSize: 10, fill: "color-mix(in srgb, var(--color-navy) 45%, transparent)" }} tickLine={false} axisLine={false} width={28} />
+          <Tooltip content={ChartTooltip} cursor={{ fill: "color-mix(in srgb, var(--color-navy) 4%, transparent)" }} />
+          <Bar dataKey="subscriptions" stackId="active" fill="var(--chart-violet-1)" />
+          <Bar dataKey="packs" stackId="active" fill="var(--chart-violet-2)" radius={[4, 4, 0, 0]}>
+            <LabelList dataKey="count" position="top" style={{ fontSize: 11, fontWeight: 500, fill: "var(--color-navy)" }} />
           </Bar>
         </BarChart>
       </ResponsiveContainer>

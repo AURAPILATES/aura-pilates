@@ -44,7 +44,7 @@ export default function Breakeven({ points, lastUpdated }: { points: BreakevenPo
       toolbar={
         <>
           {view === "bruto" && (
-            <Legend items={[{ label: "Ingresos acumulados", color: "#43884d" }, { label: "Gastos acumulados", color: "#f44854" }]} />
+            <Legend items={[{ label: "Ingresos acumulados", color: "var(--color-income)" }, { label: "Gastos acumulados", color: "var(--color-danger)" }]} />
           )}
           <ToggleGroup
             value={view}

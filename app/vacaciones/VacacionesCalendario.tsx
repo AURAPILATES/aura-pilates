@@ -632,7 +632,7 @@ function Donut({ used, total, stroke }: { used: number; total: number; stroke: s
   const dash = pct * circ;
   return (
     <svg width="72" height="72" viewBox="0 0 72 72">
-      <circle cx="36" cy="36" r={r} fill="none" stroke="#e5e7eb" strokeWidth="7" />
+      <circle cx="36" cy="36" r={r} fill="none" stroke="var(--color-border)" strokeWidth="7" />
       <circle
         cx="36" cy="36" r={r} fill="none"
         stroke={stroke} strokeWidth="7"

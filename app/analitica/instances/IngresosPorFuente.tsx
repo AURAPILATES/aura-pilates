@@ -88,7 +88,7 @@ export default function IngresosPorFuente({
   const tableTotalBruto  = tableStripeGross + tableUscNet;
 
   const SOURCES = [
-    { key: "stripe", label: "Stripe", color: "#4021c8", value: stripeGross },
+    { key: "stripe", label: "Stripe", color: "var(--color-primary)", value: stripeGross },
     { key: "urban",  label: "Urban",  color: "#F59E0B", value: uscNet },
   ];
 

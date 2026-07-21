@@ -63,12 +63,12 @@ export default function EvolucionGastosBody({
     <div style={{ width: "100%", height: 280 }}>
       <ResponsiveContainer width="100%" height="100%">
         <ComposedChart data={rows} margin={{ top: 16, right: 8, bottom: 0, left: 0 }}>
-          <CartesianGrid strokeDasharray="4 3" stroke="rgba(28,25,23,0.07)" vertical={false} />
-          <XAxis dataKey="label" tick={{ fontSize: 10, fill: "rgba(28,25,23,0.45)" }} tickLine={false} axisLine={false} />
-          <YAxis tickFormatter={fmtTick} tick={{ fontSize: 10, fill: "rgba(28,25,23,0.45)" }} tickLine={false} axisLine={false} width={34} />
+          <CartesianGrid strokeDasharray="4 3" stroke="color-mix(in srgb, var(--color-navy) 7%, transparent)" vertical={false} />
+          <XAxis dataKey="label" tick={{ fontSize: 10, fill: "color-mix(in srgb, var(--color-navy) 45%, transparent)" }} tickLine={false} axisLine={false} />
+          <YAxis tickFormatter={fmtTick} tick={{ fontSize: 10, fill: "color-mix(in srgb, var(--color-navy) 45%, transparent)" }} tickLine={false} axisLine={false} width={34} />
           <Tooltip
             content={makeTooltip(visibleGroups)}
-            cursor={chartType === "bar" ? { fill: "rgba(28,25,23,0.04)" } : { stroke: "rgba(28,25,23,0.2)", strokeDasharray: "4 3" }}
+            cursor={chartType === "bar" ? { fill: "color-mix(in srgb, var(--color-navy) 4%, transparent)" } : { stroke: "color-mix(in srgb, var(--color-navy) 20%, transparent)", strokeDasharray: "4 3" }}
           />
           {chartType === "bar"
             ? visibleGroups.map((g) => (

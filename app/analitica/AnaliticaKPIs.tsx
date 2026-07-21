@@ -250,8 +250,8 @@ export default function AnaliticaKPIs({
             {activeTotal > 0 && (
               <ProportionBar
                 segments={[
-                  { label: "Suscripciones", color: "#7F77DD", percentage: Math.round(subPct) },
-                  { label: "Packs activos", color: "#AFA9EC", percentage: Math.round(packPct) },
+                  { label: "Suscripciones", color: "var(--chart-violet-1)", percentage: Math.round(subPct) },
+                  { label: "Packs activos", color: "var(--chart-violet-2)", percentage: Math.round(packPct) },
                 ]}
               />
             )}

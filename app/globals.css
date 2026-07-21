@@ -35,6 +35,15 @@
   --radius-md: 0.3125rem;
 }
 
+/* Paleta de series de gráficos (no genera utilidades Tailwind, solo se consume vía
+   var() en atributos SVG/estilos inline de los gráficos personalizados). */
+:root {
+  --chart-violet-1: #7F77DD;
+  --chart-violet-2: #AFA9EC;
+  --chart-blue-1: #3B4B9E;
+  --chart-blue-2: #C0C6E8;
+}
+
 .dark {
   --color-app-bg: #1a1820;
   --color-card: #242129;
@@ -50,6 +59,11 @@
   --color-faint: #6b6b74;
   --color-border: #322e39;
   --color-subtle: #211e26;
+
+  --chart-violet-1: #938de2;
+  --chart-violet-2: #c3bef2;
+  --chart-blue-1: #97a2d8;
+  --chart-blue-2: #d3d7ee;
 
   --shadow-card: 0 0 0 1px rgba(255, 255, 255, 0.06);
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.25);

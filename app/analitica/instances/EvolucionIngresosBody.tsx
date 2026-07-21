@@ -88,14 +88,14 @@ function EventDots({ viewBox, evs, hoveredEventId, onHover }: EventDotProps) {
                 <text x={cx + 33} y={viewBox.y! + 16} fontSize="12" fontWeight="600" fill={EVENT_COLORS[ev.categoria]}>
                   {EVENT_LABELS[ev.categoria]}
                 </text>
-                <text x={cx + 210} y={viewBox.y! + 16} fontSize="11.5" fill="#a1a1aa" textAnchor="end">
+                <text x={cx + 210} y={viewBox.y! + 16} fontSize="11.5" fill="var(--color-faint)" textAnchor="end">
                   {fmtEventDate(ev.fecha)}
                 </text>
-                <text x={cx + 18} y={viewBox.y! + 34} fontSize="13" fontWeight="600" fill="#18181b">
+                <text x={cx + 18} y={viewBox.y! + 34} fontSize="13" fontWeight="600" fill="var(--color-navy)">
                   {ev.titulo.length > 26 ? ev.titulo.slice(0, 26) + "…" : ev.titulo}
                 </text>
                 {ev.descripcion && (
-                  <text x={cx + 18} y={viewBox.y! + 51} fontSize="11.5" fill="#71717a">
+                  <text x={cx + 18} y={viewBox.y! + 51} fontSize="11.5" fill="var(--color-muted)">
                     {ev.descripcion.length > 32 ? ev.descripcion.slice(0, 32) + "…" : ev.descripcion}
                   </text>
                 )}
@@ -152,10 +152,10 @@ export default function EvolucionIngresosBody({
               ))}
             </defs>
           )}
-          <CartesianGrid strokeDasharray="4 3" stroke="rgba(28,25,23,0.07)" vertical={false} />
-          <XAxis dataKey="label" tick={{ fontSize: 10, fill: "rgba(28,25,23,0.45)" }} tickLine={false} axisLine={false} />
-          <YAxis tickFormatter={fmtTick} tick={{ fontSize: 10, fill: "rgba(28,25,23,0.45)" }} tickLine={false} axisLine={false} width={34} />
-          <Tooltip content={makeTooltip(visibleKeys, colorOf)} cursor={chartType === "bar" ? { fill: "rgba(28,25,23,0.04)" } : { stroke: "rgba(28,25,23,0.2)", strokeDasharray: "4 3" }} />
+          <CartesianGrid strokeDasharray="4 3" stroke="color-mix(in srgb, var(--color-navy) 7%, transparent)" vertical={false} />
+          <XAxis dataKey="label" tick={{ fontSize: 10, fill: "color-mix(in srgb, var(--color-navy) 45%, transparent)" }} tickLine={false} axisLine={false} />
+          <YAxis tickFormatter={fmtTick} tick={{ fontSize: 10, fill: "color-mix(in srgb, var(--color-navy) 45%, transparent)" }} tickLine={false} axisLine={false} width={34} />
+          <Tooltip content={makeTooltip(visibleKeys, colorOf)} cursor={chartType === "bar" ? { fill: "color-mix(in srgb, var(--color-navy) 4%, transparent)" } : { stroke: "color-mix(in srgb, var(--color-navy) 20%, transparent)", strokeDasharray: "4 3" }} />
 
           {rows.map((r) => {
             const evs = eventsByMonth.get(r.month) ?? [];

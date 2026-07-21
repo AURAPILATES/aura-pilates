@@ -122,7 +122,7 @@ function CombinedChart({
       <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="w-full h-20">
         {minSaldo < 0 && (
           <line x1="0" y1={saldoY(0)} x2={W} y2={saldoY(0)}
-            stroke="#94a3b8" strokeWidth="0.5" strokeDasharray="3,2" />
+            stroke="var(--color-border)" strokeWidth="0.5" strokeDasharray="3,2" />
         )}
         {allMonths.map((m, i) => {
           const barsH = H * 0.5;
@@ -135,17 +135,17 @@ function CombinedChart({
             <g key={m.month}>
               {m.month === TODAY_MONTH && (
                 <line x1={i * barW} y1={0} x2={i * barW} y2={H}
-                  stroke="#4021c8" strokeWidth="0.5" strokeDasharray="2,2" opacity={0.4} />
+                  stroke="var(--color-primary)" strokeWidth="0.5" strokeDasharray="2,2" opacity={0.4} />
               )}
-              <rect x={x} y={H - inH} width={w} height={inH} fill="#298a83" opacity={opacity} rx="0.5" />
-              <rect x={x + w + barW * 0.04} y={H - outH} width={w} height={outH} fill="#e53935" opacity={opacity} rx="0.5" />
+              <rect x={x} y={H - inH} width={w} height={inH} fill="var(--color-income)" opacity={opacity} rx="0.5" />
+              <rect x={x + w + barW * 0.04} y={H - outH} width={w} height={outH} fill="var(--color-danger)" opacity={opacity} rx="0.5" />
             </g>
           );
         })}
         {historical.length > 0 && (
           <polyline
             points={allMonths.slice(0, pastCount).map((m, i) => `${(i + 0.5) * barW},${saldoY(m.saldo ?? 0)}`).join(" ")}
-            fill="none" stroke="#4021c8" strokeWidth="1.5"
+            fill="none" stroke="var(--color-primary)" strokeWidth="1.5"
             strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke"
           />
         )}
@@ -157,13 +157,13 @@ function CombinedChart({
                 : []),
               ...forecast.map((m, i) => `${(pastCount + i + 0.5) * barW},${saldoY(m.saldoFinal)}`),
             ].join(" ")}
-            fill="none" stroke="#4021c8" strokeWidth="1.5" strokeDasharray="4,3"
+            fill="none" stroke="var(--color-primary)" strokeWidth="1.5" strokeDasharray="4,3"
             strokeLinecap="round" strokeLinejoin="round" opacity={0.55} vectorEffect="non-scaling-stroke"
           />
         )}
         {allMonths.map((m, i) => (
           <circle key={m.month} cx={(i + 0.5) * barW} cy={saldoY(m.saldo ?? 0)} r="1.5"
-            fill="#4021c8" opacity={m.isForecast ? 0.4 : 0.9} vectorEffect="non-scaling-stroke" />
+            fill="var(--color-primary)" opacity={m.isForecast ? 0.4 : 0.9} vectorEffect="non-scaling-stroke" />
         ))}
       </svg>
       <div className="flex mt-0.5">
@@ -409,31 +409,14 @@ export default function PrevisionesTable({
           </div>
         </div>
         <CombinedChart historical={historical} forecast={forecast} showForecast={showForecast} />
+        {showForecast && (
+          <p className="flex items-center gap-3 flex-wrap text-[11px] text-navy/45 mt-2 pt-2 border-t border-navy/[0.06]">
+            <span>Entradas 12m: <b className="font-semibold text-income">{fmtAmt(forecast.reduce((s, m) => s + m.totalEntradas, 0))}</b></span>
+            <span>Salidas 12m: <b className="font-semibold text-danger">{fmtAmt(forecast.reduce((s, m) => s + m.totalSalidas, 0))}</b></span>
+            <span>Saldo final: <b className={`font-semibold ${fcSaldoFinal >= 0 ? "text-navy" : "text-danger"}`}>{fmtSign(fcSaldoFinal)}</b></span>
+          </p>
+        )}
       </div>
-
-      {/* ── KPI strip ── */}
-      {showForecast && (
-        <div className="grid grid-cols-3 gap-3">
-          <div className="bg-card border border-navy/[0.07] rounded-xl p-3">
-            <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-0.5">Entradas 12m</p>
-            <p className="text-base font-semibold text-income tabular-nums">
-              {fmtAmt(forecast.reduce((s, m) => s + m.totalEntradas, 0))}
-            </p>
-          </div>
-          <div className="bg-card border border-navy/[0.07] rounded-xl p-3">
-            <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-0.5">Salidas 12m</p>
-            <p className="text-base font-semibold text-danger tabular-nums">
-              {fmtAmt(forecast.reduce((s, m) => s + m.totalSalidas, 0))}
-            </p>
-          </div>
-          <div className="bg-card border border-navy/[0.07] rounded-xl p-3">
-            <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-0.5">Saldo final</p>
-            <p className={`text-base font-semibold tabular-nums ${fcSaldoFinal >= 0 ? "text-navy" : "text-danger"}`}>
-              {fmtSign(fcSaldoFinal)}
-            </p>
-          </div>
-        </div>
-      )}
 
       {/* ── Main budget table ── */}
       <div className="bg-card border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden">
