@@ -68,7 +68,7 @@ type Props = {
   confirmedPage: number;
   pageSize: number;
   onConfirmedPageChange: (p: number) => void;
-  onNewManual: () => void;
+  onNewManual?: () => void;
 };
 
 function ArchivedRowV2({ row }: { row: RecurringExpense }) {
