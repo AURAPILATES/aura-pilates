@@ -127,14 +127,14 @@ export default function ClientesTableV2({
             const planColorCls = planProduct ? productColor(planProduct) : "bg-navy/[0.05] text-navy/50";
             const statusCfg =
               status === "baja"
-                ? { color: "#dc2626", label: c.isRecurring ? `Baja · ${days}d` : `Pack vencido · ${days}d` }
+                ? { color: "#dc2626", label: c.isRecurring ? `Baja · ${days}d` : `Pack vencido · ${days}d`, action: c.isRecurring ? "Contactar para recuperar" : "Ofrecer renovación" }
                 : status === "sinpagar"
-                ? { color: "#b45309", label: `Sin pagar · ${days}d tarde` }
+                ? { color: "#b45309", label: `Sin pagar · ${days}d tarde`, action: "Revisar cobro fallido" }
                 : status === "caducado"
-                ? { color: "#b45309", label: `Pack vencido · ${days}d` }
+                ? { color: "#b45309", label: `Pack vencido · ${days}d`, action: "Ofrecer renovación" }
                 : status === "porvencer"
-                ? { color: "#d4a017", label: `Vence en ${days}d` }
-                : { color: "#16a34a", label: "Al día" };
+                ? { color: "#d4a017", label: `Vence en ${days}d`, action: undefined }
+                : { color: "#16a34a", label: "Al día", action: undefined };
             return (
               <div key={c.id}>
                 {/* Fila escritorio */}
@@ -166,6 +166,9 @@ export default function ClientesTableV2({
                         <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: statusCfg.color }} />
                         {statusCfg.label}
                       </span>
+                      {statusCfg.action && (
+                        <p className="text-[11px] text-faint italic mt-1">{statusCfg.action}</p>
+                      )}
                     </div>
                   </div>
                 </div>

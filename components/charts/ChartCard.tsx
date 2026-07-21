@@ -76,7 +76,21 @@ export default function ChartCard({
       {/* HEADER */}
       <div className="px-4 sm:px-5 pt-4">
         <div className="flex items-center justify-between gap-2 flex-wrap mb-1">
-          <span className="text-sm font-medium text-navy">{title}</span>
+          <span className="flex items-center gap-1 text-sm font-medium text-navy">
+            {title}
+            {dataSource && (
+              <span
+                className="shrink-0"
+                onMouseEnter={(e) => showTooltip(e, dataSource)}
+                onMouseLeave={() => setTooltip(null)}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="text-navy/30 cursor-help">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M12 16v-4M12 8h.01" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </span>
+            )}
+          </span>
           {dateRange && (
             <span className="text-[11px] text-navy/50 bg-navy/5 px-2 py-0.5 rounded-full whitespace-nowrap inline-flex items-center gap-1">
               {dateRange}

@@ -1,4 +1,5 @@
 import { fmt } from "@/lib/analytics";
+import { getLatestSyncRuns } from "@/lib/syncRuns";
 import { taxBreakdown, fiscalQuarterOf, ivaRepercutidoFromGross, netIvaAPagar } from "@/lib/taxCalc";
 import { loadSales, benvingudaConversion, subscriberFirstPurchase } from "@/lib/sales";
 import PrimeraCompra from "./instances/PrimeraCompra";
@@ -145,7 +146,7 @@ export default async function AnaliticaLoader({
   const [
     paymentsAll, membershipsAll, productsAll, customersAll,
     txnsAll, dbCategories, budgets, businessEvents, recurringExpenses, breakdown,
-    bancoLastImport, momenceChurn, paymentErrorAcks,
+    bancoLastImport, momenceChurn, paymentErrorAcks, syncRuns,
   ] = await Promise.all([
     loadStripePaymentsCached(),
     getMemberships(),
@@ -160,7 +161,15 @@ export default async function AnaliticaLoader({
     getLatestImportDate(),
     getMomenceChurn(),
     loadPaymentErrorAcks(),
+    getLatestSyncRuns().catch(() => null),
   ]);
+
+  // La carga en vivo de Momence puede ir bien aunque el snapshot nocturno haya fallado
+  // (p.ej. token caducado a las 3am) — eso afectaría a métricas de bajas/altas que
+  // dependen de esos snapshots históricos, sin que la página en sí falle.
+  const failedSyncRun = syncRuns
+    ? ([syncRuns.momence_events, syncRuns.momence_subscribers].find((r) => r && !r.ok) ?? null)
+    : null;
 
   // Stripe/Momence se leen en vivo en cada carga; el banco depende de la última subida manual de CSV.
   const liveLastUpdated = formatRelativeTime(now.toISOString());
@@ -500,6 +509,13 @@ export default async function AnaliticaLoader({
         <div className="bg-warning/10 border border-warning/30 rounded-[10px] p-4 text-sm text-warning mb-6">
           Sin datos de ventas. Copia el CSV de Momence a{" "}
           <code className="font-mono bg-warning/10 px-1 rounded text-xs">data/sales.csv</code>.
+        </div>
+      )}
+
+      {failedSyncRun && (
+        <div className="bg-danger/10 border border-danger/30 rounded-[10px] p-4 text-sm text-danger mb-6">
+          📌 El último snapshot nocturno de Momence falló ({formatRelativeTime(failedSyncRun.ranAt)}): {failedSyncRun.error}.
+          Las métricas de altas/bajas de suscripción pueden estar desactualizadas hasta el próximo sync.
         </div>
       )}
 
