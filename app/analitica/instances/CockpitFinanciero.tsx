@@ -1,149 +1,102 @@
 "use client";
 
-import Link from "next/link";
-import { TrendingUp, FileText } from "react-feather";
+import { TrendingUp, FileText, DollarSign } from "react-feather";
 import { ChartCard } from "@/components/charts";
 
 function fmt(v: number) {
   return Math.round(v).toLocaleString("de-DE", { maximumFractionDigits: 0 }) + " €";
 }
 
-function fmtDate(iso: string): string {
-  const [y, m, d] = iso.split("-");
-  return `${d}/${m}/${y}`;
-}
-
 export type CockpitFinancieroProps = {
   curMonthLabel: string;
-  currentBalance: number | null;
-  balanceDate: string | null;
-  runwayMonths: number | null;
-  avgMonthlyBurn: number;
-  completeBurnMonthsCount: number;
-  ventasPrevistas: number;
-  gastosComprometidos: number;
+  avgMonthlyRevenue: number;
+  revenueBasisLabel: string;
   lastUpdated?: string | null;
   nextIvaLabel: string | null;
   nextIvaQuarter: string | null;
   ivaNeto: number;
-  ivaSoportado: number;
-  ivaRepercutido: number;
   retenciones: number;
   ivaQuarterClosed: boolean;
+  ahorroBruto: number;
+  ahorroNeto: number;
 };
 
 export default function CockpitFinanciero({
   curMonthLabel,
-  currentBalance,
-  balanceDate,
-  runwayMonths,
-  avgMonthlyBurn,
-  completeBurnMonthsCount,
-  ventasPrevistas,
-  gastosComprometidos,
+  avgMonthlyRevenue,
+  revenueBasisLabel,
   lastUpdated,
   nextIvaLabel,
   nextIvaQuarter,
   ivaNeto,
-  ivaSoportado,
-  ivaRepercutido,
   retenciones,
   ivaQuarterClosed,
+  ahorroBruto,
+  ahorroNeto,
 }: CockpitFinancieroProps) {
-  const saldoProyectado = (currentBalance ?? 0) + ventasPrevistas - gastosComprometidos;
-
   return (
     <ChartCard
       title="Cockpit financiero"
-      subtitle="Qué pasó, dónde estamos, a dónde vamos"
+      subtitle="Previsión de ingresos, IVA/IRPF y ahorro mensual"
       dateRange={curMonthLabel}
-      dataSource="Stripe API (ingresos) + CaixaBank CSV (gastos, saldo) + Recurrentes confirmados + IVA 21% ventas / IVA-retención por contacto (gastos)"
+      dataSource="Ingresos: media de ventas brutas de los últimos 3 meses completos (Stripe + USC). IVA/IRPF: trimestre en curso, según reglas por contacto. Ahorro neto: ingresos − gastos comprometidos − comisión Stripe estimada − IVA neto mensualizado."
       sources={["stripe", "momence", "excel"]}
       lastUpdated={lastUpdated}
     >
-      {/* 3-column section */}
       <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-border">
 
-        {/* PRESENTE */}
+        {/* INGRESOS */}
         <div className="p-4 sm:pl-0">
           <div className="flex items-center gap-1.5 mb-4">
-            <span className="w-2 h-2 rounded-full bg-primary shrink-0" />
-            <span className="text-[11px] font-semibold text-primary uppercase tracking-wider">Presente</span>
+            <TrendingUp size={12} className="text-primary" />
+            <span className="text-[11px] font-semibold text-primary uppercase tracking-wider">Previsión de ingresos</span>
           </div>
-          <div className="mb-4">
-            <div className="text-[11px] font-medium text-navy/45 mb-1">Saldo actual</div>
-            <div className="text-[32px] font-semibold text-navy leading-tight tracking-tight">
-              {currentBalance !== null ? fmt(currentBalance) : "—"}
-            </div>
-            <div className="text-[11px] text-navy/50 mt-0.5">
-              {balanceDate ? `últ. mov. ${fmtDate(balanceDate)}` : "sin datos bancarios"}
-            </div>
+          <div className="text-[32px] font-semibold text-navy leading-tight tracking-tight">
+            {fmt(avgMonthlyRevenue)}
           </div>
-          <div>
-            <div className="text-[11px] font-medium text-navy/45 mb-1">Meses de caja</div>
-            <div className="text-[20px] font-medium text-navy leading-tight">
-              {runwayMonths !== null ? `${runwayMonths.toFixed(1)} m` : "—"}
-            </div>
-            <div className="text-[11px] text-navy/50 mt-0.5">
-              {fmt(avgMonthlyBurn)}/mes · media {completeBurnMonthsCount} m
-            </div>
-          </div>
+          <div className="text-[11px] text-navy/50 mt-0.5">{revenueBasisLabel}</div>
         </div>
 
         {/* FISCAL */}
         <div className="p-4">
           <div className="flex items-center gap-1.5 mb-4">
             <FileText size={12} className="text-navy/40" />
-            <span className="text-[11px] font-semibold text-navy/40 uppercase tracking-wider">Fiscal</span>
+            <span className="text-[11px] font-semibold text-navy/40 uppercase tracking-wider">Previsión de IVA e IRPF</span>
           </div>
-          <div className="mb-4">
-            <div className="text-[11px] font-medium text-navy/45 mb-1">Previsión de IVA e IRPF</div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className={`text-[26px] font-medium leading-tight ${ivaNeto >= 0 ? "text-navy" : "text-success"}`}>
-                {fmt(Math.abs(ivaNeto))}
-              </span>
-              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap ${
-                ivaNeto >= 0 ? "bg-danger/10 text-danger" : "bg-success/10 text-success"
-              }`}>
-                {ivaNeto >= 0 ? "A pagar" : "A favor"}
-              </span>
-            </div>
-            <div className="text-[11px] text-navy/50 mt-1">
-              Soportado {fmt(ivaSoportado)} · Repercutido {fmt(ivaRepercutido)}
-            </div>
-            <div className="text-[10px] text-navy/35 mt-0.5">
-              {nextIvaQuarter ?? "—"} · vence {nextIvaLabel ?? "—"}{!ivaQuarterClosed && " (en curso)"}
-            </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[26px] font-medium leading-tight text-navy">{fmt(Math.abs(ivaNeto))}</span>
+            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap ${
+              ivaNeto >= 0 ? "bg-danger/10 text-danger" : "bg-success/10 text-success"
+            }`}>
+              {ivaNeto >= 0 ? "IVA a pagar" : "IVA a favor"}
+            </span>
           </div>
-          <div>
-            <div className="text-[11px] font-medium text-navy/45 mb-1">Retenciones (IRPF)</div>
-            <div className="text-[20px] font-medium text-navy leading-tight">{fmt(retenciones)}</div>
-            <div className="text-[11px] text-navy/45 mt-1">nóminas + alquileres</div>
+          <div className="text-[11px] text-navy/50 mt-1">
+            + {fmt(retenciones)} retenciones (IRPF)
+          </div>
+          <div className="text-[10px] text-navy/35 mt-0.5">
+            {nextIvaQuarter ?? "—"} · vence {nextIvaLabel ?? "—"}{!ivaQuarterClosed && " (en curso)"}
           </div>
         </div>
 
-        {/* FUTURO */}
+        {/* AHORRO */}
         <div className="p-4 sm:pr-0">
           <div className="flex items-center gap-1.5 mb-4">
-            <TrendingUp size={12} className="text-navy/40" />
-            <span className="text-[11px] font-semibold text-navy/40 uppercase tracking-wider">Futuro</span>
+            <DollarSign size={12} className="text-income" />
+            <span className="text-[11px] font-semibold text-income uppercase tracking-wider">Ahorro mensual</span>
           </div>
-          <div className="mb-4">
-            <div className="text-[11px] font-medium text-navy/45 mb-1">Saldo proyectado</div>
-            <div className="text-[26px] font-medium text-navy leading-tight">~{fmt(saldoProyectado)}</div>
-            <div className="text-[11px] text-navy/50 mt-0.5">saldo + previsto – comprometido · 30d</div>
+          <div className="mb-3">
+            <div className="text-[11px] font-medium text-navy/45 mb-1">Bruto</div>
+            <div className={`text-[26px] font-medium leading-tight ${ahorroBruto >= 0 ? "text-navy" : "text-danger"}`}>
+              {fmt(ahorroBruto)}
+            </div>
           </div>
           <div>
-            <div className="text-[11px] font-medium text-navy/45 mb-1">Previsión de ventas y pagos</div>
-            <div className="text-[20px] font-medium text-navy leading-tight">
-              {fmt(ventasPrevistas - gastosComprometidos)}
+            <div className="text-[11px] font-medium text-navy/45 mb-1">Neto</div>
+            <div className={`text-[20px] font-medium leading-tight ${ahorroNeto >= 0 ? "text-income" : "text-danger"}`}>
+              {fmt(ahorroNeto)}
             </div>
-            <div className="text-[11px] text-navy/50 mt-0.5">
-              <span className="text-success">~{fmt(ventasPrevistas)}</span> ventas − <span className="text-danger">{fmt(gastosComprometidos)}</span> gastos
-            </div>
-            <Link href="/previsiones" className="text-[11px] text-primary hover:underline mt-1.5 inline-block">
-              Ver previsión completa →
-            </Link>
+            <div className="text-[11px] text-navy/50 mt-0.5">tras comisión Stripe e IVA neto</div>
           </div>
         </div>
       </div>

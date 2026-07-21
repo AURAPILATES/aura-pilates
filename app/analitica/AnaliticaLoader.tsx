@@ -24,6 +24,7 @@ import { loadCategoriesCached, type Category } from "@/lib/categories";
 import { loadRecurringExpensesCached, forecastConfirmedExpenses } from "@/lib/recurringExpenses";
 import DesglosGastosUnificado from "./instances/DesglosGastosUnificado";
 import CockpitFinanciero from "./instances/CockpitFinanciero";
+import IvaRetenciones from "./instances/IvaRetenciones";
 import IngresosPorFuente from "./instances/IngresosPorFuente";
 import type { IngresosPorFuenteRow } from "./instances/IngresosPorFuenteBody";
 import EvolucionInscritos from "./instances/EvolucionInscritos";
@@ -318,11 +319,6 @@ export default async function AnaliticaLoader({
   // ── Salud financiera (datos completos) ──
   const today_ym = curMonth;
 
-  const currentBalance = [...txnsAll].sort((a, b) => b.date.localeCompare(a.date))
-    .find((t) => t.balance !== null)?.balance ?? null;
-  const balanceDate = [...txnsAll].sort((a, b) => b.date.localeCompare(a.date))
-    .find((t) => t.balance !== null)?.date ?? null;
-
   const burnByMonth = new Map<string, number>();
   const suministrosByMonth = new Map<string, number>();
   const SUMINISTROS_CATS = new Set(["Electricidad", "Agua"]);
@@ -345,9 +341,6 @@ export default async function AnaliticaLoader({
   const avgMonthlyBurn = completeBurnMonths.length > 0
     ? completeBurnMonths.reduce((s, m) => s + burnByMonth.get(m)!, 0) / completeBurnMonths.length
     : 0;
-
-  const runwayMonths = currentBalance !== null && avgMonthlyBurn > 0
-    ? currentBalance / avgMonthlyBurn : null;
 
   const revMonths = [...new Set([
     ...salesAll.map((s) => s.paymentDate.slice(0, 7)),
@@ -390,11 +383,6 @@ export default async function AnaliticaLoader({
     acc.count += 1;
     fiscalByQuarter.set(q, acc);
   }
-  const fiscalRows = [...fiscalByQuarter.entries()]
-    .map(([quarter, v]) => ({ quarter, ...v }))
-    .sort((a, b) => b.quarter.localeCompare(a.quarter))
-    .slice(0, 6);
-
   // ── IVA repercutido por trimestre, a partir de las ventas (Stripe + USC), que ya
   // incluyen el 21% de IVA en el importe bruto ──
   const ivaRepercutidoByQuarter = new Map<string, number>();
@@ -438,9 +426,32 @@ export default async function AnaliticaLoader({
     : null;
   const nextIvaQuarterClosed = nextIvaObligation ? todayStr > quarterEndDate(nextIvaObligation.quarter) : false;
 
+  const MESES_LARGO = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+  const nextIvaDueLabelLong = nextIvaObligation
+    ? (() => { const [y, m] = nextIvaObligation.deadline.split("-"); return `${MESES_LARGO[parseInt(m, 10) - 1]} de ${y}`; })()
+    : "—";
+  const nextIvaQuarterLabel = nextIvaObligation
+    ? (() => { const [y, qn] = nextIvaObligation.quarter.split("-Q"); return `T${qn} ${y}`; })()
+    : "—";
+
+  // Mismo resumen que fiscalSummaryByQuarter pero como lista ordenada (más reciente primero)
+  // para la tabla "por trimestre" de IvaRetenciones.
+  const quarterlyFiscalRows = [...fiscalSummaryByQuarter.entries()]
+    .map(([quarter, v]) => ({ quarter, ...v }))
+    .sort((a, b) => b.quarter.localeCompare(a.quarter))
+    .slice(0, 6);
+
   // ── Clientela (composición, altas, riesgo de baja) ───────────────────────
   const recurringForecasts = forecastConfirmedExpenses(recurringExpenses, txnsAll, undefined, dbCategories);
   const gastosComprometidos = recurringForecasts.reduce((s, f) => s + Math.abs(f.amount), 0) + avgSuministros;
+
+  // ── Ahorro mensual: bruto = ingresos previstos − gastos comprometidos; neto también
+  // descuenta la comisión de Stripe (aplicada al histórico) y el IVA neto del trimestre
+  // en curso, prorrateado a un mes. Las retenciones no se restan: ya salen netas del
+  // propio pago al contacto, no son un coste adicional para Aura. ──
+  const stripeFeeRatio = totalRev > 0 ? stripeFees / totalRev : 0;
+  const ahorroBruto = avgMonthlyRevenue - gastosComprometidos;
+  const ahorroNeto = ahorroBruto - avgMonthlyRevenue * stripeFeeRatio - (nextIvaQuarterData?.ivaNeto ?? 0) / 3;
 
   const activeMomenceSubCount = mrrByTier.reduce((s, t) => s + t.activeCount, 0);
 
@@ -526,21 +537,16 @@ export default async function AnaliticaLoader({
             <div className="space-y-4">
               <CockpitFinanciero
                 curMonthLabel={monthLabel(curMonth)}
-                currentBalance={currentBalance}
-                balanceDate={balanceDate}
-                runwayMonths={runwayMonths}
-                avgMonthlyBurn={avgMonthlyBurn}
-                completeBurnMonthsCount={completeBurnMonths.length}
-                ventasPrevistas={avgMonthlyRevenue}
-                gastosComprometidos={gastosComprometidos}
+                avgMonthlyRevenue={avgMonthlyRevenue}
+                revenueBasisLabel={`media últimos ${revMonths.length || 3} m`}
                 lastUpdated={bancoLastUpdated}
                 nextIvaLabel={nextIvaObligation?.date ?? null}
                 nextIvaQuarter={nextIvaObligation?.quarter ?? null}
                 ivaNeto={nextIvaQuarterData?.ivaNeto ?? 0}
-                ivaSoportado={nextIvaQuarterData?.ivaSoportado ?? 0}
-                ivaRepercutido={nextIvaQuarterData?.ivaRepercutido ?? 0}
                 retenciones={nextIvaQuarterData?.retenciones ?? 0}
                 ivaQuarterClosed={nextIvaQuarterClosed}
+                ahorroBruto={ahorroBruto}
+                ahorroNeto={ahorroNeto}
               />
               <Breakeven points={breakevenPoints} lastUpdated={bancoLastUpdated} />
               <ChartCard title="Próximas obligaciones">
@@ -566,28 +572,17 @@ export default async function AnaliticaLoader({
                   })}
                 </div>
               </ChartCard>
-              <ChartCard
-                title="IVA soportado y retenciones"
-                subtitle="Según el IVA/retención asignado por contacto al importar (Configuración → Contactos)"
-                sources={["excel"]}
+              <IvaRetenciones
+                quarterLabel={nextIvaQuarterLabel}
+                ivaRepercutido={nextIvaQuarterData?.ivaRepercutido ?? 0}
+                ivaSoportado={nextIvaQuarterData?.ivaSoportado ?? 0}
+                ivaNeto={nextIvaQuarterData?.ivaNeto ?? 0}
+                retenciones={nextIvaQuarterData?.retenciones ?? 0}
+                dueLabel={nextIvaDueLabelLong}
+                quarterClosed={nextIvaQuarterClosed}
+                rows={quarterlyFiscalRows}
                 lastUpdated={bancoLastUpdated}
-              >
-                {fiscalRows.length === 0 ? (
-                  <p className="text-sm text-navy/40">Todavía no hay movimientos con IVA o retención asignados.</p>
-                ) : (
-                  <div className="space-y-3">
-                    {fiscalRows.map((r) => (
-                      <div key={r.quarter} className="flex items-center justify-between">
-                        <span className="text-sm text-navy">{r.quarter}</span>
-                        <div className="flex items-center gap-4 text-xs text-navy/55">
-                          <span>IVA soportado <strong className="text-navy tabular-nums">{fmt(r.iva)}</strong></span>
-                          <span>Retenciones <strong className="text-navy tabular-nums">{fmt(r.retencion)}</strong></span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </ChartCard>
+              />
               <Financiacion initialBudgets={budgets} spent={budgetSpent} />
             </div>
           </section>
