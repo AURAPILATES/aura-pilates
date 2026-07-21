@@ -816,14 +816,13 @@ export async function createRecurringExpenseFromTransaction(
   if (!bucket) throw new Error("Periodo inválido");
 
   const supabase = createServerClient();
-  const { data: t, error } = await supabase
-    .from("transactions")
-    .select("*")
-    .eq("id", transactionId)
-    .single();
+  const [{ data: t, error }, { data: allTxns }] = await Promise.all([
+    supabase.from("transactions").select("*").eq("id", transactionId).single(),
+    supabase.from("transactions").select("*").is("deleted_at", null),
+  ]);
   if (error || !t) throw new Error(error?.message ?? "Movimiento no encontrado");
 
-  const key = seriesKeyFor(t as Transaction);
+  const key = seriesKeyFor(t as Transaction, (allTxns ?? []) as Transaction[]);
   if (!key) throw new Error("El movimiento no tiene contacto ni concepto para agruparlo");
 
   let ivaRate = 0;
@@ -871,14 +870,13 @@ export async function createRecurringExpenseFromTransaction(
  * alta manualmente desde este movimiento (misma key que `createRecurringExpenseFromTransaction`). */
 export async function removeRecurringExpenseForTransaction(transactionId: string): Promise<void> {
   const supabase = createServerClient();
-  const { data: t, error } = await supabase
-    .from("transactions")
-    .select("*")
-    .eq("id", transactionId)
-    .single();
+  const [{ data: t, error }, { data: allTxns }] = await Promise.all([
+    supabase.from("transactions").select("*").eq("id", transactionId).single(),
+    supabase.from("transactions").select("*").is("deleted_at", null),
+  ]);
   if (error || !t) throw new Error(error?.message ?? "Movimiento no encontrado");
 
-  const key = seriesKeyFor(t as Transaction);
+  const key = seriesKeyFor(t as Transaction, (allTxns ?? []) as Transaction[]);
   if (!key) return;
 
   const { error: deleteError } = await supabase.from("recurring_expenses").delete().eq("key", key);

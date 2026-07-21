@@ -40,7 +40,7 @@ export default async function TransaccionesPage(props: {
   );
   for (const t of transactions) {
     if (recurringPeriods[t.id]) continue;
-    const key = seriesKeyFor(t);
+    const key = seriesKeyFor(t, allTimeTransactions);
     const period = key ? confirmedPeriodByKey.get(key) : undefined;
     if (period) recurringPeriods[t.id] = period;
   }
@@ -64,7 +64,7 @@ export default async function TransaccionesPage(props: {
     .filter((e) => e.status === "confirmed" && isExpenseRow(e))
     .map((e) => {
       const s = seriesByKey.get(e.key);
-      const lastDate = s ? s.transactions[s.transactions.length - 1].date : null;
+      const lastDate = s ? s.transactions[s.transactions.length - 1].date : e.anchor_date;
       const projection = lastDate ? projectNextDate(lastDate, e.period_days) : null;
       return {
         expense: e,
@@ -95,6 +95,7 @@ export default async function TransaccionesPage(props: {
         <Suspense fallback={null}>
           <TransaccionesTabs
             transactions={transactions}
+            allTransactions={allTimeTransactions}
             categories={categories}
             uncategorizedCount={uncategorizedCount}
             recurringPeriods={recurringPeriods}

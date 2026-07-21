@@ -690,7 +690,7 @@ export default function TransaccionesList({
           categories={categories}
           contacts={contacts}
           recurringPeriod={recurringPeriods[drawerTxn.id]}
-          recurringExpense={recurringExpenses.find((e) => e.key === seriesKeyFor(drawerTxn)) ?? null}
+          recurringExpense={recurringExpenses.find((e) => e.key === seriesKeyFor(drawerTxn, allTransactions ?? transactions)) ?? null}
           onClose={() => setDrawerTxnId(null)}
           onUpdateConcept={handleConceptChange}
           onUpdateBankDetails={handleBankDetailsChange}

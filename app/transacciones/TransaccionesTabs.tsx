@@ -19,6 +19,7 @@ const TABS: { key: Tab; label: string }[] = [
 
 type Props = {
   transactions: Transaction[];
+  allTransactions: Transaction[];
   categories: Category[];
   uncategorizedCount: number;
   recurringPeriods: Record<string, string>;
@@ -31,6 +32,7 @@ type Props = {
 
 export default function TransaccionesTabs({
   transactions,
+  allTransactions,
   categories,
   uncategorizedCount,
   recurringPeriods,
@@ -62,6 +64,7 @@ export default function TransaccionesTabs({
       {tab === "movimientos" ? (
         <TransaccionesList
           transactions={transactions}
+          allTransactions={allTransactions}
           categories={categories}
           uncategorizedCount={uncategorizedCount}
           recurringPeriods={recurringPeriods}

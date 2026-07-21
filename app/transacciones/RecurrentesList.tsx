@@ -10,16 +10,18 @@ import type { Category } from "@/lib/categories";
 import { PERIOD_BUCKETS } from "@/lib/recurring";
 import type { RecurringExpense, RecurringExpenseEndType } from "@/lib/recurringExpenses";
 import type { Contact } from "./actions";
-import { CategoryBadge } from "./TransaccionesList";
+import { CategoryBadge, CategoryPill } from "./TransaccionesList";
 import type { ContactPickResult } from "./ContactPicker";
 import RecurrentesListV2 from "./RecurrentesListV2";
 import {
   recordRecurringExpense,
   confirmRecurringExpenses,
+  createManualRecurringExpense,
   updateRecurringExpense,
   relinkRecurringExpenseContact,
   setRecurringExpenseStatus,
   type ConfirmRecurringRow,
+  type ManualRecurringInput,
 } from "./recurringActions";
 
 export type PendingSeriesRow = {
@@ -339,6 +341,152 @@ function ConfirmPendingDrawer({ row, period, pick, end, name, ivaRate, retencion
   );
 }
 
+/** Alta manual de un gasto recurrente sin transacción real detrás — para anticipar un gasto
+ * futuro conocido (ej. "en 2 meses empiezo a pagar X"). A diferencia de ConfirmPendingDrawer,
+ * aquí todos los campos parten en blanco: no hay una serie detectada de la que copiar importe,
+ * periodo o contacto sugerido. */
+function NewManualRecurringDrawer({ categories, contacts, pick, onOpenContactPicker, onClose, onCreate }: {
+  categories: Category[];
+  contacts: Contact[];
+  pick: ContactPick;
+  onOpenContactPicker: () => void;
+  onClose: () => void;
+  onCreate: (input: ManualRecurringInput) => Promise<void>;
+}) {
+  const [label, setLabel] = useState("");
+  const [amount, setAmount] = useState("");
+  const [category, setCategory] = useState<string | null>(null);
+  const [period, setPeriod] = useState("mensual");
+  const [anchorDate, setAnchorDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [end, setEnd] = useState<EndFields>(defaultEnd());
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const pickLabel = pickToLabel(pick, contacts);
+
+  async function handleCreate() {
+    if (!label.trim()) { setError("Falta el nombre."); return; }
+    const parsed = parseFloat(amount.replace(",", ".")) || 0;
+    if (!parsed) { setError("Falta el importe."); return; }
+    if (!anchorDate) { setError("Falta la fecha de referencia."); return; }
+    setSaving(true);
+    setError(null);
+    try {
+      const periodDays = PERIOD_BUCKETS.find((b) => b.label === period)?.days ?? 30;
+      await onCreate({
+        label: label.trim(),
+        category,
+        period,
+        period_days: periodDays,
+        amount: -Math.abs(parsed),
+        anchorDate,
+        contactId: pick && "contactId" in pick ? pick.contactId : null,
+        newContactLabel: pick && "newLabel" in pick ? pick.newLabel : null,
+        endType: end.type,
+        endDate: end.type === "date" ? end.date || null : null,
+        endCount: end.type === "count" ? parseInt(end.count, 10) || null : null,
+      });
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al guardar.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Drawer
+      title="Nuevo recurrente"
+      subtitle="Sin transacción todavía — para anticipar un gasto futuro conocido"
+      onClose={onClose}
+      footer={
+        <div className="flex gap-2">
+          <button
+            onClick={onClose}
+            className="flex-1 py-2.5 text-sm text-navy/60 border border-navy/15 rounded-lg hover:bg-navy/[0.03] transition-colors"
+          >
+            Cancelar
+          </button>
+          <Button onClick={handleCreate} disabled={saving} className="flex-1">
+            {saving ? "Guardando…" : "Crear recurrente"}
+          </Button>
+        </div>
+      }
+    >
+      <div className="p-4 border-b border-navy/[0.06]">
+        <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-1.5">Nombre</p>
+        <input
+          type="text"
+          autoFocus
+          value={label}
+          onChange={(e) => setLabel(e.target.value)}
+          placeholder="ej. Alquiler local nuevo"
+          className="w-full px-3 py-2 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40"
+        />
+      </div>
+
+      <div className="p-4 border-b border-navy/[0.06]">
+        <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-1.5">Importe</p>
+        <div className="flex items-center gap-1.5">
+          <input
+            type="text"
+            inputMode="decimal"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder="0,00"
+            className="w-32 px-3 py-2 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40"
+          />
+          <span className="text-sm text-navy/40">€</span>
+        </div>
+      </div>
+
+      <div className="p-4 border-b border-navy/[0.06]">
+        <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-1.5">Categoría</p>
+        <CategoryPill category={category} categories={categories} onChange={setCategory} />
+      </div>
+
+      <div className="p-4 border-b border-navy/[0.06]">
+        <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-1.5">Contacto (opcional)</p>
+        <button
+          onClick={onOpenContactPicker}
+          className="w-full flex items-center justify-between gap-2 px-3 py-2.5 border border-navy/15 rounded-lg hover:border-primary/40 transition-colors text-left"
+        >
+          <span className={`text-sm truncate ${pick ? "text-navy font-medium" : "text-navy/40"}`}>
+            {pickLabel || "Elegir o crear contacto…"}
+          </span>
+          <ChevronRight size={14} className="text-navy/30 shrink-0" />
+        </button>
+        <p className="text-xs text-navy/40 mt-2">{pickToInfo(pick, contacts)}</p>
+      </div>
+
+      <div className="p-4 border-b border-navy/[0.06]">
+        <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-1.5">Periodicidad</p>
+        <Select value={period} onChange={(e) => setPeriod(e.target.value)}>
+          {PERIOD_BUCKETS.map((b) => (
+            <option key={b.label} value={b.label}>{b.label}</option>
+          ))}
+        </Select>
+      </div>
+
+      <div className="p-4 border-b border-navy/[0.06]">
+        <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-1.5">Fecha de referencia</p>
+        <input
+          type="date"
+          value={anchorDate}
+          onChange={(e) => setAnchorDate(e.target.value)}
+          className="w-full px-3 py-2 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40"
+        />
+        <p className="text-xs text-navy/40 mt-2">Último pago conocido, o el próximo previsto si aún no ha empezado — desde aquí se proyecta el siguiente.</p>
+      </div>
+
+      <div className="p-4">
+        <EndOfRecurrenceFields value={end} onChange={setEnd} />
+      </div>
+
+      {error && <p className="px-4 pb-4 text-xs text-danger">{error}</p>}
+    </Drawer>
+  );
+}
+
 function RecurringExpenseDrawer({ row, categories, contacts, onClose, onOpenContactPicker }: {
   row: ConfirmedExpenseRow;
   categories: Category[];
@@ -355,6 +503,7 @@ function RecurringExpenseDrawer({ row, categories, contacts, onClose, onOpenCont
   const [saving, setSaving] = useState(false);
   const [end, setEnd] = useState<EndFields>(() => endFromExpense(e));
   const [name, setName] = useState(e.label);
+  const [amountDraft, setAmountDraft] = useState(String(Math.abs(e.amount)));
   const ivaRate = contact?.ivaRate ?? 0;
   const retencionRate = contact?.retencionRate ?? 0;
 
@@ -364,6 +513,20 @@ function RecurringExpenseDrawer({ row, categories, contacts, onClose, onOpenCont
     setSaving(true);
     try {
       await updateRecurringExpense(e.id, { label: trimmed });
+      router.refresh();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function changeAmount() {
+    const parsed = parseFloat(amountDraft.replace(",", ".")) || 0;
+    const next = -Math.abs(parsed);
+    setAmountDraft(String(Math.abs(next)));
+    if (next === e.amount) return;
+    setSaving(true);
+    try {
+      await updateRecurringExpense(e.id, { amount: next });
       router.refresh();
     } finally {
       setSaving(false);
@@ -431,11 +594,26 @@ function RecurringExpenseDrawer({ row, categories, contacts, onClose, onOpenCont
       }
     >
       <div className="p-4 border-b border-navy/[0.06]">
-        <p className="bg-navy/[0.02] rounded-xl px-3 py-2.5 inline-block">
-          <span className="block text-[11px] text-navy/40">Importe</span>
-          <span className="text-lg font-semibold text-navy">{fmtEUR(Math.abs(e.amount))}</span>
-        </p>
-        {row.lastDate && <p className="text-xs text-navy/40 mt-2">Último pago: {fmtDate(row.lastDate)}</p>}
+        <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-1.5">Importe</p>
+        <div className="flex items-center gap-1.5">
+          <input
+            type="text"
+            inputMode="decimal"
+            value={amountDraft}
+            disabled={saving}
+            onChange={(ev) => setAmountDraft(ev.target.value)}
+            onBlur={changeAmount}
+            className="w-32 px-3 py-2 text-sm font-semibold text-navy border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40 disabled:opacity-50"
+          />
+          <span className="text-sm text-navy/40">€</span>
+        </div>
+        {row.lastDate ? (
+          <p className="text-xs text-navy/40 mt-2">
+            {e.manual && row.occurrences === 0 ? "Fecha de referencia" : "Último pago"}: {fmtDate(row.lastDate)}
+          </p>
+        ) : (
+          e.manual && <p className="text-xs text-navy/40 mt-2">Sin transacciones todavía — pendiente de que llegue el primer pago real.</p>
+        )}
       </div>
 
       <div className="p-4 border-b border-navy/[0.06]">
@@ -503,6 +681,8 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
   const [names, setNames] = useState<Record<string, string>>({});
   const [openPendingKey, setOpenPendingKey] = useState<string | null>(null);
   const [openConfirmedId, setOpenConfirmedId] = useState<number | null>(null);
+  const [creatingManual, setCreatingManual] = useState(false);
+  const [manualPick, setManualPick] = useState<ContactPick>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [confirmedPage, setConfirmedPage] = useState(0);
   const [search, setSearch] = useState("");
@@ -616,7 +796,9 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
   }
 
   async function handlePickerPick(result: ContactPickResult) {
-    if (openPendingRow) {
+    if (creatingManual) {
+      setManualPick(resultToPick(result));
+    } else if (openPendingRow) {
       const pick = resultToPick(result);
       setPicks((prev) => ({ ...prev, [openPendingRow.keys[0]]: pick }));
     } else if (openConfirmedRow) {
@@ -624,6 +806,11 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
       await relinkRecurringExpenseContact(openConfirmedRow.expense.id, relinkPick);
       router.refresh();
     }
+  }
+
+  async function handleCreateManual(input: ManualRecurringInput) {
+    await createManualRecurringExpense(input);
+    router.refresh();
   }
 
   return (
@@ -646,6 +833,7 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
         confirmedPage={confirmedPage}
         pageSize={PAGE_SIZE}
         onConfirmedPageChange={setConfirmedPage}
+        onNewManual={() => setCreatingManual(true)}
       />
       {openPendingRow && (
         <ConfirmPendingDrawer
@@ -674,6 +862,17 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
           contacts={contacts}
           onClose={() => setOpenConfirmedId(null)}
           onOpenContactPicker={() => setPickerOpen(true)}
+        />
+      )}
+
+      {creatingManual && (
+        <NewManualRecurringDrawer
+          categories={categories}
+          contacts={contacts}
+          pick={manualPick}
+          onOpenContactPicker={() => setPickerOpen(true)}
+          onClose={() => { setCreatingManual(false); setManualPick(null); }}
+          onCreate={handleCreateManual}
         />
       )}
 

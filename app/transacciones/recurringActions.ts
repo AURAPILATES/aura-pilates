@@ -120,6 +120,62 @@ export async function confirmRecurringExpenses(rows: ConfirmRecurringRow[]): Pro
   revalidateTag("transactions");
 }
 
+export type ManualRecurringInput = {
+  label: string;
+  category: string | null;
+  period: string;
+  period_days: number;
+  amount: number; // negativo
+  anchorDate: string;
+  contactId: number | null;
+  newContactLabel: string | null;
+  endType: "never" | "date" | "count";
+  endDate: string | null;
+  endCount: number | null;
+};
+
+/** Da de alta un gasto recurrente "por libre": sin transacción real detrás (a diferencia de
+ * `confirmRecurringExpenses`/`recordRecurringExpense`, que siempre parten de una serie ya
+ * detectada). Pensado para anticipar un gasto futuro conocido (ej. "en 2 meses empiezo a pagar
+ * X"). La key es sintética (no enlaza con ninguna transacción) y `anchor_date` guarda desde
+ * cuándo proyectar el próximo pago (ver forecastConfirmedExpenses). */
+export async function createManualRecurringExpense(input: ManualRecurringInput): Promise<void> {
+  const supabase = createServerClient();
+
+  let contact: ResolvedContact | null = null;
+  if (input.contactId != null) {
+    const { data, error } = await supabase
+      .from("contacts")
+      .select("id, category, iva_rate, retencion_rate")
+      .eq("id", input.contactId)
+      .single();
+    if (error || !data) throw new Error(error?.message ?? "Contacto no encontrado");
+    contact = data;
+  } else if (input.newContactLabel) {
+    contact = await resolveOrCreateContact(supabase, input.newContactLabel, []);
+  }
+
+  const { error } = await supabase.from("recurring_expenses").insert({
+    key: `m:${crypto.randomUUID()}`,
+    label: input.label,
+    category: contact?.category ?? input.category,
+    period: input.period,
+    period_days: input.period_days,
+    amount: input.amount,
+    iva_rate: contact?.iva_rate ?? 0,
+    retencion_rate: contact?.retencion_rate ?? 0,
+    contact_id: contact?.id ?? null,
+    status: "confirmed",
+    manual: true,
+    anchor_date: input.anchorDate,
+    end_type: input.endType,
+    end_date: input.endType === "date" ? input.endDate : null,
+    end_count: input.endType === "count" ? input.endCount : null,
+  });
+  if (error) throw new Error(error.message);
+  revalidateAll();
+}
+
 export async function updateRecurringExpense(
   id: number,
   data: {
@@ -130,6 +186,7 @@ export async function updateRecurringExpense(
     period_days?: number;
     iva_rate?: number;
     retencion_rate?: number;
+    anchor_date?: string | null;
     end_type?: "never" | "date" | "count";
     end_date?: string | null;
     end_count?: number | null;

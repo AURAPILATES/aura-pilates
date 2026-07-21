@@ -1,6 +1,6 @@
 import type { Transaction } from "./transactions";
 import type { Category } from "./categories";
-import { contactKeyFor, matchesPattern } from "./contactRules";
+import { contactKeyFor, matchesPattern, cleanBankText } from "./contactRules";
 
 const MONTH_NAMES_RE = /\b(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)\b/g;
 
@@ -28,12 +28,30 @@ export function displayLabel(t: Transaction): string {
 
 /** Misma clave que agrupa series en `findRecurringSeries`, para poder dar de alta
  * manualmente un gasto recurrente desde un único movimiento (sin esperar a que el
- * heurístico detecte 2+ pagos). Null si el movimiento no tiene contacto ni concepto. */
-export function seriesKeyFor(t: Transaction): string | null {
+ * heurístico detecte 2+ pagos), o para saber si un movimiento ya está cubierto por uno
+ * existente. Null si el movimiento no tiene contacto ni concepto.
+ *
+ * Si se pasa `allTransactions`, reproduce exactamente la misma lógica de desambiguación por
+ * colisión de fecha que `findRecurringSeries` (ver `splitOnSameDateCollision`) — necesario para
+ * que la key coincida con la que de verdad tiene la serie cuando dos series distintas comparten
+ * contacto e importe (ej. dos préstamos del mismo banco con la misma cuota). Sin ese contexto,
+ * se devuelve la key "base" sin sufijo. */
+export function seriesKeyFor(t: Transaction, allTransactions?: Transaction[]): string | null {
   const key = groupKey(t);
   if (!key) return null;
   const amountCents = Math.round(Math.abs(t.amount) * 100);
-  return `${key}:${amountCents}`;
+  const base = `${key}:${amountCents}`;
+  if (!allTransactions) return base;
+
+  const siblings = allTransactions.filter((o) => {
+    if (o.amount >= 0) return false;
+    if (groupKey(o) !== key) return false;
+    return Math.round(Math.abs(o.amount) * 100) === amountCents;
+  });
+  const dates = new Set(siblings.map((o) => o.date));
+  if (dates.size >= siblings.length) return base; // sin colisión de fecha
+  const suffix = cleanBankText(t.concept).toLowerCase().trim() || "x";
+  return `${base}:${suffix}`;
 }
 
 // período → {días esperados, tolerancia en días}
@@ -54,6 +72,27 @@ function matchPeriod(days: number): string | null {
   return null;
 }
 
+/** Si dentro de un mismo grupo contacto+importe hay dos movimientos en la MISMA fecha, no
+ * pueden ser el mismo pago repitiéndose (un préstamo o una suscripción no se cobra dos veces el
+ * mismo día) — son en realidad dos obligaciones distintas que casualmente comparten contacto e
+ * importe (ej. dos préstamos del mismo banco con la misma cuota mensual). En ese caso se separan
+ * por el texto de concepto que las distingue antes de analizar la periodicidad de cada una. Sin
+ * colisión de fecha se deja el grupo intacto — así no se rompen casos legítimos donde el
+ * concepto trae un código de referencia distinto cada mes (ej. Squarespace). */
+function splitOnSameDateCollision(txns: Transaction[]): { txns: Transaction[]; suffix: string | null }[] {
+  const dateCounts = new Map<string, number>();
+  for (const t of txns) dateCounts.set(t.date, (dateCounts.get(t.date) ?? 0) + 1);
+  if (![...dateCounts.values()].some((c) => c > 1)) return [{ txns, suffix: null }];
+
+  const bySuffix = new Map<string, Transaction[]>();
+  for (const t of txns) {
+    const suffix = cleanBankText(t.concept).toLowerCase().trim() || "x";
+    if (!bySuffix.has(suffix)) bySuffix.set(suffix, []);
+    bySuffix.get(suffix)!.push(t);
+  }
+  return [...bySuffix.entries()].map(([suffix, ts]) => ({ txns: ts, suffix }));
+}
+
 export type RecurringSeries = {
   key: string;
   label: string;
@@ -62,6 +101,12 @@ export type RecurringSeries = {
   periodDays: number;
   amount: number; // negativo
   transactions: Transaction[]; // orden ascendente por fecha
+  /** true si esta serie viene de separar una colisión de fecha (ver splitOnSameDateCollision):
+   * dos obligaciones reales distintas que comparten contacto+importe. computePendingRecurring
+   * no debe volver a fusionarla con otras del mismo contacto+importe — a diferencia del caso
+   * normal (mismo gasto partido en dos keys porque el contacto se asignó a mitad de historial),
+   * aquí sí son dos cosas de verdad diferentes. */
+  disambiguated?: boolean;
 };
 
 /**
@@ -96,28 +141,32 @@ export function findRecurringSeries(transactions: Transaction[], categories?: Ca
   for (const byAmount of groups.values()) {
     for (const [amountCents, txns] of byAmount) {
       if (txns.length < 2) continue;
-      const sorted = [...txns].sort((a, b) => a.date.localeCompare(b.date));
-      const gaps: number[] = [];
-      for (let i = 1; i < sorted.length; i++) {
-        const d1 = new Date(sorted[i - 1].date + "T00:00:00");
-        const d2 = new Date(sorted[i].date + "T00:00:00");
-        gaps.push(Math.round((d2.getTime() - d1.getTime()) / 86400000));
+      for (const { txns: subTxns, suffix } of splitOnSameDateCollision(txns)) {
+        if (subTxns.length < 2) continue;
+        const sorted = [...subTxns].sort((a, b) => a.date.localeCompare(b.date));
+        const gaps: number[] = [];
+        for (let i = 1; i < sorted.length; i++) {
+          const d1 = new Date(sorted[i - 1].date + "T00:00:00");
+          const d2 = new Date(sorted[i].date + "T00:00:00");
+          gaps.push(Math.round((d2.getTime() - d1.getTime()) / 86400000));
+        }
+        const periods = gaps.map(matchPeriod);
+        if (periods.some((p) => p === null)) continue;
+        const period = periods[0]!;
+        if (!periods.every((p) => p === period)) continue;
+        const bucket = PERIOD_BUCKETS.find((b) => b.label === period)!;
+        const last = sorted[sorted.length - 1];
+        series.push({
+          key: suffix ? `${groupKey(last)}:${amountCents}:${suffix}` : `${groupKey(last)}:${amountCents}`,
+          label: displayLabel(last),
+          category: last.category,
+          period,
+          periodDays: bucket.days,
+          amount: -(amountCents / 100),
+          transactions: sorted,
+          disambiguated: suffix != null,
+        });
       }
-      const periods = gaps.map(matchPeriod);
-      if (periods.some((p) => p === null)) continue;
-      const period = periods[0]!;
-      if (!periods.every((p) => p === period)) continue;
-      const bucket = PERIOD_BUCKETS.find((b) => b.label === period)!;
-      const last = sorted[sorted.length - 1];
-      series.push({
-        key: `${groupKey(last)}:${amountCents}`,
-        label: displayLabel(last),
-        category: last.category,
-        period,
-        periodDays: bucket.days,
-        amount: -(amountCents / 100),
-        transactions: sorted,
-      });
     }
   }
   return series;
@@ -203,7 +252,11 @@ export function computePendingRecurring(
     const bankPattern = contactKeyFor(last.concept, last.bank_details);
     const contact = findMatchedContact(bankPattern, s.label);
     const amountCents = Math.round(Math.abs(s.amount) * 100);
-    const groupKey = `${contact ? `c:${contact.id}` : `p:${bankPattern}`}:${amountCents}`;
+    // Una serie "disambiguated" es una obligación real distinta que solo coincide en
+    // contacto+importe con otra por casualidad (ver RecurringSeries.disambiguated) — no se
+    // fusiona con sus hermanas, a diferencia del caso normal (mismo gasto partido en dos keys
+    // porque el contacto se asignó a mitad de historial).
+    const groupKey = s.disambiguated ? `k:${s.key}` : `${contact ? `c:${contact.id}` : `p:${bankPattern}`}:${amountCents}`;
     const group = pendingGroups.get(groupKey) ?? { keys: [], bankPatterns: [], contact, series: [] };
     group.keys.push(s.key);
     group.bankPatterns.push(bankPattern);
@@ -220,6 +273,11 @@ export function computePendingRecurring(
     confirmedByLabelAmount.add(`${e.label.toLowerCase()}:${amountCents}`);
   }
   function alreadyConfirmed(g: PendingGroup): boolean {
+    // Una serie disambiguated ya pasó por el filtro de key exacta (expenseByKey) al agruparla
+    // — el cruce por contacto+importe de aquí abajo es correcto para "el mismo gasto partido en
+    // dos keys", pero para dos obligaciones reales distintas (mismo contacto+importe) marcaría
+    // la segunda como "ya confirmada" en cuanto se confirme la primera. Ver RecurringSeries.disambiguated.
+    if (g.series.every((s) => s.disambiguated)) return false;
     const amountCents = Math.round(Math.abs(g.series[0].amount) * 100);
     if (g.contact && confirmedByContactAmount.has(`${g.contact.id}:${amountCents}`)) return true;
     const label = (g.contact?.label ?? g.series[0].label).toLowerCase();

@@ -23,6 +23,12 @@ export type RecurringExpense = {
   end_date: string | null;
   end_count: number | null;
   notes: string | null;
+  /** Dado de alta a mano, sin transacción real detrás todavía (ver createManualRecurringExpense
+   * en recurringActions.ts) — para anticipar un gasto futuro conocido. */
+  manual: boolean;
+  /** Fecha de referencia (último pago conocido o próximo previsto) desde la que proyectar,
+   * solo relevante mientras no haya transacciones reales que lo respalden. */
+  anchor_date: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -60,9 +66,12 @@ export function forecastConfirmedExpenses(
   for (const e of expenses) {
     if (e.status !== "confirmed") continue;
     const s = seriesByKey.get(e.key);
-    const lastDate = s ? s.transactions[s.transactions.length - 1].date : null;
-    if (!lastDate) continue; // sin movimientos que lo respalden todavía
-    if (e.end_type === "count" && e.end_count != null && s!.transactions.length >= e.end_count) continue;
+    const occurrences = s?.transactions.length ?? 0;
+    // Sin transacciones reales todavía, un recurrente manual proyecta desde su fecha de
+    // referencia en vez de desaparecer de la previsión (ver createManualRecurringExpense).
+    const lastDate = s ? s.transactions[s.transactions.length - 1].date : e.anchor_date;
+    if (!lastDate) continue;
+    if (e.end_type === "count" && e.end_count != null && occurrences >= e.end_count) continue;
     const { nextDate, daysUntil } = projectNextDate(lastDate, e.period_days, referenceDate);
     if (e.end_type === "date" && e.end_date && nextDate > e.end_date) continue;
     result.push({
@@ -74,7 +83,7 @@ export function forecastConfirmedExpenses(
       lastDate,
       nextDate,
       daysUntil,
-      occurrences: s!.transactions.length,
+      occurrences,
     });
   }
 
