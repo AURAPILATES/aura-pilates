@@ -120,7 +120,7 @@ export default function MobileNav() {
 
       {/* Drawer */}
       <div
-        className={`sm:hidden fixed top-0 left-0 h-full w-[260px] bg-[#f9f9f7] dark:bg-[#18161c] z-50 shadow-xl flex flex-col transition-transform duration-200 ${
+        className={`sm:hidden fixed top-0 left-0 h-full w-[260px] bg-[#f9f9f7] dark:bg-[#171520] z-50 shadow-xl flex flex-col transition-transform duration-200 ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
         style={{ paddingTop: "env(safe-area-inset-top)" }}

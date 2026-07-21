@@ -13,7 +13,7 @@ export default function Sidebar() {
   const pendingRecurringCount = usePendingRecurringCount();
 
   return (
-    <aside className="hidden sm:flex fixed top-0 left-0 h-screen w-[220px] flex-col bg-[#f9f9f7] dark:bg-[#18161c] border-r border-navy/[0.07] z-30">
+    <aside className="hidden sm:flex fixed top-0 left-0 h-screen w-[220px] flex-col bg-[#f9f9f7] dark:bg-[#171520] border-r border-navy/[0.07] z-30">
       {/* Logo */}
       <div className="px-5 py-5">
         <Link href="/">

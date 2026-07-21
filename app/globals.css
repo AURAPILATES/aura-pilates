@@ -36,9 +36,9 @@
 }
 
 .dark {
-  --color-app-bg: #121014;
-  --color-card: #1c1a20;
-  --color-navy: #ededec;
+  --color-app-bg: #1a1820;
+  --color-card: #242129;
+  --color-navy: #e6e3e8;
   --color-primary: #8a75ff;
   --color-success: #6fb98a;
   --color-income: #4dbdb3;
@@ -48,8 +48,8 @@
   --color-strong: #d4d4d8;
   --color-muted: #9a9aa2;
   --color-faint: #6b6b74;
-  --color-border: #2c2933;
-  --color-subtle: #201d24;
+  --color-border: #322e39;
+  --color-subtle: #211e26;
 
   --shadow-card: 0 0 0 1px rgba(255, 255, 255, 0.06);
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.25);
