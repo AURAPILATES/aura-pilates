@@ -49,7 +49,7 @@ function makeTooltip(keys: string[], colorOf: (k: string) => string) {
     if (!active || !payload?.length) return null;
     const row = payload[0].payload as EvolucionRow;
     return (
-      <div className="bg-white border border-[#e6e6ea] rounded-[10px] shadow-lg px-3 py-2 text-xs min-w-[160px]">
+      <div className="bg-card border border-border rounded-[10px] shadow-lg px-3 py-2 text-xs min-w-[160px]">
         <p className="font-semibold text-navy mb-1.5">{row.label}</p>
         {keys.map((k) => (
           <div key={k} className="flex items-center gap-1.5 mb-0.5 last:mb-0">
@@ -79,11 +79,11 @@ function EventDots({ viewBox, evs, hoveredEventId, onHover }: EventDotProps) {
         const isHov = hoveredEventId === ev.id;
         return (
           <g key={ev.id} style={{ cursor: "default" }} onMouseEnter={() => onHover(ev.id)} onMouseLeave={() => onHover(null)}>
-            <circle cx={cx} cy={viewBox.y} r={isHov ? 5 : 3.5} fill={EVENT_COLORS[ev.categoria]} stroke="white" strokeWidth={isHov ? 1.5 : 1} />
+            <circle cx={cx} cy={viewBox.y} r={isHov ? 5 : 3.5} fill={EVENT_COLORS[ev.categoria]} stroke="var(--color-card)" strokeWidth={isHov ? 1.5 : 1} />
             {isHov && (
               <g pointerEvents="none">
                 <rect x={cx + 8} y={viewBox.y! - 8} width={210} height={ev.descripcion ? 68 : 50} rx="10"
-                  fill="white" stroke="#e6e6ea" style={{ filter: "drop-shadow(0 4px 16px rgba(0,0,0,0.12))" }} />
+                  fill="var(--color-card)" stroke="var(--color-border)" style={{ filter: "drop-shadow(0 4px 16px rgba(0,0,0,0.12))" }} />
                 <circle cx={cx + 24} cy={viewBox.y! + 12} r="4" fill={EVENT_COLORS[ev.categoria]} />
                 <text x={cx + 33} y={viewBox.y! + 16} fontSize="12" fontWeight="600" fill={EVENT_COLORS[ev.categoria]}>
                   {EVENT_LABELS[ev.categoria]}

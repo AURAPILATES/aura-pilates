@@ -9,16 +9,16 @@ const DAY_LABELS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 
 type OccStyle = { card: string; pct: string; bar: string };
 function occStyle(occ: number): OccStyle {
-  if (occ >= 1.0) return { card: "bg-[#e8efe5] border-[#c8dcc3]", pct: "text-[#3d7048]", bar: "bg-[#4e8a5d]" };
-  if (occ >= 0.5) return { card: "bg-[#f2ede0] border-[#ddd0b0]", pct: "text-[#8b7230]", bar: "bg-[#a38540]" };
-  return { card: "bg-[#f5e2de] border-[#e0c0b8]", pct: "text-[#b03020]", bar: "bg-[#c03828]" };
+  if (occ >= 1.0) return { card: "bg-[#e8efe5] dark:bg-[#22301c] border-[#c8dcc3] dark:border-[#425f3a]", pct: "text-[#3d7048] dark:text-[#8dce9b]", bar: "bg-[#4e8a5d] dark:bg-[#8dce9d]" };
+  if (occ >= 0.5) return { card: "bg-[#f2ede0] dark:bg-[#372e15] border-[#ddd0b0] dark:border-[#685831]", pct: "text-[#8b7230] dark:text-[#cebc8d]", bar: "bg-[#a38540] dark:bg-[#ceba8d]" };
+  return { card: "bg-[#f5e2de] dark:bg-[#391a13] border-[#e0c0b8] dark:border-[#683c31]", pct: "text-[#b03020] dark:text-[#db8a80]", bar: "bg-[#c03828] dark:bg-[#d88c83]" };
 }
 
 function pctColor(occ: number) {
-  if (occ >= 0.8) return "text-[#3d7048]";
-  if (occ >= 0.6) return "text-[#8b7230]";
-  if (occ >= 0.4) return "text-[#b06020]";
-  return "text-[#b03020]";
+  if (occ >= 0.8) return "text-[#3d7048] dark:text-[#8dce9b]";
+  if (occ >= 0.6) return "text-[#8b7230] dark:text-[#cebc8d]";
+  if (occ >= 0.4) return "text-[#b06020] dark:text-[#dba880]";
+  return "text-[#b03020] dark:text-[#db8a80]";
 }
 
 function dayStats(events: MomenceEvent[]) {
@@ -101,14 +101,14 @@ export default memo(function HorarioCalendar({
 
   if (events.length === 0) {
     return (
-      <div className="bg-white border border-[#ececef] rounded-[10px] p-16 text-center text-navy/35 text-sm">
+      <div className="bg-card border border-border rounded-[10px] p-16 text-center text-navy/35 text-sm">
         No hay clases esta semana.
       </div>
     );
   }
 
   return (
-    <div className="bg-white border border-[#ececef] rounded-[10px] overflow-hidden">
+    <div className="bg-card border border-border rounded-[10px] overflow-hidden">
       {/* Day headers */}
       <div className="grid border-b border-navy/[0.08] bg-navy/[0.03]" style={{ gridTemplateColumns: "52px repeat(7, 1fr)" }}>
         <div className="border-r border-navy/[0.07]" />

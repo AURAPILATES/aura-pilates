@@ -40,9 +40,9 @@ function occText(occ: number) {
 }
 
 function getOccStatus(occ: number) {
-  if (occ >= 1.0) return { label: "✓ Llena",   bg: "bg-[#eaf4ee]", text: "text-[#4e8a5d]", border: "border-l-[#4e8a5d]", dot: "bg-[#4e8a5d]" };
-  if (occ >= 0.5) return { label: "A medias",  bg: "bg-[#f5f0e0]", text: "text-[#a38540]", border: "border-l-[#a38540]", dot: "bg-[#a38540]" };
-  return             { label: "Por llenar", bg: "bg-[#fdecea]", text: "text-[#c03828]", border: "border-l-[#c03828]", dot: "bg-[#c03828]" };
+  if (occ >= 1.0) return { label: "✓ Llena",   bg: "bg-[#eaf4ee] dark:bg-[#193324]", text: "text-[#4e8a5d] dark:text-[#8dce9d]", border: "border-l-[#4e8a5d]", dot: "bg-[#4e8a5d] dark:bg-[#8dce9d]" };
+  if (occ >= 0.5) return { label: "A medias",  bg: "bg-[#f5f0e0] dark:bg-[#393013]", text: "text-[#a38540] dark:text-[#ceba8d]", border: "border-l-[#a38540]", dot: "bg-[#a38540] dark:bg-[#ceba8d]" };
+  return             { label: "Por llenar", bg: "bg-[#fdecea] dark:bg-[#391713]", text: "text-[#c03828] dark:text-[#d88c83]", border: "border-l-[#c03828]", dot: "bg-[#c03828] dark:bg-[#d88c83]" };
 }
 
 const MIN_WEEK    = "2026-06-15";
@@ -150,7 +150,7 @@ export default function HorarioShell({
                 <button
                   onClick={() => router.push(`?week=${prevWeek}`)}
                   disabled={weekMonday <= MIN_WEEK}
-                  className="w-7 h-7 flex items-center justify-center rounded-md border border-navy/[0.12] bg-white text-navy/50 disabled:opacity-20 hover:text-navy hover:bg-navy/[0.03] transition-colors"
+                  className="w-7 h-7 flex items-center justify-center rounded-md border border-navy/[0.12] bg-card text-navy/50 disabled:opacity-20 hover:text-navy hover:bg-navy/[0.03] transition-colors"
                 >
                   {chevLeft}
                 </button>
@@ -159,7 +159,7 @@ export default function HorarioShell({
                 </span>
                 <button
                   onClick={() => router.push(`?week=${nextWeek}`)}
-                  className="w-7 h-7 flex items-center justify-center rounded-md border border-navy/[0.12] bg-white text-navy/50 hover:text-navy hover:bg-navy/[0.03] transition-colors"
+                  className="w-7 h-7 flex items-center justify-center rounded-md border border-navy/[0.12] bg-card text-navy/50 hover:text-navy hover:bg-navy/[0.03] transition-colors"
                 >
                   {chevRight}
                 </button>
@@ -206,13 +206,13 @@ export default function HorarioShell({
                   <button
                     onClick={() => router.push(`?week=${prevWeek}`)}
                     disabled={weekMonday <= MIN_WEEK}
-                    className="w-8 h-8 flex items-center justify-center rounded-lg border border-navy/[0.12] bg-white text-navy/50 disabled:opacity-20"
+                    className="w-8 h-8 flex items-center justify-center rounded-lg border border-navy/[0.12] bg-card text-navy/50 disabled:opacity-20"
                   >
                     {chevLeft}
                   </button>
                   <button
                     onClick={() => router.push(`?week=${nextWeek}`)}
-                    className="w-8 h-8 flex items-center justify-center rounded-lg border border-navy/[0.12] bg-white text-navy/50"
+                    className="w-8 h-8 flex items-center justify-center rounded-lg border border-navy/[0.12] bg-card text-navy/50"
                   >
                     {chevRight}
                   </button>
@@ -221,7 +221,7 @@ export default function HorarioShell({
 
               {/* Stats card */}
               {events.length > 0 && (
-                <div className="bg-white border border-navy/[0.07] rounded-xl shadow-card mb-4 overflow-hidden">
+                <div className="bg-card border border-navy/[0.07] rounded-xl shadow-card mb-4 overflow-hidden">
                   <div className="px-4 pt-4 pb-3 flex items-end gap-2.5">
                     <div className="flex items-end gap-1">
                       <span className="text-4xl font-medium text-navy leading-none">{Math.round(weekOcc * 100)}</span>
@@ -263,7 +263,7 @@ export default function HorarioShell({
                       onClick={() => document.getElementById(`mday-${day.key}`)?.scrollIntoView({ behavior: "smooth", block: "start" })}
                       className={`shrink-0 flex flex-col items-center w-[44px] py-2 rounded-lg transition-colors ${
                         day.hasEvents
-                          ? "bg-white border border-navy/[0.12] text-navy"
+                          ? "bg-card border border-navy/[0.12] text-navy"
                           : "bg-navy/[0.03] border border-navy/[0.06] text-navy/25"
                       }`}
                     >
@@ -396,7 +396,7 @@ function MobileClassCard({ event: e, onSelect }: { event: MomenceEvent; onSelect
   return (
     <button
       onClick={() => onSelect(e)}
-      className="w-full text-left bg-white p-3.5 flex items-center gap-3"
+      className="w-full text-left bg-card p-3.5 flex items-center gap-3"
     >
       <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${status.dot}`} />
       <span className="font-mono text-xs text-navy/45 shrink-0">{time}</span>
@@ -422,29 +422,29 @@ function HiddenEventsPanel({ events }: { events: MomenceEvent[] }) {
 
   function reason(e: MomenceEvent) {
     if (e.isDeleted) return { label: "Eliminada", cls: "bg-navy/10 text-navy/50" };
-    if (e.isCancelled) return { label: "Cancelada", cls: "bg-[#fdecea] text-[#c03828]" };
-    if (!e.published) return { label: "Sin publicar", cls: "bg-[#fdf0e5] text-[#c07030]" };
+    if (e.isCancelled) return { label: "Cancelada", cls: "bg-[#fdecea] dark:bg-[#391713] text-[#c03828] dark:text-[#d88c83]" };
+    if (!e.published) return { label: "Sin publicar", cls: "bg-[#fdf0e5] dark:bg-[#392513] text-[#c07030] dark:text-[#d5a986]" };
     return { label: "—", cls: "bg-navy/10 text-navy/50" };
   }
 
   return (
-    <div className="bg-[#fdf6ec] border border-[#e8d9bb] rounded-xl mb-4 overflow-hidden">
+    <div className="bg-[#fdf6ec] dark:bg-[#392a13] border border-[#e8d9bb] dark:border-[#6f582a] rounded-xl mb-4 overflow-hidden">
       <button
         onClick={() => setOpen((o) => !o)}
         className="w-full flex items-center justify-between gap-2 px-4 py-2.5 text-left"
       >
-        <span className="text-xs font-medium text-[#8a6a30]">
+        <span className="text-xs font-medium text-[#8a6a30] dark:text-[#ceb78d]">
           {events.length} clase{events.length !== 1 ? "s" : ""} oculta{events.length !== 1 ? "s" : ""} esta semana (canceladas / sin publicar / eliminadas)
         </span>
         <svg
           width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
-          className={`text-[#8a6a30] shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
+          className={`text-[#8a6a30] dark:text-[#ceb78d] shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
         >
           <polyline points="6 9 12 15 18 9" />
         </svg>
       </button>
       {open && (
-        <div className="border-t border-[#e8d9bb] divide-y divide-[#e8d9bb]/70">
+        <div className="border-t border-[#e8d9bb] dark:border-[#6f582a] divide-y divide-[#e8d9bb]/70 dark:divide-[#6f582a]/70">
           {sorted.map((e) => {
             const d = new Date(e.dateTime);
             const r = reason(e);
@@ -474,7 +474,7 @@ function KpiCard({ label, value, valueColor = "text-navy", tooltip }: {
   label: string; value: string; valueColor?: string; tooltip?: string;
 }) {
   return (
-    <div className="bg-white border border-[#ececef] rounded-[14px] px-4 py-3">
+    <div className="bg-card border border-border rounded-[14px] px-4 py-3">
       <div className="flex items-center gap-1 mb-1">
         <p className="text-[11px] font-semibold text-navy/50 uppercase tracking-wider leading-tight">{label}</p>
         {tooltip && (
@@ -488,7 +488,7 @@ function KpiCard({ label, value, valueColor = "text-navy", tooltip }: {
               <path d="M8 7v5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
               <circle cx="8" cy="4.5" r="0.75" fill="currentColor"/>
             </svg>
-            <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[200px] rounded-lg bg-navy px-2.5 py-1.5 text-[11px] leading-snug text-white shadow-lg opacity-0 group-hover/tip:opacity-100 transition-opacity z-50 whitespace-normal text-center">
+            <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[200px] rounded-lg bg-navy-solid px-2.5 py-1.5 text-[11px] leading-snug text-white shadow-lg opacity-0 group-hover/tip:opacity-100 transition-opacity z-50 whitespace-normal text-center">
               {tooltip}
               <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-navy" />
             </span>
@@ -507,16 +507,16 @@ function OccFilterGroup({ occFilter, onChange }: { occFilter: OccFilter; onChang
       <div className="inline-flex items-center gap-0.5 bg-navy/5 p-[3px] rounded-[10px] w-max min-w-full sm:min-w-0">
         {([
           { value: "all",  label: "Todas",      dot: "bg-navy/25" },
-          { value: "low",  label: "Por llenar", dot: "bg-[#c03828]" },
-          { value: "mid",  label: "A medias",   dot: "bg-[#a38540]" },
-          { value: "high", label: "Llenas",     dot: "bg-[#4e8a5d]" },
+          { value: "low",  label: "Por llenar", dot: "bg-[#c03828] dark:bg-[#d88c83]" },
+          { value: "mid",  label: "A medias",   dot: "bg-[#a38540] dark:bg-[#ceba8d]" },
+          { value: "high", label: "Llenas",     dot: "bg-[#4e8a5d] dark:bg-[#8dce9d]" },
         ] as { value: OccFilter; label: string; dot: string }[]).map(({ value, label, dot }) => (
           <button
             key={value}
             onClick={() => onChange(value)}
             className={`shrink-0 flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-[7px] whitespace-nowrap transition-colors ${
               occFilter === value
-                ? "bg-white text-navy font-medium border border-navy/[0.07]"
+                ? "bg-card text-navy font-medium border border-navy/[0.07]"
                 : "text-navy/50 hover:text-navy"
             }`}
           >

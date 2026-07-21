@@ -29,7 +29,7 @@ function FuenteTooltip({ active, payload }: TooltipContentProps) {
   if (!active || !payload?.length) return null;
   const row = payload[0].payload as IngresosPorFuenteRow;
   return (
-    <div className="bg-white border border-[#e6e6ea] rounded-[10px] shadow-lg px-3 py-2 text-xs min-w-[160px]">
+    <div className="bg-card border border-border rounded-[10px] shadow-lg px-3 py-2 text-xs min-w-[160px]">
       <p className="font-semibold text-navy mb-1.5">{row.label}</p>
       <div className="flex items-center gap-1.5 mb-0.5">
         <span className="w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: COLOR_STRIPE }} />

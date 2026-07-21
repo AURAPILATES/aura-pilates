@@ -8,15 +8,15 @@ type Props = SelectHTMLAttributes<HTMLSelectElement> & { variant?: "classic" | "
 export default function Select({ className = "", children, variant = "classic", ...props }: Props) {
   const selectCls =
     variant === "v2"
-      ? "w-full appearance-none text-[13.5px] border border-[#e6e6ea] rounded-[10px] pl-3 pr-8 py-2 bg-white text-[#18181b] outline-none focus:ring-2 focus:ring-[#18181b]/10 hover:border-[#18181b]/20 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
-      : "w-full appearance-none text-sm border border-navy/[0.12] rounded-lg pl-3 pr-8 py-2 bg-white text-navy outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 hover:border-navy/25 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 transition-colors";
+      ? "w-full appearance-none text-[13.5px] border border-border rounded-[10px] pl-3 pr-8 py-2 bg-card text-navy outline-none focus:ring-2 focus:ring-navy/10 hover:border-navy/20 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+      : "w-full appearance-none text-sm border border-navy/[0.12] rounded-lg pl-3 pr-8 py-2 bg-card text-navy outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 hover:border-navy/25 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 transition-colors";
   return (
     <div className={`relative ${className}`}>
       <select className={selectCls} {...props}>
         {children}
       </select>
       <svg
-        className={`pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 ${variant === "v2" ? "text-[#a1a1aa]" : "text-navy/40"}`}
+        className={`pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 ${variant === "v2" ? "text-faint" : "text-navy/40"}`}
         width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
       >
         <polyline points="6 9 12 15 18 9" />

@@ -236,8 +236,8 @@ export default function HorarioOcupacionEvolucion({
                 {data.map((d, i) => (
                   <g key={d.key} onMouseEnter={() => setHoveredKey(d.key)} style={{ cursor: "default" }}>
                     <rect x={barX(i)} y={MT} width={barW} height={CHART_H} fill="transparent" />
-                    <circle cx={barCx(i)} cy={valY(d.capacity)} r={hoveredKey === d.key ? 4 : 2.5} fill="#C0C6E8" stroke="white" strokeWidth="1" vectorEffect="non-scaling-stroke" />
-                    <circle cx={barCx(i)} cy={valY(d.sold)} r={hoveredKey === d.key ? 4 : 2.5} fill="#3B4B9E" stroke="white" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+                    <circle cx={barCx(i)} cy={valY(d.capacity)} r={hoveredKey === d.key ? 4 : 2.5} fill="#C0C6E8" stroke="var(--color-card)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+                    <circle cx={barCx(i)} cy={valY(d.sold)} r={hoveredKey === d.key ? 4 : 2.5} fill="#3B4B9E" stroke="var(--color-card)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
                   </g>
                 ))}
               </>
@@ -250,7 +250,7 @@ export default function HorarioOcupacionEvolucion({
                 key={`dot-${d.key}`}
                 cx={barCx(i)} cy={occY(d.occ)}
                 r={hoveredKey === d.key ? 4 : 2.5}
-                fill="#43884d" stroke="white" strokeWidth="1"
+                fill="#43884d" stroke="var(--color-card)" strokeWidth="1"
                 vectorEffect="non-scaling-stroke"
               />
             ))}
@@ -275,7 +275,7 @@ export default function HorarioOcupacionEvolucion({
                       cx={cx} cy={MT - 2}
                       r={isHov ? 5 : 3.5}
                       fill={color}
-                      stroke="white"
+                      stroke="var(--color-card)"
                       strokeWidth={isHov ? 1.5 : 1}
                       opacity={isHov ? 1 : 0.8}
                       vectorEffect="non-scaling-stroke"
@@ -299,7 +299,7 @@ export default function HorarioOcupacionEvolucion({
             const flipL = pctX(cx) > 70;
             return (
               <div
-                className="absolute z-10 bg-white border border-[#e6e6ea] rounded-[10px] shadow-lg px-3 py-2 text-xs leading-snug pointer-events-none whitespace-nowrap"
+                className="absolute z-10 bg-card border border-border rounded-[10px] shadow-lg px-3 py-2 text-xs leading-snug pointer-events-none whitespace-nowrap"
                 style={{
                   left: `${pctX(cx)}%`,
                   top: `${pctY(anchorY)}%`,
@@ -324,7 +324,7 @@ export default function HorarioOcupacionEvolucion({
               return (
                 <div
                   key={`evtip-${ev.id}`}
-                  className="absolute z-20 bg-white border border-[#e6e6ea] rounded-[10px] shadow-lg px-3 py-2 text-xs leading-snug pointer-events-none max-w-[200px]"
+                  className="absolute z-20 bg-card border border-border rounded-[10px] shadow-lg px-3 py-2 text-xs leading-snug pointer-events-none max-w-[200px]"
                   style={{
                     left: `${pctX(cx)}%`,
                     top: `${pctY(MT)}%`,

@@ -96,7 +96,7 @@ export default function HorarioFilters({ events }: { events: MomenceEvent[] }) {
                 <h2 className="text-xs font-semibold text-navy/55 uppercase tracking-widest capitalize">
                   {label}
                 </h2>
-                <div className="flex bg-white border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden">
+                <div className="flex bg-card border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden">
                   <StatChip label="clases" value={String(dayEvents.length)} />
                   <StatChip label="alumnos" value={String(dayStudents)} />
                   <StatChip label="ocupación" value={pct(dayOcc)} valueClass={occColor} />
@@ -104,7 +104,7 @@ export default function HorarioFilters({ events }: { events: MomenceEvent[] }) {
                 </div>
               </div>
 
-              <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden">
+              <div className="bg-card border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden">
                 <table className="w-full text-sm">
                   <tbody>
                     {dayEvents.map((e, i) => {

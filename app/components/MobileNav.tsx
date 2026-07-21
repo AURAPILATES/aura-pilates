@@ -6,6 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import SyncStatusPanel from "./SyncStatusPanel";
+import ThemeToggle from "./ThemeToggle";
 import { usePendingRecurringCount } from "./usePendingRecurringCount";
 
 const groups = [
@@ -119,7 +120,7 @@ export default function MobileNav() {
 
       {/* Drawer */}
       <div
-        className={`sm:hidden fixed top-0 left-0 h-full w-[260px] bg-[#f9f9f7] z-50 shadow-xl flex flex-col transition-transform duration-200 ${
+        className={`sm:hidden fixed top-0 left-0 h-full w-[260px] bg-[#f9f9f7] dark:bg-[#18161c] z-50 shadow-xl flex flex-col transition-transform duration-200 ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
         style={{ paddingTop: "env(safe-area-inset-top)" }}
@@ -199,6 +200,7 @@ export default function MobileNav() {
             </span>
             Configuración
           </Link>
+          <ThemeToggle />
         </div>
       </div>
     </>
@@ -210,7 +212,7 @@ export default function MobileNav() {
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Abrir menú"
-        className="sm:hidden inline-flex items-center justify-center w-9 h-9 rounded-lg border border-navy/[0.1] bg-white shadow-sm text-navy/70 active:scale-95 transition-transform"
+        className="sm:hidden inline-flex items-center justify-center w-9 h-9 rounded-lg border border-navy/[0.1] bg-card shadow-sm text-navy/70 active:scale-95 transition-transform"
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>

@@ -97,14 +97,14 @@ export default function RevolutList({ transactions, categories, uncategorizedCou
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-3 text-center gap-1 mb-3 bg-white border border-navy/[0.08] rounded-xl py-3">
+      <div className="grid grid-cols-3 text-center gap-1 mb-3 bg-card border border-navy/[0.08] rounded-xl py-3">
         <div className="min-w-0">
           <p className="text-[12px] text-navy/40 uppercase tracking-wider leading-none mb-0.5 whitespace-nowrap">Ingresos</p>
           <p className="text-[14px] font-semibold text-success tabular-nums truncate">{Math.round(totalIn).toLocaleString("es-ES")} €</p>
         </div>
         <div className="min-w-0">
           <p className="text-[12px] text-navy/40 uppercase tracking-wider leading-none mb-0.5 whitespace-nowrap">Gastos</p>
-          <p className="text-[14px] font-semibold text-[#B85C3A] tabular-nums truncate">−{Math.round(totalOut).toLocaleString("es-ES")} €</p>
+          <p className="text-[14px] font-semibold text-[#B85C3A] dark:text-[#cf9e8b] tabular-nums truncate">−{Math.round(totalOut).toLocaleString("es-ES")} €</p>
         </div>
         <div className="min-w-0">
           <p className="text-[12px] text-navy/40 uppercase tracking-wider leading-none mb-0.5 whitespace-nowrap">Neto</p>
@@ -125,7 +125,7 @@ export default function RevolutList({ transactions, categories, uncategorizedCou
             placeholder="Buscar concepto o contacto…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-9 py-2.5 text-sm border border-navy/[0.12] rounded-lg bg-white text-navy placeholder:text-navy/35 outline-none focus:ring-2 focus:ring-primary/20 transition"
+            className="w-full pl-9 pr-9 py-2.5 text-sm border border-navy/[0.12] rounded-lg bg-card text-navy placeholder:text-navy/35 outline-none focus:ring-2 focus:ring-primary/20 transition"
           />
           {search && (
             <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-navy/30 hover:text-navy/60">✕</button>
@@ -133,7 +133,7 @@ export default function RevolutList({ transactions, categories, uncategorizedCou
         </div>
         <button
           title="Filtros"
-          className="relative shrink-0 flex items-center justify-center w-[42px] h-[42px] bg-white border border-navy/[0.12] rounded-lg text-navy"
+          className="relative shrink-0 flex items-center justify-center w-[42px] h-[42px] bg-card border border-navy/[0.12] rounded-lg text-navy"
         >
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/>
@@ -141,7 +141,7 @@ export default function RevolutList({ transactions, categories, uncategorizedCou
         </button>
         <button
           title="Más acciones"
-          className="shrink-0 flex items-center justify-center w-[42px] h-[42px] text-navy/55 border border-navy/[0.12] rounded-lg bg-white"
+          className="shrink-0 flex items-center justify-center w-[42px] h-[42px] text-navy/55 border border-navy/[0.12] rounded-lg bg-card"
         >
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/><circle cx="5" cy="12" r="1.5"/>
@@ -168,7 +168,7 @@ export default function RevolutList({ transactions, categories, uncategorizedCou
         <button
           onClick={() => router.push(pathname)}
           className={`shrink-0 px-3.5 py-1.5 rounded-full text-sm transition-colors whitespace-nowrap ${
-            !activeMonth ? "bg-navy text-white font-medium" : "text-navy/40 hover:text-navy/70"
+            !activeMonth ? "bg-navy-solid text-white font-medium" : "text-navy/40 hover:text-navy/70"
           }`}
         >
           Todo
@@ -182,7 +182,7 @@ export default function RevolutList({ transactions, categories, uncategorizedCou
               ref={isActive ? activeMonthRef : undefined}
               onClick={() => goToMonth(key)}
               className={`shrink-0 px-3.5 py-1.5 rounded-full text-sm transition-colors capitalize whitespace-nowrap ${
-                isActive ? "bg-navy text-white font-medium" : "text-navy/40 hover:text-navy/70"
+                isActive ? "bg-navy-solid text-white font-medium" : "text-navy/40 hover:text-navy/70"
               }`}
             >
               {label}{showYear && <span className="text-[10px] ml-0.5 opacity-60">{year}</span>}
@@ -193,13 +193,13 @@ export default function RevolutList({ transactions, categories, uncategorizedCou
 
       {/* Toolbar */}
       <div className="flex items-stretch gap-2 mb-4">
-        <button className="flex-1 flex items-center justify-center gap-1.5 px-3 h-9 bg-white text-navy text-[13px] font-medium border border-navy/15 rounded-xl hover:bg-navy/[0.02] transition-colors">
+        <button className="flex-1 flex items-center justify-center gap-1.5 px-3 h-9 bg-card text-navy text-[13px] font-medium border border-navy/15 rounded-xl hover:bg-navy/[0.02] transition-colors">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
           </svg>
           Añadir movimiento
         </button>
-        <button className="shrink-0 flex items-center justify-center gap-1.5 w-[124px] h-9 text-[13px] font-medium px-4 rounded-xl border bg-white text-navy border-navy/15 hover:bg-navy/[0.02] transition-colors">
+        <button className="shrink-0 flex items-center justify-center gap-1.5 w-[124px] h-9 text-[13px] font-medium px-4 rounded-xl border bg-card text-navy border-navy/15 hover:bg-navy/[0.02] transition-colors">
           <span className="w-3.5 h-3.5 rounded-[3px] border border-navy/35 flex items-center justify-center shrink-0">
             <svg width="9" height="7" viewBox="0 0 9 7" fill="none">
               <polyline points="1,3.5 3.5,6 8,1" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-navy/35"/>
@@ -224,7 +224,7 @@ export default function RevolutList({ transactions, categories, uncategorizedCou
                   {dayNet < 0 ? "−" : "+"}{fmtAmt(Math.abs(dayNet))}
                 </span>
               </div>
-              <div className="bg-white border border-navy/[0.06] rounded-2xl">
+              <div className="bg-card border border-navy/[0.06] rounded-2xl">
                 {dayTxns.map((t, i) => {
                   const cat = t.category ? categories.find((c) => c.value === t.category) : undefined;
                   const accent = cat?.text_color ?? (t.amount > 0 ? FALLBACK_COLOR.in : FALLBACK_COLOR.out);

@@ -1,22 +1,60 @@
 @import "tailwindcss";
 
+/* Modo oscuro controlado por clase (no por prefers-color-scheme), para que
+   el switch manual del sidebar mande sobre la preferencia del sistema. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-sans: 'Inter', sans-serif;
   --font-mono: 'DM Mono', monospace;
   --font-display: 'Playfair Display', serif;
 
   --color-app-bg: #ffffff;
+  --color-card: #ffffff;
   --color-navy: #1c1917;
+  /* Color fijo (no invierte con el tema) para chips/tooltips sólidos que
+     siempre llevan texto blanco encima, p.ej. bg-navy-solid text-white. */
+  --color-navy-solid: #1c1917;
   --color-primary: #4021c8;
   --color-success: #4E8C68;
   --color-income: #298a83;
   --color-danger: #B85C6E;
   --color-warning: #BF8C3A;
 
+  /* Escala de grises del diseño v2 (tablas, filtros, botones). Mismos roles
+     que navy pero con más matices; se invierten en .dark igual que navy. */
+  --color-strong: #3f3f46;
+  --color-muted: #63636b;
+  --color-faint: #a1a1aa;
+  --color-border: #e6e6ea;
+  --color-subtle: #f4f4f5;
+
   --shadow-card: 0 0 6px rgba(28, 25, 23, 0.06);
   --shadow-sm: 0 1px 3px rgba(28, 25, 23, 0.08), 0 1px 2px rgba(28, 25, 23, 0.05);
 
   --radius-md: 0.3125rem;
+}
+
+.dark {
+  --color-app-bg: #121014;
+  --color-card: #1c1a20;
+  --color-navy: #ededec;
+  --color-primary: #8a75ff;
+  --color-success: #6fb98a;
+  --color-income: #4dbdb3;
+  --color-danger: #e0879a;
+  --color-warning: #e0ab5c;
+
+  --color-strong: #d4d4d8;
+  --color-muted: #9a9aa2;
+  --color-faint: #6b6b74;
+  --color-border: #2c2933;
+  --color-subtle: #201d24;
+
+  --shadow-card: 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.25);
+
+  color-scheme: dark;
 }
 
 /* Recharts hace focusable el <svg> del gráfico para navegación por teclado

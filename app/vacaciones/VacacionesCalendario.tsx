@@ -21,8 +21,8 @@ const PERSON_COLORS = [
   { dot: "bg-primary", cellBg: "bg-primary/[0.12]", stroke: "#4021c8", border: "border-primary/20", text: "text-primary", badge: "bg-primary/10 text-primary" },
   { dot: "bg-income",  cellBg: "bg-income/[0.12]",  stroke: "#298a83", border: "border-income/20",  text: "text-income",  badge: "bg-income/10 text-income" },
   { dot: "bg-warning", cellBg: "bg-warning/[0.12]", stroke: "#ff8a00", border: "border-warning/20", text: "text-warning", badge: "bg-warning/10 text-warning" },
-  { dot: "bg-purple-500", cellBg: "bg-purple-500/[0.12]", stroke: "#8b5cf6", border: "border-purple-200", text: "text-purple-600", badge: "bg-purple-50 text-purple-600" },
-  { dot: "bg-pink-500", cellBg: "bg-pink-500/[0.12]", stroke: "#ec4899", border: "border-pink-200", text: "text-pink-600", badge: "bg-pink-50 text-pink-600" },
+  { dot: "bg-purple-500", cellBg: "bg-purple-500/[0.12]", stroke: "#8b5cf6", border: "border-purple-200 dark:border-purple-500/30", text: "text-purple-600 dark:text-purple-400", badge: "bg-purple-50 dark:bg-purple-500/15 text-purple-600 dark:text-purple-400" },
+  { dot: "bg-pink-500", cellBg: "bg-pink-500/[0.12]", stroke: "#ec4899", border: "border-pink-200 dark:border-pink-500/30", text: "text-pink-600 dark:text-pink-400", badge: "bg-pink-50 dark:bg-pink-500/15 text-pink-600 dark:text-pink-400" },
 ];
 
 const MONTH_SHORT = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
@@ -210,7 +210,7 @@ function SugerenciasBlock({ personas, festivos }: { personas: Persona[]; festivo
   };
 
   return (
-    <div className="bg-white border border-[#ececef] rounded-[14px] divide-y divide-navy/[0.06]">
+    <div className="bg-card border border-border rounded-[14px] divide-y divide-navy/[0.06]">
       {suggestions.map((s, i) => (
         <div key={i} className="flex items-start gap-2.5 px-4 py-2.5">
           <span className={`shrink-0 mt-1.5 w-1.5 h-1.5 rounded-full ${dot[s.type]}`} />
@@ -444,7 +444,7 @@ function AñadirAusenciaModal({
                 </svg>
               </div>
               <div className="flex-1 relative">
-                <div className="flex items-center gap-2 border border-navy/[0.12] rounded-lg px-3 py-2.5 bg-white pointer-events-none absolute inset-0 z-10">
+                <div className="flex items-center gap-2 border border-navy/[0.12] rounded-lg px-3 py-2.5 bg-card pointer-events-none absolute inset-0 z-10">
                   <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: selectedType.dotHex }} />
                   <span className="text-sm text-navy flex-1 truncate">{selectedType.label}</span>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-navy/35 shrink-0">
@@ -706,7 +706,7 @@ function PersonCard({
           onAdd={onAdd}
         />
       )}
-      <div className={`bg-white border ${colors.border} rounded-[14px] overflow-hidden flex flex-col`}>
+      <div className={`bg-card border ${colors.border} rounded-[14px] overflow-hidden flex flex-col`}>
         {/* Header */}
         <div className="px-5 pt-5 pb-4 border-b border-navy/5">
           <div className="flex items-center justify-between mb-4">
@@ -724,7 +724,7 @@ function PersonCard({
               </button>
               <button
                 onClick={() => setShowAddModal(true)}
-                className="flex items-center gap-1 text-xs text-white bg-navy px-2.5 py-1 rounded-lg hover:bg-navy/85 transition-colors"
+                className="flex items-center gap-1 text-xs text-app-bg bg-navy px-2.5 py-1 rounded-lg hover:bg-navy/85 transition-colors"
               >
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
@@ -968,7 +968,7 @@ function AnnualCalendar({
         }).filter((p) => p.days.length > 0);
 
         return (
-          <div key={month} className="bg-white border border-[#ececef] rounded-[14px] overflow-hidden">
+          <div key={month} className="bg-card border border-border rounded-[14px] overflow-hidden">
             <div className="px-4 pt-4 pb-2">
               <p className="text-xs font-semibold text-navy/50 uppercase tracking-wider">{monthName}</p>
             </div>
@@ -1075,7 +1075,7 @@ function GanttView({
   });
 
   return (
-    <div className="bg-white border border-[#ececef] rounded-[14px] p-5">
+    <div className="bg-card border border-border rounded-[14px] p-5">
       <div className="flex mb-3">
         <div className="w-24 shrink-0" />
         <div className="flex-1 grid grid-cols-12 gap-1">
@@ -1311,7 +1311,7 @@ export default function VacacionesCalendario({
                 <path d="M9 18h6" /><path d="M10 22h4" /><path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z" />
               </svg>
               {suggestionsCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#b45309] border border-white" />
+                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#b45309] dark:bg-[#e8a572] border border-white" />
               )}
             </IconButtonV2>
             <IconButtonV2 onClick={openArchivados} title="Archivados">

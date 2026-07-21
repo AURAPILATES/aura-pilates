@@ -33,7 +33,7 @@ function Tooltip({ text, children, as: As = "span", className = "" }: {
   return (
     <As className={`relative inline-flex group ${className}`}>
       {children}
-      <span className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-full mt-1.5 z-20 hidden group-hover:block whitespace-nowrap rounded bg-navy text-white text-[11px] px-2 py-1 shadow-lg">
+      <span className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-full mt-1.5 z-20 hidden group-hover:block whitespace-nowrap rounded bg-navy-solid text-white text-[11px] px-2 py-1 shadow-lg">
         {text}
       </span>
     </As>

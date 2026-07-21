@@ -3,7 +3,7 @@ import { occupancyByHour, occupancyByWeekday, pct } from "@/lib/analytics";
 
 function Card({ children }: { children: React.ReactNode }) {
   return (
-    <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card p-4 sm:p-5">
+    <div className="bg-card border border-navy/[0.07] rounded-2xl shadow-card p-4 sm:p-5">
       {children}
     </div>
   );

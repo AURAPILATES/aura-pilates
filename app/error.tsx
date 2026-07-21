@@ -18,8 +18,8 @@ export default function Error({
 
   return (
     <div className="flex items-center justify-center min-h-[60vh] px-6">
-      <div className="max-w-lg w-full rounded-2xl border border-red-200 bg-red-50 p-6 space-y-3">
-        <div className="flex items-center gap-2 text-red-600">
+      <div className="max-w-lg w-full rounded-2xl border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950 p-6 space-y-3">
+        <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
           <AlertTriangle size={18} />
           <p className="font-semibold">Error al cargar los datos</p>
         </div>

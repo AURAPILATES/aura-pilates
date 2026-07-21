@@ -79,8 +79,8 @@ export default function DateFilter({ variant = "classic" }: { variant?: "classic
         }}
         className={
           variant === "v2"
-            ? "flex items-center gap-2 px-3 py-2 text-[13.5px] font-medium border border-[#e6e6ea] rounded-[10px] bg-white text-[#3f3f46] hover:bg-[#18181b]/[0.02] transition-colors whitespace-nowrap"
-            : "flex items-center gap-2 px-3 py-2 text-sm font-medium border border-navy/[0.12] rounded-xl bg-white text-navy hover:bg-navy/[0.03] transition-colors"
+            ? "flex items-center gap-2 px-3 py-2 text-[13.5px] font-medium border border-border rounded-[10px] bg-card text-strong hover:bg-navy/[0.02] transition-colors whitespace-nowrap"
+            : "flex items-center gap-2 px-3 py-2 text-sm font-medium border border-navy/[0.12] rounded-xl bg-card text-navy hover:bg-navy/[0.03] transition-colors"
         }
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -100,7 +100,7 @@ export default function DateFilter({ variant = "classic" }: { variant?: "classic
       </button>
 
       {open && (
-        <div className={`absolute left-0 top-full mt-1.5 z-50 bg-white shadow-lg overflow-hidden min-w-[210px] ${variant === "v2" ? "border border-[#e6e6ea] rounded-[10px]" : "border border-navy/[0.12] rounded-xl"}`}>
+        <div className={`absolute left-0 top-full mt-1.5 z-50 bg-card shadow-lg overflow-hidden min-w-[210px] ${variant === "v2" ? "border border-border rounded-[10px]" : "border border-navy/[0.12] rounded-xl"}`}>
           {!showCustom ? (
             <ul className="py-1">
               {RANGE_OPTIONS.map(({ key, label }) => (
@@ -109,8 +109,8 @@ export default function DateFilter({ variant = "classic" }: { variant?: "classic
                     onClick={() => selectRange(key)}
                     className={`w-full text-left px-4 py-2 text-sm transition-colors ${
                       current === key
-                        ? variant === "v2" ? "bg-[#18181b]/[0.05] text-[#18181b] font-medium" : "bg-primary/[0.08] text-primary font-medium"
-                        : variant === "v2" ? "text-[#3f3f46] hover:bg-[#18181b]/[0.04]" : "text-navy/70 hover:bg-navy/[0.04] hover:text-navy"
+                        ? variant === "v2" ? "bg-navy/[0.05] text-navy font-medium" : "bg-primary/[0.08] text-primary font-medium"
+                        : variant === "v2" ? "text-strong hover:bg-navy/[0.04]" : "text-navy/70 hover:bg-navy/[0.04] hover:text-navy"
                     }`}
                   >
                     {label}
@@ -146,7 +146,7 @@ export default function DateFilter({ variant = "classic" }: { variant?: "classic
               <div className="flex gap-2 pt-1">
                 <button
                   onClick={() => setShowCustom(false)}
-                  className={`flex-1 text-sm px-3 py-2 transition-colors ${variant === "v2" ? "rounded-[10px] border border-[#e6e6ea] text-[#52525b] hover:bg-[#18181b]/[0.02]" : "rounded-lg border border-navy/[0.12] text-navy/60 hover:bg-navy/[0.03]"}`}
+                  className={`flex-1 text-sm px-3 py-2 transition-colors ${variant === "v2" ? "rounded-[10px] border border-border text-muted hover:bg-navy/[0.02]" : "rounded-lg border border-navy/[0.12] text-navy/60 hover:bg-navy/[0.03]"}`}
                 >
                   Volver
                 </button>

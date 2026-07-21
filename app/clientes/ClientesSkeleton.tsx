@@ -1,7 +1,7 @@
 function LoadingBadge({ text }: { text: string }) {
   return (
     <div className="absolute top-4 left-0 right-0 flex justify-center z-10">
-      <div className="flex items-center gap-1.5 px-3 py-1.5 bg-navy text-white text-[11px] whitespace-nowrap rounded-[6px] shadow-lg pointer-events-none">
+      <div className="flex items-center gap-1.5 px-3 py-1.5 bg-navy-solid text-white text-[11px] whitespace-nowrap rounded-[6px] shadow-lg pointer-events-none">
         <span className="w-1.5 h-1.5 rounded-full bg-white/60 animate-pulse shrink-0" />
         {text}
       </div>
@@ -43,14 +43,14 @@ export default function ClientesSkeleton() {
         {/* Toolbar: search + CSV + filter pills */}
         <div className="flex flex-wrap items-center gap-2 mb-5">
           <div className="flex items-center gap-2 flex-1 min-w-[200px]">
-            <div className="flex-1 h-[38px] bg-white border border-navy/[0.1] rounded-xl" />
-            <div className="w-9 h-9 bg-white border border-navy/[0.1] rounded-xl shrink-0" />
+            <div className="flex-1 h-[38px] bg-card border border-navy/[0.1] rounded-xl" />
+            <div className="w-9 h-9 bg-card border border-navy/[0.1] rounded-xl shrink-0" />
           </div>
-          <div className="h-9 w-64 bg-white border border-navy/[0.1] rounded-xl" />
+          <div className="h-9 w-64 bg-card border border-navy/[0.1] rounded-xl" />
         </div>
 
         {/* Table */}
-        <div className="bg-white border border-navy/[0.07] shadow-card rounded-[5px] overflow-hidden">
+        <div className="bg-card border border-navy/[0.07] shadow-card rounded-[5px] overflow-hidden">
           <div className="px-4 py-3 border-b border-navy/[0.06] flex items-center gap-4">
             <div className="h-2.5 w-16 bg-navy/10 rounded flex-1 max-w-[130px]" />
             <div className="h-2.5 w-10 bg-navy/10 rounded" />

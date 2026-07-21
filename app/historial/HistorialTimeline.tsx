@@ -13,11 +13,11 @@ import { createBusinessEvent, updateBusinessEvent, deleteBusinessEvent } from ".
 // ── Config ────────────────────────────────────────────────────────────────────
 
 const CATEGORIAS: { value: EventCategoria; label: string; color: string; bg: string }[] = [
-  { value: "precios",     label: "Precios",     color: "text-amber-700",   bg: "bg-amber-50 border-amber-200"   },
-  { value: "horarios",    label: "Horarios",    color: "text-blue-700",    bg: "bg-blue-50 border-blue-200"     },
-  { value: "promociones", label: "Promociones", color: "text-emerald-700", bg: "bg-emerald-50 border-emerald-200" },
-  { value: "operativo",   label: "Operativo",   color: "text-purple-700",  bg: "bg-purple-50 border-purple-200" },
-  { value: "otro",        label: "Otro",        color: "text-slate-600",   bg: "bg-slate-50 border-slate-200"   },
+  { value: "precios",     label: "Precios",     color: "text-amber-700 dark:text-amber-400",   bg: "bg-amber-50 dark:bg-amber-500/15 border-amber-200 dark:border-amber-500/30"   },
+  { value: "horarios",    label: "Horarios",    color: "text-blue-700 dark:text-blue-400",    bg: "bg-blue-50 dark:bg-blue-500/15 border-blue-200 dark:border-blue-500/30"     },
+  { value: "promociones", label: "Promociones", color: "text-emerald-700 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-500/15 border-emerald-200 dark:border-emerald-500/30" },
+  { value: "operativo",   label: "Operativo",   color: "text-purple-700 dark:text-purple-400",  bg: "bg-purple-50 dark:bg-purple-500/15 border-purple-200 dark:border-purple-500/30" },
+  { value: "otro",        label: "Otro",        color: "text-slate-600 dark:text-slate-400",   bg: "bg-slate-50 dark:bg-slate-500/15 border-slate-200 dark:border-slate-500/30"   },
 ];
 
 const DOT_COLOR: Record<EventCategoria, string> = {
@@ -132,7 +132,7 @@ function EventForm({
         </div>
 
         {error && (
-          <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+          <p className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/15 border border-red-100 dark:border-red-500/30 rounded-lg px-3 py-2">
             {error}
           </p>
         )}
@@ -284,7 +284,7 @@ export default function HistorialTimeline({ events: initial }: { events: Busines
                         error={formError}
                       />
                     ) : (
-                      <div className="group bg-white border border-navy/[0.08] rounded-xl px-4 py-3 hover:border-navy/20 transition-colors">
+                      <div className="group bg-card border border-navy/[0.08] rounded-xl px-4 py-3 hover:border-navy/20 transition-colors">
                         <div className="flex items-start justify-between gap-3">
                           <div className="space-y-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
@@ -331,7 +331,7 @@ export default function HistorialTimeline({ events: initial }: { events: Busines
                               </button>
                               <button
                                 onClick={() => setConfirmDeleteId(ev.id)}
-                                className="p-1.5 rounded-md text-navy/40 hover:text-red-500 hover:bg-red-50 transition-colors"
+                                className="p-1.5 rounded-md text-navy/40 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/15 transition-colors"
                                 title="Eliminar"
                               >
                                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

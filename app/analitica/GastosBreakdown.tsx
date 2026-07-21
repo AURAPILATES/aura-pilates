@@ -309,7 +309,7 @@ export default function GastosBreakdown({
             !(selectedTop && selectedTop.children.length > 0) ? (
               <Link
                 href={`/transacciones?categoria=${encodeURIComponent(selected)}`}
-                className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-navy/20 bg-white text-sm font-medium text-navy hover:border-navy/40 transition-colors"
+                className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-navy/20 bg-card text-sm font-medium text-navy hover:border-navy/40 transition-colors"
               >
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>

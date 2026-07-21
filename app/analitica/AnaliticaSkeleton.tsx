@@ -1,6 +1,6 @@
 function CardSkeleton() {
   return (
-    <div className="bg-white border border-[#ececef] rounded-[14px] p-4 sm:p-5 animate-pulse">
+    <div className="bg-card border border-border rounded-[14px] p-4 sm:p-5 animate-pulse">
       <div className="h-2 w-16 bg-navy/10 rounded mb-3" />
       <div className="h-2 w-10 bg-navy/[0.07] rounded mb-2" />
       <div className="h-7 w-20 bg-navy/10 rounded mb-2" />
@@ -11,7 +11,7 @@ function CardSkeleton() {
 
 function ChartSkeleton({ height = "h-[180px]" }: { height?: string }) {
   return (
-    <div className="bg-white border border-[#ececef] rounded-[14px] p-4 sm:p-6 animate-pulse">
+    <div className="bg-card border border-border rounded-[14px] p-4 sm:p-6 animate-pulse">
       <div className="h-2.5 w-28 bg-navy/10 rounded mb-1.5" />
       <div className="h-2 w-44 bg-navy/[0.07] rounded mb-5" />
       <div className={`${height} bg-navy/[0.05] rounded-[10px]`} />
@@ -22,7 +22,7 @@ function ChartSkeleton({ height = "h-[180px]" }: { height?: string }) {
 function LoadingBadge({ text }: { text: string }) {
   return (
     <div className="absolute top-4 left-0 right-0 flex justify-center z-10">
-      <div className="flex items-center gap-1.5 px-3 py-1.5 bg-navy text-white text-[11px] whitespace-nowrap rounded-[6px] shadow-lg pointer-events-none">
+      <div className="flex items-center gap-1.5 px-3 py-1.5 bg-navy-solid text-white text-[11px] whitespace-nowrap rounded-[6px] shadow-lg pointer-events-none">
         <span className="w-1.5 h-1.5 rounded-full bg-white/60 animate-pulse shrink-0" />
         {text}
       </div>

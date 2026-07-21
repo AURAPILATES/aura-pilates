@@ -6,7 +6,7 @@
 export default function TaxBadgeV2({ value, isError, zeroIsExplicit }: { value: number; isError: boolean; zeroIsExplicit?: boolean }) {
   if (isError) {
     return (
-      <span className="inline-flex items-center gap-1 bg-[#fee2e2] text-[#dc2626] border border-[#fca5a5] rounded-[6px] px-[7px] py-[2px] text-[11px] font-semibold">
+      <span className="inline-flex items-center gap-1 bg-[#fee2e2] dark:bg-[#391313] text-[#dc2626] dark:text-[#dd7e7e] border border-[#fca5a5] dark:border-[#6f2a2a] rounded-[6px] px-[7px] py-[2px] text-[11px] font-semibold">
         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M12 3l9 16H3z" /><path d="M12 10v4M12 17v.5" />
         </svg>
@@ -15,7 +15,7 @@ export default function TaxBadgeV2({ value, isError, zeroIsExplicit }: { value: 
     );
   }
   return (
-    <span className="inline-flex items-center bg-[#f2f2f4] text-[#52525b] rounded-[6px] px-[7px] py-[2px] text-[11px] font-medium">
+    <span className="inline-flex items-center bg-subtle text-muted rounded-[6px] px-[7px] py-[2px] text-[11px] font-medium">
       {value > 0 || zeroIsExplicit ? `${value}%` : "—"}
     </span>
   );

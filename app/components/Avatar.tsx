@@ -21,7 +21,7 @@ export default function Avatar({ seed, initials, logoDomain, size = 32 }: {
   if (logoDomain && !imgError) {
     return (
       <div
-        className="shrink-0 rounded-full bg-white border border-navy/[0.08] flex items-center justify-center overflow-hidden"
+        className="shrink-0 rounded-full bg-card border border-navy/[0.08] flex items-center justify-center overflow-hidden"
         style={{ width: size, height: size }}
       >
         <img

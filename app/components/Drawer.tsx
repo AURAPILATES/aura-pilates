@@ -41,7 +41,7 @@ export default function Drawer({
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
       <div className="absolute inset-0 bg-navy/20 backdrop-blur-[2px]" onClick={onClose} />
-      <div className={`relative w-full ${maxWidth} bg-white h-full flex flex-col shadow-2xl`}>
+      <div className={`relative w-full ${maxWidth} bg-card h-full flex flex-col shadow-2xl`}>
         <div className="flex items-start justify-between gap-3 px-6 py-4 border-b border-navy/[0.07] shrink-0">
           <div className="min-w-0 flex-1">
             {header ?? (

@@ -138,7 +138,7 @@ export default function ContactPicker({
       {open && dropPos && (options.length > 0 || showCreate) && createPortal(
         <div
           ref={dropRef}
-          className="fixed z-[9999] bg-white border border-navy/10 rounded-xl shadow-xl overflow-y-auto py-1"
+          className="fixed z-[9999] bg-card border border-navy/10 rounded-xl shadow-xl overflow-y-auto py-1"
           style={{ top: dropPos.top, left: dropPos.left, width: dropPos.width, maxHeight: "14rem" }}
         >
           {options.map((c) => (

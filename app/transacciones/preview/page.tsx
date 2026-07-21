@@ -27,7 +27,7 @@ export default async function TransaccionesPreviewPage(props: {
     .reverse();
 
   return (
-    <div className="max-w-md mx-auto bg-white min-h-screen">
+    <div className="max-w-md mx-auto bg-card min-h-screen">
       <div className="px-4 pt-6 pb-16">
         <Suspense fallback={null}>
           <PreviewList

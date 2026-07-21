@@ -63,12 +63,12 @@ function BulkActionBarV2({
   }
 
   return (
-    <div className="fixed left-1/2 bottom-6 -translate-x-1/2 z-30 flex items-center gap-2 bg-[#18181b] text-white rounded-[14px] shadow-lg pl-4 pr-2 py-2">
+    <div className="fixed left-1/2 bottom-6 -translate-x-1/2 z-30 flex items-center gap-2 bg-navy text-app-bg rounded-[14px] shadow-lg pl-4 pr-2 py-2">
       <span className="text-[13px] font-medium whitespace-nowrap">{count} seleccionado{count !== 1 ? "s" : ""}</span>
-      <div className="w-px h-5 bg-white/15 shrink-0" />
+      <div className="w-px h-5 bg-app-bg/15 shrink-0" />
       {mode === "iva" || mode === "retencion" ? (
         <div className="flex items-center gap-1.5">
-          <span className="text-[12px] text-white/60 whitespace-nowrap">{mode === "iva" ? "IVA" : "IRPF"} %</span>
+          <span className="text-[12px] text-app-bg/60 whitespace-nowrap">{mode === "iva" ? "IVA" : "IRPF"} %</span>
           <input
             autoFocus
             type="text"
@@ -76,39 +76,39 @@ function BulkActionBarV2({
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") submitRate(); if (e.key === "Escape") setMode("idle"); }}
-            className="w-14 px-2 py-1 text-[13px] text-[#18181b] rounded-[7px] focus:outline-none"
+            className="w-14 px-2 py-1 text-[13px] text-navy bg-app-bg rounded-[7px] focus:outline-none"
           />
-          <button type="button" onClick={submitRate} className="text-[12px] font-semibold text-[#18181b] bg-white hover:bg-white/85 rounded-[7px] px-2.5 py-1.5 transition-colors whitespace-nowrap">
+          <button type="button" onClick={submitRate} className="text-[12px] font-semibold text-navy bg-app-bg hover:bg-app-bg/85 rounded-[7px] px-2.5 py-1.5 transition-colors whitespace-nowrap">
             Aplicar
           </button>
-          <button type="button" onClick={() => setMode("idle")} className="text-white/50 hover:text-white text-[12px] px-1">
+          <button type="button" onClick={() => setMode("idle")} className="text-app-bg/50 hover:text-app-bg text-[12px] px-1">
             Cancelar
           </button>
         </div>
       ) : mode === "delete" ? (
         <div className="flex items-center gap-1.5">
-          <span className="text-[12px] text-white/70 whitespace-nowrap">¿Eliminar {count}?</span>
-          <button type="button" onClick={onDelete} className="text-[12px] font-semibold text-white bg-[#dc2626] hover:bg-[#dc2626]/85 rounded-[7px] px-2.5 py-1.5 transition-colors whitespace-nowrap">
+          <span className="text-[12px] text-app-bg/70 whitespace-nowrap">¿Eliminar {count}?</span>
+          <button type="button" onClick={onDelete} className="text-[12px] font-semibold text-white bg-[#dc2626] dark:bg-[#dd7e7e] hover:bg-[#dc2626]/85 dark:hover:bg-[#dd7e7e]/85 rounded-[7px] px-2.5 py-1.5 transition-colors whitespace-nowrap">
             Sí, eliminar
           </button>
-          <button type="button" onClick={() => setMode("idle")} className="text-white/50 hover:text-white text-[12px] px-1">
+          <button type="button" onClick={() => setMode("idle")} className="text-app-bg/50 hover:text-app-bg text-[12px] px-1">
             Cancelar
           </button>
         </div>
       ) : (
         <div className="flex items-center gap-1">
-          <button type="button" onClick={() => setMode("iva")} className="text-[12.5px] font-medium text-white/85 hover:text-white hover:bg-white/10 rounded-[7px] px-2.5 py-1.5 transition-colors whitespace-nowrap">
+          <button type="button" onClick={() => setMode("iva")} className="text-[12.5px] font-medium text-app-bg/85 hover:text-app-bg hover:bg-app-bg/10 rounded-[7px] px-2.5 py-1.5 transition-colors whitespace-nowrap">
             Cambiar IVA
           </button>
-          <button type="button" onClick={() => setMode("retencion")} className="text-[12.5px] font-medium text-white/85 hover:text-white hover:bg-white/10 rounded-[7px] px-2.5 py-1.5 transition-colors whitespace-nowrap">
+          <button type="button" onClick={() => setMode("retencion")} className="text-[12.5px] font-medium text-app-bg/85 hover:text-app-bg hover:bg-app-bg/10 rounded-[7px] px-2.5 py-1.5 transition-colors whitespace-nowrap">
             Cambiar IRPF
           </button>
-          <button type="button" onClick={() => setMode("delete")} className="text-[12.5px] font-medium text-[#f87171] hover:text-white hover:bg-[#dc2626]/30 rounded-[7px] px-2.5 py-1.5 transition-colors whitespace-nowrap">
+          <button type="button" onClick={() => setMode("delete")} className="text-[12.5px] font-medium text-[#f87171] hover:text-white hover:bg-[#dc2626]/30 dark:hover:bg-[#dd7e7e]/30 rounded-[7px] px-2.5 py-1.5 transition-colors whitespace-nowrap">
             Eliminar
           </button>
         </div>
       )}
-      <button type="button" onClick={onClear} title="Cancelar selección" className="ml-1 w-6 h-6 flex items-center justify-center shrink-0 text-white/40 hover:text-white transition-colors">
+      <button type="button" onClick={onClear} title="Cancelar selección" className="ml-1 w-6 h-6 flex items-center justify-center shrink-0 text-app-bg/40 hover:text-app-bg transition-colors">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
@@ -140,7 +140,7 @@ export default function ContactosManagerV2({
               onClick={onCleanup}
               disabled={cleaning}
               title="Vuelve a limpiar los conceptos ya guardados quitando códigos de operación variables, para que coincidan de forma estable"
-              className="inline-flex items-center gap-[7px] bg-[#fef3e2] text-[#b45309] border border-[#f6dcb8] rounded-full px-3 py-[5px] text-[12.5px] font-medium disabled:opacity-50"
+              className="inline-flex items-center gap-[7px] bg-[#fef3e2] dark:bg-[#392a13] text-[#b45309] dark:text-[#e8a572] border border-[#f6dcb8] dark:border-[#6f522a] rounded-full px-3 py-[5px] text-[12.5px] font-medium disabled:opacity-50"
             >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 3l9 16H3z" /><path d="M12 10v4M12 17v.5" />
@@ -154,7 +154,7 @@ export default function ContactosManagerV2({
               onClick={onRecompute}
               disabled={recomputing}
               title="Vuelve a calcular Contacto a partir de Concepto + Más datos, cruzando con los contactos guardados"
-              className="inline-flex items-center gap-[7px] bg-[#fef3e2] text-[#b45309] border border-[#f6dcb8] rounded-full px-3 py-[5px] text-[12.5px] font-medium disabled:opacity-50"
+              className="inline-flex items-center gap-[7px] bg-[#fef3e2] dark:bg-[#392a13] text-[#b45309] dark:text-[#e8a572] border border-[#f6dcb8] dark:border-[#6f522a] rounded-full px-3 py-[5px] text-[12.5px] font-medium disabled:opacity-50"
             >
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 3l9 16H3z" /><path d="M12 10v4M12 17v.5" />
@@ -178,7 +178,7 @@ export default function ContactosManagerV2({
         </div>
 
         {rows.length === 0 ? (
-          <div className="py-12 text-center text-[#a1a1aa] text-sm">Ningún contacto coincide con la búsqueda.</div>
+          <div className="py-12 text-center text-faint text-sm">Ningún contacto coincide con la búsqueda.</div>
         ) : (
           rows.map((c) => {
             const stats = contactStats[c.id];
@@ -207,38 +207,38 @@ export default function ContactosManagerV2({
                             type="checkbox"
                             checked={isSelected}
                             onChange={() => onToggleSelect(c.id)}
-                            className="w-[17px] h-[17px] rounded-[5px] border-[#d4d4d8] text-[#18181b] focus:ring-[#18181b]/20 cursor-pointer"
+                            className="w-[17px] h-[17px] rounded-[5px] border-border text-navy focus:ring-navy/20 cursor-pointer"
                           />
                         </label>
                       </span>
-                      <p className="text-[13.5px] font-medium text-[#18181b] truncate">{c.label}</p>
+                      <p className="text-[13.5px] font-medium text-navy truncate">{c.label}</p>
                     </div>
                     <div><CategoryBadge category={c.category} categories={categories} /></div>
                     <div><TaxBadgeV2 value={c.ivaRate} isError={bothMissing} zeroIsExplicit={c.noTax} /></div>
                     <div><TaxBadgeV2 value={c.retencionRate} isError={bothMissing} zeroIsExplicit={c.noTax} /></div>
-                    <p className="text-[13px] font-semibold text-[#18181b]">{stats?.count ?? "—"}</p>
-                    <p className="text-right text-[12.5px] text-[#71717a]">{lastDate ? fmtContactDate(lastDate) : "—"}</p>
+                    <p className="text-[13px] font-semibold text-navy">{stats?.count ?? "—"}</p>
+                    <p className="text-right text-[12.5px] text-muted">{lastDate ? fmtContactDate(lastDate) : "—"}</p>
                   </div>
                 </div>
 
                 {/* Fila móvil */}
                 <div
                   onClick={() => onRowClick(c.id)}
-                  className="sm:hidden flex items-center gap-[10px] py-[10px] border-t border-[#f4f4f4] cursor-pointer active:bg-[#fafafb]"
+                  className="sm:hidden flex items-center gap-[10px] py-[10px] border-t border-subtle cursor-pointer active:bg-subtle"
                 >
                   <Avatar seed={c.label} initials={initials(c.label)} logoDomain={knownDomain(c.label)} size={32} />
                   <div className="flex-1 min-w-0">
-                    <p className="text-[14px] font-medium text-[#18181b] truncate">{c.label}</p>
+                    <p className="text-[14px] font-medium text-navy truncate">{c.label}</p>
                     <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                       <CategoryBadge category={c.category} categories={categories} />
                       {bothMissing ? (
                         <TaxBadgeV2 value={0} isError />
                       ) : c.noTax ? (
-                        <span className="inline-flex items-center bg-[#f2f2f4] text-[#52525b] rounded-[6px] px-[7px] py-[2px] text-[11px] font-medium whitespace-nowrap">
+                        <span className="inline-flex items-center bg-subtle text-muted rounded-[6px] px-[7px] py-[2px] text-[11px] font-medium whitespace-nowrap">
                           Sin IVA ni retenciones
                         </span>
                       ) : (
-                        <span className="inline-flex items-center bg-[#f2f2f4] text-[#52525b] rounded-[6px] px-[7px] py-[2px] text-[11px] font-medium whitespace-nowrap">
+                        <span className="inline-flex items-center bg-subtle text-muted rounded-[6px] px-[7px] py-[2px] text-[11px] font-medium whitespace-nowrap">
                           {[c.ivaRate > 0 ? `IVA ${c.ivaRate}%` : null, c.retencionRate > 0 ? `IRPF ${c.retencionRate}%` : null]
                             .filter(Boolean)
                             .join(" | ")}

@@ -42,7 +42,7 @@ type Props = {
 
 function sortArrow(active: boolean, dir: "asc" | "desc") {
   if (!active) return null;
-  return <span className="text-[#52525b]">{dir === "asc" ? " ▲" : " ▼"}</span>;
+  return <span className="text-muted">{dir === "asc" ? " ▲" : " ▼"}</span>;
 }
 
 export default function ClientesMatrizComprasV2({
@@ -116,7 +116,7 @@ export default function ClientesMatrizComprasV2({
             type="button"
             onClick={onToggleOnlyInactive}
             className={`text-[13px] px-[13px] py-2 rounded-[10px] border whitespace-nowrap transition-colors ${
-              onlyInactive ? "border-[#18181b] bg-[#18181b] text-white font-medium" : "border-[#e6e6ea] bg-white text-[#3f3f46] hover:bg-[#18181b]/[0.02]"
+              onlyInactive ? "border-navy bg-navy text-app-bg font-medium" : "border-border bg-card text-strong hover:bg-navy/[0.02]"
             }`}
           >
             Sin compra en {lastMonth ? monthLabel(lastMonth) : "el último mes"}
@@ -126,7 +126,7 @@ export default function ClientesMatrizComprasV2({
             onClick={onToggleOnlyUpsell}
             title="Clientes en Bàsic desde hace 3 meses o más que nunca han subido a Plus o Pro"
             className={`text-[13px] px-[13px] py-2 rounded-[10px] border whitespace-nowrap transition-colors ${
-              onlyUpsell ? "border-[#18181b] bg-[#18181b] text-white font-medium" : "border-[#e6e6ea] bg-white text-[#3f3f46] hover:bg-[#18181b]/[0.02]"
+              onlyUpsell ? "border-navy bg-navy text-app-bg font-medium" : "border-border bg-card text-strong hover:bg-navy/[0.02]"
             }`}
           >
             Candidatos a upsell
@@ -148,7 +148,7 @@ export default function ClientesMatrizComprasV2({
           <button
             type="button"
             onClick={() => setExpanded((v) => !v)}
-            className="text-[12px] font-medium text-[#18181b] underline underline-offset-2"
+            className="text-[12px] font-medium text-navy underline underline-offset-2"
           >
             {expanded ? "Ver resumen (último mes)" : `Ver todos los meses (${months.length})`}
           </button>
@@ -159,14 +159,14 @@ export default function ClientesMatrizComprasV2({
         <div>
           <div className={tableHeadClassV2} style={gridColsV2(cols)}>
             <span
-              className={`cursor-pointer select-none ${sortKey === "name" ? "text-[#18181b]" : ""}`}
+              className={`cursor-pointer select-none ${sortKey === "name" ? "text-navy" : ""}`}
               onClick={() => onToggleSort("name")}
             >
               Cliente{sortArrow(sortKey === "name", sortDir)}
             </span>
             {showFirstPurchase && (
               <span
-                className={`cursor-pointer select-none ${sortKey === "first" ? "text-[#18181b]" : ""}`}
+                className={`cursor-pointer select-none ${sortKey === "first" ? "text-navy" : ""}`}
                 onClick={() => onToggleSort("first")}
               >
                 Primera compra{sortArrow(sortKey === "first", sortDir)}
@@ -176,7 +176,7 @@ export default function ClientesMatrizComprasV2({
               <span key={m} className="text-center whitespace-nowrap">{monthLabel(m)}</span>
             ))}
             <span
-              className={`text-right cursor-pointer select-none ${sortKey === "total" ? "text-[#18181b]" : ""}`}
+              className={`text-right cursor-pointer select-none ${sortKey === "total" ? "text-navy" : ""}`}
               onClick={() => onToggleSort("total")}
             >
               Total{sortArrow(sortKey === "total", sortDir)}
@@ -184,7 +184,7 @@ export default function ClientesMatrizComprasV2({
           </div>
 
           {rows.length === 0 ? (
-            <div className="py-6 text-center text-[#a1a1aa] text-sm">Sin resultados</div>
+            <div className="py-6 text-center text-faint text-sm">Sin resultados</div>
           ) : (
             rows.map(({ customer, byMonth, totalPaid, firstPurchase }) => (
               <div
@@ -193,11 +193,11 @@ export default function ClientesMatrizComprasV2({
                 className={`${tableRowClassV2} cursor-pointer`}
                 style={gridColsV2(cols)}
               >
-                <p className="font-semibold text-[#18181b] truncate text-[13.5px]" title={customer.name ?? customer.email ?? undefined}>
+                <p className="font-semibold text-navy truncate text-[13.5px]" title={customer.name ?? customer.email ?? undefined}>
                   {customer.name ?? customer.email ?? "—"}
                 </p>
                 {showFirstPurchase && (
-                  <p className="text-center text-[#71717a] text-[12.5px] whitespace-nowrap">
+                  <p className="text-center text-muted text-[12.5px] whitespace-nowrap">
                     {firstPurchase ? monthLabel(firstPurchase.slice(0, 7)) : "—"}
                   </p>
                 )}
@@ -222,21 +222,21 @@ export default function ClientesMatrizComprasV2({
                     </div>
                   );
                 })}
-                <p className="text-right font-semibold text-[#18181b] text-[13.5px] tabular-nums">{fmt(totalPaid)}</p>
+                <p className="text-right font-semibold text-navy text-[13.5px] tabular-nums">{fmt(totalPaid)}</p>
               </div>
             ))
           )}
 
           {rows.length > 0 && (
             <div className={tableRowClassV2} style={gridColsV2(cols)}>
-              <p className="font-semibold text-[#71717a] text-[10.5px] uppercase tracking-wide">Total</p>
+              <p className="font-semibold text-muted text-[10.5px] uppercase tracking-wide">Total</p>
               {showFirstPurchase && <div />}
               {visibleMonths.map((m) => (
-                <p key={m} className="text-center text-[10.5px] font-semibold text-[#71717a] tabular-nums">
+                <p key={m} className="text-center text-[10.5px] font-semibold text-muted tabular-nums">
                   {monthTotals[m] > 0 ? fmt(monthTotals[m]) : "—"}
                 </p>
               ))}
-              <p className="text-right text-[10.5px] font-bold text-[#18181b] tabular-nums">{fmt(grandTotal)}</p>
+              <p className="text-right text-[10.5px] font-bold text-navy tabular-nums">{fmt(grandTotal)}</p>
             </div>
           )}
         </div>

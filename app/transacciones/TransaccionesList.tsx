@@ -41,19 +41,19 @@ export const FALLBACK_COLOR = { in: "#4e8c68", out: "#1c1917" };
 export const FALLBACK_ICON = { in: "trending-up", out: "package" };
 
 // ── Source avatar ─────────────────────────────────────────────────────────────
-const SOCIO_INITIALS: Record<string, { initials: string; bg: string; color: string }> = {
-  victor: { initials: "V",  bg: "#EDE9FE", color: "#5B21B6" },
-  celia:  { initials: "Ce", bg: "#FCE7F3", color: "#9D174D" },
-  olga:   { initials: "O",  bg: "#D1FAE5", color: "#065F46" },
-  carles: { initials: "Ca", bg: "#DBEAFE", color: "#1D4ED8" },
+const SOCIO_INITIALS: Record<string, { initials: string; textCls: string; cls: string }> = {
+  victor: { initials: "V",  textCls: "text-[#5B21B6] dark:text-[#c4b5fd]", cls: "bg-[#EDE9FE] dark:bg-[#382f5c] text-[#5B21B6] dark:text-[#c4b5fd]" },
+  celia:  { initials: "Ce", textCls: "text-[#9D174D] dark:text-[#f9a8d4]", cls: "bg-[#FCE7F3] dark:bg-[#4a2438] text-[#9D174D] dark:text-[#f9a8d4]" },
+  olga:   { initials: "O",  textCls: "text-[#065F46] dark:text-[#6ee7b7]", cls: "bg-[#D1FAE5] dark:bg-[#123a2c] text-[#065F46] dark:text-[#6ee7b7]" },
+  carles: { initials: "Ca", textCls: "text-[#1D4ED8] dark:text-[#93c5fd]", cls: "bg-[#DBEAFE] dark:bg-[#1e2f52] text-[#1D4ED8] dark:text-[#93c5fd]" },
 };
 
 export function SourceAvatar({ method, size = 22 }: { method: string; size?: number }) {
   if (method === "efectivo") {
     const icon = Math.round(size * 0.5);
     return (
-      <div className="shrink-0 rounded-full bg-amber-100 flex items-center justify-center" style={{ width: size, height: size }} title="Efectivo Aura">
-        <svg width={icon} height={icon} viewBox="0 0 24 24" fill="none" stroke="#92400E" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <div className="shrink-0 rounded-full bg-amber-100 dark:bg-[#3d2f13] flex items-center justify-center" style={{ width: size, height: size }} title="Efectivo Aura">
+        <svg width={icon} height={icon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-[#92400E] dark:text-[#fcd34d]">
           <rect x="2" y="6" width="20" height="14" rx="2"/><circle cx="12" cy="13" r="3"/><path d="M6 10h.01M18 10h.01"/>
         </svg>
       </div>
@@ -63,8 +63,8 @@ export function SourceAvatar({ method, size = 22 }: { method: string; size?: num
   if (socio) {
     return (
       <div
-        className="shrink-0 rounded-full flex items-center justify-center"
-        style={{ background: socio.bg, color: socio.color, width: size, height: size }}
+        className={`shrink-0 rounded-full flex items-center justify-center ${socio.cls}`}
+        style={{ width: size, height: size }}
         title={method.charAt(0).toUpperCase() + method.slice(1)}
       >
         <span style={{ fontSize: Math.round(size * 9 / 22), fontWeight: 700, lineHeight: 1 }}>{socio.initials}</span>
@@ -83,12 +83,12 @@ export function Checkbox({ checked, onChange }: { checked: boolean; onChange: ()
     <div
       onClick={(e) => { e.stopPropagation(); onChange(); }}
       className={`w-[15px] h-[15px] rounded-[3px] border cursor-pointer flex items-center justify-center shrink-0 transition-colors ${
-        checked ? "bg-black border-black" : "bg-white border-gray-300 hover:border-gray-400"
+        checked ? "bg-navy border-navy" : "bg-card border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500"
       }`}
     >
       {checked && (
-        <svg width="9" height="7" viewBox="0 0 9 7" fill="none">
-          <polyline points="1,3.5 3.5,6 8,1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+        <svg width="9" height="7" viewBox="0 0 9 7" fill="none" className="text-app-bg">
+          <polyline points="1,3.5 3.5,6 8,1" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
       )}
     </div>
@@ -150,10 +150,10 @@ export function CategoryMultiFilter({
   }
 
   const MiniCheck = ({ on }: { on: boolean }) => (
-    <div className={`w-3 h-3 rounded-[2px] border flex items-center justify-center shrink-0 transition-colors ${on ? "bg-black border-black" : "border-navy/30"}`}>
+    <div className={`w-3 h-3 rounded-[2px] border flex items-center justify-center shrink-0 transition-colors ${on ? "bg-navy border-navy" : "border-navy/30"}`}>
       {on && (
-        <svg width="8" height="6" viewBox="0 0 9 7" fill="none">
-          <polyline points="1,3.5 3.5,6 8,1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+        <svg width="8" height="6" viewBox="0 0 9 7" fill="none" className="text-app-bg">
+          <polyline points="1,3.5 3.5,6 8,1" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
       )}
     </div>
@@ -164,7 +164,7 @@ export function CategoryMultiFilter({
       <button
         ref={btnRef}
         onClick={handleToggle}
-        className={`flex items-center gap-2 text-sm border rounded-xl px-3 py-2 bg-white outline-none transition-colors cursor-pointer whitespace-nowrap w-full ${
+        className={`flex items-center gap-2 text-sm border rounded-xl px-3 py-2 bg-card outline-none transition-colors cursor-pointer whitespace-nowrap w-full ${
           selected.length > 0 ? "border-primary/40 text-navy font-medium" : "border-navy/[0.12] text-navy hover:border-navy/30"
         }`}
         style={{ minWidth: "130px" }}
@@ -184,7 +184,7 @@ export function CategoryMultiFilter({
       {open && dropPos && createPortal(
         <div
           ref={dropRef}
-          className="fixed z-[9999] bg-white border border-navy/10 rounded-xl shadow-xl overflow-y-auto py-1"
+          className="fixed z-[9999] bg-card border border-navy/10 rounded-xl shadow-xl overflow-y-auto py-1"
           style={{ top: dropPos.top, left: dropPos.left, minWidth: "13rem", maxHeight: "18rem" }}
         >
           <button
@@ -275,7 +275,7 @@ export function CategoryPill({ category, categories, onChange, hideIcon = false 
       {open && dropPos && createPortal(
         <div
           ref={dropRef}
-          className="fixed z-[9999] bg-white border border-navy/10 rounded-xl shadow-xl overflow-y-auto py-1"
+          className="fixed z-[9999] bg-card border border-navy/10 rounded-xl shadow-xl overflow-y-auto py-1"
           style={{ top: dropPos.top, left: dropPos.left, minWidth: "11rem", maxHeight: "13rem" }}
         >
           <button
@@ -309,14 +309,14 @@ export function OriginIcon({ method, size = 12 }: { method: string; size?: numbe
   }
   if (method === "efectivo") {
     return (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#B45309" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-[#B45309] dark:text-[#e8a572]">
         <rect x="2" y="6" width="20" height="14" rx="2"/><circle cx="12" cy="13" r="3"/><path d="M6 10h.01M18 10h.01"/>
       </svg>
     );
   }
-  const color = SOCIO_INITIALS[method]?.color ?? "#64748B";
+  const textCls = SOCIO_INITIALS[method]?.textCls ?? "text-[#64748B] dark:text-[#94a3b8]";
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className={`shrink-0 ${textCls}`}>
       <circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"/>
     </svg>
   );
@@ -377,7 +377,7 @@ export function MoreOptionsMenu({
         onClick={handleToggle}
         title="Más opciones"
         className={`relative shrink-0 flex items-center justify-center w-9 h-9 border rounded-xl transition-colors ${
-          hasActive ? "border-primary/40 text-primary bg-primary/5" : "text-navy/50 hover:text-navy border-navy/[0.12] bg-white hover:bg-navy/[0.02]"
+          hasActive ? "border-primary/40 text-primary bg-primary/5" : "text-navy/50 hover:text-navy border-navy/[0.12] bg-card hover:bg-navy/[0.02]"
         }`}
       >
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -388,7 +388,7 @@ export function MoreOptionsMenu({
       {open && dropPos && createPortal(
         <div
           ref={dropRef}
-          className="fixed z-[9999] bg-white border border-navy/10 rounded-xl shadow-xl py-2"
+          className="fixed z-[9999] bg-card border border-navy/10 rounded-xl shadow-xl py-2"
           style={{ top: dropPos.top, left: dropPos.left, width: "240px" }}
         >
           <div className="px-3 pt-1 pb-2">
@@ -473,12 +473,13 @@ type Props = {
   recurringPeriods: Record<string, string>;
   recurringExpenses: RecurringExpense[];
   contacts: Contact[];
+  allTransactions?: Transaction[];
 };
 
 const PAGE_SIZE = 50;
 
 export default function TransaccionesList({
-  transactions, categories, uncategorizedCount, recurringPeriods, recurringExpenses, contacts,
+  transactions, categories, uncategorizedCount, recurringPeriods, recurringExpenses, contacts, allTransactions,
 }: Props) {
   const searchParams = useSearchParams();
   const currentRange = searchParams.get("range") ?? "all";
@@ -689,7 +690,7 @@ export default function TransaccionesList({
           categories={categories}
           contacts={contacts}
           recurringPeriod={recurringPeriods[drawerTxn.id]}
-          recurringExpense={recurringExpenses.find((e) => e.key === seriesKeyFor(drawerTxn)) ?? null}
+          recurringExpense={recurringExpenses.find((e) => e.key === seriesKeyFor(drawerTxn, allTransactions ?? transactions)) ?? null}
           onClose={() => setDrawerTxnId(null)}
           onUpdateConcept={handleConceptChange}
           onUpdateBankDetails={handleBankDetailsChange}

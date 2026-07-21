@@ -17,7 +17,7 @@ type Props<T extends string> = {
  * estrechas, si no caben todas, la fila hace scroll horizontal en vez de partirse en líneas. */
 export default function SectionTabsV2<T extends string>({ tabs, active, onChange, className = "" }: Props<T>) {
   return (
-    <div className={`overflow-x-auto scrollbar-none border-b border-[#eee] ${className}`}>
+    <div className={`overflow-x-auto scrollbar-none border-b border-[#eee] dark:border-[#4c4c4c] ${className}`}>
       <div className="flex gap-5 sm:gap-[22px] w-max min-w-full">
         {tabs.map(({ key, label, badge }) => (
           <button
@@ -26,13 +26,13 @@ export default function SectionTabsV2<T extends string>({ tabs, active, onChange
             onClick={() => onChange(key)}
             className={`flex items-center gap-[7px] pb-[11px] text-[14px] whitespace-nowrap transition-colors -mb-px shrink-0 ${
               active === key
-                ? "text-[#18181b] font-semibold border-b-2 border-[#18181b]"
-                : "text-[#71717a] border-b-2 border-transparent hover:text-[#18181b]"
+                ? "text-navy font-semibold border-b-2 border-navy"
+                : "text-muted border-b-2 border-transparent hover:text-navy"
             }`}
           >
             {label}
             {!!badge && (
-              <span className="shrink-0 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-[#b45309] text-white text-[11px] font-semibold px-1">
+              <span className="shrink-0 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-[#b45309] dark:bg-[#e8a572] text-white text-[11px] font-semibold px-1">
                 {badge}
               </span>
             )}

@@ -18,6 +18,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es" className={`${inter.variable} ${dmMono.variable} ${playfair.variable}`}>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{if(localStorage.getItem('theme')==='dark'){document.documentElement.classList.add('dark')}}catch(e){}`,
+          }}
+        />
+      </head>
       <body className="bg-app-bg text-navy antialiased">
         <AppShell>{children}</AppShell>
       </body>

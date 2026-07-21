@@ -19,9 +19,9 @@ type Props = PaymentsBreakdown & {
 
 const ITEMS: { key: SegmentKey; label: string; bg: string; drawerTitle: string }[] = [
   { key: "succeeded", label: "Efectuado",   bg: "bg-[#635bff]", drawerTitle: "Pagos efectuados"       },
-  { key: "refunded",  label: "Reembolsada", bg: "bg-[#0ea5e9]", drawerTitle: "Reembolsos"              },
-  { key: "disputed",  label: "Bloqueado",   bg: "bg-[#f97316]", drawerTitle: "Disputas / Bloqueado"    },
-  { key: "failed",    label: "Error",       bg: "bg-[#dc2626]", drawerTitle: "Errores de pago"         },
+  { key: "refunded",  label: "Reembolsada", bg: "bg-[#0ea5e9] dark:bg-[#27b3f2]", drawerTitle: "Reembolsos"              },
+  { key: "disputed",  label: "Bloqueado",   bg: "bg-[#f97316] dark:bg-[#f9791f]", drawerTitle: "Disputas / Bloqueado"    },
+  { key: "failed",    label: "Error",       bg: "bg-[#dc2626] dark:bg-[#dd7e7e]", drawerTitle: "Errores de pago"         },
 ];
 
 function fmtDate(d: string | null) {

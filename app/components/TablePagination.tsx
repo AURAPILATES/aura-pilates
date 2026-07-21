@@ -34,7 +34,7 @@ export default function TablePagination({ page, totalItems, pageSize, onPageChan
               key={i}
               onClick={() => onPageChange(i)}
               className={`w-7 h-7 flex items-center justify-center rounded-md text-xs font-medium transition-colors ${
-                i === safePage ? "bg-navy text-white" : "text-navy/50 hover:text-navy hover:bg-navy/[0.04]"
+                i === safePage ? "bg-navy text-app-bg" : "text-navy/50 hover:text-navy hover:bg-navy/[0.04]"
               }`}
             >
               {i + 1}

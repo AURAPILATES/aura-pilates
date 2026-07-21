@@ -28,13 +28,13 @@ export function productAbbr(product: string): string {
 
 export function productColor(product: string): string {
   if (product === "Bàsic" || product === "Plus" || product === "Pro")
-    return "bg-violet-50 text-violet-600";
+    return "bg-violet-50 dark:bg-violet-500/15 text-violet-600 dark:text-violet-400";
   if (product === "Pack Benvinguda")
-    return "bg-pink-50 text-pink-600";
+    return "bg-pink-50 dark:bg-pink-500/15 text-pink-600 dark:text-pink-400";
   if (product === "Pack 4 clases" || product === "Pack 8 clases")
-    return "bg-orange-50 text-orange-600";
+    return "bg-orange-50 dark:bg-orange-500/15 text-orange-600 dark:text-orange-400";
   if (product === "Clase suelta")
-    return "bg-yellow-50 text-yellow-600";
+    return "bg-yellow-50 dark:bg-yellow-500/15 text-yellow-600 dark:text-yellow-400";
   return "bg-navy/[0.05] text-navy/50";
 }
 

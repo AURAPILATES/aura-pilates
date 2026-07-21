@@ -14,7 +14,7 @@ import Drawer from "@/app/components/Drawer";
 import TablePaginationV2 from "@/app/components/v2/TablePaginationV2";
 import TaxBadgeV2 from "@/app/components/v2/TaxBadgeV2";
 import SearchInputV2 from "@/app/components/v2/SearchInputV2";
-import { IconButtonV2 } from "@/app/components/v2/ButtonsV2";
+import { IconButtonV2, PrimaryButtonV2 } from "@/app/components/v2/ButtonsV2";
 import { tableHeadClassV2, tableRowClassV2, tableGroupClassV2, gridColsV2 } from "@/app/components/v2/tableStylesV2";
 
 const COLS = "2.1fr 1.2fr 1.1fr .9fr .9fr 1fr";
@@ -35,7 +35,7 @@ function periodDayDetail(period: string, lastDate: string | null | undefined): s
  * para gastos (la mayoría de recurrentes) — en vez de mostrar siempre el valor absoluto. */
 function SignedAmount({ amount, className = "" }: { amount: number; className?: string }) {
   return (
-    <span className={`${amount > 0 ? "text-[#16a34a]" : "text-[#18181b]"} ${className}`}>
+    <span className={`${amount > 0 ? "text-[#16a34a] dark:text-[#7cdfa0]" : "text-navy"} ${className}`}>
       {amount > 0 ? "+" : "−"}{fmtEUR(Math.abs(amount))}
     </span>
   );
@@ -68,6 +68,7 @@ type Props = {
   confirmedPage: number;
   pageSize: number;
   onConfirmedPageChange: (p: number) => void;
+  onNewManual: () => void;
 };
 
 function ArchivedRowV2({ row }: { row: RecurringExpense }) {
@@ -102,7 +103,7 @@ function ArchivedRowV2({ row }: { row: RecurringExpense }) {
 
 export default function RecurrentesListV2({
   pending, confirmed, confirmedPageRows, archived, categories, contacts, search, onSearchChange, pickFor, ivaRateFor, retencionRateFor,
-  onOpenPending, onOpenConfirmed, onConfirmRow, confirmedPage, pageSize, onConfirmedPageChange,
+  onOpenPending, onOpenConfirmed, onConfirmRow, confirmedPage, pageSize, onConfirmedPageChange, onNewManual,
 }: Props) {
   const [showArchived, setShowArchived] = useState(false);
 
@@ -118,6 +119,11 @@ export default function RecurrentesListV2({
             <polyline points="21 8 21 21 3 21 3 8" /><rect x="1" y="3" width="22" height="5" /><line x1="10" y1="12" x2="14" y2="12" />
           </svg>
         </IconButtonV2>
+        <PrimaryButtonV2
+          onClick={onNewManual}
+          label="Nuevo recurrente"
+          icon={<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>}
+        />
       </div>
 
       {showArchived && (
@@ -152,10 +158,10 @@ export default function RecurrentesListV2({
         <>
           <div className={tableGroupClassV2}>
             <span className="flex items-center gap-2">
-              <span className="w-[7px] h-[7px] rounded-full bg-[#b45309]" />
+              <span className="w-[7px] h-[7px] rounded-full bg-[#b45309] dark:bg-[#e8a572]" />
               POR CONFIRMAR
             </span>
-            <span className="text-[#a1a1aa] font-normal normal-case">{pending.length}</span>
+            <span className="text-faint font-normal normal-case">{pending.length}</span>
           </div>
           {pending.map((row) => {
             const pick = pickFor(row);
@@ -177,12 +183,12 @@ export default function RecurrentesListV2({
                       <span className="w-[30px] h-[30px] shrink-0 rounded-[8px] flex items-center justify-center" style={{ backgroundColor: icon.accent }}>
                         <CatIcon iconKey={icon.iconKey} name={icon.label ?? row.label} color="#fff" size={14} />
                       </span>
-                      <p className="text-[13.5px] font-medium text-[#18181b] truncate">{row.label}</p>
+                      <p className="text-[13.5px] font-medium text-navy truncate">{row.label}</p>
                     </div>
                     <div>{row.category && <CategoryBadge category={row.category} categories={categories} />}</div>
                     <div>
-                      <p className="text-[12.5px] text-[#71717a] capitalize">{row.period}</p>
-                      {dayDetail && <p className="text-[11px] text-[#a1a1aa] capitalize">{dayDetail}</p>}
+                      <p className="text-[12.5px] text-muted capitalize">{row.period}</p>
+                      {dayDetail && <p className="text-[11px] text-faint capitalize">{dayDetail}</p>}
                     </div>
                     <div className="flex items-center gap-1.5">
                       <TaxBadgeV2 value={ivaRate} isError={false} />
@@ -195,7 +201,7 @@ export default function RecurrentesListV2({
                           type="button"
                           onClick={(e) => { e.stopPropagation(); void onConfirmRow(row); }}
                           title={`Vinculado a ${pickToLabel(pick, contacts)}`}
-                          className="inline-flex items-center gap-1.5 bg-[#fef3e2] text-[#b45309] rounded-full px-[11px] py-1 text-[12px] font-semibold whitespace-nowrap hover:bg-[#fce8c8] transition-colors"
+                          className="inline-flex items-center gap-1.5 bg-[#fef3e2] dark:bg-[#392a13] text-[#b45309] dark:text-[#e8a572] rounded-full px-[11px] py-1 text-[12px] font-semibold whitespace-nowrap hover:bg-[#fce8c8] dark:hover:bg-[#392b13] transition-colors"
                         >
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M5 12l4 4 10-10" />
@@ -203,7 +209,7 @@ export default function RecurrentesListV2({
                           Confirmar
                         </button>
                       ) : (
-                        <span className="inline-flex items-center gap-1.5 bg-[#f2f2f4] text-[#71717a] rounded-full px-[11px] py-1 text-[12px] font-medium whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1.5 bg-subtle text-muted rounded-full px-[11px] py-1 text-[12px] font-medium whitespace-nowrap">
                           Sin vincular
                         </span>
                       )}
@@ -214,16 +220,16 @@ export default function RecurrentesListV2({
                 {/* Fila móvil */}
                 <div
                   onClick={() => onOpenPending(row)}
-                  className="sm:hidden flex items-center gap-[10px] py-[10px] border-t border-[#f4f4f4] cursor-pointer active:bg-[#fafafb]"
+                  className="sm:hidden flex items-center gap-[10px] py-[10px] border-t border-subtle cursor-pointer active:bg-subtle"
                 >
                   <span className="w-[32px] h-[32px] shrink-0 rounded-[10px] flex items-center justify-center" style={{ backgroundColor: icon.accent }}>
                     <CatIcon iconKey={icon.iconKey} name={icon.label ?? row.label} color="#fff" size={15} />
                   </span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[14px] font-medium text-[#18181b] truncate">{row.label}</p>
+                    <p className="text-[14px] font-medium text-navy truncate">{row.label}</p>
                     <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                       {row.category && <CategoryBadge category={row.category} categories={categories} />}
-                      <span className="text-[11.5px] text-[#71717a] capitalize">{row.period}{dayDetail ? ` · ${dayDetail}` : ""}</span>
+                      <span className="text-[11.5px] text-muted capitalize">{row.period}{dayDetail ? ` · ${dayDetail}` : ""}</span>
                     </div>
                   </div>
                   <div className="text-right shrink-0">
@@ -233,12 +239,12 @@ export default function RecurrentesListV2({
                         type="button"
                         onClick={(e) => { e.stopPropagation(); void onConfirmRow(row); }}
                         title={`Vinculado a ${pickToLabel(pick, contacts)}`}
-                        className="mt-1 inline-flex items-center gap-1 bg-[#fef3e2] text-[#b45309] rounded-full px-[9px] py-[3px] text-[11px] font-semibold whitespace-nowrap"
+                        className="mt-1 inline-flex items-center gap-1 bg-[#fef3e2] dark:bg-[#392a13] text-[#b45309] dark:text-[#e8a572] rounded-full px-[9px] py-[3px] text-[11px] font-semibold whitespace-nowrap"
                       >
                         Confirmar
                       </button>
                     ) : (
-                      <span className="mt-1 inline-block bg-[#f2f2f4] text-[#71717a] rounded-full px-[9px] py-[3px] text-[11px] font-medium whitespace-nowrap">
+                      <span className="mt-1 inline-block bg-subtle text-muted rounded-full px-[9px] py-[3px] text-[11px] font-medium whitespace-nowrap">
                         Sin vincular
                       </span>
                     )}
@@ -251,7 +257,7 @@ export default function RecurrentesListV2({
       )}
 
       {confirmed.length === 0 ? (
-        <p className="text-sm text-[#a1a1aa] py-6">
+        <p className="text-sm text-faint py-6">
           {search.trim() ? "Sin resultados" : "Sin gastos recurrentes confirmados todavía."}
         </p>
       ) : (
@@ -276,12 +282,12 @@ export default function RecurrentesListV2({
                     <span className="w-[30px] h-[30px] shrink-0 rounded-[8px] flex items-center justify-center" style={{ backgroundColor: icon.accent }}>
                       <CatIcon iconKey={icon.iconKey} name={icon.label ?? e.label} color="#fff" size={14} />
                     </span>
-                    <p className="text-[13.5px] font-medium text-[#18181b] truncate">{e.label}</p>
+                    <p className="text-[13.5px] font-medium text-navy truncate">{e.label}</p>
                   </div>
                   <div>{e.category && <CategoryBadge category={e.category} categories={categories} />}</div>
                   <div>
-                    <p className="text-[12.5px] text-[#71717a] capitalize">{e.period}</p>
-                    {dayDetail && <p className="text-[11px] text-[#a1a1aa] capitalize">{dayDetail}</p>}
+                    <p className="text-[12.5px] text-muted capitalize">{e.period}</p>
+                    {dayDetail && <p className="text-[11px] text-faint capitalize">{dayDetail}</p>}
                   </div>
                   <div className="flex items-center gap-1.5">
                     <TaxBadgeV2 value={ivaRate} isError={bothMissing} />
@@ -289,8 +295,8 @@ export default function RecurrentesListV2({
                   </div>
                   <p className="text-right text-[13.5px] font-semibold"><SignedAmount amount={e.amount} /></p>
                   <div className="flex justify-end">
-                    <span className="inline-flex items-center gap-1.5 text-[#16a34a] text-[12.5px] font-medium whitespace-nowrap">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#16a34a]" />
+                    <span className="inline-flex items-center gap-1.5 text-[#16a34a] dark:text-[#7cdfa0] text-[12.5px] font-medium whitespace-nowrap">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#16a34a] dark:bg-[#7cdfa0]" />
                       Activo
                     </span>
                   </div>
@@ -300,20 +306,20 @@ export default function RecurrentesListV2({
               {/* Fila móvil */}
               <div
                 onClick={() => onOpenConfirmed(row)}
-                className="sm:hidden flex items-center gap-[10px] py-[10px] border-t border-[#f4f4f4] cursor-pointer active:bg-[#fafafb]"
+                className="sm:hidden flex items-center gap-[10px] py-[10px] border-t border-subtle cursor-pointer active:bg-subtle"
               >
                 <span className="w-[32px] h-[32px] shrink-0 rounded-[10px] flex items-center justify-center" style={{ backgroundColor: icon.accent }}>
                   <CatIcon iconKey={icon.iconKey} name={icon.label ?? e.label} color="#fff" size={15} />
                 </span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[14px] font-medium text-[#18181b] truncate">{e.label}</p>
+                  <p className="text-[14px] font-medium text-navy truncate">{e.label}</p>
                   <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                     {e.category && <CategoryBadge category={e.category} categories={categories} />}
                   </div>
                 </div>
                 <div className="text-right shrink-0">
                   <p className="text-[14px] font-semibold"><SignedAmount amount={e.amount} /></p>
-                  <p className="text-[11.5px] text-[#71717a] capitalize mt-0.5">{e.period}{dayDetail ? ` · ${dayDetail}` : ""}</p>
+                  <p className="text-[11.5px] text-muted capitalize mt-0.5">{e.period}{dayDetail ? ` · ${dayDetail}` : ""}</p>
                 </div>
               </div>
             </div>

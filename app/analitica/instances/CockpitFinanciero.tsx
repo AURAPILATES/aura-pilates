@@ -62,7 +62,7 @@ export default function CockpitFinanciero({
       lastUpdated={lastUpdated}
     >
       {/* 3-column section */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-[#ececef]">
+      <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-border">
 
         {/* PRESENTE */}
         <div className="p-4 sm:pl-0">

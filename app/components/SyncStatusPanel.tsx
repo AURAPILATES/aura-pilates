@@ -30,7 +30,7 @@ function Dot({ color, tooltip }: { color: DotColor; tooltip: string }) {
   return (
     <span className="relative group/dot flex items-center shrink-0">
       <span className={`w-1.5 h-1.5 rounded-full ${bg}`} />
-      <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 z-50 whitespace-nowrap rounded-lg bg-navy px-2.5 py-1.5 text-[10px] text-white opacity-0 group-hover/dot:opacity-100 transition-opacity shadow-xl">
+      <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 z-50 whitespace-nowrap rounded-lg bg-navy-solid px-2.5 py-1.5 text-[10px] text-white opacity-0 group-hover/dot:opacity-100 transition-opacity shadow-xl">
         {tooltip}
       </span>
     </span>

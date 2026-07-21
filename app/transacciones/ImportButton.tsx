@@ -36,7 +36,7 @@ export default function ImportButton({
         {v2 ? (
           <button
             onClick={() => setOpen((v) => !v)}
-            className="shrink-0 flex items-center justify-center gap-[7px] w-[38px] sm:w-full h-[38px] px-0 sm:px-3.5 text-[11.5px] font-semibold text-white bg-[#18181b] rounded-[10px] hover:bg-[#18181b]/85 transition-colors whitespace-nowrap"
+            className="shrink-0 flex items-center justify-center gap-[7px] w-[38px] sm:w-full h-[38px] px-0 sm:px-3.5 text-[11.5px] font-semibold text-app-bg bg-navy rounded-[10px] hover:bg-navy/85 transition-colors whitespace-nowrap"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
               <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
@@ -46,7 +46,7 @@ export default function ImportButton({
         ) : compact ? (
           <button
             onClick={() => setOpen((v) => !v)}
-            className="flex items-center justify-center gap-1.5 px-3 h-9 bg-white text-navy text-[13px] font-medium border border-navy/15 rounded-xl hover:bg-navy/[0.02] transition-colors w-full"
+            className="flex items-center justify-center gap-1.5 px-3 h-9 bg-card text-navy text-[13px] font-medium border border-navy/15 rounded-xl hover:bg-navy/[0.02] transition-colors w-full"
           >
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
@@ -63,7 +63,7 @@ export default function ImportButton({
         )}
 
         {open && (
-          <div className="absolute right-0 top-full mt-1.5 w-56 bg-white border border-navy/[0.1] rounded-xl shadow-lg z-50 overflow-hidden">
+          <div className="absolute right-0 top-full mt-1.5 w-56 bg-card border border-navy/[0.1] rounded-xl shadow-lg z-50 overflow-hidden">
             <button
               onClick={() => { setShowImport(true); setOpen(false); }}
               className="w-full flex items-start gap-3 px-4 py-3 hover:bg-navy/[0.03] transition-colors text-left"

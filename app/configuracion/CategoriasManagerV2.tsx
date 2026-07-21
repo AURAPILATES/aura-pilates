@@ -41,15 +41,15 @@ export default function CategoriasManagerV2({
 
       <div className="mt-[14px]">
         {groups.length === 0 && (
-          <div className="py-12 text-center text-[#a1a1aa] text-sm">Ninguna categoría coincide con la búsqueda.</div>
+          <div className="py-12 text-center text-faint text-sm">Ninguna categoría coincide con la búsqueda.</div>
         )}
         {groups.map((group, gi) => (
           <div key={gi}>
             {group.sectionLabel && (
-              <p className="pt-[18px] pb-1.5 text-[11px] tracking-wide uppercase text-[#a1a1aa] font-bold">{group.sectionLabel}</p>
+              <p className="pt-[18px] pb-1.5 text-[11px] tracking-wide uppercase text-faint font-bold">{group.sectionLabel}</p>
             )}
             {group.subsectionLabel && (
-              <p className="pt-2.5 pb-1 text-[11.5px] text-[#a1a1aa] font-medium">{group.subsectionLabel}</p>
+              <p className="pt-2.5 pb-1 text-[11.5px] text-faint font-medium">{group.subsectionLabel}</p>
             )}
             {group.ordered.map((cat) => {
               const isSub = !!cat.parent_id;
@@ -64,8 +64,8 @@ export default function CategoriasManagerV2({
                   onDragLeave={() => onDragLeave(cat.id)}
                   onDrop={(e) => { e.preventDefault(); onDrop(group.ordered, cat.id); }}
                   onDragEnd={onDragEnd}
-                  className={`flex items-center gap-3 border-t border-[#f4f4f4] py-[9px] transition-colors ${
-                    isDragOver ? "bg-[#18181b]/[0.04]" : ""
+                  className={`flex items-center gap-3 border-t border-subtle py-[9px] transition-colors ${
+                    isDragOver ? "bg-navy/[0.04]" : ""
                   } ${isDragging ? "opacity-40" : ""}`}
                   style={{ paddingLeft: isSub ? 28 : 0 }}
                 >
@@ -80,19 +80,19 @@ export default function CategoriasManagerV2({
                   >
                     <CategoryIcon iconKey={cat.emoji} name={cat.label} color={cat.text_color} size={isSub ? 28 : 30} />
                     <div className="min-w-0">
-                      <p className="text-[14px] font-semibold text-[#18181b] truncate">{cat.label}</p>
-                      {cat.auto_keywords && <p className="text-[11.5px] text-[#a1a1aa] truncate">{cat.auto_keywords}</p>}
+                      <p className="text-[14px] font-semibold text-navy truncate">{cat.label}</p>
+                      {cat.auto_keywords && <p className="text-[11.5px] text-faint truncate">{cat.auto_keywords}</p>}
                     </div>
                   </button>
-                  <span className="text-[12.5px] text-[#a1a1aa] whitespace-nowrap shrink-0">{totalCount(cat)} trx</span>
+                  <span className="text-[12.5px] text-faint whitespace-nowrap shrink-0">{totalCount(cat)} trx</span>
                   <button
                     onClick={(e) => { e.stopPropagation(); onViewTransactions(cat); }}
                     title={`Ver movimientos de "${cat.label}"`}
-                    className="shrink-0 text-[#c4c4c8] hover:text-[#71717a] transition-colors"
+                    className="shrink-0 text-border hover:text-muted transition-colors"
                   >
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="11" cy="11" r="6.5" /><path d="M20 20l-3.8-3.8" /></svg>
                   </button>
-                  <span className="shrink-0 text-[#c4c4c8]">
+                  <span className="shrink-0 text-border">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 6l6 6-6 6" /></svg>
                   </span>
                 </div>
@@ -101,7 +101,7 @@ export default function CategoriasManagerV2({
           </div>
         ))}
       </div>
-      <div className="pt-3.5 text-[12.5px] text-[#a1a1aa]">{totalCategories} categorías · arrastra para reordenar</div>
+      <div className="pt-3.5 text-[12.5px] text-faint">{totalCategories} categorías · arrastra para reordenar</div>
     </div>
   );
 }

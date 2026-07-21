@@ -14,7 +14,7 @@ type Props = {
  * menor que el contenedor de la página (si no, la caja queda más ancha que la tabla). */
 export default function TableBox({ title, subtitle, action, children, className = "", style }: Props) {
   return (
-    <div style={style} className={`bg-white border border-navy/[0.07] shadow-card rounded-[5px] overflow-hidden ${className}`}>
+    <div style={style} className={`bg-card border border-navy/[0.07] shadow-card rounded-[5px] overflow-hidden ${className}`}>
       {title && (
         <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-navy/[0.06]">
           <div className="min-w-0">

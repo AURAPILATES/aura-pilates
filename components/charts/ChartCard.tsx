@@ -72,7 +72,7 @@ export default function ChartCard({
   }
 
   return (
-    <div ref={cardRef} className={`relative bg-white border border-[#ececef] rounded-[14px] overflow-hidden ${className}`}>
+    <div ref={cardRef} className={`relative bg-card border border-border rounded-[14px] overflow-hidden ${className}`}>
       {/* HEADER */}
       <div className="px-4 sm:px-5 pt-4">
         <div className="flex items-center justify-between gap-2 flex-wrap mb-1">
@@ -88,7 +88,7 @@ export default function ChartCard({
 
       {/* KPI ÚNICO */}
       {kpi && (
-        <div className="px-4 sm:px-5 pb-3 pt-1.5 border-b border-[#ececef]">
+        <div className="px-4 sm:px-5 pb-3 pt-1.5 border-b border-border">
           <div className="flex items-baseline gap-2.5 flex-wrap mb-1">
             <span className={`text-[32px] font-medium text-navy tracking-tight leading-none ${kpi.valueClassName ?? ""}`}>
               {kpi.value}
@@ -102,7 +102,7 @@ export default function ChartCard({
       {/* KPI MULTI */}
       {kpiItems && kpiItems.length > 0 && (
         <div
-          className="grid border-b border-[#ececef]"
+          className="grid border-b border-border"
           style={{ gridTemplateColumns: `repeat(auto-fit, minmax(110px, 1fr))` }}
         >
           {kpiItems.map((item, i) => {
@@ -111,7 +111,7 @@ export default function ChartCard({
               <Cell
                 key={item.label}
                 onClick={item.onClick}
-                className={`px-4 sm:px-5 py-3 text-left ${i < kpiItems.length - 1 ? "border-r border-[#ececef]" : ""} ${
+                className={`px-4 sm:px-5 py-3 text-left ${i < kpiItems.length - 1 ? "border-r border-border" : ""} ${
                   item.onClick ? "hover:bg-navy/[0.02] transition-colors cursor-pointer" : ""
                 }`}
               >
@@ -142,7 +142,7 @@ export default function ChartCard({
 
       {/* TOOLBAR */}
       {toolbar && (
-        <div className="flex items-center justify-between gap-2 flex-wrap px-4 sm:px-5 py-2.5 border-b border-[#ececef]">
+        <div className="flex items-center justify-between gap-2 flex-wrap px-4 sm:px-5 py-2.5 border-b border-border">
           {toolbar}
         </div>
       )}
@@ -157,7 +157,7 @@ export default function ChartCard({
 
       {/* AI INSIGHT */}
       {aiInsight && (
-        <div className="bg-primary/5 border-t border-[#ececef] px-4 sm:px-5 py-3">
+        <div className="bg-primary/5 border-t border-border px-4 sm:px-5 py-3">
           <button
             type="button"
             onClick={() => setAiOpen((o) => !o)}
@@ -177,7 +177,7 @@ export default function ChartCard({
 
       {/* SOURCE */}
       {((sources && sources.length > 0) || lastUpdated) && (
-        <div className="flex items-center justify-between flex-wrap gap-x-3 gap-y-1 text-[11px] text-navy/45 leading-relaxed px-4 sm:px-5 py-2.5 border-t border-[#ececef]">
+        <div className="flex items-center justify-between flex-wrap gap-x-3 gap-y-1 text-[11px] text-navy/45 leading-relaxed px-4 sm:px-5 py-2.5 border-t border-border">
           {sources && sources.length > 0 ? (
             <span className="flex items-center gap-1.5 min-w-0" title={dataSource || undefined}>
               <Book size={13} className="shrink-0" />
@@ -194,7 +194,7 @@ export default function ChartCard({
           que nunca tape el título/subtítulo de la propia card */}
       {tooltip && (
         <div
-          className="fixed z-50 w-52 -translate-y-full bg-navy text-white text-[11px] leading-relaxed rounded-xl px-3 py-2.5 shadow-xl normal-case tracking-normal font-normal pointer-events-none"
+          className="fixed z-50 w-52 -translate-y-full bg-navy-solid text-white text-[11px] leading-relaxed rounded-xl px-3 py-2.5 shadow-xl normal-case tracking-normal font-normal pointer-events-none"
           style={{ top: tooltip.top, left: tooltip.left }}
         >
           {tooltip.text}
@@ -235,7 +235,7 @@ export function ToggleGroup({ options, value, onChange, className = "", fullWidt
           onClick={() => onChange(opt.value)}
           className={`flex items-center justify-center gap-1.5 px-2.5 py-1 text-xs rounded-[7px] whitespace-nowrap transition-colors ${fullWidth ? "flex-1" : ""} ${
             opt.value === value
-              ? opt.activeClassName ?? "bg-white text-navy font-medium border border-navy/[0.07] shadow-card"
+              ? opt.activeClassName ?? "bg-card text-navy font-medium border border-navy/[0.07] shadow-card"
               : "text-navy/50 hover:text-navy"
           }`}
         >
@@ -272,7 +272,7 @@ export function ChartTypeToggle({ options, value, onChange, className = "" }: Ch
           aria-pressed={opt.value === value}
           className={`w-7 h-[26px] flex items-center justify-center rounded-[7px] transition-colors ${
             opt.value === value
-              ? "bg-white text-navy border border-navy/[0.07] shadow-card"
+              ? "bg-card text-navy border border-navy/[0.07] shadow-card"
               : "text-navy/50 hover:text-navy"
           }`}
         >

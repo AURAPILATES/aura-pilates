@@ -4,19 +4,19 @@ import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import type { Transaction } from "@/lib/transactions";
 import type { Category } from "@/lib/categories";
 
-const SOCIO_INITIALS: Record<string, { initials: string; bg: string; color: string }> = {
-  victor: { initials: "V",  bg: "#EDE9FE", color: "#5B21B6" },
-  celia:  { initials: "Ce", bg: "#FCE7F3", color: "#9D174D" },
-  olga:   { initials: "O",  bg: "#D1FAE5", color: "#065F46" },
-  carles: { initials: "Ca", bg: "#DBEAFE", color: "#1D4ED8" },
+const SOCIO_INITIALS: Record<string, { initials: string; cls: string }> = {
+  victor: { initials: "V",  cls: "bg-[#EDE9FE] dark:bg-[#382f5c] text-[#5B21B6] dark:text-[#c4b5fd]" },
+  celia:  { initials: "Ce", cls: "bg-[#FCE7F3] dark:bg-[#4a2438] text-[#9D174D] dark:text-[#f9a8d4]" },
+  olga:   { initials: "O",  cls: "bg-[#D1FAE5] dark:bg-[#123a2c] text-[#065F46] dark:text-[#6ee7b7]" },
+  carles: { initials: "Ca", cls: "bg-[#DBEAFE] dark:bg-[#1e2f52] text-[#1D4ED8] dark:text-[#93c5fd]" },
 };
 
 function SourceLogo({ method }: { method: string }) {
   if (method === "efectivo") {
     return (
       <div className="shrink-0 w-10 flex flex-col items-center gap-1">
-        <div className="w-6 h-6 rounded-md bg-amber-100 flex items-center justify-center">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#92400E" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <div className="w-6 h-6 rounded-md bg-amber-100 dark:bg-[#3d2f13] flex items-center justify-center">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-[#92400E] dark:text-[#fcd34d]">
             <rect x="2" y="6" width="20" height="14" rx="2"/><circle cx="12" cy="13" r="3"/><path d="M6 10h.01M18 10h.01"/>
           </svg>
         </div>
@@ -28,7 +28,7 @@ function SourceLogo({ method }: { method: string }) {
   if (socio) {
     return (
       <div className="shrink-0 w-10 flex flex-col items-center gap-1">
-        <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ background: socio.bg, color: socio.color }}>
+        <div className={`w-6 h-6 rounded-md flex items-center justify-center ${socio.cls}`}>
           <span style={{ fontSize: "10px", fontWeight: 700 }}>{socio.initials}</span>
         </div>
         <span className="text-[9px] text-navy/40 font-medium leading-none capitalize text-center">{method}</span>
@@ -128,7 +128,7 @@ export default function PreviewList({ transactions, categories, uncategorizedCou
       </div>
 
       {/* KPIs agrupados en una sola caja */}
-      <div className="grid grid-cols-3 divide-x divide-navy/[0.08] border border-navy/[0.1] rounded-xl bg-[#F3F0E7] mb-4 text-center">
+      <div className="grid grid-cols-3 divide-x divide-navy/[0.08] border border-navy/[0.1] rounded-xl bg-[#F3F0E7] dark:bg-[#342d18] mb-4 text-center">
         <div className="px-2 py-3">
           <p className="text-[10px] text-navy/45 uppercase tracking-wider mb-1">Ingresos</p>
           <p className="text-base font-semibold text-success tabular-nums">{Math.round(totalIn).toLocaleString("es-ES")} €</p>
@@ -154,15 +154,15 @@ export default function PreviewList({ transactions, categories, uncategorizedCou
             placeholder="Buscar concepto o contacto..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 text-sm border border-navy/[0.15] rounded-lg bg-white text-navy placeholder:text-navy/35 outline-none focus:ring-2 focus:ring-primary/20 transition"
+            className="w-full pl-9 pr-4 py-2.5 text-sm border border-navy/[0.15] rounded-lg bg-card text-navy placeholder:text-navy/35 outline-none focus:ring-2 focus:ring-primary/20 transition"
           />
         </div>
-        <button className="shrink-0 flex items-center justify-center w-[42px] h-[42px] bg-white border border-navy/[0.15] rounded-lg text-navy/60">
+        <button className="shrink-0 flex items-center justify-center w-[42px] h-[42px] bg-card border border-navy/[0.15] rounded-lg text-navy/60">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/>
           </svg>
         </button>
-        <button className="shrink-0 flex items-center justify-center w-[42px] h-[42px] bg-white border border-navy/[0.15] rounded-lg text-navy/60">
+        <button className="shrink-0 flex items-center justify-center w-[42px] h-[42px] bg-card border border-navy/[0.15] rounded-lg text-navy/60">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>
           </svg>
@@ -184,11 +184,11 @@ export default function PreviewList({ transactions, categories, uncategorizedCou
 
       {/* Tira de meses: segmented control */}
       <div className="mb-4">
-        <div className="flex items-center gap-0.5 border border-navy/[0.12] rounded-lg bg-white p-0.5 overflow-x-auto scrollbar-none">
+        <div className="flex items-center gap-0.5 border border-navy/[0.12] rounded-lg bg-card p-0.5 overflow-x-auto scrollbar-none">
           <button
             onClick={() => router.push(pathname)}
             className={`shrink-0 px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap ${
-              !activeMonth ? "bg-navy text-white" : "text-navy/50 hover:text-navy"
+              !activeMonth ? "bg-navy-solid text-white" : "text-navy/50 hover:text-navy"
             }`}
           >
             Todo
@@ -202,7 +202,7 @@ export default function PreviewList({ transactions, categories, uncategorizedCou
                 ref={isActive ? activeMonthRef : undefined}
                 onClick={() => goToMonth(key)}
                 className={`shrink-0 px-3 py-1.5 text-xs font-medium rounded-md transition-colors capitalize whitespace-nowrap ${
-                  isActive ? "bg-navy text-white" : "text-navy/50 hover:text-navy"
+                  isActive ? "bg-navy-solid text-white" : "text-navy/50 hover:text-navy"
                 }`}
               >
                 {label}{showYear && <span className="text-[10px] ml-0.5 opacity-60">{year}</span>}
@@ -214,13 +214,13 @@ export default function PreviewList({ transactions, categories, uncategorizedCou
 
       {/* Toolbar */}
       <div className="flex items-stretch gap-2 mb-2">
-        <button className="flex-1 flex items-center justify-center gap-1.5 px-3 h-9 bg-white text-navy text-[13px] font-medium border border-navy/15 rounded-xl hover:bg-navy/[0.02] transition-colors">
+        <button className="flex-1 flex items-center justify-center gap-1.5 px-3 h-9 bg-card text-navy text-[13px] font-medium border border-navy/15 rounded-xl hover:bg-navy/[0.02] transition-colors">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
           </svg>
           Añadir movimiento
         </button>
-        <button className="shrink-0 flex items-center justify-center gap-1.5 w-[124px] h-9 text-[13px] font-medium px-4 rounded-xl border bg-white text-navy border-navy/15 hover:bg-navy/[0.02] transition-colors">
+        <button className="shrink-0 flex items-center justify-center gap-1.5 w-[124px] h-9 text-[13px] font-medium px-4 rounded-xl border bg-card text-navy border-navy/15 hover:bg-navy/[0.02] transition-colors">
           <span className="w-3.5 h-3.5 rounded-[3px] border border-navy/35 flex items-center justify-center shrink-0">
             <svg width="9" height="7" viewBox="0 0 9 7" fill="none">
               <polyline points="1,3.5 3.5,6 8,1" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-navy/35"/>

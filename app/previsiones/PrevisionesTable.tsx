@@ -49,7 +49,7 @@ function ScenarioCards({
             className={`text-left rounded-xl border p-3 sm:p-4 transition-all ${
               isActive
                 ? "border-primary bg-primary/[0.06] ring-1 ring-primary/20"
-                : "border-navy/[0.08] bg-white hover:border-navy/20 hover:bg-navy/[0.02]"
+                : "border-navy/[0.08] bg-card hover:border-navy/20 hover:bg-navy/[0.02]"
             }`}
           >
             <p className={`text-xs font-semibold mb-0.5 ${isActive ? "text-primary" : "text-navy"}`}>
@@ -199,7 +199,7 @@ function InlineParam({
   min?: number;
 }) {
   return (
-    <label className="flex items-center gap-2 px-3 py-2 bg-white border border-navy/[0.08] rounded-lg cursor-text hover:border-navy/20 transition-colors">
+    <label className="flex items-center gap-2 px-3 py-2 bg-card border border-navy/[0.08] rounded-lg cursor-text hover:border-navy/20 transition-colors">
       <span className="text-[11px] text-navy/45 whitespace-nowrap">{label}</span>
       <input
         type="number"
@@ -399,7 +399,7 @@ export default function PrevisionesTable({
       </div>
 
       {/* ── Chart ── */}
-      <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card px-5 pt-4 pb-3">
+      <div className="bg-card border border-navy/[0.07] rounded-2xl shadow-card px-5 pt-4 pb-3">
         <div className="flex items-center justify-between mb-2">
           <p className="text-xs font-semibold text-navy/55 uppercase tracking-wider">Evolución</p>
           <div className="flex items-center gap-3 text-[10px] text-navy/40">
@@ -414,19 +414,19 @@ export default function PrevisionesTable({
       {/* ── KPI strip ── */}
       {showForecast && (
         <div className="grid grid-cols-3 gap-3">
-          <div className="bg-white border border-navy/[0.07] rounded-xl p-3">
+          <div className="bg-card border border-navy/[0.07] rounded-xl p-3">
             <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-0.5">Entradas 12m</p>
             <p className="text-base font-semibold text-income tabular-nums">
               {fmtAmt(forecast.reduce((s, m) => s + m.totalEntradas, 0))}
             </p>
           </div>
-          <div className="bg-white border border-navy/[0.07] rounded-xl p-3">
+          <div className="bg-card border border-navy/[0.07] rounded-xl p-3">
             <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-0.5">Salidas 12m</p>
             <p className="text-base font-semibold text-danger tabular-nums">
               {fmtAmt(forecast.reduce((s, m) => s + m.totalSalidas, 0))}
             </p>
           </div>
-          <div className="bg-white border border-navy/[0.07] rounded-xl p-3">
+          <div className="bg-card border border-navy/[0.07] rounded-xl p-3">
             <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-0.5">Saldo final</p>
             <p className={`text-base font-semibold tabular-nums ${fcSaldoFinal >= 0 ? "text-navy" : "text-danger"}`}>
               {fmtSign(fcSaldoFinal)}
@@ -436,7 +436,7 @@ export default function PrevisionesTable({
       )}
 
       {/* ── Main budget table ── */}
-      <div className="bg-white border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden">
+      <div className="bg-card border border-navy/[0.07] rounded-2xl shadow-card overflow-hidden">
         <div className="overflow-x-auto">
           <table
             className="border-collapse text-xs"
@@ -696,7 +696,7 @@ function SubRow({
 }) {
   return (
     <tr className="hover:bg-navy/[0.01]">
-      <td className="sticky left-0 z-10 bg-white px-4 py-2 text-[11px] text-navy/55 pl-6 whitespace-nowrap w-[160px] min-w-[160px]">
+      <td className="sticky left-0 z-10 bg-card px-4 py-2 text-[11px] text-navy/55 pl-6 whitespace-nowrap w-[160px] min-w-[160px]">
         <span className="text-navy/25 mr-1">└</span>{label}
       </td>
       {/* Historical: show actual per-category data or dash */}

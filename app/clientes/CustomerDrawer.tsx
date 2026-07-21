@@ -80,7 +80,7 @@ export default function CustomerDrawer({ customer, payments, onClose }: Props) {
                 </span>
               );
               if (status === "porvencer") return (
-                <span className="text-xs bg-amber-50 text-amber-600 px-2.5 py-1 rounded-full font-medium flex items-center gap-1 whitespace-nowrap border border-amber-200/60">
+                <span className="text-xs bg-amber-50 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400 px-2.5 py-1 rounded-full font-medium flex items-center gap-1 whitespace-nowrap border border-amber-200/60 dark:border-amber-500/30">
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block shrink-0" />
                   Vence en {days}d
                 </span>
@@ -152,7 +152,7 @@ export default function CustomerDrawer({ customer, payments, onClose }: Props) {
               </span>
             </button>
             {stripeOpen && (
-              <div className="absolute bottom-full mb-2 left-0 right-0 bg-white border border-navy/[0.10] rounded-xl shadow-lg overflow-hidden z-10 max-h-52 overflow-y-auto">
+              <div className="absolute bottom-full mb-2 left-0 right-0 bg-card border border-navy/[0.10] rounded-xl shadow-lg overflow-hidden z-10 max-h-52 overflow-y-auto">
                 {ids.map((sid, i) => (
                   <a key={sid}
                     href={`https://dashboard.stripe.com/customers/${sid}`}
@@ -212,7 +212,7 @@ export default function CustomerDrawer({ customer, payments, onClose }: Props) {
                     {p.inferredProduct !== "Otro" ? p.inferredProduct : (p.description ?? p.category)}
                   </p>
                   {p.inferredType === "coupon" && (
-                    <span className="shrink-0 text-[10px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200/80 px-1.5 py-0.5 rounded-full">
+                    <span className="shrink-0 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/15 border border-emerald-200/80 dark:border-emerald-500/30 px-1.5 py-0.5 rounded-full">
                       cupón
                     </span>
                   )}

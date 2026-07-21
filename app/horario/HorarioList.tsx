@@ -7,15 +7,15 @@ import { pct, occupancyRate } from "@/lib/analytics";
 type DayGroup = { dateKey: string; label: string; events: MomenceEvent[] };
 
 function occText(occ: number) {
-  if (occ >= 1.0) return "text-[#4e8a5d]";
-  if (occ >= 0.5) return "text-[#a38540]";
-  return "text-[#c03828]";
+  if (occ >= 1.0) return "text-[#4e8a5d] dark:text-[#8dce9d]";
+  if (occ >= 0.5) return "text-[#a38540] dark:text-[#ceba8d]";
+  return "text-[#c03828] dark:text-[#d88c83]";
 }
 
 function occBarColor(occ: number) {
-  if (occ >= 1.0) return "bg-[#4e8a5d]";
-  if (occ >= 0.5) return "bg-[#a38540]";
-  return "bg-[#c03828]";
+  if (occ >= 1.0) return "bg-[#4e8a5d] dark:bg-[#8dce9d]";
+  if (occ >= 0.5) return "bg-[#a38540] dark:bg-[#ceba8d]";
+  return "bg-[#c03828] dark:bg-[#d88c83]";
 }
 
 export default memo(function HorarioList({
@@ -79,7 +79,7 @@ export default memo(function HorarioList({
                   <button
                     key={e.id}
                     onClick={() => onSelect(e)}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-left bg-white hover:bg-navy/[0.02] transition-colors"
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-left bg-card hover:bg-navy/[0.02] transition-colors"
                   >
                     <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${occBarColor(occ)}`} />
                     <span className="font-mono text-xs text-navy/45 w-10 shrink-0">{time}</span>

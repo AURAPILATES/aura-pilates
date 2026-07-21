@@ -18,7 +18,7 @@ export function PrimaryButtonV2({ className = "", type = "button", icon, label, 
     return (
       <button
         type={type}
-        className={`shrink-0 flex items-center justify-center gap-[7px] w-[38px] sm:w-auto h-[38px] sm:h-auto px-0 sm:px-3.5 py-2 text-[11.5px] font-semibold text-white bg-[#18181b] rounded-[10px] hover:bg-[#18181b]/85 transition-colors disabled:opacity-40 whitespace-nowrap ${className}`}
+        className={`shrink-0 flex items-center justify-center gap-[7px] w-[38px] sm:w-auto h-[38px] sm:h-auto px-0 sm:px-3.5 py-2 text-[11.5px] font-semibold text-app-bg bg-navy rounded-[10px] hover:bg-navy/85 transition-colors disabled:opacity-40 whitespace-nowrap ${className}`}
         {...props}
       >
         {icon}
@@ -29,7 +29,7 @@ export function PrimaryButtonV2({ className = "", type = "button", icon, label, 
   return (
     <button
       type={type}
-      className={`px-3.5 py-2 text-[11.5px] font-semibold text-white bg-[#18181b] rounded-[10px] hover:bg-[#18181b]/85 transition-colors disabled:opacity-40 whitespace-nowrap ${className}`}
+      className={`px-3.5 py-2 text-[11.5px] font-semibold text-app-bg bg-navy rounded-[10px] hover:bg-navy/85 transition-colors disabled:opacity-40 whitespace-nowrap ${className}`}
       {...props}
     >
       {children}
@@ -42,7 +42,7 @@ export function IconButtonV2({ className = "", type = "button", ...props }: Butt
   return (
     <button
       type={type}
-      className={`shrink-0 flex items-center justify-center w-[38px] h-[38px] text-[#52525b] border border-[#e6e6ea] rounded-[10px] bg-white hover:bg-[#18181b]/[0.02] transition-colors ${className}`}
+      className={`shrink-0 flex items-center justify-center w-[38px] h-[38px] text-muted border border-border rounded-[10px] bg-card hover:bg-navy/[0.02] transition-colors ${className}`}
       {...props}
     />
   );

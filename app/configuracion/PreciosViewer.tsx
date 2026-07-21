@@ -10,7 +10,7 @@ function fmtEur(v: number) {
 export default function PreciosViewer({ rows }: { rows: PricingRow[] }) {
   return (
     <div>
-      <p className="text-[13px] text-[#71717a] leading-relaxed mb-5 max-w-[640px]">
+      <p className="text-[13px] text-muted leading-relaxed mb-5 max-w-[640px]">
         Precios que usa la app para identificar a qué producto corresponde cada cobro de Stripe.
         Se leen en vivo del catálogo de Momence (membresías y productos) por nombre exacto; si un
         nombre no se encuentra ahí, se usa el precio de respaldo guardado en el código. Esta vista
@@ -30,12 +30,12 @@ export default function PreciosViewer({ rows }: { rows: PricingRow[] }) {
         const mismatch = usingLive && row.livePrice !== row.fallbackPrice;
         return (
           <div key={row.name} className={tableRowClassV2} style={gridColsV2(COLS)}>
-            <p className="text-[13.5px] font-medium text-[#18181b] truncate">{row.name}</p>
-            <p className="text-[12.5px] text-[#71717a]">{row.type === "subscription" ? "Suscripción" : "Pack"}</p>
-            <p className="text-right text-[13.5px] tabular-nums text-[#18181b]">
+            <p className="text-[13.5px] font-medium text-navy truncate">{row.name}</p>
+            <p className="text-[12.5px] text-muted">{row.type === "subscription" ? "Suscripción" : "Pack"}</p>
+            <p className="text-right text-[13.5px] tabular-nums text-navy">
               {usingLive ? fmtEur(row.livePrice!) : "—"}
             </p>
-            <p className={`text-right text-[13.5px] tabular-nums ${mismatch ? "text-warning font-medium" : "text-[#a1a1aa]"}`}>
+            <p className={`text-right text-[13.5px] tabular-nums ${mismatch ? "text-warning font-medium" : "text-faint"}`}>
               {fmtEur(row.fallbackPrice)}
             </p>
             <div className="flex justify-end">

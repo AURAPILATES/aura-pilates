@@ -15,8 +15,8 @@ function fmtAmt(n: number) {
 function SourceAvatar({ method }: { method: string }) {
   if (method === "efectivo") {
     return (
-      <div className="shrink-0 w-[22px] h-[22px] rounded-full bg-amber-100 flex items-center justify-center" title="Efectivo">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#92400E" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <div className="shrink-0 w-[22px] h-[22px] rounded-full bg-amber-100 dark:bg-[#3d2f13] flex items-center justify-center" title="Efectivo">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-[#92400E] dark:text-[#fcd34d]">
           <rect x="2" y="6" width="20" height="14" rx="2"/><circle cx="12" cy="13" r="3"/><path d="M6 10h.01M18 10h.01"/>
         </svg>
       </div>

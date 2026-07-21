@@ -73,17 +73,17 @@ export function clientStatus(c: CustomerRow): { status: ClientStatus; days: numb
 export type PlanBadgeCfg = { label: string; cls: string };
 export function planBadgeCfg(planType: "sub" | "pack" | "session", lastSubProduct?: string | null, lastPackProduct?: string | null): PlanBadgeCfg {
   if (planType === "sub") {
-    if (lastSubProduct === "Bàsic") return { label: "Suscripción Bàsic", cls: "bg-violet-50 text-violet-600" };
-    if (lastSubProduct === "Plus")  return { label: "Suscripción Plus",  cls: "bg-indigo-50 text-indigo-600" };
-    if (lastSubProduct === "Pro")   return { label: "Suscripción Pro",   cls: "bg-purple-50 text-purple-700" };
-    return { label: "Suscripción",                                        cls: "bg-violet-50 text-violet-600" };
+    if (lastSubProduct === "Bàsic") return { label: "Suscripción Bàsic", cls: "bg-violet-50 dark:bg-violet-500/15 text-violet-600 dark:text-violet-400" };
+    if (lastSubProduct === "Plus")  return { label: "Suscripción Plus",  cls: "bg-indigo-50 dark:bg-indigo-500/15 text-indigo-600 dark:text-indigo-400" };
+    if (lastSubProduct === "Pro")   return { label: "Suscripción Pro",   cls: "bg-purple-50 dark:bg-purple-500/15 text-purple-700 dark:text-purple-400" };
+    return { label: "Suscripción",                                        cls: "bg-violet-50 dark:bg-violet-500/15 text-violet-600 dark:text-violet-400" };
   }
   if (planType === "pack") {
-    if (lastPackProduct === "Pack 4 clases")   return { label: "Pack 4",       cls: "bg-orange-50 text-orange-600" };
-    if (lastPackProduct === "Pack 8 clases")   return { label: "Pack 8",       cls: "bg-orange-100 text-orange-700" };
-    if (lastPackProduct === "Pack Benvinguda") return { label: "Pack Benvinguda", cls: "bg-pink-50 text-pink-600" };
-    if (lastPackProduct === "Clase suelta")    return { label: "Clase suelta", cls: "bg-yellow-50 text-yellow-600" };
-    return { label: "Pack",                                                cls: "bg-orange-50 text-orange-600" };
+    if (lastPackProduct === "Pack 4 clases")   return { label: "Pack 4",       cls: "bg-orange-50 dark:bg-orange-500/15 text-orange-600 dark:text-orange-400" };
+    if (lastPackProduct === "Pack 8 clases")   return { label: "Pack 8",       cls: "bg-orange-100 dark:bg-orange-500/20 text-orange-700 dark:text-orange-300" };
+    if (lastPackProduct === "Pack Benvinguda") return { label: "Pack Benvinguda", cls: "bg-pink-50 dark:bg-pink-500/15 text-pink-600 dark:text-pink-400" };
+    if (lastPackProduct === "Clase suelta")    return { label: "Clase suelta", cls: "bg-yellow-50 dark:bg-yellow-500/15 text-yellow-600 dark:text-yellow-400" };
+    return { label: "Pack",                                                cls: "bg-orange-50 dark:bg-orange-500/15 text-orange-600 dark:text-orange-400" };
   }
   return { label: "Por sesión", cls: "bg-navy/[0.06] text-navy/55" };
 }
@@ -266,7 +266,7 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
           </div>
           <button
             onClick={onClearMonth}
-            className="flex items-center gap-1 text-xs font-semibold text-primary/70 hover:text-primary bg-white border border-primary/20 hover:border-primary/40 px-2.5 py-1.5 rounded-lg transition-colors"
+            className="flex items-center gap-1 text-xs font-semibold text-primary/70 hover:text-primary bg-card border border-primary/20 hover:border-primary/40 px-2.5 py-1.5 rounded-lg transition-colors"
           >
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             Quitar filtro

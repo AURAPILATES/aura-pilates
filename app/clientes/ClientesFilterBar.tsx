@@ -38,7 +38,7 @@ function FilterBarInner({ defaultPeriod = "30" }: { defaultPeriod?: string }) {
             key={d}
             onClick={() => update({ period: d, from: "", to: "" })}
             className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-              period === d ? "bg-white shadow-sm text-navy" : "text-navy/50 hover:text-navy"
+              period === d ? "bg-card shadow-sm text-navy" : "text-navy/50 hover:text-navy"
             }`}
           >
             {d} días
@@ -47,7 +47,7 @@ function FilterBarInner({ defaultPeriod = "30" }: { defaultPeriod?: string }) {
         <button
           onClick={() => update({ period: "all", from: "", to: "" })}
           className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-            period === "all" ? "bg-white shadow-sm text-navy" : "text-navy/50 hover:text-navy"
+            period === "all" ? "bg-card shadow-sm text-navy" : "text-navy/50 hover:text-navy"
           }`}
         >
           Inicio
@@ -55,7 +55,7 @@ function FilterBarInner({ defaultPeriod = "30" }: { defaultPeriod?: string }) {
         <button
           onClick={() => update({ period: "custom" })}
           className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-            period === "custom" ? "bg-white shadow-sm text-navy" : "text-navy/50 hover:text-navy"
+            period === "custom" ? "bg-card shadow-sm text-navy" : "text-navy/50 hover:text-navy"
           }`}
         >
           Personalizado
@@ -63,7 +63,7 @@ function FilterBarInner({ defaultPeriod = "30" }: { defaultPeriod?: string }) {
       </div>
 
       {period === "custom" && (
-        <div className="flex items-center gap-1.5 bg-white border border-navy/[0.1] rounded-xl px-3 py-1.5">
+        <div className="flex items-center gap-1.5 bg-card border border-navy/[0.1] rounded-xl px-3 py-1.5">
           <input
             type="date"
             value={customFrom}
@@ -90,7 +90,7 @@ function FilterBarInner({ defaultPeriod = "30" }: { defaultPeriod?: string }) {
           <button
             onClick={() => update({ compareWith: "previous", compareFrom: "", compareTo: "" })}
             className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-              compareWith === "previous" ? "bg-white shadow-sm text-navy" : "text-navy/50 hover:text-navy"
+              compareWith === "previous" ? "bg-card shadow-sm text-navy" : "text-navy/50 hover:text-navy"
             }`}
           >
             Período anterior
@@ -98,7 +98,7 @@ function FilterBarInner({ defaultPeriod = "30" }: { defaultPeriod?: string }) {
           <button
             onClick={() => update({ compareWith: "custom" })}
             className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-              compareWith === "custom" ? "bg-white shadow-sm text-navy" : "text-navy/50 hover:text-navy"
+              compareWith === "custom" ? "bg-card shadow-sm text-navy" : "text-navy/50 hover:text-navy"
             }`}
           >
             Personalizado
@@ -106,7 +106,7 @@ function FilterBarInner({ defaultPeriod = "30" }: { defaultPeriod?: string }) {
         </div>
 
         {compareWith === "custom" && (
-          <div className="flex items-center gap-1.5 bg-white border border-navy/[0.1] rounded-xl px-3 py-1.5">
+          <div className="flex items-center gap-1.5 bg-card border border-navy/[0.1] rounded-xl px-3 py-1.5">
             <input
               type="date"
               value={compareFrom}

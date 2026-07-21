@@ -406,7 +406,7 @@ export default function CategoriasManager({
       {editor && (
         <>
           <div className="fixed inset-0 z-40 bg-navy/10" onClick={closeEditor} />
-          <div className="fixed right-0 top-0 bottom-0 z-50 w-full sm:w-[420px] bg-white shadow-2xl flex flex-col border-l border-navy/10">
+          <div className="fixed right-0 top-0 bottom-0 z-50 w-full sm:w-[420px] bg-card shadow-2xl flex flex-col border-l border-navy/10">
 
             {/* Header */}
             <div className="flex items-center gap-3 px-5 py-4 border-b border-navy/[0.08]">
@@ -490,7 +490,7 @@ export default function CategoriasManager({
                         title={key}
                       >
                         {isSelected && (
-                          <span className="absolute inset-0 rounded-full" style={{ boxShadow: `0 0 0 2px white, 0 0 0 3.5px ${selectedColor}` }} />
+                          <span className="absolute inset-0 rounded-full" style={{ boxShadow: `0 0 0 2px var(--color-card), 0 0 0 3.5px ${selectedColor}` }} />
                         )}
                         <svg
                           width="16"
@@ -596,7 +596,7 @@ export default function CategoriasManager({
               </div>
 
               {error && (
-                <p className="text-xs text-red-500 bg-red-50 rounded-xl px-4 py-3">{error}</p>
+                <p className="text-xs text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-500/15 rounded-xl px-4 py-3">{error}</p>
               )}
             </div>
 
