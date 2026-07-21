@@ -72,7 +72,7 @@ export default function CockpitFinanciero({
           </div>
           <div className="mb-4">
             <div className="text-[11px] font-medium text-navy/45 mb-1">Saldo actual</div>
-            <div className="text-[26px] font-medium text-navy leading-tight">
+            <div className="text-[32px] font-semibold text-navy leading-tight tracking-tight">
               {currentBalance !== null ? fmt(currentBalance) : "—"}
             </div>
             <div className="text-[11px] text-navy/50 mt-0.5">
@@ -111,9 +111,8 @@ export default function CockpitFinanciero({
             <div className="text-[11px] text-navy/50 mt-1">
               Soportado {fmt(ivaSoportado)} · Repercutido {fmt(ivaRepercutido)}
             </div>
-            <div className="text-[11px] text-navy/40 mt-0.5">
-              IVA {nextIvaQuarter ?? "—"} · vence {nextIvaLabel ?? "—"}
-              {!ivaQuarterClosed && " · parcial, trimestre en curso"}
+            <div className="text-[10px] text-navy/35 mt-0.5">
+              {nextIvaQuarter ?? "—"} · vence {nextIvaLabel ?? "—"}{!ivaQuarterClosed && " (en curso)"}
             </div>
           </div>
           <div>
@@ -136,12 +135,12 @@ export default function CockpitFinanciero({
           </div>
           <div>
             <div className="text-[11px] font-medium text-navy/45 mb-1">Previsión de ventas y pagos</div>
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-[18px] font-medium text-success leading-tight">~{fmt(ventasPrevistas)}</span>
-              <span className="text-[13px] text-navy/40">−</span>
-              <span className="text-[18px] font-medium text-danger leading-tight">{fmt(gastosComprometidos)}</span>
+            <div className="text-[20px] font-medium text-navy leading-tight">
+              {fmt(ventasPrevistas - gastosComprometidos)}
             </div>
-            <div className="text-[11px] text-navy/50 mt-0.5">ventas media últ. 3m − gastos comprometidos</div>
+            <div className="text-[11px] text-navy/50 mt-0.5">
+              <span className="text-success">~{fmt(ventasPrevistas)}</span> ventas − <span className="text-danger">{fmt(gastosComprometidos)}</span> gastos
+            </div>
             <Link href="/previsiones" className="text-[11px] text-primary hover:underline mt-1.5 inline-block">
               Ver previsión completa →
             </Link>

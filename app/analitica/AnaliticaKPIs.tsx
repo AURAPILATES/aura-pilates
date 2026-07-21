@@ -275,11 +275,11 @@ export default function AnaliticaKPIs({
 
               {/* Fila 1: Stripe */}
               <p className="text-[11px] text-navy/35 mb-2">Stripe · período seleccionado</p>
-              <div className="grid grid-cols-3 gap-4 mb-5">
+              <div className="flex flex-wrap divide-x divide-navy/[0.06] mb-5 -mx-1">
                 <button
                   type="button"
                   onClick={newCustomers.length > 0 ? () => setDrawer("new") : undefined}
-                  className="text-left"
+                  className="text-left px-4 first:pl-1"
                   disabled={newCustomers.length === 0}
                   title="Clientes cuyo primer pago registrado en Stripe cae dentro del período seleccionado."
                 >
@@ -290,7 +290,7 @@ export default function AnaliticaKPIs({
                 <button
                   type="button"
                   onClick={reactivatedCustomers.length > 0 ? () => setDrawer("altas") : undefined}
-                  className="text-left"
+                  className="text-left px-4"
                   disabled={reactivatedCustomers.length === 0}
                   title="Clientes que ya habían pagado antes pero llevaban más de 60 días sin hacerlo y volvieron a pagar en el período."
                 >
@@ -301,7 +301,7 @@ export default function AnaliticaKPIs({
                 <button
                   type="button"
                   onClick={altasList.length > 0 ? () => setDrawer("altas") : undefined}
-                  className="text-left"
+                  className="text-left px-4"
                   disabled={altasList.length === 0}
                   title="Nuevos + reactivados en el período. Son todas las altas netas sin contar bajas."
                 >
@@ -316,11 +316,11 @@ export default function AnaliticaKPIs({
                   <p className="text-[11px] text-navy/35 mb-2">
                     Momence · {fmtShort(momenceChurn.refDate)} – {fmtShort(momenceChurn.compareDate)}
                   </p>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-wrap divide-x divide-navy/[0.06] -mx-1">
                     <button
                       type="button"
                       onClick={momenceChurn.churned.length > 0 ? () => setDrawer("baja_momence") : undefined}
-                      className="text-left"
+                      className="text-left px-4 first:pl-1"
                       disabled={momenceChurn.churned.length === 0}
                       title={`Suscriptoras que estaban activas en Momence el ${fmtShort(momenceChurn.refDate)} y ya no aparecen hoy. Baja confirmada.`}
                     >
@@ -331,7 +331,7 @@ export default function AnaliticaKPIs({
                     <button
                       type="button"
                       onClick={momenceChurn.gained.length > 0 ? () => setDrawer("alta_momence") : undefined}
-                      className="text-left"
+                      className="text-left px-4"
                       disabled={momenceChurn.gained.length === 0}
                       title={`Suscriptoras que no estaban en Momence el ${fmtShort(momenceChurn.refDate)} y sí aparecen hoy.`}
                     >
