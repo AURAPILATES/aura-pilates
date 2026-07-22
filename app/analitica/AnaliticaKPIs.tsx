@@ -175,14 +175,16 @@ export default function AnaliticaKPIs({
   return (
     <>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-        <StatBox
-          icon={<UserPlus size={14} />}
-          label="Por convertir"
-          value={convertCandidates.length}
-          valueClassName={convertCandidates.length > 0 ? "text-primary" : "text-navy/50"}
-          tooltip="Compraron 2 o más packs (sin contar Benvinguda) pero nunca han tenido suscripción. Son el perfil ideal para proponer un plan mensual."
-          onClick={convertCandidates.length > 0 ? () => setDrawer("convert") : undefined}
-        />
+        <div className="col-span-2 sm:col-span-1">
+          <StatBox
+            icon={<UserPlus size={14} />}
+            label="Por convertir"
+            value={convertCandidates.length}
+            valueClassName={convertCandidates.length > 0 ? "text-primary" : "text-navy/50"}
+            tooltip="Compraron 2 o más packs (sin contar Benvinguda) pero nunca han tenido suscripción. Son el perfil ideal para proponer un plan mensual."
+            onClick={convertCandidates.length > 0 ? () => setDrawer("convert") : undefined}
+          />
+        </div>
         <StatBox
           icon={<AlertTriangle size={14} />}
           label="Sin renovar"
@@ -202,13 +204,15 @@ export default function AnaliticaKPIs({
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-        <StatBox
-          icon={<DollarSign size={14} />}
-          label="Gasto medio por alumno"
-          value={fmt(spendPerClient)}
-          tooltip="Facturación total del período ÷ clientes únicos que pagaron. Solo Stripe."
-          delta={pctDelta(spendPerClient, spendPerClientComp)}
-        />
+        <div className="col-span-2 sm:col-span-1">
+          <StatBox
+            icon={<DollarSign size={14} />}
+            label="Gasto medio por alumno"
+            value={fmt(spendPerClient)}
+            tooltip="Facturación total del período ÷ clientes únicos que pagaron. Solo Stripe."
+            delta={pctDelta(spendPerClient, spendPerClientComp)}
+          />
+        </div>
         <StatBox
           icon={<Activity size={14} />}
           label="Ocupación media"
