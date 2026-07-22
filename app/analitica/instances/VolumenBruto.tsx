@@ -6,7 +6,7 @@ import { BarChart2, Activity } from "react-feather";
 import type { Transaction } from "@/lib/transactions";
 import { findCategory } from "@/lib/transactions";
 import { NON_CASHFLOW_GROUP_TYPES, type Category } from "@/lib/categories";
-import { ChartCard, ChartTypeToggle, ToggleGroup, Legend, type MultiKpiItem } from "@/components/charts";
+import { ChartCard, ChartTypeToggle, ToggleGroup, Legend, CollapsibleTable, type MultiKpiItem } from "@/components/charts";
 import type { VolumenBrutoRow } from "./VolumenBrutoBody";
 
 const VolumenBrutoBody = dynamic(() => import("./VolumenBrutoBody"), {
@@ -125,7 +125,7 @@ export default function VolumenBruto({
     >
       <VolumenBrutoBody data={data} chartType={chartType} />
 
-      <div className="mt-5 overflow-x-auto">
+      <CollapsibleTable>
         <table className="w-full min-w-max text-xs">
           <thead>
             <tr className="border-b border-navy/[0.07]">
@@ -151,7 +151,7 @@ export default function VolumenBruto({
             })}
           </tbody>
         </table>
-      </div>
+      </CollapsibleTable>
     </ChartCard>
   );
 }

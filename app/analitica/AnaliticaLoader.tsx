@@ -1,5 +1,4 @@
 import { fmt, filterActive, occupancyRate, totalStudents } from "@/lib/analytics";
-import { GROUP_COLORS, type GroupTotal } from "./GastosResumenGeneral";
 import { saveHistoricalEvents, loadHistoricalEvents } from "@/lib/history";
 import { getLatestSyncRuns } from "@/lib/syncRuns";
 import { taxBreakdown, fiscalQuarterOf, ivaRepercutidoFromGross, netIvaAPagar } from "@/lib/taxCalc";
@@ -20,7 +19,7 @@ import { loadStripeCustomers } from "@/lib/stripeCustomers";
 import { buildPrimaryIdMap, enrichCustomers, hasActiveSub } from "@/lib/customerEnrichment";
 import { estimatedMRR } from "@/lib/stripeRecurrence";
 
-import { loadTransactionsCached, expensesByCategoryAll, getLatestImportDate, findCategory, type EconomicGroup } from "@/lib/transactions";
+import { loadTransactionsCached, expensesByCategoryAll, financingExpensesByCategory, getLatestImportDate, findCategory, type EconomicGroup } from "@/lib/transactions";
 import { formatRelativeTime } from "@/lib/formatRelativeTime";
 import { loadCategoriesCached, NON_CASHFLOW_GROUP_TYPES, type Category } from "@/lib/categories";
 import { loadRecurringExpensesCached, forecastConfirmedExpenses } from "@/lib/recurringExpenses";
@@ -42,7 +41,6 @@ import { computeSubscriptionCohorts, computeRetentionCohorts } from "@/lib/subsc
 import RetencionCohorte from "./instances/RetencionCohorte";
 import { loadBusinessEvents } from "@/lib/businessEvents";
 import { loadPaymentErrorAcks, isPaymentErrorAcked } from "@/lib/paymentErrorAcks";
-import { ChartCard } from "@/components/charts";
 import { pad2 } from "@/lib/periodCalculation";
 import AnaliticaKPIs from "./AnaliticaKPIs";
 import ClientesPaymentsBreakdown from "@/app/clientes/ClientesPaymentsBreakdown";
@@ -103,7 +101,7 @@ function groupExpensesByTopCategory(
   return result.sort((a, b) => b.total - a.total);
 }
 
-const ECON_GROUP_ORDER: EconomicGroup[] = ["personal", "operational", "capex"];
+const ECON_GROUP_ORDER: EconomicGroup[] = ["personal", "operational", "financiacion", "capex"];
 
 /** Totales por bloque económico (Personal / OpEx / CapEx), con sus transacciones, para la visión general del desglose de gastos. */
 function groupExpensesByEconomicGroup(
@@ -308,42 +306,17 @@ export default async function AnaliticaLoader({
     transactionsByCategory[t.category].push({ date: t.date, amount: t.amount, concept: t.concept ?? "", contact: t.contact ?? "" });
   }
 
-  // ── Financiación dentro del desglose de gastos: los reembolsos de préstamos no tienen
-  // categoría propia (se identifican por contacto, igual que en la card Financiación), así
-  // que se añaden como un grupo aparte en vez de vía expensesByCategoryAll. Solo cuentan los
-  // pagos (importe negativo) — no la entrada del propio préstamo, que no es un gasto. ──
-  const financingTxnsMain = txnsMain.filter((t) => {
-    if (t.amount >= 0 || !t.contact) return false;
-    const contact = t.contact.toLowerCase();
-    return budgets.some((b) => b.contactKeyword.trim() && contact.includes(b.contactKeyword.trim().toLowerCase()));
-  });
-  const financingGroupTotal: GroupTotal = {
-    group: "financiacion",
-    total: financingTxnsMain.reduce((s, t) => s + Math.abs(t.amount), 0),
-    count: financingTxnsMain.length,
-    txns: financingTxnsMain.map((t) => ({ date: t.date, amount: t.amount, concept: t.concept ?? "", contact: t.contact ?? "" })),
-  };
-  const financingByBudget: TopExpenseSeg[] = budgets
-    .map((b) => {
-      const kw = b.contactKeyword.trim().toLowerCase();
-      const txns = kw ? financingTxnsMain.filter((t) => t.contact!.toLowerCase().includes(kw)) : [];
-      transactionsByCategory[`budget-${b.id}`] = txns.map((t) => ({ date: t.date, amount: t.amount, concept: t.concept ?? "", contact: t.contact ?? "" }));
-      return {
-        key: `budget-${b.id}`,
-        label: b.name || "Financiación",
-        color: GROUP_COLORS.financiacion,
-        group: "financiacion" as const,
-        count: txns.length,
-        total: txns.reduce((s, t) => s + Math.abs(t.amount), 0),
-        children: [],
-      };
-    })
-    .filter((seg) => seg.total > 0);
+  // ── Financiación dentro del desglose de gastos: expensesByCategoryAll excluye a propósito
+  // las categorías de tipo "transfer" (Financiación) para no mezclarlas con traspasos internos
+  // reales — pero si una transacción SÍ tiene esa categoría asignada (p.ej. cuotas de préstamo),
+  // es un gasto real y debe contar aparte, con su propio grupo en vez de en Operativo. ──
+  const financingByCategory = financingExpensesByCategory(txnsMain, dbCategories);
+  const allExpCategories = [...expByCategory, ...financingByCategory];
 
-  // ── Desglose de gastos: visión general (Personal/OpEx/CapEx/Financiación) vs. específico (Personal+OpEx) ──
-  const expGroupTotals = [...groupExpensesByEconomicGroup(expByCategory, transactionsByCategory), financingGroupTotal];
-  const expByTopCategory = [...groupExpensesByTopCategory(expByCategory, dbCatByValue, dbCatById, EXPENSE_COLORS), ...financingByBudget];
-  const totalExpCat = expByCategory.reduce((s, r) => s + r.total, 0) + financingGroupTotal.total;
+  // ── Desglose de gastos: visión general (Personal/OpEx/Financiación/CapEx) vs. específico (Personal+OpEx) ──
+  const expGroupTotals = groupExpensesByEconomicGroup(allExpCategories, transactionsByCategory);
+  const expByTopCategory = groupExpensesByTopCategory(allExpCategories, dbCatByValue, dbCatById, EXPENSE_COLORS);
+  const totalExpCat = allExpCategories.reduce((s, r) => s + r.total, 0);
   const totalExpCatNoCapex = expGroupTotals.filter((g) => g.group !== "capex").reduce((s, g) => s + g.total, 0);
 
   // ── Salud financiera (datos completos) ──
@@ -572,29 +545,6 @@ export default async function AnaliticaLoader({
                     ahorroBruto={ahorroBruto}
                     ahorroNeto={ahorroNeto}
                   />
-                  <ChartCard title="Próximas obligaciones">
-                    <div className="space-y-3">
-                      {obligations.map(({ label, date, deadline }) => {
-                        const days = daysUntil(deadline);
-                        const badgeClass = days <= 30
-                          ? "bg-danger/10 text-danger"
-                          : days <= 60
-                          ? "bg-warning/10 text-warning"
-                          : "bg-navy/5 text-navy/55";
-                        return (
-                          <div key={label} className="flex items-center justify-between">
-                            <span className="text-sm text-navy">{label}</span>
-                            <div className="flex items-center gap-3">
-                              <span className="text-xs text-navy/45 tabular-nums">
-                                {daysUntil(deadline) <= 0 ? "vence hoy" : `${daysUntil(deadline)} días`}
-                              </span>
-                              <span className={`text-xs font-medium px-2 py-0.5 rounded ${badgeClass}`}>{date}</span>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </ChartCard>
                   <IvaRetenciones
                     quarterLabel={nextIvaQuarterLabel}
                     ivaRepercutido={nextIvaQuarterData?.ivaRepercutido ?? 0}
@@ -603,6 +553,7 @@ export default async function AnaliticaLoader({
                     retenciones={nextIvaQuarterData?.retenciones ?? 0}
                     dueLabel={nextIvaDueLabelLong}
                     quarterClosed={nextIvaQuarterClosed}
+                    obligations={obligations.map(({ label, deadline }) => ({ label, deadline, days: daysUntil(deadline) }))}
                     rows={quarterlyFiscalRows}
                     lastUpdated={bancoLastUpdated}
                   />
