@@ -23,14 +23,14 @@ export default function ConversionPack({ summary }: { summary: ConversionSummary
     <ChartCard
       title="Conversión Pack Benvinguda 2×1 → suscripción"
       subtitle="% de compradores del pack que acabaron suscribiéndose"
-      dateRange="Histórico completo"
+      dateRange="Desde el inicio"
       kpiItems={[
         { label: "Tasa de conversión", value: fmtPct(rate), valueClassName: "text-success" },
-        { label: "Convertidos / total", value: <>{totalConverted} <span className="text-[13px] text-navy/50 font-normal">de {totalBuyers}</span></> },
+        { label: "Convertidos", value: `${totalConverted}/${totalBuyers}` },
         {
-          label: "Días hasta conv. (media)",
+          label: "Días hasta convertir",
           value: avgDaysToConvert !== null ? Math.round(avgDaysToConvert) : "—",
-          helper: medianDaysToConvert !== null ? `med. ${medianDaysToConvert}d` : undefined,
+          tooltip: "Promedio de días desde que un alumno compra pack bienvenida hasta su siguiente compra.",
         },
       ]}
       chartDescription={`Evolución mensual de la tasa de conversión del Pack Benvinguda, ${fmtPct(rate)} de media`}

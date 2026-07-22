@@ -14,7 +14,7 @@ export default function PrimeraCompra({ summary }: { summary: FirstPurchaseSumma
     <ChartCard
       title="¿Cómo llegan los suscriptores?"
       subtitle={`Primera compra de los ${totalSubscribers} clientes que alguna vez se suscribieron`}
-      dateRange="Histórico completo"
+      dateRange="Desde el inicio"
       dataSource="Stripe, producto identificado por importe del cobro (estimación) · primera compra = la de fecha más antigua de cada cliente, sea cual sea el producto"
       sources={["stripe"]}
       lastUpdated="ahora"
@@ -27,7 +27,7 @@ export default function PrimeraCompra({ summary }: { summary: FirstPurchaseSumma
           {rows.map((r, i) => (
             <div key={r.item}>
               <div className="flex items-center justify-between mb-1.5">
-                <span className="text-sm text-navy">{r.item}</span>
+                <span className="text-[13px] text-navy">{r.item}</span>
                 <div className="flex items-center gap-3">
                   <span className="text-xs text-navy/55 tabular-nums">{r.count} clientes</span>
                   <span className="text-xs font-medium text-navy w-12 text-right tabular-nums">{pct(r.rate)}</span>

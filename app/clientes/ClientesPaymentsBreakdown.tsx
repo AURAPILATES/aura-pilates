@@ -138,10 +138,10 @@ export default function ClientesPaymentsBreakdown({
                 >
                   <div className="flex items-center gap-2.5">
                     <span className={`w-2 h-2 rounded-full ${it.bg} shrink-0`} />
-                    <span className={`text-sm text-navy/65 ${clickable ? "group-hover:text-navy" : ""} transition-colors`}>{it.label}</span>
+                    <span className={`text-[13px] text-navy/65 ${clickable ? "group-hover:text-navy" : ""} transition-colors`}>{it.label}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className={`text-sm font-semibold tabular-nums ${it.key === "succeeded" ? "text-navy" : "text-navy/60"}`}>
+                    <span className={`text-[13px] font-semibold tabular-nums ${it.key === "succeeded" ? "text-navy" : "text-navy/60"}`}>
                       {fmt(values[it.key])}
                     </span>
                     <span className="text-xs text-navy/40 tabular-nums w-10 text-right">

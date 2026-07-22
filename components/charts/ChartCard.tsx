@@ -72,7 +72,7 @@ export default function ChartCard({
   }
 
   return (
-    <div ref={cardRef} className={`relative bg-card border border-border rounded-[14px] overflow-hidden ${className}`}>
+    <div ref={cardRef} className={`relative bg-card border border-border rounded-[14px] overflow-hidden flex flex-col ${className}`}>
       {/* HEADER */}
       <div className="px-4 sm:px-5 pt-4">
         <div className="flex items-center justify-between gap-2 flex-wrap mb-1">
@@ -193,7 +193,7 @@ export default function ChartCard({
 
       {/* SOURCE */}
       {((sources && sources.length > 0) || lastUpdated) && (
-        <div className="flex items-center justify-between flex-wrap gap-x-3 gap-y-1 text-[11px] text-navy/45 leading-relaxed px-4 sm:px-5 py-2.5 border-t border-border">
+        <div className="mt-auto flex items-center justify-between flex-wrap gap-x-3 gap-y-1 text-[11px] text-navy/45 leading-relaxed px-4 sm:px-5 py-2.5 border-t border-border">
           {sources && sources.length > 0 ? (
             <span className="flex items-center gap-1.5 min-w-0" title={dataSource || undefined}>
               <Book size={13} className="shrink-0" />
