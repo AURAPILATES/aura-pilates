@@ -99,30 +99,28 @@ export default function VolumenBruto({
       dateRange={dateRange}
       kpiItems={kpiItems}
       toolbar={
-        <>
-          <div className="flex items-center gap-3 flex-wrap">
-            <ChartTypeToggle
-              value={chartType}
-              onChange={(v) => setChartType(v as "bar" | "line")}
-              options={[
-                { value: "bar", label: "Ver como barras", icon: <BarChart2 size={14} /> },
-                { value: "line", label: "Ver como línea", icon: <Activity size={14} /> },
-              ]}
-            />
-            <Legend items={[{ label: "Ingresos", color: "#818CF8" }, { label: "Gastos", color: "#FCA5A5" }]} />
-          </div>
+        <div className="flex items-center justify-between gap-3 w-full flex-nowrap">
+          <ChartTypeToggle
+            value={chartType}
+            onChange={(v) => setChartType(v as "bar" | "line")}
+            options={[
+              { value: "bar", label: "Ver como barras", icon: <BarChart2 size={14} /> },
+              { value: "line", label: "Ver como línea", icon: <Activity size={14} /> },
+            ]}
+          />
           <ToggleGroup
             value={period}
             onChange={(v) => setPeriod(v as Period)}
             options={PERIODS.map((p) => ({ value: p.key, label: p.label }))}
           />
-        </>
+        </div>
       }
       chartDescription="Evolución de entradas y salidas de caja por período seleccionado"
       dataSource="Bruto: todo movimiento bancario de entrada o salida, excluyendo traspasos internos. No concilia con Momence/Stripe — por eso es flujo de caja, no resultado contable."
       sources={["excel"]}
       lastUpdated={lastUpdated}
     >
+      <Legend items={[{ label: "Ingresos", color: "#818CF8" }, { label: "Gastos", color: "#FCA5A5" }]} className="mb-3" />
       <VolumenBrutoBody data={data} chartType={chartType} />
 
       <CollapsibleTable>

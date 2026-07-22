@@ -53,9 +53,9 @@ export default function Financiacion({
   return (
     <ChartCard
       title={
-        <span className="flex items-center gap-2">
-          Amortización préstamo
-          <span className="text-[11px] font-semibold text-warning bg-warning/10 px-2 py-0.5 rounded-full whitespace-nowrap">
+        <span className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+          <span className="whitespace-nowrap">Amortización préstamo</span>
+          <span className="text-[11px] font-semibold text-warning bg-warning/10 px-2 py-0.5 rounded-full whitespace-nowrap self-start">
             Falta cuadro de amortización
           </span>
         </span>
@@ -116,16 +116,16 @@ export default function Financiacion({
 
                 return (
                   <div key={b.id}>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <p className="text-sm font-medium text-navy">{b.name || "—"}</p>
-                      <div className="flex items-baseline gap-3">
-                        <span className="text-xs text-navy/45 tabular-nums">
-                          {fmtEur(s)} / {fmtEur(b.limit)}
-                        </span>
-                        <span className={`text-sm font-semibold tabular-nums w-14 text-right ${exceeded ? "text-danger" : "text-navy/70"}`}>
+                    <div className="mb-1.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm font-medium text-navy truncate">{b.name || "—"}</p>
+                        <span className={`text-sm font-semibold tabular-nums shrink-0 ${exceeded ? "text-danger" : "text-navy/70"}`}>
                           {Math.round(ratio * 100)}%
                         </span>
                       </div>
+                      <p className="text-xs text-navy/45 tabular-nums mt-0.5">
+                        {fmtEur(s)} / {fmtEur(b.limit)}
+                      </p>
                     </div>
                     <div className="h-2 bg-navy/[0.05] rounded-full overflow-hidden mb-1.5">
                       <div

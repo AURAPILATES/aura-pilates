@@ -101,8 +101,7 @@ export default function PrevisionGastos({
   return (
     <ChartCard
       title="Previsión de gastos recurrentes"
-      subtitle="Próximos 30 días"
-      dateRange="próximos 30 días"
+      dateRange="Próximos 30 días"
       dataSource="Gastos recurrentes confirmados en Transacciones › Recurrentes. Suministros: media de los últimos 3 meses completos (Electricidad + Agua)."
       sources={["recurrentes"]}
     >
@@ -113,7 +112,8 @@ export default function PrevisionGastos({
         </p>
       ) : (
         <>
-          <div className="flex items-center gap-6 flex-wrap sm:flex-nowrap mb-4">
+          <div className="@container mb-4">
+          <div className="flex items-center gap-6 flex-wrap @[420px]:flex-nowrap">
             <div className="shrink-0">
               <p className="text-[11px] font-medium text-navy/45 mb-1 whitespace-nowrap">Total previsto</p>
               <p className="text-[26px] font-semibold text-navy leading-tight tracking-tight">{fmt(totalPrevisto)}</p>
@@ -131,6 +131,7 @@ export default function PrevisionGastos({
                 />
               </div>
             )}
+          </div>
           </div>
 
           {/* Sort toolbar */}

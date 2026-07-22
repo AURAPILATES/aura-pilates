@@ -366,7 +366,7 @@ export default function RecurrentesListV2({
                 {/* Fila móvil */}
                 <div
                   onClick={() => onOpenPending(row)}
-                  className="sm:hidden flex items-center gap-[10px] py-[10px] border-t border-subtle cursor-pointer active:bg-subtle"
+                  className="sm:hidden flex items-center gap-[10px] px-2 py-[10px] border-t border-subtle cursor-pointer active:bg-subtle"
                 >
                   <span className="w-[32px] h-[32px] shrink-0 rounded-[10px] flex items-center justify-center" style={{ backgroundColor: icon.accent }}>
                     <CatIcon iconKey={icon.iconKey} name={icon.label ?? row.label} color="#fff" size={15} />
@@ -469,7 +469,7 @@ export default function RecurrentesListV2({
               {/* Fila móvil */}
               <div
                 onClick={() => onOpenConfirmed(row)}
-                className="sm:hidden flex items-center gap-[10px] py-[10px] border-t border-subtle cursor-pointer active:bg-subtle"
+                className="sm:hidden flex items-center gap-[10px] px-2 py-[10px] border-t border-subtle cursor-pointer active:bg-subtle"
               >
                 <span className="w-[32px] h-[32px] shrink-0 rounded-[10px] flex items-center justify-center" style={{ backgroundColor: icon.accent }}>
                   <CatIcon iconKey={icon.iconKey} name={icon.label ?? e.label} color="#fff" size={15} />

@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { ChevronRight } from "react-feather";
 import { ChartCard, type MultiKpiItem } from "@/components/charts";
 import { fmt } from "@/lib/analytics";
 
@@ -76,21 +78,24 @@ function ResultBadge({ favorable }: { favorable: boolean }) {
 export default function IvaRetenciones({
   quarterLabel, ivaRepercutido, ivaSoportado, ivaNeto, retenciones, dueLabel, quarterClosed, rows, obligations, lastUpdated,
 }: Props) {
+  const [ivaExpanded, setIvaExpanded] = useState(false);
   const quarterStatus = quarterClosed ? "trimestre cerrado" : "trimestre en curso";
 
   const kpiItems: MultiKpiItem[] = [
     {
       label: `IVA · ${quarterStatus}`,
-      value: fmt(Math.abs(ivaNeto)),
+      value: (
+        <span className="inline-flex items-center gap-2">
+          {fmt(Math.abs(ivaNeto))}
+          <ResultBadge favorable={ivaNeto < 0} />
+        </span>
+      ),
       valueClassName: ivaNeto < 0 ? "text-success" : "text-navy",
       tooltip: "Repercutido: 21% extraído del bruto de ventas (Stripe + Urban Sports Club). Soportado: según el % de IVA asignado por contacto en cada gasto importado (Configuración → Contactos). Resultado = repercutido − soportado.",
       helper: (
-        <div className="mt-1 space-y-1.5">
-          <ResultBadge favorable={ivaNeto < 0} />
-          <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-navy/45">
-            <span>Repercutido {fmt(ivaRepercutido)}</span>
-            <span>Soportado {fmt(ivaSoportado)}</span>
-          </div>
+        <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-navy/45">
+          <span>Repercutido (Ventas) {fmt(ivaRepercutido)}</span>
+          <span>Soportado (Gastos) {fmt(ivaSoportado)}</span>
         </div>
       ),
     },
@@ -131,27 +136,40 @@ export default function IvaRetenciones({
                 </thead>
                 <tbody>
                   <tr className="border-b border-border">
-                    <td className="py-2.5 pr-3 text-navy/50 whitespace-nowrap">IVA repercutido</td>
-                    {rows.map((r) => (
-                      <td key={r.quarter} className="py-2.5 px-3 text-right text-navy/70 tabular-nums">{fmt(r.ivaRepercutido)}</td>
-                    ))}
-                  </tr>
-                  <tr className="border-b border-border">
-                    <td className="py-2.5 pr-3 text-navy/50 whitespace-nowrap">IVA soportado</td>
-                    {rows.map((r) => (
-                      <td key={r.quarter} className="py-2.5 px-3 text-right text-navy/70 tabular-nums">− {fmt(r.ivaSoportado)}</td>
-                    ))}
-                  </tr>
-                  <tr className="border-b border-border">
-                    <td className="py-2.5 pr-3 font-medium text-navy whitespace-nowrap">IVA (resultado)</td>
+                    <td className="py-2.5 pr-3 font-medium text-navy whitespace-nowrap">
+                      <button
+                        type="button"
+                        onClick={() => setIvaExpanded((v) => !v)}
+                        className="flex items-center gap-1 hover:text-navy/70 transition-colors"
+                      >
+                        <ChevronRight size={13} className={`shrink-0 text-navy/35 transition-transform ${ivaExpanded ? "rotate-90" : ""}`} />
+                        IVA
+                      </button>
+                    </td>
                     {rows.map((r) => (
                       <td key={r.quarter} className={`py-2.5 px-3 text-right font-semibold tabular-nums ${r.ivaNeto < 0 ? "text-success" : "text-navy"}`}>
                         {fmt(r.ivaNeto)}
                       </td>
                     ))}
                   </tr>
+                  {ivaExpanded && (
+                    <>
+                      <tr className="border-b border-border">
+                        <td className="py-2 pl-7 pr-3 text-navy/50 whitespace-nowrap">Repercutido (Ventas)</td>
+                        {rows.map((r) => (
+                          <td key={r.quarter} className="py-2 px-3 text-right text-navy/70 tabular-nums">{fmt(r.ivaRepercutido)}</td>
+                        ))}
+                      </tr>
+                      <tr className="border-b border-border">
+                        <td className="py-2 pl-7 pr-3 text-navy/50 whitespace-nowrap">Soportado (Gastos)</td>
+                        {rows.map((r) => (
+                          <td key={r.quarter} className="py-2 px-3 text-right text-navy/70 tabular-nums">− {fmt(r.ivaSoportado)}</td>
+                        ))}
+                      </tr>
+                    </>
+                  )}
                   <tr className="last:border-0">
-                    <td className="py-2.5 pr-3 text-navy/50 whitespace-nowrap">Retenciones (IRPF)</td>
+                    <td className="py-2.5 pr-3 text-navy/50 whitespace-nowrap">IRPF</td>
                     {rows.map((r) => (
                       <td key={r.quarter} className="py-2.5 px-3 text-right text-navy/70 tabular-nums">{fmt(r.retenciones)}</td>
                     ))}
