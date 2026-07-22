@@ -277,14 +277,16 @@ export default function RecurrentesListV2({
       <div className="mt-2 sm:mt-[24px]">
       <div className="hidden sm:block">
         <div className={tableHeadClassV2} style={gridColsV2(COLS)}>
-          <span className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={allConfirmedSelected}
-              ref={(el) => { if (el) el.indeterminate = !allConfirmedSelected && someConfirmedSelected; }}
-              onChange={() => onToggleSelectAll(confirmedPageIds)}
-              className="w-[13px] h-[13px] rounded-[4px] border-border text-navy focus:ring-navy/20 cursor-pointer"
-            />
+          <span className="flex items-center gap-[10px]">
+            <span className="w-[30px] h-[30px] shrink-0 flex items-center justify-center">
+              <input
+                type="checkbox"
+                checked={allConfirmedSelected}
+                ref={(el) => { if (el) el.indeterminate = !allConfirmedSelected && someConfirmedSelected; }}
+                onChange={() => onToggleSelectAll(confirmedPageIds)}
+                className="w-[13px] h-[13px] rounded-[4px] border-border accent-navy focus:ring-navy/20 cursor-pointer"
+              />
+            </span>
             Concepto
           </span>
           <span>Categoría</span>
@@ -439,7 +441,7 @@ export default function RecurrentesListV2({
                           type="checkbox"
                           checked={isSelected}
                           onChange={() => onToggleSelect(e.id)}
-                          className="w-[15px] h-[15px] rounded-[4px] border-border text-navy focus:ring-navy/20 cursor-pointer"
+                          className="w-[15px] h-[15px] rounded-[4px] border-border accent-navy focus:ring-navy/20 cursor-pointer"
                         />
                       </label>
                     </span>

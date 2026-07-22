@@ -207,7 +207,7 @@ export default function ContactosManagerV2({
                             type="checkbox"
                             checked={isSelected}
                             onChange={() => onToggleSelect(c.id)}
-                            className="w-[17px] h-[17px] rounded-[5px] border-border text-navy focus:ring-navy/20 cursor-pointer"
+                            className="w-[17px] h-[17px] rounded-[5px] border-border accent-navy focus:ring-navy/20 cursor-pointer"
                           />
                         </label>
                       </span>

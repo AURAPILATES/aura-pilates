@@ -314,14 +314,16 @@ export default function TransaccionesListV2({
       <div className="mt-2 sm:mt-[24px]">
         <div className="hidden sm:block">
           <div className={`${tableHeadClassV2} px-2`} style={gridColsV2(COLS)}>
-            <span className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={allPageSelected}
-                ref={(el) => { if (el) el.indeterminate = !allPageSelected && somePageSelected; }}
-                onChange={() => onToggleSelectAll(pageIds)}
-                className="w-[13px] h-[13px] rounded-[4px] border-border text-navy focus:ring-navy/20 cursor-pointer"
-              />
+            <span className="flex items-center gap-[10px]">
+              <span className="w-[30px] h-[30px] shrink-0 flex items-center justify-center">
+                <input
+                  type="checkbox"
+                  checked={allPageSelected}
+                  ref={(el) => { if (el) el.indeterminate = !allPageSelected && somePageSelected; }}
+                  onChange={() => onToggleSelectAll(pageIds)}
+                  className="w-[13px] h-[13px] rounded-[4px] border-border accent-navy focus:ring-navy/20 cursor-pointer"
+                />
+              </span>
               <span
                 className={`flex items-center cursor-pointer select-none ${sortKey === "concept" ? "text-navy" : ""}`}
                 onClick={() => onToggleSort("concept")}
@@ -399,7 +401,7 @@ export default function TransaccionesListV2({
                                   type="checkbox"
                                   checked={isSelected}
                                   onChange={() => onToggleSelect(t.id)}
-                                  className="w-[15px] h-[15px] rounded-[4px] border-border text-navy focus:ring-navy/20 cursor-pointer"
+                                  className="w-[15px] h-[15px] rounded-[4px] border-border accent-navy focus:ring-navy/20 cursor-pointer"
                                 />
                               </label>
                             </span>
