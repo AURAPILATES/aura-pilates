@@ -19,6 +19,8 @@ export interface MultiKpiItem {
   helper?: ReactNode;
   tooltip?: string;
   onClick?: () => void;
+  /** Badge de variación vs. el período de comparación (ver pctDelta en DeltaBadge.tsx). */
+  delta?: { value: string; direction: DeltaDirection };
 }
 
 export interface ChartCardProps {
@@ -154,8 +156,11 @@ export default function ChartCard({
                     </span>
                   )}
                 </div>
-                <div className={`text-2xl font-medium leading-tight text-navy ${item.valueClassName ?? ""}`}>
-                  {item.value}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className={`text-2xl font-medium leading-tight text-navy ${item.valueClassName ?? ""}`}>
+                    {item.value}
+                  </span>
+                  {item.delta && <DeltaBadge value={item.delta.value} direction={item.delta.direction} />}
                 </div>
                 {item.helper && <div className="text-[11px] text-navy/45 mt-0.5">{item.helper}</div>}
               </Cell>

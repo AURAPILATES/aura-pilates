@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { BarChart2, Activity, Eye, EyeOff, ChevronRight, ChevronDown } from "react-feather";
 import { ChartCard, ChartTypeToggle, ToggleGroup, CollapsibleTable, type MultiKpiItem } from "@/components/charts";
+import { pctDelta } from "@/components/charts/DeltaBadge";
 import { pct } from "@/lib/analytics";
 import Drawer from "@/app/components/Drawer";
 import { CategoryIcon } from "../GastosBreakdown";
@@ -58,6 +59,7 @@ export default function DesglosGastosUnificado({
   categories,
   transactionsByCategory,
   totalExpCat,
+  totalExpCatComp,
   rangeLabel,
   lastUpdated,
 }: {
@@ -65,6 +67,8 @@ export default function DesglosGastosUnificado({
   categories: TopExpenseSeg[];
   transactionsByCategory: Record<string, Txn[]>;
   totalExpCat: number;
+  /** Mismo total, calculado sobre el período de comparación — solo para el badge de variación. */
+  totalExpCatComp: number;
   rangeLabel?: string | null;
   lastUpdated?: string | null;
 }) {
@@ -113,7 +117,7 @@ export default function DesglosGastosUnificado({
       : [];
 
   const kpiItems: MultiKpiItem[] = [
-    { label: "Total período", value: fmtAmount(totalExpCat) },
+    { label: "Total período", value: fmtAmount(totalExpCat), delta: pctDelta(totalExpCat, totalExpCatComp, true) },
   ];
 
   function categoryTxns(seg: TopExpenseSeg): Txn[] {

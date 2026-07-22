@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { AlertTriangle, CreditCard, UserPlus, DollarSign, Activity, Users } from "react-feather";
 import { fmt } from "@/lib/analytics";
 import Drawer from "@/app/components/Drawer";
+import DeltaBadge, { pctDelta, type DeltaDirection } from "@/components/charts/DeltaBadge";
 import { isChurned, type EnrichedCustomer } from "@/lib/customerEnrichment";
 import { ackPaymentErrorAction } from "@/app/actions/ackPaymentError";
 
@@ -78,7 +79,7 @@ function CustomerRowItem({
 }
 
 function StatBox({
-  icon, label, value, valueClassName, tooltip, onClick,
+  icon, label, value, valueClassName, tooltip, onClick, delta,
 }: {
   icon: ReactNode;
   label: string;
@@ -86,6 +87,7 @@ function StatBox({
   valueClassName?: string;
   tooltip: string;
   onClick?: () => void;
+  delta?: { value: string; direction: DeltaDirection };
 }) {
   const Comp = onClick ? "button" : "div";
   return (
@@ -107,8 +109,11 @@ function StatBox({
           </svg>
         </span>
       </div>
-      <div className={`text-2xl font-medium leading-tight tabular-nums ${valueClassName ?? "text-navy"}`}>
-        {value}
+      <div className="flex items-center gap-1.5 flex-wrap">
+        <span className={`text-2xl font-medium leading-tight tabular-nums ${valueClassName ?? "text-navy"}`}>
+          {value}
+        </span>
+        {delta && <DeltaBadge value={delta.value} direction={delta.direction} />}
       </div>
     </Comp>
   );
@@ -118,12 +123,17 @@ type DrawerEntry = { title: string; subtitle: string; customers: EnrichedCustome
 
 export default function AnaliticaKPIs({
   customers, convertCandidates, spendPerClient, occupancyAvg, avgPerClass,
+  spendPerClientComp, occupancyAvgComp, avgPerClassComp,
 }: {
   customers: EnrichedCustomer[];
   convertCandidates: EnrichedCustomer[];
   spendPerClient: number;
   occupancyAvg: number;
   avgPerClass: number;
+  /** Mismos valores calculados sobre el período de comparación — solo para el badge de variación. */
+  spendPerClientComp: number;
+  occupancyAvgComp: number;
+  avgPerClassComp: number;
 }) {
   const router = useRouter();
   const [drawer, setDrawer] = useState<DrawerKey>(null);
@@ -197,6 +207,7 @@ export default function AnaliticaKPIs({
           label="Gasto medio por alumno"
           value={fmt(spendPerClient)}
           tooltip="Facturación total del período ÷ clientes únicos que pagaron. Solo Stripe."
+          delta={pctDelta(spendPerClient, spendPerClientComp)}
         />
         <StatBox
           icon={<Activity size={14} />}
@@ -204,12 +215,14 @@ export default function AnaliticaKPIs({
           value={`${Math.round(occupancyAvg * 100)}%`}
           valueClassName={occupancyAvg >= 0.7 ? "text-success" : occupancyAvg >= 0.4 ? "text-warning" : "text-danger"}
           tooltip="Plazas vendidas ÷ plazas totales en el período. Fuente: Momence."
+          delta={pctDelta(occupancyAvg, occupancyAvgComp)}
         />
         <StatBox
           icon={<Users size={14} />}
           label="Media de alumnos/clase"
           value={avgPerClass.toFixed(1)}
           tooltip="Alumnos por clase de media en el período. Fuente: Momence."
+          delta={pctDelta(avgPerClass, avgPerClassComp)}
         />
       </div>
 

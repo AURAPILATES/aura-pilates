@@ -1,4 +1,5 @@
 import { fmt, filterActive, occupancyRate, totalStudents } from "@/lib/analytics";
+import { pctDelta } from "@/components/charts/DeltaBadge";
 import { saveHistoricalEvents, loadHistoricalEvents } from "@/lib/history";
 import { getLatestSyncRuns } from "@/lib/syncRuns";
 import { taxBreakdown, fiscalQuarterOf, ivaRepercutidoFromGross, netIvaAPagar } from "@/lib/taxCalc";
@@ -19,7 +20,7 @@ import { loadStripeCustomers } from "@/lib/stripeCustomers";
 import { buildPrimaryIdMap, enrichCustomers, hasActiveSub } from "@/lib/customerEnrichment";
 import { estimatedMRR } from "@/lib/stripeRecurrence";
 
-import { loadTransactionsCached, expensesByCategoryAll, financingExpensesByCategory, getLatestImportDate, findCategory, type EconomicGroup } from "@/lib/transactions";
+import { loadTransactionsCached, expensesByCategoryAll, financingExpensesByCategory, getLatestImportDate, findCategory, type EconomicGroup, type Transaction } from "@/lib/transactions";
 import { formatRelativeTime } from "@/lib/formatRelativeTime";
 import { loadCategoriesCached, NON_CASHFLOW_GROUP_TYPES, type Category } from "@/lib/categories";
 import { loadRecurringExpensesCached, forecastConfirmedExpenses } from "@/lib/recurringExpenses";
@@ -137,7 +138,7 @@ export default async function AnaliticaLoader({
 
   const [
     paymentsAll, membershipsAll, productsAll, customersAll,
-    txnsAll, dbCategories, budgets, businessEvents, recurringExpenses, breakdown,
+    txnsAll, dbCategories, budgets, businessEvents, recurringExpenses, breakdown, breakdownComp,
     bancoLastImport, paymentErrorAcks, syncRuns, liveMomenceEvents, historicalMomenceEvents,
   ] = await Promise.all([
     loadStripePaymentsCached(),
@@ -150,6 +151,7 @@ export default async function AnaliticaLoader({
     loadBusinessEvents(),
     loadRecurringExpensesCached(),
     loadPaymentsBreakdown(mainFrom, mainTo),
+    loadPaymentsBreakdown(compFrom, compTo),
     getLatestImportDate(),
     loadPaymentErrorAcks(),
     getLatestSyncRuns().catch(() => null),
@@ -160,12 +162,19 @@ export default async function AnaliticaLoader({
 
   const allMomenceEventsById = new Map(historicalMomenceEvents.map((e) => [e.id, e]));
   liveMomenceEvents.forEach((e) => allMomenceEventsById.set(e.id, e));
-  const mainEvents = filterActive(Array.from(allMomenceEventsById.values())).filter((e) => {
+  const allMomenceEvents = Array.from(allMomenceEventsById.values());
+  const mainEvents = filterActive(allMomenceEvents).filter((e) => {
     const d = new Date(e.dateTime);
     return d >= new Date(mainFrom + "T00:00:00") && d <= new Date(mainTo + "T23:59:59");
   });
+  const compEvents = filterActive(allMomenceEvents).filter((e) => {
+    const d = new Date(e.dateTime);
+    return d >= new Date(compFrom + "T00:00:00") && d <= new Date(compTo + "T23:59:59");
+  });
   const occupancyAvg = occupancyRate(mainEvents);
   const avgPerClass  = mainEvents.length > 0 ? totalStudents(mainEvents) / mainEvents.length : 0;
+  const occupancyAvgComp = occupancyRate(compEvents);
+  const avgPerClassComp  = compEvents.length > 0 ? totalStudents(compEvents) / compEvents.length : 0;
 
   // La carga en vivo de Momence puede ir bien aunque el snapshot nocturno haya fallado
   // (p.ej. token caducado a las 3am) — eso afectaría a métricas de bajas/altas que
@@ -185,6 +194,7 @@ export default async function AnaliticaLoader({
   const pMain = paymentsAll.filter((p) => p.date >= mainFrom && p.date <= mainTo);
   const pComp = paymentsAll.filter((p) => p.date >= compFrom && p.date <= compTo);
   const txnsMain = txnsAll.filter((t) => t.date >= mainFrom && t.date <= mainTo);
+  const txnsComp = txnsAll.filter((t) => t.date >= compFrom && t.date <= compTo);
 
   const hasSales  = paymentsAll.length > 0;
   const totalRev  = stripeTotalRevenue(pMain);
@@ -209,6 +219,7 @@ export default async function AnaliticaLoader({
   const uscRevenue = uscSales.reduce((sum, s) => sum + s.amount, 0);
   const uscCount   = uscSales.length;
   const revComp    = stripeTotalRevenue(pComp);
+  const stripeFeesComp = stripeTotalFees(pComp);
   const uscRevComp = momenceSalesAll.filter((s) =>
     s.method === "urban-sports-club" &&
     s.paymentDate >= compFrom &&
@@ -316,6 +327,12 @@ export default async function AnaliticaLoader({
   const expByTopCategory = groupExpensesByTopCategory(allExpCategories, dbCatByValue, dbCatById, EXPENSE_COLORS);
   const totalExpCat = allExpCategories.reduce((s, r) => s + r.total, 0);
 
+  // Mismo cálculo sobre el período de comparación, solo para el delta del KPI — no hace
+  // falta el desglose por categoría/grupo, solo el total.
+  const totalExpCatComp =
+    expensesByCategoryAll(txnsComp, dbCategories).reduce((s, r) => s + r.total, 0) +
+    financingExpensesByCategory(txnsComp, dbCategories).reduce((s, r) => s + r.total, 0);
+
   // ── Salud financiera (datos completos) ──
   const today_ym = curMonth;
 
@@ -369,6 +386,20 @@ export default async function AnaliticaLoader({
     ? revMonths.reduce((s, m) => s + (expenseByMonth.get(m) ?? 0), 0) / revMonths.length
     : 0;
   const avgMonthlyMargin = avgMonthlyRevenue - avgMonthlyExpense;
+
+  // Margen del período seleccionado en el filtro (vs. el período de comparación), mismo
+  // criterio de "según el banco" que el resto de Flujo de caja.
+  function cashflowNet(txns: Transaction[]): number {
+    let net = 0;
+    for (const t of txns) {
+      const cat = t.category ? findCategory(dbCategories, t.category) : undefined;
+      if (cat && NON_CASHFLOW_GROUP_TYPES.has(cat.group_type)) continue;
+      net += t.amount;
+    }
+    return net;
+  }
+  const periodMargin = cashflowNet(txnsMain);
+  const periodMarginComp = cashflowNet(txnsComp);
 
   const breakEvenGap = avgMonthlyBurn - avgMonthlyRevenue;
   const clientesNecesarios = breakEvenGap > 0 && ticketMedio > 0
@@ -498,6 +529,11 @@ export default async function AnaliticaLoader({
   const activeCount   = payingCustomers.length;
   const spendPerClient = activeCount > 0 ? totalRev / activeCount : 0;
 
+  const compPayerIds = new Set(pComp.filter((p) => p.customerId).map((p) => p.customerId!));
+  const payingCustomersComp = customers.filter((c) => c.stripeIds.some((sid) => compPayerIds.has(sid)));
+  const activeCountComp = payingCustomersComp.length;
+  const spendPerClientComp = activeCountComp > 0 ? revComp / activeCountComp : 0;
+
   // ── Clientes por convertir a suscripción: 2+ packs (sin contar Benvinguda), sin sub activa ──
   const packCounts = new Map<string, number>();
   for (const p of paymentsAll) {
@@ -535,10 +571,11 @@ export default async function AnaliticaLoader({
             <SectionHeader id="ingresos-gastos" title="Ingresos y gastos" />
             <div className="space-y-4">
               <VolumenBruto
-                txns={txnsAll}
+                txns={txnsMain}
                 categories={dbCategories}
                 lastUpdated={bancoLastUpdated}
                 kpiItems={[
+                  { label: "Margen del período", value: fmt(periodMargin), delta: pctDelta(periodMargin, periodMarginComp) },
                   { label: "Margen mensual", value: fmt(avgMonthlyMargin), helper: "media últimos 3 m" },
                 ]}
               />
@@ -547,6 +584,9 @@ export default async function AnaliticaLoader({
                 stripeFees={stripeFees}
                 stripeNet={stripeNet}
                 uscGross={uscRevenue}
+                stripeGrossComp={revComp}
+                stripeFeesComp={stripeFeesComp}
+                uscGrossComp={uscRevComp}
                 monthly={monthlyByFuente}
                 dateRange={periodLabel}
                 uscLastDateLabel={uscLastDateLabel}
@@ -561,6 +601,7 @@ export default async function AnaliticaLoader({
                 categories={expByTopCategory}
                 transactionsByCategory={transactionsByCategory}
                 totalExpCat={totalExpCat}
+                totalExpCatComp={totalExpCatComp}
                 rangeLabel={periodLabel}
                 lastUpdated={bancoLastUpdated}
               />
@@ -592,6 +633,9 @@ export default async function AnaliticaLoader({
                 spendPerClient={spendPerClient}
                 occupancyAvg={occupancyAvg}
                 avgPerClass={avgPerClass}
+                spendPerClientComp={spendPerClientComp}
+                occupancyAvgComp={occupancyAvgComp}
+                avgPerClassComp={avgPerClassComp}
               />
               <EvolucionInscritos data={activeCustomersData} />
               <HorarioReporting
@@ -616,6 +660,12 @@ export default async function AnaliticaLoader({
                   customers={customers}
                   periodLabel={periodLabel}
                   excludeSegments={["disputed", "failed"]}
+                  compBreakdown={{
+                    succeeded: revComp,
+                    refunded: breakdownComp.refunded,
+                    disputed: breakdownComp.disputed,
+                    failed: breakdownComp.failed,
+                  }}
                 />
               </div>
               <ConversionPack summary={conversionSummary} />

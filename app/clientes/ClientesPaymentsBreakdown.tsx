@@ -4,6 +4,7 @@ import { useState } from "react";
 import { fmt } from "@/lib/analytics";
 import Drawer from "@/app/components/Drawer";
 import { ChartCard } from "@/components/charts";
+import DeltaBadge, { pctDelta } from "@/components/charts/DeltaBadge";
 import type { PaymentsBreakdown } from "@/lib/stripePayments";
 import type { CustomerRow } from "./ClientesTable";
 
@@ -15,6 +16,8 @@ type Props = PaymentsBreakdown & {
   customers?: CustomerRow[];
   periodLabel: string;
   excludeSegments?: SegmentKey[];
+  /** Mismos 4 totales sobre el período de comparación — solo para el badge de variación del total. */
+  compBreakdown?: { succeeded: number; refunded: number; disputed: number; failed: number };
 };
 
 const ITEMS: { key: SegmentKey; label: string; bg: string; text: string; drawerTitle: string }[] = [
@@ -47,7 +50,7 @@ function pct(n: number) {
 export default function ClientesPaymentsBreakdown({
   succeeded, refunded, disputed, failed,
   succeededIds = [], refundedIds, disputedIds, failedIds,
-  customers, periodLabel, excludeSegments = [],
+  customers, periodLabel, excludeSegments = [], compBreakdown,
 }: Props) {
   const [open, setOpen] = useState<SegmentKey | null>(null);
 
@@ -62,6 +65,10 @@ export default function ClientesPaymentsBreakdown({
   // segmentos (p.ej. disputed/failed), su importe no puede seguir sumando al total o el
   // anillo no llegaría al 100% y dejaría un hueco sin colorear.
   const total = visible.reduce((s, it) => s + values[it.key], 0);
+  const totalComp = compBreakdown
+    ? ITEMS.filter((it) => !excludeSegments.includes(it.key)).reduce((s, it) => s + compBreakdown[it.key], 0)
+    : undefined;
+  const totalDelta = totalComp !== undefined ? pctDelta(total, totalComp) : undefined;
 
   function customersForSegment(key: SegmentKey): CustomerRow[] {
     if (!customers) return [];
@@ -125,6 +132,11 @@ export default function ClientesPaymentsBreakdown({
                 <div className="h-full flex flex-col items-center justify-center text-center">
                   <p className="text-lg font-bold text-navy tabular-nums leading-tight">{fmtCompact(total)}</p>
                   <p className="text-[10px] text-navy/45 font-medium mt-0.5">Total</p>
+                  {totalDelta && (
+                    <div className="mt-1 scale-90">
+                      <DeltaBadge value={totalDelta.value} direction={totalDelta.direction} />
+                    </div>
+                  )}
                 </div>
               </foreignObject>
             </svg>

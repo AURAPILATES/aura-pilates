@@ -35,3 +35,17 @@ export default function DeltaBadge({ value, direction, icon, className = "" }: D
     </span>
   );
 }
+
+/** % de variación entre el período actual y el anterior, listo para pasar a DeltaBadge.
+ * `invert` es para métricas donde bajar es bueno (p.ej. plazas libres, errores de pago):
+ * así el color refleja si es una buena o mala noticia, no solo si el número subió o bajó. */
+export function pctDelta(cur: number, prev: number, invert = false): { value: string; direction: DeltaDirection } | undefined {
+  if (!prev) return undefined;
+  const p = ((cur - prev) / prev) * 100;
+  if (p === 0) return undefined;
+  const up = invert ? p < 0 : p > 0;
+  return {
+    value: `${p > 0 ? "+" : ""}${p.toFixed(1).replace(".", ",")}%`,
+    direction: up ? "pos" : "neg",
+  };
+}

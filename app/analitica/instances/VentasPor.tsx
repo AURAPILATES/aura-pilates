@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { BarChart2, Activity } from "react-feather";
 import { ChartCard, ChartTypeToggle, ToggleGroup, InteractiveLegend, CollapsibleTable } from "@/components/charts";
+import { pctDelta } from "@/components/charts/DeltaBadge";
 import { pct } from "@/lib/analytics";
 import Drawer from "@/app/components/Drawer";
 import type { IngresosPorFuenteRow } from "./IngresosPorFuenteBody";
@@ -67,6 +68,9 @@ export default function VentasPor({
   stripeFees,
   stripeNet,
   uscGross,
+  stripeGrossComp,
+  stripeFeesComp,
+  uscGrossComp,
   monthly,
   dateRange,
   uscLastDateLabel,
@@ -80,6 +84,10 @@ export default function VentasPor({
   stripeFees: number;
   stripeNet: number;
   uscGross: number;
+  /** Mismos totales, calculados sobre el período de comparación — solo para el badge de variación. */
+  stripeGrossComp: number;
+  stripeFeesComp: number;
+  uscGrossComp: number;
   monthly: IngresosPorFuenteRow[];
   dateRange?: string;
   /** Última fecha con datos reales de Urban en el CSV manual de Momence — Stripe sigue
@@ -103,6 +111,12 @@ export default function VentasPor({
   const totalBruto = stripeGross + uscNet;
   const ventasNetas = totalBruto - stripeFees - totalBruto * 0.21;
   const grouped = groupByPeriod(monthly, period);
+
+  const totalBrutoComp = stripeGrossComp + uscGrossComp;
+  const ventasNetasComp = totalBrutoComp - stripeFeesComp - totalBrutoComp * 0.21;
+  const ventasDelta   = pctDelta(totalBruto, totalBrutoComp);
+  const comisionDelta = pctDelta(stripeFees, stripeFeesComp, true);
+  const netasDelta    = pctDelta(ventasNetas, ventasNetasComp);
 
   // La tabla desglosa TODO el histórico (no solo el período seleccionado arriba), así que su
   // fila "Total" debe sumar las filas mostradas, no los KPI del período — el total no cambia
@@ -205,9 +219,9 @@ export default function VentasPor({
             : (months.length > 0 ? `${periodLabel(months[0], period)} – ${periodLabel(months[months.length - 1], period)}` : undefined)
         }
         kpiItems={[
-          { label: "Ventas totales", value: fmtEur(totalBruto), helper: "Stripe bruto + Urban" },
-          { label: "Comisión Stripe", value: `−${fmtEur(stripeFees)}`, valueClassName: "text-danger", helper: `Neto: ${fmtEur(stripeNet)}` },
-          { label: "Ventas netas", value: fmtEur(ventasNetas), tooltip: "Ventas totales - comisión Stripe - 21%" },
+          { label: "Ventas totales", value: fmtEur(totalBruto), helper: "Stripe bruto + Urban", delta: ventasDelta },
+          { label: "Comisión Stripe", value: `−${fmtEur(stripeFees)}`, valueClassName: "text-danger", helper: `Neto: ${fmtEur(stripeNet)}`, delta: comisionDelta },
+          { label: "Ventas netas", value: fmtEur(ventasNetas), tooltip: "Ventas totales - comisión Stripe - 21%", delta: netasDelta },
         ]}
         toolbar={
           <div className="flex items-center justify-between gap-3 w-full flex-wrap">
