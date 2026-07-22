@@ -1,6 +1,5 @@
 "use client";
 
-import { Calendar } from "react-feather";
 import { ChartCard, type MultiKpiItem } from "@/components/charts";
 import { fmt } from "@/lib/analytics";
 
@@ -54,30 +53,58 @@ const URGENCY_STYLES = {
 function ObligationDayBadge({ deadline, level }: { deadline: string; level: keyof typeof URGENCY_STYLES }) {
   const d = new Date(deadline + "T12:00:00");
   return (
-    <div className={`w-12 h-12 shrink-0 rounded-[10px] flex flex-col items-center justify-center ${URGENCY_STYLES[level]}`}>
-      <span className="text-[15px] font-semibold leading-none">{d.getDate()}</span>
-      <span className="text-[9px] font-semibold uppercase tracking-wide mt-1">{MONTH_SHORT[d.getMonth()]}</span>
+    <div className={`w-9 h-9 shrink-0 rounded-[8px] flex flex-col items-center justify-center ${URGENCY_STYLES[level]}`}>
+      <span className="text-[12px] font-semibold leading-none">{d.getDate()}</span>
+      <span className="text-[7.5px] font-semibold uppercase tracking-wide mt-0.5">{MONTH_SHORT[d.getMonth()]}</span>
     </div>
+  );
+}
+
+/** Badge "A pagar"/"A favor" — igual paleta semántica que el resto de la app (success/danger). */
+function ResultBadge({ favorable }: { favorable: boolean }) {
+  return (
+    <span
+      className={`inline-flex items-center px-1.5 py-[1px] rounded-full text-[10px] font-semibold ${
+        favorable ? "bg-success/10 text-success" : "bg-danger/10 text-danger"
+      }`}
+    >
+      {favorable ? "A favor" : "A pagar"}
+    </span>
   );
 }
 
 export default function IvaRetenciones({
   quarterLabel, ivaRepercutido, ivaSoportado, ivaNeto, retenciones, dueLabel, quarterClosed, rows, obligations, lastUpdated,
 }: Props) {
+  const quarterStatus = quarterClosed ? "trimestre cerrado" : "trimestre en curso";
+
   const kpiItems: MultiKpiItem[] = [
     {
-      label: "IVA (resultado)",
+      label: `IVA · ${quarterStatus}`,
       value: fmt(Math.abs(ivaNeto)),
       valueClassName: ivaNeto < 0 ? "text-success" : "text-navy",
-      helper: <span className={ivaNeto < 0 ? "text-success" : "text-danger"}>{ivaNeto < 0 ? "A favor" : "A pagar"}</span>,
+      tooltip: "Repercutido: 21% extraído del bruto de ventas (Stripe + Urban Sports Club). Soportado: según el % de IVA asignado por contacto en cada gasto importado (Configuración → Contactos). Resultado = repercutido − soportado.",
+      helper: (
+        <div className="mt-1 space-y-1.5">
+          <ResultBadge favorable={ivaNeto < 0} />
+          <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-navy/45">
+            <span>Repercutido {fmt(ivaRepercutido)}</span>
+            <span>Soportado {fmt(ivaSoportado)}</span>
+          </div>
+        </div>
+      ),
     },
-    { label: "IRPF retenido", value: fmt(retenciones), helper: "Practicado a contactos" },
+    {
+      label: `IRPF · ${quarterStatus}`,
+      value: fmt(retenciones),
+      tooltip: "Retenciones practicadas según el % de IRPF asignado por contacto (nóminas, alquileres, profesionales) en cada gasto importado.",
+    },
   ];
 
   return (
     <ChartCard
       title="Impuestos"
-      subtitle="IVA repercutido y soportado, retenciones practicadas y próximos vencimientos fiscales"
+      subtitle={`Próximo vencimiento: ${dueLabel}`}
       dateRange={quarterLabel}
       kpiItems={kpiItems}
       dataSource="IVA repercutido: 21% extraído del bruto de ventas (Stripe + USC). IVA soportado y retenciones: según el % de IVA/IRPF asignado por contacto en cada gasto importado."
@@ -85,37 +112,6 @@ export default function IvaRetenciones({
       lastUpdated={lastUpdated}
     >
       <div className="space-y-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          <div>
-            <p className="text-xs font-semibold text-navy/55 uppercase tracking-wide mb-2">IVA</p>
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-[13px]">
-                <span className="text-navy/50">IVA repercutido</span>
-                <span className="font-medium text-navy tabular-nums">{fmt(ivaRepercutido)}</span>
-              </div>
-              <div className="flex items-center justify-between text-[13px]">
-                <span className="text-navy/50">IVA soportado</span>
-                <span className="font-medium text-navy tabular-nums">− {fmt(ivaSoportado)}</span>
-              </div>
-            </div>
-            <div className="flex items-center gap-1.5 text-[11px] text-navy/45 mt-2.5">
-              <Calendar size={12} className="shrink-0" />
-              Vence en {dueLabel}{!quarterClosed && " · trimestre en curso"}
-            </div>
-          </div>
-
-          <div>
-            <p className="text-xs font-semibold text-navy/55 uppercase tracking-wide mb-2">IRPF</p>
-            <p className="text-[13px] text-navy/50 leading-relaxed">
-              Retenciones practicadas según el % de IRPF asignado por contacto (nóminas, alquileres, profesionales).
-            </p>
-            <div className="flex items-center gap-1.5 text-[11px] text-navy/45 mt-2.5">
-              <Calendar size={12} className="shrink-0" />
-              Vence en {dueLabel}{!quarterClosed && " · trimestre en curso"}
-            </div>
-          </div>
-        </div>
-
         <div>
           <p className="text-xs font-semibold text-navy/55 uppercase tracking-wide mb-3">Por trimestre</p>
           {rows.length === 0 ? (
@@ -125,25 +121,41 @@ export default function IvaRetenciones({
               <table className="w-full text-[13px]">
                 <thead>
                   <tr className="border-b border-border">
-                    <th className="text-left font-medium text-navy/45 pb-2 pr-3">Trimestre</th>
-                    <th className="text-right font-medium text-navy/45 pb-2 px-3">IVA repercutido</th>
-                    <th className="text-right font-medium text-navy/45 pb-2 px-3">IVA soportado</th>
-                    <th className="text-right font-medium text-navy/45 pb-2 px-3">IVA (resultado)</th>
-                    <th className="text-right font-medium text-navy/45 pb-2 pl-3">Retenciones</th>
+                    <th className="text-left font-medium text-navy/45 pb-2 pr-3"></th>
+                    {rows.map((r) => (
+                      <th key={r.quarter} className="text-right font-medium text-navy/45 pb-2 px-3 whitespace-nowrap">
+                        {quarterShort(r.quarter)}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((r) => (
-                    <tr key={r.quarter} className="border-b border-border last:border-0">
-                      <td className="py-2.5 pr-3 font-medium text-navy whitespace-nowrap">{quarterShort(r.quarter)}</td>
-                      <td className="py-2.5 px-3 text-right text-navy/70 tabular-nums">{fmt(r.ivaRepercutido)}</td>
-                      <td className="py-2.5 px-3 text-right text-navy/70 tabular-nums">{fmt(r.ivaSoportado)}</td>
-                      <td className={`py-2.5 px-3 text-right font-semibold tabular-nums ${r.ivaNeto < 0 ? "text-success" : "text-navy"}`}>
+                  <tr className="border-b border-border">
+                    <td className="py-2.5 pr-3 text-navy/50 whitespace-nowrap">IVA repercutido</td>
+                    {rows.map((r) => (
+                      <td key={r.quarter} className="py-2.5 px-3 text-right text-navy/70 tabular-nums">{fmt(r.ivaRepercutido)}</td>
+                    ))}
+                  </tr>
+                  <tr className="border-b border-border">
+                    <td className="py-2.5 pr-3 text-navy/50 whitespace-nowrap">IVA soportado</td>
+                    {rows.map((r) => (
+                      <td key={r.quarter} className="py-2.5 px-3 text-right text-navy/70 tabular-nums">− {fmt(r.ivaSoportado)}</td>
+                    ))}
+                  </tr>
+                  <tr className="border-b border-border">
+                    <td className="py-2.5 pr-3 font-medium text-navy whitespace-nowrap">IVA (resultado)</td>
+                    {rows.map((r) => (
+                      <td key={r.quarter} className={`py-2.5 px-3 text-right font-semibold tabular-nums ${r.ivaNeto < 0 ? "text-success" : "text-navy"}`}>
                         {fmt(r.ivaNeto)}
                       </td>
-                      <td className="py-2.5 pl-3 text-right text-navy/70 tabular-nums">{fmt(r.retenciones)}</td>
-                    </tr>
-                  ))}
+                    ))}
+                  </tr>
+                  <tr className="last:border-0">
+                    <td className="py-2.5 pr-3 text-navy/50 whitespace-nowrap">Retenciones (IRPF)</td>
+                    {rows.map((r) => (
+                      <td key={r.quarter} className="py-2.5 px-3 text-right text-navy/70 tabular-nums">{fmt(r.retenciones)}</td>
+                    ))}
+                  </tr>
                 </tbody>
               </table>
             </div>
@@ -151,16 +163,16 @@ export default function IvaRetenciones({
         </div>
 
         <div>
-          <p className="text-xs font-semibold text-navy/55 uppercase tracking-wide mb-3">Próximas obligaciones</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <p className="text-[11px] font-semibold text-navy/40 uppercase tracking-wide mb-2">Próximas obligaciones</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {obligations.map((o) => {
               const level = urgencyOf(o.days);
               return (
-                <div key={o.label} className="flex items-center gap-3 rounded-[10px] border border-border px-3 py-2.5">
+                <div key={o.label} className="flex items-center gap-2 rounded-[8px] border border-border px-2.5 py-2">
                   <ObligationDayBadge deadline={o.deadline} level={level} />
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-navy truncate">{o.label}</p>
-                    <p className="text-xs text-navy/50">{o.days <= 0 ? "Vence hoy" : `En ${o.days} días`}</p>
+                    <p className="text-[12.5px] font-medium text-navy/80 truncate">{o.label}</p>
+                    <p className="text-[11px] text-navy/45">{o.days <= 0 ? "Vence hoy" : `En ${o.days} días`}</p>
                   </div>
                 </div>
               );
