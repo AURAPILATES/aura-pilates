@@ -39,7 +39,7 @@ function quarterShort(q: string): string {
 }
 
 function fmtOrDash(v: number): string {
-  return v === 0 ? "—" : fmt(v);
+  return v === 0 ? "-" : fmt(v);
 }
 
 const MONTH_SHORT = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
@@ -168,7 +168,7 @@ export default function IvaRetenciones({
                         <td className="py-2 pl-4 pr-3 text-navy/50 whitespace-nowrap">Soportado (Gastos)</td>
                         {rows.map((r) => (
                           <td key={r.quarter} className="py-2 px-3 text-right text-navy/70 tabular-nums">
-                            {r.ivaSoportado === 0 ? "—" : `− ${fmt(r.ivaSoportado)}`}
+                            {r.ivaSoportado === 0 ? "-" : `− ${fmt(r.ivaSoportado)}`}
                           </td>
                         ))}
                       </tr>
@@ -180,12 +180,15 @@ export default function IvaRetenciones({
                       <td key={r.quarter} className="py-2.5 px-3 text-right text-navy/70 tabular-nums">{fmtOrDash(r.retenciones)}</td>
                     ))}
                   </tr>
-                  <tr className="last:border-0">
-                    <td className="py-2.5 pr-3 font-semibold text-navy whitespace-nowrap">Total</td>
-                    {rows.map((r) => {
+                  <tr className="last:border-0 bg-navy/[0.035]">
+                    <td className="py-2.5 pr-3 font-semibold text-navy whitespace-nowrap rounded-l-[6px]">Total</td>
+                    {rows.map((r, i) => {
                       const total = r.ivaNeto + r.retenciones;
                       return (
-                        <td key={r.quarter} className="py-2.5 px-3 text-right font-semibold text-navy tabular-nums">
+                        <td
+                          key={r.quarter}
+                          className={`py-2.5 px-3 text-right font-semibold text-navy tabular-nums ${i === rows.length - 1 ? "rounded-r-[6px]" : ""}`}
+                        >
                           {fmtOrDash(total)}
                         </td>
                       );
