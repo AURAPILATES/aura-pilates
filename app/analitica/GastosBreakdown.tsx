@@ -20,6 +20,7 @@ const GROUP_LABELS: Record<EconomicGroup, string> = {
   personal: "Personal",
   operational: "Operativo",
   capex: "Inversión",
+  financiacion: "Financiación",
 };
 
 const GROUP_ORDER: EconomicGroup[] = ["personal", "operational", "capex"];

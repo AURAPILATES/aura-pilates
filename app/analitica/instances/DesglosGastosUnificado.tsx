@@ -116,7 +116,7 @@ export default function DesglosGastosUnificado({
 
   const kpiItems: MultiKpiItem[] = [
     { label: "Total período", value: fmtAmount(totalExpCat) },
-    { label: "Coste operativo", value: fmtAmount(totalExpCatNoCapex), helper: "Personal + operativo, sin inversión" },
+    { label: "Coste operativo", value: fmtAmount(totalExpCatNoCapex), helper: "Personal + operativo + financiación, sin inversión" },
   ];
 
   function categoryTxns(seg: TopExpenseSeg): Txn[] {
@@ -159,7 +159,7 @@ export default function DesglosGastosUnificado({
   return (
     <ChartCard
       title="Desglose de gastos"
-      subtitle="Personal, operativo e inversión, con detalle por categoría y subcategoría"
+      subtitle="Personal, operativo, financiación e inversión, con detalle por categoría y subcategoría"
       dateRange={rangeLabel ?? undefined}
       kpiItems={kpiItems}
       toolbar={
@@ -181,7 +181,7 @@ export default function DesglosGastosUnificado({
           </div>
         </>
       }
-      dataSource="Exportación bancaria CaixaBank · excluye aportaciones de socios y préstamo"
+      dataSource="Exportación bancaria CaixaBank · excluye aportaciones de socios · financiación identificada por contacto, igual que en Financiación"
       sources={["excel"]}
       lastUpdated={lastUpdated}
       aiInsight={

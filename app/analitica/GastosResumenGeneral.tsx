@@ -12,15 +12,17 @@ export const GROUP_LABELS: Record<EconomicGroup, string> = {
   personal: "Personal",
   operational: "Operativo",
   capex: "Inversión",
+  financiacion: "Financiación",
 };
 
 export const GROUP_COLORS: Record<EconomicGroup, string> = {
   personal: "#3A56C5",
   operational: "#1E8C5A",
   capex: "#D4621A",
+  financiacion: "#8878C0",
 };
 
-export const GROUP_ORDER: EconomicGroup[] = ["personal", "operational", "capex"];
+export const GROUP_ORDER: EconomicGroup[] = ["personal", "operational", "financiacion", "capex"];
 
 export function fmtAmount(n: number) {
   // "es-ES" solo agrupa millares a partir de 5 cifras (quirk de CLDR); "de-DE" usa el

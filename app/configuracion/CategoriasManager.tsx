@@ -26,6 +26,7 @@ const ECONOMIC_LABELS: Record<EconomicGroup, string> = {
   personal: "Personal",
   operational: "Gasto operativo (OpEx)",
   capex: "Inversión (CapEx)",
+  financiacion: "Financiación",
 };
 const ECONOMIC_ORDER: EconomicGroup[] = ["personal", "operational", "capex"];
 

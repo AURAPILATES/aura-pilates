@@ -1,5 +1,8 @@
-/** Agrupación de categorías de gasto por naturaleza económica (sin dependencias de servidor, usable en cliente). */
-export type EconomicGroup = "capex" | "personal" | "operational";
+/** Agrupación de categorías de gasto por naturaleza económica (sin dependencias de servidor, usable en cliente).
+ * "financiacion" no sale de una categoría de transacción — se construye aparte a partir de
+ * las fuentes de financiación (Presupuestos), por eso no aparece en STARTUP_CATS/PERSONAL_CATS
+ * ni en el fallback de economicGroupOf: ninguna categoría real cae ahí automáticamente. */
+export type EconomicGroup = "capex" | "personal" | "operational" | "financiacion";
 
 export const STARTUP_CATS = new Set([
   "Inversión",

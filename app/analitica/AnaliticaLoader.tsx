@@ -1,4 +1,5 @@
 import { fmt, filterActive, occupancyRate, totalStudents } from "@/lib/analytics";
+import { GROUP_COLORS, type GroupTotal } from "./GastosResumenGeneral";
 import { saveHistoricalEvents, loadHistoricalEvents } from "@/lib/history";
 import { getLatestSyncRuns } from "@/lib/syncRuns";
 import { taxBreakdown, fiscalQuarterOf, ivaRepercutidoFromGross, netIvaAPagar } from "@/lib/taxCalc";
@@ -241,7 +242,6 @@ export default async function AnaliticaLoader({
   const dbCatByValue = new Map(dbCategories.map((c) => [c.value, c]));
   const dbCatById = new Map(dbCategories.map((c) => [c.id, c]));
   const expByCategory = expensesByCategoryAll(txnsMain, dbCategories);
-  const totalExpCat   = expByCategory.reduce((s, r) => s + r.total, 0);
 
   // ── Budgets / Financiación ────────────────────────────────────────────────
   const budgetSpent = computeSpent(budgets, txnsAll);
@@ -308,9 +308,42 @@ export default async function AnaliticaLoader({
     transactionsByCategory[t.category].push({ date: t.date, amount: t.amount, concept: t.concept ?? "", contact: t.contact ?? "" });
   }
 
-  // ── Desglose de gastos: visión general (Personal/OpEx/CapEx) vs. específico (Personal+OpEx) ──
-  const expGroupTotals = groupExpensesByEconomicGroup(expByCategory, transactionsByCategory);
-  const expByTopCategory = groupExpensesByTopCategory(expByCategory, dbCatByValue, dbCatById, EXPENSE_COLORS);
+  // ── Financiación dentro del desglose de gastos: los reembolsos de préstamos no tienen
+  // categoría propia (se identifican por contacto, igual que en la card Financiación), así
+  // que se añaden como un grupo aparte en vez de vía expensesByCategoryAll. Solo cuentan los
+  // pagos (importe negativo) — no la entrada del propio préstamo, que no es un gasto. ──
+  const financingTxnsMain = txnsMain.filter((t) => {
+    if (t.amount >= 0 || !t.contact) return false;
+    const contact = t.contact.toLowerCase();
+    return budgets.some((b) => b.contactKeyword.trim() && contact.includes(b.contactKeyword.trim().toLowerCase()));
+  });
+  const financingGroupTotal: GroupTotal = {
+    group: "financiacion",
+    total: financingTxnsMain.reduce((s, t) => s + Math.abs(t.amount), 0),
+    count: financingTxnsMain.length,
+    txns: financingTxnsMain.map((t) => ({ date: t.date, amount: t.amount, concept: t.concept ?? "", contact: t.contact ?? "" })),
+  };
+  const financingByBudget: TopExpenseSeg[] = budgets
+    .map((b) => {
+      const kw = b.contactKeyword.trim().toLowerCase();
+      const txns = kw ? financingTxnsMain.filter((t) => t.contact!.toLowerCase().includes(kw)) : [];
+      transactionsByCategory[`budget-${b.id}`] = txns.map((t) => ({ date: t.date, amount: t.amount, concept: t.concept ?? "", contact: t.contact ?? "" }));
+      return {
+        key: `budget-${b.id}`,
+        label: b.name || "Financiación",
+        color: GROUP_COLORS.financiacion,
+        group: "financiacion" as const,
+        count: txns.length,
+        total: txns.reduce((s, t) => s + Math.abs(t.amount), 0),
+        children: [],
+      };
+    })
+    .filter((seg) => seg.total > 0);
+
+  // ── Desglose de gastos: visión general (Personal/OpEx/CapEx/Financiación) vs. específico (Personal+OpEx) ──
+  const expGroupTotals = [...groupExpensesByEconomicGroup(expByCategory, transactionsByCategory), financingGroupTotal];
+  const expByTopCategory = [...groupExpensesByTopCategory(expByCategory, dbCatByValue, dbCatById, EXPENSE_COLORS), ...financingByBudget];
+  const totalExpCat = expByCategory.reduce((s, r) => s + r.total, 0) + financingGroupTotal.total;
   const totalExpCatNoCapex = expGroupTotals.filter((g) => g.group !== "capex").reduce((s, g) => s + g.total, 0);
 
   // ── Salud financiera (datos completos) ──
