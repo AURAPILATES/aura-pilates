@@ -258,3 +258,48 @@ export async function deleteRecurringExpense(id: number) {
   if (error) throw new Error(error.message);
   revalidateAll();
 }
+
+export async function deleteRecurringExpenses(ids: number[]): Promise<void> {
+  if (!ids.length) return;
+  const supabase = createServerClient();
+  const { error } = await supabase.from("recurring_expenses").delete().in("id", ids);
+  if (error) throw new Error(error.message);
+  revalidateAll();
+}
+
+export async function updateRecurringExpensesCategory(ids: number[], category: string | null): Promise<void> {
+  if (!ids.length) return;
+  const supabase = createServerClient();
+  const { error } = await supabase
+    .from("recurring_expenses")
+    .update({ category, updated_at: new Date().toISOString() })
+    .in("id", ids);
+  if (error) throw new Error(error.message);
+  revalidateAll();
+}
+
+/** Igual que `relinkRecurringExpenseContact` pero para varias filas a la vez — se usa desde la
+ * selección múltiple de Recurrentes. Solo admite un contacto ya existente (no crea uno nuevo,
+ * a diferencia de la versión de una sola fila). */
+export async function relinkRecurringExpensesContact(ids: number[], contactId: number): Promise<void> {
+  if (!ids.length) return;
+  const supabase = createServerClient();
+  const { data, error } = await supabase
+    .from("contacts")
+    .select("id, category, iva_rate, retencion_rate")
+    .eq("id", contactId)
+    .single();
+  if (error || !data) throw new Error(error?.message ?? "Contacto no encontrado");
+
+  const { error: updateError } = await supabase
+    .from("recurring_expenses")
+    .update({
+      contact_id: data.id,
+      iva_rate: data.iva_rate,
+      retencion_rate: data.retencion_rate,
+      updated_at: new Date().toISOString(),
+    })
+    .in("id", ids);
+  if (updateError) throw new Error(updateError.message);
+  revalidateAll();
+}

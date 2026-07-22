@@ -19,6 +19,9 @@ import {
   createManualRecurringExpense,
   updateRecurringExpense,
   relinkRecurringExpenseContact,
+  relinkRecurringExpensesContact,
+  updateRecurringExpensesCategory,
+  deleteRecurringExpenses,
   setRecurringExpenseStatus,
   type ConfirmRecurringRow,
   type ManualRecurringInput,
@@ -700,6 +703,7 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
   const [pickerOpen, setPickerOpen] = useState(false);
   const [confirmedPage, setConfirmedPage] = useState(0);
   const [search, setSearch] = useState("");
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   // En móvil no hay paginador (lista corta, no aporta cortarla en páginas), así que ahí se
   // muestran todos los confirmados de golpe.
   const [isMobile, setIsMobile] = useState(false);
@@ -827,6 +831,46 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
     router.refresh();
   }
 
+  function toggleSelect(id: number) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+  function clearSelection() {
+    setSelectedIds(new Set());
+  }
+  function toggleSelectAll(ids: number[]) {
+    setSelectedIds((prev) => {
+      const allSelected = ids.length > 0 && ids.every((id) => prev.has(id));
+      if (allSelected) {
+        const next = new Set(prev);
+        ids.forEach((id) => next.delete(id));
+        return next;
+      }
+      return new Set([...prev, ...ids]);
+    });
+  }
+  async function applyBulkContact(contactId: number) {
+    const ids = [...selectedIds];
+    clearSelection();
+    await relinkRecurringExpensesContact(ids, contactId);
+    router.refresh();
+  }
+  async function applyBulkCategory(category: string | null) {
+    const ids = [...selectedIds];
+    clearSelection();
+    await updateRecurringExpensesCategory(ids, category);
+    router.refresh();
+  }
+  async function applyBulkDelete() {
+    const ids = [...selectedIds];
+    clearSelection();
+    await deleteRecurringExpenses(ids);
+    router.refresh();
+  }
+
   return (
     <div className="space-y-4">
       <RecurrentesListV2
@@ -848,6 +892,13 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
         pageSize={PAGE_SIZE}
         onConfirmedPageChange={setConfirmedPage}
         onNewManual={() => setCreatingManual(true)}
+        selectedIds={selectedIds}
+        onToggleSelect={toggleSelect}
+        onToggleSelectAll={toggleSelectAll}
+        onClearSelection={clearSelection}
+        onBulkContact={applyBulkContact}
+        onBulkCategory={applyBulkCategory}
+        onBulkDelete={applyBulkDelete}
       />
       {openPendingRow && (
         <ConfirmPendingDrawer

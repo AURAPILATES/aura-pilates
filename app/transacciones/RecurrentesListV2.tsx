@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import type { Category } from "@/lib/categories";
+import { sortCategoriesHierarchical, categoryDisplayLabel, type Category } from "@/lib/categories";
 import type { RecurringExpense } from "@/lib/recurringExpenses";
 import type { Contact } from "./actions";
 import type { PendingSeriesRow, ConfirmedExpenseRow, ContactPick } from "./RecurrentesList";
@@ -18,6 +18,127 @@ import { IconButtonV2, PrimaryButtonV2 } from "@/app/components/v2/ButtonsV2";
 import { tableHeadClassV2, tableRowClassV2, tableGroupClassV2, gridColsV2 } from "@/app/components/v2/tableStylesV2";
 
 const COLS = "2.1fr 1.2fr 1.1fr .9fr .9fr 1fr";
+
+/** Barra flotante de acciones masivas, centrada abajo — aparece al seleccionar filas
+ * confirmadas (checkbox al hover sobre el icono de categoría, ver fila de escritorio más
+ * abajo). Solo escritorio, y solo aplica a recurrentes ya confirmados (los pendientes no
+ * tienen fila propia en `recurring_expenses` todavía). */
+function BulkActionBarV2({
+  count, categories, contacts, onClear, onSetContact, onSetCategory, onDelete,
+}: {
+  count: number;
+  categories: Category[];
+  contacts: Contact[];
+  onClear: () => void;
+  onSetContact: (contactId: number) => void;
+  onSetCategory: (category: string | null) => void;
+  onDelete: () => void;
+}) {
+  const [mode, setMode] = useState<"idle" | "contact" | "category" | "delete">("idle");
+  const [contactDraft, setContactDraft] = useState("");
+  const [catDraft, setCatDraft] = useState("");
+
+  function submitContact() {
+    if (!contactDraft) return;
+    onSetContact(parseInt(contactDraft, 10));
+    setMode("idle");
+    setContactDraft("");
+  }
+  function submitCategory() {
+    if (!catDraft) return;
+    onSetCategory(catDraft === "__null__" ? null : catDraft);
+    setMode("idle");
+    setCatDraft("");
+  }
+
+  return (
+    <div className="hidden sm:flex fixed left-1/2 bottom-6 -translate-x-1/2 z-30 items-center gap-2 bg-navy text-app-bg rounded-[14px] shadow-lg pl-4 pr-2 py-2">
+      <span className="text-[13px] font-medium whitespace-nowrap">{count} seleccionado{count !== 1 ? "s" : ""}</span>
+      <div className="w-px h-5 bg-app-bg/15 shrink-0" />
+      {mode === "contact" ? (
+        <div className="flex items-center gap-1.5">
+          <select
+            autoFocus
+            value={contactDraft}
+            onChange={(e) => setContactDraft(e.target.value)}
+            className="text-[13px] rounded-[7px] px-2 py-1 bg-app-bg/10 text-app-bg border border-app-bg/20 outline-none focus:border-app-bg/40 max-w-[160px] cursor-pointer"
+          >
+            <option value="" disabled className="text-navy">Contacto…</option>
+            {contacts.map((c) => (
+              <option key={c.id} value={c.id} className="text-navy">{c.label}</option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={submitContact}
+            disabled={!contactDraft}
+            className="text-[12px] font-semibold text-navy bg-app-bg hover:bg-app-bg/85 disabled:opacity-40 rounded-[7px] px-2.5 py-1.5 transition-colors whitespace-nowrap"
+          >
+            Aplicar
+          </button>
+          <button type="button" onClick={() => setMode("idle")} className="text-app-bg/50 hover:text-app-bg text-[12px] px-1">
+            Cancelar
+          </button>
+        </div>
+      ) : mode === "category" ? (
+        <div className="flex items-center gap-1.5">
+          <select
+            autoFocus
+            value={catDraft}
+            onChange={(e) => setCatDraft(e.target.value)}
+            className="text-[13px] rounded-[7px] px-2 py-1 bg-app-bg/10 text-app-bg border border-app-bg/20 outline-none focus:border-app-bg/40 max-w-[160px] cursor-pointer"
+          >
+            <option value="" disabled className="text-navy">Categoría…</option>
+            <option value="__null__" className="text-navy">Sin categoría</option>
+            {sortCategoriesHierarchical(categories).map((c) => (
+              <option key={c.value} value={c.value} className="text-navy">{categoryDisplayLabel(c, categories)}</option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={submitCategory}
+            disabled={!catDraft}
+            className="text-[12px] font-semibold text-navy bg-app-bg hover:bg-app-bg/85 disabled:opacity-40 rounded-[7px] px-2.5 py-1.5 transition-colors whitespace-nowrap"
+          >
+            Aplicar
+          </button>
+          <button type="button" onClick={() => setMode("idle")} className="text-app-bg/50 hover:text-app-bg text-[12px] px-1">
+            Cancelar
+          </button>
+        </div>
+      ) : mode === "delete" ? (
+        <div className="flex items-center gap-1.5">
+          <span className="text-[12px] text-app-bg/70 whitespace-nowrap">¿Eliminar {count}?</span>
+          <button
+            type="button"
+            onClick={onDelete}
+            className="text-[12px] font-semibold text-white bg-[#dc2626] dark:bg-[#dd7e7e] hover:bg-[#dc2626]/85 dark:hover:bg-[#dd7e7e]/85 rounded-[7px] px-2.5 py-1.5 transition-colors whitespace-nowrap"
+          >
+            Sí, eliminar
+          </button>
+          <button type="button" onClick={() => setMode("idle")} className="text-app-bg/50 hover:text-app-bg text-[12px] px-1">
+            Cancelar
+          </button>
+        </div>
+      ) : (
+        <div className="flex items-center gap-1">
+          <button type="button" onClick={() => setMode("contact")} className="text-[12.5px] font-medium text-app-bg/85 hover:text-app-bg hover:bg-app-bg/10 rounded-[7px] px-2.5 py-1.5 transition-colors whitespace-nowrap">
+            Cambiar contacto
+          </button>
+          <button type="button" onClick={() => setMode("category")} className="text-[12.5px] font-medium text-app-bg/85 hover:text-app-bg hover:bg-app-bg/10 rounded-[7px] px-2.5 py-1.5 transition-colors whitespace-nowrap">
+            Cambiar categoría
+          </button>
+          <button type="button" onClick={() => setMode("delete")} className="text-[12.5px] font-medium text-[#f87171] hover:text-white hover:bg-[#dc2626]/30 dark:hover:bg-[#dd7e7e]/30 rounded-[7px] px-2.5 py-1.5 transition-colors whitespace-nowrap">
+            Eliminar
+          </button>
+        </div>
+      )}
+      <button type="button" onClick={onClear} title="Cancelar selección" className="ml-1 w-6 h-6 flex items-center justify-center shrink-0 text-app-bg/40 hover:text-app-bg transition-colors">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+  );
+}
 
 const DAY_NAMES_ES = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
 
@@ -69,6 +190,13 @@ type Props = {
   pageSize: number;
   onConfirmedPageChange: (p: number) => void;
   onNewManual?: () => void;
+  selectedIds: Set<number>;
+  onToggleSelect: (id: number) => void;
+  onToggleSelectAll: (ids: number[]) => void;
+  onClearSelection: () => void;
+  onBulkContact: (contactId: number) => void;
+  onBulkCategory: (category: string | null) => void;
+  onBulkDelete: () => void;
 };
 
 function ArchivedRowV2({ row }: { row: RecurringExpense }) {
@@ -104,8 +232,12 @@ function ArchivedRowV2({ row }: { row: RecurringExpense }) {
 export default function RecurrentesListV2({
   pending, confirmed, confirmedPageRows, archived, categories, contacts, search, onSearchChange, pickFor, ivaRateFor, retencionRateFor,
   onOpenPending, onOpenConfirmed, onConfirmRow, confirmedPage, pageSize, onConfirmedPageChange, onNewManual,
+  selectedIds, onToggleSelect, onToggleSelectAll, onClearSelection, onBulkContact, onBulkCategory, onBulkDelete,
 }: Props) {
   const [showArchived, setShowArchived] = useState(false);
+  const confirmedPageIds = confirmedPageRows.map((row) => row.expense.id);
+  const allConfirmedSelected = confirmedPageIds.length > 0 && confirmedPageIds.every((id) => selectedIds.has(id));
+  const someConfirmedSelected = confirmedPageIds.some((id) => selectedIds.has(id));
 
   return (
     <div>
@@ -145,7 +277,16 @@ export default function RecurrentesListV2({
       <div className="mt-2 sm:mt-[24px]">
       <div className="hidden sm:block">
         <div className={tableHeadClassV2} style={gridColsV2(COLS)}>
-          <span>Concepto</span>
+          <span className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={allConfirmedSelected}
+              ref={(el) => { if (el) el.indeterminate = !allConfirmedSelected && someConfirmedSelected; }}
+              onChange={() => onToggleSelectAll(confirmedPageIds)}
+              className="w-[13px] h-[13px] rounded-[4px] border-border text-navy focus:ring-navy/20 cursor-pointer"
+            />
+            Concepto
+          </span>
           <span>Categoría</span>
           <span>Periodicidad</span>
           <span>IVA / Ret</span>
@@ -272,18 +413,35 @@ export default function RecurrentesListV2({
           const bothMissing = !contact?.noTax && !(ivaRate > 0) && !(retRate > 0);
           const icon = iconFor(categories, e.category);
           const dayDetail = periodDayDetail(e.period, row.lastDate);
+          const isSelected = selectedIds.has(e.id);
           return (
             <div key={e.id}>
               {/* Fila escritorio */}
               <div className="hidden sm:block">
                 <div
                   onClick={() => onOpenConfirmed(row)}
-                  className={`${tableRowClassV2} cursor-pointer`}
+                  className={`${tableRowClassV2} cursor-pointer group ${isSelected ? "bg-subtle" : ""}`}
                   style={gridColsV2(COLS)}
                 >
                   <div className="flex items-center gap-[10px] min-w-0">
-                    <span className="w-[30px] h-[30px] shrink-0 rounded-[8px] flex items-center justify-center" style={{ backgroundColor: icon.accent }}>
-                      <CatIcon iconKey={icon.iconKey} name={icon.label ?? e.label} color="#fff" size={14} />
+                    <span className="relative shrink-0 w-[30px] h-[30px]">
+                      <span
+                        className={`w-[30px] h-[30px] rounded-[8px] items-center justify-center ${isSelected ? "hidden" : "flex group-hover:hidden"}`}
+                        style={{ backgroundColor: icon.accent }}
+                      >
+                        <CatIcon iconKey={icon.iconKey} name={icon.label ?? e.label} color="#fff" size={14} />
+                      </span>
+                      <label
+                        onClick={(ev) => ev.stopPropagation()}
+                        className={`${isSelected ? "flex" : "hidden group-hover:flex"} items-center justify-center w-[30px] h-[30px] rounded-[8px] border border-border bg-card cursor-pointer`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => onToggleSelect(e.id)}
+                          className="w-[15px] h-[15px] rounded-[4px] border-border text-navy focus:ring-navy/20 cursor-pointer"
+                        />
+                      </label>
                     </span>
                     <p className="text-[13.5px] font-medium text-navy truncate">{e.label}</p>
                   </div>
@@ -335,6 +493,18 @@ export default function RecurrentesListV2({
         </div>
       )}
       </div>
+
+      {selectedIds.size > 0 && (
+        <BulkActionBarV2
+          count={selectedIds.size}
+          categories={categories}
+          contacts={contacts}
+          onClear={onClearSelection}
+          onSetContact={onBulkContact}
+          onSetCategory={onBulkCategory}
+          onDelete={onBulkDelete}
+        />
+      )}
     </div>
   );
 }
