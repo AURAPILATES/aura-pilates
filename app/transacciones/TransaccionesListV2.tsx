@@ -16,7 +16,7 @@ import {
 import { CatIcon } from "./catIcons";
 import ImportButton from "./ImportButton";
 
-const COLS = "20px 2.1fr .95fr 1.1fr .7fr .95fr";
+const COLS = "2.1fr .95fr 1.1fr .7fr .95fr";
 
 /** Barra flotante de acciones masivas, centrada abajo — aparece al seleccionar filas en la
  * tabla de escritorio (checkbox al hover, ver fila de escritorio más abajo). Solo escritorio:
@@ -137,6 +137,7 @@ type Props = {
   onCategoryChange: (id: string, category: string | null) => void;
   selectedIds: Set<string>;
   onToggleSelect: (id: string) => void;
+  onToggleSelectAll: (ids: string[]) => void;
   onClearSelection: () => void;
   onBulkCategory: (category: string | null) => void;
   onBulkDelete: () => void;
@@ -172,10 +173,13 @@ export default function TransaccionesListV2({
   sortKey, sortDir, onToggleSort, byMonth, onRowClick,
   onExportCsv, onAddCash, onPapelera, page, totalItems, pageSize, onPageChange, recurringPeriods,
   onCategoryChange,
-  selectedIds, onToggleSelect, onClearSelection, onBulkCategory, onBulkDelete,
+  selectedIds, onToggleSelect, onToggleSelectAll, onClearSelection, onBulkCategory, onBulkDelete,
 }: Props) {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const monthRefs = useRef(new Map<string, HTMLDivElement>());
+  const pageIds = byMonth.flatMap(([, txns]) => txns.map((t) => t.id));
+  const allPageSelected = pageIds.length > 0 && pageIds.every((id) => selectedIds.has(id));
+  const somePageSelected = pageIds.some((id) => selectedIds.has(id));
   const filtersActive = catFilters.length > 0 || onlyRecurring || originFilter !== "all" || amountMin !== "" || amountMax !== "";
   const activeFilterCount =
     (catFilters.length > 0 ? 1 : 0) + (onlyRecurring ? 1 : 0) + (originFilter !== "all" ? 1 : 0) +
@@ -310,12 +314,20 @@ export default function TransaccionesListV2({
       <div className="mt-2 sm:mt-[24px]">
         <div className="hidden sm:block">
           <div className={`${tableHeadClassV2} px-2`} style={gridColsV2(COLS)}>
-            <span />
-            <span
-              className={`flex items-center cursor-pointer select-none ${sortKey === "concept" ? "text-navy" : ""}`}
-              onClick={() => onToggleSort("concept")}
-            >
-              Concepto<SortArrowV2 active={sortKey === "concept"} dir={sortDir} />
+            <span className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={allPageSelected}
+                ref={(el) => { if (el) el.indeterminate = !allPageSelected && somePageSelected; }}
+                onChange={() => onToggleSelectAll(pageIds)}
+                className="w-[13px] h-[13px] rounded-[4px] border-border text-navy focus:ring-navy/20 cursor-pointer"
+              />
+              <span
+                className={`flex items-center cursor-pointer select-none ${sortKey === "concept" ? "text-navy" : ""}`}
+                onClick={() => onToggleSort("concept")}
+              >
+                Concepto<SortArrowV2 active={sortKey === "concept"} dir={sortDir} />
+              </span>
             </span>
             <span>Origen</span>
             <span>Categoría</span>
@@ -371,20 +383,25 @@ export default function TransaccionesListV2({
                           style={gridColsV2(COLS)}
                           onClick={() => onRowClick(t.id)}
                         >
-                          <label
-                            onClick={(e) => e.stopPropagation()}
-                            className={`${isSelected ? "flex" : "hidden group-hover:flex"} items-center justify-center cursor-pointer`}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={() => onToggleSelect(t.id)}
-                              className="w-[15px] h-[15px] rounded-[4px] border-border text-navy focus:ring-navy/20 cursor-pointer"
-                            />
-                          </label>
                           <div className="flex items-center gap-[10px] min-w-0">
-                            <span className="w-[30px] h-[30px] shrink-0 rounded-[8px] flex items-center justify-center" style={{ backgroundColor: accent }}>
-                              <CatIcon iconKey={iconKey} name={cat?.label ?? primary} color="#fff" size={14} />
+                            <span className="relative shrink-0 w-[30px] h-[30px]">
+                              <span
+                                className={`w-[30px] h-[30px] rounded-[8px] items-center justify-center ${isSelected ? "hidden" : "flex group-hover:hidden"}`}
+                                style={{ backgroundColor: accent }}
+                              >
+                                <CatIcon iconKey={iconKey} name={cat?.label ?? primary} color="#fff" size={14} />
+                              </span>
+                              <label
+                                onClick={(e) => e.stopPropagation()}
+                                className={`${isSelected ? "flex" : "hidden group-hover:flex"} items-center justify-center w-[30px] h-[30px] rounded-[8px] border border-border bg-card cursor-pointer`}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={() => onToggleSelect(t.id)}
+                                  className="w-[15px] h-[15px] rounded-[4px] border-border text-navy focus:ring-navy/20 cursor-pointer"
+                                />
+                              </label>
                             </span>
                             <div className="min-w-0">
                               <div className="flex items-center gap-1.5 min-w-0">

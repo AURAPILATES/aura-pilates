@@ -628,6 +628,17 @@ export default function TransaccionesList({
   function clearSelection() {
     setSelectedIds(new Set());
   }
+  function toggleSelectAll(ids: string[]) {
+    setSelectedIds((prev) => {
+      const allSelected = ids.length > 0 && ids.every((id) => prev.has(id));
+      if (allSelected) {
+        const next = new Set(prev);
+        ids.forEach((id) => next.delete(id));
+        return next;
+      }
+      return new Set([...prev, ...ids]);
+    });
+  }
   function applyBulkCategory(category: string | null) {
     const ids = [...selectedIds];
     clearSelection();
@@ -700,6 +711,7 @@ export default function TransaccionesList({
         onCategoryChange={handleCategoryChange}
         selectedIds={selectedIds}
         onToggleSelect={toggleSelect}
+        onToggleSelectAll={toggleSelectAll}
         onClearSelection={clearSelection}
         onBulkCategory={applyBulkCategory}
         onBulkDelete={applyBulkDelete}
