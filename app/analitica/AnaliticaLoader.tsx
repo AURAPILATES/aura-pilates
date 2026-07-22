@@ -530,11 +530,6 @@ export default async function AnaliticaLoader({
                 avgMonthlyRevenue={avgMonthlyRevenue}
                 revenueBasisLabel={`media últimos ${revMonths.length || 3} m`}
                 lastUpdated={bancoLastUpdated}
-                nextIvaLabel={nextIvaObligation?.date ?? null}
-                nextIvaQuarter={nextIvaObligation?.quarter ?? null}
-                ivaNeto={nextIvaQuarterData?.ivaNeto ?? 0}
-                retenciones={nextIvaQuarterData?.retenciones ?? 0}
-                ivaQuarterClosed={nextIvaQuarterClosed}
                 ahorroBruto={ahorroBruto}
                 ahorroNeto={ahorroNeto}
               />
@@ -628,6 +623,7 @@ export default async function AnaliticaLoader({
                 }}
               />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <PrimeraCompra summary={firstPurchaseSummary} />
                 <ClientesPaymentsBreakdown
                   succeeded={totalRev}
                   refunded={breakdown.refunded}
@@ -640,7 +636,6 @@ export default async function AnaliticaLoader({
                   periodLabel={periodLabel}
                   excludeSegments={["disputed", "failed"]}
                 />
-                <PrimeraCompra summary={firstPurchaseSummary} />
               </div>
               <ConversionPack summary={conversionSummary} />
               <RetencionCohorte cohorts={retentionCohorts} />

@@ -53,11 +53,15 @@ export default function ClientesPaymentsBreakdown({
 
   const values = { succeeded, refunded, disputed, failed };
   const ids    = { succeeded: succeededIds, refunded: refundedIds, disputed: disputedIds, failed: failedIds };
-  const total  = succeeded + refunded + disputed + failed;
 
   const visible = ITEMS
     .filter((it) => !excludeSegments.includes(it.key))
     .filter((it) => values[it.key] > 0);
+
+  // El total debe reflejar solo lo que de verdad se dibuja en el donut — si se excluyen
+  // segmentos (p.ej. disputed/failed), su importe no puede seguir sumando al total o el
+  // anillo no llegaría al 100% y dejaría un hueco sin colorear.
+  const total = visible.reduce((s, it) => s + values[it.key], 0);
 
   function customersForSegment(key: SegmentKey): CustomerRow[] {
     if (!customers) return [];

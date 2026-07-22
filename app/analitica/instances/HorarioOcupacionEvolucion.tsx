@@ -2,10 +2,10 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { BarChart2, Activity } from "react-feather";
-import { occupancyByPeriod, occupancyPeriodKey, pct, type OccupancyPeriod } from "@/lib/analytics";
+import { occupancyByPeriod, occupancyPeriodKey, type OccupancyPeriod } from "@/lib/analytics";
 import { MomenceEvent } from "@/lib/momence";
 import type { BusinessEvent, EventCategoria } from "@/lib/businessEvents";
-import { ChartCard, ChartTypeToggle, ToggleGroup, StaticLegend, InteractiveLegend, type MultiKpiItem } from "@/components/charts";
+import { ChartCard, ChartTypeToggle, ToggleGroup, StaticLegend, type MultiKpiItem } from "@/components/charts";
 
 // Suaviza una polilínea a una curva tipo Catmull-Rom (mismo aspecto que el type="monotone"
 // de Recharts en el resto de gráficos por líneas de la app, aquí dibujado a mano en SVG).
@@ -400,12 +400,23 @@ export default function HorarioOcupacionEvolucion({
             <div style={{ flex: `${totalCapacity > 0 ? totalSold / totalCapacity : 0} 0 0%`, backgroundColor: "var(--chart-blue-1)" }} />
             <div style={{ flex: `${totalCapacity > 0 ? totalFree / totalCapacity : 0} 0 0%`, backgroundColor: "var(--chart-blue-2)" }} />
           </div>
-          <InteractiveLegend
-            items={[
-              { key: "sold", label: "Ocupado", color: "var(--chart-blue-1)", value: totalSold, helper: pct(avgOcc) },
-              { key: "free", label: "Libre", color: "var(--chart-blue-2)", value: totalFree, helper: pct(totalCapacity > 0 ? totalFree / totalCapacity : 0) },
-            ]}
-          />
+          <div className="space-y-2.5">
+            {[
+              { key: "sold", label: "Ocupado", color: "var(--chart-blue-1)", value: totalSold, share: avgOcc },
+              { key: "free", label: "Libre", color: "var(--chart-blue-2)", value: totalFree, share: totalCapacity > 0 ? totalFree / totalCapacity : 0 },
+            ].map((s) => (
+              <div key={s.key} className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: s.color }} />
+                  <span className="text-xs text-navy/70 truncate">{s.label}</span>
+                </div>
+                <div className="text-right shrink-0">
+                  <span className="text-xs font-semibold text-navy tabular-nums">{s.value}</span>
+                  <span className="text-[11px] text-navy/40 ml-1">{Math.round(s.share * 100)}%</span>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </ChartCard>

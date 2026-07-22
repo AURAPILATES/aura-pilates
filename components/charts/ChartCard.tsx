@@ -403,13 +403,13 @@ export function InteractiveLegend({
           </button>
           {item.value !== undefined && (
             <span
-              className={`font-semibold text-navy tabular-nums text-right shrink-0 ${compact ? "text-[12px] w-20" : "text-[13px] w-24"}`}
+              className={`font-semibold text-navy tabular-nums text-right shrink-0 ${compact ? "text-[12px]" : "text-[13px]"}`}
             >
               {item.value}
             </span>
           )}
           {item.helper !== undefined && (
-            <span className={`text-navy/50 tabular-nums text-right shrink-0 ${compact ? "text-[11px] w-9" : "text-xs w-10"}`}>
+            <span className={`text-navy/50 tabular-nums text-right shrink-0 ${compact ? "text-[11px]" : "text-xs"}`}>
               {item.helper}
             </span>
           )}

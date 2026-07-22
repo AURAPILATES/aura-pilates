@@ -11,11 +11,6 @@ export type CockpitFinancieroProps = {
   avgMonthlyRevenue: number;
   revenueBasisLabel: string;
   lastUpdated?: string | null;
-  nextIvaLabel: string | null;
-  nextIvaQuarter: string | null;
-  ivaNeto: number;
-  retenciones: number;
-  ivaQuarterClosed: boolean;
   ahorroBruto: number;
   ahorroNeto: number;
 };
@@ -25,16 +20,11 @@ export default function CockpitFinanciero({
   avgMonthlyRevenue,
   revenueBasisLabel,
   lastUpdated,
-  nextIvaLabel,
-  nextIvaQuarter,
-  ivaNeto,
-  retenciones,
-  ivaQuarterClosed,
   ahorroBruto,
   ahorroNeto,
 }: CockpitFinancieroProps) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
       {/* INGRESOS */}
       <ChartCard
         title="Previsión de ingresos"
@@ -47,30 +37,6 @@ export default function CockpitFinanciero({
           {fmt(avgMonthlyRevenue)}
         </div>
         <div className="text-[11px] text-navy/50 mt-0.5">{revenueBasisLabel}</div>
-      </ChartCard>
-
-      {/* FISCAL */}
-      <ChartCard
-        title="Previsión de IVA e IRPF"
-        dateRange={nextIvaQuarter ?? undefined}
-        dataSource="IVA neto y retenciones del trimestre en curso, según reglas de IVA/retención asignadas por contacto."
-        sources={["excel"]}
-        lastUpdated={lastUpdated}
-      >
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[32px] font-semibold text-navy leading-tight tracking-tight">{fmt(Math.abs(ivaNeto))}</span>
-          <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap ${
-            ivaNeto >= 0 ? "bg-danger/10 text-danger" : "bg-success/10 text-success"
-          }`}>
-            {ivaNeto >= 0 ? "IVA a pagar" : "IVA a favor"}
-          </span>
-        </div>
-        <div className="text-[11px] text-navy/50 mt-1">
-          + {fmt(retenciones)} retenciones (IRPF)
-        </div>
-        <div className="text-[11px] text-navy/45 mt-0.5">
-          vence {nextIvaLabel ?? "—"}{!ivaQuarterClosed && " (trimestre en curso)"}
-        </div>
       </ChartCard>
 
       {/* AHORRO */}
