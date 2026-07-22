@@ -521,83 +521,87 @@ export default async function AnaliticaLoader({
       )}
 
       <AnaliticaTabs
-        resumen={
-          <section>
-            <SectionHeader id="resumen" title="Resumen" />
-            <div className="space-y-4">
-              <CockpitFinanciero
-                curMonthLabel={monthLabel(curMonth)}
-                avgMonthlyRevenue={avgMonthlyRevenue}
-                revenueBasisLabel={`media últimos ${revMonths.length || 3} m`}
-                lastUpdated={bancoLastUpdated}
-                ahorroBruto={ahorroBruto}
-                ahorroNeto={ahorroNeto}
-              />
-              <Breakeven points={breakevenPoints} lastUpdated={bancoLastUpdated} />
-              <ChartCard title="Próximas obligaciones">
-                <div className="space-y-3">
-                  {obligations.map(({ label, date, deadline }) => {
-                    const days = daysUntil(deadline);
-                    const badgeClass = days <= 30
-                      ? "bg-danger/10 text-danger"
-                      : days <= 60
-                      ? "bg-warning/10 text-warning"
-                      : "bg-navy/5 text-navy/55";
-                    return (
-                      <div key={label} className="flex items-center justify-between">
-                        <span className="text-sm text-navy">{label}</span>
-                        <div className="flex items-center gap-3">
-                          <span className="text-xs text-navy/45 tabular-nums">
-                            {daysUntil(deadline) <= 0 ? "vence hoy" : `${daysUntil(deadline)} días`}
-                          </span>
-                          <span className={`text-xs font-medium px-2 py-0.5 rounded ${badgeClass}`}>{date}</span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </ChartCard>
-              <IvaRetenciones
-                quarterLabel={nextIvaQuarterLabel}
-                ivaRepercutido={nextIvaQuarterData?.ivaRepercutido ?? 0}
-                ivaSoportado={nextIvaQuarterData?.ivaSoportado ?? 0}
-                ivaNeto={nextIvaQuarterData?.ivaNeto ?? 0}
-                retenciones={nextIvaQuarterData?.retenciones ?? 0}
-                dueLabel={nextIvaDueLabelLong}
-                quarterClosed={nextIvaQuarterClosed}
-                rows={quarterlyFiscalRows}
-                lastUpdated={bancoLastUpdated}
-              />
-              <Financiacion initialBudgets={budgets} spent={budgetSpent} />
-            </div>
-          </section>
-        }
         ingresosGastos={
           <section>
             <SectionHeader id="ingresos-gastos" title="Ingresos y gastos" />
-            <div className="space-y-4">
-              <VolumenBruto txns={txnsAll} categories={dbCategories} lastUpdated={bancoLastUpdated} />
-              <IngresosPorFuente
-                stripeGross={totalRev}
-                stripeFees={stripeFees}
-                stripeNet={stripeNet}
-                uscGross={uscRevenue}
-                monthly={monthlyByFuente}
-                dateRange={periodLabel}
-                uscLastDateLabel={uscLastDateLabel}
-                lastUpdated={uscLastDateLabel ? `Urban al día ${uscLastDateLabel}` : liveLastUpdated}
-              />
-              <EvolucionSuscripcionesFullWidth monthly={monthlyStripeRevenue} cohorts={subscriptionCohorts} events={businessEvents} rawPayments={pMain} />
-              <DesglosGastosUnificado
-                groups={expGroupTotals}
-                categories={expByTopCategory}
-                transactionsByCategory={transactionsByCategory}
-                totalExpCat={totalExpCat}
-                totalExpCatNoCapex={totalExpCatNoCapex}
-                rangeLabel={periodLabel}
-                lastUpdated={bancoLastUpdated}
-              />
-              <PrevisionGastos forecasts={recurringForecasts} categories={dbCategories} avgSuministros={avgSuministros} />
+            <div className="space-y-8">
+              <div>
+                <SectionHeader id="prevision" title="Previsión" />
+                <div className="space-y-4">
+                  <CockpitFinanciero
+                    curMonthLabel={monthLabel(curMonth)}
+                    avgMonthlyRevenue={avgMonthlyRevenue}
+                    revenueBasisLabel={`media últimos ${revMonths.length || 3} m`}
+                    lastUpdated={bancoLastUpdated}
+                    ahorroBruto={ahorroBruto}
+                    ahorroNeto={ahorroNeto}
+                  />
+                  <ChartCard title="Próximas obligaciones">
+                    <div className="space-y-3">
+                      {obligations.map(({ label, date, deadline }) => {
+                        const days = daysUntil(deadline);
+                        const badgeClass = days <= 30
+                          ? "bg-danger/10 text-danger"
+                          : days <= 60
+                          ? "bg-warning/10 text-warning"
+                          : "bg-navy/5 text-navy/55";
+                        return (
+                          <div key={label} className="flex items-center justify-between">
+                            <span className="text-sm text-navy">{label}</span>
+                            <div className="flex items-center gap-3">
+                              <span className="text-xs text-navy/45 tabular-nums">
+                                {daysUntil(deadline) <= 0 ? "vence hoy" : `${daysUntil(deadline)} días`}
+                              </span>
+                              <span className={`text-xs font-medium px-2 py-0.5 rounded ${badgeClass}`}>{date}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </ChartCard>
+                  <IvaRetenciones
+                    quarterLabel={nextIvaQuarterLabel}
+                    ivaRepercutido={nextIvaQuarterData?.ivaRepercutido ?? 0}
+                    ivaSoportado={nextIvaQuarterData?.ivaSoportado ?? 0}
+                    ivaNeto={nextIvaQuarterData?.ivaNeto ?? 0}
+                    retenciones={nextIvaQuarterData?.retenciones ?? 0}
+                    dueLabel={nextIvaDueLabelLong}
+                    quarterClosed={nextIvaQuarterClosed}
+                    rows={quarterlyFiscalRows}
+                    lastUpdated={bancoLastUpdated}
+                  />
+                  <PrevisionGastos forecasts={recurringForecasts} categories={dbCategories} avgSuministros={avgSuministros} />
+                  <Financiacion initialBudgets={budgets} spent={budgetSpent} />
+                </div>
+              </div>
+
+              <div>
+                <SectionHeader id="historico" title="Histórico" />
+                <div className="space-y-4">
+                  <VolumenBruto txns={txnsAll} categories={dbCategories} lastUpdated={bancoLastUpdated} />
+                  <IngresosPorFuente
+                    stripeGross={totalRev}
+                    stripeFees={stripeFees}
+                    stripeNet={stripeNet}
+                    uscGross={uscRevenue}
+                    monthly={monthlyByFuente}
+                    dateRange={periodLabel}
+                    uscLastDateLabel={uscLastDateLabel}
+                    lastUpdated={uscLastDateLabel ? `Urban al día ${uscLastDateLabel}` : liveLastUpdated}
+                  />
+                  <EvolucionSuscripcionesFullWidth monthly={monthlyStripeRevenue} cohorts={subscriptionCohorts} events={businessEvents} rawPayments={pMain} />
+                  <DesglosGastosUnificado
+                    groups={expGroupTotals}
+                    categories={expByTopCategory}
+                    transactionsByCategory={transactionsByCategory}
+                    totalExpCat={totalExpCat}
+                    totalExpCatNoCapex={totalExpCatNoCapex}
+                    rangeLabel={periodLabel}
+                    lastUpdated={bancoLastUpdated}
+                  />
+                  <Breakeven points={breakevenPoints} lastUpdated={bancoLastUpdated} />
+                </div>
+              </div>
             </div>
           </section>
         }
