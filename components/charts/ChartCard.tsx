@@ -22,7 +22,7 @@ export interface MultiKpiItem {
 }
 
 export interface ChartCardProps {
-  title: string;
+  title: ReactNode;
   subtitle?: ReactNode;
   dateRange?: string;
   /** KPI único con badge de delta — usar en lugar de `kpiItems`, no junto a él */

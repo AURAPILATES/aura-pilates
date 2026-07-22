@@ -3,6 +3,11 @@ import { unstable_cache } from "next/cache";
 
 export type GroupType = "operational" | "income" | "transfer" | "internal";
 
+/** Traspasos entre cuentas propias (p.ej. banco ↔ efectivo): no son ingreso ni gasto real,
+ * así que se excluyen de cualquier cálculo "según el banco" (flujo de caja, previsión de
+ * ingresos...) para no duplicar el mismo dinero en ambos lados ni contarlo como negocio. */
+export const NON_CASHFLOW_GROUP_TYPES = new Set(["transfer", "internal"]);
+
 export type Category = {
   id: string;
   value: string;

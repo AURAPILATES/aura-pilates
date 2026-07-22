@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import { BarChart2, Activity } from "react-feather";
 import type { Transaction } from "@/lib/transactions";
 import { findCategory } from "@/lib/transactions";
-import type { Category } from "@/lib/categories";
+import { NON_CASHFLOW_GROUP_TYPES, type Category } from "@/lib/categories";
 import { ChartCard, ChartTypeToggle, ToggleGroup, Legend, type MultiKpiItem } from "@/components/charts";
 import type { VolumenBrutoRow } from "./VolumenBrutoBody";
 
@@ -27,10 +27,6 @@ const MONTH_NAMES: Record<string, string> = {
   "05": "May", "06": "Jun", "07": "Jul", "08": "Ago",
   "09": "Sep", "10": "Oct", "11": "Nov", "12": "Dic",
 };
-
-/** Traspasos entre cuentas propias (p.ej. banco ↔ efectivo): no son ingreso ni gasto real,
- * así que se excluyen del flujo de caja para no duplicar el mismo dinero en ambos lados. */
-const NON_CASHFLOW_GROUP_TYPES = new Set(["transfer", "internal"]);
 
 function getPeriodKey(date: string, period: Period): string {
   const [y, m] = date.split("-");

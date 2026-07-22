@@ -19,14 +19,14 @@ import { loadStripeCustomers } from "@/lib/stripeCustomers";
 import { buildPrimaryIdMap, enrichCustomers, hasActiveSub } from "@/lib/customerEnrichment";
 import { estimatedMRR } from "@/lib/stripeRecurrence";
 
-import { loadTransactionsCached, expensesByCategoryAll, getLatestImportDate, type EconomicGroup } from "@/lib/transactions";
+import { loadTransactionsCached, expensesByCategoryAll, getLatestImportDate, findCategory, type EconomicGroup } from "@/lib/transactions";
 import { formatRelativeTime } from "@/lib/formatRelativeTime";
-import { loadCategoriesCached, type Category } from "@/lib/categories";
+import { loadCategoriesCached, NON_CASHFLOW_GROUP_TYPES, type Category } from "@/lib/categories";
 import { loadRecurringExpensesCached, forecastConfirmedExpenses } from "@/lib/recurringExpenses";
 import DesglosGastosUnificado from "./instances/DesglosGastosUnificado";
 import CockpitFinanciero from "./instances/CockpitFinanciero";
 import IvaRetenciones from "./instances/IvaRetenciones";
-import IngresosPorFuente from "./instances/IngresosPorFuente";
+import VentasPor from "./instances/VentasPor";
 import type { IngresosPorFuenteRow } from "./instances/IngresosPorFuenteBody";
 import EvolucionInscritos from "./instances/EvolucionInscritos";
 import Financiacion from "./instances/Financiacion";
@@ -38,7 +38,6 @@ import { subscriptionTiersFromMemberships } from "@/lib/mrr";
 import { getMemberships, getProducts, getCustomers, getEvents } from "@/lib/momence";
 import { catalogFromMomence, revenueByProductByMonth } from "@/lib/productRevenue";
 import { computeSubscriptionCohorts, computeRetentionCohorts } from "@/lib/subscriptionCohort";
-import EvolucionSuscripcionesFullWidth from "./instances/EvolucionSuscripcionesFullWidth";
 import RetencionCohorte from "./instances/RetencionCohorte";
 import { loadBusinessEvents } from "@/lib/businessEvents";
 import { loadPaymentErrorAcks, isPaymentErrorAcked } from "@/lib/paymentErrorAcks";
@@ -319,15 +318,23 @@ export default async function AnaliticaLoader({
 
   const burnByMonth = new Map<string, number>();
   const suministrosByMonth = new Map<string, number>();
+  const incomeByMonth = new Map<string, number>();
   const SUMINISTROS_CATS = new Set(["Electricidad", "Agua"]);
   for (const t of txnsAll) {
-    if (t.amount >= 0 || !t.category) continue;
+    const cat = t.category ? findCategory(dbCategories, t.category) : undefined;
+    const m = t.date.slice(0, 7);
+
+    if (t.amount >= 0) {
+      if (!cat || !NON_CASHFLOW_GROUP_TYPES.has(cat.group_type)) {
+        incomeByMonth.set(m, (incomeByMonth.get(m) ?? 0) + t.amount);
+      }
+      continue;
+    }
+    if (!t.category) continue;
     if (BURN_CATS.has(t.category)) {
-      const m = t.date.slice(0, 7);
       burnByMonth.set(m, (burnByMonth.get(m) ?? 0) + Math.abs(t.amount));
     }
     if (SUMINISTROS_CATS.has(t.category)) {
-      const m = t.date.slice(0, 7);
       suministrosByMonth.set(m, (suministrosByMonth.get(m) ?? 0) + Math.abs(t.amount));
     }
   }
@@ -340,16 +347,12 @@ export default async function AnaliticaLoader({
     ? completeBurnMonths.reduce((s, m) => s + burnByMonth.get(m)!, 0) / completeBurnMonths.length
     : 0;
 
-  const revMonths = [...new Set([
-    ...salesAll.map((s) => s.paymentDate.slice(0, 7)),
-    ...momenceSalesAll.filter((s) => s.method === "urban-sports-club").map((s) => s.paymentDate.slice(0, 7)),
-  ])].filter((m) => m < today_ym).sort().reverse().slice(0, 3);
+  // Previsión de ingresos: media de los últimos 3 meses completos según el banco (mismo
+  // criterio que Flujo de caja), no según Stripe/Momence — así ambos bloques hablan del
+  // mismo dinero real y no de una estimación de venta que puede no haberse cobrado aún.
+  const revMonths = [...incomeByMonth.keys()].filter((m) => m < today_ym).sort().reverse().slice(0, 3);
   const avgMonthlyRevenue = revMonths.length > 0
-    ? revMonths.reduce((s, m) => {
-        const stripeRev = stripeRevenueForMonth(paymentsAll, m);
-        const uscRev = momenceSalesAll.filter((sa) => sa.method === "urban-sports-club" && sa.paymentDate.startsWith(m)).reduce((sum, sa) => sum + sa.amount, 0);
-        return s + stripeRev + uscRev;
-      }, 0) / revMonths.length
+    ? revMonths.reduce((s, m) => s + (incomeByMonth.get(m) ?? 0), 0) / revMonths.length
     : 0;
 
   const breakEvenGap = avgMonthlyBurn - avgMonthlyRevenue;
@@ -579,7 +582,7 @@ export default async function AnaliticaLoader({
                 <SectionHeader id="historico" title="Histórico" />
                 <div className="space-y-4">
                   <VolumenBruto txns={txnsAll} categories={dbCategories} lastUpdated={bancoLastUpdated} />
-                  <IngresosPorFuente
+                  <VentasPor
                     stripeGross={totalRev}
                     stripeFees={stripeFees}
                     stripeNet={stripeNet}
@@ -588,8 +591,11 @@ export default async function AnaliticaLoader({
                     dateRange={periodLabel}
                     uscLastDateLabel={uscLastDateLabel}
                     lastUpdated={uscLastDateLabel ? `Urban al día ${uscLastDateLabel}` : liveLastUpdated}
+                    monthlyProducto={monthlyStripeRevenue}
+                    cohorts={subscriptionCohorts}
+                    events={businessEvents}
+                    rawPayments={pMain}
                   />
-                  <EvolucionSuscripcionesFullWidth monthly={monthlyStripeRevenue} cohorts={subscriptionCohorts} events={businessEvents} rawPayments={pMain} />
                   <DesglosGastosUnificado
                     groups={expGroupTotals}
                     categories={expByTopCategory}
