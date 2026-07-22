@@ -2,13 +2,13 @@
 
 import { useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, CreditCard } from "react-feather";
+import { AlertTriangle, CreditCard, UserPlus } from "react-feather";
 import { fmt } from "@/lib/analytics";
 import Drawer from "@/app/components/Drawer";
 import { isChurned, type EnrichedCustomer } from "@/lib/customerEnrichment";
 import { ackPaymentErrorAction } from "@/app/actions/ackPaymentError";
 
-type DrawerKey = "churn" | "error" | null;
+type DrawerKey = "convert" | "churn" | "error" | null;
 
 function fmtDate(d: string | null) {
   if (!d) return "—";
@@ -116,7 +116,12 @@ function StatBox({
 
 type DrawerEntry = { title: string; subtitle: string; customers: EnrichedCustomer[] };
 
-export default function AnaliticaKPIs({ customers }: { customers: EnrichedCustomer[] }) {
+export default function AnaliticaKPIs({
+  customers, convertCandidates,
+}: {
+  customers: EnrichedCustomer[];
+  convertCandidates: EnrichedCustomer[];
+}) {
   const router = useRouter();
   const [drawer, setDrawer] = useState<DrawerKey>(null);
   const [ackingId, setAckingId] = useState<string | null>(null);
@@ -137,6 +142,11 @@ export default function AnaliticaKPIs({ customers }: { customers: EnrichedCustom
   const delinquentList = customers.filter((c) => c.hasPaymentError);
 
   const drawerConfig: Record<Exclude<DrawerKey, null>, DrawerEntry> = {
+    convert: {
+      title: "Por convertir a suscripción",
+      subtitle: "2 o más compras de pack (sin contar Benvinguda), sin suscripción activa",
+      customers: convertCandidates,
+    },
     churn: {
       title: "Bajas de suscripción",
       subtitle: "Sin renovar entre 46 y 76 días",
@@ -151,7 +161,15 @@ export default function AnaliticaKPIs({ customers }: { customers: EnrichedCustom
 
   return (
     <>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <StatBox
+          icon={<UserPlus size={14} />}
+          label="Por convertir"
+          value={convertCandidates.length}
+          valueClassName={convertCandidates.length > 0 ? "text-primary" : "text-navy/50"}
+          tooltip="Compraron 2 o más packs (sin contar Benvinguda) pero nunca han tenido suscripción. Son el perfil ideal para proponer un plan mensual."
+          onClick={convertCandidates.length > 0 ? () => setDrawer("convert") : undefined}
+        />
         <StatBox
           icon={<AlertTriangle size={14} />}
           label="Sin renovar"

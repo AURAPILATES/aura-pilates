@@ -11,11 +11,10 @@ const EvolucionInscritosBody = dynamic(() => import("./EvolucionInscritosBody"),
 });
 
 export default function EvolucionInscritos({
-  data, spendPerClient, convertCount,
+  data, spendPerClient,
 }: {
   data: ActiveCustomersRow[];
   spendPerClient: number;
-  convertCount: number;
 }) {
   if (data.length === 0) {
     return <ChartCard title="Evolución de clientes activos" subtitle="Clientes con suscripción o pack vigente al cierre de cada mes." />;
@@ -39,18 +38,6 @@ export default function EvolucionInscritos({
           label: "Gasto medio por alumno",
           value: fmt(spendPerClient),
           tooltip: "Facturación total del período ÷ clientes únicos que pagaron. Solo Stripe.",
-        },
-        {
-          label: "Alumnos activos",
-          value: last.count,
-          valueClassName: "text-primary",
-          tooltip: "Clientes con suscripción o pack vigente al cierre del mes.",
-        },
-        {
-          label: "Por convertir",
-          value: convertCount,
-          valueClassName: convertCount > 0 ? "text-primary" : "text-navy/50",
-          tooltip: "Compraron 2 o más packs (sin contar Benvinguda) pero nunca han tenido suscripción. Son el perfil ideal para proponer un plan mensual.",
         },
       ]}
       dataSource="Suscripción (vigencia 31 días) o pack (15–90 días según tipo) según último pago en Stripe"

@@ -597,18 +597,8 @@ export default async function AnaliticaLoader({
           <section>
             <SectionHeader id="clientes" title="Clientes" />
             <div className="space-y-4">
-              <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-                <div className="lg:col-span-2 min-w-0">
-                  <EvolucionInscritos
-                    data={activeCustomersData}
-                    spendPerClient={spendPerClient}
-                    convertCount={convertCandidates.length}
-                  />
-                </div>
-                <div className="lg:col-span-2 min-w-0">
-                  <AnaliticaKPIs customers={customers} />
-                </div>
-              </div>
+              <AnaliticaKPIs customers={customers} convertCandidates={convertCandidates} />
+              <EvolucionInscritos data={activeCustomersData} spendPerClient={spendPerClient} />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <ClientesPaymentsBreakdown
                   succeeded={totalRev}
