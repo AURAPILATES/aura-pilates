@@ -8,13 +8,13 @@ const INCOME_COLOR = "#818CF8";
 const EXPENSE_COLOR = "#FCA5A5";
 
 function fmtTick(v: number) {
-  return v >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${v}`;
+  return v >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${Math.round(v)}`;
 }
 
 function fmtLabel(v: unknown) {
   const n = Number(v);
   if (!n) return "";
-  return n >= 1000 ? `${(n / 1000).toFixed(1)}k` : `${n}`;
+  return n >= 1000 ? `${(n / 1000).toFixed(1)}k` : `${Math.round(n)}`;
 }
 
 function fmtEur(v: number) {

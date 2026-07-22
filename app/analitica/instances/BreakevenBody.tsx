@@ -10,7 +10,7 @@ type View = "bruto" | "neto";
 
 function fmtTick(v: number) {
   const abs = Math.abs(v);
-  return abs >= 1000 ? `${v < 0 ? "−" : ""}${(abs / 1000).toFixed(0)}k` : `${v}`;
+  return abs >= 1000 ? `${v < 0 ? "−" : ""}${(abs / 1000).toFixed(0)}k` : `${Math.round(v)}`;
 }
 
 function fmtEur(v: number) {

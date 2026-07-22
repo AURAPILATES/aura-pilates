@@ -16,7 +16,7 @@ import {
 } from "@/lib/stripePayments";
 import { loadStripeCustomers } from "@/lib/stripeCustomers";
 import { buildPrimaryIdMap, enrichCustomers, hasActiveSub } from "@/lib/customerEnrichment";
-import { estimatedMRR, recurringCustomerIds } from "@/lib/stripeRecurrence";
+import { estimatedMRR } from "@/lib/stripeRecurrence";
 
 import { loadTransactionsCached, expensesByCategoryAll, getLatestImportDate, type EconomicGroup } from "@/lib/transactions";
 import { formatRelativeTime } from "@/lib/formatRelativeTime";
@@ -33,14 +33,13 @@ import { loadBudgetsCached, computeSpent } from "@/lib/budgets";
 import Breakeven from "./instances/Breakeven";
 import { computeBreakeven } from "@/lib/breakeven";
 import ConversionPack from "./instances/ConversionPack";
-import { subscriptionTiersFromMemberships, computeMrrByTier } from "@/lib/mrr";
+import { subscriptionTiersFromMemberships } from "@/lib/mrr";
 import { getMemberships, getProducts, getCustomers } from "@/lib/momence";
 import { catalogFromMomence, revenueByProductByMonth } from "@/lib/productRevenue";
 import { computeSubscriptionCohorts, computeRetentionCohorts } from "@/lib/subscriptionCohort";
 import EvolucionSuscripcionesFullWidth from "./instances/EvolucionSuscripcionesFullWidth";
 import RetencionCohorte from "./instances/RetencionCohorte";
 import { loadBusinessEvents } from "@/lib/businessEvents";
-import { getMomenceChurn } from "@/lib/subscriberSnapshots";
 import { loadPaymentErrorAcks, isPaymentErrorAcked } from "@/lib/paymentErrorAcks";
 import { ChartCard } from "@/components/charts";
 import { pad2 } from "@/lib/periodCalculation";
@@ -147,7 +146,7 @@ export default async function AnaliticaLoader({
   const [
     paymentsAll, membershipsAll, productsAll, customersAll,
     txnsAll, dbCategories, budgets, businessEvents, recurringExpenses, breakdown,
-    bancoLastImport, momenceChurn, paymentErrorAcks, syncRuns,
+    bancoLastImport, paymentErrorAcks, syncRuns,
   ] = await Promise.all([
     loadStripePaymentsCached(),
     getMemberships(),
@@ -160,7 +159,6 @@ export default async function AnaliticaLoader({
     loadRecurringExpensesCached(),
     loadPaymentsBreakdown(mainFrom, mainTo),
     getLatestImportDate(),
-    getMomenceChurn(),
     loadPaymentErrorAcks(),
     getLatestSyncRuns().catch(() => null),
   ]);
@@ -192,18 +190,7 @@ export default async function AnaliticaLoader({
   const ticketMedio = pMain.length > 0 ? totalRev / pMain.length : 0;
 
   // ── Recurrencia (derivada de pagos, no de suscripciones Stripe) ──
-  const recurringIds    = recurringCustomerIds(paymentsAll, curMonth);
-  const realMrr         = estimatedMRR(paymentsAll, curMonth);
-
-  // Recurrentes activas: ≥2 pagos en últimos 3 meses Y pagaron en los últimos 30 días
-  const thirtyDaysAgo = new Date(now);
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().slice(0, 10);
-  const activeRecurringCount = new Set(
-    paymentsAll
-      .filter((p) => p.customerId && recurringIds.has(p.customerId) && p.date >= thirtyDaysAgoStr)
-      .map((p) => p.customerId!)
-  ).size;
+  const realMrr = estimatedMRR(paymentsAll, curMonth);
 
   const salesAll = toSales(paymentsAll);
 
@@ -258,8 +245,6 @@ export default async function AnaliticaLoader({
 
   // ── MRR/ARR por suscripción (suscriptores activos reales en Momence) ──────
   const subscriptionTiers = subscriptionTiersFromMemberships(membershipsAll);
-  const mrrByTier = computeMrrByTier(customersAll, subscriptionTiers);
-
   // ── Evolución de ingresos + altas/bajas/reactivaciones (histórico completo, solo Stripe) ──
   // Antes se recortaba TODO paymentsAll a uscLastDate "para que Stripe y Urban cubran el mismo
   // período" — pero estos tres usos son 100% Stripe (Urban no aparece en ninguno), así que ese
@@ -453,8 +438,6 @@ export default async function AnaliticaLoader({
   const ahorroBruto = avgMonthlyRevenue - gastosComprometidos;
   const ahorroNeto = ahorroBruto - avgMonthlyRevenue * stripeFeeRatio - (nextIvaQuarterData?.ivaNeto ?? 0) / 3;
 
-  const activeMomenceSubCount = mrrByTier.reduce((s, t) => s + t.activeCount, 0);
-
   const firstPaymentMap = new Map<string, string>();
   for (const p of paymentsAll) {
     if (!p.customerId) continue;
@@ -473,7 +456,6 @@ export default async function AnaliticaLoader({
   );
 
   const mainPayerIds = new Set(pMain.filter((p) => p.customerId).map((p) => p.customerId!));
-  const compPayerIds = new Set(pComp.filter((p) => p.customerId).map((p) => p.customerId!));
 
   const customersRaw = enrichCustomers(stripeCustomersAll, paymentsAll, {
     activeIds: mainPayerIds,
@@ -489,15 +471,10 @@ export default async function AnaliticaLoader({
   );
 
   // ── Activos por email, deduplicados ──
-  const payingCustomers     = customers.filter((c) => c.stripeIds.some((sid) => mainPayerIds.has(sid)));
-  const payingCustomersComp = customers.filter((c) => c.stripeIds.some((sid) => compPayerIds.has(sid)));
-  const newCustomers         = payingCustomers.filter((c) => c.isNew);
-  const reactivatedCustomers = payingCustomers.filter((c) => !c.isNew && !c.isRecurring);
+  const payingCustomers = customers.filter((c) => c.stripeIds.some((sid) => mainPayerIds.has(sid)));
 
-  const activeCount     = payingCustomers.length;
-  const activeCountComp = payingCustomersComp.length;
-  const spendPerClient     = activeCount     > 0 ? totalRev     / activeCount     : 0;
-  const spendPerClientComp = activeCountComp > 0 ? revComp / activeCountComp : 0;
+  const activeCount   = payingCustomers.length;
+  const spendPerClient = activeCount > 0 ? totalRev / activeCount : 0;
 
   // ── Clientes por convertir a suscripción: 2+ packs (sin contar Benvinguda), sin sub activa ──
   const packCounts = new Map<string, number>();
@@ -620,21 +597,18 @@ export default async function AnaliticaLoader({
           <section>
             <SectionHeader id="clientes" title="Clientes" />
             <div className="space-y-4">
-              <AnaliticaKPIs
-                customers={customers}
-                periodLabel={periodLabel}
-                periodFrom={mainFrom}
-                periodTo={mainTo}
-                compDateRange={compDateRange}
-                spendPerClient={spendPerClient}
-                spendPerClientComp={spendPerClientComp}
-                newCustomers={newCustomers}
-                reactivatedCustomers={reactivatedCustomers}
-                convertCandidates={convertCandidates}
-                activeMomenceSubCount={activeMomenceSubCount}
-                activeRecurringCount={activeRecurringCount}
-                momenceChurn={momenceChurn}
-              />
+              <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                <div className="lg:col-span-2 min-w-0">
+                  <EvolucionInscritos
+                    data={activeCustomersData}
+                    spendPerClient={spendPerClient}
+                    convertCount={convertCandidates.length}
+                  />
+                </div>
+                <div className="lg:col-span-2 min-w-0">
+                  <AnaliticaKPIs customers={customers} />
+                </div>
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <ClientesPaymentsBreakdown
                   succeeded={totalRev}
@@ -650,7 +624,6 @@ export default async function AnaliticaLoader({
                 />
                 <PrimeraCompra summary={firstPurchaseSummary} />
               </div>
-              <EvolucionInscritos data={activeCustomersData} />
               <RetencionCohorte cohorts={retentionCohorts} />
               <ConversionPack summary={conversionSummary} />
             </div>

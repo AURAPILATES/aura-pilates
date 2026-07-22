@@ -37,7 +37,7 @@ function fmtEventDate(iso: string) {
 }
 
 function fmtTick(v: number) {
-  return v >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${v}`;
+  return v >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${Math.round(v)}`;
 }
 
 function fmtEur(v: number) {

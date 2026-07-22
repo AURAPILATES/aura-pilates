@@ -59,13 +59,17 @@ export default function ClientesPaymentsBreakdown({
     .filter((it) => !excludeSegments.includes(it.key))
     .filter((it) => values[it.key] > 0);
 
-  const hasCustomers = !!(customers && customers.length > 0);
-
   function customersForSegment(key: SegmentKey): CustomerRow[] {
     if (!customers) return [];
     const segIds = new Set(ids[key]);
     return customers.filter((c) => c.stripeIds.some((sid) => segIds.has(sid)));
   }
+
+  // Solo se puede abrir el drawer de un segmento si de verdad hay clientes identificados
+  // para él — si no, el clic no llevaría a ningún sitio (ver customersForSegment).
+  const clickableSegments = new Set(
+    visible.filter((it) => customersForSegment(it.key).length > 0).map((it) => it.key),
+  );
 
   const drawerCustomers = open ? customersForSegment(open) : [];
   const drawerItem      = ITEMS.find((it) => it.key === open);
@@ -95,20 +99,23 @@ export default function ClientesPaymentsBreakdown({
             <svg viewBox="0 0 180 180" width="140" height="140">
               <circle cx={CX} cy={CY} r={R} fill="none" stroke="var(--color-border)" strokeWidth={SW} />
               <g transform={`rotate(-90, ${CX}, ${CY})`}>
-                {total === 0 ? null : segments.map((seg) => (
-                  <circle
-                    key={seg.key}
-                    cx={CX} cy={CY} r={R}
-                    fill="none"
-                    strokeWidth={SW}
-                    strokeDasharray={`${seg.dash} ${CIRC}`}
-                    strokeDashoffset={seg.offset}
-                    strokeLinecap="round"
-                    className={`${seg.text} ${hasCustomers ? "cursor-pointer" : ""} transition-opacity`}
-                    stroke="currentColor"
-                    onClick={hasCustomers ? () => setOpen(seg.key) : undefined}
-                  />
-                ))}
+                {total === 0 ? null : segments.map((seg) => {
+                  const clickable = clickableSegments.has(seg.key);
+                  return (
+                    <circle
+                      key={seg.key}
+                      cx={CX} cy={CY} r={R}
+                      fill="none"
+                      strokeWidth={SW}
+                      strokeDasharray={`${seg.dash} ${CIRC}`}
+                      strokeDashoffset={seg.offset}
+                      strokeLinecap="round"
+                      className={`${seg.text} ${clickable ? "cursor-pointer" : ""} transition-opacity`}
+                      stroke="currentColor"
+                      onClick={clickable ? () => setOpen(seg.key) : undefined}
+                    />
+                  );
+                })}
               </g>
               <foreignObject x="10" y="45" width="160" height="90">
                 <div className="h-full flex flex-col items-center justify-center text-center">
@@ -121,34 +128,37 @@ export default function ClientesPaymentsBreakdown({
 
           {/* Leyenda */}
           <div className="flex-1 min-w-0 divide-y divide-navy/[0.05] w-full">
-            {visible.map((it) => (
-              <div
-                key={it.key}
-                onClick={hasCustomers ? () => setOpen(it.key) : undefined}
-                className={`flex items-center justify-between py-2.5 ${hasCustomers ? "cursor-pointer hover:bg-navy/[0.02] -mx-1 px-1 rounded-lg group" : ""} transition-colors`}
-              >
-                <div className="flex items-center gap-2.5">
-                  <span className={`w-2 h-2 rounded-full ${it.bg} shrink-0`} />
-                  <span className={`text-sm text-navy/65 ${hasCustomers ? "group-hover:text-navy" : ""} transition-colors`}>{it.label}</span>
+            {visible.map((it) => {
+              const clickable = clickableSegments.has(it.key);
+              return (
+                <div
+                  key={it.key}
+                  onClick={clickable ? () => setOpen(it.key) : undefined}
+                  className={`flex items-center justify-between py-2.5 ${clickable ? "cursor-pointer hover:bg-navy/[0.02] -mx-1 px-1 rounded-lg group" : ""} transition-colors`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <span className={`w-2 h-2 rounded-full ${it.bg} shrink-0`} />
+                    <span className={`text-sm text-navy/65 ${clickable ? "group-hover:text-navy" : ""} transition-colors`}>{it.label}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-sm font-semibold tabular-nums ${it.key === "succeeded" ? "text-navy" : "text-navy/60"}`}>
+                      {fmt(values[it.key])}
+                    </span>
+                    <span className="text-xs text-navy/40 tabular-nums w-10 text-right">
+                      {total > 0 ? pct(values[it.key] / total) : "—"}
+                    </span>
+                    {clickable && (
+                      <span className="text-navy/25 text-xs opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className={`text-sm font-semibold tabular-nums ${it.key === "succeeded" ? "text-navy" : "text-navy/60"}`}>
-                    {fmt(values[it.key])}
-                  </span>
-                  <span className="text-xs text-navy/40 tabular-nums w-10 text-right">
-                    {total > 0 ? pct(values[it.key] / total) : "—"}
-                  </span>
-                  {hasCustomers && (
-                    <span className="text-navy/25 text-xs opacity-0 group-hover:opacity-100 transition-opacity">→</span>
-                  )}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </ChartCard>
 
-      {open && drawerItem && hasCustomers && (
+      {open && drawerItem && clickableSegments.has(open) && (
         <Drawer
           title={drawerItem.drawerTitle}
           subtitle={`${periodLabel}`}

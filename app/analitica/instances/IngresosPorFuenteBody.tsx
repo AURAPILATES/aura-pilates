@@ -14,15 +14,15 @@ export type IngresosPorFuenteRow = {
   uscNet: number;
 };
 
-const COLOR_STRIPE = "var(--color-primary)"; // primary
-const COLOR_USC    = "#F59E0B"; // warning
+const COLOR_STRIPE = "var(--chart-violet-1)";
+const COLOR_USC    = "var(--color-warning)";
 
 function fmtEur(v: number) {
   return Math.round(v).toLocaleString("de-DE", { maximumFractionDigits: 0 }) + " €";
 }
 
 function fmtTick(v: number) {
-  return v >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${v}`;
+  return v >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${Math.round(v)}`;
 }
 
 function FuenteTooltip({ active, payload }: TooltipContentProps) {

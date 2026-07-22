@@ -103,13 +103,6 @@ export default function PrevisionGastos({
       title="Previsión de gastos recurrentes"
       subtitle="Próximos 30 días"
       dateRange="próximos 30 días"
-      kpiItems={[
-        {
-          label: "Total previsto",
-          value: fmt(totalPrevisto),
-          helper: `${items.length} pagos previstos`,
-        },
-      ]}
       dataSource="Gastos recurrentes confirmados en Transacciones › Recurrentes. Suministros: media de los últimos 3 meses completos (Electricidad + Agua)."
       sources={["recurrentes"]}
     >
@@ -120,17 +113,25 @@ export default function PrevisionGastos({
         </p>
       ) : (
         <>
-          {totalPrevisto > 0 && (
-            <ProportionBar
-              className="mb-4"
-              segments={[
-                { label: "Comprometido", color: "var(--color-navy)", percentage: Math.round((committed / totalPrevisto) * 100), displayValue: fmt(committed) },
-                ...(avgSuministros > 0
-                  ? [{ label: "Variable", color: "var(--color-warning)", percentage: Math.round((avgSuministros / totalPrevisto) * 100), displayValue: fmt(avgSuministros) }]
-                  : []),
-              ]}
-            />
-          )}
+          <div className="flex items-center gap-6 flex-wrap sm:flex-nowrap mb-4">
+            <div className="shrink-0">
+              <p className="text-[11px] font-medium text-navy/45 mb-1 whitespace-nowrap">Total previsto</p>
+              <p className="text-[26px] font-semibold text-navy leading-tight tracking-tight">{fmt(totalPrevisto)}</p>
+              <p className="text-[11px] text-navy/50 mt-0.5 whitespace-nowrap">{items.length} pagos previstos</p>
+            </div>
+            {totalPrevisto > 0 && (
+              <div className="flex-1 min-w-0 w-full">
+                <ProportionBar
+                  segments={[
+                    { label: "Comprometido", color: "var(--color-navy)", percentage: Math.round((committed / totalPrevisto) * 100), displayValue: fmt(committed) },
+                    ...(avgSuministros > 0
+                      ? [{ label: "Variable", color: "var(--color-warning)", percentage: Math.round((avgSuministros / totalPrevisto) * 100), displayValue: fmt(avgSuministros) }]
+                      : []),
+                  ]}
+                />
+              </div>
+            )}
+          </div>
 
           {/* Sort toolbar */}
           <div className="flex items-center gap-3 mb-4">

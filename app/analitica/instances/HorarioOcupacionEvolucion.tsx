@@ -7,6 +7,28 @@ import { MomenceEvent } from "@/lib/momence";
 import type { BusinessEvent, EventCategoria } from "@/lib/businessEvents";
 import { ChartCard, ChartTypeToggle, ToggleGroup, StaticLegend, InteractiveLegend, type MultiKpiItem } from "@/components/charts";
 
+// Suaviza una polilínea a una curva tipo Catmull-Rom (mismo aspecto que el type="monotone"
+// de Recharts en el resto de gráficos por líneas de la app, aquí dibujado a mano en SVG).
+function smoothPath(points: [number, number][]): string {
+  if (points.length === 0) return "";
+  if (points.length < 3) {
+    return points.map((p, i) => `${i === 0 ? "M" : "L"}${p[0]},${p[1]}`).join(" ");
+  }
+  let d = `M${points[0][0]},${points[0][1]}`;
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = points[i - 1] ?? points[i];
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    const p3 = points[i + 2] ?? p2;
+    const cp1x = p1[0] + (p2[0] - p0[0]) / 6;
+    const cp1y = p1[1] + (p2[1] - p0[1]) / 6;
+    const cp2x = p2[0] - (p3[0] - p1[0]) / 6;
+    const cp2y = p2[1] - (p3[1] - p1[1]) / 6;
+    d += ` C${cp1x},${cp1y} ${cp2x},${cp2y} ${p2[0]},${p2[1]}`;
+  }
+  return d;
+}
+
 // Internal coordinate system for the SVG (bars + line + gridlines only — no text).
 // Text labels are rendered as plain HTML overlays positioned with percentages,
 // so font-size stays a real CSS pixel value at any screen width (no SVG-unit scaling).
@@ -103,9 +125,9 @@ export default function HorarioOcupacionEvolucion({
   function pctX(x: number) { return (x / SVG_W) * 100; }
   function pctY(y: number) { return (y / SVG_H) * 100; }
 
-  const linePoints = data.map((d, i) => `${barCx(i)},${occY(d.occ)}`).join(" ");
-  const soldLinePoints     = data.map((d, i) => `${barCx(i)},${valY(d.sold)}`).join(" ");
-  const capacityLinePoints = data.map((d, i) => `${barCx(i)},${valY(d.capacity)}`).join(" ");
+  const linePath     = smoothPath(data.map((d, i) => [barCx(i), occY(d.occ)]));
+  const soldLinePath     = smoothPath(data.map((d, i) => [barCx(i), valY(d.sold)]));
+  const capacityLinePath = smoothPath(data.map((d, i) => [barCx(i), valY(d.capacity)]));
 
   const totalSold     = data.reduce((s, d) => s + d.sold, 0);
   const totalCapacity = data.reduce((s, d) => s + d.capacity, 0);
@@ -145,7 +167,7 @@ export default function HorarioOcupacionEvolucion({
               items={[
                 { label: "Ocupado", color: "var(--chart-blue-1)", swatch: "dot" },
                 { label: "Libre", color: "var(--chart-blue-2)", swatch: "dot" },
-                { label: "% ocupación", color: "#43884d", swatch: "line" },
+                { label: "% ocupación", color: "var(--color-income)", swatch: "line" },
               ]}
             />
           </div>
@@ -237,8 +259,8 @@ export default function HorarioOcupacionEvolucion({
             ) : (
               <>
                 {/* Plazas totales (capacidad) y vendidas como líneas */}
-                <polyline points={capacityLinePoints} fill="none" stroke="var(--chart-blue-2)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-                <polyline points={soldLinePoints} fill="none" stroke="var(--chart-blue-1)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+                <path d={capacityLinePath} fill="none" stroke="var(--chart-blue-2)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+                <path d={soldLinePath} fill="none" stroke="var(--chart-blue-1)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
                 {data.map((d, i) => (
                   <g key={d.key} onMouseEnter={() => setHoveredKey(d.key)} style={{ cursor: "default" }}>
                     <rect x={barX(i)} y={MT} width={barW} height={CHART_H} fill="transparent" />
@@ -250,7 +272,7 @@ export default function HorarioOcupacionEvolucion({
             )}
 
             {/* Occupancy % line */}
-            <polyline points={linePoints} fill="none" stroke="var(--color-income)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+            <path d={linePath} fill="none" stroke="var(--color-income)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
             {data.map((d, i) => (
               <circle
                 key={`dot-${d.key}`}
@@ -314,7 +336,7 @@ export default function HorarioOcupacionEvolucion({
               >
                 <p className="font-semibold text-navy">{d.label}</p>
                 <p className="text-navy/60 mt-0.5">{d.sold}/{d.capacity} plazas</p>
-                <p className="text-[#43884d] font-semibold mt-0.5">{Math.round(d.occ * 100)}% ocupación</p>
+                <p className="text-income font-semibold mt-0.5">{Math.round(d.occ * 100)}% ocupación</p>
               </div>
             );
           })()}

@@ -12,7 +12,7 @@ import { regroupSeries, periodLabel, buildGroupSeries, type Period } from "./evo
 type Row = { month: string; label: string } & Record<EconomicGroup, number>;
 
 function fmtTick(v: number) {
-  return v >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${v}`;
+  return v >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${Math.round(v)}`;
 }
 
 function makeTooltip(visibleGroups: EconomicGroup[]) {
