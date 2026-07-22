@@ -181,7 +181,7 @@ export default function DesglosGastosUnificado({
           </div>
         </>
       }
-      dataSource="Exportación bancaria CaixaBank · excluye aportaciones de socios · financiación identificada por contacto, igual que en Financiación"
+      dataSource="Exportación bancaria CaixaBank · excluye aportaciones de socios y traspasos internos · financiación = categorías de tipo transfer, solo la cuota pagada"
       sources={["excel"]}
       lastUpdated={lastUpdated}
       aiInsight={

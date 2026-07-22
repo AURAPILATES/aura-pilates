@@ -302,6 +302,11 @@ export default async function AnaliticaLoader({
   const transactionsByCategory: Record<string, { date: string; amount: number; concept: string; contact: string }[]> = {};
   for (const t of txnsMain) {
     if (!t.category) continue;
+    // Las categorías de tipo "transfer" (Financiación) también incluyen la entrada del propio
+    // préstamo (importe positivo) — eso no es un gasto y no debe colarse en el gráfico/drawer
+    // de Desglose de gastos, así que aquí solo cuentan los pagos (importe negativo).
+    const cat = findCategory(dbCategories, t.category);
+    if (cat?.group_type === "transfer" && t.amount >= 0) continue;
     if (!transactionsByCategory[t.category]) transactionsByCategory[t.category] = [];
     transactionsByCategory[t.category].push({ date: t.date, amount: t.amount, concept: t.concept ?? "", contact: t.contact ?? "" });
   }

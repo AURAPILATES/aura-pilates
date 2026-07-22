@@ -45,6 +45,24 @@ function isExpenseCategory(category: string, categories: Category[]): boolean {
   return !cat || !NON_EXPENSE_GROUP_TYPES.has(cat.group_type);
 }
 
+/** Gastos de financiación: categorías de tipo "transfer" (p.ej. cuotas de préstamo), que
+ * `expensesByCategoryAll` excluye a propósito para no mezclarlas con traspasos internos
+ * reales. Aquí sí cuentan como gasto real — solo el pago (importe negativo), nunca la
+ * entrada del propio préstamo — para poder mostrarlas aparte en el desglose de gastos. */
+export function financingExpensesByCategory(txns: Transaction[], categories: Category[]) {
+  const map = new Map<string, { count: number; total: number }>();
+  for (const t of txns) {
+    if (t.amount >= 0 || !t.category) continue;
+    const cat = findCategory(categories, t.category);
+    if (!cat || cat.group_type !== "transfer") continue;
+    const d = map.get(t.category) ?? { count: 0, total: 0 };
+    d.count++;
+    d.total += Math.abs(t.amount);
+    map.set(t.category, d);
+  }
+  return [...map.entries()].map(([category, d]) => ({ category, ...d, group: "financiacion" as const }));
+}
+
 
 export async function loadCategoryCounts(): Promise<Record<string, number>> {
   const supabase = createServerClient();
