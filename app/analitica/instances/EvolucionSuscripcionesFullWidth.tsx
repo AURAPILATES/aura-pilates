@@ -24,7 +24,7 @@ import {
 
 const EvolucionIngresosBody = dynamic(() => import("./EvolucionIngresosBody"), {
   ssr: false,
-  loading: () => <div className="h-[340px] rounded-lg bg-navy/[0.04] animate-pulse" />,
+  loading: () => <div className="h-[280px] rounded-lg bg-navy/[0.04] animate-pulse" />,
 });
 
 type ChartType = "line" | "bar";
@@ -115,14 +115,13 @@ export default function EvolucionSuscripcionesFullWidth({
   const cohortByPeriod = new Map(cohortRows.map((c) => [c.month, c]));
 
   if (monthly.length === 0) {
-    return <ChartCard title="Evolución de ingresos y suscripciones" subtitle="Sin datos suficientes" />;
+    return <ChartCard title="Ingresos por producto" subtitle="Sin datos suficientes" />;
   }
 
   return (
     <>
       <ChartCard
-        title="Evolución de ingresos y suscripciones"
-        subtitle="Ingresos por producto · altas, bajas y reactivaciones de suscripción"
+        title="Ingresos por producto"
         dateRange={months.length > 0 ? `${periodLabel(months[0], period)} – ${periodLabel(months[months.length - 1], period)}` : undefined}
         toolbar={
           <>
@@ -166,6 +165,7 @@ export default function EvolucionSuscripcionesFullWidth({
           colorOf={colorOf}
           eventsByMonth={eventsByMonth}
           onBarClick={period === "mes" ? (month, key) => setBarDrawer({ month, key }) : undefined}
+          height={280}
         />
 
         <p className="text-xs font-medium text-navy/55 mt-5 mb-2.5">Resumen</p>

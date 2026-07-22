@@ -138,11 +138,6 @@ export default function IngresosPorFuente({
       sources={["stripe", "momence"]}
       lastUpdated={lastUpdated}
     >
-      {uscLastDateLabel && (
-        <p className="text-[11px] text-warning bg-warning/10 rounded-[8px] px-2.5 py-1.5 mb-4">
-          Urban solo tiene datos hasta el {uscLastDateLabel} (importación manual en Transacciones) — Stripe se recorta a la misma fecha para que la comparación no sea engañosa.
-        </p>
-      )}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
         <div className="lg:col-span-3 min-w-0">
           <IngresosPorFuenteBody data={grouped} chartType={chartType} />
@@ -166,6 +161,11 @@ export default function IngresosPorFuente({
               helper: totalBruto > 0 ? `${Math.round((s.value / totalBruto) * 100)}%` : "—",
             }))}
           />
+          {uscLastDateLabel && (
+            <p className="text-[11px] text-warning bg-warning/10 rounded-[8px] px-2.5 py-1.5 mt-4">
+              Urban solo tiene datos hasta el {uscLastDateLabel} (importación manual en Transacciones)
+            </p>
+          )}
         </div>
       </div>
 
