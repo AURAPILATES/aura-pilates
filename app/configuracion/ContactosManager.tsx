@@ -1,6 +1,6 @@
 "use client";
 import { useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import type { Category } from "@/lib/categories";
 import { contactKeyFor } from "@/lib/contactRules";
 import {
@@ -274,6 +274,7 @@ export default function ContactosManager({ contacts: initialContacts, categories
   pendingCleanupCount: number;
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [contacts, setContacts] = useState(initialContacts);
   const [creating, setCreating] = useState(false);
   const [recomputing, setRecomputing] = useState(false);
@@ -282,7 +283,10 @@ export default function ContactosManager({ contacts: initialContacts, categories
   const [cleaned, setCleaned] = useState<{ updated: number; merged: number } | null>(null);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [selectedId, setSelectedId] = useState<number | null>(() => {
+    const raw = searchParams.get("contacto");
+    return raw ? parseInt(raw, 10) : null;
+  });
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [, startTransition] = useTransition();
 

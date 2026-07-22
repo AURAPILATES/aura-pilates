@@ -269,7 +269,7 @@ export default function RecurrentesListV2({
           const contact = e.contact_id != null ? contacts.find((c) => c.id === e.contact_id) : undefined;
           const ivaRate = contact?.ivaRate ?? 0;
           const retRate = contact?.retencionRate ?? 0;
-          const bothMissing = !(ivaRate > 0) && !(retRate > 0);
+          const bothMissing = !contact?.noTax && !(ivaRate > 0) && !(retRate > 0);
           const icon = iconFor(categories, e.category);
           const dayDetail = periodDayDetail(e.period, row.lastDate);
           return (
@@ -293,8 +293,8 @@ export default function RecurrentesListV2({
                     {dayDetail && <p className="text-[11px] text-faint capitalize">{dayDetail}</p>}
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <TaxBadgeV2 value={ivaRate} isError={bothMissing} />
-                    <TaxBadgeV2 value={retRate} isError={bothMissing} />
+                    <TaxBadgeV2 value={ivaRate} isError={bothMissing} zeroIsExplicit={contact?.noTax} />
+                    <TaxBadgeV2 value={retRate} isError={bothMissing} zeroIsExplicit={contact?.noTax} />
                   </div>
                   <p className="text-right text-[13.5px] font-semibold"><SignedAmount amount={e.amount} /></p>
                   <div className="flex justify-end">

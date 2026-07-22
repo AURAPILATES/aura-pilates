@@ -653,7 +653,21 @@ function RecurringExpenseDrawer({ row, categories, contacts, onClose, onOpenCont
           </div>
         </div>
         <p className="text-xs text-navy/40 mt-2">
-          {contact ? `Heredado de ${contact.label}.` : "Sin contacto vinculado."} Se edita en Configuración › Contactos.
+          {contact ? (
+            <>
+              Heredado de {contact.label}. Se edita en{" "}
+              <button
+                type="button"
+                onClick={() => router.push(`/configuracion?tab=contactos&contacto=${contact.id}`)}
+                className="text-primary hover:underline"
+              >
+                Configuración › Contactos
+              </button>
+              .
+            </>
+          ) : (
+            "Sin contacto vinculado. Se edita en Configuración › Contactos."
+          )}
         </p>
       </div>
 
