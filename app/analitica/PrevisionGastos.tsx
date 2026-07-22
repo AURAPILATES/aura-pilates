@@ -112,8 +112,7 @@ export default function PrevisionGastos({
         </p>
       ) : (
         <>
-          <div className="@container mb-4">
-          <div className="flex items-center gap-6 flex-wrap @[420px]:flex-nowrap">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 mb-4">
             <div className="shrink-0">
               <p className="text-[11px] font-medium text-navy/45 mb-1 whitespace-nowrap">Total previsto</p>
               <p className="text-[26px] font-semibold text-navy leading-tight tracking-tight">{fmt(totalPrevisto)}</p>
@@ -131,7 +130,6 @@ export default function PrevisionGastos({
                 />
               </div>
             )}
-          </div>
           </div>
 
           {/* Sort toolbar */}

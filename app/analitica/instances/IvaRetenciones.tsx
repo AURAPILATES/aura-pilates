@@ -38,6 +38,10 @@ function quarterShort(q: string): string {
   return `T${qn} ${year}`;
 }
 
+function fmtOrDash(v: number): string {
+  return v === 0 ? "—" : fmt(v);
+}
+
 const MONTH_SHORT = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
 
 function urgencyOf(days: number): "danger" | "warning" | "neutral" {
@@ -136,7 +140,7 @@ export default function IvaRetenciones({
                 </thead>
                 <tbody>
                   <tr className="border-b border-border">
-                    <td className="py-2.5 pr-3 font-medium text-navy whitespace-nowrap">
+                    <td className="py-2.5 pr-3 text-navy/50 whitespace-nowrap">
                       <button
                         type="button"
                         onClick={() => setIvaExpanded((v) => !v)}
@@ -147,32 +151,45 @@ export default function IvaRetenciones({
                       </button>
                     </td>
                     {rows.map((r) => (
-                      <td key={r.quarter} className={`py-2.5 px-3 text-right font-semibold tabular-nums ${r.ivaNeto < 0 ? "text-success" : "text-navy"}`}>
-                        {fmt(r.ivaNeto)}
+                      <td key={r.quarter} className={`py-2.5 px-3 text-right tabular-nums ${r.ivaNeto < 0 ? "text-success" : "text-navy/70"}`}>
+                        {fmtOrDash(r.ivaNeto)}
                       </td>
                     ))}
                   </tr>
                   {ivaExpanded && (
                     <>
                       <tr className="border-b border-border">
-                        <td className="py-2 pl-7 pr-3 text-navy/50 whitespace-nowrap">Repercutido (Ventas)</td>
+                        <td className="py-2 pl-4 pr-3 text-navy/50 whitespace-nowrap">Repercutido (Ventas)</td>
                         {rows.map((r) => (
-                          <td key={r.quarter} className="py-2 px-3 text-right text-navy/70 tabular-nums">{fmt(r.ivaRepercutido)}</td>
+                          <td key={r.quarter} className="py-2 px-3 text-right text-navy/70 tabular-nums">{fmtOrDash(r.ivaRepercutido)}</td>
                         ))}
                       </tr>
                       <tr className="border-b border-border">
-                        <td className="py-2 pl-7 pr-3 text-navy/50 whitespace-nowrap">Soportado (Gastos)</td>
+                        <td className="py-2 pl-4 pr-3 text-navy/50 whitespace-nowrap">Soportado (Gastos)</td>
                         {rows.map((r) => (
-                          <td key={r.quarter} className="py-2 px-3 text-right text-navy/70 tabular-nums">− {fmt(r.ivaSoportado)}</td>
+                          <td key={r.quarter} className="py-2 px-3 text-right text-navy/70 tabular-nums">
+                            {r.ivaSoportado === 0 ? "—" : `− ${fmt(r.ivaSoportado)}`}
+                          </td>
                         ))}
                       </tr>
                     </>
                   )}
-                  <tr className="last:border-0">
+                  <tr className="border-b border-border">
                     <td className="py-2.5 pr-3 text-navy/50 whitespace-nowrap">IRPF</td>
                     {rows.map((r) => (
-                      <td key={r.quarter} className="py-2.5 px-3 text-right text-navy/70 tabular-nums">{fmt(r.retenciones)}</td>
+                      <td key={r.quarter} className="py-2.5 px-3 text-right text-navy/70 tabular-nums">{fmtOrDash(r.retenciones)}</td>
                     ))}
+                  </tr>
+                  <tr className="last:border-0">
+                    <td className="py-2.5 pr-3 font-semibold text-navy whitespace-nowrap">Total</td>
+                    {rows.map((r) => {
+                      const total = r.ivaNeto + r.retenciones;
+                      return (
+                        <td key={r.quarter} className="py-2.5 px-3 text-right font-semibold text-navy tabular-nums">
+                          {fmtOrDash(total)}
+                        </td>
+                      );
+                    })}
                   </tr>
                 </tbody>
               </table>

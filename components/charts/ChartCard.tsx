@@ -157,7 +157,7 @@ export default function ChartCard({
                   )}
                 </div>
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className={`text-2xl font-medium leading-tight text-navy ${item.valueClassName ?? ""}`}>
+                  <span className={`text-xl sm:text-2xl font-medium leading-tight text-navy ${item.valueClassName ?? ""}`}>
                     {item.value}
                   </span>
                   {item.delta && <DeltaBadge value={item.delta.value} direction={item.delta.direction} />}
