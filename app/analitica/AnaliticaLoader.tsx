@@ -24,7 +24,6 @@ import { formatRelativeTime } from "@/lib/formatRelativeTime";
 import { loadCategoriesCached, NON_CASHFLOW_GROUP_TYPES, type Category } from "@/lib/categories";
 import { loadRecurringExpensesCached, forecastConfirmedExpenses } from "@/lib/recurringExpenses";
 import DesglosGastosUnificado from "./instances/DesglosGastosUnificado";
-import CockpitFinanciero from "./instances/CockpitFinanciero";
 import IvaRetenciones from "./instances/IvaRetenciones";
 import VentasPor from "./instances/VentasPor";
 import type { IngresosPorFuenteRow } from "./instances/IngresosPorFuenteBody";
@@ -117,12 +116,6 @@ function groupExpensesByEconomicGroup(
       txns: entries.flatMap((e) => transactionsByCategory[e.category] ?? []),
     };
   });
-}
-
-const MES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
-function monthLabel(ym: string) {
-  const [y, m] = ym.split("-");
-  return `${MES[parseInt(m, 10) - 1]} ${y}`;
 }
 
 // ── Loader ────────────────────────────────────────────────────────────────────
@@ -322,7 +315,6 @@ export default async function AnaliticaLoader({
   const expGroupTotals = groupExpensesByEconomicGroup(allExpCategories, transactionsByCategory);
   const expByTopCategory = groupExpensesByTopCategory(allExpCategories, dbCatByValue, dbCatById, EXPENSE_COLORS);
   const totalExpCat = allExpCategories.reduce((s, r) => s + r.total, 0);
-  const totalExpCatNoCapex = expGroupTotals.filter((g) => g.group !== "capex").reduce((s, g) => s + g.total, 0);
 
   // ── Salud financiera (datos completos) ──
   const today_ym = curMonth;
@@ -330,16 +322,21 @@ export default async function AnaliticaLoader({
   const burnByMonth = new Map<string, number>();
   const suministrosByMonth = new Map<string, number>();
   const incomeByMonth = new Map<string, number>();
+  const expenseByMonth = new Map<string, number>();
   const SUMINISTROS_CATS = new Set(["Electricidad", "Agua"]);
   for (const t of txnsAll) {
     const cat = t.category ? findCategory(dbCategories, t.category) : undefined;
     const m = t.date.slice(0, 7);
+    const isCashflow = !cat || !NON_CASHFLOW_GROUP_TYPES.has(cat.group_type);
 
     if (t.amount >= 0) {
-      if (!cat || !NON_CASHFLOW_GROUP_TYPES.has(cat.group_type)) {
+      if (isCashflow) {
         incomeByMonth.set(m, (incomeByMonth.get(m) ?? 0) + t.amount);
       }
       continue;
+    }
+    if (isCashflow) {
+      expenseByMonth.set(m, (expenseByMonth.get(m) ?? 0) + Math.abs(t.amount));
     }
     if (!t.category) continue;
     if (BURN_CATS.has(t.category)) {
@@ -365,6 +362,13 @@ export default async function AnaliticaLoader({
   const avgMonthlyRevenue = revMonths.length > 0
     ? revMonths.reduce((s, m) => s + (incomeByMonth.get(m) ?? 0), 0) / revMonths.length
     : 0;
+
+  // Margen mensual de Flujo de caja: mismo criterio (ingresos y gastos brutos según el
+  // banco) que el propio gráfico, medido sobre los últimos 3 meses completos.
+  const avgMonthlyExpense = revMonths.length > 0
+    ? revMonths.reduce((s, m) => s + (expenseByMonth.get(m) ?? 0), 0) / revMonths.length
+    : 0;
+  const avgMonthlyMargin = avgMonthlyRevenue - avgMonthlyExpense;
 
   const breakEvenGap = avgMonthlyBurn - avgMonthlyRevenue;
   const clientesNecesarios = breakEvenGap > 0 && ticketMedio > 0
@@ -455,15 +459,6 @@ export default async function AnaliticaLoader({
 
   // ── Clientela (composición, altas, riesgo de baja) ───────────────────────
   const recurringForecasts = forecastConfirmedExpenses(recurringExpenses, txnsAll, undefined, dbCategories);
-  const gastosComprometidos = recurringForecasts.reduce((s, f) => s + Math.abs(f.amount), 0) + avgSuministros;
-
-  // ── Ahorro mensual: bruto = ingresos previstos − gastos comprometidos; neto también
-  // descuenta la comisión de Stripe (aplicada al histórico) y el IVA neto del trimestre
-  // en curso, prorrateado a un mes. Las retenciones no se restan: ya salen netas del
-  // propio pago al contacto, no son un coste adicional para Aura. ──
-  const stripeFeeRatio = totalRev > 0 ? stripeFees / totalRev : 0;
-  const ahorroBruto = avgMonthlyRevenue - gastosComprometidos;
-  const ahorroNeto = ahorroBruto - avgMonthlyRevenue * stripeFeeRatio - (nextIvaQuarterData?.ivaNeto ?? 0) / 3;
 
   const firstPaymentMap = new Map<string, string>();
   for (const p of paymentsAll) {
@@ -538,65 +533,52 @@ export default async function AnaliticaLoader({
         ingresosGastos={
           <section>
             <SectionHeader id="ingresos-gastos" title="Ingresos y gastos" />
-            <div className="space-y-8">
-              <div>
-                <SectionHeader id="prevision" title="Previsión" />
-                <div className="space-y-4">
-                  <CockpitFinanciero
-                    curMonthLabel={monthLabel(curMonth)}
-                    avgMonthlyRevenue={avgMonthlyRevenue}
-                    revenueBasisLabel={`media últimos ${revMonths.length || 3} m`}
-                    lastUpdated={bancoLastUpdated}
-                    ahorroBruto={ahorroBruto}
-                    ahorroNeto={ahorroNeto}
-                  />
-                  <IvaRetenciones
-                    quarterLabel={nextIvaQuarterLabel}
-                    ivaRepercutido={nextIvaQuarterData?.ivaRepercutido ?? 0}
-                    ivaSoportado={nextIvaQuarterData?.ivaSoportado ?? 0}
-                    ivaNeto={nextIvaQuarterData?.ivaNeto ?? 0}
-                    retenciones={nextIvaQuarterData?.retenciones ?? 0}
-                    dueLabel={nextIvaDueLabelLong}
-                    quarterClosed={nextIvaQuarterClosed}
-                    obligations={obligations.map(({ label, deadline }) => ({ label, deadline, days: daysUntil(deadline) }))}
-                    rows={quarterlyFiscalRows}
-                    lastUpdated={bancoLastUpdated}
-                  />
-                  <PrevisionGastos forecasts={recurringForecasts} categories={dbCategories} avgSuministros={avgSuministros} />
-                  <Financiacion initialBudgets={budgets} spent={budgetSpent} />
-                </div>
-              </div>
-
-              <div>
-                <SectionHeader id="historico" title="Histórico" />
-                <div className="space-y-4">
-                  <VolumenBruto txns={txnsAll} categories={dbCategories} lastUpdated={bancoLastUpdated} />
-                  <VentasPor
-                    stripeGross={totalRev}
-                    stripeFees={stripeFees}
-                    stripeNet={stripeNet}
-                    uscGross={uscRevenue}
-                    monthly={monthlyByFuente}
-                    dateRange={periodLabel}
-                    uscLastDateLabel={uscLastDateLabel}
-                    lastUpdated={uscLastDateLabel ? `Urban al día ${uscLastDateLabel}` : liveLastUpdated}
-                    monthlyProducto={monthlyStripeRevenue}
-                    cohorts={subscriptionCohorts}
-                    events={businessEvents}
-                    rawPayments={pMain}
-                  />
-                  <DesglosGastosUnificado
-                    groups={expGroupTotals}
-                    categories={expByTopCategory}
-                    transactionsByCategory={transactionsByCategory}
-                    totalExpCat={totalExpCat}
-                    totalExpCatNoCapex={totalExpCatNoCapex}
-                    rangeLabel={periodLabel}
-                    lastUpdated={bancoLastUpdated}
-                  />
-                  <Breakeven points={breakevenPoints} lastUpdated={bancoLastUpdated} />
-                </div>
-              </div>
+            <div className="space-y-4">
+              <VolumenBruto
+                txns={txnsAll}
+                categories={dbCategories}
+                lastUpdated={bancoLastUpdated}
+                kpiItems={[
+                  { label: "Margen mensual", value: fmt(avgMonthlyMargin), helper: "media últimos 3 m" },
+                ]}
+              />
+              <VentasPor
+                stripeGross={totalRev}
+                stripeFees={stripeFees}
+                stripeNet={stripeNet}
+                uscGross={uscRevenue}
+                monthly={monthlyByFuente}
+                dateRange={periodLabel}
+                uscLastDateLabel={uscLastDateLabel}
+                lastUpdated={uscLastDateLabel ? `Urban al día ${uscLastDateLabel}` : liveLastUpdated}
+                monthlyProducto={monthlyStripeRevenue}
+                cohorts={subscriptionCohorts}
+                events={businessEvents}
+                rawPayments={pMain}
+              />
+              <DesglosGastosUnificado
+                groups={expGroupTotals}
+                categories={expByTopCategory}
+                transactionsByCategory={transactionsByCategory}
+                totalExpCat={totalExpCat}
+                rangeLabel={periodLabel}
+                lastUpdated={bancoLastUpdated}
+              />
+              <PrevisionGastos forecasts={recurringForecasts} categories={dbCategories} avgSuministros={avgSuministros} />
+              <Financiacion initialBudgets={budgets} spent={budgetSpent} />
+              <Breakeven points={breakevenPoints} lastUpdated={bancoLastUpdated} />
+              <IvaRetenciones
+                quarterLabel={nextIvaQuarterLabel}
+                ivaRepercutido={nextIvaQuarterData?.ivaRepercutido ?? 0}
+                ivaSoportado={nextIvaQuarterData?.ivaSoportado ?? 0}
+                ivaNeto={nextIvaQuarterData?.ivaNeto ?? 0}
+                retenciones={nextIvaQuarterData?.retenciones ?? 0}
+                dueLabel={nextIvaDueLabelLong}
+                quarterClosed={nextIvaQuarterClosed}
+                obligations={obligations.map(({ label, deadline }) => ({ label, deadline, days: daysUntil(deadline) }))}
+                rows={quarterlyFiscalRows}
+                lastUpdated={bancoLastUpdated}
+              />
             </div>
           </section>
         }

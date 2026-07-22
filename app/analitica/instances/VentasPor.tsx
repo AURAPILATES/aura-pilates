@@ -101,6 +101,7 @@ export default function VentasPor({
   // ── Vista "fuente" (Stripe vs. Urban) ──
   const uscNet     = uscGross;
   const totalBruto = stripeGross + uscNet;
+  const ventasNetas = totalBruto - stripeFees - totalBruto * 0.21;
   const grouped = groupByPeriod(monthly, period);
 
   // La tabla desglosa TODO el histórico (no solo el período seleccionado arriba), así que su
@@ -206,6 +207,7 @@ export default function VentasPor({
         kpiItems={[
           { label: "Ventas totales", value: fmtEur(totalBruto), helper: "Stripe bruto + Urban" },
           { label: "Comisión Stripe", value: `−${fmtEur(stripeFees)}`, valueClassName: "text-danger", helper: `Neto: ${fmtEur(stripeNet)}` },
+          { label: "Ventas netas", value: fmtEur(ventasNetas), tooltip: "Ventas totales - comisión Stripe - 21%" },
         ]}
         toolbar={
           <div className="flex items-center justify-between gap-3 w-full flex-wrap">

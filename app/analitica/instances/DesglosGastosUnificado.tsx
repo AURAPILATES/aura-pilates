@@ -58,7 +58,6 @@ export default function DesglosGastosUnificado({
   categories,
   transactionsByCategory,
   totalExpCat,
-  totalExpCatNoCapex,
   rangeLabel,
   lastUpdated,
 }: {
@@ -66,7 +65,6 @@ export default function DesglosGastosUnificado({
   categories: TopExpenseSeg[];
   transactionsByCategory: Record<string, Txn[]>;
   totalExpCat: number;
-  totalExpCatNoCapex: number;
   rangeLabel?: string | null;
   lastUpdated?: string | null;
 }) {
@@ -116,7 +114,6 @@ export default function DesglosGastosUnificado({
 
   const kpiItems: MultiKpiItem[] = [
     { label: "Total período", value: fmtAmount(totalExpCat) },
-    { label: "Coste operativo", value: fmtAmount(totalExpCatNoCapex), helper: "Personal + operativo + financiación, sin inversión" },
   ];
 
   function categoryTxns(seg: TopExpenseSeg): Txn[] {

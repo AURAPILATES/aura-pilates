@@ -52,9 +52,16 @@ export default function Financiacion({
 
   return (
     <ChartCard
-      title="Financiación"
-      toolbar={
-        !editing ? (
+      title={
+        <span className="flex items-center gap-2">
+          Amortización préstamo
+          <span className="text-[11px] font-semibold text-warning bg-warning/10 px-2 py-0.5 rounded-full whitespace-nowrap">
+            Falta cuadro de amortización
+          </span>
+        </span>
+      }
+      headerAction={
+        !editing && (
           <button
             onClick={() => setEditing(true)}
             className="flex items-center gap-1.5 text-xs text-navy/50 hover:text-navy transition-colors"
@@ -62,7 +69,10 @@ export default function Financiacion({
             <Edit2 size={12} />
             Editar
           </button>
-        ) : (
+        )
+      }
+      toolbar={
+        editing && (
           <div className="flex items-center gap-2 ml-auto">
             <button
               onClick={handleCancel}

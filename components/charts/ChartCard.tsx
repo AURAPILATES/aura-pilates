@@ -25,6 +25,8 @@ export interface ChartCardProps {
   title: ReactNode;
   subtitle?: ReactNode;
   dateRange?: string;
+  /** Acción a la derecha del título (p.ej. un botón "Editar"), en vez de en la fila de toolbar. */
+  headerAction?: ReactNode;
   /** KPI único con badge de delta — usar en lugar de `kpiItems`, no junto a él */
   kpi?: SingleKpi;
   /** grid de mini-KPIs — usar en lugar de `kpi`, no junto a él */
@@ -47,6 +49,7 @@ export default function ChartCard({
   title,
   subtitle,
   dateRange,
+  headerAction,
   kpi,
   kpiItems,
   toolbar,
@@ -92,9 +95,14 @@ export default function ChartCard({
               </span>
             )}
           </span>
-          {dateRange && (
-            <span className="text-[11px] text-navy/50 bg-navy/5 px-2 py-0.5 rounded-full whitespace-nowrap inline-flex items-center gap-1">
-              {dateRange}
+          {(dateRange || headerAction) && (
+            <span className="flex items-center gap-2 shrink-0">
+              {dateRange && (
+                <span className="text-[11px] text-navy/50 bg-navy/5 px-2 py-0.5 rounded-full whitespace-nowrap inline-flex items-center gap-1">
+                  {dateRange}
+                </span>
+              )}
+              {headerAction}
             </span>
           )}
         </div>
