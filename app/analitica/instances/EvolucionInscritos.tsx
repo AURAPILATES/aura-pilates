@@ -2,7 +2,6 @@
 
 import dynamic from "next/dynamic";
 import type { ActiveCustomersRow } from "@/lib/stripePayments";
-import { fmt } from "@/lib/analytics";
 import { ChartCard } from "@/components/charts";
 
 const EvolucionInscritosBody = dynamic(() => import("./EvolucionInscritosBody"), {
@@ -10,12 +9,7 @@ const EvolucionInscritosBody = dynamic(() => import("./EvolucionInscritosBody"),
   loading: () => <div className="h-[200px] rounded-lg bg-navy/[0.04] animate-pulse" />,
 });
 
-export default function EvolucionInscritos({
-  data, spendPerClient,
-}: {
-  data: ActiveCustomersRow[];
-  spendPerClient: number;
-}) {
+export default function EvolucionInscritos({ data }: { data: ActiveCustomersRow[] }) {
   if (data.length === 0) {
     return <ChartCard title="Evolución de clientes activos" subtitle="Clientes con suscripción o pack vigente al cierre de cada mes." />;
   }
@@ -33,13 +27,6 @@ export default function EvolucionInscritos({
       title="Evolución de clientes activos"
       subtitle="Clientes con suscripción o pack vigente al cierre de cada mes."
       dateRange="Desde apertura"
-      kpiItems={[
-        {
-          label: "Gasto medio por alumno",
-          value: fmt(spendPerClient),
-          tooltip: "Facturación total del período ÷ clientes únicos que pagaron. Solo Stripe.",
-        },
-      ]}
       dataSource="Suscripción (vigencia 31 días) o pack (15–90 días según tipo) según último pago en Stripe"
       sources={["stripe"]}
       lastUpdated="ahora"

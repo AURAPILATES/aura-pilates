@@ -2,7 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, CreditCard, UserPlus } from "react-feather";
+import { AlertTriangle, CreditCard, UserPlus, DollarSign, Activity, Users } from "react-feather";
 import { fmt } from "@/lib/analytics";
 import Drawer from "@/app/components/Drawer";
 import { isChurned, type EnrichedCustomer } from "@/lib/customerEnrichment";
@@ -117,10 +117,13 @@ function StatBox({
 type DrawerEntry = { title: string; subtitle: string; customers: EnrichedCustomer[] };
 
 export default function AnaliticaKPIs({
-  customers, convertCandidates,
+  customers, convertCandidates, spendPerClient, occupancyAvg, avgPerClass,
 }: {
   customers: EnrichedCustomer[];
   convertCandidates: EnrichedCustomer[];
+  spendPerClient: number;
+  occupancyAvg: number;
+  avgPerClass: number;
 }) {
   const router = useRouter();
   const [drawer, setDrawer] = useState<DrawerKey>(null);
@@ -185,6 +188,28 @@ export default function AnaliticaKPIs({
           valueClassName={delinquentList.length > 0 ? "text-danger" : "text-navy/50"}
           tooltip="Stripe intentó cobrar en los últimos 30 días pero el cargo fue rechazado. El cliente sigue suscrito pero no está pagando."
           onClick={delinquentList.length > 0 ? () => setDrawer("error") : undefined}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <StatBox
+          icon={<DollarSign size={14} />}
+          label="Gasto medio por alumno"
+          value={fmt(spendPerClient)}
+          tooltip="Facturación total del período ÷ clientes únicos que pagaron. Solo Stripe."
+        />
+        <StatBox
+          icon={<Activity size={14} />}
+          label="Ocupación media"
+          value={`${Math.round(occupancyAvg * 100)}%`}
+          valueClassName={occupancyAvg >= 0.7 ? "text-success" : occupancyAvg >= 0.4 ? "text-warning" : "text-danger"}
+          tooltip="Plazas vendidas ÷ plazas totales en el período. Fuente: Momence."
+        />
+        <StatBox
+          icon={<Users size={14} />}
+          label="Media de alumnos/clase"
+          value={avgPerClass.toFixed(1)}
+          tooltip="Alumnos por clase de media en el período. Fuente: Momence."
         />
       </div>
 

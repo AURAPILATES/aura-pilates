@@ -3,13 +3,12 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-export type Tab = "resumen" | "ingresosGastos" | "clientes" | "ocupacion";
+export type Tab = "resumen" | "ingresosGastos" | "clientes";
 
 export const TABS: { key: Tab; label: string }[] = [
   { key: "resumen", label: "Resumen" },
   { key: "ingresosGastos", label: "Ingresos y gastos" },
   { key: "clientes", label: "Clientes" },
-  { key: "ocupacion", label: "Ocupación" },
 ];
 
 const AnaliticaTabContext = createContext<{ tab: Tab; selectTab: (next: Tab) => void } | null>(null);

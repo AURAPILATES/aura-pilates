@@ -1,18 +1,11 @@
 import { MomenceEvent } from "@/lib/momence";
 import type { BusinessEvent } from "@/lib/businessEvents";
-import {
-  occupancyRate,
-  occupancyHeatmap,
-  totalStudents,
-  pct,
-} from "@/lib/analytics";
+import { occupancyHeatmap, pct } from "@/lib/analytics";
 import { ChartCard } from "@/components/charts";
 import HorarioOcupacionEvolucion from "./HorarioOcupacionEvolucion";
-import DeltaBadge, { type DeltaDirection } from "@/components/charts/DeltaBadge";
 
 export type ReportingData = {
   main: MomenceEvent[];
-  compare: MomenceEvent[];
   periodLabel: string;
   periodFrom: string;
   periodTo: string;
@@ -25,17 +18,6 @@ function occTone(value: number) {
   return { soft: "bg-danger/15 text-danger", solid: "bg-danger" };
 }
 
-function delta(cur: number, prev: number, invert = false): { value: string; direction: DeltaDirection } | undefined {
-  if (prev === 0) return undefined;
-  const p = ((cur - prev) / prev) * 100;
-  if (p === 0) return undefined;
-  const up = invert ? p < 0 : p > 0;
-  return {
-    value: `${p > 0 ? "+" : ""}${p.toFixed(1).replace(".", ",")} %`,
-    direction: up ? "pos" : "neg",
-  };
-}
-
 const WEEKDAY_SHORT = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
 
 function fmtD(d: string) {
@@ -44,16 +26,8 @@ function fmtD(d: string) {
 }
 
 export default function HorarioReporting({ data }: { data: ReportingData }) {
-  const { main, compare, periodFrom, periodTo, businessEvents } = data;
+  const { main, periodFrom, periodTo, businessEvents } = data;
   const dateRange = `${fmtD(periodFrom)} – ${fmtD(periodTo)}`;
-
-  const occ     = occupancyRate(main);
-  const occPrev = occupancyRate(compare);
-
-  const studentsTotal     = totalStudents(main);
-  const studentsTotalPrev = totalStudents(compare);
-  const avgPerClass     = main.length > 0 ? studentsTotal / main.length : 0;
-  const avgPerClassPrev = compare.length > 0 ? studentsTotalPrev / compare.length : 0;
 
   const heatmap    = occupancyHeatmap(main);
   const heatmapHours = [...new Set(heatmap.map((c) => c.hour))].sort((a, b) => a - b);
@@ -76,19 +50,6 @@ export default function HorarioReporting({ data }: { data: ReportingData }) {
         events={main}
         businessEvents={businessEvents}
         dateRange={dateRange}
-        kpiItems={[
-          {
-            label: "Ocupación media",
-            value: `${Math.round(occ * 100)}%`,
-            valueClassName: occ >= 0.7 ? "text-success" : occ >= 0.4 ? "text-warning" : "text-danger",
-            helper: delta(occ, occPrev) && <DeltaBadge {...delta(occ, occPrev)!} />,
-          },
-          {
-            label: "Media alumnos/clase",
-            value: avgPerClass.toFixed(1),
-            helper: delta(avgPerClass, avgPerClassPrev) && <DeltaBadge {...delta(avgPerClass, avgPerClassPrev)!} />,
-          },
-        ]}
       />
 
       <ChartCard

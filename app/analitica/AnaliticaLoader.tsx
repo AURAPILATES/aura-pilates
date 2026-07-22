@@ -1,4 +1,5 @@
-import { fmt } from "@/lib/analytics";
+import { fmt, filterActive, occupancyRate, totalStudents } from "@/lib/analytics";
+import { saveHistoricalEvents, loadHistoricalEvents } from "@/lib/history";
 import { getLatestSyncRuns } from "@/lib/syncRuns";
 import { taxBreakdown, fiscalQuarterOf, ivaRepercutidoFromGross, netIvaAPagar } from "@/lib/taxCalc";
 import { loadSales, benvingudaConversion, subscriberFirstPurchase } from "@/lib/sales";
@@ -34,7 +35,7 @@ import Breakeven from "./instances/Breakeven";
 import { computeBreakeven } from "@/lib/breakeven";
 import ConversionPack from "./instances/ConversionPack";
 import { subscriptionTiersFromMemberships } from "@/lib/mrr";
-import { getMemberships, getProducts, getCustomers } from "@/lib/momence";
+import { getMemberships, getProducts, getCustomers, getEvents } from "@/lib/momence";
 import { catalogFromMomence, revenueByProductByMonth } from "@/lib/productRevenue";
 import { computeSubscriptionCohorts, computeRetentionCohorts } from "@/lib/subscriptionCohort";
 import EvolucionSuscripcionesFullWidth from "./instances/EvolucionSuscripcionesFullWidth";
@@ -46,7 +47,7 @@ import { pad2 } from "@/lib/periodCalculation";
 import AnaliticaKPIs from "./AnaliticaKPIs";
 import ClientesPaymentsBreakdown from "@/app/clientes/ClientesPaymentsBreakdown";
 import PrevisionGastos from "./PrevisionGastos";
-import OcupacionTab from "./instances/OcupacionTab";
+import HorarioReporting from "./instances/HorarioReporting";
 import VolumenBruto from "./instances/VolumenBruto";
 import AnaliticaTabs from "./AnaliticaTabs";
 import SectionHeader from "./SectionHeader";
@@ -146,7 +147,7 @@ export default async function AnaliticaLoader({
   const [
     paymentsAll, membershipsAll, productsAll, customersAll,
     txnsAll, dbCategories, budgets, businessEvents, recurringExpenses, breakdown,
-    bancoLastImport, paymentErrorAcks, syncRuns,
+    bancoLastImport, paymentErrorAcks, syncRuns, liveMomenceEvents, historicalMomenceEvents,
   ] = await Promise.all([
     loadStripePaymentsCached(),
     getMemberships(),
@@ -161,7 +162,19 @@ export default async function AnaliticaLoader({
     getLatestImportDate(),
     loadPaymentErrorAcks(),
     getLatestSyncRuns().catch(() => null),
+    getEvents(),
+    loadHistoricalEvents(),
   ]);
+  await saveHistoricalEvents(liveMomenceEvents);
+
+  const allMomenceEventsById = new Map(historicalMomenceEvents.map((e) => [e.id, e]));
+  liveMomenceEvents.forEach((e) => allMomenceEventsById.set(e.id, e));
+  const mainEvents = filterActive(Array.from(allMomenceEventsById.values())).filter((e) => {
+    const d = new Date(e.dateTime);
+    return d >= new Date(mainFrom + "T00:00:00") && d <= new Date(mainTo + "T23:59:59");
+  });
+  const occupancyAvg = occupancyRate(mainEvents);
+  const avgPerClass  = mainEvents.length > 0 ? totalStudents(mainEvents) / mainEvents.length : 0;
 
   // La carga en vivo de Momence puede ir bien aunque el snapshot nocturno haya fallado
   // (p.ej. token caducado a las 3am) — eso afectaría a métricas de bajas/altas que
@@ -597,8 +610,23 @@ export default async function AnaliticaLoader({
           <section>
             <SectionHeader id="clientes" title="Clientes" />
             <div className="space-y-4">
-              <AnaliticaKPIs customers={customers} convertCandidates={convertCandidates} />
-              <EvolucionInscritos data={activeCustomersData} spendPerClient={spendPerClient} />
+              <AnaliticaKPIs
+                customers={customers}
+                convertCandidates={convertCandidates}
+                spendPerClient={spendPerClient}
+                occupancyAvg={occupancyAvg}
+                avgPerClass={avgPerClass}
+              />
+              <EvolucionInscritos data={activeCustomersData} />
+              <HorarioReporting
+                data={{
+                  main: mainEvents,
+                  periodLabel,
+                  periodFrom: mainFrom,
+                  periodTo: mainTo,
+                  businessEvents,
+                }}
+              />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <ClientesPaymentsBreakdown
                   succeeded={totalRev}
@@ -614,22 +642,9 @@ export default async function AnaliticaLoader({
                 />
                 <PrimeraCompra summary={firstPurchaseSummary} />
               </div>
-              <RetencionCohorte cohorts={retentionCohorts} />
               <ConversionPack summary={conversionSummary} />
+              <RetencionCohorte cohorts={retentionCohorts} />
             </div>
-          </section>
-        }
-        ocupacion={
-          <section>
-            <SectionHeader id="ocupacion" title="Ocupación" />
-            <OcupacionTab
-              mainFrom={mainFrom}
-              mainTo={mainTo}
-              compFrom={compFrom}
-              compTo={compTo}
-              periodLabel={periodLabel}
-              businessEvents={businessEvents}
-            />
           </section>
         }
       />
