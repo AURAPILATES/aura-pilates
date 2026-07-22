@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import type { Transaction } from "@/lib/transactions";
-import type { Category } from "@/lib/categories";
+import { sortCategoriesHierarchical, categoryDisplayLabel, type Category } from "@/lib/categories";
 import DateFilter from "@/app/components/DateFilter";
 import SearchInputV2 from "@/app/components/v2/SearchInputV2";
 import TablePaginationV2 from "@/app/components/v2/TablePaginationV2";
@@ -16,7 +16,90 @@ import {
 import { CatIcon } from "./catIcons";
 import ImportButton from "./ImportButton";
 
-const COLS = "2.1fr .95fr 1.1fr .7fr .95fr";
+const COLS = "20px 2.1fr .95fr 1.1fr .7fr .95fr";
+
+/** Barra flotante de acciones masivas, centrada abajo — aparece al seleccionar filas en la
+ * tabla de escritorio (checkbox al hover, ver fila de escritorio más abajo). Solo escritorio:
+ * las filas de la tabla móvil no tienen checkbox. */
+function BulkActionBarV2({
+  count, categories, onClear, onSetCategory, onDelete,
+}: {
+  count: number;
+  categories: Category[];
+  onClear: () => void;
+  onSetCategory: (category: string | null) => void;
+  onDelete: () => void;
+}) {
+  const [mode, setMode] = useState<"idle" | "category" | "delete">("idle");
+  const [catDraft, setCatDraft] = useState("");
+
+  function submitCategory() {
+    if (!catDraft) return;
+    onSetCategory(catDraft === "__null__" ? null : catDraft);
+    setMode("idle");
+    setCatDraft("");
+  }
+
+  return (
+    <div className="hidden sm:flex fixed left-1/2 bottom-6 -translate-x-1/2 z-30 items-center gap-2 bg-navy text-app-bg rounded-[14px] shadow-lg pl-4 pr-2 py-2">
+      <span className="text-[13px] font-medium whitespace-nowrap">{count} seleccionado{count !== 1 ? "s" : ""}</span>
+      <div className="w-px h-5 bg-app-bg/15 shrink-0" />
+      {mode === "category" ? (
+        <div className="flex items-center gap-1.5">
+          <select
+            autoFocus
+            value={catDraft}
+            onChange={(e) => setCatDraft(e.target.value)}
+            className="text-[13px] rounded-[7px] px-2 py-1 bg-app-bg/10 text-app-bg border border-app-bg/20 outline-none focus:border-app-bg/40 max-w-[160px] cursor-pointer"
+          >
+            <option value="" disabled className="text-navy">Categoría…</option>
+            <option value="__null__" className="text-navy">Sin categoría</option>
+            {sortCategoriesHierarchical(categories).map((c) => (
+              <option key={c.value} value={c.value} className="text-navy">{categoryDisplayLabel(c, categories)}</option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={submitCategory}
+            disabled={!catDraft}
+            className="text-[12px] font-semibold text-navy bg-app-bg hover:bg-app-bg/85 disabled:opacity-40 rounded-[7px] px-2.5 py-1.5 transition-colors whitespace-nowrap"
+          >
+            Aplicar
+          </button>
+          <button type="button" onClick={() => setMode("idle")} className="text-app-bg/50 hover:text-app-bg text-[12px] px-1">
+            Cancelar
+          </button>
+        </div>
+      ) : mode === "delete" ? (
+        <div className="flex items-center gap-1.5">
+          <span className="text-[12px] text-app-bg/70 whitespace-nowrap">¿Eliminar {count}?</span>
+          <button
+            type="button"
+            onClick={onDelete}
+            className="text-[12px] font-semibold text-white bg-[#dc2626] dark:bg-[#dd7e7e] hover:bg-[#dc2626]/85 dark:hover:bg-[#dd7e7e]/85 rounded-[7px] px-2.5 py-1.5 transition-colors whitespace-nowrap"
+          >
+            Sí, eliminar
+          </button>
+          <button type="button" onClick={() => setMode("idle")} className="text-app-bg/50 hover:text-app-bg text-[12px] px-1">
+            Cancelar
+          </button>
+        </div>
+      ) : (
+        <div className="flex items-center gap-1">
+          <button type="button" onClick={() => setMode("category")} className="text-[12.5px] font-medium text-app-bg/85 hover:text-app-bg hover:bg-app-bg/10 rounded-[7px] px-2.5 py-1.5 transition-colors whitespace-nowrap">
+            Editar categoría
+          </button>
+          <button type="button" onClick={() => setMode("delete")} className="text-[12.5px] font-medium text-[#f87171] hover:text-white hover:bg-[#dc2626]/30 dark:hover:bg-[#dd7e7e]/30 rounded-[7px] px-2.5 py-1.5 transition-colors whitespace-nowrap">
+            Eliminar
+          </button>
+        </div>
+      )}
+      <button type="button" onClick={onClear} title="Cancelar selección" className="ml-1 w-6 h-6 flex items-center justify-center shrink-0 text-app-bg/40 hover:text-app-bg transition-colors">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+  );
+}
 
 type Props = {
   categories: Category[];
@@ -52,6 +135,11 @@ type Props = {
   onPageChange: (p: number) => void;
   recurringPeriods: Record<string, string>;
   onCategoryChange: (id: string, category: string | null) => void;
+  selectedIds: Set<string>;
+  onToggleSelect: (id: string) => void;
+  onClearSelection: () => void;
+  onBulkCategory: (category: string | null) => void;
+  onBulkDelete: () => void;
 };
 
 /** Versión abreviada para las tarjetas KPI en móvil, donde "100.036,34 €" se corta —
@@ -84,6 +172,7 @@ export default function TransaccionesListV2({
   sortKey, sortDir, onToggleSort, byMonth, onRowClick,
   onExportCsv, onAddCash, onPapelera, page, totalItems, pageSize, onPageChange, recurringPeriods,
   onCategoryChange,
+  selectedIds, onToggleSelect, onClearSelection, onBulkCategory, onBulkDelete,
 }: Props) {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const monthRefs = useRef(new Map<string, HTMLDivElement>());
@@ -221,6 +310,7 @@ export default function TransaccionesListV2({
       <div className="mt-2 sm:mt-[24px]">
         <div className="hidden sm:block">
           <div className={`${tableHeadClassV2} px-2`} style={gridColsV2(COLS)}>
+            <span />
             <span
               className={`flex items-center cursor-pointer select-none ${sortKey === "concept" ? "text-navy" : ""}`}
               onClick={() => onToggleSort("concept")}
@@ -271,15 +361,27 @@ export default function TransaccionesListV2({
                   const cat = t.category ? categories.find((c) => c.value === t.category) : undefined;
                   const accent = cat ? cat.text_color : CAT_FALLBACK.color;
                   const iconKey = cat ? cat.emoji : CAT_FALLBACK.emoji;
+                  const isSelected = selectedIds.has(t.id);
                   return (
                     <div key={t.id}>
                       {/* Fila escritorio */}
                       <div className="hidden sm:block">
                         <div
-                          className={`${tableRowClassV2} px-2 cursor-pointer`}
+                          className={`${tableRowClassV2} px-2 cursor-pointer group ${isSelected ? "bg-subtle" : ""}`}
                           style={gridColsV2(COLS)}
                           onClick={() => onRowClick(t.id)}
                         >
+                          <label
+                            onClick={(e) => e.stopPropagation()}
+                            className={`${isSelected ? "flex" : "hidden group-hover:flex"} items-center justify-center cursor-pointer`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => onToggleSelect(t.id)}
+                              className="w-[15px] h-[15px] rounded-[4px] border-border text-navy focus:ring-navy/20 cursor-pointer"
+                            />
+                          </label>
                           <div className="flex items-center gap-[10px] min-w-0">
                             <span className="w-[30px] h-[30px] shrink-0 rounded-[8px] flex items-center justify-center" style={{ backgroundColor: accent }}>
                               <CatIcon iconKey={iconKey} name={cat?.label ?? primary} color="#fff" size={14} />
@@ -356,6 +458,16 @@ export default function TransaccionesListV2({
         )}
         {byMonth.length === 0 && <div className={tableFootClassV2} />}
       </div>
+
+      {selectedIds.size > 0 && (
+        <BulkActionBarV2
+          count={selectedIds.size}
+          categories={categories}
+          onClear={onClearSelection}
+          onSetCategory={onBulkCategory}
+          onDelete={onBulkDelete}
+        />
+      )}
     </div>
   );
 }

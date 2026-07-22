@@ -502,6 +502,7 @@ export default function TransaccionesList({
   const [amountMax, setAmountMax] = useState("");
   const [drawerTxnId, setDrawerTxnId] = useState<string | null>(null);
   const drawerTxn = drawerTxnId ? transactions.find((t) => t.id === drawerTxnId) ?? null : null;
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [page, setPage] = useState(0);
   // En móvil no hay paginador (la franja de meses necesita ver todos los meses a la vez para
   // poder saltar a cualquiera), así que ahí se muestra la lista completa sin cortar por página.
@@ -617,6 +618,27 @@ export default function TransaccionesList({
     startTransition(async () => { await softDeleteTransactions([id]); });
   }
 
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+  function clearSelection() {
+    setSelectedIds(new Set());
+  }
+  function applyBulkCategory(category: string | null) {
+    const ids = [...selectedIds];
+    clearSelection();
+    startTransition(async () => { await Promise.all(ids.map((id) => updateTransactionCategory(id, category))); });
+  }
+  function applyBulkDelete() {
+    const ids = [...selectedIds];
+    clearSelection();
+    startTransition(async () => { await softDeleteTransactions(ids); });
+  }
+
   function exportCSV() {
     const cols = ["fecha", "concepto", "contacto", "categoría", "importe", "saldo", "notas"];
     const rows = filtered.map((t) => [
@@ -676,6 +698,11 @@ export default function TransaccionesList({
         onPageChange={setPage}
         recurringPeriods={recurringPeriods}
         onCategoryChange={handleCategoryChange}
+        selectedIds={selectedIds}
+        onToggleSelect={toggleSelect}
+        onClearSelection={clearSelection}
+        onBulkCategory={applyBulkCategory}
+        onBulkDelete={applyBulkDelete}
       />
 
       {showAddCash && (
