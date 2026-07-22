@@ -7,7 +7,7 @@ import type { MonthlyProductRevenue } from "@/lib/productRevenue";
 import type { MonthlySubStats } from "@/lib/subscriptionCohort";
 import type { BusinessEvent } from "@/lib/businessEvents";
 import type { StripePayment } from "@/lib/stripePayments";
-import { ChartCard, ChartTypeToggle, ToggleGroup, InteractiveLegend, CollapsibleTable, type MultiKpiItem } from "@/components/charts";
+import { ChartCard, ChartTypeToggle, ToggleGroup, InteractiveLegend, CollapsibleTable } from "@/components/charts";
 import { pct } from "@/lib/analytics";
 import Drawer from "@/app/components/Drawer";
 import type { EvolucionRow } from "./EvolucionIngresosBody";
@@ -114,28 +114,6 @@ export default function EvolucionSuscripcionesFullWidth({
   const cohortRows = regroupCohorts(cohorts, period);
   const cohortByPeriod = new Map(cohortRows.map((c) => [c.month, c]));
 
-  const lastCohort = cohortRows.length > 0 ? cohortRows[cohortRows.length - 1] : null;
-  // Suma TODOS los productos del último período (no solo los `keys` top-8 mostrados en
-  // el gráfico/leyenda), para que el KPI cuadre con el desglose y las ventas reales.
-  const lastMonthKey = months.length > 0 ? months[months.length - 1] : null;
-  const lastTotal = lastMonthKey
-    ? Array.from((data.get(lastMonthKey) ?? new Map()).values()).reduce((s, v) => s + v, 0)
-    : 0;
-
-  const kpiItems: MultiKpiItem[] = [{ label: "Ingresos del período", value: fmtEur(lastTotal) }];
-  if (lastCohort) {
-    kpiItems.push({
-      label: "Altas / Bajas",
-      value: (
-        <>
-          <span className="text-success">+{lastCohort.newSubs}</span>
-          {" / "}
-          <span className="text-danger">−{lastCohort.churned}</span>
-        </>
-      ),
-    });
-  }
-
   if (monthly.length === 0) {
     return <ChartCard title="Evolución de ingresos y suscripciones" subtitle="Sin datos suficientes" />;
   }
@@ -146,7 +124,6 @@ export default function EvolucionSuscripcionesFullWidth({
         title="Evolución de ingresos y suscripciones"
         subtitle="Ingresos por producto · altas, bajas y reactivaciones de suscripción"
         dateRange={months.length > 0 ? `${periodLabel(months[0], period)} – ${periodLabel(months[months.length - 1], period)}` : undefined}
-        kpiItems={kpiItems}
         toolbar={
           <>
             <ChartTypeToggle

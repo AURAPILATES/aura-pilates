@@ -3,11 +3,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import { fmt } from "@/lib/analytics";
-import { ChartCard, ToggleGroup } from "@/components/charts";
+import { ChartCard, ToggleGroup, ProportionBar } from "@/components/charts";
 import type { RecurringForecast } from "@/lib/recurring";
 import type { Category } from "@/lib/categories";
 
-type SortKey = "fecha" | "categoria" | "importe";
+type SortKey = "fecha" | "importe";
 
 type ListItem = RecurringForecast & { variable?: boolean; categoryLabel: string; categoryColor: string };
 
@@ -94,8 +94,7 @@ export default function PrevisionGastos({
   ];
 
   const sorted = [...items].sort((a, b) => {
-    if (sort === "fecha")     return a.nextDate.localeCompare(b.nextDate);
-    if (sort === "categoria") return a.categoryLabel.localeCompare(b.categoryLabel) || a.nextDate.localeCompare(b.nextDate);
+    if (sort === "fecha") return a.nextDate.localeCompare(b.nextDate);
     return Math.abs(b.amount) - Math.abs(a.amount);
   });
 
@@ -110,19 +109,6 @@ export default function PrevisionGastos({
           value: fmt(totalPrevisto),
           helper: `${items.length} pagos previstos`,
         },
-        {
-          label: "Comprometido",
-          value: fmt(committed),
-          helper: "importe fijo conocido",
-        },
-        ...(avgSuministros > 0
-          ? [{
-              label: "Variable",
-              value: fmt(avgSuministros),
-              valueClassName: "text-warning",
-              helper: "suministros · media últ. 3m",
-            }]
-          : []),
       ]}
       dataSource="Gastos recurrentes confirmados en Transacciones › Recurrentes. Suministros: media de los últimos 3 meses completos (Electricidad + Agua)."
       sources={["recurrentes"]}
@@ -134,6 +120,18 @@ export default function PrevisionGastos({
         </p>
       ) : (
         <>
+          {totalPrevisto > 0 && (
+            <ProportionBar
+              className="mb-4"
+              segments={[
+                { label: "Comprometido", color: "var(--color-navy)", percentage: Math.round((committed / totalPrevisto) * 100), displayValue: fmt(committed) },
+                ...(avgSuministros > 0
+                  ? [{ label: "Variable", color: "var(--color-warning)", percentage: Math.round((avgSuministros / totalPrevisto) * 100), displayValue: fmt(avgSuministros) }]
+                  : []),
+              ]}
+            />
+          )}
+
           {/* Sort toolbar */}
           <div className="flex items-center gap-3 mb-4">
             <span className="text-xs text-navy/45">Ordenar por</span>
@@ -142,7 +140,6 @@ export default function PrevisionGastos({
               onChange={(v) => setSort(v as SortKey)}
               options={[
                 { value: "fecha",     label: "Fecha" },
-                { value: "categoria", label: "Categoría" },
                 { value: "importe",   label: "Importe" },
               ]}
             />

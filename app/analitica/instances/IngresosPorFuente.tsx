@@ -63,9 +63,8 @@ export default function IngresosPorFuente({
   uscGross: number;
   monthly: IngresosPorFuenteRow[];
   dateRange?: string;
-  /** Última fecha con datos reales de Urban en el CSV manual de Momence — Stripe se recorta a
-   * esta misma fecha en este gráfico (y solo en este) para que la comparación entre ambas
-   * fuentes no muestre meses donde solo tenemos un lado. */
+  /** Última fecha con datos reales de Urban en el CSV manual de Momence — Stripe sigue
+   * mostrando su histórico completo y real, sin recortar a esta fecha. */
   uscLastDateLabel?: string | null;
   lastUpdated?: string | null;
 }) {
@@ -133,7 +132,7 @@ export default function IngresosPorFuente({
       }
       dataSource={
         uscLastDateLabel
-          ? `Stripe API (precio de venta, antes de comisión) + Urban Sports Club Momence CSV (11 €/clase, importación manual en Transacciones). Stripe se recorta hasta ${uscLastDateLabel} para igualar la última fecha con datos reales de Urban — hay ingresos de Stripe más recientes que no se muestran aquí.`
+          ? `Stripe API (precio de venta, antes de comisión), datos en vivo hasta hoy. Urban Sports Club: Momence CSV (11 €/clase, importación manual en Transacciones), solo hasta el ${uscLastDateLabel}.`
           : "Stripe API (precio de venta, antes de comisión) + Urban Sports Club Momence CSV (11 €/clase, importación manual en Transacciones)"
       }
       sources={["stripe", "momence"]}

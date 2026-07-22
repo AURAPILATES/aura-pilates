@@ -17,16 +17,31 @@ type Props = PaymentsBreakdown & {
   excludeSegments?: SegmentKey[];
 };
 
-const ITEMS: { key: SegmentKey; label: string; bg: string; drawerTitle: string }[] = [
-  { key: "succeeded", label: "Efectuado",   bg: "bg-[#635bff]", drawerTitle: "Pagos efectuados"       },
-  { key: "refunded",  label: "Reembolsada", bg: "bg-[#0ea5e9] dark:bg-[#27b3f2]", drawerTitle: "Reembolsos"              },
-  { key: "disputed",  label: "Bloqueado",   bg: "bg-[#f97316] dark:bg-[#f9791f]", drawerTitle: "Disputas / Bloqueado"    },
-  { key: "failed",    label: "Error",       bg: "bg-[#dc2626] dark:bg-[#dd7e7e]", drawerTitle: "Errores de pago"         },
+const ITEMS: { key: SegmentKey; label: string; bg: string; text: string; drawerTitle: string }[] = [
+  { key: "succeeded", label: "Efectuado",   bg: "bg-[#635bff]", text: "text-[#635bff]", drawerTitle: "Pagos efectuados"       },
+  { key: "refunded",  label: "Reembolsada", bg: "bg-[#0ea5e9] dark:bg-[#27b3f2]", text: "text-[#0ea5e9] dark:text-[#27b3f2]", drawerTitle: "Reembolsos"              },
+  { key: "disputed",  label: "Bloqueado",   bg: "bg-[#f97316] dark:bg-[#f9791f]", text: "text-[#f97316] dark:text-[#f9791f]", drawerTitle: "Disputas / Bloqueado"    },
+  { key: "failed",    label: "Error",       bg: "bg-[#dc2626] dark:bg-[#dd7e7e]", text: "text-[#dc2626] dark:text-[#dd7e7e]", drawerTitle: "Errores de pago"         },
 ];
+
+const R    = 70;
+const CX   = 90;
+const CY   = 90;
+const CIRC = 2 * Math.PI * R;
+const SW   = 18;
 
 function fmtDate(d: string | null) {
   if (!d) return "—";
   return d.split("-").reverse().join("/");
+}
+
+function fmtCompact(n: number): string {
+  if (Math.abs(n) >= 1000) return `${Math.round(n / 1000)}k €`;
+  return `${Math.round(n)} €`;
+}
+
+function pct(n: number) {
+  return `${Math.round(n * 100)}%`;
 }
 
 export default function ClientesPaymentsBreakdown({
@@ -55,6 +70,16 @@ export default function ClientesPaymentsBreakdown({
   const drawerCustomers = open ? customersForSegment(open) : [];
   const drawerItem      = ITEMS.find((it) => it.key === open);
 
+  let acc = 0;
+  const segments = visible.map((it) => {
+    const share  = total > 0 ? values[it.key] / total : 0;
+    const dash   = share * CIRC;
+    const gap    = visible.length > 1 ? 2 : 0;
+    const offset = -(acc + gap / 2);
+    acc += dash + gap;
+    return { ...it, share, dash: Math.max(dash - gap, 0), offset };
+  });
+
   return (
     <>
       <ChartCard
@@ -64,43 +89,62 @@ export default function ClientesPaymentsBreakdown({
         dataSource="Stripe · pagos en tiempo real"
         sources={["stripe"]}
       >
-        {/* Barra proporcional */}
-        <div className="flex rounded-full overflow-hidden h-2 mb-4 gap-[2px]">
-          {total === 0
-            ? <div className="flex-1 bg-navy/[0.06]" />
-            : visible.map((it) => (
-                <div
-                  key={it.key}
-                  onClick={hasCustomers ? () => setOpen(it.key) : undefined}
-                  className={`${it.bg} ${hasCustomers ? "cursor-pointer hover:opacity-80" : ""} transition-opacity`}
-                  style={{ width: `${(values[it.key] / total) * 100}%` }}
-                  title={it.label}
-                />
-              ))}
-        </div>
+        <div className="flex items-center gap-6 flex-wrap sm:flex-nowrap">
+          {/* Donut */}
+          <div className="relative w-[140px] h-[140px] shrink-0 mx-auto sm:mx-0">
+            <svg viewBox="0 0 180 180" width="140" height="140">
+              <circle cx={CX} cy={CY} r={R} fill="none" stroke="var(--color-border)" strokeWidth={SW} />
+              <g transform={`rotate(-90, ${CX}, ${CY})`}>
+                {total === 0 ? null : segments.map((seg) => (
+                  <circle
+                    key={seg.key}
+                    cx={CX} cy={CY} r={R}
+                    fill="none"
+                    strokeWidth={SW}
+                    strokeDasharray={`${seg.dash} ${CIRC}`}
+                    strokeDashoffset={seg.offset}
+                    strokeLinecap="round"
+                    className={`${seg.text} ${hasCustomers ? "cursor-pointer" : ""} transition-opacity`}
+                    stroke="currentColor"
+                    onClick={hasCustomers ? () => setOpen(seg.key) : undefined}
+                  />
+                ))}
+              </g>
+              <foreignObject x="10" y="45" width="160" height="90">
+                <div className="h-full flex flex-col items-center justify-center text-center">
+                  <p className="text-lg font-bold text-navy tabular-nums leading-tight">{fmtCompact(total)}</p>
+                  <p className="text-[10px] text-navy/45 font-medium mt-0.5">Total</p>
+                </div>
+              </foreignObject>
+            </svg>
+          </div>
 
-        {/* Desglose */}
-        <div className="divide-y divide-navy/[0.05]">
-          {visible.map((it) => (
-            <div
-              key={it.key}
-              onClick={hasCustomers ? () => setOpen(it.key) : undefined}
-              className={`flex items-center justify-between py-2.5 ${hasCustomers ? "cursor-pointer hover:bg-navy/[0.02] -mx-1 px-1 rounded-lg group" : ""} transition-colors`}
-            >
-              <div className="flex items-center gap-2.5">
-                <span className={`w-2 h-2 rounded-full ${it.bg} shrink-0`} />
-                <span className={`text-sm text-navy/65 ${hasCustomers ? "group-hover:text-navy" : ""} transition-colors`}>{it.label}</span>
+          {/* Leyenda */}
+          <div className="flex-1 min-w-0 divide-y divide-navy/[0.05] w-full">
+            {visible.map((it) => (
+              <div
+                key={it.key}
+                onClick={hasCustomers ? () => setOpen(it.key) : undefined}
+                className={`flex items-center justify-between py-2.5 ${hasCustomers ? "cursor-pointer hover:bg-navy/[0.02] -mx-1 px-1 rounded-lg group" : ""} transition-colors`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <span className={`w-2 h-2 rounded-full ${it.bg} shrink-0`} />
+                  <span className={`text-sm text-navy/65 ${hasCustomers ? "group-hover:text-navy" : ""} transition-colors`}>{it.label}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`text-sm font-semibold tabular-nums ${it.key === "succeeded" ? "text-navy" : "text-navy/60"}`}>
+                    {fmt(values[it.key])}
+                  </span>
+                  <span className="text-xs text-navy/40 tabular-nums w-10 text-right">
+                    {total > 0 ? pct(values[it.key] / total) : "—"}
+                  </span>
+                  {hasCustomers && (
+                    <span className="text-navy/25 text-xs opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+                  )}
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <span className={`text-sm font-semibold tabular-nums ${it.key === "succeeded" ? "text-navy" : "text-navy/60"}`}>
-                  {fmt(values[it.key])}
-                </span>
-                {hasCustomers && (
-                  <span className="text-navy/25 text-xs opacity-0 group-hover:opacity-100 transition-opacity">→</span>
-                )}
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </ChartCard>
 

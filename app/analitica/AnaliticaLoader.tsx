@@ -274,14 +274,14 @@ export default async function AnaliticaLoader({
     uscByMonth.set(m, (uscByMonth.get(m) ?? 0) + s.amount);
   }
 
-  // Ingresos por fuente: bruto, comisión y neto de Stripe por mes + USC neto — acotado a
-  // uscLastDate para que la comparación Stripe vs. Urban no muestre meses donde solo tenemos
-  // un lado (ver uscLastDateLabel, mostrado en la propia tarjeta para que el recorte sea visible).
-  const paymentsBoundedToUsc = uscLastDate ? paymentsAll.filter((p) => p.date <= uscLastDate) : paymentsAll;
+  // Ingresos por fuente: bruto, comisión y neto de Stripe por mes + USC neto. Stripe muestra
+  // su histórico completo y real (sin recortar a uscLastDate) — Urban depende de un CSV manual
+  // que se queda atrás, pero eso no debe ocultar ingresos de Stripe ya confirmados. La tarjeta
+  // avisa por su cuenta de hasta cuándo llegan los datos de Urban (ver uscLastDateLabel).
   const monthlyStripeGrossMap = new Map<string, number>();
   const monthlyStripeFeesMap  = new Map<string, number>();
   const monthlyStripeNetMap   = new Map<string, number>();
-  for (const p of paymentsBoundedToUsc) {
+  for (const p of paymentsAll) {
     const m = p.date.slice(0, 7);
     monthlyStripeGrossMap.set(m, (monthlyStripeGrossMap.get(m) ?? 0) + p.amount);
     monthlyStripeFeesMap.set(m,  (monthlyStripeFeesMap.get(m)  ?? 0) + p.fee);
@@ -591,7 +591,7 @@ export default async function AnaliticaLoader({
           <section>
             <SectionHeader id="ingresos-gastos" title="Ingresos y gastos" />
             <div className="space-y-4">
-              <VolumenBruto sales={salesAll} txns={txnsAll} lastUpdated={bancoLastUpdated} />
+              <VolumenBruto txns={txnsAll} categories={dbCategories} lastUpdated={bancoLastUpdated} />
               <IngresosPorFuente
                 stripeGross={totalRev}
                 stripeFees={stripeFees}

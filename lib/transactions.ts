@@ -33,7 +33,7 @@ const NON_EXPENSE_GROUP_TYPES = new Set(["income", "transfer", "internal"]);
 
 /** Busca la categoría de una transacción por su `value`, sin sensibilidad a mayúsculas/minúsculas
  * (las categorías guardan el value con distinta capitalización según cuándo se crearon). */
-function findCategory(categories: Category[], value: string): Category | undefined {
+export function findCategory(categories: Category[], value: string): Category | undefined {
   const norm = value.toLowerCase();
   return categories.find((c) => c.value.toLowerCase() === norm);
 }

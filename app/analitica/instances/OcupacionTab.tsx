@@ -1,7 +1,6 @@
 import { getEvents } from "@/lib/momence";
 import { saveHistoricalEvents, loadHistoricalEvents } from "@/lib/history";
 import { filterActive } from "@/lib/analytics";
-import { urbanBookingsByHour, urbanBookingsByWeekday } from "@/lib/sales";
 import type { BusinessEvent } from "@/lib/businessEvents";
 import HorarioReporting from "./HorarioReporting";
 
@@ -39,9 +38,6 @@ export default async function OcupacionTab({
     return d >= new Date(compFrom + "T00:00:00") && d <= new Date(compTo + "T23:59:59");
   });
 
-  const uscByHour = urbanBookingsByHour();
-  const uscByWeekday = urbanBookingsByWeekday();
-
   return (
     <HorarioReporting
       data={{
@@ -50,8 +46,6 @@ export default async function OcupacionTab({
         periodLabel,
         periodFrom: mainFrom,
         periodTo: mainTo,
-        uscByHour,
-        uscByWeekday,
         businessEvents,
       }}
     />

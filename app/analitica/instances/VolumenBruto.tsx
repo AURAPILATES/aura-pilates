@@ -3,8 +3,9 @@
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import { BarChart2, Activity } from "react-feather";
-import type { Sale } from "@/lib/sales";
 import type { Transaction } from "@/lib/transactions";
+import { findCategory } from "@/lib/transactions";
+import type { Category } from "@/lib/categories";
 import { ChartCard, ChartTypeToggle, ToggleGroup, Legend, type MultiKpiItem } from "@/components/charts";
 import type { VolumenBrutoRow } from "./VolumenBrutoBody";
 
@@ -27,11 +28,9 @@ const MONTH_NAMES: Record<string, string> = {
   "09": "Sep", "10": "Oct", "11": "Nov", "12": "Dic",
 };
 
-const EXPENSE_CATS = new Set([
-  "Alquiler", "Salarios", "Seguridad social", "Electricidad", "Agua", "Software", "Gestoría y legal",
-  "Impuestos y tasas", "IVA", "IRPF", "IS", "Teléfono", "Seguros", "Comisiones bancarias", "Merchandising",
-  "Local", "Otros", "Inversión", "Material y maquinaria", "Mobiliario", "Reforma",
-]);
+/** Traspasos entre cuentas propias (p.ej. banco ↔ efectivo): no son ingreso ni gasto real,
+ * así que se excluyen del flujo de caja para no duplicar el mismo dinero en ambos lados. */
+const NON_CASHFLOW_GROUP_TYPES = new Set(["transfer", "internal"]);
 
 function getPeriodKey(date: string, period: Period): string {
   const [y, m] = date.split("-");
@@ -57,20 +56,20 @@ function fmtEur(v: number) {
   return Math.round(v).toLocaleString("de-DE", { maximumFractionDigits: 0 }) + " €";
 }
 
-function groupData(sales: Sale[], txns: Transaction[], period: Period): VolumenBrutoRow[] {
+function groupData(txns: Transaction[], categories: Category[], period: Period): VolumenBrutoRow[] {
   const map = new Map<string, { income: number; expense: number }>();
 
-  for (const s of sales) {
-    const key = getPeriodKey(s.paymentDate, period);
-    const p = map.get(key) ?? { income: 0, expense: 0 };
-    map.set(key, { ...p, income: p.income + s.amount });
-  }
-
   for (const t of txns) {
-    if (t.amount >= 0 || !t.category || !EXPENSE_CATS.has(t.category)) continue;
+    const cat = t.category ? findCategory(categories, t.category) : undefined;
+    if (cat && NON_CASHFLOW_GROUP_TYPES.has(cat.group_type)) continue;
+
     const key = getPeriodKey(t.date, period);
     const p = map.get(key) ?? { income: 0, expense: 0 };
-    map.set(key, { ...p, expense: p.expense + Math.abs(t.amount) });
+    if (t.amount >= 0) {
+      map.set(key, { ...p, income: p.income + t.amount });
+    } else {
+      map.set(key, { ...p, expense: p.expense + Math.abs(t.amount) });
+    }
   }
 
   return Array.from(map.entries())
@@ -79,28 +78,28 @@ function groupData(sales: Sale[], txns: Transaction[], period: Period): VolumenB
 }
 
 export default function VolumenBruto({
-  sales,
   txns,
+  categories,
   lastUpdated,
   kpiItems,
 }: {
-  sales: Sale[];
   txns: Transaction[];
+  categories: Category[];
   lastUpdated?: string | null;
   kpiItems?: MultiKpiItem[];
 }) {
   const [period, setPeriod] = useState<Period>("mes");
   const [chartType, setChartType] = useState<"bar" | "line">("bar");
 
-  const data = groupData(sales, txns, period);
+  const data = groupData(txns, categories, period);
   const dateRange = data.length > 0
     ? data.length > 1 ? `${data[0].label} – ${data[data.length - 1].label}` : data[0].label
     : undefined;
 
   return (
     <ChartCard
-      title="Ingresos, gastos y resultado"
-      subtitle="Volumen bruto de ingresos (Momence) frente a gastos (exportación bancaria) por período"
+      title="Flujo de caja"
+      subtitle="Entradas y salidas brutas de dinero según el banco, sin conciliar con Momence ni Stripe"
       dateRange={dateRange}
       kpiItems={kpiItems}
       toolbar={
@@ -123,9 +122,9 @@ export default function VolumenBruto({
           />
         </>
       }
-      chartDescription="Evolución de ingresos y gastos por período seleccionado"
-      dataSource="Ingresos: Stripe en vivo + Momence sales.csv · Gastos: exportación bancaria CaixaBank"
-      sources={["stripe", "momence", "excel"]}
+      chartDescription="Evolución de entradas y salidas de caja por período seleccionado"
+      dataSource="Bruto: todo movimiento bancario de entrada o salida, excluyendo traspasos internos. No concilia con Momence/Stripe — por eso es flujo de caja, no resultado contable."
+      sources={["excel"]}
       lastUpdated={lastUpdated}
     >
       <VolumenBrutoBody data={data} chartType={chartType} />

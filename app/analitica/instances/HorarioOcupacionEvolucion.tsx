@@ -5,7 +5,7 @@ import { BarChart2, Activity } from "react-feather";
 import { occupancyByPeriod, occupancyPeriodKey, pct, type OccupancyPeriod } from "@/lib/analytics";
 import { MomenceEvent } from "@/lib/momence";
 import type { BusinessEvent, EventCategoria } from "@/lib/businessEvents";
-import { ChartCard, ChartTypeToggle, ToggleGroup, StaticLegend, InteractiveLegend } from "@/components/charts";
+import { ChartCard, ChartTypeToggle, ToggleGroup, StaticLegend, InteractiveLegend, type MultiKpiItem } from "@/components/charts";
 
 // Internal coordinate system for the SVG (bars + line + gridlines only — no text).
 // Text labels are rendered as plain HTML overlays positioned with percentages,
@@ -51,9 +51,13 @@ const PERIODS: { key: OccupancyPeriod; label: string }[] = [
 export default function HorarioOcupacionEvolucion({
   events,
   businessEvents,
+  dateRange,
+  kpiItems,
 }: {
   events: MomenceEvent[];
   businessEvents?: BusinessEvent[];
+  dateRange?: string;
+  kpiItems?: MultiKpiItem[];
 }) {
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
   const [hoveredEventId, setHoveredEventId] = useState<string | null>(null);
@@ -112,7 +116,7 @@ export default function HorarioOcupacionEvolucion({
 
   if (data.length === 0) {
     return (
-      <ChartCard title="Evolución de la ocupación" subtitle={`Plazas vendidas vs. totales y % de ocupación por ${periodLabelLower}`}>
+      <ChartCard title="Evolución de la ocupación" subtitle={`Ocupado vs. total y % de ocupación por ${periodLabelLower}`} dateRange={dateRange} kpiItems={kpiItems}>
         <p className="text-sm text-navy/45 py-6 text-center">Sin datos suficientes para este período.</p>
       </ChartCard>
     );
@@ -121,7 +125,9 @@ export default function HorarioOcupacionEvolucion({
   return (
     <ChartCard
       title="Evolución de la ocupación"
-      subtitle={`Plazas vendidas vs. totales y % de ocupación por ${periodLabelLower}`}
+      subtitle={`Ocupado vs. total y % de ocupación por ${periodLabelLower}`}
+      dateRange={dateRange}
+      kpiItems={kpiItems}
       dataSource={`Eventos activos en Momence, agrupados por ${periodLabelLower}`}
       sources={["momence"]}
       toolbar={
@@ -137,8 +143,8 @@ export default function HorarioOcupacionEvolucion({
             />
             <StaticLegend
               items={[
-                { label: "Plazas vendidas", color: "var(--chart-blue-1)", swatch: "dot" },
-                { label: "Plazas libres", color: "var(--chart-blue-2)", swatch: "dot" },
+                { label: "Ocupado", color: "var(--chart-blue-1)", swatch: "dot" },
+                { label: "Libre", color: "var(--chart-blue-2)", swatch: "dot" },
                 { label: "% ocupación", color: "#43884d", swatch: "line" },
               ]}
             />
@@ -374,8 +380,8 @@ export default function HorarioOcupacionEvolucion({
           </div>
           <InteractiveLegend
             items={[
-              { key: "sold", label: "Plazas vendidas", color: "var(--chart-blue-1)", value: totalSold, helper: pct(avgOcc) },
-              { key: "free", label: "Plazas libres", color: "var(--chart-blue-2)", value: totalFree, helper: pct(totalCapacity > 0 ? totalFree / totalCapacity : 0) },
+              { key: "sold", label: "Ocupado", color: "var(--chart-blue-1)", value: totalSold, helper: pct(avgOcc) },
+              { key: "free", label: "Libre", color: "var(--chart-blue-2)", value: totalFree, helper: pct(totalCapacity > 0 ? totalFree / totalCapacity : 0) },
             ]}
           />
         </div>
