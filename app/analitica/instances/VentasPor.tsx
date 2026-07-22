@@ -205,6 +205,7 @@ export default function VentasPor({
         }
         kpiItems={[
           { label: "Ventas totales", value: fmtEur(totalBruto), helper: "Stripe bruto + Urban" },
+          { label: "Comisión Stripe", value: `−${fmtEur(stripeFees)}`, valueClassName: "text-danger", helper: `Neto: ${fmtEur(stripeNet)}` },
         ]}
         toolbar={
           <div className="flex items-center justify-between gap-3 w-full flex-wrap">
