@@ -7,7 +7,7 @@ import Select from "@/app/components/Select";
 import { IconButtonV2 } from "@/app/components/v2/ButtonsV2";
 import FiltersToggleButtonV2 from "@/app/components/v2/FiltersToggleButtonV2";
 import ClearFiltersButtonV2 from "@/app/components/v2/ClearFiltersButtonV2";
-import { tableHeadClassV2, tableRowClassV2, tableFootClassV2, gridColsV2 } from "@/app/components/v2/tableStylesV2";
+import { tableHeadClassV2, tableRowClassV2, tableFootClassV2, tableCardClassV2, gridColsV2 } from "@/app/components/v2/tableStylesV2";
 import { fmt } from "@/lib/analytics";
 import { PRODUCT_FILTERS, PURCHASE_COUNT_FILTERS, monthLabel, productAbbr, productColor, type MatrixRow, type SortKey } from "./ClientesMatrizCompras";
 
@@ -155,8 +155,8 @@ export default function ClientesMatrizComprasV2({
         </div>
       )}
 
-      <div className={`overflow-x-auto ${isMobile ? "mt-2" : "mt-[24px]"}`}>
-        <div>
+      <div className={`${isMobile ? "mt-2" : "mt-[24px]"} ${tableCardClassV2}`}>
+        <div className="overflow-x-auto">
           <div className={tableHeadClassV2} style={gridColsV2(cols)}>
             <span
               className={`cursor-pointer select-none ${sortKey === "name" ? "text-navy" : ""}`}
@@ -240,9 +240,9 @@ export default function ClientesMatrizComprasV2({
             </div>
           )}
         </div>
+        {rows.length === 0 && <div className={tableFootClassV2} />}
+        <TablePaginationV2 page={page} totalItems={totalCount} pageSize={pageSize} onPageChange={onPageChange} />
       </div>
-      {rows.length === 0 && <div className={tableFootClassV2} />}
-      <TablePaginationV2 page={page} totalItems={totalCount} pageSize={pageSize} onPageChange={onPageChange} />
     </div>
   );
 }

@@ -8,7 +8,7 @@ import SearchInputV2 from "@/app/components/v2/SearchInputV2";
 import TablePaginationV2 from "@/app/components/v2/TablePaginationV2";
 import FiltersToggleButtonV2 from "@/app/components/v2/FiltersToggleButtonV2";
 import ClearFiltersButtonV2 from "@/app/components/v2/ClearFiltersButtonV2";
-import { tableHeadClassV2, tableRowClassV2, tableFootClassV2, gridColsV2 } from "@/app/components/v2/tableStylesV2";
+import { tableHeadClassV2, tableRowClassV2, tableFootClassV2, tableCardClassV2, gridColsV2 } from "@/app/components/v2/tableStylesV2";
 import {
   MoreOptionsMenu, OriginIcon, originLabel, CategoryPill, CategoryBadge, CategoryMultiFilter,
   fmtAmt, fmtDate, CAT_FALLBACK, MONTHS_ES, type SortKey,
@@ -336,10 +336,10 @@ export default function TransaccionesListV2({
         </div>
       )}
 
-      {/* Tabla suelta agrupada por mes */}
-      <div className="mt-2 sm:mt-[24px]">
+      {/* Tabla agrupada por mes, en tarjeta blanca */}
+      <div className={`mt-2 sm:mt-[24px] ${tableCardClassV2} overflow-hidden`}>
         <div className="hidden sm:block">
-          <div className={`${tableHeadClassV2} px-2`} style={gridColsV2(COLS)}>
+          <div className={tableHeadClassV2} style={gridColsV2(COLS)}>
             <span className="flex items-center gap-[10px]">
               <span className="w-[30px] h-[30px] shrink-0 flex items-center justify-center">
                 <input
@@ -388,7 +388,7 @@ export default function TransaccionesListV2({
                 ref={(el) => { if (el) monthRefs.current.set(monthKey, el); else monthRefs.current.delete(monthKey); }}
                 className="scroll-mt-[104px]"
               >
-                <div className="flex items-baseline justify-between px-2 py-2 bg-navy/[0.025] border-y border-border">
+                <div className="flex items-baseline justify-between -mx-2.5 sm:-mx-4 px-2.5 sm:px-4 py-2 bg-navy/[0.025] border-y border-border">
                   <span className="text-[12.5px] font-semibold text-muted uppercase tracking-wide">{label}</span>
                   <span className={`text-[13px] font-semibold tabular-nums ${monthNet < 0 ? "text-[#b53e0d] dark:text-[#e69675]" : "text-[#13803a] dark:text-[#7cdfa0]"}`}>
                     {monthNet < 0 ? "−" : "+"}{fmtAmt(Math.abs(monthNet))}
@@ -407,7 +407,7 @@ export default function TransaccionesListV2({
                       {/* Fila escritorio */}
                       <div className="hidden sm:block">
                         <div
-                          className={`${tableRowClassV2} px-2 cursor-pointer group ${isSelected ? "bg-subtle" : ""}`}
+                          className={`${tableRowClassV2} cursor-pointer group ${isSelected ? "bg-subtle" : ""}`}
                           style={gridColsV2(COLS)}
                           onClick={() => onRowClick(t.id)}
                         >
@@ -462,7 +462,7 @@ export default function TransaccionesListV2({
 
                       {/* Fila móvil */}
                       <div
-                        className={`sm:hidden flex items-start gap-[10px] px-2 py-[10px] border-t border-subtle cursor-pointer active:bg-subtle ${isSelected ? "bg-subtle" : ""}`}
+                        className={`sm:hidden flex items-start gap-[10px] py-[10px] border-t border-subtle cursor-pointer active:bg-subtle ${isSelected ? "bg-subtle" : ""}`}
                         onClick={() => (selectionMode ? onToggleSelect(t.id) : onRowClick(t.id))}
                       >
                         {selectionMode ? (

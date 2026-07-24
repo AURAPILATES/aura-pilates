@@ -15,7 +15,7 @@ import TablePaginationV2 from "@/app/components/v2/TablePaginationV2";
 import TaxBadgeV2 from "@/app/components/v2/TaxBadgeV2";
 import SearchInputV2 from "@/app/components/v2/SearchInputV2";
 import { IconButtonV2, PrimaryButtonV2 } from "@/app/components/v2/ButtonsV2";
-import { tableHeadClassV2, tableRowClassV2, tableGroupClassV2, gridColsV2 } from "@/app/components/v2/tableStylesV2";
+import { tableHeadClassV2, tableRowClassV2, tableGroupClassV2, tableCardClassV2, gridColsV2 } from "@/app/components/v2/tableStylesV2";
 
 const COLS = "2.1fr 1.2fr 1.1fr .9fr .9fr 1fr";
 
@@ -299,7 +299,7 @@ export default function RecurrentesListV2({
         </Drawer>
       )}
 
-      <div className="mt-2 sm:mt-[24px]">
+      <div className={`mt-2 sm:mt-[24px] ${tableCardClassV2}`}>
       <div className="hidden sm:block">
         <div className={tableHeadClassV2} style={gridColsV2(COLS)}>
           <span className="flex items-center gap-[10px]">
@@ -391,7 +391,7 @@ export default function RecurrentesListV2({
                 {/* Fila móvil */}
                 <div
                   onClick={() => onOpenPending(row)}
-                  className="sm:hidden flex items-center gap-[10px] px-2 py-[10px] border-t border-subtle cursor-pointer active:bg-subtle"
+                  className="sm:hidden flex items-center gap-[10px] py-[10px] border-t border-subtle cursor-pointer active:bg-subtle"
                 >
                   <span className="w-[32px] h-[32px] shrink-0 rounded-[10px] flex items-center justify-center" style={{ backgroundColor: icon.accent }}>
                     <CatIcon iconKey={icon.iconKey} name={icon.label ?? row.label} color="#fff" size={15} />
@@ -494,7 +494,7 @@ export default function RecurrentesListV2({
               {/* Fila móvil */}
               <div
                 onClick={() => (selectionMode ? onToggleSelect(e.id) : onOpenConfirmed(row))}
-                className={`sm:hidden flex items-center gap-[10px] px-2 py-[10px] border-t border-subtle cursor-pointer active:bg-subtle ${isSelected ? "bg-subtle" : ""}`}
+                className={`sm:hidden flex items-center gap-[10px] py-[10px] border-t border-subtle cursor-pointer active:bg-subtle ${isSelected ? "bg-subtle" : ""}`}
               >
                 {selectionMode ? (
                   <span className="w-[32px] h-[32px] shrink-0 rounded-[10px] flex items-center justify-center border border-border bg-card">

@@ -7,7 +7,7 @@ import SearchInputV2 from "@/app/components/v2/SearchInputV2";
 import TablePaginationV2 from "@/app/components/v2/TablePaginationV2";
 import { PrimaryButtonV2 } from "@/app/components/v2/ButtonsV2";
 import TaxBadgeV2 from "@/app/components/v2/TaxBadgeV2";
-import { tableHeadClassV2, tableRowClassV2, gridColsV2 } from "@/app/components/v2/tableStylesV2";
+import { tableHeadClassV2, tableRowClassV2, tableCardClassV2, gridColsV2 } from "@/app/components/v2/tableStylesV2";
 import { knownDomain, initials, fmtDate as fmtContactDate } from "./ContactosManager";
 
 const COLS = "2fr 1.3fr .6fr .6fr .7fr .8fr";
@@ -206,7 +206,7 @@ export default function ContactosManagerV2({
         </div>
       )}
 
-      <div className="mt-[24px]">
+      <div className={`mt-[24px] ${tableCardClassV2}`}>
         <div className="hidden sm:block">
           <div className={tableHeadClassV2} style={gridColsV2(COLS)}>
             <span>Nombre</span>
@@ -265,7 +265,7 @@ export default function ContactosManagerV2({
                 {/* Fila móvil */}
                 <div
                   onClick={() => (selectionMode ? onToggleSelect(c.id) : onRowClick(c.id))}
-                  className={`sm:hidden flex items-center gap-[10px] px-2 py-[10px] border-t border-subtle cursor-pointer active:bg-subtle ${isSelected ? "bg-subtle" : ""}`}
+                  className={`sm:hidden flex items-center gap-[10px] py-[10px] border-t border-subtle cursor-pointer active:bg-subtle ${isSelected ? "bg-subtle" : ""}`}
                 >
                   {selectionMode ? (
                     <span className="w-[32px] h-[32px] shrink-0 rounded-[10px] flex items-center justify-center border border-border bg-card">

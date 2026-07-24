@@ -1,5 +1,5 @@
 import type { PricingRow } from "@/lib/stripePayments";
-import { tableHeadClassV2, tableRowClassV2, gridColsV2 } from "@/app/components/v2/tableStylesV2";
+import { tableHeadClassV2, tableRowClassV2, tableCardClassV2, gridColsV2 } from "@/app/components/v2/tableStylesV2";
 import PreciosGuiaDrawer from "./PreciosGuiaDrawer";
 
 const COLS = "1.6fr .9fr 1fr 1fr 1.3fr";
@@ -16,6 +16,7 @@ export default function PreciosViewer({ rows }: { rows: PricingRow[] }) {
         <PreciosGuiaDrawer />
       </div>
 
+      <div className={tableCardClassV2}>
       {/* Tabla - escritorio */}
       <div className="hidden sm:block">
         <div className={tableHeadClassV2} style={gridColsV2(COLS)}>
@@ -76,6 +77,7 @@ export default function PreciosViewer({ rows }: { rows: PricingRow[] }) {
             </div>
           );
         })}
+      </div>
       </div>
     </div>
   );

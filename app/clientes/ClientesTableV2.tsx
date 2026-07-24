@@ -7,7 +7,7 @@ import FiltersToggleButtonV2 from "@/app/components/v2/FiltersToggleButtonV2";
 import { IconButtonV2 } from "@/app/components/v2/ButtonsV2";
 import Select from "@/app/components/Select";
 import ClearFiltersButtonV2 from "@/app/components/v2/ClearFiltersButtonV2";
-import { tableHeadClassV2, tableRowClassV2, gridColsV2 } from "@/app/components/v2/tableStylesV2";
+import { tableHeadClassV2, tableRowClassV2, tableCardClassV2, gridColsV2 } from "@/app/components/v2/tableStylesV2";
 import { fmt } from "@/lib/analytics";
 import { clientStatus, initials, fmtDate, SESSION_PLAN, type CustomerRow, type Filter, type SortKey, type SortDir } from "./ClientesTable";
 import { productAbbr, productColor, PRODUCT_FILTERS } from "./ClientesMatrizCompras";
@@ -98,7 +98,7 @@ export default function ClientesTableV2({
         )}
       </div>
 
-      <div className="mt-[24px]">
+      <div className={`mt-[24px] ${tableCardClassV2}`}>
         <div className="hidden sm:block">
           <div className={tableHeadClassV2} style={gridColsV2(COLS)}>
             <span
