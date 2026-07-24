@@ -251,8 +251,23 @@ export default function RecurrentesListV2({
 
   return (
     <div>
-      <div className="flex items-center gap-[9px]">
+      <div className="flex items-center gap-2">
         <SearchInputV2 value={search} onChange={onSearchChange} placeholder="Buscar recurrente…" className="min-w-[160px] flex-1" />
+        {confirmed.length > 0 && (
+          <button
+            type="button"
+            onClick={() => (selectionMode ? exitSelectionMode() : setSelectionMode(true))}
+            title={selectionMode ? "Cancelar selección" : "Seleccionar varios"}
+            className={`sm:hidden shrink-0 flex items-center justify-center w-[38px] h-[38px] rounded-[10px] border transition-colors ${
+              selectionMode ? "border-navy bg-navy text-app-bg" : "border-border bg-card text-muted"
+            }`}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="9 11 12 14 22 4" />
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+            </svg>
+          </button>
+        )}
         <IconButtonV2
           onClick={() => setShowArchived(true)}
           title={`Archivados${archived.length > 0 ? ` (${archived.length})` : ""}`}
@@ -282,19 +297,6 @@ export default function RecurrentesListV2({
             </div>
           )}
         </Drawer>
-      )}
-
-      {/* Móvil: activar/salir del modo selección múltiple (solo aplica a confirmados) */}
-      {confirmed.length > 0 && (
-        <div className="sm:hidden flex items-center justify-end mt-1 -mb-1">
-          <button
-            type="button"
-            onClick={() => (selectionMode ? exitSelectionMode() : setSelectionMode(true))}
-            className="text-[13px] font-medium text-primary px-2 py-1 -mr-2"
-          >
-            {selectionMode ? "Cancelar" : "Seleccionar"}
-          </button>
-        </div>
       )}
 
       <div className="mt-2 sm:mt-[24px]">

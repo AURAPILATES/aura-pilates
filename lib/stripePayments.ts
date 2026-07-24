@@ -21,15 +21,19 @@ export type StripePayment = {
 };
 
 // Nombres/tipos de producto de referencia — estables, no cambian cuando sube un precio.
-// El IMPORTE de cada uno se resuelve en vivo contra el catálogo de Momence (ver
-// getPricingReport más abajo); el valor de aquí solo se usa como respaldo si Momence no
-// responde o si ese nombre ya no existe en su catálogo. Última revisión manual: jun 2026.
-const PRODUCT_MAP: Array<{ amount: number; name: string; type: "subscription" | "pack" }> = [
+// `name` es el identificador CANÓNICO interno de la app (se usa como clave en muchos sitios:
+// ventana de vigencia, etiquetas de cliente, etc.), no tocar. El IMPORTE de cada uno se
+// resuelve en vivo contra el catálogo de Momence (ver getPricingReport más abajo); el valor
+// de aquí solo se usa como respaldo si Momence no responde o si ese nombre ya no existe en su
+// catálogo. `momenceName` es el nombre EXACTO tal como aparece en Momence cuando difiere del
+// canónico (p.ej. Momence llama a los packs "…classes" y aquí el canónico es "…clases");
+// se usa solo para el cruce con su catálogo. Última revisión manual: jul 2026.
+const PRODUCT_MAP: Array<{ amount: number; name: string; type: "subscription" | "pack"; momenceName?: string }> = [
   { amount: 75,  name: "Bàsic",           type: "subscription" },
   { amount: 140, name: "Plus",            type: "subscription" },
   { amount: 180, name: "Pro",             type: "subscription" },
-  { amount: 90,  name: "Pack 4 clases",   type: "pack" },
-  { amount: 170, name: "Pack 8 clases",   type: "pack" },
+  { amount: 90,  name: "Pack 4 clases",   type: "pack", momenceName: "Pack 4 classes" },
+  { amount: 170, name: "Pack 8 clases",   type: "pack", momenceName: "Pack 8 classes" },
   { amount: 25,  name: "Pack Benvinguda", type: "pack" },
   { amount: 20,  name: "Clase suelta",    type: "pack" },
 ];
@@ -57,7 +61,7 @@ export const getPricingReport = unstable_cache(
       // Momence caído o sin credenciales: seguimos con los precios de respaldo del código.
     }
     return PRODUCT_MAP.map((entry) => {
-      const live = catalog.find((c) => c.name === entry.name);
+      const live = catalog.find((c) => c.name === (entry.momenceName ?? entry.name));
       return {
         name: entry.name,
         type: entry.type,

@@ -211,7 +211,7 @@ export default function TransaccionesListV2({
   return (
     <div className="mb-8">
       {/* KPIs */}
-      <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-[18px]">
+      <div className="grid grid-cols-3 gap-1.5 sm:gap-3 mb-[18px]">
         <button
           type="button"
           onClick={() => onDirectionFilterChange(directionFilter === "in" ? "all" : "in")}
@@ -254,8 +254,23 @@ export default function TransaccionesListV2({
       </div>
 
       {/* Toolbar */}
-      <div className="flex items-center gap-[10px] flex-wrap">
+      <div className="flex items-center gap-2 flex-wrap">
         <SearchInputV2 value={search} onChange={onSearchChange} placeholder="Buscar concepto o contacto…" className="flex-1 min-w-[140px]" />
+        {byMonth.length > 0 && (
+          <button
+            type="button"
+            onClick={() => (selectionMode ? exitSelectionMode() : setSelectionMode(true))}
+            title={selectionMode ? "Cancelar selección" : "Seleccionar varios"}
+            className={`sm:hidden shrink-0 flex items-center justify-center w-9 h-9 rounded-[10px] border transition-colors ${
+              selectionMode ? "border-navy bg-navy text-app-bg" : "border-border bg-card text-muted"
+            }`}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="9 11 12 14 22 4" />
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+            </svg>
+          </button>
+        )}
         <FiltersToggleButtonV2 open={filtersOpen} active={filtersActive} onClick={() => setFiltersOpen((v) => !v)} />
         <ImportButton v2 onManual={onAddCash} className="sm:order-2" />
         <div className={`${filtersOpen ? "flex" : "hidden"} sm:flex sm:order-1 items-center gap-[10px] flex-wrap w-full sm:w-auto`}>
@@ -302,7 +317,7 @@ export default function TransaccionesListV2({
       {/* Móvil: franja de meses (sticky), navega a cada grupo del mes */}
       {byMonth.length > 0 && (
         <div className="sm:hidden sticky top-[45px] z-20 -mx-2 px-2 pt-3 pb-2 bg-app-bg overflow-x-auto scrollbar-none">
-          <div className="inline-flex max-w-full gap-0.5 p-1 rounded-full bg-navy/[0.05]">
+          <div className="inline-flex w-max gap-0.5 p-1 rounded-full bg-navy/[0.05]">
             {byMonth.map(([monthKey]) => {
               const [y, m] = monthKey.split("-");
               const label = MONTHS_ES[parseInt(m) - 1].slice(0, 3);
@@ -318,19 +333,6 @@ export default function TransaccionesListV2({
               );
             })}
           </div>
-        </div>
-      )}
-
-      {/* Móvil: activar/salir del modo selección múltiple */}
-      {byMonth.length > 0 && (
-        <div className="sm:hidden flex items-center justify-end mt-1 -mb-1">
-          <button
-            type="button"
-            onClick={() => (selectionMode ? exitSelectionMode() : setSelectionMode(true))}
-            className="text-[13px] font-medium text-primary px-2 py-1 -mr-2"
-          >
-            {selectionMode ? "Cancelar" : "Seleccionar"}
-          </button>
         </div>
       )}
 
