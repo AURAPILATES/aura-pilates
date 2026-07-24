@@ -7,6 +7,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import SyncStatusPanel from "./SyncStatusPanel";
 import ThemeToggle from "./ThemeToggle";
+import { ShowNavButton } from "./NavVisibility";
 import { usePendingRecurringCount } from "./usePendingRecurringCount";
 
 const groups = [
@@ -208,6 +209,8 @@ export default function MobileNav() {
 
   return (
     <>
+      {/* Móvil: abre el menú lateral. Escritorio: botón para volver a mostrar la sidebar
+          cuando está oculta (ShowNavButton, controlado por CSS .nav-reopen). */}
       <button
         type="button"
         onClick={() => setOpen(true)}
@@ -218,6 +221,7 @@ export default function MobileNav() {
           <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
         </svg>
       </button>
+      <ShowNavButton />
 
       {mounted && createPortal(drawer, document.body)}
     </>

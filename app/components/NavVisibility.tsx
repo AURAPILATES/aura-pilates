@@ -31,9 +31,10 @@ export function HideNavButton() {
   );
 }
 
-/** Pestaña en el borde izquierdo (centrada verticalmente) para volver a mostrar la sidebar;
- * solo visible cuando está oculta y en escritorio (ver reglas .nav-reopen en globals.css).
- * Va pegada al borde para no solaparse con la cabecera de cada página. */
+/** Botón para volver a mostrar la sidebar. Va integrado en la cabecera de cada página (a la
+ * izquierda, misma altura que el logo/título), no flotante — así aparece siempre en el mismo
+ * sitio. Solo visible cuando la sidebar está oculta y en escritorio (reglas .nav-reopen en
+ * globals.css); en móvil manda el menú hamburguesa. */
 export function ShowNavButton() {
   return (
     <button
@@ -41,11 +42,12 @@ export function ShowNavButton() {
       onClick={toggleNav}
       title="Mostrar menú"
       aria-label="Mostrar menú"
-      className="nav-reopen fixed left-0 top-1/2 -translate-y-1/2 z-40 items-center justify-center w-[22px] h-14 rounded-r-[10px] border border-l-0 border-border bg-card shadow-sm text-navy/45 hover:text-navy hover:bg-navy/[0.03] transition-colors"
+      className="nav-reopen shrink-0 items-center gap-1.5 h-9 pl-2.5 pr-3 rounded-lg border border-navy/[0.1] bg-card shadow-sm text-[13px] font-medium text-navy/75 hover:text-navy hover:bg-navy/[0.03] transition-colors"
     >
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M9 6l6 6-6 6" />
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
       </svg>
+      Menú
     </button>
   );
 }

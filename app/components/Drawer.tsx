@@ -1,5 +1,6 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 
 /** Pila de drawers abiertos (puede haber varios apilados, ej. NewContactDrawer sobre
  * TransactionDrawer) - Escape solo debe cerrar el de más arriba, no todos a la vez. */
@@ -38,7 +39,13 @@ export default function Drawer({
     return () => document.removeEventListener("keydown", handler);
   }, [onClose]);
 
-  return (
+  // Se monta en <body> para que el `fixed` cubra el viewport aunque el botón que lo abre viva
+  // dentro de un contenedor que crea contexto de posicionamiento (p.ej. una cabecera sticky
+  // con backdrop-blur, que contendría el fixed y lo dejaría recortado arriba).
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  const overlay = (
     <div className="fixed inset-0 z-50 flex justify-end">
       <div className="absolute inset-0 bg-navy/20 backdrop-blur-[2px]" onClick={onClose} />
       <div className={`relative w-full ${maxWidth} bg-card h-full flex flex-col shadow-2xl`}>
@@ -65,4 +72,7 @@ export default function Drawer({
       </div>
     </div>
   );
+
+  if (!mounted) return null;
+  return createPortal(overlay, document.body);
 }

@@ -1,7 +1,9 @@
+import { useState } from "react";
 import Avatar from "@/app/components/Avatar";
 import SearchInputV2 from "@/app/components/v2/SearchInputV2";
 import TablePaginationV2 from "@/app/components/v2/TablePaginationV2";
 import FilterPillGroupV2 from "@/app/components/v2/FilterPillGroupV2";
+import FiltersToggleButtonV2 from "@/app/components/v2/FiltersToggleButtonV2";
 import { IconButtonV2 } from "@/app/components/v2/ButtonsV2";
 import Select from "@/app/components/Select";
 import ClearFiltersButtonV2 from "@/app/components/v2/ClearFiltersButtonV2";
@@ -47,6 +49,8 @@ export default function ClientesTableV2({
   search, onSearchChange, filter, onFilterChange, filterLabels, planFilter, onPlanFilterChange,
   sortKey, sortDir, onToggleSort, rows, totalCount, page, pageSize, onPageChange, onRowClick, onExportCsv,
 }: Props) {
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const filtersActive = !!planFilter;
   const activeFilterCount = (filter !== "all" ? 1 : 0) + (planFilter ? 1 : 0);
   function clearFilters() {
     onFilterChange("all");
@@ -55,20 +59,26 @@ export default function ClientesTableV2({
 
   return (
     <div>
-      <SearchInputV2 value={search} onChange={onSearchChange} placeholder="Buscar por nombre o email…" className="w-full" />
-      <div className="flex items-center gap-2.5 mt-2.5">
-        <Select variant="v2" value={planFilter} onChange={(e) => onPlanFilterChange(e.target.value)} className="w-auto">
-          <option value="">Plan actual: todos</option>
-          {PRODUCT_FILTERS.map((p) => (
-            <option key={p} value={p}>{p}</option>
-          ))}
-          <option value={SESSION_PLAN}>Por sesión</option>
-        </Select>
-        <IconButtonV2 onClick={onExportCsv} title="Exportar tabla actual a CSV">
+      <div className="flex items-center gap-[9px] flex-wrap">
+        <SearchInputV2 value={search} onChange={onSearchChange} placeholder="Buscar por nombre o email…" className="min-w-[160px] flex-1" />
+        <FiltersToggleButtonV2 open={filtersOpen} active={filtersActive} onClick={() => setFiltersOpen((v) => !v)} />
+        <IconButtonV2 onClick={onExportCsv} title="Exportar tabla actual a CSV" className="sm:order-2">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
             <path d="M12 4v10M8 11l4 4 4-4M5 19h14" />
           </svg>
         </IconButtonV2>
+        <div className={`${filtersOpen ? "flex" : "hidden"} sm:flex sm:order-1 items-center gap-[9px] flex-wrap w-full sm:w-auto`}>
+          <Select variant="v2" value={planFilter} onChange={(e) => onPlanFilterChange(e.target.value)} className="w-auto">
+            <option value="">Plan actual: todos</option>
+            {PRODUCT_FILTERS.map((p) => (
+              <option key={p} value={p}>{p}</option>
+            ))}
+            <option value={SESSION_PLAN}>Por sesión</option>
+          </Select>
+          {activeFilterCount >= 2 && (
+            <ClearFiltersButtonV2 onClick={clearFilters} className="hidden sm:flex" />
+          )}
+        </div>
       </div>
 
       {activeFilterCount >= 2 && (
