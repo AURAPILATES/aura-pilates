@@ -19,7 +19,7 @@ export default async function ClientesPage() {
         </div>
       </div>
 
-      <div className="pt-8 px-6 pb-6 max-w-[1600px] mx-auto">
+      <div className="pt-6 px-4 sm:px-6 pb-6 max-w-[1600px] mx-auto">
         <Suspense fallback={<ClientesSkeleton />}>
           <ClientesLoader curMonth={curMonth} />
         </Suspense>

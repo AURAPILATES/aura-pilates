@@ -15,7 +15,7 @@ export default async function VacacionesPage() {
           <h1 className="text-sm font-bold text-navy uppercase tracking-widest">Vacaciones</h1>
         </div>
       </div>
-      <main className="max-w-[1600px] mx-auto px-6 pt-8 pb-16 space-y-6">
+      <main className="max-w-[1600px] mx-auto px-4 sm:px-6 pt-6 pb-16 space-y-6">
         <VacacionesCalendario personas={personas} festivos={festivos} />
       </main>
     </div>

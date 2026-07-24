@@ -30,7 +30,7 @@ export default function HorarioSkeleton() {
       </div>
 
       {/* Content */}
-      <div className="relative max-w-[1600px] mx-auto px-4 sm:px-6 pt-4 sm:pt-8 pb-16">
+      <div className="relative max-w-[1600px] mx-auto px-4 sm:px-6 pt-6 pb-16">
 
         <div className="absolute top-4 left-0 right-0 flex justify-center z-10">
           <div className="flex items-center gap-1.5 px-3 py-1.5 bg-navy-solid text-white text-[11px] whitespace-nowrap rounded-[6px] shadow-lg pointer-events-none">

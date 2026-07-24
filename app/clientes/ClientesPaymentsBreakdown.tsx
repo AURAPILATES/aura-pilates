@@ -104,7 +104,7 @@ export default function ClientesPaymentsBreakdown({
         dataSource="Stripe · pagos en tiempo real"
         sources={["stripe"]}
       >
-        <div className="flex items-center gap-6 flex-wrap sm:flex-nowrap">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
           {/* Donut */}
           <div className="relative w-[140px] h-[140px] shrink-0 mx-auto sm:mx-0">
             <svg viewBox="0 0 180 180" width="140" height="140">
