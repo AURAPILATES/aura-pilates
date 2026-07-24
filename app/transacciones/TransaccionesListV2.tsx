@@ -388,7 +388,7 @@ export default function TransaccionesListV2({
                 ref={(el) => { if (el) monthRefs.current.set(monthKey, el); else monthRefs.current.delete(monthKey); }}
                 className="scroll-mt-[104px]"
               >
-                <div className="flex items-baseline justify-between -mx-2.5 sm:-mx-4 px-2.5 sm:px-4 py-2 bg-navy/[0.025] border-y border-border">
+                <div className="table-band flex items-baseline justify-between py-2 bg-navy/[0.025] border-y border-border">
                   <span className="text-[12.5px] font-semibold text-muted uppercase tracking-wide">{label}</span>
                   <span className={`text-[13px] font-semibold tabular-nums ${monthNet < 0 ? "text-[#b53e0d] dark:text-[#e69675]" : "text-[#13803a] dark:text-[#7cdfa0]"}`}>
                     {monthNet < 0 ? "−" : "+"}{fmtAmt(Math.abs(monthNet))}

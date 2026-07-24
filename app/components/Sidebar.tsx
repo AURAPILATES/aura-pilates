@@ -5,6 +5,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import SyncStatusPanel from "./SyncStatusPanel";
 import ThemeToggle from "./ThemeToggle";
+import TableStyleToggle from "./TableStyleToggle";
 import { HideNavButton } from "./NavVisibility";
 import { usePendingRecurringCount } from "./usePendingRecurringCount";
 import { navGroups, IconSettings } from "./sidebarNav";
@@ -84,6 +85,7 @@ export default function Sidebar() {
           Configuración
         </Link>
         <ThemeToggle />
+        <TableStyleToggle />
       </div>
     </aside>
   );

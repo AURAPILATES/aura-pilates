@@ -7,6 +7,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import SyncStatusPanel from "./SyncStatusPanel";
 import ThemeToggle from "./ThemeToggle";
+import TableStyleToggle from "./TableStyleToggle";
 import { usePendingRecurringCount } from "./usePendingRecurringCount";
 
 const groups = [
@@ -201,6 +202,7 @@ export default function MobileNav() {
             Configuración
           </Link>
           <ThemeToggle />
+          <TableStyleToggle />
         </div>
       </div>
     </>

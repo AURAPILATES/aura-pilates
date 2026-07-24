@@ -102,3 +102,47 @@
     display: flex;
   }
 }
+
+/* Envoltorio de cada tabla suelta. Por defecto va sobre una tarjeta blanca que "flota"
+   sobre el fondo crudo (como las tarjetas KPI). El toggle de comparación añade .tables-flat
+   a <html> para volver al aspecto anterior: tabla suelta, sin caja ni sangrado. */
+.table-card {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  padding: 0.5rem 0.625rem 0.25rem; /* pt-2 px-2.5 pb-1 */
+}
+@media (min-width: 640px) {
+  .table-card {
+    padding-left: 1rem; /* sm:px-4 */
+    padding-right: 1rem;
+  }
+}
+/* Banda de mes (Movimientos): sangra hasta los bordes de la tarjeta. */
+.table-band {
+  margin-left: -0.625rem;
+  margin-right: -0.625rem;
+  padding-left: 0.625rem;
+  padding-right: 0.625rem;
+}
+@media (min-width: 640px) {
+  .table-band {
+    margin-left: -1rem;
+    margin-right: -1rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+/* Modo comparación "suelto" (previo): sin caja ni sangrado. */
+.tables-flat .table-card {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+}
+.tables-flat .table-band {
+  margin-left: 0;
+  margin-right: 0;
+  padding-left: 0;
+  padding-right: 0;
+}

@@ -21,7 +21,7 @@ export default function RootLayout({
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `try{if(localStorage.getItem('theme')==='dark'){document.documentElement.classList.add('dark')}}catch(e){}try{if(localStorage.getItem('navHidden')==='1'){document.documentElement.classList.add('nav-hidden')}}catch(e){}`,
+            __html: `try{if(localStorage.getItem('theme')==='dark'){document.documentElement.classList.add('dark')}}catch(e){}try{if(localStorage.getItem('navHidden')==='1'){document.documentElement.classList.add('nav-hidden')}}catch(e){}try{if(localStorage.getItem('tablesFlat')==='1'){document.documentElement.classList.add('tables-flat')}}catch(e){}`,
           }}
         />
       </head>

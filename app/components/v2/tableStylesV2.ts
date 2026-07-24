@@ -16,10 +16,11 @@ export const tableGroupClassV2 =
 export const tableFootClassV2 = "px-0.5 py-3.5 text-[12.5px] text-faint";
 
 /** Tarjeta blanca que envuelve cada tabla suelta: sobre el fondo crudo de la app (#f6f5f2)
- * las tablas "flotan" en blanco, como las tarjetas KPI. El padding horizontal lo aporta la
- * tarjeta (por eso las filas no llevan px propio) para que el inset sea uniforme entre tablas. */
-export const tableCardClassV2 =
-  "bg-card border border-border rounded-[14px] px-2.5 sm:px-4 pt-2 pb-1";
+ * las tablas "flotan" en blanco, como las tarjetas KPI. Los estilos viven en globals.css
+ * (.table-card) para poder alternar con el toggle de comparación (.tables-flat en <html>,
+ * ver TableStyleToggle) sin duplicar utilidades. El padding horizontal lo aporta la tarjeta
+ * (por eso las filas no llevan px propio) para que el inset sea uniforme entre tablas. */
+export const tableCardClassV2 = "table-card";
 
 export function gridColsV2(template: string): CSSProperties {
   return { display: "grid", gridTemplateColumns: template };
