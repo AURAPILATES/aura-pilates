@@ -42,12 +42,11 @@ export function ShowNavButton() {
       onClick={toggleNav}
       title="Mostrar menú"
       aria-label="Mostrar menú"
-      className="nav-reopen shrink-0 items-center gap-1.5 h-9 pl-2.5 pr-3 rounded-lg border border-navy/[0.1] bg-card shadow-sm text-[13px] font-medium text-navy/75 hover:text-navy hover:bg-navy/[0.03] transition-colors"
+      className="nav-reopen fixed left-0 top-2 z-40 items-center justify-center w-[22px] h-11 rounded-r-[10px] border border-l-0 border-border bg-card shadow-sm text-navy/45 hover:text-navy hover:bg-navy/[0.03] transition-colors"
     >
-      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M9 6l6 6-6 6" />
       </svg>
-      Menú
     </button>
   );
 }

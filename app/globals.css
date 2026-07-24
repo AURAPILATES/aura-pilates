@@ -9,7 +9,7 @@
   --font-mono: 'DM Mono', monospace;
   --font-display: 'Playfair Display', serif;
 
-  --color-app-bg: #ffffff;
+  --color-app-bg: #f6f5f2;
   --color-card: #ffffff;
   --color-navy: #1c1917;
   /* Color fijo (no invierte con el tema) para chips/tooltips sólidos que
