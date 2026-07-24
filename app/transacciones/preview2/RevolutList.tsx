@@ -233,7 +233,7 @@ export default function RevolutList({ transactions, categories, uncategorizedCou
                   const badgeBg = cat
                     ? (cat.bg_color === cat.text_color ? rgba(cat.text_color, 0.12) : cat.bg_color)
                     : rgba(accent, 0.12);
-                  const primary = t.contact || t.concept || "—";
+                  const primary = t.contact || t.concept || "-";
                   const secondary = t.contact && t.concept && t.concept !== t.contact ? t.concept : null;
                   return (
                     <div key={t.id} className={`flex items-start gap-3 px-3 py-3 ${i > 0 ? "border-t border-navy/[0.04]" : ""}`}>

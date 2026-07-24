@@ -117,7 +117,7 @@ export default function VolumenBruto({
         </div>
       }
       chartDescription="Evolución de entradas y salidas de caja por período seleccionado"
-      dataSource="Bruto: todo movimiento bancario de entrada o salida, excluyendo traspasos internos. No concilia con Momence/Stripe — por eso es flujo de caja, no resultado contable."
+      dataSource="Bruto: todo movimiento bancario de entrada o salida, excluyendo traspasos internos. No concilia con Momence/Stripe - por eso es flujo de caja, no resultado contable."
       sources={["excel"]}
       lastUpdated={lastUpdated}
     >

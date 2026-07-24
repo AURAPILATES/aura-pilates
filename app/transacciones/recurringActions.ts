@@ -35,7 +35,7 @@ export async function recordRecurringExpense(
 export type ConfirmRecurringRow = {
   /** Una fila puede agrupar varias series detectadas (mismo contacto + mismo importe pero
    * separadas porque parte de los movimientos todavía no tenían el contacto asignado en el
-   * texto bancario) — se confirma una fila de recurring_expenses por cada key para que ninguna
+   * texto bancario) - se confirma una fila de recurring_expenses por cada key para que ninguna
    * de las variantes vuelva a aparecer como pendiente. */
   keys: string[];
   label: string;
@@ -43,13 +43,13 @@ export type ConfirmRecurringRow = {
   period: string;
   period_days: number;
   amount: number;
-  /** Textos de banco (concepto + más datos, ya limpios) de cada serie agrupada — se registran
+  /** Textos de banco (concepto + más datos, ya limpios) de cada serie agrupada - se registran
    * todos como patrones del contacto para que futuros movimientos de cualquier variante se
    * reconozcan solos. */
   bankPatterns: string[];
   contactId: number | null;
   newContactLabel: string | null;
-  /** IVA/retención tal y como quedan tras validarlos en el drawer de confirmación — parten del
+  /** IVA/retención tal y como quedan tras validarlos en el drawer de confirmación - parten del
    * contacto por defecto pero el usuario puede corregirlos para esta recurrencia concreta. */
   ivaRate: number;
   retencionRate: number;
@@ -60,7 +60,7 @@ export type ConfirmRecurringRow = {
 
 /** Confirma uno o varios gastos detectados vinculándolos a un Contacto: el IVA/Retención parten
  * de su ficha (ver contacts en migrations/011_contacts.sql) pero se guardan tal y como llegan en
- * `row` — el usuario los valida/corrige fila a fila en el drawer antes de confirmar. Si el
+ * `row` - el usuario los valida/corrige fila a fila en el drawer antes de confirmar. Si el
  * contacto no existe todavía, lo crea. En ambos casos registra/asegura los patrones bancarios y
  * aplica el contacto a los movimientos ya importados que coincidan (ver resolveOrCreateContact y
  * applyPatternsToTransactions en ./actions). */
@@ -201,7 +201,7 @@ export async function updateRecurringExpense(
   revalidateAll();
 }
 
-/** Re-vincula un gasto recurrente ya confirmado a otro Contacto (existente o nuevo) — vuelve a
+/** Re-vincula un gasto recurrente ya confirmado a otro Contacto (existente o nuevo) - vuelve a
  * copiar su IVA/Retención, igual que en la confirmación inicial. A diferencia de
  * `confirmRecurringExpenses`, aquí no se registra ningún patrón bancario nuevo: el movimiento
  * ya estaba reconocido antes, esto solo cambia de qué ficha hereda los impuestos. */
@@ -278,7 +278,7 @@ export async function updateRecurringExpensesCategory(ids: number[], category: s
   revalidateAll();
 }
 
-/** Igual que `relinkRecurringExpenseContact` pero para varias filas a la vez — se usa desde la
+/** Igual que `relinkRecurringExpenseContact` pero para varias filas a la vez - se usa desde la
  * selección múltiple de Recurrentes. Solo admite un contacto ya existente (no crea uno nuevo,
  * a diferencia de la versión de una sola fila). */
 export async function relinkRecurringExpensesContact(ids: number[], contactId: number): Promise<void> {

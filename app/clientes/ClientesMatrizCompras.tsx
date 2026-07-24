@@ -72,7 +72,7 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
 
   const { months, matrix } = useMemo(() => {
     const now = new Date();
-    const start = new Date(2026, 1, 1); // Feb 2026 — apertura
+    const start = new Date(2026, 1, 1); // Feb 2026 - apertura
     const months: string[] = [];
     const cur = new Date(start);
     while (cur <= now) {

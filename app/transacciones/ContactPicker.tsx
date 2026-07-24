@@ -22,7 +22,7 @@ export default function ContactPicker({
   placeholder?: string;
   disabled?: boolean;
   /** Si true, al hacer clic fuera con texto libre distinto al valor actual se confirma como
-   * vinculación inmediata (match exacto o contacto nuevo) — comportamiento del selector dentro
+   * vinculación inmediata (match exacto o contacto nuevo) - comportamiento del selector dentro
    * del detalle de movimiento, donde no hay un botón "Confirmar" separado. */
   commitOnBlur?: boolean;
 }) {

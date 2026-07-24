@@ -567,7 +567,7 @@ export default function PrevisionesTable({
                 showForecast={showForecast}
                 getHistVal={m => m.resultado}
                 getFcVal={m => m.resultado}
-                format={v => v !== null ? fmtSign(v) : "—"}
+                format={v => v !== null ? fmtSign(v) : "-"}
                 colorFn={v => v === null ? "text-navy/30" : v >= 0 ? "text-income font-semibold" : "text-danger font-semibold"}
               />
 
@@ -579,7 +579,7 @@ export default function PrevisionesTable({
                 showForecast={showForecast}
                 getHistVal={m => m.saldoFinal}
                 getFcVal={m => m.saldoFinal}
-                format={v => v !== null ? fmtSign(v) : "—"}
+                format={v => v !== null ? fmtSign(v) : "-"}
                 colorFn={v => v === null ? "text-navy/30" : v >= 0 ? "text-navy font-bold" : "text-danger font-bold"}
               />
 
@@ -691,7 +691,7 @@ function SubRow({
               val === null ? "text-navy/20" : colorClass
             } ${m.month === TODAY_MONTH ? "bg-primary/[0.02]" : ""}`}
           >
-            {val === null ? "—" : `${prefix}${fmtAmt(val)}`}
+            {val === null ? "-" : `${prefix}${fmtAmt(val)}`}
           </td>
         );
       })}

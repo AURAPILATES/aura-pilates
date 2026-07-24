@@ -24,7 +24,7 @@ export type RecurringExpense = {
   end_count: number | null;
   notes: string | null;
   /** Dado de alta a mano, sin transacción real detrás todavía (ver createManualRecurringExpense
-   * en recurringActions.ts) — para anticipar un gasto futuro conocido. */
+   * en recurringActions.ts) - para anticipar un gasto futuro conocido. */
   manual: boolean;
   /** Fecha de referencia (último pago conocido o próximo previsto) desde la que proyectar,
    * solo relevante mientras no haya transacciones reales que lo respalden. */

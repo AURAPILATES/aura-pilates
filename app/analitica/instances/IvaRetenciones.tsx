@@ -66,7 +66,7 @@ function ObligationDayBadge({ deadline, level }: { deadline: string; level: keyo
   );
 }
 
-/** Badge "A pagar"/"A favor" — igual paleta semántica que el resto de la app (success/danger). */
+/** Badge "A pagar"/"A favor" - igual paleta semántica que el resto de la app (success/danger). */
 function ResultBadge({ favorable }: { favorable: boolean }) {
   return (
     <span
@@ -112,7 +112,7 @@ export default function IvaRetenciones({
 
   return (
     <ChartCard
-      title="Impuestos"
+      title="Impuestos aproximados"
       subtitle={`Próximo vencimiento: ${dueLabel}`}
       dateRange={quarterLabel}
       kpiItems={kpiItems}
@@ -210,7 +210,7 @@ export default function IvaRetenciones({
                   <ObligationDayBadge deadline={o.deadline} level={level} />
                   <div className="min-w-0 flex-1">
                     <p className="text-[12.5px] font-medium text-navy/80 truncate">{o.label}</p>
-                    <p className="text-[11px] text-navy/45">{o.days <= 0 ? "Vence hoy" : `En ${o.days} días`}</p>
+                    <p className="text-[11px] text-navy/45">{o.days < 0 ? `Venció hace ${-o.days} d` : o.days === 0 ? "Vence hoy" : `En ${o.days} días`}</p>
                   </div>
                 </div>
               );

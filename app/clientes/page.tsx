@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { Suspense } from "react";
 import ClientesLoader from "./ClientesLoader";
 import ClientesSkeleton from "./ClientesSkeleton";
+import ClientesGuiaDrawer from "./ClientesGuiaDrawer";
 import MobileNav from "@/app/components/MobileNav";
 import { pad2 } from "@/lib/periodCalculation";
 
@@ -16,6 +17,9 @@ export default async function ClientesPage() {
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 h-[45px] flex items-center gap-3">
           <MobileNav />
           <h1 className="text-sm font-bold text-navy uppercase tracking-widest">Clientes</h1>
+          <div className="ml-auto">
+            <ClientesGuiaDrawer />
+          </div>
         </div>
       </div>
 

@@ -192,7 +192,7 @@ export function CategoryMultiFilter({
             className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-navy/[0.04] transition-colors"
           >
             <MiniCheck on={selected.includes("__none__")} />
-            <span className="text-navy/40">—</span>
+            <span className="text-navy/40">-</span>
             <span className="text-navy/50">Sin categoría</span>
           </button>
           {sortCategoriesHierarchical(categories).map((c) => (
@@ -213,7 +213,7 @@ export function CategoryMultiFilter({
   );
 }
 
-/** Pill visual de categoría, sin interacción — para mostrar en sitios de solo lectura como
+/** Pill visual de categoría, sin interacción - para mostrar en sitios de solo lectura como
  * la tabla de contactos. CategoryPill la usa por dentro para el botón interactivo. */
 export function CategoryBadge({ category, categories, hideIcon = false }: { category: string | null; categories: Category[]; hideIcon?: boolean }) {
   const cat = category ? categories.find((c) => c.value === category) : undefined;
@@ -282,7 +282,7 @@ export function CategoryPill({ category, categories, onChange, hideIcon = false 
             onClick={() => { onChange(null); setOpen(false); }}
             className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-navy/[0.04] transition-colors ${!category ? "font-semibold" : ""}`}
           >
-            <span className="text-navy/40">—</span>
+            <span className="text-navy/40">-</span>
             <span className="text-navy/50">Sin categoría</span>
           </button>
           {sortCategoriesHierarchical(categories).map((c) => (
@@ -577,14 +577,14 @@ export default function TransaccionesList({
     });
   }, [filtered, sortKey, sortDir]);
 
-  // ── Paginación (desktop) — corta sortedFiltered/filtered antes de agrupar por mes,
+  // ── Paginación (desktop) - corta sortedFiltered/filtered antes de agrupar por mes,
   // así cada página tiene siempre PAGE_SIZE movimientos aunque abarque varios meses.
   useEffect(() => { setPage(0); }, [search, catFilters, originFilter, onlyRecurring, directionFilter, amountMin, amountMax, currentRange, sortKey, sortDir]);
   const totalPages = Math.max(1, Math.ceil(sortedFiltered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages - 1);
   const pagedFlat = isMobile ? sortedFiltered : sortedFiltered.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
 
-  // ── Month grouping — solo de la página actual ───────────────────────────────
+  // ── Month grouping - solo de la página actual ───────────────────────────────
   const byMonth = useMemo(() => {
     const map = new Map<string, Transaction[]>();
     for (const t of pagedFlat) {

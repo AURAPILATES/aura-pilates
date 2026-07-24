@@ -83,7 +83,7 @@ export default function CohortTable({
                     <span
                       className={`inline-flex items-center justify-center min-w-11 px-1.5 py-1 rounded-md text-xs font-medium tabular-nums ${TIER_STYLES[tier]}`}
                     >
-                      {value === null ? "—" : `${value}%`}
+                      {value === null ? "-" : `${value}%`}
                     </span>
                   </td>
                 );

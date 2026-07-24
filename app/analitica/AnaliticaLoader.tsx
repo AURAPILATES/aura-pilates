@@ -177,7 +177,7 @@ export default async function AnaliticaLoader({
   const avgPerClassComp  = compEvents.length > 0 ? totalStudents(compEvents) / compEvents.length : 0;
 
   // La carga en vivo de Momence puede ir bien aunque el snapshot nocturno haya fallado
-  // (p.ej. token caducado a las 3am) — eso afectaría a métricas de bajas/altas que
+  // (p.ej. token caducado a las 3am) - eso afectaría a métricas de bajas/altas que
   // dependen de esos snapshots históricos, sin que la página en sí falle.
   const failedSyncRun = syncRuns
     ? ([syncRuns.momence_events, syncRuns.momence_subscribers].find((r) => r && !r.ok) ?? null)
@@ -211,7 +211,7 @@ export default async function AnaliticaLoader({
   // Momence CSV: export manual, ya no se actualiza en tiempo real. Solo se usa para
   // Urban Sports Club (paga por transferencia bancaria, sin fuente en vivo) y para
   // breakeven histórico. Conversión del pack y "de dónde vienen los suscriptores" usan
-  // salesAll (Stripe + producto inferido por importe, igual que en Clientes) — en vivo.
+  // salesAll (Stripe + producto inferido por importe, igual que en Clientes) - en vivo.
   const momenceSalesAll = loadSales();
 
   // ── Urban Sports Club: ingresos desde Momence CSV (USC paga por transferencia, no Stripe) ──
@@ -228,7 +228,7 @@ export default async function AnaliticaLoader({
   const q1Revenue = totalRev + uscRevenue;
   const q1RevComp = revComp + uscRevComp;
 
-  // Última fecha con datos reales de Urban (el CSV no se actualiza solo) — se usa para
+  // Última fecha con datos reales de Urban (el CSV no se actualiza solo) - se usa para
   // acotar "Por producto" / "Por canal de pago" y que Stripe y Urban cubran el mismo periodo.
   const uscDates = momenceSalesAll.filter((s) => s.method === "urban-sports-club").map((s) => s.paymentDate);
   const uscLastDate = uscDates.length > 0 ? uscDates.sort().reverse()[0] : null;
@@ -261,7 +261,7 @@ export default async function AnaliticaLoader({
   const subscriptionTiers = subscriptionTiersFromMemberships(membershipsAll);
   // ── Evolución de ingresos + altas/bajas/reactivaciones (histórico completo, solo Stripe) ──
   // Antes se recortaba TODO paymentsAll a uscLastDate "para que Stripe y Urban cubran el mismo
-  // período" — pero estos tres usos son 100% Stripe (Urban no aparece en ninguno), así que ese
+  // período" - pero estos tres usos son 100% Stripe (Urban no aparece en ninguno), así que ese
   // recorte solo servía para tirar datos de Stripe recientes cada vez que el CSV manual de Urban
   // se quedaba desactualizado. Solo "Ingresos por fuente" (más abajo) compara Stripe vs. Urban de
   // verdad, así que es el único que sigue acotado a uscLastDate.
@@ -274,7 +274,7 @@ export default async function AnaliticaLoader({
   }
 
   // Ingresos por fuente: bruto, comisión y neto de Stripe por mes + USC neto. Stripe muestra
-  // su histórico completo y real (sin recortar a uscLastDate) — Urban depende de un CSV manual
+  // su histórico completo y real (sin recortar a uscLastDate) - Urban depende de un CSV manual
   // que se queda atrás, pero eso no debe ocultar ingresos de Stripe ya confirmados. La tarjeta
   // avisa por su cuenta de hasta cuándo llegan los datos de Urban (ver uscLastDateLabel).
   const monthlyStripeGrossMap = new Map<string, number>();
@@ -307,7 +307,7 @@ export default async function AnaliticaLoader({
   for (const t of txnsMain) {
     if (!t.category) continue;
     // Las categorías de tipo "transfer" (Financiación) también incluyen la entrada del propio
-    // préstamo (importe positivo) — eso no es un gasto y no debe colarse en el gráfico/drawer
+    // préstamo (importe positivo) - eso no es un gasto y no debe colarse en el gráfico/drawer
     // de Desglose de gastos, así que aquí solo cuentan los pagos (importe negativo).
     const cat = findCategory(dbCategories, t.category);
     if (cat?.group_type === "transfer" && t.amount >= 0) continue;
@@ -317,7 +317,7 @@ export default async function AnaliticaLoader({
 
   // ── Financiación dentro del desglose de gastos: expensesByCategoryAll excluye a propósito
   // las categorías de tipo "transfer" (Financiación) para no mezclarlas con traspasos internos
-  // reales — pero si una transacción SÍ tiene esa categoría asignada (p.ej. cuotas de préstamo),
+  // reales - pero si una transacción SÍ tiene esa categoría asignada (p.ej. cuotas de préstamo),
   // es un gasto real y debe contar aparte, con su propio grupo en vez de en Operativo. ──
   const financingByCategory = financingExpensesByCategory(txnsMain, dbCategories);
   const allExpCategories = [...expByCategory, ...financingByCategory];
@@ -327,7 +327,7 @@ export default async function AnaliticaLoader({
   const expByTopCategory = groupExpensesByTopCategory(allExpCategories, dbCatByValue, dbCatById, EXPENSE_COLORS);
   const totalExpCat = allExpCategories.reduce((s, r) => s + r.total, 0);
 
-  // Mismo cálculo sobre el período de comparación, solo para el delta del KPI — no hace
+  // Mismo cálculo sobre el período de comparación, solo para el delta del KPI - no hace
   // falta el desglose por categoría/grupo, solo el total.
   const totalExpCatComp =
     expensesByCategoryAll(txnsComp, dbCategories).reduce((s, r) => s + r.total, 0) +
@@ -373,7 +373,7 @@ export default async function AnaliticaLoader({
     : 0;
 
   // Previsión de ingresos: media de los últimos 3 meses completos según el banco (mismo
-  // criterio que Flujo de caja), no según Stripe/Momence — así ambos bloques hablan del
+  // criterio que Flujo de caja), no según Stripe/Momence - así ambos bloques hablan del
   // mismo dinero real y no de una estimación de venta que puede no haberse cobrado aún.
   const revMonths = [...incomeByMonth.keys()].filter((m) => m < today_ym).sort().reverse().slice(0, 3);
   const avgMonthlyRevenue = revMonths.length > 0
@@ -476,10 +476,10 @@ export default async function AnaliticaLoader({
   const MESES_LARGO = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
   const nextIvaDueLabelLong = nextIvaObligation
     ? (() => { const [y, m] = nextIvaObligation.deadline.split("-"); return `${MESES_LARGO[parseInt(m, 10) - 1]} de ${y}`; })()
-    : "—";
+    : "-";
   const nextIvaQuarterLabel = nextIvaObligation
     ? (() => { const [y, qn] = nextIvaObligation.quarter.split("-Q"); return `T${qn} ${y}`; })()
-    : "—";
+    : "-";
 
   // Mismo resumen que fiscalSummaryByQuarter pero como lista ordenada (más reciente primero)
   // para la tabla "por trimestre" de IvaRetenciones.
@@ -617,7 +617,9 @@ export default async function AnaliticaLoader({
                 retenciones={nextIvaQuarterData?.retenciones ?? 0}
                 dueLabel={nextIvaDueLabelLong}
                 quarterClosed={nextIvaQuarterClosed}
-                obligations={obligations.map(({ label, deadline }) => ({ label, deadline, days: daysUntil(deadline) }))}
+                obligations={obligations
+                  .map(({ label, deadline }) => ({ label, deadline, days: daysUntil(deadline) }))
+                  .filter((o) => o.days >= 0)}
                 rows={quarterlyFiscalRows}
                 lastUpdated={bancoLastUpdated}
               />

@@ -13,7 +13,7 @@ import { ackPaymentErrorAction } from "@/app/actions/ackPaymentError";
 type DrawerKey = "convert" | "churn" | "error" | null;
 
 function fmtDate(d: string | null) {
-  if (!d) return "—";
+  if (!d) return "-";
   return d.split("-").reverse().join("/");
 }
 
@@ -125,7 +125,7 @@ export default function AnaliticaKPIs({
   spendPerClient: number;
   occupancyAvg: number;
   avgPerClass: number;
-  /** Mismos valores calculados sobre el período de comparación — solo para el badge de variación. */
+  /** Mismos valores calculados sobre el período de comparación - solo para el badge de variación. */
   spendPerClientComp: number;
   occupancyAvgComp: number;
   avgPerClassComp: number;

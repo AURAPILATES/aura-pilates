@@ -414,7 +414,7 @@ function AñadirAusenciaModal({
     ? fmtPreviewDate(dateFrom)
     : newDates.length > 0
     ? `${fmtPreviewDate(dateFrom)} → ${fmtPreviewDate(dateTo)}`
-    : "—";
+    : "-";
 
   const vacUsadas = persona.vacaciones.length;
   const isVacaciones = absenceType === "vacaciones";
@@ -706,7 +706,7 @@ function PersonCard({
           onAdd={onAdd}
         />
       )}
-      <div className={`bg-card border ${colors.border} rounded-[14px] overflow-hidden flex flex-col`}>
+      <div className="bg-card border border-border rounded-[14px] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="px-5 pt-5 pb-4 border-b border-navy/5">
           <div className="flex items-center justify-between mb-4">
@@ -840,7 +840,7 @@ function PersonCard({
             </div>
           )}
 
-          {/* Archivar button — visible only in edit mode */}
+          {/* Archivar button - visible only in edit mode */}
           {editMode && (
             <button
               onClick={handleArchive}
@@ -852,7 +852,7 @@ function PersonCard({
           )}
         </div>
 
-        {/* Ver ausencias — fijo al pie */}
+        {/* Ver ausencias - fijo al pie */}
         <div className="border-t border-navy/[0.05] px-5 py-3">
           <button
             onClick={() => setShowModal(true)}
@@ -1404,7 +1404,7 @@ export default function VacacionesCalendario({
         })}
       </div>
 
-      {/* Vista Gantt — solo desktop */}
+      {/* Vista Gantt - solo desktop */}
       <section className="hidden sm:block">
         <h2 className="text-xs font-semibold text-navy/55 uppercase tracking-widest mb-4">Vista anual</h2>
         <GanttView personas={personasFiltradas} allPersonas={personas} festivos={festivos} />

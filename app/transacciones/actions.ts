@@ -72,7 +72,7 @@ async function loadContactPatternMap(
 }
 
 /** Busca el contacto cuyo patrón guardado aparece dentro del texto de un movimiento (ver
- * matchesPattern) — así un "Concepto bancario" editado a mano para quedarse más corto que el
+ * matchesPattern) - así un "Concepto bancario" editado a mano para quedarse más corto que el
  * texto real del banco (ej. "Stripe" en vez de "Stripe Technology Eu") sigue reconociendo el
  * contacto en futuros movimientos. */
 function matchContact(text: string, patterns: PatternEntry[]): ContactInfo | undefined {
@@ -128,7 +128,7 @@ export async function getContacts(): Promise<Contact[]> {
 export type ContactStats = { count: number; total: number; latest: { id: string; date: string; amount: number; concept: string | null }[] };
 
 /** Recuento, suma y últimos movimientos por contacto, cruzando sus patrones con los
- * movimientos importados — para mostrar en la tabla/drawer de Configuración > Contactos sin
+ * movimientos importados - para mostrar en la tabla/drawer de Configuración > Contactos sin
  * hacer una consulta por contacto. */
 export async function getContactsStats(): Promise<Record<number, ContactStats>> {
   const supabase = createServerClient();
@@ -236,7 +236,7 @@ export async function ignorePatterns(patterns: string[]): Promise<void> {
 /** Copia categoría/IVA/retención a los movimientos ya importados (de cualquier fecha) que
  * coincidan con alguno de los patrones dados. Se usa tanto para "Aplicar a existentes" en
  * Configuración > Contactos como, automáticamente, al confirmar un contacto nuevo o añadir un
- * patrón a uno existente durante la importación — así no hace falta acordarse de aplicarlo
+ * patrón a uno existente durante la importación - así no hace falta acordarse de aplicarlo
  * a mano para los movimientos que ya estaban importados antes de crear el contacto. */
 export async function applyPatternsToTransactions(
   supabase: ReturnType<typeof createServerClient>,
@@ -324,7 +324,7 @@ export async function applyContactToExisting(contactId: number): Promise<{ updat
 
 /** Recalcula la columna "Contacto" de todos los movimientos a partir de "Más datos" +
  * concepto, cruzando con los contactos guardados. Solo hace falta ejecutarlo una vez tras
- * separar "Más datos" (texto crudo del banco) de "Contacto" (lo que nosotros asignamos) —
+ * separar "Más datos" (texto crudo del banco) de "Contacto" (lo que nosotros asignamos) -
  * antes de eso, "contact" mezclaba ambos. Es idempotente: se puede volver a ejecutar sin
  * riesgo si se añaden contactos o patrones nuevos más adelante. */
 export async function recomputeContactsFromBankDetails(dryRun = false): Promise<{ updated: number }> {
@@ -410,7 +410,7 @@ export async function cleanupContactPatterns(dryRun = false): Promise<{ updated:
 export type ResolvedContact = { id: number; category: string | null; iva_rate: number; retencion_rate: number };
 
 /** Busca un contacto por nombre (sin distinguir mayúsculas); si no existe lo crea, y registra
- * `pattern` (concepto + más datos, ya limpios) como uno de sus conceptos de reconocimiento —
+ * `pattern` (concepto + más datos, ya limpios) como uno de sus conceptos de reconocimiento -
  * así la próxima vez que aparezca ese texto bancario se asigna solo. Usado tanto al asignar un
  * contacto a mano desde el detalle de un movimiento como al confirmar un gasto recurrente. */
 export async function resolveOrCreateContact(
@@ -448,7 +448,7 @@ export async function resolveOrCreateContact(
 
 /** Asigna un contacto a un movimiento concreto: si el contacto no existe todavía lo crea, y
  * registra el patrón (concepto + más datos, ya limpios) de este movimiento para que la
- * próxima vez que aparezca se reconozca solo — la misma idea que confirmar un contacto nuevo
+ * próxima vez que aparezca se reconozca solo - la misma idea que confirmar un contacto nuevo
  * al importar, pero hecha a mano desde el detalle de un movimiento ya importado. */
 export async function assignContactToTransaction(transactionId: string, contactLabel: string): Promise<void> {
   const supabase = createServerClient();
@@ -495,7 +495,7 @@ export type NewContactDraft = {
 /** Guarda las decisiones tomadas al revisar los contactos nuevos detectados en una
  * importación: crear contacto, añadir el patrón a uno ya existente, o descartarlo (no volver
  * a preguntar). "Concepto bancario" (bankPatterns) son los textos, editados a mano por el
- * usuario si hace falta, que se guardan como patrones de reconocimiento — pueden ser más cortos
+ * usuario si hace falta, que se guardan como patrones de reconocimiento - pueden ser más cortos
  * que el texto crudo del banco (ver matchesPattern en lib/contactRules). En los dos primeros
  * casos aplica también categoría/IVA/retención a los movimientos ya importados antes que
  * coincidan, sin esperar a que alguien pulse "Aplicar a existentes" a mano en Configuración. */

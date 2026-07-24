@@ -40,9 +40,9 @@ export default function ThemeToggle({ className = "" }: { className?: string }) 
           </svg>
         )}
       </span>
-      <span className="flex-1 text-left">{dark ? "Modo oscuro" : "Modo claro"}</span>
-      <span className={`shrink-0 w-8 h-[18px] rounded-full transition-colors relative ${dark ? "bg-navy" : "bg-navy/15"}`}>
-        <span className={`absolute top-[2px] w-[14px] h-[14px] rounded-full bg-card shadow-sm transition-transform ${dark ? "translate-x-[18px]" : "translate-x-[2px]"}`} />
+      <span className="flex-1 text-left">Modo oscuro</span>
+      <span className={`shrink-0 relative w-9 h-5 rounded-full transition-colors ${dark ? "bg-primary" : "bg-navy/20"}`}>
+        <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${dark ? "translate-x-4" : "translate-x-0"}`} />
       </span>
     </button>
   );

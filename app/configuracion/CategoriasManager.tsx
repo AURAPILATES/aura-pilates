@@ -20,7 +20,7 @@ const GROUP_LABELS: Record<GroupType, string> = {
 const GROUP_ORDER: GroupType[] = ["income", "operational", "transfer", "internal"];
 const KNOWN_GROUPS = new Set<string>(["income", "transfer", "operational", "internal"]);
 
-// Subdivisión por naturaleza económica, solo dentro de "Operacional" — derivada del nombre
+// Subdivisión por naturaleza económica, solo dentro de "Operacional" - derivada del nombre
 // de la categoría (ver lib/economicGroups.ts), no es un campo editable en BD.
 const ECONOMIC_LABELS: Record<EconomicGroup, string> = {
   personal: "Personal",
@@ -360,7 +360,7 @@ export default function CategoriasManager({
     : categories;
 
   // Lista aplanada para la vista v2 (una entrada por caja/subgrupo, en el mismo orden que
-  // renderItems() usa abajo para la vista clásica) — evita duplicar el algoritmo de agrupado.
+  // renderItems() usa abajo para la vista clásica) - evita duplicar el algoritmo de agrupado.
   const displayGroups: { sectionLabel?: string; subsectionLabel?: string; ordered: Category[] }[] = [];
   for (const g of GROUP_ORDER) {
     const items = filteredCategories.filter((c) => c.group_type === g || (g === "operational" && !KNOWN_GROUPS.has(c.group_type)));
@@ -570,7 +570,7 @@ export default function CategoriasManager({
                   </p>
                 ) : (
                   <Select value={form.parent_id ?? ""} onChange={(e) => handleParentSelect(e.target.value)}>
-                    <option value="">— Sin categoría padre —</option>
+                    <option value="">- Sin categoría padre -</option>
                     {categories
                       .filter((c) => !c.parent_id && (editor.mode !== "edit" || c.id !== editor.cat.id))
                       .map((c) => (

@@ -25,7 +25,7 @@ async function withRetry<T>(fn: () => Promise<T>, label: string, attempts = 3): 
       const retryable = !(e instanceof MomenceHttpError) || e.status === 429 || e.status >= 500;
       if (!retryable || i === attempts - 1) break;
       await sleep(1000 * 2 ** i); // 1s, 2s, 4s...
-      console.warn(`${label}: intento ${i + 1}/${attempts} falló, reintentando — ${e instanceof Error ? e.message : e}`);
+      console.warn(`${label}: intento ${i + 1}/${attempts} falló, reintentando - ${e instanceof Error ? e.message : e}`);
     }
   }
   throw lastError;
@@ -48,7 +48,7 @@ async function fetchMomenceOnce<T>(endpoint: string): Promise<T> {
       next: { revalidate: 1800, tags: ["momence"] },
     });
   } catch (e) {
-    throw new Error(`Momence (${endpoint}): sin conexión — ${e instanceof Error ? e.message : String(e)}`);
+    throw new Error(`Momence (${endpoint}): sin conexión - ${e instanceof Error ? e.message : String(e)}`);
   }
   if (!res.ok) {
     const body = await res.text().catch(() => "");
@@ -188,7 +188,7 @@ async function fetchCustomersPageOnce(page: number, pageSize: number): Promise<C
   try {
     res = await fetch(`${BASE_URL}/Customers?${params}`, { next: { revalidate: 1800, tags: ["momence"] } });
   } catch (e) {
-    throw new Error(`Momence (Customers p${page}): sin conexión — ${e instanceof Error ? e.message : String(e)}`);
+    throw new Error(`Momence (Customers p${page}): sin conexión - ${e instanceof Error ? e.message : String(e)}`);
   }
   if (!res.ok) {
     const body = await res.text().catch(() => "");

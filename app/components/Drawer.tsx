@@ -2,7 +2,7 @@
 import { useEffect } from "react";
 
 /** Pila de drawers abiertos (puede haber varios apilados, ej. NewContactDrawer sobre
- * TransactionDrawer) — Escape solo debe cerrar el de más arriba, no todos a la vez. */
+ * TransactionDrawer) - Escape solo debe cerrar el de más arriba, no todos a la vez. */
 const openDrawers: Array<() => void> = [];
 
 export default function Drawer({

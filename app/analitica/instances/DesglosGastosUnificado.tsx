@@ -67,7 +67,7 @@ export default function DesglosGastosUnificado({
   categories: TopExpenseSeg[];
   transactionsByCategory: Record<string, Txn[]>;
   totalExpCat: number;
-  /** Mismo total, calculado sobre el período de comparación — solo para el badge de variación. */
+  /** Mismo total, calculado sobre el período de comparación - solo para el badge de variación. */
   totalExpCatComp: number;
   rangeLabel?: string | null;
   lastUpdated?: string | null;

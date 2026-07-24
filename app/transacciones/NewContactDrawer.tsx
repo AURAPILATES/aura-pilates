@@ -18,7 +18,7 @@ function AutomationIcon() {
 
 /** Drawer de creación de contacto con todos los campos (categoría, IVA, retención, conceptos
  * bancarios), reutilizado tanto desde Configuración > Contactos como al crear un contacto nuevo
- * desde el detalle de un movimiento — en ese caso se prellena con los datos de la transacción. */
+ * desde el detalle de un movimiento - en ese caso se prellena con los datos de la transacción. */
 export default function NewContactDrawer({
   categories,
   initialLabel = "",

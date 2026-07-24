@@ -1,5 +1,6 @@
 import type { PricingRow } from "@/lib/stripePayments";
 import { tableHeadClassV2, tableRowClassV2, gridColsV2 } from "@/app/components/v2/tableStylesV2";
+import PreciosGuiaDrawer from "./PreciosGuiaDrawer";
 
 const COLS = "1.6fr .9fr 1fr 1fr 1.3fr";
 
@@ -10,14 +11,12 @@ function fmtEur(v: number) {
 export default function PreciosViewer({ rows }: { rows: PricingRow[] }) {
   return (
     <div>
-      <p className="text-[13px] text-muted leading-relaxed mb-5 max-w-[640px]">
-        Precios que usa la app para identificar a qué producto corresponde cada cobro de Stripe.
-        Se leen en vivo del catálogo de Momence (membresías y productos) por nombre exacto; si un
-        nombre no se encuentra ahí, se usa el precio de respaldo guardado en el código. Esta vista
-        es solo de lectura — para cambiar un precio, hazlo en Momence.
-      </p>
+      <div className="flex items-center justify-between gap-3 mb-4">
+        <p className="text-[13px] text-muted">Precios que usa la app para identificar cada cobro de Stripe.</p>
+        <PreciosGuiaDrawer />
+      </div>
 
-      {/* Tabla — escritorio */}
+      {/* Tabla - escritorio */}
       <div className="hidden sm:block">
         <div className={tableHeadClassV2} style={gridColsV2(COLS)}>
           <span>Producto</span>
@@ -35,7 +34,7 @@ export default function PreciosViewer({ rows }: { rows: PricingRow[] }) {
               <p className="text-[13.5px] font-medium text-navy truncate">{row.name}</p>
               <p className="text-[12.5px] text-muted">{row.type === "subscription" ? "Suscripción" : "Pack"}</p>
               <p className="text-right text-[13.5px] tabular-nums text-navy">
-                {usingLive ? fmtEur(row.livePrice!) : "—"}
+                {usingLive ? fmtEur(row.livePrice!) : "-"}
               </p>
               <p className={`text-right text-[13.5px] tabular-nums ${mismatch ? "text-warning font-medium" : "text-faint"}`}>
                 {fmtEur(row.fallbackPrice)}
@@ -48,7 +47,7 @@ export default function PreciosViewer({ rows }: { rows: PricingRow[] }) {
         })}
       </div>
 
-      {/* Tarjetas — móvil */}
+      {/* Tarjetas - móvil */}
       <div className="sm:hidden divide-y divide-subtle">
         {rows.map((row) => {
           const usingLive = row.livePrice !== null;
@@ -67,7 +66,7 @@ export default function PreciosViewer({ rows }: { rows: PricingRow[] }) {
               <div className="flex items-center gap-4 text-[12.5px]">
                 <span className="text-navy/55">
                   Momence{" "}
-                  <b className="text-navy font-medium tabular-nums">{usingLive ? fmtEur(row.livePrice!) : "—"}</b>
+                  <b className="text-navy font-medium tabular-nums">{usingLive ? fmtEur(row.livePrice!) : "-"}</b>
                 </span>
                 <span className="text-navy/55">
                   Respaldo{" "}
@@ -87,7 +86,7 @@ function EstadoBadge({ usingLive, mismatch }: { usingLive: boolean; mismatch: bo
     return (
       <span
         className="inline-flex items-center gap-1.5 bg-warning/10 text-warning rounded-full px-[11px] py-1 text-[12px] font-medium whitespace-nowrap"
-        title="No se encontró este nombre en el catálogo de Momence — se está usando el precio de respaldo del código."
+        title="No se encontró este nombre en el catálogo de Momence - se está usando el precio de respaldo del código."
       >
         Usando respaldo
       </span>
@@ -97,7 +96,7 @@ function EstadoBadge({ usingLive, mismatch }: { usingLive: boolean; mismatch: bo
     return (
       <span
         className="inline-flex items-center gap-1.5 bg-warning/10 text-warning rounded-full px-[11px] py-1 text-[12px] font-medium whitespace-nowrap"
-        title="El precio de Momence ya no coincide con el de respaldo guardado en el código — no es un problema, solo indica que el precio cambió y el respaldo quedó desactualizado."
+        title="El precio de Momence ya no coincide con el de respaldo guardado en el código - no es un problema, solo indica que el precio cambió y el respaldo quedó desactualizado."
       >
         Precio cambió
       </span>

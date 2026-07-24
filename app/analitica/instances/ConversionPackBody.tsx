@@ -38,7 +38,7 @@ function ConversionTooltip({ active, payload }: TooltipContentProps) {
       <p className="text-navy/55">{c.converted} / {c.buyers} convertidos</p>
       <p className="font-semibold" style={{ color: c.unreliable ? DANGER : PRIMARY }}>{fmtPct(c.rate)}</p>
       {c.immature && (
-        <p className="text-[11px] text-danger mt-1.5 leading-snug">Mes dentro de la ventana de conversión — tasa todavía provisional.</p>
+        <p className="text-[11px] text-danger mt-1.5 leading-snug">Mes dentro de la ventana de conversión - tasa todavía provisional.</p>
       )}
       {!c.immature && c.lowConfidence && (
         <p className="text-[11px] text-danger mt-1.5 leading-snug">Muestra insuficiente para ser concluyente.</p>

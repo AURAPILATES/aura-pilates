@@ -147,7 +147,7 @@ export default function SyncStatusPanel() {
         label="Banco"
         time={data.banco.lastImport ? relativeTime(data.banco.lastImport, now) : "sin datos"}
         dot="grey"
-        tooltip="Importación manual — subí el CSV desde Transacciones"
+        tooltip="Importación manual - subí el CSV desde Transacciones"
       />
     </div>
   );

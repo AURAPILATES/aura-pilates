@@ -160,7 +160,7 @@ export function HeatmapBlock({ data }: { data: HeatmapCell[] }) {
                           {pct(cell.avgOcc)}
                         </div>
                       ) : (
-                        <div className="rounded bg-transparent py-1 px-1 text-center text-navy/10">—</div>
+                        <div className="rounded bg-transparent py-1 px-1 text-center text-navy/10">-</div>
                       )}
                     </td>
                   );

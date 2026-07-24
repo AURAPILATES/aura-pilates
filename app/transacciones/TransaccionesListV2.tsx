@@ -18,7 +18,7 @@ import ImportButton from "./ImportButton";
 
 const COLS = "2.1fr .95fr 1.1fr .7fr .95fr";
 
-/** Barra flotante de acciones masivas, centrada abajo — aparece al seleccionar filas en la
+/** Barra flotante de acciones masivas, centrada abajo - aparece al seleccionar filas en la
  * tabla de escritorio (checkbox al hover, ver fila de escritorio más abajo). Solo escritorio:
  * las filas de la tabla móvil no tienen checkbox. */
 function BulkActionBarV2({
@@ -145,7 +145,7 @@ type Props = {
   onBulkDelete: () => void;
 };
 
-/** Versión abreviada para las tarjetas KPI en móvil, donde "100.036,34 €" se corta —
+/** Versión abreviada para las tarjetas KPI en móvil, donde "100.036,34 €" se corta -
  * p. ej. "63,6k €" en vez de "63.641,05 €". */
 function fmtAmtCompact(n: number): string {
   const abs = Math.abs(n);
@@ -390,13 +390,13 @@ export default function TransaccionesListV2({
               >
                 <div className="flex items-baseline justify-between px-2 py-2 bg-navy/[0.025] border-y border-border">
                   <span className="text-[12.5px] font-semibold text-muted uppercase tracking-wide">{label}</span>
-                  <span className={`text-[13px] font-semibold tabular-nums ${monthNet < 0 ? "text-[#b53e0d] dark:text-[#e69675]" : "text-[#16a34a] dark:text-[#7cdfa0]"}`}>
+                  <span className={`text-[13px] font-semibold tabular-nums ${monthNet < 0 ? "text-[#b53e0d] dark:text-[#e69675]" : "text-[#13803a] dark:text-[#7cdfa0]"}`}>
                     {monthNet < 0 ? "−" : "+"}{fmtAmt(Math.abs(monthNet))}
                   </span>
                 </div>
                 {monthTxns.map((t) => {
                   const recurringPeriod = recurringPeriods[t.id];
-                  const primary = t.contact || t.concept || "—";
+                  const primary = t.contact || t.concept || "-";
                   const secondary = t.contact && t.concept && t.concept !== t.contact ? t.concept : null;
                   const cat = t.category ? categories.find((c) => c.value === t.category) : undefined;
                   const accent = cat ? cat.text_color : CAT_FALLBACK.color;
@@ -452,7 +452,7 @@ export default function TransaccionesListV2({
                           </div>
                           <div className="text-[12.5px] text-muted whitespace-nowrap">{fmtDate(t.date)}</div>
                           <div className="text-right">
-                            <p className={`text-[13.5px] font-semibold ${t.amount > 0 ? "text-[#16a34a] dark:text-[#7cdfa0]" : "text-navy"}`}>
+                            <p className={`text-[13.5px] font-semibold ${t.amount > 0 ? "text-[#13803a] dark:text-[#7cdfa0]" : "text-navy"}`}>
                               {t.amount > 0 ? "+" : "−"}{fmtAmt(t.amount)}
                             </p>
                             {t.balance != null && <p className="text-[11px] text-faint">{fmtAmt(t.balance)}</p>}
@@ -494,7 +494,7 @@ export default function TransaccionesListV2({
                           </div>
                         </div>
                         <div className="text-right shrink-0">
-                          <p className={`text-[14px] font-semibold ${t.amount > 0 ? "text-[#16a34a] dark:text-[#7cdfa0]" : "text-navy"}`}>
+                          <p className={`text-[14px] font-semibold ${t.amount > 0 ? "text-[#13803a] dark:text-[#7cdfa0]" : "text-navy"}`}>
                             {t.amount > 0 ? "+" : "−"}{fmtAmt(t.amount)}
                           </p>
                           <p className="text-[11px] text-faint whitespace-nowrap mt-0.5">{fmtDate(t.date)}</p>

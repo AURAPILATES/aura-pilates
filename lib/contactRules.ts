@@ -1,5 +1,5 @@
 /** Una cadena es "de referencia" (número de operación, parte de un IBAN, etc.) si la mayoría
- * de sus caracteres no son letras — no identifica a un contacto real, así que agruparía mal
+ * de sus caracteres no son letras - no identifica a un contacto real, así que agruparía mal
  * (cada movimiento traería un número distinto en "Más datos": PAGO TRASPASOS, TGSS.COTIZACION...). */
 export function isReferenceLike(s: string): boolean {
   const clean = s.replace(/[\s-]/g, "");
@@ -10,7 +10,7 @@ export function isReferenceLike(s: string): boolean {
 
 /** Un token "parece un código" (de operación, de transferencia, de factura...) si es mayoría
  * dígitos, si es un bloque de mayúsculas sin vocales, o si mezcla letras y números (ej.
- * "WORKSPÑ2386", "HYVEDEMM488") — ese patrón no aparece en palabras o nombres reales, solo en
+ * "WORKSPÑ2386", "HYVEDEMM488") - ese patrón no aparece en palabras o nombres reales, solo en
  * identificadores que el banco genera por movimiento y que cambian aunque sea siempre el mismo
  * contacto. */
 function looksLikeCode(word: string): boolean {
@@ -40,7 +40,7 @@ function normalize(s: string): string {
 
 /** Quita de un texto de banco los tokens que "parecen un código" (ver looksLikeCode) o que son
  * ruido genérico de forma jurídica (ver NOISE_WORDS), dejando solo lo que identifica de forma
- * estable a un contacto — así dos movimientos del mismo contacto con referencias distintas
+ * estable a un contacto - así dos movimientos del mismo contacto con referencias distintas
  * ("SXPYDKKK", "QWERTYZZ"...) producen el mismo resultado. Si no queda ninguna palabra
  * reconocible, devuelve el texto original sin tocar. */
 export function cleanBankText(s: string | null | undefined): string {
@@ -87,7 +87,7 @@ export function contactKeyFor(concept: string | null, contact: string | null): s
 }
 
 /** Re-limpia una clave ya calculada (con el formato "concepto|másdatos" o solo texto) por si
- * se generó antes de afinar cleanBankText — para poder migrar patrones guardados sin tener
+ * se generó antes de afinar cleanBankText - para poder migrar patrones guardados sin tener
  * que volver a leer la transacción original. */
 export function recleanPattern(pattern: string): string {
   const parts = pattern.split("|");

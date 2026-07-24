@@ -42,6 +42,26 @@ const PERIODS: { key: Period; label: string }[] = [
   { key: "año", label: "Año" },
 ];
 
+/** Versión compacta para móvil, donde "38.330 €" no cabe en 3 columnas y se parte en dos
+ * líneas - p.ej. "38,3k €". En escritorio se muestra el importe completo. */
+function fmtEurCompact(v: number) {
+  const abs = Math.abs(v);
+  if (abs >= 1000) {
+    return `${(abs / 1000).toLocaleString("es-ES", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}k €`;
+  }
+  return fmtEur(abs);
+}
+
+/** Importe con dos representaciones: compacta en móvil, completa (sm+) en escritorio. */
+function ResponsiveEur({ value, prefix = "" }: { value: number; prefix?: string }) {
+  return (
+    <>
+      <span className="sm:hidden">{prefix}{fmtEurCompact(value)}</span>
+      <span className="hidden sm:inline">{prefix}{fmtEur(value)}</span>
+    </>
+  );
+}
+
 /** El histórico llega agregado por mes; para trimestre/año se vuelve a agrupar sumando los
  * meses que caen en cada bloque, en vez de pedir los datos ya agregados así al servidor. */
 function groupByPeriod(rows: IngresosPorFuenteRow[], period: Period): IngresosPorFuenteRow[] {
@@ -84,13 +104,13 @@ export default function VentasPor({
   stripeFees: number;
   stripeNet: number;
   uscGross: number;
-  /** Mismos totales, calculados sobre el período de comparación — solo para el badge de variación. */
+  /** Mismos totales, calculados sobre el período de comparación - solo para el badge de variación. */
   stripeGrossComp: number;
   stripeFeesComp: number;
   uscGrossComp: number;
   monthly: IngresosPorFuenteRow[];
   dateRange?: string;
-  /** Última fecha con datos reales de Urban en el CSV manual de Momence — Stripe sigue
+  /** Última fecha con datos reales de Urban en el CSV manual de Momence - Stripe sigue
    * mostrando su histórico completo y real, sin recortar a esta fecha. */
   uscLastDateLabel?: string | null;
   lastUpdated?: string | null;
@@ -119,7 +139,7 @@ export default function VentasPor({
   const netasDelta    = pctDelta(ventasNetas, ventasNetasComp);
 
   // La tabla desglosa TODO el histórico (no solo el período seleccionado arriba), así que su
-  // fila "Total" debe sumar las filas mostradas, no los KPI del período — el total no cambia
+  // fila "Total" debe sumar las filas mostradas, no los KPI del período - el total no cambia
   // al reagrupar por trimestre/año, así que se calcula siempre sobre el detalle mensual.
   const tableStripeGross = monthly.reduce((s, r) => s + r.stripeGross, 0);
   const tableStripeFees  = monthly.reduce((s, r) => s + r.stripeFees, 0);
@@ -219,9 +239,9 @@ export default function VentasPor({
             : (months.length > 0 ? `${periodLabel(months[0], period)} – ${periodLabel(months[months.length - 1], period)}` : undefined)
         }
         kpiItems={[
-          { label: "Ventas totales", value: fmtEur(totalBruto), helper: "Stripe bruto + Urban", delta: ventasDelta },
-          { label: "Comisión Stripe", value: `−${fmtEur(stripeFees)}`, valueClassName: "text-danger", helper: `Neto: ${fmtEur(stripeNet)}`, delta: comisionDelta },
-          { label: "Ventas netas", value: fmtEur(ventasNetas), tooltip: "Ventas totales - comisión Stripe - 21%", delta: netasDelta },
+          { label: "Ventas totales", value: <ResponsiveEur value={totalBruto} />, helper: "Stripe bruto + Urban", delta: ventasDelta },
+          { label: "Comisión Stripe", value: <ResponsiveEur value={stripeFees} prefix="−" />, valueClassName: "text-danger", helper: `Neto: ${fmtEur(stripeNet)}`, delta: comisionDelta },
+          { label: "Ventas netas", value: <ResponsiveEur value={ventasNetas} />, tooltip: "Ventas totales - comisión Stripe - 21%", delta: netasDelta },
         ]}
         toolbar={
           <div className="flex items-center justify-between gap-3 w-full flex-wrap">
@@ -245,7 +265,7 @@ export default function VentasPor({
             ? (uscLastDateLabel
                 ? `Stripe API (precio de venta, antes de comisión), datos en vivo hasta hoy. Urban Sports Club: Momence CSV (11 €/clase, importación manual en Transacciones), solo hasta el ${uscLastDateLabel}.`
                 : "Stripe API (precio de venta, antes de comisión) + Urban Sports Club Momence CSV (11 €/clase, importación manual en Transacciones)")
-            : "Solo Stripe — no incluye Urban Sports Club. Producto identificado contra el catálogo de precios en vivo de Momence · altas/bajas/reactivaciones por patrón de pagos de suscripción en Stripe"
+            : "Solo Stripe - no incluye Urban Sports Club. Producto identificado contra el catálogo de precios en vivo de Momence · altas/bajas/reactivaciones por patrón de pagos de suscripción en Stripe"
         }
         sources={view === "fuente" ? ["stripe", "momence"] : ["stripe"]}
         lastUpdated={lastUpdated}
@@ -281,7 +301,7 @@ export default function VentasPor({
                     label: s.label,
                     color: s.color,
                     value: fmtEur(s.value),
-                    helper: totalBruto > 0 ? `${Math.round((s.value / totalBruto) * 100)}%` : "—",
+                    helper: totalBruto > 0 ? `${Math.round((s.value / totalBruto) * 100)}%` : "-",
                   }))}
                 />
                 {uscLastDateLabel && (

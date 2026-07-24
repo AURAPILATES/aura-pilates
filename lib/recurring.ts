@@ -32,7 +32,7 @@ export function displayLabel(t: Transaction): string {
  * existente. Null si el movimiento no tiene contacto ni concepto.
  *
  * Si se pasa `allTransactions`, reproduce exactamente la misma lógica de desambiguación por
- * colisión de fecha que `findRecurringSeries` (ver `splitOnSameDateCollision`) — necesario para
+ * colisión de fecha que `findRecurringSeries` (ver `splitOnSameDateCollision`) - necesario para
  * que la key coincida con la que de verdad tiene la serie cuando dos series distintas comparten
  * contacto e importe (ej. dos préstamos del mismo banco con la misma cuota). Sin ese contexto,
  * se devuelve la key "base" sin sufijo. */
@@ -74,10 +74,10 @@ function matchPeriod(days: number): string | null {
 
 /** Si dentro de un mismo grupo contacto+importe hay dos movimientos en la MISMA fecha, no
  * pueden ser el mismo pago repitiéndose (un préstamo o una suscripción no se cobra dos veces el
- * mismo día) — son en realidad dos obligaciones distintas que casualmente comparten contacto e
+ * mismo día) - son en realidad dos obligaciones distintas que casualmente comparten contacto e
  * importe (ej. dos préstamos del mismo banco con la misma cuota mensual). En ese caso se separan
  * por el texto de concepto que las distingue antes de analizar la periodicidad de cada una. Sin
- * colisión de fecha se deja el grupo intacto — así no se rompen casos legítimos donde el
+ * colisión de fecha se deja el grupo intacto - así no se rompen casos legítimos donde el
  * concepto trae un código de referencia distinto cada mes (ej. Squarespace). */
 function splitOnSameDateCollision(txns: Transaction[]): { txns: Transaction[]; suffix: string | null }[] {
   const dateCounts = new Map<string, number>();
@@ -103,7 +103,7 @@ export type RecurringSeries = {
   transactions: Transaction[]; // orden ascendente por fecha
   /** true si esta serie viene de separar una colisión de fecha (ver splitOnSameDateCollision):
    * dos obligaciones reales distintas que comparten contacto+importe. computePendingRecurring
-   * no debe volver a fusionarla con otras del mismo contacto+importe — a diferencia del caso
+   * no debe volver a fusionarla con otras del mismo contacto+importe - a diferencia del caso
    * normal (mismo gasto partido en dos keys porque el contacto se asignó a mitad de historial),
    * aquí sí son dos cosas de verdad diferentes. */
   disambiguated?: boolean;
@@ -201,7 +201,7 @@ export type RecurringForecast = {
 export type PendingRecurringGroup = {
   /** Una fila puede agrupar varias series detectadas que en realidad son el mismo gasto
    * (mismo contacto + mismo importe, separadas porque parte de los movimientos no tenían el
-   * contacto asignado todavía) — se usa keys[0] como identificador estable de la fila. */
+   * contacto asignado todavía) - se usa keys[0] como identificador estable de la fila. */
   keys: string[];
   label: string;
   category: string | null;
@@ -210,7 +210,7 @@ export type PendingRecurringGroup = {
   amount: number; // negativo
   occurrences: number;
   lastDate: string;
-  /** Textos de banco (concepto + más datos, ya limpios) de cada serie agrupada — se guardan
+  /** Textos de banco (concepto + más datos, ya limpios) de cada serie agrupada - se guardan
    * como patrones del contacto al confirmar. */
   bankPatterns: string[];
   /** Contacto ya reconocido en el último movimiento de la serie (preselecciona el picker). */
@@ -226,7 +226,7 @@ type RecurringExpenseLike = { key: string; status: string; contact_id: number | 
  * key distinta porque parte de los movimientos son anteriores a tener el contacto asignado), y
  * descarta las que ya están confirmadas bajo otra key (mismo contacto+importe o etiqueta+importe).
  * Es la fuente única tanto para la lista de la pestaña "Recurrentes" como para el contador de
- * la sidebar — deben coincidir siempre.
+ * la sidebar - deben coincidir siempre.
  */
 export function computePendingRecurring(
   transactions: Transaction[],
@@ -253,7 +253,7 @@ export function computePendingRecurring(
     const contact = findMatchedContact(bankPattern, s.label);
     const amountCents = Math.round(Math.abs(s.amount) * 100);
     // Una serie "disambiguated" es una obligación real distinta que solo coincide en
-    // contacto+importe con otra por casualidad (ver RecurringSeries.disambiguated) — no se
+    // contacto+importe con otra por casualidad (ver RecurringSeries.disambiguated) - no se
     // fusiona con sus hermanas, a diferencia del caso normal (mismo gasto partido en dos keys
     // porque el contacto se asignó a mitad de historial).
     const groupKey = s.disambiguated ? `k:${s.key}` : `${contact ? `c:${contact.id}` : `p:${bankPattern}`}:${amountCents}`;
@@ -274,7 +274,7 @@ export function computePendingRecurring(
   }
   function alreadyConfirmed(g: PendingGroup): boolean {
     // Una serie disambiguated ya pasó por el filtro de key exacta (expenseByKey) al agruparla
-    // — el cruce por contacto+importe de aquí abajo es correcto para "el mismo gasto partido en
+    // - el cruce por contacto+importe de aquí abajo es correcto para "el mismo gasto partido en
     // dos keys", pero para dos obligaciones reales distintas (mismo contacto+importe) marcaría
     // la segunda como "ya confirmada" en cuanto se confirme la primera. Ver RecurringSeries.disambiguated.
     if (g.series.every((s) => s.disambiguated)) return false;

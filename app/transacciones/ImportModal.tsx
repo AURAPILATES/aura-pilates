@@ -220,7 +220,7 @@ type State =
   | { kind: "done"; imported: number; skipped: number; skippedRows: ImportRow[]; batchId: string }
   | { kind: "error"; message: string };
 
-/** Sugerencia de categoría por palabra clave para prerellenar el formulario de revisión —
+/** Sugerencia de categoría por palabra clave para prerellenar el formulario de revisión -
  * mismo criterio que el auto-categorizador del servidor (app/transacciones/actions.ts),
  * pero solo entre categorías ya existentes: nunca propone crear una nueva. */
 function suggestCategory(row: ImportRow, categories: Category[]): string | null {
@@ -238,7 +238,7 @@ function fmtAmt(n: number) {
 }
 
 /** Lista de conceptos bancarios para un contacto aún no guardado, con la misma UI de chips
- * removibles + input para añadir uno más que usa Configuración > Contactos — pero sin tocar el
+ * removibles + input para añadir uno más que usa Configuración > Contactos - pero sin tocar el
  * servidor todavía: se guardan todos juntos al confirmar la revisión. */
 function DraftPatternsEditor({ patterns, onChange }: { patterns: string[]; onChange: (patterns: string[]) => void }) {
   const [draft, setDraft] = useState("");
@@ -445,7 +445,7 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                 </svg>
                 <div className="text-center">
                   <p className="text-sm font-medium text-navy/70">Arrastra un archivo aquí</p>
-                  <p className="text-xs text-navy/40 mt-0.5">CSV, XLS o XLSX — o haz clic para seleccionar</p>
+                  <p className="text-xs text-navy/40 mt-0.5">CSV, XLS o XLSX - o haz clic para seleccionar</p>
                 </div>
                 <input ref={fileRef} type="file" accept=".csv,.xls,.xlsx,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" className="hidden"
                   onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
@@ -512,10 +512,10 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                     <div className="flex items-start justify-between gap-2 mb-3">
                       <div className="min-w-0">
                         <p className="text-xs text-navy truncate">
-                          <span className="text-navy/40">Concepto:</span> {d.concept || "—"}
+                          <span className="text-navy/40">Concepto:</span> {d.concept || "-"}
                         </p>
                         <p className="text-xs text-navy truncate mt-1">
-                          <span className="text-navy/40">Más datos:</span> {d.bankDetailsRaw || "—"}
+                          <span className="text-navy/40">Más datos:</span> {d.bankDetailsRaw || "-"}
                         </p>
                         <p className="text-[11px] text-navy/40 mt-1.5">
                           {d.count} {d.count === 1 ? "movimiento" : "movimientos"} · ej. {fmtDateShort(d.exampleDate)} · {d.exampleAmount >= 0 ? "+" : "−"}{fmtAmt(d.exampleAmount)} €
@@ -539,7 +539,7 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                     </div>
 
                     {d.action === "ignore" ? (
-                      <p className="text-xs text-navy/40 italic">Descartado — no se creará un contacto para esto.</p>
+                      <p className="text-xs text-navy/40 italic">Descartado - no se creará un contacto para esto.</p>
                     ) : (
                       <>
                         {contacts.length > 0 && (
@@ -669,7 +669,7 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                     {state.rows.slice(0, 5).map((r, i) => (
                       <tr key={i} className="border-b border-navy/[0.04] last:border-0">
                         <td className="px-3 py-2 text-navy/60 whitespace-nowrap tabular-nums">{r.date.split("-").reverse().join("/")}</td>
-                        <td className="px-3 py-2 text-navy truncate max-w-[200px]">{r.concept ?? r.bankDetails ?? "—"}</td>
+                        <td className="px-3 py-2 text-navy truncate max-w-[200px]">{r.concept ?? r.bankDetails ?? "-"}</td>
                         <td className={`px-3 py-2 text-right font-semibold tabular-nums ${r.amount >= 0 ? "text-success" : "text-navy/70"}`}>
                           {r.amount >= 0 ? "+" : "−"}{fmtAmt(r.amount)} €
                         </td>
@@ -763,7 +763,7 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                           {r.date.split("-").reverse().join("/")}
                         </span>
                         <span className="text-xs text-navy truncate flex-1">
-                          {r.concept ?? r.bankDetails ?? "—"}
+                          {r.concept ?? r.bankDetails ?? "-"}
                         </span>
                         <span className={`text-xs font-semibold tabular-nums shrink-0 ${r.amount >= 0 ? "text-success" : "text-navy/70"}`}>
                           {r.amount >= 0 ? "+" : "−"}{fmtAmt(r.amount)} €

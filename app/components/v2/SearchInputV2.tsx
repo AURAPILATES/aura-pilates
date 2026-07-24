@@ -7,7 +7,7 @@ type Props = {
   className?: string;
 };
 
-/** Barra de búsqueda del rediseño en prueba — misma API que SearchInput.tsx, otro look. */
+/** Barra de búsqueda del rediseño en prueba - misma API que SearchInput.tsx, otro look. */
 export default function SearchInputV2({ value, onChange, placeholder = "Buscar…", className = "" }: Props) {
   return (
     <div className={`relative ${className}`}>

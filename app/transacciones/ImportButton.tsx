@@ -13,7 +13,7 @@ export default function ImportButton({
   onManual?: () => void;
   compact?: boolean;
   /** Estilo del rediseño V2: icono "+" solo en móvil (mismo patrón que PrimaryButtonV2), texto
-   * completo en escritorio — para no competir por ancho ni partirse en dos líneas junto a
+   * completo en escritorio - para no competir por ancho ni partirse en dos líneas junto a
    * buscadores/avisos. */
   v2?: boolean;
 }) {

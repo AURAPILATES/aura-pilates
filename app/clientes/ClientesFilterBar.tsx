@@ -71,7 +71,7 @@ function FilterBarInner({ defaultPeriod = "30" }: { defaultPeriod?: string }) {
             onChange={(e) => update({ from: e.target.value })}
             className="text-xs text-navy bg-transparent outline-none w-[110px]"
           />
-          <span className="text-xs text-navy/30">—</span>
+          <span className="text-xs text-navy/30">-</span>
           <input
             type="date"
             value={customTo || today}
@@ -114,7 +114,7 @@ function FilterBarInner({ defaultPeriod = "30" }: { defaultPeriod?: string }) {
               onChange={(e) => update({ compareFrom: e.target.value })}
               className="text-xs text-navy bg-transparent outline-none w-[110px]"
             />
-            <span className="text-xs text-navy/30">—</span>
+            <span className="text-xs text-navy/30">-</span>
             <input
               type="date"
               value={compareTo || today}

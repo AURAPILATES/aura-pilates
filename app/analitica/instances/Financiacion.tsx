@@ -118,7 +118,7 @@ export default function Financiacion({
                   <div key={b.id}>
                     <div className="mb-1.5">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm font-medium text-navy truncate">{b.name || "—"}</p>
+                        <p className="text-sm font-medium text-navy truncate">{b.name || "-"}</p>
                         <span className={`text-sm font-semibold tabular-nums shrink-0 ${exceeded ? "text-danger" : "text-navy/70"}`}>
                           {Math.round(ratio * 100)}%
                         </span>

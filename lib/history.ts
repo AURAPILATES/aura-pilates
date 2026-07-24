@@ -2,7 +2,7 @@ import { createServerClient } from "./supabase";
 import { MomenceEvent } from "./momence";
 
 // Saves past events from an API response to Supabase, one row per day.
-// Skips days already saved — call this on every page load.
+// Skips days already saved - call this on every page load.
 export async function saveHistoricalEvents(events: MomenceEvent[]) {
   const db = createServerClient();
   const now = new Date();

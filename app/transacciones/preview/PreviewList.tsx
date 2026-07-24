@@ -249,7 +249,7 @@ export default function PreviewList({ transactions, categories, uncategorizedCou
                 {dayTxns.map((t) => {
                   const cat = t.category ? categories.find((c) => c.value === t.category) : undefined;
                   const accent = cat?.text_color ?? (t.amount > 0 ? FALLBACK_COLOR.in : FALLBACK_COLOR.out);
-                  const label = cat?.label ?? t.concept ?? "—";
+                  const label = cat?.label ?? t.concept ?? "-";
                   const badgeBg = cat
                     ? (cat.bg_color === cat.text_color ? rgba(cat.text_color, 0.12) : cat.bg_color)
                     : rgba(accent, 0.12);
@@ -257,7 +257,7 @@ export default function PreviewList({ transactions, categories, uncategorizedCou
                     <div key={t.id} className="flex items-center gap-3 py-3">
                       <SourceLogo method={t.payment_method} />
                       <div className="flex-1 min-w-0">
-                        <p className="text-[15px] font-semibold text-navy truncate">{t.contact || t.concept || "—"}</p>
+                        <p className="text-[15px] font-semibold text-navy truncate">{t.contact || t.concept || "-"}</p>
                         <p className="text-xs text-navy/40 truncate">{t.concept}</p>
                         <span
                           className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium mt-1"

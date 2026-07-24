@@ -194,11 +194,11 @@ export default function ClientesMatrizComprasV2({
                 style={gridColsV2(cols)}
               >
                 <p className="font-semibold text-navy truncate text-[13.5px]" title={customer.name ?? customer.email ?? undefined}>
-                  {customer.name ?? customer.email ?? "—"}
+                  {customer.name ?? customer.email ?? "-"}
                 </p>
                 {showFirstPurchase && (
                   <p className="text-center text-muted text-[12.5px] whitespace-nowrap">
-                    {firstPurchase ? monthLabel(firstPurchase.slice(0, 7)) : "—"}
+                    {firstPurchase ? monthLabel(firstPurchase.slice(0, 7)) : "-"}
                   </p>
                 )}
                 {visibleMonths.map((m) => {
@@ -233,7 +233,7 @@ export default function ClientesMatrizComprasV2({
               {showFirstPurchase && <div />}
               {visibleMonths.map((m) => (
                 <p key={m} className="text-center text-[10.5px] font-semibold text-muted tabular-nums">
-                  {monthTotals[m] > 0 ? fmt(monthTotals[m]) : "—"}
+                  {monthTotals[m] > 0 ? fmt(monthTotals[m]) : "-"}
                 </p>
               ))}
               <p className="text-right text-[10.5px] font-bold text-navy tabular-nums">{fmt(grandTotal)}</p>

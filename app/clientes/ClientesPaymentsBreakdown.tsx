@@ -16,7 +16,7 @@ type Props = PaymentsBreakdown & {
   customers?: CustomerRow[];
   periodLabel: string;
   excludeSegments?: SegmentKey[];
-  /** Mismos 4 totales sobre el período de comparación — solo para el badge de variación del total. */
+  /** Mismos 4 totales sobre el período de comparación - solo para el badge de variación del total. */
   compBreakdown?: { succeeded: number; refunded: number; disputed: number; failed: number };
 };
 
@@ -34,7 +34,7 @@ const CIRC = 2 * Math.PI * R;
 const SW   = 18;
 
 function fmtDate(d: string | null) {
-  if (!d) return "—";
+  if (!d) return "-";
   return d.split("-").reverse().join("/");
 }
 
@@ -61,7 +61,7 @@ export default function ClientesPaymentsBreakdown({
     .filter((it) => !excludeSegments.includes(it.key))
     .filter((it) => values[it.key] > 0);
 
-  // El total debe reflejar solo lo que de verdad se dibuja en el donut — si se excluyen
+  // El total debe reflejar solo lo que de verdad se dibuja en el donut - si se excluyen
   // segmentos (p.ej. disputed/failed), su importe no puede seguir sumando al total o el
   // anillo no llegaría al 100% y dejaría un hueco sin colorear.
   const total = visible.reduce((s, it) => s + values[it.key], 0);
@@ -77,7 +77,7 @@ export default function ClientesPaymentsBreakdown({
   }
 
   // Solo se puede abrir el drawer de un segmento si de verdad hay clientes identificados
-  // para él — si no, el clic no llevaría a ningún sitio (ver customersForSegment).
+  // para él - si no, el clic no llevaría a ningún sitio (ver customersForSegment).
   const clickableSegments = new Set(
     visible.filter((it) => customersForSegment(it.key).length > 0).map((it) => it.key),
   );
@@ -161,7 +161,7 @@ export default function ClientesPaymentsBreakdown({
                       {fmt(values[it.key])}
                     </span>
                     <span className="text-xs text-navy/40 tabular-nums w-9 text-right">
-                      {total > 0 ? pct(values[it.key] / total) : "—"}
+                      {total > 0 ? pct(values[it.key] / total) : "-"}
                     </span>
                   </div>
                 </div>

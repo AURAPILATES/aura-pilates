@@ -1,7 +1,7 @@
 "use client";
 
 /** Botón de texto transparente para vaciar todos los filtros activos de una tabla V2 de una
- * vez — se muestra solo cuando hay 2 o más filtros aplicados a la vez (una tabla con un único
+ * vez - se muestra solo cuando hay 2 o más filtros aplicados a la vez (una tabla con un único
  * filtro ya tiene su propio "quitar" en el propio control). */
 export default function ClearFiltersButtonV2({ onClick, className = "" }: { onClick: () => void; className?: string }) {
   return (

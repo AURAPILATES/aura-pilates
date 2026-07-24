@@ -10,7 +10,7 @@ function escapeHtml(s: string): string {
 }
 
 // Avisa por email cuando una sincronización falla del todo (tras agotar los
-// reintentos). Si falla el propio envío, solo se registra en consola — no
+// reintentos). Si falla el propio envío, solo se registra en consola - no
 // debe tapar el error original del cron.
 export async function sendSyncFailureAlert(source: SyncSource, error: string) {
   const apiKey = process.env.RESEND_API_KEY;
@@ -42,9 +42,9 @@ export async function sendSyncFailureAlert(source: SyncSource, error: string) {
     });
     if (!res.ok) {
       const body = await res.text().catch(() => "");
-      console.error(`sendSyncFailureAlert: Resend respondió ${res.status} — ${body}`);
+      console.error(`sendSyncFailureAlert: Resend respondió ${res.status} - ${body}`);
     }
   } catch (e) {
-    console.error("sendSyncFailureAlert: error al enviar email —", e);
+    console.error("sendSyncFailureAlert: error al enviar email -", e);
   }
 }

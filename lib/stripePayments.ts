@@ -6,9 +6,9 @@ import { catalogFromMomence } from "./productRevenue";
 
 export type StripePayment = {
   id: string;
-  amount: number;       // bruto — lo que paga el cliente, en euros
+  amount: number;       // bruto - lo que paga el cliente, en euros
   fee: number;          // comisión Stripe, en euros
-  net: number;          // neto — lo que llega al banco, en euros
+  net: number;          // neto - lo que llega al banco, en euros
   date: string;         // YYYY-MM-DD
   customerId: string | null;
   customerName: string | null;
@@ -20,7 +20,7 @@ export type StripePayment = {
   inferredType: "subscription" | "pack" | "coupon" | "unknown";
 };
 
-// Nombres/tipos de producto de referencia — estables, no cambian cuando sube un precio.
+// Nombres/tipos de producto de referencia - estables, no cambian cuando sube un precio.
 // `name` es el identificador CANÓNICO interno de la app (se usa como clave en muchos sitios:
 // ventana de vigencia, etiquetas de cliente, etc.), no tocar. El IMPORTE de cada uno se
 // resuelve en vivo contra el catálogo de Momence (ver getPricingReport más abajo); el valor
@@ -461,7 +461,7 @@ const STRIPE_METHOD_LABEL: Record<string, string> = {
 };
 
 // Categoría/producto derivados del importe (misma inferencia que usa ClientesTable),
-// no de la descripción cruda de Stripe — Momence no pasa metadatos de producto.
+// no de la descripción cruda de Stripe - Momence no pasa metadatos de producto.
 function inferredCategory(type: StripePayment["inferredType"]): string {
   if (type === "subscription") return "Suscripción";
   if (type === "pack") return "Paquete";

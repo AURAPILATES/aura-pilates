@@ -1,6 +1,6 @@
 export interface ProportionSegment {
   label: string;
-  /** color hex/rgb dinámico de la serie — ver convención de color por categoría en app/finanzas */
+  /** color hex/rgb dinámico de la serie - ver convención de color por categoría en app/finanzas */
   color: string;
   percentage: number;
   /** valor ya formateado para mostrar en la leyenda (p. ej. "5.860 €") */

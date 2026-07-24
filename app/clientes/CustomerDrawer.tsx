@@ -183,7 +183,7 @@ export default function CustomerDrawer({ customer, payments, onClose }: Props) {
         <div className="px-5 py-4 text-center">
           <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1">Primer pago</p>
           <p className="text-sm font-semibold text-navy/70">
-            {customer.firstPaymentDate ? fmtDate(customer.firstPaymentDate) : "—"}
+            {customer.firstPaymentDate ? fmtDate(customer.firstPaymentDate) : "-"}
           </p>
           {customer.firstPaymentDate && (
             <p className="text-[10px] text-navy/35 mt-0.5">{timeAgo(customer.firstPaymentDate)}</p>

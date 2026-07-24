@@ -7,7 +7,7 @@ const MONTH_LABELS: Record<string, string> = {
   "09": "Sep", "10": "Oct", "11": "Nov", "12": "Dic",
 };
 
-const PRICE_TOLERANCE = 2; // € — mismo margen que en el resto de matching por precio
+const PRICE_TOLERANCE = 2; // € - mismo margen que en el resto de matching por precio
 
 export type MonthlySubStats = {
   month: string;   // "YYYY-MM"
@@ -88,7 +88,7 @@ export function computeSubscriptionCohorts(
 }
 
 export type RetentionCohortRow = {
-  month: string;   // "YYYY-MM" — mes de la primera suscripción de la cohorte
+  month: string;   // "YYYY-MM" - mes de la primera suscripción de la cohorte
   label: string;   // "Feb 2026"
   n: number;       // tamaño de la cohorte
   values: Array<number | null>; // % retención en M+1, M+2, ... (null = mes aún no transcurrido)

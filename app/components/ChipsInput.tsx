@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 
-/** Lista de chips removibles + input para añadir uno más con Enter o al perder el foco —
+/** Lista de chips removibles + input para añadir uno más con Enter o al perder el foco -
  * mismo patrón visual en Configuración > Contactos (conceptos bancarios de un contacto) y
  * Configuración > Categorías (conceptos bancarios que auto-categorizan). */
 export default function ChipsInput({ values, onChange, placeholder = "+ añadir…", clean }: {

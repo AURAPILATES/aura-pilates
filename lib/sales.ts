@@ -232,7 +232,7 @@ export function benvingudaConversion(sales: Sale[]): ConversionSummary {
   }
 
   // Separamos suscripciones (lo único que cuenta como "conversión") de otros packs de
-  // clases (Pack 4/8, Clase suelta) — comprar otro pack sin suscribirse NO es conversión,
+  // clases (Pack 4/8, Clase suelta) - comprar otro pack sin suscribirse NO es conversión,
   // pero lo marcamos aparte para no confundirlo con quien no vuelve a comprar nada.
   const subDatesByEmail = new Map<string, string[]>();
   const otherPackDatesByEmail = new Map<string, string[]>();

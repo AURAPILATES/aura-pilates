@@ -99,7 +99,7 @@ export default function HorarioReporting({ data }: { data: ReportingData }) {
                       const cell = heatCell(wd, h);
                       if (!cell) return (
                         <td key={h} className="px-1 py-1">
-                          <div className="text-center text-[11px] text-navy/50 py-2 px-2">—</div>
+                          <div className="text-center text-[11px] text-navy/50 py-2 px-2">-</div>
                         </td>
                       );
                       return (

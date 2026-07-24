@@ -171,7 +171,7 @@ export default function GastosBreakdown({
             {/* Track ring */}
             <circle cx={CX} cy={CY} r={R} fill="none" stroke="var(--color-border)" strokeWidth={SW} />
 
-            {/* Segments — rotated to start at top */}
+            {/* Segments - rotated to start at top */}
             <g transform={`rotate(-90, ${CX}, ${CY})`}>
               {segments.map((seg, i) => (
                 <circle

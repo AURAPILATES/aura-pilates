@@ -5,7 +5,7 @@ type Props = {
   onPageChange: (page: number) => void;
 };
 
-/** Pie de paginación del rediseño en prueba — misma API que TablePagination.tsx. */
+/** Pie de paginación del rediseño en prueba - misma API que TablePagination.tsx. */
 export default function TablePaginationV2({ page, totalItems, pageSize, onPageChange }: Props) {
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
   const safePage = Math.min(page, totalPages - 1);
@@ -40,7 +40,7 @@ export default function TablePaginationV2({ page, totalItems, pageSize, onPageCh
       </p>
       {totalPages > 1 && (
         <>
-          {/* Móvil: compacto — flecha, "página X de Y", flecha */}
+          {/* Móvil: compacto - flecha, "página X de Y", flecha */}
           <div className="sm:hidden flex items-center gap-1 shrink-0">
             {prevBtn}
             <span className="text-xs font-medium text-navy px-1 whitespace-nowrap">{safePage + 1} / {totalPages}</span>

@@ -18,7 +18,7 @@ export function PrimaryButtonV2({ className = "", type = "button", icon, label, 
     return (
       <button
         type={type}
-        className={`shrink-0 flex items-center justify-center gap-[7px] w-[38px] sm:w-auto h-[38px] sm:h-auto px-0 sm:px-3.5 py-2 text-[11.5px] font-semibold text-app-bg bg-navy rounded-[10px] hover:bg-navy/85 transition-colors disabled:opacity-40 whitespace-nowrap ${className}`}
+        className={`shrink-0 flex items-center justify-center gap-[7px] w-[38px] sm:w-auto h-[38px] sm:h-auto px-0 sm:px-3.5 py-2 text-[12.5px] font-semibold text-app-bg bg-navy rounded-[10px] hover:bg-navy/85 transition-colors disabled:opacity-40 whitespace-nowrap ${className}`}
         {...props}
       >
         {icon}
@@ -29,7 +29,7 @@ export function PrimaryButtonV2({ className = "", type = "button", icon, label, 
   return (
     <button
       type={type}
-      className={`px-3.5 py-2 text-[11.5px] font-semibold text-app-bg bg-navy rounded-[10px] hover:bg-navy/85 transition-colors disabled:opacity-40 whitespace-nowrap ${className}`}
+      className={`px-3.5 py-2 text-[12.5px] font-semibold text-app-bg bg-navy rounded-[10px] hover:bg-navy/85 transition-colors disabled:opacity-40 whitespace-nowrap ${className}`}
       {...props}
     >
       {children}
@@ -37,7 +37,7 @@ export function PrimaryButtonV2({ className = "", type = "button", icon, label, 
   );
 }
 
-/** Botón de icono secundario (exportar, etc.) — cuadrado con borde, radio 10. */
+/** Botón de icono secundario (exportar, etc.) - cuadrado con borde, radio 10. */
 export function IconButtonV2({ className = "", type = "button", ...props }: ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <button

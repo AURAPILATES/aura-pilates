@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { Category } from "@/lib/categories";
+import { sortCategoriesHierarchical, categoryDisplayLabel, type Category } from "@/lib/categories";
 import type { Contact, ContactStats } from "@/app/transacciones/actions";
 import { CategoryBadge } from "@/app/transacciones/TransaccionesList";
 import Avatar from "@/app/components/Avatar";
@@ -38,77 +38,95 @@ type Props = {
   onBulkDelete: () => void;
   onBulkSetIva: (rate: number) => void;
   onBulkSetRetencion: (rate: number) => void;
+  onBulkSetCategory: (category: string | null) => void;
 };
 
-/** Barra flotante de acciones masivas, centrada abajo — aparece al seleccionar filas en la
- * tabla de escritorio (checkbox al hover, ver Avatar/checkbox en cada fila). */
+const IVA_RATES = [21, 10, 4];
+const IRPF_RATES = [15, 7, 19];
+
+/** Barra flotante de acciones masivas. En escritorio la selección se activa con el checkbox
+ * al hover; en móvil con el modo selección (tocar una fila la marca). Misma UI que las barras
+ * de Movimientos/Recurrentes: 94% del ancho y pegada abajo en móvil, compacta en escritorio. */
 function BulkActionBarV2({
-  count, onClear, onDelete, onSetIva, onSetRetencion,
+  count, categories, onClear, onDelete, onSetIva, onSetRetencion, onSetCategory,
 }: {
   count: number;
+  categories: Category[];
   onClear: () => void;
   onDelete: () => void;
   onSetIva: (rate: number) => void;
   onSetRetencion: (rate: number) => void;
+  onSetCategory: (category: string | null) => void;
 }) {
-  const [mode, setMode] = useState<"idle" | "iva" | "retencion" | "delete">("idle");
-  const [draft, setDraft] = useState("");
+  const [mode, setMode] = useState<"idle" | "iva" | "retencion" | "category" | "delete">("idle");
+  const [rateDraft, setRateDraft] = useState("");
+  const [catDraft, setCatDraft] = useState("");
 
   function submitRate() {
-    const v = parseFloat(draft.replace(",", ".")) || 0;
+    if (rateDraft === "") return;
+    const v = parseFloat(rateDraft) || 0;
     if (mode === "iva") onSetIva(v);
     if (mode === "retencion") onSetRetencion(v);
     setMode("idle");
-    setDraft("");
+    setRateDraft("");
+  }
+  function submitCategory() {
+    if (!catDraft) return;
+    onSetCategory(catDraft === "__null__" ? null : catDraft);
+    setMode("idle");
+    setCatDraft("");
   }
 
+  const selectCls = "text-[13px] rounded-[7px] px-2 py-1 bg-app-bg/10 text-app-bg border border-app-bg/20 outline-none focus:border-app-bg/40 max-w-[150px] cursor-pointer";
+  const applyCls = "text-[12px] font-semibold text-navy bg-app-bg hover:bg-app-bg/85 disabled:opacity-40 rounded-[7px] px-2.5 py-1.5 transition-colors whitespace-nowrap";
+
   return (
-    <div className="fixed left-1/2 bottom-6 -translate-x-1/2 z-30 flex items-center gap-2 bg-navy text-app-bg rounded-[14px] shadow-lg pl-4 pr-2 py-2">
-      <span className="text-[13px] font-medium whitespace-nowrap">{count} seleccionado{count !== 1 ? "s" : ""}</span>
-      <div className="w-px h-5 bg-app-bg/15 shrink-0" />
-      {mode === "iva" || mode === "retencion" ? (
-        <div className="flex items-center gap-1.5">
-          <span className="text-[12px] text-app-bg/60 whitespace-nowrap">{mode === "iva" ? "IVA" : "IRPF"} %</span>
-          <input
-            autoFocus
-            type="text"
-            inputMode="decimal"
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") submitRate(); if (e.key === "Escape") setMode("idle"); }}
-            className="w-14 px-2 py-1 text-[13px] text-navy bg-app-bg rounded-[7px] focus:outline-none"
-          />
-          <button type="button" onClick={submitRate} className="text-[12px] font-semibold text-navy bg-app-bg hover:bg-app-bg/85 rounded-[7px] px-2.5 py-1.5 transition-colors whitespace-nowrap">
-            Aplicar
-          </button>
-          <button type="button" onClick={() => setMode("idle")} className="text-app-bg/50 hover:text-app-bg text-[12px] px-1">
-            Cancelar
-          </button>
-        </div>
-      ) : mode === "delete" ? (
-        <div className="flex items-center gap-1.5">
-          <span className="text-[12px] text-app-bg/70 whitespace-nowrap">¿Eliminar {count}?</span>
-          <button type="button" onClick={onDelete} className="text-[12px] font-semibold text-white bg-[#dc2626] dark:bg-[#dd7e7e] hover:bg-[#dc2626]/85 dark:hover:bg-[#dd7e7e]/85 rounded-[7px] px-2.5 py-1.5 transition-colors whitespace-nowrap">
-            Sí, eliminar
-          </button>
-          <button type="button" onClick={() => setMode("idle")} className="text-app-bg/50 hover:text-app-bg text-[12px] px-1">
-            Cancelar
-          </button>
-        </div>
-      ) : (
-        <div className="flex items-center gap-1">
-          <button type="button" onClick={() => setMode("iva")} className="text-[12.5px] font-medium text-app-bg/85 hover:text-app-bg hover:bg-app-bg/10 rounded-[7px] px-2.5 py-1.5 transition-colors whitespace-nowrap">
-            Cambiar IVA
-          </button>
-          <button type="button" onClick={() => setMode("retencion")} className="text-[12.5px] font-medium text-app-bg/85 hover:text-app-bg hover:bg-app-bg/10 rounded-[7px] px-2.5 py-1.5 transition-colors whitespace-nowrap">
-            Cambiar IRPF
-          </button>
-          <button type="button" onClick={() => setMode("delete")} className="text-[12.5px] font-medium text-[#f87171] hover:text-white hover:bg-[#dc2626]/30 dark:hover:bg-[#dd7e7e]/30 rounded-[7px] px-2.5 py-1.5 transition-colors whitespace-nowrap">
-            Eliminar
-          </button>
-        </div>
-      )}
-      <button type="button" onClick={onClear} title="Cancelar selección" className="ml-1 w-6 h-6 flex items-center justify-center shrink-0 text-app-bg/40 hover:text-app-bg transition-colors">
+    <div className="flex fixed z-30 items-center justify-between gap-2 bg-navy text-app-bg shadow-lg pl-4 pr-2 py-2 left-1/2 -translate-x-1/2 bottom-[6px] w-[94%] rounded-[6px] sm:bottom-6 sm:w-auto sm:rounded-[14px]">
+      <div className="flex items-center gap-2 min-w-0 overflow-x-auto scrollbar-none">
+        <span className="text-[13px] font-medium whitespace-nowrap">{count} sel.<span className="hidden sm:inline">eccionado{count !== 1 ? "s" : ""}</span></span>
+        <div className="w-px h-5 bg-app-bg/15 shrink-0" />
+        {mode === "iva" || mode === "retencion" ? (
+          <div className="flex items-center gap-1.5">
+            <select autoFocus value={rateDraft} onChange={(e) => setRateDraft(e.target.value)} className={selectCls}>
+              <option value="" disabled className="text-navy">{mode === "iva" ? "IVA…" : "IRPF…"}</option>
+              <option value="0" className="text-navy">{mode === "iva" ? "Sin IVA" : "Sin IRPF"}</option>
+              {(mode === "iva" ? IVA_RATES : IRPF_RATES).map((r) => (
+                <option key={r} value={r} className="text-navy">{r}%</option>
+              ))}
+            </select>
+            <button type="button" onClick={submitRate} disabled={rateDraft === ""} className={applyCls}>Aplicar</button>
+            <button type="button" onClick={() => setMode("idle")} className="text-app-bg/50 hover:text-app-bg text-[12px] px-1">Cancelar</button>
+          </div>
+        ) : mode === "category" ? (
+          <div className="flex items-center gap-1.5">
+            <select autoFocus value={catDraft} onChange={(e) => setCatDraft(e.target.value)} className={selectCls}>
+              <option value="" disabled className="text-navy">Categoría…</option>
+              <option value="__null__" className="text-navy">Sin categoría</option>
+              {sortCategoriesHierarchical(categories).map((c) => (
+                <option key={c.value} value={c.value} className="text-navy">{categoryDisplayLabel(c, categories)}</option>
+              ))}
+            </select>
+            <button type="button" onClick={submitCategory} disabled={!catDraft} className={applyCls}>Aplicar</button>
+            <button type="button" onClick={() => setMode("idle")} className="text-app-bg/50 hover:text-app-bg text-[12px] px-1">Cancelar</button>
+          </div>
+        ) : mode === "delete" ? (
+          <div className="flex items-center gap-1.5">
+            <span className="text-[12px] text-app-bg/70 whitespace-nowrap">¿Eliminar {count}?</span>
+            <button type="button" onClick={onDelete} className="text-[12px] font-semibold text-white bg-[#dc2626] dark:bg-[#dd7e7e] hover:bg-[#dc2626]/85 dark:hover:bg-[#dd7e7e]/85 rounded-[7px] px-2.5 py-1.5 transition-colors whitespace-nowrap">
+              Sí, eliminar
+            </button>
+            <button type="button" onClick={() => setMode("idle")} className="text-app-bg/50 hover:text-app-bg text-[12px] px-1">Cancelar</button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1">
+            <button type="button" onClick={() => setMode("iva")} className="text-[12.5px] font-medium text-app-bg/85 hover:text-app-bg hover:bg-app-bg/10 rounded-[7px] px-2.5 py-1.5 transition-colors whitespace-nowrap">IVA</button>
+            <button type="button" onClick={() => setMode("retencion")} className="text-[12.5px] font-medium text-app-bg/85 hover:text-app-bg hover:bg-app-bg/10 rounded-[7px] px-2.5 py-1.5 transition-colors whitespace-nowrap">IRPF</button>
+            <button type="button" onClick={() => setMode("category")} className="text-[12.5px] font-medium text-app-bg/85 hover:text-app-bg hover:bg-app-bg/10 rounded-[7px] px-2.5 py-1.5 transition-colors whitespace-nowrap">Categoría</button>
+            <button type="button" onClick={() => setMode("delete")} className="text-[12.5px] font-medium text-[#f87171] hover:text-white hover:bg-[#dc2626]/30 dark:hover:bg-[#dd7e7e]/30 rounded-[7px] px-2.5 py-1.5 transition-colors whitespace-nowrap">Eliminar</button>
+          </div>
+        )}
+      </div>
+      <button type="button" onClick={onClear} title="Cancelar selección" className="w-6 h-6 flex items-center justify-center shrink-0 text-app-bg/40 hover:text-app-bg transition-colors">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
@@ -119,12 +137,35 @@ export default function ContactosManagerV2({
   search, onSearchChange, rows, totalCount, page, pageSize, onPageChange,
   categories, contactStats, onRowClick, onNewContact, onCleanup, cleaning, cleaned, onRecompute, recomputing, recomputed,
   pendingRecomputeCount, pendingCleanupCount,
-  selectedIds, onToggleSelect, onClearSelection, onBulkDelete, onBulkSetIva, onBulkSetRetencion,
+  selectedIds, onToggleSelect, onClearSelection, onBulkDelete, onBulkSetIva, onBulkSetRetencion, onBulkSetCategory,
 }: Props) {
+  // Modo selección solo para móvil (en escritorio se usa el checkbox al hover): tocar una
+  // fila la marca en vez de abrir su detalle.
+  const [selectionMode, setSelectionMode] = useState(false);
+  function exitSelectionMode() {
+    setSelectionMode(false);
+    onClearSelection();
+  }
+
   return (
     <div>
-      <div className="flex items-center gap-[10px] flex-wrap">
+      <div className="flex items-center gap-2 flex-wrap">
         <SearchInputV2 value={search} onChange={onSearchChange} placeholder="Buscar contacto…" className="flex-1 min-w-[160px]" />
+        {rows.length > 0 && (
+          <button
+            type="button"
+            onClick={() => (selectionMode ? exitSelectionMode() : setSelectionMode(true))}
+            title={selectionMode ? "Cancelar selección" : "Seleccionar varios"}
+            className={`sm:hidden shrink-0 flex items-center justify-center w-[38px] h-[38px] rounded-[10px] border transition-colors ${
+              selectionMode ? "border-navy bg-navy text-app-bg" : "border-border bg-card text-muted"
+            }`}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="9 11 12 14 22 4" />
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+            </svg>
+          </button>
+        )}
         <PrimaryButtonV2
           onClick={onNewContact}
           label="Nuevo contacto"
@@ -216,17 +257,28 @@ export default function ContactosManagerV2({
                     <div><CategoryBadge category={c.category} categories={categories} /></div>
                     <div><TaxBadgeV2 value={c.ivaRate} isError={bothMissing} zeroIsExplicit={c.noTax} /></div>
                     <div><TaxBadgeV2 value={c.retencionRate} isError={bothMissing} zeroIsExplicit={c.noTax} /></div>
-                    <p className="text-[13px] font-semibold text-navy">{stats?.count ?? "—"}</p>
-                    <p className="text-right text-[12.5px] text-muted">{lastDate ? fmtContactDate(lastDate) : "—"}</p>
+                    <p className="text-[13px] font-semibold text-navy">{stats?.count ?? "-"}</p>
+                    <p className="text-right text-[12.5px] text-muted">{lastDate ? fmtContactDate(lastDate) : "-"}</p>
                   </div>
                 </div>
 
                 {/* Fila móvil */}
                 <div
-                  onClick={() => onRowClick(c.id)}
-                  className="sm:hidden flex items-center gap-[10px] py-[10px] border-t border-subtle cursor-pointer active:bg-subtle"
+                  onClick={() => (selectionMode ? onToggleSelect(c.id) : onRowClick(c.id))}
+                  className={`sm:hidden flex items-center gap-[10px] px-2 py-[10px] border-t border-subtle cursor-pointer active:bg-subtle ${isSelected ? "bg-subtle" : ""}`}
                 >
-                  <Avatar seed={c.label} initials={initials(c.label)} logoDomain={knownDomain(c.label)} size={32} />
+                  {selectionMode ? (
+                    <span className="w-[32px] h-[32px] shrink-0 rounded-[10px] flex items-center justify-center border border-border bg-card">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        readOnly
+                        className="w-[16px] h-[16px] rounded-[4px] border-border accent-navy pointer-events-none"
+                      />
+                    </span>
+                  ) : (
+                    <Avatar seed={c.label} initials={initials(c.label)} logoDomain={knownDomain(c.label)} size={32} />
+                  )}
                   <div className="flex-1 min-w-0">
                     <p className="text-[14px] font-medium text-navy truncate">{c.label}</p>
                     <div className="flex items-center gap-1.5 mt-1 flex-wrap">
@@ -259,10 +311,12 @@ export default function ContactosManagerV2({
       {selectedIds.size > 0 && (
         <BulkActionBarV2
           count={selectedIds.size}
-          onClear={onClearSelection}
+          categories={categories}
+          onClear={exitSelectionMode}
           onDelete={onBulkDelete}
           onSetIva={onBulkSetIva}
           onSetRetencion={onBulkSetRetencion}
+          onSetCategory={onBulkSetCategory}
         />
       )}
     </div>

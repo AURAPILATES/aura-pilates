@@ -30,7 +30,7 @@ import {
 export type PendingSeriesRow = {
   /** Una fila puede agrupar varias series detectadas que en realidad son el mismo gasto
    * (mismo contacto + mismo importe, separadas porque parte de los movimientos no tenían el
-   * contacto asignado todavía) — se usa keys[0] como identificador estable de la fila. */
+   * contacto asignado todavía) - se usa keys[0] como identificador estable de la fila. */
   keys: string[];
   label: string;
   category: string | null;
@@ -39,7 +39,7 @@ export type PendingSeriesRow = {
   amount: number; // negativo
   occurrences: number;
   lastDate: string;
-  /** Textos de banco (concepto + más datos, ya limpios) de cada serie agrupada — se guardan
+  /** Textos de banco (concepto + más datos, ya limpios) de cada serie agrupada - se guardan
    * como patrones del contacto al confirmar. */
   bankPatterns: string[];
   /** Contacto ya reconocido en el último movimiento de la serie (preselecciona el picker). */
@@ -109,7 +109,7 @@ function pickToInfo(pick: ContactPick, contacts: Contact[]): string {
     const c = contacts.find((x) => x.id === pick.contactId);
     return c ? `Hereda de ${c.label}: IVA ${c.ivaRate}% · Retención ${c.retencionRate}%` : "";
   }
-  return "Contacto nuevo — sin IVA/retención todavía (edítalo en Configuración › Contactos).";
+  return "Contacto nuevo - sin IVA/retención todavía (edítalo en Configuración › Contactos).";
 }
 
 const END_TYPE_OPTIONS: { value: RecurringExpenseEndType; label: string }[] = [
@@ -344,7 +344,7 @@ function ConfirmPendingDrawer({ row, period, pick, end, name, ivaRate, retencion
   );
 }
 
-/** Alta manual de un gasto recurrente sin transacción real detrás — para anticipar un gasto
+/** Alta manual de un gasto recurrente sin transacción real detrás - para anticipar un gasto
  * futuro conocido (ej. "en 2 meses empiezo a pagar X"). A diferencia de ConfirmPendingDrawer,
  * aquí todos los campos parten en blanco: no hay una serie detectada de la que copiar importe,
  * periodo o contacto sugerido. */
@@ -399,7 +399,7 @@ function NewManualRecurringDrawer({ categories, contacts, pick, onOpenContactPic
   return (
     <Drawer
       title="Nuevo recurrente"
-      subtitle="Sin transacción todavía — para anticipar un gasto futuro conocido"
+      subtitle="Sin transacción todavía - para anticipar un gasto futuro conocido"
       onClose={onClose}
       footer={
         <div className="flex gap-2">
@@ -478,7 +478,7 @@ function NewManualRecurringDrawer({ categories, contacts, pick, onOpenContactPic
           onChange={(e) => setAnchorDate(e.target.value)}
           className="w-full px-3 py-2 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40"
         />
-        <p className="text-xs text-navy/40 mt-2">Último pago conocido, o el próximo previsto si aún no ha empezado — desde aquí se proyecta el siguiente.</p>
+        <p className="text-xs text-navy/40 mt-2">Último pago conocido, o el próximo previsto si aún no ha empezado - desde aquí se proyecta el siguiente.</p>
       </div>
 
       <div className="p-4">
@@ -615,7 +615,7 @@ function RecurringExpenseDrawer({ row, categories, contacts, onClose, onOpenCont
             {e.manual && row.occurrences === 0 ? "Fecha de referencia" : "Último pago"}: {fmtDate(row.lastDate)}
           </p>
         ) : (
-          e.manual && <p className="text-xs text-navy/40 mt-2">Sin transacciones todavía — pendiente de que llegue el primer pago real.</p>
+          e.manual && <p className="text-xs text-navy/40 mt-2">Sin transacciones todavía - pendiente de que llegue el primer pago real.</p>
         )}
       </div>
 
@@ -629,7 +629,7 @@ function RecurringExpenseDrawer({ row, categories, contacts, onClose, onOpenCont
           onBlur={changeLabel}
           className="w-full px-3 py-2 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40 disabled:opacity-50"
         />
-        <p className="text-xs text-navy/40 mt-2">Nombre de esta recurrencia — puede ser distinto del contacto vinculado.</p>
+        <p className="text-xs text-navy/40 mt-2">Nombre de esta recurrencia - puede ser distinto del contacto vinculado.</p>
       </div>
 
       <div className="p-4 border-b border-navy/[0.06]">
@@ -754,7 +754,7 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
     return row.matchedContactId != null ? { contactId: row.matchedContactId } : null;
   }
 
-  /** Siempre hereda el IVA/retención del contacto vinculado — no editable por recurrencia,
+  /** Siempre hereda el IVA/retención del contacto vinculado - no editable por recurrencia,
    * para que un cambio en la ficha del contacto se refleje sin desincronizarse. */
   function ivaRateFor(row: PendingSeriesRow): number {
     const pick = pickFor(row);

@@ -17,7 +17,7 @@ import ContactosManagerV2 from "./ContactosManagerV2";
 const PAGE_SIZE = 25;
 
 /** Dominios de marcas reconocibles para mostrar su logo real (favicon de Google) en vez de
- * iniciales — solo para proveedores habituales de Aura Pilates. El resto cae a iniciales. */
+ * iniciales - solo para proveedores habituales de Aura Pilates. El resto cae a iniciales. */
 const KNOWN_DOMAINS: Record<string, string> = {
   "stripe": "stripe.com",
   "squarespace": "squarespace.com",
@@ -76,7 +76,7 @@ function RateInput({ value, onSave }: { value: number; onSave: (v: number) => vo
 }
 
 /** Conceptos bancarios que identifican a un contacto, con persistencia inmediata de cada
- * alta/baja — p. ej. cuando una empresa factura con un texto distinto al habitual
+ * alta/baja - p. ej. cuando una empresa factura con un texto distinto al habitual
  * ("Spotify P4106A003" además de "SPOTIFY SPAIN SL"). */
 function PatternsEditor({ contactId, patterns, onAdd, onRemove }: {
   contactId: number;
@@ -191,7 +191,7 @@ function ContactDetailDrawer({ contact, categories, stats, onChange, onRemove, o
           <div className="bg-navy/[0.02] rounded-xl px-3 py-2.5">
             <p className="text-[11px] text-navy/40">Media por movimiento</p>
             <p className="text-lg font-semibold text-navy">{fmtAmt(avg)}</p>
-            <p className="text-[11px] text-navy/40 mt-0.5">último: {stats?.latest[0] ? fmtDate(stats.latest[0].date) : "—"}</p>
+            <p className="text-[11px] text-navy/40 mt-0.5">último: {stats?.latest[0] ? fmtDate(stats.latest[0].date) : "-"}</p>
           </div>
         </div>
 
@@ -250,7 +250,7 @@ function ContactDetailDrawer({ contact, categories, stats, onChange, onRemove, o
               {stats.latest.map((t) => (
                 <div key={t.id} className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-xs text-navy truncate">{t.concept || "—"}</p>
+                    <p className="text-xs text-navy truncate">{t.concept || "-"}</p>
                     <p className="text-[11px] text-navy/40">{fmtDate(t.date)}</p>
                   </div>
                   <span className={`text-xs font-semibold tabular-nums shrink-0 ${t.amount >= 0 ? "text-success" : "text-navy/70"}`}>
@@ -319,6 +319,14 @@ export default function ContactosManager({ contacts: initialContacts, categories
     setContacts((prev) => prev.map((c) => (selectedIds.has(c.id) ? { ...c, retencionRate: rate } : c)));
     setSelectedIds(new Set());
     await Promise.all(ids.map((id) => updateContact(id, { retencionRate: rate })));
+    router.refresh();
+  }
+
+  async function bulkSetCategoryContacts(category: string | null) {
+    const ids = Array.from(selectedIds);
+    setContacts((prev) => prev.map((c) => (selectedIds.has(c.id) ? { ...c, category } : c)));
+    setSelectedIds(new Set());
+    await Promise.all(ids.map((id) => updateContact(id, { category })));
     router.refresh();
   }
 
@@ -403,6 +411,7 @@ export default function ContactosManager({ contacts: initialContacts, categories
         onBulkDelete={bulkDeleteContacts}
         onBulkSetIva={bulkSetIvaContacts}
         onBulkSetRetencion={bulkSetRetencionContacts}
+        onBulkSetCategory={bulkSetCategoryContacts}
       />
 
       {creating && (

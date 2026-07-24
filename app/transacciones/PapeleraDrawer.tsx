@@ -118,7 +118,7 @@ export default function PapeleraDrawer({ onClose }: { onClose: () => void }) {
             <div className="divide-y divide-navy/[0.04]">
               {items.map((t) => {
                 const isRestoring = restoring.has(t.id);
-                const primary = t.contact || t.concept || "—";
+                const primary = t.contact || t.concept || "-";
                 const secondary = t.contact && t.concept && t.concept !== t.contact ? t.concept : null;
 
                 return (

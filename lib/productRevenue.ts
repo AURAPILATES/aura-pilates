@@ -9,7 +9,7 @@ const MONTH_LABELS: Record<string, string> = {
 
 export type CatalogItem = { name: string; price: number; type: string };
 
-const PRICE_TOLERANCE = 2; // € — margen para no perder cargos con descuentos puntuales de céntimos
+const PRICE_TOLERANCE = 2; // € - margen para no perder cargos con descuentos puntuales de céntimos
 
 export function catalogFromMomence(memberships: MomenceMembership[], products: MomenceProduct[]): CatalogItem[] {
   return [

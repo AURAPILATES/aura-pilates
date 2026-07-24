@@ -252,7 +252,7 @@ export default function HorarioShell({
               )}
 
 
-              {/* Day pills — tap to scroll to that day */}
+              {/* Day pills - tap to scroll to that day */}
               <div className="flex gap-1.5 overflow-x-auto pb-1 mb-2.5 scrollbar-none">
                 {weekDays.map((day) => {
                   const status = day.hasEvents ? getOccStatus(day.occ) : null;
@@ -282,7 +282,7 @@ export default function HorarioShell({
                 <OccFilterGroup occFilter={occFilter} onChange={setOccFilter} />
               </div>
 
-              {/* All days — continuous scroll */}
+              {/* All days - continuous scroll */}
               {days.length === 0 ? (
                 <p className="text-sm text-navy/40 text-center py-10">Sin clases con estos filtros.</p>
               ) : (
@@ -424,7 +424,7 @@ function HiddenEventsPanel({ events }: { events: MomenceEvent[] }) {
     if (e.isDeleted) return { label: "Eliminada", cls: "bg-navy/10 text-navy/50" };
     if (e.isCancelled) return { label: "Cancelada", cls: "bg-[#fdecea] dark:bg-[#391713] text-[#c03828] dark:text-[#d88c83]" };
     if (!e.published) return { label: "Sin publicar", cls: "bg-[#fdf0e5] dark:bg-[#392513] text-[#c07030] dark:text-[#d5a986]" };
-    return { label: "—", cls: "bg-navy/10 text-navy/50" };
+    return { label: "-", cls: "bg-navy/10 text-navy/50" };
   }
 
   return (
@@ -500,7 +500,7 @@ function KpiCard({ label, value, valueColor = "text-navy", tooltip }: {
   );
 }
 
-/** Segmentado Todas/Por llenar/A medias/Llenas — mismo componente en escritorio y móvil. */
+/** Segmentado Todas/Por llenar/A medias/Llenas - mismo componente en escritorio y móvil. */
 function OccFilterGroup({ occFilter, onChange }: { occFilter: OccFilter; onChange: (v: OccFilter) => void }) {
   return (
     <div className="overflow-x-auto scrollbar-none">

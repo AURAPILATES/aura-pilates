@@ -17,10 +17,10 @@ export default function RetencionCohorte({ cohorts }: { cohorts: RetentionCohort
       subtitle="% del grupo inicial que volvió a pagar cada mes siguiente"
       dateRange={`${cohorts[0].label} – ${cohorts[cohorts.length - 1].label}`}
       kpiItems={[
-        { label: "Retención M+1 media", value: m1Avg !== null ? `${m1Avg}%` : "—", valueClassName: "text-primary" },
+        { label: "Retención M+1 media", value: m1Avg !== null ? `${m1Avg}%` : "-", valueClassName: "text-primary" },
         {
           label: "Mejor cohorte M+1",
-          value: best ? <>{best.values[0]}% <span className="text-xs text-navy/50 font-normal">{best.label.split(" ")[0].toLowerCase()}</span></> : "—",
+          value: best ? <>{best.values[0]}% <span className="text-xs text-navy/50 font-normal">{best.label.split(" ")[0].toLowerCase()}</span></> : "-",
           valueClassName: "text-success",
         },
         { label: "Cohortes activas", value: String(cohorts.length) },

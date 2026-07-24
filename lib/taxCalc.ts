@@ -35,7 +35,7 @@ export function ivaRepercutidoFromGross(amount: number, ivaRate: number = 21): n
 
 /**
  * IVA neto a pagar de un trimestre: IVA repercutido de ventas − IVA soportado de gastos.
- * No se clampa a 0 — un resultado negativo es "a favor"/a compensar y debe mostrarse tal cual.
+ * No se clampa a 0 - un resultado negativo es "a favor"/a compensar y debe mostrarse tal cual.
  */
 export function netIvaAPagar(ivaRepercutido: number, ivaSoportado: number): number {
   return ivaRepercutido - ivaSoportado;

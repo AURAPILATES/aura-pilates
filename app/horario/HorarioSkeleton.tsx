@@ -41,7 +41,7 @@ export default function HorarioSkeleton() {
 
         <div className="animate-pulse">
 
-        {/* Stat cards — desktop */}
+        {/* Stat cards - desktop */}
         <div className="hidden sm:grid grid-cols-4 gap-3 mb-5">
           {[0, 1, 2, 3].map((i) => (
             <div key={i} className="bg-card border border-navy/[0.07] rounded-2xl shadow-card px-5 py-4">
@@ -51,7 +51,7 @@ export default function HorarioSkeleton() {
           ))}
         </div>
 
-        {/* Stat card — mobile */}
+        {/* Stat card - mobile */}
         <div className="sm:hidden bg-card border border-navy/[0.07] rounded-2xl shadow-card mb-5 overflow-hidden">
           <div className="px-5 pt-5 pb-4">
             <div className="h-12 w-20 bg-navy/10 rounded mb-1" />
@@ -66,7 +66,7 @@ export default function HorarioSkeleton() {
           </div>
         </div>
 
-        {/* Filter bar — desktop */}
+        {/* Filter bar - desktop */}
         <div className="hidden sm:flex items-center gap-3 mb-6">
           <div className="h-9 w-40 bg-card border border-navy/[0.1] rounded-lg" />
           <div className="h-9 w-48 bg-card border border-navy/[0.1] rounded-lg" />

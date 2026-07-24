@@ -19,7 +19,7 @@ import { tableHeadClassV2, tableRowClassV2, tableGroupClassV2, gridColsV2 } from
 
 const COLS = "2.1fr 1.2fr 1.1fr .9fr .9fr 1fr";
 
-/** Barra flotante de acciones masivas, centrada abajo — aparece al seleccionar filas
+/** Barra flotante de acciones masivas, centrada abajo - aparece al seleccionar filas
  * confirmadas (checkbox al hover sobre el icono de categoría, ver fila de escritorio más
  * abajo). Solo escritorio, y solo aplica a recurrentes ya confirmados (los pendientes no
  * tienen fila propia en `recurring_expenses` todavía). */
@@ -145,7 +145,7 @@ function BulkActionBarV2({
 const DAY_NAMES_ES = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
 
 /** "lunes"/"martes"… para periodos semanales/quincenales, "día N" para el resto (mensual,
- * bimestral, trimestral…) — a partir del último pago detectado. */
+ * bimestral, trimestral…) - a partir del último pago detectado. */
 function periodDayDetail(period: string, lastDate: string | null | undefined): string | null {
   if (!lastDate) return null;
   const d = new Date(lastDate + "T12:00:00");
@@ -155,10 +155,10 @@ function periodDayDetail(period: string, lastDate: string | null | undefined): s
 }
 
 /** Importe con signo y color, igual que en Movimientos: verde "+" para ingresos, oscuro "−"
- * para gastos (la mayoría de recurrentes) — en vez de mostrar siempre el valor absoluto. */
+ * para gastos (la mayoría de recurrentes) - en vez de mostrar siempre el valor absoluto. */
 function SignedAmount({ amount, className = "" }: { amount: number; className?: string }) {
   return (
-    <span className={`${amount > 0 ? "text-[#16a34a] dark:text-[#7cdfa0]" : "text-navy"} ${className}`}>
+    <span className={`${amount > 0 ? "text-[#13803a] dark:text-[#7cdfa0]" : "text-navy"} ${className}`}>
       {amount > 0 ? "+" : "−"}{fmtEUR(Math.abs(amount))}
     </span>
   );
@@ -286,7 +286,7 @@ export default function RecurrentesListV2({
       {showArchived && (
         <Drawer
           title="Recurrentes archivados"
-          subtitle="Ignorados o dados de baja — no se proyectan en la previsión de cashflow"
+          subtitle="Ignorados o dados de baja - no se proyectan en la previsión de cashflow"
           onClose={() => setShowArchived(false)}
         >
           {archived.length === 0 ? (
@@ -483,7 +483,7 @@ export default function RecurrentesListV2({
                   </div>
                   <p className="text-right text-[13.5px] font-semibold"><SignedAmount amount={e.amount} /></p>
                   <div className="flex justify-end">
-                    <span className="inline-flex items-center gap-1.5 text-[#16a34a] dark:text-[#7cdfa0] text-[12.5px] font-medium whitespace-nowrap">
+                    <span className="inline-flex items-center gap-1.5 text-[#13803a] dark:text-[#7cdfa0] text-[12.5px] font-medium whitespace-nowrap">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#16a34a] dark:bg-[#7cdfa0]" />
                       Activo
                     </span>

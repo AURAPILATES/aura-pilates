@@ -143,7 +143,7 @@ export function resolveCalendarPeriod(sp: PeriodSearchParams): ResolvedPeriod {
     from = "2025-01-01";
     to = todayStr;
     periodLabel = "Desde el inicio";
-    return { from, to, compFrom: from, compTo: from, periodLabel, compDateRange: "—" };
+    return { from, to, compFrom: from, compTo: from, periodLabel, compDateRange: "-" };
   } else if (periodType === "custom") {
     const customFrom = str(sp.from);
     const customTo = str(sp.to);
@@ -228,7 +228,7 @@ export function resolveCalendarPeriod(sp: PeriodSearchParams): ResolvedPeriod {
     }
   }
 
-  const compDateRange = compareWith === "none" ? "—" : `${fmtShort(compFrom)}–${fmtShort(compTo)}`;
+  const compDateRange = compareWith === "none" ? "-" : `${fmtShort(compFrom)}–${fmtShort(compTo)}`;
 
   return { from, to, compFrom, compTo, periodLabel, compDateRange };
 }

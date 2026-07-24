@@ -15,14 +15,13 @@ export default function ClientesGuiaDrawer() {
         type="button"
         onClick={() => setOpen(true)}
         title="Cómo se calculan estos datos"
-        className="shrink-0 flex items-center gap-1.5 h-[34px] px-3 rounded-[10px] border border-border bg-card text-muted hover:text-navy hover:bg-navy/[0.02] transition-colors"
+        className="shrink-0 flex items-center justify-center w-8 h-8 rounded-full text-navy/45 hover:text-navy hover:bg-navy/[0.05] transition-colors"
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="12" cy="12" r="10" />
           <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
           <line x1="12" y1="17" x2="12.01" y2="17" />
         </svg>
-        <span className="hidden sm:inline text-[13px] font-medium">Cómo se calcula</span>
       </button>
 
       {open && (
@@ -95,7 +94,7 @@ export default function ClientesGuiaDrawer() {
               </p>
               <p>
                 Ojo: las <B>Bajas</B> (suscripción &gt;45 días, o pack caducado hace mucho) <B>no</B>
-                aparecen aquí — ya se dan por perdidas, no como retraso.
+                aparecen aquí - ya se dan por perdidas, no como retraso.
               </p>
             </Section>
 
@@ -153,7 +152,7 @@ function Legend({ color, label, desc }: { color: string; label: string; desc: st
     <div className="flex items-start gap-2 py-0.5">
       <span className="w-2 h-2 rounded-full shrink-0 mt-1.5" style={{ backgroundColor: color }} />
       <p>
-        <span className="font-semibold text-navy">{label}</span> — {desc}
+        <span className="font-semibold text-navy">{label}</span> - {desc}
       </p>
     </div>
   );

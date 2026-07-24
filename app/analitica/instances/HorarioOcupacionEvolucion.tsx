@@ -29,7 +29,7 @@ function smoothPath(points: [number, number][]): string {
   return d;
 }
 
-// Internal coordinate system for the SVG (bars + line + gridlines only — no text).
+// Internal coordinate system for the SVG (bars + line + gridlines only - no text).
 // Text labels are rendered as plain HTML overlays positioned with percentages,
 // so font-size stays a real CSS pixel value at any screen width (no SVG-unit scaling).
 const SVG_W = 600;
@@ -187,7 +187,7 @@ export default function HorarioOcupacionEvolucion({
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
         <div className="lg:col-span-3 min-w-0">
       <div className="flex items-stretch gap-2 mb-7">
-        {/* Y-axis tick labels (plazas) — plain HTML, fixed CSS font size */}
+        {/* Y-axis tick labels (plazas) - plain HTML, fixed CSS font size */}
         <div className="relative w-7 shrink-0">
           {ticks.map((v) => (
             <div
@@ -217,7 +217,7 @@ export default function HorarioOcupacionEvolucion({
               );
             })}
 
-            {/* Event annotation lines — behind bars */}
+            {/* Event annotation lines - behind bars */}
             {data.map((d, i) => {
               const evs = eventsByPeriod.get(d.key) ?? [];
               return evs.map((ev, ei) => {
@@ -288,7 +288,7 @@ export default function HorarioOcupacionEvolucion({
               />
             ))}
 
-            {/* Event markers — rendered last (on top); tooltip content is an HTML overlay below */}
+            {/* Event markers - rendered last (on top); tooltip content is an HTML overlay below */}
             {data.map((d, i) => {
               const evs = eventsByPeriod.get(d.key) ?? [];
               return evs.map((ev, ei) => {
@@ -319,7 +319,7 @@ export default function HorarioOcupacionEvolucion({
             })}
           </svg>
 
-          {/* Hover tooltip — plain HTML overlay positioned by %, so text stays a real CSS px
+          {/* Hover tooltip - plain HTML overlay positioned by %, so text stays a real CSS px
               size instead of scaling with the SVG viewBox (same reasoning as the axis/week
               labels below: avoids the thicker-lines/oversized-text look vs. the Recharts-based
               charts elsewhere in Analítica). */}
@@ -346,7 +346,7 @@ export default function HorarioOcupacionEvolucion({
             );
           })()}
 
-          {/* Event tooltip — same HTML-overlay reasoning as the hover tooltip above */}
+          {/* Event tooltip - same HTML-overlay reasoning as the hover tooltip above */}
           {data.map((d, i) => {
             const evs = eventsByPeriod.get(d.key) ?? [];
             return evs.map((ev, ei) => {
@@ -378,7 +378,7 @@ export default function HorarioOcupacionEvolucion({
             });
           })}
 
-          {/* Week labels — plain HTML, fixed CSS font size */}
+          {/* Week labels - plain HTML, fixed CSS font size */}
           {data.map((d, i) => {
             // Patrón anclado al final: la última siempre se ve y el resto quedan repartidas
             // cada `labelStep` sin adyacencias (evita solapes).

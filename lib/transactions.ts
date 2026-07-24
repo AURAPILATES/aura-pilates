@@ -47,8 +47,8 @@ function isExpenseCategory(category: string, categories: Category[]): boolean {
 
 /** Gastos de financiación: categorías de tipo "transfer" (p.ej. cuotas de préstamo), que
  * `expensesByCategoryAll` excluye a propósito para no mezclarlas con traspasos internos
- * reales. Aquí sí cuentan como gasto real — solo el pago (importe negativo), nunca la
- * entrada del propio préstamo — para poder mostrarlas aparte en el desglose de gastos. */
+ * reales. Aquí sí cuentan como gasto real - solo el pago (importe negativo), nunca la
+ * entrada del propio préstamo - para poder mostrarlas aparte en el desglose de gastos. */
 export function financingExpensesByCategory(txns: Transaction[], categories: Category[]) {
   const map = new Map<string, { count: number; total: number }>();
   for (const t of txns) {

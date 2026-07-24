@@ -485,7 +485,7 @@ function AnaliticaFilterBarInner() {
           )}
       </div>
 
-      {/* Compare with — disabled when period is "all" */}
+      {/* Compare with - disabled when period is "all" */}
       <div className={`flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 sm:ml-auto ${disabled ? "opacity-35 pointer-events-none" : ""}`}>
         <span className="text-[11px] text-navy/40">Comparar con</span>
         <Select value={compareWith} onChange={(e) => update({ compareWith: e.target.value })}>

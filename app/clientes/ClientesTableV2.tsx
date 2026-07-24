@@ -55,8 +55,8 @@ export default function ClientesTableV2({
 
   return (
     <div>
-      <div className="flex items-center gap-2.5 flex-wrap">
-        <SearchInputV2 value={search} onChange={onSearchChange} placeholder="Buscar por nombre o email…" className="flex-1 min-w-[160px]" />
+      <SearchInputV2 value={search} onChange={onSearchChange} placeholder="Buscar por nombre o email…" className="w-full" />
+      <div className="flex items-center gap-2.5 mt-2.5">
         <Select variant="v2" value={planFilter} onChange={(e) => onPlanFilterChange(e.target.value)} className="w-auto">
           <option value="">Plan actual: todos</option>
           {PRODUCT_FILTERS.map((p) => (
@@ -147,7 +147,7 @@ export default function ClientesTableV2({
                     <div className="flex items-center gap-[11px] min-w-0">
                       <Avatar seed={c.id} initials={initials(c.name, c.email)} size={30} />
                       <div className="min-w-0">
-                        <p className="text-[14px] font-semibold text-navy truncate">{c.name ?? "—"}</p>
+                        <p className="text-[14px] font-semibold text-navy truncate">{c.name ?? "-"}</p>
                         {c.email && <p className="text-[12px] text-faint truncate">{c.email}</p>}
                       </div>
                     </div>
@@ -160,7 +160,7 @@ export default function ClientesTableV2({
                       <p className="text-[14px] font-semibold text-navy">{fmt(c.totalSpent)}</p>
                       <p className="text-[11px] text-faint">{c.paymentCount} pagos</p>
                     </div>
-                    <div className="text-[13px] text-muted">{c.lastPaymentDate ? fmtDate(c.lastPaymentDate) : "—"}</div>
+                    <div className="text-[13px] text-muted">{c.lastPaymentDate ? fmtDate(c.lastPaymentDate) : "-"}</div>
                     <div>
                       <span className="inline-flex items-center gap-[7px] border border-border rounded-full px-[11px] py-[3px] text-[12.5px] font-medium text-strong whitespace-nowrap">
                         <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: statusCfg.color }} />
@@ -180,7 +180,7 @@ export default function ClientesTableV2({
                 >
                   <Avatar seed={c.id} initials={initials(c.name, c.email)} size={32} />
                   <div className="flex-1 min-w-0">
-                    <p className="text-[14px] font-semibold text-navy truncate">{c.name ?? "—"}</p>
+                    <p className="text-[14px] font-semibold text-navy truncate">{c.name ?? "-"}</p>
                     <div className="flex items-center gap-1.5 mt-0.5">
                       <span className={`inline-block px-[7px] py-[1px] rounded-[6px] text-[11px] font-medium whitespace-nowrap ${planColorCls}`}>
                         {planLabel}

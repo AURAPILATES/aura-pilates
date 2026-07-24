@@ -30,9 +30,9 @@ export interface ChartCardProps {
   dateRange?: string;
   /** Acción a la derecha del título (p.ej. un botón "Editar"), en vez de en la fila de toolbar. */
   headerAction?: ReactNode;
-  /** KPI único con badge de delta — usar en lugar de `kpiItems`, no junto a él */
+  /** KPI único con badge de delta - usar en lugar de `kpiItems`, no junto a él */
   kpi?: SingleKpi;
-  /** grid de mini-KPIs — usar en lugar de `kpi`, no junto a él */
+  /** grid de mini-KPIs - usar en lugar de `kpi`, no junto a él */
   kpiItems?: MultiKpiItem[];
   toolbar?: ReactNode;
   children?: ReactNode;
@@ -40,7 +40,7 @@ export interface ChartCardProps {
   chartDescription?: string;
   aiInsight?: ReactNode;
   aiInsightDefaultOpen?: boolean;
-  /** detalle/metodología de la fuente — no se muestra en línea, aparece como tooltip al pasar el ratón */
+  /** detalle/metodología de la fuente - no se muestra en línea, aparece como tooltip al pasar el ratón */
   dataSource?: string;
   sources?: SourceKey[];
   /** texto ya formateado, p.ej. "ahora" / "hace 3 min" / "hoy 8:30" / "11 jun 2026" */
@@ -341,7 +341,7 @@ export function InteractiveLegend({
 }) {
   // Con pocas series sobra espacio vertical para una columna a tamaño normal; con muchas,
   // compactamos a 2 columnas y texto más pequeño para que quepan en el mismo alto. Las 2
-  // columnas solo se activan si el propio contenedor tiene sitio real (container query) —
+  // columnas solo se activan si el propio contenedor tiene sitio real (container query) -
   // en un panel lateral estrecho (25%) 2 columnas no caben y se queda en 1 compacta.
   const compact = items.length > 3;
 

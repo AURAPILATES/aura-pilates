@@ -189,7 +189,7 @@ export async function loadStripeCustomers(
     });
   }
 
-  // Merge duplicate emails — keep oldest createdAt as primary id
+  // Merge duplicate emails - keep oldest createdAt as primary id
   const byEmail = new Map<string, RawEntry[]>();
   const noEmail: RawEntry[] = [];
   for (const r of raw_customers) {

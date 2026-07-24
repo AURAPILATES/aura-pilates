@@ -3,7 +3,6 @@
 import { useEffect, useState, useRef } from "react";
 import ClientesTable, { type ClientesTableHandle, type CustomerRow } from "./ClientesTable";
 import ClientesMatrizCompras from "./ClientesMatrizCompras";
-import ClientesGuiaDrawer from "./ClientesGuiaDrawer";
 import SectionTabsV2, { type SectionTabV2 } from "@/app/components/v2/SectionTabsV2";
 import type { StripePayment } from "@/lib/stripePayments";
 
@@ -29,14 +28,7 @@ export default function ClientesShell({ customers, payments }: Props) {
 
   return (
     <>
-      <div className="flex items-stretch gap-3 mb-5">
-        <div className="flex-1 min-w-0">
-          <SectionTabsV2 active={tab} onChange={setTab} tabs={TABS} />
-        </div>
-        <div className="shrink-0 flex items-end pb-[7px]">
-          <ClientesGuiaDrawer />
-        </div>
-      </div>
+      <SectionTabsV2 className="mb-5" active={tab} onChange={setTab} tabs={TABS} />
 
       {mounted.estado && (
         <div className={tab === "estado" ? "" : "hidden"}>

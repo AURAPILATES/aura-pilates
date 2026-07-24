@@ -54,7 +54,7 @@ export default function EvolucionInscritos({ data }: { data: ActiveCustomersRow[
                 </div>
                 <div className="text-right shrink-0">
                   <span className="text-xs font-semibold text-navy tabular-nums">{s.value}</span>
-                  <span className="text-[11px] text-navy/40 ml-1">{compositionTotal > 0 ? `${Math.round(s.value / compositionTotal * 100)}%` : "—"}</span>
+                  <span className="text-[11px] text-navy/40 ml-1">{compositionTotal > 0 ? `${Math.round(s.value / compositionTotal * 100)}%` : "-"}</span>
                 </div>
               </div>
             ))}

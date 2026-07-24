@@ -1,9 +1,9 @@
 import type { ConversionCohort } from "@/lib/sales";
 
 export type CohortAnalysis = ConversionCohort & {
-  /** n·p < 5 o n·(1-p) < 5 — la proporción no es estadísticamente concluyente. */
+  /** n·p < 5 o n·(1-p) < 5 - la proporción no es estadísticamente concluyente. */
   lowConfidence: boolean;
-  /** No han pasado los días medianos de conversión desde el cierre del mes — la tasa todavía puede subir. */
+  /** No han pasado los días medianos de conversión desde el cierre del mes - la tasa todavía puede subir. */
   immature: boolean;
   unreliable: boolean;
 };
@@ -45,7 +45,7 @@ export function buildConversionInsight(analyzed: CohortAnalysis[], medianDaysToC
     const labels = immatureCohorts.map((c) => c.label).join(", ");
     const verb = immatureCohorts.length === 1 ? "no es comparable" : "no son comparables";
     sentences.push(
-      `${labels}: todavía dentro de la ventana de conversión (~${maturityWindow}d desde el pack) — su tasa ${verb} con meses anteriores.`,
+      `${labels}: todavía dentro de la ventana de conversión (~${maturityWindow}d desde el pack) - su tasa ${verb} con meses anteriores.`,
     );
   }
 

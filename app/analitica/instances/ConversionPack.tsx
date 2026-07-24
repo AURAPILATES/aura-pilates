@@ -29,7 +29,7 @@ export default function ConversionPack({ summary }: { summary: ConversionSummary
         { label: "Convertidos", value: `${totalConverted}/${totalBuyers}` },
         {
           label: "Días hasta convertir",
-          value: avgDaysToConvert !== null ? Math.round(avgDaysToConvert) : "—",
+          value: avgDaysToConvert !== null ? Math.round(avgDaysToConvert) : "-",
           tooltip: "Promedio de días desde que un alumno compra pack bienvenida hasta su siguiente compra.",
         },
       ]}

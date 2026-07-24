@@ -5,6 +5,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import SyncStatusPanel from "./SyncStatusPanel";
 import ThemeToggle from "./ThemeToggle";
+import { HideNavButton } from "./NavVisibility";
 import { usePendingRecurringCount } from "./usePendingRecurringCount";
 import { navGroups, IconSettings } from "./sidebarNav";
 
@@ -13,9 +14,9 @@ export default function Sidebar() {
   const pendingRecurringCount = usePendingRecurringCount();
 
   return (
-    <aside className="hidden sm:flex fixed top-0 left-0 h-screen w-[220px] flex-col bg-[#f9f9f7] dark:bg-[#171520] border-r border-navy/[0.07] z-30">
-      {/* Logo */}
-      <div className="px-5 py-5">
+    <aside className="app-sidebar hidden sm:flex fixed top-0 left-0 h-screen w-[220px] flex-col bg-[#f9f9f7] dark:bg-[#171520] border-r border-navy/[0.07] z-30">
+      {/* Logo + ocultar menú */}
+      <div className="px-5 py-5 flex items-center justify-between gap-2">
         <Link href="/">
           <Image
             src="/logotipo.png"
@@ -26,6 +27,7 @@ export default function Sidebar() {
             priority
           />
         </Link>
+        <HideNavButton />
       </div>
 
       {/* Nav links */}
