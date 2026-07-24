@@ -52,8 +52,9 @@ function BulkActionBarV2({
   }
 
   return (
-    <div className="hidden sm:flex fixed left-1/2 bottom-6 -translate-x-1/2 z-30 items-center gap-2 bg-navy text-app-bg rounded-[14px] shadow-lg pl-4 pr-2 py-2">
-      <span className="text-[13px] font-medium whitespace-nowrap">{count} seleccionado{count !== 1 ? "s" : ""}</span>
+    <div className="flex fixed z-30 items-center justify-between gap-2 bg-navy text-app-bg shadow-lg pl-4 pr-2 py-2 left-1/2 -translate-x-1/2 bottom-[6px] w-[94%] rounded-[6px] sm:bottom-6 sm:w-auto sm:rounded-[14px]">
+      <div className="flex items-center gap-2 min-w-0 overflow-x-auto scrollbar-none">
+      <span className="text-[13px] font-medium whitespace-nowrap">{count} sel.<span className="hidden sm:inline">eccionado{count !== 1 ? "s" : ""}</span></span>
       <div className="w-px h-5 bg-app-bg/15 shrink-0" />
       {mode === "contact" ? (
         <div className="flex items-center gap-1.5">
@@ -61,7 +62,7 @@ function BulkActionBarV2({
             autoFocus
             value={contactDraft}
             onChange={(e) => setContactDraft(e.target.value)}
-            className="text-[13px] rounded-[7px] px-2 py-1 bg-app-bg/10 text-app-bg border border-app-bg/20 outline-none focus:border-app-bg/40 max-w-[160px] cursor-pointer"
+            className="text-[13px] rounded-[7px] px-2 py-1 bg-app-bg/10 text-app-bg border border-app-bg/20 outline-none focus:border-app-bg/40 max-w-[130px] sm:max-w-[160px] cursor-pointer"
           >
             <option value="" disabled className="text-navy">Contacto…</option>
             {contacts.map((c) => (
@@ -86,7 +87,7 @@ function BulkActionBarV2({
             autoFocus
             value={catDraft}
             onChange={(e) => setCatDraft(e.target.value)}
-            className="text-[13px] rounded-[7px] px-2 py-1 bg-app-bg/10 text-app-bg border border-app-bg/20 outline-none focus:border-app-bg/40 max-w-[160px] cursor-pointer"
+            className="text-[13px] rounded-[7px] px-2 py-1 bg-app-bg/10 text-app-bg border border-app-bg/20 outline-none focus:border-app-bg/40 max-w-[130px] sm:max-w-[160px] cursor-pointer"
           >
             <option value="" disabled className="text-navy">Categoría…</option>
             <option value="__null__" className="text-navy">Sin categoría</option>
@@ -123,17 +124,18 @@ function BulkActionBarV2({
       ) : (
         <div className="flex items-center gap-1">
           <button type="button" onClick={() => setMode("contact")} className="text-[12.5px] font-medium text-app-bg/85 hover:text-app-bg hover:bg-app-bg/10 rounded-[7px] px-2.5 py-1.5 transition-colors whitespace-nowrap">
-            Cambiar contacto
+            <span className="sm:hidden">Contacto</span><span className="hidden sm:inline">Cambiar contacto</span>
           </button>
           <button type="button" onClick={() => setMode("category")} className="text-[12.5px] font-medium text-app-bg/85 hover:text-app-bg hover:bg-app-bg/10 rounded-[7px] px-2.5 py-1.5 transition-colors whitespace-nowrap">
-            Cambiar categoría
+            <span className="sm:hidden">Categoría</span><span className="hidden sm:inline">Cambiar categoría</span>
           </button>
           <button type="button" onClick={() => setMode("delete")} className="text-[12.5px] font-medium text-[#f87171] hover:text-white hover:bg-[#dc2626]/30 dark:hover:bg-[#dd7e7e]/30 rounded-[7px] px-2.5 py-1.5 transition-colors whitespace-nowrap">
             Eliminar
           </button>
         </div>
       )}
-      <button type="button" onClick={onClear} title="Cancelar selección" className="ml-1 w-6 h-6 flex items-center justify-center shrink-0 text-app-bg/40 hover:text-app-bg transition-colors">
+      </div>
+      <button type="button" onClick={onClear} title="Cancelar selección" className="w-6 h-6 flex items-center justify-center shrink-0 text-app-bg/40 hover:text-app-bg transition-colors">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
@@ -235,9 +237,17 @@ export default function RecurrentesListV2({
   selectedIds, onToggleSelect, onToggleSelectAll, onClearSelection, onBulkContact, onBulkCategory, onBulkDelete,
 }: Props) {
   const [showArchived, setShowArchived] = useState(false);
+  // Modo selección solo para móvil (en escritorio se usa el checkbox al hover): tocar una
+  // fila confirmada la marca en vez de abrir su detalle.
+  const [selectionMode, setSelectionMode] = useState(false);
   const confirmedPageIds = confirmedPageRows.map((row) => row.expense.id);
   const allConfirmedSelected = confirmedPageIds.length > 0 && confirmedPageIds.every((id) => selectedIds.has(id));
   const someConfirmedSelected = confirmedPageIds.some((id) => selectedIds.has(id));
+
+  function exitSelectionMode() {
+    setSelectionMode(false);
+    onClearSelection();
+  }
 
   return (
     <div>
@@ -272,6 +282,19 @@ export default function RecurrentesListV2({
             </div>
           )}
         </Drawer>
+      )}
+
+      {/* Móvil: activar/salir del modo selección múltiple (solo aplica a confirmados) */}
+      {confirmed.length > 0 && (
+        <div className="sm:hidden flex items-center justify-end mt-1 -mb-1">
+          <button
+            type="button"
+            onClick={() => (selectionMode ? exitSelectionMode() : setSelectionMode(true))}
+            className="text-[13px] font-medium text-primary px-2 py-1 -mr-2"
+          >
+            {selectionMode ? "Cancelar" : "Seleccionar"}
+          </button>
+        </div>
       )}
 
       <div className="mt-2 sm:mt-[24px]">
@@ -468,12 +491,22 @@ export default function RecurrentesListV2({
 
               {/* Fila móvil */}
               <div
-                onClick={() => onOpenConfirmed(row)}
-                className="sm:hidden flex items-center gap-[10px] px-2 py-[10px] border-t border-subtle cursor-pointer active:bg-subtle"
+                onClick={() => (selectionMode ? onToggleSelect(e.id) : onOpenConfirmed(row))}
+                className={`sm:hidden flex items-center gap-[10px] px-2 py-[10px] border-t border-subtle cursor-pointer active:bg-subtle ${isSelected ? "bg-subtle" : ""}`}
               >
-                <span className="w-[32px] h-[32px] shrink-0 rounded-[10px] flex items-center justify-center" style={{ backgroundColor: icon.accent }}>
-                  <CatIcon iconKey={icon.iconKey} name={icon.label ?? e.label} color="#fff" size={15} />
-                </span>
+                {selectionMode ? (
+                  <span className={`w-[32px] h-[32px] shrink-0 rounded-[10px] flex items-center justify-center border transition-colors ${isSelected ? "bg-navy border-navy" : "bg-card border-border"}`}>
+                    {isSelected && (
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    )}
+                  </span>
+                ) : (
+                  <span className="w-[32px] h-[32px] shrink-0 rounded-[10px] flex items-center justify-center" style={{ backgroundColor: icon.accent }}>
+                    <CatIcon iconKey={icon.iconKey} name={icon.label ?? e.label} color="#fff" size={15} />
+                  </span>
+                )}
                 <div className="flex-1 min-w-0">
                   <p className="text-[14px] font-medium text-navy truncate">{e.label}</p>
                   <div className="flex items-center gap-1.5 mt-1 flex-wrap">
@@ -501,7 +534,7 @@ export default function RecurrentesListV2({
           count={selectedIds.size}
           categories={categories}
           contacts={contacts}
-          onClear={onClearSelection}
+          onClear={exitSelectionMode}
           onSetContact={onBulkContact}
           onSetCategory={onBulkCategory}
           onDelete={onBulkDelete}

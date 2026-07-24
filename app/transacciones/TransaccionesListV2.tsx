@@ -41,60 +41,62 @@ function BulkActionBarV2({
   }
 
   return (
-    <div className="hidden sm:flex fixed left-1/2 bottom-6 -translate-x-1/2 z-30 items-center gap-2 bg-navy text-app-bg rounded-[14px] shadow-lg pl-4 pr-2 py-2">
-      <span className="text-[13px] font-medium whitespace-nowrap">{count} seleccionado{count !== 1 ? "s" : ""}</span>
-      <div className="w-px h-5 bg-app-bg/15 shrink-0" />
-      {mode === "category" ? (
-        <div className="flex items-center gap-1.5">
-          <select
-            autoFocus
-            value={catDraft}
-            onChange={(e) => setCatDraft(e.target.value)}
-            className="text-[13px] rounded-[7px] px-2 py-1 bg-app-bg/10 text-app-bg border border-app-bg/20 outline-none focus:border-app-bg/40 max-w-[160px] cursor-pointer"
-          >
-            <option value="" disabled className="text-navy">Categoría…</option>
-            <option value="__null__" className="text-navy">Sin categoría</option>
-            {sortCategoriesHierarchical(categories).map((c) => (
-              <option key={c.value} value={c.value} className="text-navy">{categoryDisplayLabel(c, categories)}</option>
-            ))}
-          </select>
-          <button
-            type="button"
-            onClick={submitCategory}
-            disabled={!catDraft}
-            className="text-[12px] font-semibold text-navy bg-app-bg hover:bg-app-bg/85 disabled:opacity-40 rounded-[7px] px-2.5 py-1.5 transition-colors whitespace-nowrap"
-          >
-            Aplicar
-          </button>
-          <button type="button" onClick={() => setMode("idle")} className="text-app-bg/50 hover:text-app-bg text-[12px] px-1">
-            Cancelar
-          </button>
-        </div>
-      ) : mode === "delete" ? (
-        <div className="flex items-center gap-1.5">
-          <span className="text-[12px] text-app-bg/70 whitespace-nowrap">¿Eliminar {count}?</span>
-          <button
-            type="button"
-            onClick={onDelete}
-            className="text-[12px] font-semibold text-white bg-[#dc2626] dark:bg-[#dd7e7e] hover:bg-[#dc2626]/85 dark:hover:bg-[#dd7e7e]/85 rounded-[7px] px-2.5 py-1.5 transition-colors whitespace-nowrap"
-          >
-            Sí, eliminar
-          </button>
-          <button type="button" onClick={() => setMode("idle")} className="text-app-bg/50 hover:text-app-bg text-[12px] px-1">
-            Cancelar
-          </button>
-        </div>
-      ) : (
-        <div className="flex items-center gap-1">
-          <button type="button" onClick={() => setMode("category")} className="text-[12.5px] font-medium text-app-bg/85 hover:text-app-bg hover:bg-app-bg/10 rounded-[7px] px-2.5 py-1.5 transition-colors whitespace-nowrap">
-            Editar categoría
-          </button>
-          <button type="button" onClick={() => setMode("delete")} className="text-[12.5px] font-medium text-[#f87171] hover:text-white hover:bg-[#dc2626]/30 dark:hover:bg-[#dd7e7e]/30 rounded-[7px] px-2.5 py-1.5 transition-colors whitespace-nowrap">
-            Eliminar
-          </button>
-        </div>
-      )}
-      <button type="button" onClick={onClear} title="Cancelar selección" className="ml-1 w-6 h-6 flex items-center justify-center shrink-0 text-app-bg/40 hover:text-app-bg transition-colors">
+    <div className="flex fixed z-30 items-center justify-between gap-2 bg-navy text-app-bg shadow-lg pl-4 pr-2 py-2 left-1/2 -translate-x-1/2 bottom-[6px] w-[94%] rounded-[6px] sm:bottom-6 sm:w-auto sm:rounded-[14px]">
+      <div className="flex items-center gap-2 min-w-0">
+        <span className="text-[13px] font-medium whitespace-nowrap">{count} sel.<span className="hidden sm:inline">eccionado{count !== 1 ? "s" : ""}</span></span>
+        <div className="w-px h-5 bg-app-bg/15 shrink-0" />
+        {mode === "category" ? (
+          <div className="flex items-center gap-1.5">
+            <select
+              autoFocus
+              value={catDraft}
+              onChange={(e) => setCatDraft(e.target.value)}
+              className="text-[13px] rounded-[7px] px-2 py-1 bg-app-bg/10 text-app-bg border border-app-bg/20 outline-none focus:border-app-bg/40 max-w-[130px] sm:max-w-[160px] cursor-pointer"
+            >
+              <option value="" disabled className="text-navy">Categoría…</option>
+              <option value="__null__" className="text-navy">Sin categoría</option>
+              {sortCategoriesHierarchical(categories).map((c) => (
+                <option key={c.value} value={c.value} className="text-navy">{categoryDisplayLabel(c, categories)}</option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={submitCategory}
+              disabled={!catDraft}
+              className="text-[12px] font-semibold text-navy bg-app-bg hover:bg-app-bg/85 disabled:opacity-40 rounded-[7px] px-2.5 py-1.5 transition-colors whitespace-nowrap"
+            >
+              Aplicar
+            </button>
+            <button type="button" onClick={() => setMode("idle")} className="text-app-bg/50 hover:text-app-bg text-[12px] px-1">
+              Cancelar
+            </button>
+          </div>
+        ) : mode === "delete" ? (
+          <div className="flex items-center gap-1.5">
+            <span className="text-[12px] text-app-bg/70 whitespace-nowrap">¿Eliminar {count}?</span>
+            <button
+              type="button"
+              onClick={onDelete}
+              className="text-[12px] font-semibold text-white bg-[#dc2626] dark:bg-[#dd7e7e] hover:bg-[#dc2626]/85 dark:hover:bg-[#dd7e7e]/85 rounded-[7px] px-2.5 py-1.5 transition-colors whitespace-nowrap"
+            >
+              Sí, eliminar
+            </button>
+            <button type="button" onClick={() => setMode("idle")} className="text-app-bg/50 hover:text-app-bg text-[12px] px-1">
+              Cancelar
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1">
+            <button type="button" onClick={() => setMode("category")} className="text-[12.5px] font-medium text-app-bg/85 hover:text-app-bg hover:bg-app-bg/10 rounded-[7px] px-2.5 py-1.5 transition-colors whitespace-nowrap">
+              <span className="sm:hidden">Categoría</span><span className="hidden sm:inline">Editar categoría</span>
+            </button>
+            <button type="button" onClick={() => setMode("delete")} className="text-[12.5px] font-medium text-[#f87171] hover:text-white hover:bg-[#dc2626]/30 dark:hover:bg-[#dd7e7e]/30 rounded-[7px] px-2.5 py-1.5 transition-colors whitespace-nowrap">
+              Eliminar
+            </button>
+          </div>
+        )}
+      </div>
+      <button type="button" onClick={onClear} title="Cancelar selección" className="w-6 h-6 flex items-center justify-center shrink-0 text-app-bg/40 hover:text-app-bg transition-colors">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
@@ -176,6 +178,10 @@ export default function TransaccionesListV2({
   selectedIds, onToggleSelect, onToggleSelectAll, onClearSelection, onBulkCategory, onBulkDelete,
 }: Props) {
   const [filtersOpen, setFiltersOpen] = useState(false);
+  // Modo selección solo para móvil: en escritorio se selecciona con el checkbox al hover,
+  // pero en móvil no hay hover, así que se activa un modo en el que tocar una fila la marca
+  // en vez de abrir su detalle.
+  const [selectionMode, setSelectionMode] = useState(false);
   const monthRefs = useRef(new Map<string, HTMLDivElement>());
   const pageIds = byMonth.flatMap(([, txns]) => txns.map((t) => t.id));
   const allPageSelected = pageIds.length > 0 && pageIds.every((id) => selectedIds.has(id));
@@ -195,6 +201,11 @@ export default function TransaccionesListV2({
 
   function scrollToMonth(key: string) {
     monthRefs.current.get(key)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function exitSelectionMode() {
+    setSelectionMode(false);
+    onClearSelection();
   }
 
   return (
@@ -307,6 +318,19 @@ export default function TransaccionesListV2({
               );
             })}
           </div>
+        </div>
+      )}
+
+      {/* Móvil: activar/salir del modo selección múltiple */}
+      {byMonth.length > 0 && (
+        <div className="sm:hidden flex items-center justify-end mt-1 -mb-1">
+          <button
+            type="button"
+            onClick={() => (selectionMode ? exitSelectionMode() : setSelectionMode(true))}
+            className="text-[13px] font-medium text-primary px-2 py-1 -mr-2"
+          >
+            {selectionMode ? "Cancelar" : "Seleccionar"}
+          </button>
         </div>
       )}
 
@@ -436,12 +460,22 @@ export default function TransaccionesListV2({
 
                       {/* Fila móvil */}
                       <div
-                        className="sm:hidden flex items-start gap-[10px] px-2 py-[10px] border-t border-subtle cursor-pointer active:bg-subtle"
-                        onClick={() => onRowClick(t.id)}
+                        className={`sm:hidden flex items-start gap-[10px] px-2 py-[10px] border-t border-subtle cursor-pointer active:bg-subtle ${isSelected ? "bg-subtle" : ""}`}
+                        onClick={() => (selectionMode ? onToggleSelect(t.id) : onRowClick(t.id))}
                       >
-                        <span className="w-[32px] h-[32px] shrink-0 rounded-[10px] flex items-center justify-center" style={{ backgroundColor: accent }}>
-                          <CatIcon iconKey={iconKey} name={cat?.label ?? primary} color="#fff" size={15} />
-                        </span>
+                        {selectionMode ? (
+                          <span className={`w-[32px] h-[32px] shrink-0 rounded-[10px] flex items-center justify-center border transition-colors ${isSelected ? "bg-navy border-navy" : "bg-card border-border"}`}>
+                            {isSelected && (
+                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            )}
+                          </span>
+                        ) : (
+                          <span className="w-[32px] h-[32px] shrink-0 rounded-[10px] flex items-center justify-center" style={{ backgroundColor: accent }}>
+                            <CatIcon iconKey={iconKey} name={cat?.label ?? primary} color="#fff" size={15} />
+                          </span>
+                        )}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5 min-w-0">
                             <p className="text-[14px] font-semibold text-navy truncate">{primary}</p>
@@ -482,7 +516,7 @@ export default function TransaccionesListV2({
         <BulkActionBarV2
           count={selectedIds.size}
           categories={categories}
-          onClear={onClearSelection}
+          onClear={exitSelectionMode}
           onSetCategory={onBulkCategory}
           onDelete={onBulkDelete}
         />
