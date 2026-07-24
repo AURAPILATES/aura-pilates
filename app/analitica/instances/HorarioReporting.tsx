@@ -20,14 +20,11 @@ function occTone(value: number) {
 
 const WEEKDAY_SHORT = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
 
-function fmtD(d: string) {
-  const [y, m, day] = d.split("-");
-  return `${day}/${m}/${y.slice(2)}`;
-}
-
 export default function HorarioReporting({ data }: { data: ReportingData }) {
-  const { main, periodFrom, periodTo, businessEvents } = data;
-  const dateRange = `${fmtD(periodFrom)} – ${fmtD(periodTo)}`;
+  // El badge de fecha usa el mismo `periodLabel` del filtro global que el resto de cards
+  // acotadas al período (p.ej. "2026" / "Jul 2026"), para que todas indiquen lo mismo.
+  const { main, periodLabel, businessEvents } = data;
+  const dateRange = periodLabel;
 
   const heatmap    = occupancyHeatmap(main);
   const heatmapHours = [...new Set(heatmap.map((c) => c.hour))].sort((a, b) => a - b);

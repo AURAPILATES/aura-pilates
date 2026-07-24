@@ -6,6 +6,7 @@ import { AlertTriangle, CreditCard, UserPlus, DollarSign, Activity, Users } from
 import { fmt } from "@/lib/analytics";
 import Drawer from "@/app/components/Drawer";
 import DeltaBadge, { pctDelta, type DeltaDirection } from "@/components/charts/DeltaBadge";
+import { InfoDot } from "@/components/charts";
 import { isChurned, type EnrichedCustomer } from "@/lib/customerEnrichment";
 import { ackPaymentErrorAction } from "@/app/actions/ackPaymentError";
 
@@ -101,13 +102,7 @@ function StatBox({
       <div className="flex items-center gap-1.5 text-navy/50 mb-2.5">
         {icon}
         <span className="text-[13px] font-medium">{label}</span>
-        <span className="shrink-0 text-navy/30 cursor-help" title={tooltip}>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10"/>
-            <line x1="12" y1="16" x2="12" y2="12"/>
-            <line x1="12" y1="8" x2="12.01" y2="8"/>
-          </svg>
-        </span>
+        <InfoDot text={tooltip} />
       </div>
       <div className="flex items-center gap-1.5 flex-wrap">
         <span className={`text-2xl font-medium leading-tight tabular-nums ${valueClassName ?? "text-navy"}`}>

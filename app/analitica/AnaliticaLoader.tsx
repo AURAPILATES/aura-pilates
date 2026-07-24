@@ -574,6 +574,7 @@ export default async function AnaliticaLoader({
                 txns={txnsMain}
                 categories={dbCategories}
                 lastUpdated={bancoLastUpdated}
+                dateRange={periodLabel}
                 kpiItems={[
                   { label: "Margen del período", value: fmt(periodMargin), delta: pctDelta(periodMargin, periodMarginComp) },
                   { label: "Margen mensual", value: fmt(avgMonthlyMargin), helper: "media últimos 3 m" },

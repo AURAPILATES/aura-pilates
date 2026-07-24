@@ -26,7 +26,7 @@ export default function EvolucionInscritos({ data }: { data: ActiveCustomersRow[
     <ChartCard
       title="Evolución de clientes activos"
       subtitle="Clientes con suscripción o pack vigente al cierre de cada mes."
-      dateRange="Desde apertura"
+      dateRange="Desde el inicio"
       dataSource="Suscripción (vigencia 31 días) o pack (15–90 días según tipo) según último pago en Stripe"
       sources={["stripe"]}
       lastUpdated="ahora"

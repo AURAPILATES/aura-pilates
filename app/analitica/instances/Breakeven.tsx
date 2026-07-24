@@ -29,7 +29,7 @@ export default function Breakeven({ points, lastUpdated }: { points: BreakevenPo
   return (
     <ChartCard
       title="Breakeven desde el inicio"
-      dateRange="Desde apertura"
+      dateRange="Desde el inicio"
       subtitle={
         isBreakeven ? (
           <span className="text-success font-medium">

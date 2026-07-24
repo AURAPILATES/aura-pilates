@@ -150,17 +150,17 @@ export default function ClientesPaymentsBreakdown({
                 <div
                   key={it.key}
                   onClick={clickable ? () => setOpen(it.key) : undefined}
-                  className={`flex items-center justify-between py-2.5 ${clickable ? "cursor-pointer hover:bg-navy/[0.02] -mx-1 px-1 rounded-lg group" : ""} transition-colors`}
+                  className={`flex items-center justify-between gap-3 py-2.5 ${clickable ? "cursor-pointer hover:bg-navy/[0.02] -mx-1 px-1 rounded-lg group" : ""} transition-colors`}
                 >
-                  <div className="flex items-center gap-2.5">
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
                     <span className={`w-2 h-2 rounded-full ${it.bg} shrink-0`} />
-                    <span className={`text-[13px] text-navy/65 ${clickable ? "group-hover:text-navy" : ""} transition-colors`}>{it.label}</span>
+                    <span className={`text-[13px] text-navy/65 truncate ${clickable ? "group-hover:text-navy" : ""} transition-colors`}>{it.label}</span>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 shrink-0">
                     <span className={`text-[13px] font-semibold tabular-nums ${it.key === "succeeded" ? "text-navy" : "text-navy/60"}`}>
                       {fmt(values[it.key])}
                     </span>
-                    <span className="text-xs text-navy/40 tabular-nums w-10 text-right">
+                    <span className="text-xs text-navy/40 tabular-nums w-9 text-right">
                       {total > 0 ? pct(values[it.key] / total) : "—"}
                     </span>
                     {clickable && (

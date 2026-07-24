@@ -78,19 +78,20 @@ export default function VolumenBruto({
   categories,
   lastUpdated,
   kpiItems,
+  dateRange,
 }: {
   txns: Transaction[];
   categories: Category[];
   lastUpdated?: string | null;
   kpiItems?: MultiKpiItem[];
+  /** Label del período global del filtro (p.ej. "2026"), para que el badge sea consistente
+   * con el resto de cards; el toggle interno mes/trim/año reagrupa dentro de ese período. */
+  dateRange?: string;
 }) {
   const [period, setPeriod] = useState<Period>("mes");
   const [chartType, setChartType] = useState<"bar" | "line">("bar");
 
   const data = groupData(txns, categories, period);
-  const dateRange = data.length > 0
-    ? data.length > 1 ? `${data[0].label} – ${data[data.length - 1].label}` : data[0].label
-    : undefined;
 
   return (
     <ChartCard

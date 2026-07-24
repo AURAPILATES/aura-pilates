@@ -15,6 +15,8 @@ export type {
 export { default as DeltaBadge } from "./DeltaBadge";
 export type { DeltaBadgeProps, DeltaDirection } from "./DeltaBadge";
 
+export { default as InfoDot } from "./InfoDot";
+
 export { default as RunwayDots } from "./RunwayDots";
 export type { RunwayDotsProps, RunwayTone } from "./RunwayDots";
 

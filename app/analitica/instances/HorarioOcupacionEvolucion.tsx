@@ -136,6 +136,12 @@ export default function HorarioOcupacionEvolucion({
 
   const periodLabelLower = PERIODS.find((p) => p.key === period)!.label.toLowerCase();
 
+  // Etiquetas del eje X: cada etiqueta ("dd/mm") ocupa ~40px, así que si hay más de las que
+  // caben se solapan. Mostramos como mucho ~6 en móvil / ~12 en escritorio, repartidas de
+  // forma regular y siempre incluyendo la última, para que nunca se pisen.
+  const maxLabels = isNarrow ? 6 : 12;
+  const labelStep = Math.max(1, Math.ceil(data.length / maxLabels));
+
   if (data.length === 0) {
     return (
       <ChartCard title="Evolución de la ocupación" subtitle={`Ocupado vs. total y % de ocupación por ${periodLabelLower}`} dateRange={dateRange} kpiItems={kpiItems}>
@@ -153,32 +159,31 @@ export default function HorarioOcupacionEvolucion({
       dataSource={`Eventos activos en Momence, agrupados por ${periodLabelLower}`}
       sources={["momence"]}
       toolbar={
-        <>
-          <div className="flex items-center gap-3 flex-wrap">
-            <ChartTypeToggle
-              value={chartType}
-              onChange={(v) => setChartType(v as "bar" | "line")}
-              options={[
-                { value: "bar", label: "Ver como barras", icon: <BarChart2 size={14} /> },
-                { value: "line", label: "Ver como línea", icon: <Activity size={14} /> },
-              ]}
-            />
-            <StaticLegend
-              items={[
-                { label: "Ocupado", color: "var(--chart-blue-1)", swatch: "dot" },
-                { label: "Libre", color: "var(--chart-blue-2)", swatch: "dot" },
-                { label: "% ocupación", color: "var(--color-income)", swatch: "line" },
-              ]}
-            />
-          </div>
+        <div className="flex items-center justify-between gap-3 w-full flex-nowrap">
+          <ChartTypeToggle
+            value={chartType}
+            onChange={(v) => setChartType(v as "bar" | "line")}
+            options={[
+              { value: "bar", label: "Ver como barras", icon: <BarChart2 size={14} /> },
+              { value: "line", label: "Ver como línea", icon: <Activity size={14} /> },
+            ]}
+          />
           <ToggleGroup
             value={period}
             onChange={(v) => setPeriod(v as OccupancyPeriod)}
             options={PERIODS.map((p) => ({ value: p.key, label: p.label }))}
           />
-        </>
+        </div>
       }
     >
+      <StaticLegend
+        className="mb-4"
+        items={[
+          { label: "Ocupado", color: "var(--chart-blue-1)", swatch: "dot" },
+          { label: "Libre", color: "var(--chart-blue-2)", swatch: "dot" },
+          { label: "% ocupación", color: "var(--color-income)", swatch: "line" },
+        ]}
+      />
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
         <div className="lg:col-span-3 min-w-0">
       <div className="flex items-stretch gap-2 mb-7">
@@ -375,7 +380,9 @@ export default function HorarioOcupacionEvolucion({
 
           {/* Week labels — plain HTML, fixed CSS font size */}
           {data.map((d, i) => {
-            if (data.length > 14 && i % 2 === 1) return null; // thin out labels on long ranges
+            // Patrón anclado al final: la última siempre se ve y el resto quedan repartidas
+            // cada `labelStep` sin adyacencias (evita solapes).
+            if ((data.length - 1 - i) % labelStep !== 0) return null;
             return (
               <div
                 key={`wk-${d.key}`}
