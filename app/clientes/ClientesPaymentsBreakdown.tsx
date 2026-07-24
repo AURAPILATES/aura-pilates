@@ -150,11 +150,11 @@ export default function ClientesPaymentsBreakdown({
                 <div
                   key={it.key}
                   onClick={clickable ? () => setOpen(it.key) : undefined}
-                  className={`flex items-center justify-between gap-3 py-2.5 ${clickable ? "cursor-pointer hover:bg-navy/[0.02] -mx-1 px-1 rounded-lg group" : ""} transition-colors`}
+                  className={`flex items-center justify-between gap-3 py-2.5 ${clickable ? "cursor-pointer" : ""}`}
                 >
                   <div className="flex items-center gap-2.5 min-w-0 flex-1">
                     <span className={`w-2 h-2 rounded-full ${it.bg} shrink-0`} />
-                    <span className={`text-[13px] text-navy/65 truncate ${clickable ? "group-hover:text-navy" : ""} transition-colors`}>{it.label}</span>
+                    <span className="text-[13px] text-navy/65 truncate">{it.label}</span>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <span className={`text-[13px] font-semibold tabular-nums ${it.key === "succeeded" ? "text-navy" : "text-navy/60"}`}>
@@ -163,9 +163,6 @@ export default function ClientesPaymentsBreakdown({
                     <span className="text-xs text-navy/40 tabular-nums w-9 text-right">
                       {total > 0 ? pct(values[it.key] / total) : "—"}
                     </span>
-                    {clickable && (
-                      <span className="text-navy/25 text-xs opacity-0 group-hover:opacity-100 transition-opacity">→</span>
-                    )}
                   </div>
                 </div>
               );

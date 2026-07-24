@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import Drawer from "@/app/components/Drawer";
 
 /** Botón "guía" (icono de libro) + drawer que explica de dónde salen los datos de Clientes,
@@ -14,12 +15,14 @@ export default function ClientesGuiaDrawer() {
         type="button"
         onClick={() => setOpen(true)}
         title="Cómo se calculan estos datos"
-        className="shrink-0 flex items-center justify-center w-[34px] h-[34px] rounded-[10px] border border-border bg-card text-muted hover:text-navy hover:bg-navy/[0.02] transition-colors"
+        className="shrink-0 flex items-center gap-1.5 h-[34px] px-3 rounded-[10px] border border-border bg-card text-muted hover:text-navy hover:bg-navy/[0.02] transition-colors"
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+          <line x1="12" y1="17" x2="12.01" y2="17" />
         </svg>
+        <span className="hidden sm:inline text-[13px] font-medium">Cómo se calcula</span>
       </button>
 
       {open && (
@@ -39,8 +42,11 @@ export default function ClientesGuiaDrawer() {
               </p>
               <p>
                 El <B>producto</B> de cada cobro (suscripción, pack, clase suelta…) se deduce por el
-                <B> importe</B>, comparándolo con el catálogo de precios de Momence
-                (ver <B>Configuración → Precios</B>).
+                <B> importe</B>, comparándolo con el catálogo de precios de Momence (ver{" "}
+                <Link href="/configuracion?tab=precios" className="text-primary hover:underline font-medium">
+                  Configuración → Precios
+                </Link>
+                ).
               </p>
             </Section>
 
@@ -108,7 +114,11 @@ export default function ClientesGuiaDrawer() {
 
             <p className="text-[12px] text-navy/40 pt-1 border-t border-navy/[0.06]">
               Fuente: Stripe · pagos en tiempo real. Los productos se identifican por importe contra el
-              catálogo de Momence.
+              catálogo de Momence (ver{" "}
+              <Link href="/configuracion?tab=precios" className="text-primary hover:underline font-medium">
+                Configuración → Precios
+              </Link>
+              ).
             </p>
           </div>
         </Drawer>

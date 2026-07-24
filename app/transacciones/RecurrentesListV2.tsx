@@ -497,12 +497,13 @@ export default function RecurrentesListV2({
                 className={`sm:hidden flex items-center gap-[10px] px-2 py-[10px] border-t border-subtle cursor-pointer active:bg-subtle ${isSelected ? "bg-subtle" : ""}`}
               >
                 {selectionMode ? (
-                  <span className={`w-[32px] h-[32px] shrink-0 rounded-[10px] flex items-center justify-center border transition-colors ${isSelected ? "bg-navy border-navy" : "bg-card border-border"}`}>
-                    {isSelected && (
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                    )}
+                  <span className="w-[32px] h-[32px] shrink-0 rounded-[10px] flex items-center justify-center border border-border bg-card">
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      readOnly
+                      className="w-[16px] h-[16px] rounded-[4px] border-border accent-navy pointer-events-none"
+                    />
                   </span>
                 ) : (
                   <span className="w-[32px] h-[32px] shrink-0 rounded-[10px] flex items-center justify-center" style={{ backgroundColor: icon.accent }}>
