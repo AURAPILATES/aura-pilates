@@ -12,16 +12,13 @@ export function forecastMonthLabel(ym: string) {
 
 // ── Histórico: cuenta de resultados por categoría (brutos, según el banco) ─────
 //
-// Agrega los movimientos por mes y categoría, separando ingresos (importe ≥ 0) de gastos
-// (importe < 0). Los gastos se etiquetan con su grupo económico madre (Personal/Operativo/
-// Financiación/Inversión, mismo criterio que "Desglose de gastos" en Analítica). Criterio de
-// exclusión/tratamiento, igual que Analítica:
-//   · "internal" (Traspasos internos): no es ingreso ni gasto → fila memo con el neto (~0€).
-//   · "transfer" Financiación: solo la cuota pagada (importes negativos) cuenta como gasto,
-//     bajo el grupo Financiación; el capital recibido (positivo) se ignora.
-//   · "transfer" Aportación de socios (u otros traspasos externos): se excluye por completo.
-// Se agrega a nivel MENSUAL en el servidor; el cliente lo reagrupa a trimestre/año, encadena el
-// saldo y filtra las transacciones del drawer, para que todo sea instantáneo.
+// Agrega los movimientos por mes y categoría, separando Entradas (importe ≥ 0) de Salidas
+// (importe < 0) por SIGNO. Se INCLUYE TODO — aportaciones de socios, capital de préstamo,
+// traspasos internos... nada se omite — para que el saldo encadenado (Saldo inicial + Entradas
+// − Salidas) cuadre con el extracto del banco. Los gastos se etiquetan con su grupo económico
+// madre (Personal/Operativo/Financiación/Inversión); traspasos y financiación caen en
+// "Financiación". Se agrega a nivel MENSUAL en el servidor; el cliente lo reagrupa a
+// trimestre/año, encadena el saldo y filtra las transacciones del drawer, para que sea instantáneo.
 
 export type StatementCatMeta = { key: string; label: string; color: string; group?: EconomicGroup };
 export type StatementTxn = { date: string; amount: number; concept: string; contact: string };
@@ -34,10 +31,13 @@ export type StatementData = {
   /** catKey → mes → importe (magnitud positiva). */
   incomeByCat: Record<string, Record<string, number>>;
   expenseByCat: Record<string, Record<string, number>>;
-  /** Neto (con signo) de "Traspasos internos" por mes; debería rondar 0. */
-  transferByMonth: Record<string, number>;
-  /** catKey → transacciones que contribuyen a esa fila (para el drawer). INTERNAL_KEY para traspasos. */
+  /** catKey → transacciones que contribuyen a esa fila (para el drawer). */
   txnsByKey: Record<string, StatementTxn[]>;
+  /** Saldo bancario real (campo `balance`) al cierre de cada mes, arrastrando el último
+   * conocido en meses sin movimiento bancario. Es la fuente de verdad del saldo: así el
+   * "Saldo final" cuadra exactamente con el extracto, sin depender de sumar importes (los
+   * movimientos en efectivo no tienen saldo y no alteran el saldo del banco). */
+  saldoFinalByMonth: Record<string, number>;
   /** Saldo bancario justo antes del primer movimiento conocido. */
   openingBalance: number;
 };
@@ -46,7 +46,6 @@ const NONE_IN = "__none_in__";
 const NONE_OUT = "__none_out__";
 const NONE_KEYS = new Set([NONE_IN, NONE_OUT]);
 const NONE_COLOR = "#a1a1aa";
-export const INTERNAL_KEY = "__internal__";
 
 export function buildStatementData(txns: Transaction[], categories: Category[]): StatementData {
   const incomeByCat: Record<string, Record<string, number>> = {};
@@ -54,7 +53,6 @@ export function buildStatementData(txns: Transaction[], categories: Category[]):
   const incomeTotals: Record<string, number> = {};
   const expenseTotals: Record<string, number> = {};
   const groupByCat: Record<string, EconomicGroup> = {};
-  const transferByMonth: Record<string, number> = {};
   const txnsByKey: Record<string, StatementTxn[]> = {};
   const monthsSet = new Set<string>();
 
@@ -72,41 +70,26 @@ export function buildStatementData(txns: Transaction[], categories: Category[]):
     push(key, t);
   };
 
-  // Se agrupa por NATURALEZA de la categoría (no por signo del movimiento suelto): una venta
-  // reembolsada (importe negativo pero categoría de ingreso) resta del ingreso neto, no aparece
-  // como gasto. Solo lo "Sin categoría" se reparte por signo.
+  // Grupo económico madre de un gasto. Traspasos y financiación (group_type transfer/internal)
+  // caen en "Financiación"; el resto usa el grupo económico habitual.
+  const expenseGroupOf = (cat?: Category): EconomicGroup =>
+    !cat
+      ? "operational"
+      : cat.group_type === "transfer" || cat.group_type === "internal"
+        ? "financiacion"
+        : economicGroupOf(cat.label, cat.economic_group);
+
+  // Se INCLUYE TODO (aportaciones de socios, capital de préstamo, traspasos internos... nada se
+  // omite) para que el saldo encadenado cuadre con el extracto del banco. Se reparte por SIGNO:
+  // los ingresos (≥0) a Entradas por categoría; los gastos (<0) a Salidas por grupo madre.
   for (const t of txns) {
     const cat = t.category ? findCategory(categories, t.category) : undefined;
-    const gt = cat?.group_type;
-    const label = cat?.label ?? "";
     const month = t.date.slice(0, 7);
-
-    // Traspasos internos (bank ↔ efectivo): fila memo con el neto, no toca ingresos/gastos.
-    if (gt === "internal") {
-      monthsSet.add(month);
-      transferByMonth[month] = (transferByMonth[month] ?? 0) + t.amount;
-      push(INTERNAL_KEY, t);
-      continue;
-    }
-    if (gt === "transfer") {
-      // Financiación: solo la cuota pagada (importes negativos) como gasto.
-      if (/financiaci/i.test(label) && t.amount < 0) {
-        monthsSet.add(month);
-        addExpense(cat!.value, month, -t.amount, "financiacion", t);
-      }
-      // Aportación de socios / capital recibido: se excluye.
-      continue;
-    }
-
     monthsSet.add(month);
-    if (gt === "income") {
-      addIncome(cat!.value, month, t.amount, t); // neto (un reembolso resta)
-    } else if (!cat) {
-      if (t.amount >= 0) addIncome(NONE_IN, month, t.amount, t);
-      else addExpense(NONE_OUT, month, -t.amount, "operational", t);
+    if (t.amount >= 0) {
+      addIncome(cat ? cat.value : NONE_IN, month, t.amount, t);
     } else {
-      // Categoría de gasto (operacional): neto por naturaleza (un abono resta del gasto).
-      addExpense(cat.value, month, -t.amount, economicGroupOf(label, cat.economic_group), t);
+      addExpense(cat ? cat.value : NONE_OUT, month, -t.amount, expenseGroupOf(cat), t);
     }
   }
 
@@ -133,14 +116,25 @@ export function buildStatementData(txns: Transaction[], categories: Category[]):
     .sort((a, b) => a.date.localeCompare(b.date));
   const openingBalance = withBal.length > 0 ? withBal[0].balance! - withBal[0].amount : 0;
 
+  // Saldo bancario real al cierre de cada mes (último `balance` conocido, arrastrado).
+  const lastBalOfMonth: Record<string, number> = {};
+  for (const t of withBal) lastBalOfMonth[t.date.slice(0, 7)] = t.balance!;
+  const months = [...monthsSet].sort();
+  const saldoFinalByMonth: Record<string, number> = {};
+  let running = openingBalance;
+  for (const m of months) {
+    if (m in lastBalOfMonth) running = lastBalOfMonth[m];
+    saldoFinalByMonth[m] = running;
+  }
+
   return {
-    months: [...monthsSet].sort(),
+    months,
     incomeCats: sortKeys(incomeTotals).map((k) => metaFor(k, false)),
     expenseCats: sortKeys(expenseTotals).map((k) => metaFor(k, true)),
     incomeByCat,
     expenseByCat,
-    transferByMonth,
     txnsByKey,
+    saldoFinalByMonth,
     openingBalance,
   };
 }
