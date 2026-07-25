@@ -146,3 +146,8 @@
   padding-left: 0;
   padding-right: 0;
 }
+/* En modo comparación "suelto" y tema claro, el fondo vuelve a blanco (aspecto previo al
+   crudo): tablas sueltas sobre fondo blanco, no sobre el crudo. En oscuro no cambia. */
+:root:not(.dark).tables-flat {
+  --color-app-bg: #ffffff;
+}
