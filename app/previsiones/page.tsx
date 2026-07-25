@@ -15,10 +15,6 @@ export default function PrevisionesPage() {
         </div>
       </div>
 
-      <div className="bg-warning text-white text-center text-[13px] font-semibold py-2 px-4">
-        🚧 Por construir
-      </div>
-
       <div className="px-4 sm:px-6 pt-6 pb-16 max-w-[1600px] mx-auto">
         <Suspense fallback={<PrevisionesSkeleton />}>
           <PrevisionesLoader />

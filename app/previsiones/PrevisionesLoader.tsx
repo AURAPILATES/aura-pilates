@@ -1,45 +1,15 @@
 import { loadTransactionsCached } from "@/lib/transactions";
-import { loadStripePaymentsCached } from "@/lib/stripePayments";
-import { getMemberships, getCustomers } from "@/lib/momence";
-import { subscriptionTiersFromMemberships, computeMrrByTier } from "@/lib/mrr";
-import {
-  detectRecurringExpenses,
-  avgPackRevenuePerMonth,
-  historicalMonthly,
-  historicalByCategory,
-} from "@/lib/previsiones";
-import PrevisionesTable from "./PrevisionesTable";
+import { loadCategoriesCached } from "@/lib/categories";
+import { buildStatementData } from "@/lib/previsiones";
+import PrevisionesHistorico from "./PrevisionesHistorico";
 
 export default async function PrevisionesLoader() {
-  const [txnsAll, paymentsAll, memberships, customers] = await Promise.all([
+  const [txnsAll, categories] = await Promise.all([
     loadTransactionsCached(),
-    loadStripePaymentsCached(),
-    getMemberships(),
-    getCustomers(),
+    loadCategoriesCached(),
   ]);
 
-  const tiers = subscriptionTiersFromMemberships(memberships);
-  const tierMrr = computeMrrByTier(customers, tiers);
-  const baseMrr = tierMrr.reduce((s, t) => s + t.mrr, 0);
+  const statement = buildStatementData(txnsAll, categories);
 
-  const packsBase = avgPackRevenuePerMonth(paymentsAll);
-  const recurringExpenses = detectRecurringExpenses(txnsAll);
-  const historical = historicalMonthly(txnsAll);
-  const historicalByCat = historicalByCategory(txnsAll);
-
-  const latestBal = [...txnsAll]
-    .sort((a, b) => b.date.localeCompare(a.date))
-    .find((t) => t.balance !== null);
-  const startingBalance = latestBal?.balance ?? 0;
-
-  return (
-    <PrevisionesTable
-      baseMrr={baseMrr}
-      packsBase={packsBase}
-      startingBalance={startingBalance}
-      recurringExpenses={recurringExpenses}
-      historical={historical}
-      historicalByCat={historicalByCat}
-    />
-  );
+  return <PrevisionesHistorico statement={statement} />;
 }

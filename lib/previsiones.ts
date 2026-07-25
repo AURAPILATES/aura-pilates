@@ -1,11 +1,113 @@
-import type { Transaction } from "./transactions";
+import { findCategory, type Transaction } from "./transactions";
 import type { StripePayment } from "./stripePayments";
+import { categoryDisplayLabel, NON_CASHFLOW_GROUP_TYPES, type Category } from "./categories";
 
 const MES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 
 export function forecastMonthLabel(ym: string) {
   const [y, m] = ym.split("-");
   return `${MES[parseInt(m, 10) - 1]} ${y.slice(2)}`;
+}
+
+// ── Histórico: cuenta de resultados por categoría (brutos, según el banco) ─────
+//
+// Agrega los movimientos por mes y categoría, separando ingresos (importe ≥ 0) de gastos
+// (importe < 0), excluyendo traspasos/movimientos internos (no son ingreso ni gasto real,
+// mismo criterio que Flujo de caja en Analítica). Se agrega a nivel MENSUAL en el servidor;
+// el cliente lo reagrupa a trimestre/año y encadena el saldo, para que el toggle sea instantáneo.
+
+export type StatementCatMeta = { key: string; label: string; color: string };
+
+export type StatementData = {
+  /** Meses con actividad, orden cronológico ("YYYY-MM"). */
+  months: string[];
+  incomeCats: StatementCatMeta[];
+  expenseCats: StatementCatMeta[];
+  /** catKey → mes → importe (magnitud positiva). */
+  incomeByCat: Record<string, Record<string, number>>;
+  expenseByCat: Record<string, Record<string, number>>;
+  /** Saldo bancario justo antes del primer movimiento conocido. */
+  openingBalance: number;
+};
+
+const NONE_KEY = "__none__";
+const NONE_COLOR = "#a1a1aa";
+
+export function buildStatementData(txns: Transaction[], categories: Category[]): StatementData {
+  const incomeByCat: Record<string, Record<string, number>> = {};
+  const expenseByCat: Record<string, Record<string, number>> = {};
+  const incomeTotals: Record<string, number> = {};
+  const expenseTotals: Record<string, number> = {};
+  const monthsSet = new Set<string>();
+
+  for (const t of txns) {
+    const cat = t.category ? findCategory(categories, t.category) : undefined;
+    // Traspasos entre cuentas propias / movimientos internos: se ignoran.
+    if (cat && NON_CASHFLOW_GROUP_TYPES.has(cat.group_type)) continue;
+    const month = t.date.slice(0, 7);
+    monthsSet.add(month);
+    const key = cat ? cat.value : NONE_KEY;
+    if (t.amount >= 0) {
+      (incomeByCat[key] ??= {})[month] = (incomeByCat[key][month] ?? 0) + t.amount;
+      incomeTotals[key] = (incomeTotals[key] ?? 0) + t.amount;
+    } else {
+      const v = Math.abs(t.amount);
+      (expenseByCat[key] ??= {})[month] = (expenseByCat[key][month] ?? 0) + v;
+      expenseTotals[key] = (expenseTotals[key] ?? 0) + v;
+    }
+  }
+
+  function metaFor(key: string): StatementCatMeta {
+    if (key === NONE_KEY) return { key, label: "Sin categoría", color: NONE_COLOR };
+    const cat = findCategory(categories, key);
+    return {
+      key,
+      label: cat ? categoryDisplayLabel(cat, categories) : key,
+      color: cat?.text_color ?? NONE_COLOR,
+    };
+  }
+  // Mayor gasto/ingreso primero; "Sin categoría" siempre al final.
+  function sortKeys(totals: Record<string, number>): string[] {
+    return Object.keys(totals).sort((a, b) => {
+      if (a === NONE_KEY) return 1;
+      if (b === NONE_KEY) return -1;
+      return totals[b] - totals[a];
+    });
+  }
+
+  const withBal = txns
+    .filter((t) => t.balance !== null)
+    .sort((a, b) => a.date.localeCompare(b.date));
+  const openingBalance = withBal.length > 0 ? withBal[0].balance! - withBal[0].amount : 0;
+
+  return {
+    months: [...monthsSet].sort(),
+    incomeCats: sortKeys(incomeTotals).map(metaFor),
+    expenseCats: sortKeys(expenseTotals).map(metaFor),
+    incomeByCat,
+    expenseByCat,
+    openingBalance,
+  };
+}
+
+// ── Reagrupación por período (cliente) ────────────────────────────────────────
+
+export type Granularity = "month" | "quarter" | "year";
+
+export function periodKeyOf(month: string, g: Granularity): string {
+  const [y, m] = month.split("-");
+  if (g === "year") return y;
+  if (g === "quarter") return `${y}-Q${Math.floor((parseInt(m, 10) - 1) / 3) + 1}`;
+  return month;
+}
+
+export function periodLabelOf(key: string, g: Granularity): string {
+  if (g === "year") return key;
+  if (g === "quarter") {
+    const [y, q] = key.split("-Q");
+    return `${q}T ${y.slice(2)}`;
+  }
+  return forecastMonthLabel(key);
 }
 
 // ── Capacity scenarios (from Excel "Aura Pilates Studio SL.xlsx") ─────────────
