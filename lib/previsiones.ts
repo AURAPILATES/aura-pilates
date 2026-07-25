@@ -1,6 +1,7 @@
 import { findCategory, type Transaction } from "./transactions";
 import type { StripePayment } from "./stripePayments";
-import { categoryDisplayLabel, NON_CASHFLOW_GROUP_TYPES, type Category } from "./categories";
+import { categoryDisplayLabel, type Category } from "./categories";
+import { economicGroupOf, type EconomicGroup } from "./economicGroups";
 
 const MES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 
@@ -12,11 +13,18 @@ export function forecastMonthLabel(ym: string) {
 // ── Histórico: cuenta de resultados por categoría (brutos, según el banco) ─────
 //
 // Agrega los movimientos por mes y categoría, separando ingresos (importe ≥ 0) de gastos
-// (importe < 0), excluyendo traspasos/movimientos internos (no son ingreso ni gasto real,
-// mismo criterio que Flujo de caja en Analítica). Se agrega a nivel MENSUAL en el servidor;
-// el cliente lo reagrupa a trimestre/año y encadena el saldo, para que el toggle sea instantáneo.
+// (importe < 0). Los gastos se etiquetan con su grupo económico madre (Personal/Operativo/
+// Financiación/Inversión, mismo criterio que "Desglose de gastos" en Analítica). Criterio de
+// exclusión/tratamiento, igual que Analítica:
+//   · "internal" (Traspasos internos): no es ingreso ni gasto → fila memo con el neto (~0€).
+//   · "transfer" Financiación: solo la cuota pagada (importes negativos) cuenta como gasto,
+//     bajo el grupo Financiación; el capital recibido (positivo) se ignora.
+//   · "transfer" Aportación de socios (u otros traspasos externos): se excluye por completo.
+// Se agrega a nivel MENSUAL en el servidor; el cliente lo reagrupa a trimestre/año, encadena el
+// saldo y filtra las transacciones del drawer, para que todo sea instantáneo.
 
-export type StatementCatMeta = { key: string; label: string; color: string };
+export type StatementCatMeta = { key: string; label: string; color: string; group?: EconomicGroup };
+export type StatementTxn = { date: string; amount: number; concept: string; contact: string };
 
 export type StatementData = {
   /** Meses con actividad, orden cronológico ("YYYY-MM"). */
@@ -26,51 +34,96 @@ export type StatementData = {
   /** catKey → mes → importe (magnitud positiva). */
   incomeByCat: Record<string, Record<string, number>>;
   expenseByCat: Record<string, Record<string, number>>;
+  /** Neto (con signo) de "Traspasos internos" por mes; debería rondar 0. */
+  transferByMonth: Record<string, number>;
+  /** catKey → transacciones que contribuyen a esa fila (para el drawer). INTERNAL_KEY para traspasos. */
+  txnsByKey: Record<string, StatementTxn[]>;
   /** Saldo bancario justo antes del primer movimiento conocido. */
   openingBalance: number;
 };
 
-const NONE_KEY = "__none__";
+const NONE_IN = "__none_in__";
+const NONE_OUT = "__none_out__";
+const NONE_KEYS = new Set([NONE_IN, NONE_OUT]);
 const NONE_COLOR = "#a1a1aa";
+export const INTERNAL_KEY = "__internal__";
 
 export function buildStatementData(txns: Transaction[], categories: Category[]): StatementData {
   const incomeByCat: Record<string, Record<string, number>> = {};
   const expenseByCat: Record<string, Record<string, number>> = {};
   const incomeTotals: Record<string, number> = {};
   const expenseTotals: Record<string, number> = {};
+  const groupByCat: Record<string, EconomicGroup> = {};
+  const transferByMonth: Record<string, number> = {};
+  const txnsByKey: Record<string, StatementTxn[]> = {};
   const monthsSet = new Set<string>();
 
+  const push = (key: string, t: Transaction) =>
+    (txnsByKey[key] ??= []).push({ date: t.date, amount: t.amount, concept: t.concept ?? "", contact: t.contact ?? "" });
+  const addIncome = (key: string, month: string, v: number, t: Transaction) => {
+    (incomeByCat[key] ??= {})[month] = (incomeByCat[key][month] ?? 0) + v;
+    incomeTotals[key] = (incomeTotals[key] ?? 0) + v;
+    push(key, t);
+  };
+  const addExpense = (key: string, month: string, v: number, group: EconomicGroup, t: Transaction) => {
+    (expenseByCat[key] ??= {})[month] = (expenseByCat[key][month] ?? 0) + v;
+    expenseTotals[key] = (expenseTotals[key] ?? 0) + v;
+    groupByCat[key] = group;
+    push(key, t);
+  };
+
+  // Se agrupa por NATURALEZA de la categoría (no por signo del movimiento suelto): una venta
+  // reembolsada (importe negativo pero categoría de ingreso) resta del ingreso neto, no aparece
+  // como gasto. Solo lo "Sin categoría" se reparte por signo.
   for (const t of txns) {
     const cat = t.category ? findCategory(categories, t.category) : undefined;
-    // Traspasos entre cuentas propias / movimientos internos: se ignoran.
-    if (cat && NON_CASHFLOW_GROUP_TYPES.has(cat.group_type)) continue;
+    const gt = cat?.group_type;
+    const label = cat?.label ?? "";
     const month = t.date.slice(0, 7);
+
+    // Traspasos internos (bank ↔ efectivo): fila memo con el neto, no toca ingresos/gastos.
+    if (gt === "internal") {
+      monthsSet.add(month);
+      transferByMonth[month] = (transferByMonth[month] ?? 0) + t.amount;
+      push(INTERNAL_KEY, t);
+      continue;
+    }
+    if (gt === "transfer") {
+      // Financiación: solo la cuota pagada (importes negativos) como gasto.
+      if (/financiaci/i.test(label) && t.amount < 0) {
+        monthsSet.add(month);
+        addExpense(cat!.value, month, -t.amount, "financiacion", t);
+      }
+      // Aportación de socios / capital recibido: se excluye.
+      continue;
+    }
+
     monthsSet.add(month);
-    const key = cat ? cat.value : NONE_KEY;
-    if (t.amount >= 0) {
-      (incomeByCat[key] ??= {})[month] = (incomeByCat[key][month] ?? 0) + t.amount;
-      incomeTotals[key] = (incomeTotals[key] ?? 0) + t.amount;
+    if (gt === "income") {
+      addIncome(cat!.value, month, t.amount, t); // neto (un reembolso resta)
+    } else if (!cat) {
+      if (t.amount >= 0) addIncome(NONE_IN, month, t.amount, t);
+      else addExpense(NONE_OUT, month, -t.amount, "operational", t);
     } else {
-      const v = Math.abs(t.amount);
-      (expenseByCat[key] ??= {})[month] = (expenseByCat[key][month] ?? 0) + v;
-      expenseTotals[key] = (expenseTotals[key] ?? 0) + v;
+      // Categoría de gasto (operacional): neto por naturaleza (un abono resta del gasto).
+      addExpense(cat.value, month, -t.amount, economicGroupOf(label, cat.economic_group), t);
     }
   }
 
-  function metaFor(key: string): StatementCatMeta {
-    if (key === NONE_KEY) return { key, label: "Sin categoría", color: NONE_COLOR };
-    const cat = findCategory(categories, key);
-    return {
-      key,
-      label: cat ? categoryDisplayLabel(cat, categories) : key,
-      color: cat?.text_color ?? NONE_COLOR,
-    };
+  function metaFor(key: string, withGroup: boolean): StatementCatMeta {
+    const base = NONE_KEYS.has(key)
+      ? { key, label: "Sin categoría", color: NONE_COLOR }
+      : (() => {
+          const cat = findCategory(categories, key);
+          return { key, label: cat ? categoryDisplayLabel(cat, categories) : key, color: cat?.text_color ?? NONE_COLOR };
+        })();
+    return withGroup ? { ...base, group: groupByCat[key] ?? "operational" } : base;
   }
   // Mayor gasto/ingreso primero; "Sin categoría" siempre al final.
   function sortKeys(totals: Record<string, number>): string[] {
     return Object.keys(totals).sort((a, b) => {
-      if (a === NONE_KEY) return 1;
-      if (b === NONE_KEY) return -1;
+      if (NONE_KEYS.has(a)) return 1;
+      if (NONE_KEYS.has(b)) return -1;
       return totals[b] - totals[a];
     });
   }
@@ -82,10 +135,12 @@ export function buildStatementData(txns: Transaction[], categories: Category[]):
 
   return {
     months: [...monthsSet].sort(),
-    incomeCats: sortKeys(incomeTotals).map(metaFor),
-    expenseCats: sortKeys(expenseTotals).map(metaFor),
+    incomeCats: sortKeys(incomeTotals).map((k) => metaFor(k, false)),
+    expenseCats: sortKeys(expenseTotals).map((k) => metaFor(k, true)),
     incomeByCat,
     expenseByCat,
+    transferByMonth,
+    txnsByKey,
     openingBalance,
   };
 }
