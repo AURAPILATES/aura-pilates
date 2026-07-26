@@ -397,6 +397,7 @@ export default function ContactosManager({ contacts: initialContacts, categories
         categories={categories}
         contactStats={contactStats}
         onRowClick={(id) => setSelectedId(id)}
+        onViewTransactions={(c) => router.push(`/transacciones?buscar=${encodeURIComponent(c.label)}`)}
         onNewContact={() => setCreating(true)}
         onCleanup={handleCleanup}
         cleaning={cleaning}

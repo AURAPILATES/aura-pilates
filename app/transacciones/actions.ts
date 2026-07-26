@@ -700,6 +700,18 @@ export async function updateTransactionCategory(id: string, category: string | n
   revalidateTag("transactions");
 }
 
+/** Cambia el importe de un movimiento (p.ej. para alternar entre ingreso y gasto en efectivo,
+ * negando el signo). */
+export async function updateTransactionAmount(id: string, amount: number) {
+  const supabase = createServerClient();
+  const { error } = await supabase
+    .from("transactions")
+    .update({ amount })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidateTag("transactions");
+}
+
 export async function softDeleteTransactions(ids: string[]): Promise<void> {
   if (!ids.length) return;
   const supabase = createServerClient();

@@ -10,6 +10,7 @@ import { PERIOD_BUCKETS } from "@/lib/recurring";
 import { contactKeyFor } from "@/lib/contactRules";
 import type { RecurringExpense, RecurringExpenseEndType } from "@/lib/recurringExpenses";
 import { CategoryPill, SourceAvatar } from "./TransaccionesList";
+import { ToggleGroup } from "@/components/charts";
 import ContactPicker from "./ContactPicker";
 import NewContactDrawer from "./NewContactDrawer";
 import { createRecurringExpenseFromTransaction, removeRecurringExpenseForTransaction, assignContactToTransaction, type Contact } from "./actions";
@@ -285,6 +286,7 @@ export default function TransactionDrawer({
   onUpdateCategory,
   onUpdateDate,
   onUpdatePaymentMethod,
+  onUpdateDirection,
   onDelete,
 }: {
   transaction: Transaction;
@@ -298,11 +300,20 @@ export default function TransactionDrawer({
   onUpdateCategory: (id: string, value: string | null) => void;
   onUpdateDate: (id: string, value: string) => void;
   onUpdatePaymentMethod: (id: string, value: PaymentMethod) => void;
+  onUpdateDirection: (id: string, isIncome: boolean) => void;
   onDelete: (id: string) => void;
 }) {
   const t = transaction;
   const editableOrigin = t.payment_method !== "banco";
   const router = useRouter();
+  // Ingreso/Gasto editable en movimientos manuales (efectivo/socios); en los del banco el
+  // signo viene del importe importado y no se toca. Estado local para respuesta inmediata.
+  const [isIncome, setIsIncome] = useState(t.amount > 0);
+  function changeDirection(next: boolean) {
+    if (next === isIncome) return;
+    setIsIncome(next);
+    onUpdateDirection(t.id, next);
+  }
 
   return (
     <Drawer
@@ -326,8 +337,8 @@ export default function TransactionDrawer({
       <div className="px-6 py-5 flex flex-col gap-5">
         <div className="flex items-start justify-between">
           <div>
-            <span className={`text-2xl font-bold tabular-nums ${t.amount > 0 ? "text-success" : "text-navy"}`}>
-              {t.amount > 0 ? "+" : "−"}{fmtAmt(t.amount)}
+            <span className={`text-2xl font-bold tabular-nums ${isIncome ? "text-success" : "text-navy"}`}>
+              {isIncome ? "+" : "−"}{fmtAmt(t.amount)}
             </span>
             {t.balance != null && (
               <p className="text-sm text-navy/40 mt-0.5">Saldo tras operación: {fmtAmt(t.balance)}</p>
@@ -342,6 +353,18 @@ export default function TransactionDrawer({
             </span>
           )}
         </div>
+
+        {editableOrigin && (
+          <ToggleGroup
+            options={[
+              { value: "income", label: "Ingreso", activeClassName: "bg-success text-white font-medium" },
+              { value: "expense", label: "Gasto", activeClassName: "bg-danger text-white font-medium" },
+            ]}
+            value={isIncome ? "income" : "expense"}
+            onChange={(v) => changeDirection(v === "income")}
+            fullWidth
+          />
+        )}
 
         <Field label="Concepto" value={t.concept ?? ""} onSave={(v) => onUpdateConcept(t.id, v)} />
         <Field label="Más datos" value={t.bank_details ?? ""} onSave={(v) => onUpdateBankDetails(t.id, v)} />
@@ -410,7 +433,7 @@ export default function TransactionDrawer({
 
         <MarkRecurringControl
           transactionId={t.id}
-          isIncome={t.amount > 0}
+          isIncome={isIncome}
           contactLabel={t.contact ?? ""}
           contacts={contacts}
           initiallyRecurring={recurringExpense?.status === "confirmed" || !!recurringPeriod}

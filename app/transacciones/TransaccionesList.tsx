@@ -8,7 +8,7 @@ import { sortCategoriesHierarchical, categoryDisplayLabel } from "@/lib/categori
 import { normalizeText } from "@/lib/normalizeText";
 import { seriesKeyFor } from "@/lib/recurring";
 import type { RecurringExpense } from "@/lib/recurringExpenses";
-import { updateTransactionCategory, updateTransactionConcept, updateTransactionBankDetails, updateTransactionDate, updateTransactionPaymentMethod, softDeleteTransactions, type Contact } from "./actions";
+import { updateTransactionCategory, updateTransactionConcept, updateTransactionBankDetails, updateTransactionDate, updateTransactionPaymentMethod, updateTransactionAmount, softDeleteTransactions, type Contact } from "./actions";
 import Select from "@/app/components/Select";
 import AddCashModal from "./AddCashModal";
 import PapeleraDrawer from "./PapeleraDrawer";
@@ -240,7 +240,7 @@ export function CategoryBadge({ category, categories, hideIcon = false }: { cate
 
 export function CategoryPill({ category, categories, onChange, hideIcon = false }: { category: string | null; categories: Category[]; onChange: (cat: string | null) => void; hideIcon?: boolean }) {
   const [open, setOpen] = useState(false);
-  const [dropPos, setDropPos] = useState<{ top: number; left: number } | null>(null);
+  const [dropPos, setDropPos] = useState<{ left: number; top?: number; bottom?: number; maxHeight: number } | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const dropRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
@@ -259,7 +259,22 @@ export function CategoryPill({ category, categories, onChange, hideIcon = false 
   function handleToggle() {
     if (!open && btnRef.current) {
       const rect = btnRef.current.getBoundingClientRect();
-      setDropPos({ top: rect.bottom + 4, left: rect.left });
+      const GAP = 4;
+      const MARGIN = 8;
+      const DESIRED = 13 * 16; // 13rem
+      const DROP_MIN_W = 11 * 16; // minWidth 11rem
+      const spaceBelow = window.innerHeight - rect.bottom - MARGIN;
+      const spaceAbove = rect.top - MARGIN;
+      // Se abre hacia arriba si abajo no cabe cómodamente y arriba hay más sitio (p.ej. la
+      // última fila de la pantalla); la altura se ajusta al hueco disponible y hace scroll.
+      const openUp = spaceBelow < Math.min(DESIRED, 200) && spaceAbove > spaceBelow;
+      const maxHeight = Math.max(140, Math.min(DESIRED, openUp ? spaceAbove : spaceBelow));
+      const left = Math.max(MARGIN, Math.min(rect.left, window.innerWidth - DROP_MIN_W - MARGIN));
+      setDropPos(
+        openUp
+          ? { left, bottom: window.innerHeight - rect.top + GAP, maxHeight }
+          : { left, top: rect.bottom + GAP, maxHeight },
+      );
     }
     setOpen((v) => !v);
   }
@@ -277,7 +292,7 @@ export function CategoryPill({ category, categories, onChange, hideIcon = false 
         <div
           ref={dropRef}
           className="fixed z-[9999] bg-card border border-navy/10 rounded-xl shadow-xl overflow-y-auto py-1"
-          style={{ top: dropPos.top, left: dropPos.left, minWidth: "11rem", maxHeight: "13rem" }}
+          style={{ ...(dropPos.top != null ? { top: dropPos.top } : { bottom: dropPos.bottom }), left: dropPos.left, minWidth: "11rem", maxHeight: dropPos.maxHeight }}
         >
           <button
             onClick={() => { onChange(null); setOpen(false); }}
@@ -498,7 +513,7 @@ export default function TransaccionesList({
   const searchParams = useSearchParams();
   const currentRange = searchParams.get("range") ?? "all";
 
-  const [search,      setSearch]      = useState("");
+  const [search,      setSearch]      = useState(searchParams.get("buscar") ?? "");
   const [catFilters,  setCatFilters]  = useState<string[]>(() => {
     const cat = searchParams.get("categoria");
     if (!cat || cat === "all") return [];
@@ -639,6 +654,13 @@ export default function TransaccionesList({
   function handlePaymentMethodChange(id: string, value: PaymentMethod) {
     startTransition(() => updateTransactionPaymentMethod(id, value));
   }
+  function handleDirectionChange(id: string, isIncome: boolean) {
+    const txn = transactions.find((t) => t.id === id);
+    if (!txn) return;
+    const amount = isIncome ? Math.abs(txn.amount) : -Math.abs(txn.amount);
+    if (amount === txn.amount) return;
+    startTransition(() => updateTransactionAmount(id, amount));
+  }
   function handleDeleteOne(id: string) {
     startTransition(async () => { await softDeleteTransactions([id]); });
   }
@@ -763,6 +785,7 @@ export default function TransaccionesList({
           onUpdateCategory={handleCategoryChange}
           onUpdateDate={handleDateChange}
           onUpdatePaymentMethod={handlePaymentMethodChange}
+          onUpdateDirection={handleDirectionChange}
           onDelete={handleDeleteOne}
         />
       )}

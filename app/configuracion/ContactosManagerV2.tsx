@@ -23,6 +23,7 @@ type Props = {
   categories: Category[];
   contactStats: Record<number, ContactStats>;
   onRowClick: (id: number) => void;
+  onViewTransactions: (contact: Contact) => void;
   onNewContact: () => void;
   onCleanup: () => void;
   cleaning: boolean;
@@ -135,7 +136,7 @@ function BulkActionBarV2({
 
 export default function ContactosManagerV2({
   search, onSearchChange, rows, totalCount, page, pageSize, onPageChange,
-  categories, contactStats, onRowClick, onNewContact, onCleanup, cleaning, cleaned, onRecompute, recomputing, recomputed,
+  categories, contactStats, onRowClick, onViewTransactions, onNewContact, onCleanup, cleaning, cleaned, onRecompute, recomputing, recomputed,
   pendingRecomputeCount, pendingCleanupCount,
   selectedIds, onToggleSelect, onClearSelection, onBulkDelete, onBulkSetIva, onBulkSetRetencion, onBulkSetCategory,
 }: Props) {
@@ -258,7 +259,16 @@ export default function ContactosManagerV2({
                     <div><TaxBadgeV2 value={c.ivaRate} isError={bothMissing} zeroIsExplicit={c.noTax} /></div>
                     <div><TaxBadgeV2 value={c.retencionRate} isError={bothMissing} zeroIsExplicit={c.noTax} /></div>
                     <p className="text-[13px] font-semibold text-navy">{stats?.count ?? "-"}</p>
-                    <p className="text-right text-[12.5px] text-muted">{lastDate ? fmtContactDate(lastDate) : "-"}</p>
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onViewTransactions(c); }}
+                        title={`Ver movimientos de "${c.label}"`}
+                        className="shrink-0 text-border hover:text-muted transition-colors"
+                      >
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="11" cy="11" r="6.5" /><path d="M20 20l-3.8-3.8" /></svg>
+                      </button>
+                      <span className="text-[12.5px] text-muted whitespace-nowrap">{lastDate ? fmtContactDate(lastDate) : "-"}</span>
+                    </div>
                   </div>
                 </div>
 
@@ -298,6 +308,15 @@ export default function ContactosManagerV2({
                       )}
                     </div>
                   </div>
+                  {!selectionMode && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onViewTransactions(c); }}
+                      title={`Ver movimientos de "${c.label}"`}
+                      className="shrink-0 text-border hover:text-muted transition-colors p-1"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="11" cy="11" r="6.5" /><path d="M20 20l-3.8-3.8" /></svg>
+                    </button>
+                  )}
                 </div>
               </div>
             );
