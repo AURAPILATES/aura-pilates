@@ -13,7 +13,7 @@ export type ClientesTableHandle = { openCustomer: (id: string) => void };
 
 export type SortKey = "totalSpent" | "lastPaymentDate" | "name";
 export type SortDir = "asc" | "desc";
-export type Filter  = "all" | "recurring" | "occasional" | "discount" | "error" | "delayed" | "family";
+export type Filter  = "all" | "recurring" | "occasional" | "error" | "delayed" | "family";
 const PAGE_SIZE = 25;
 
 export function fmtDate(d: string) {
@@ -149,14 +149,6 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
     }
   }
 
-  const couponStripeIds = useMemo(
-    () => new Set(payments.filter((p) => p.inferredType === "coupon" && p.customerId).map((p) => p.customerId!)),
-    [payments],
-  );
-
-  const hasDiscount = (c: CustomerRow) => !!c.discount || c.stripeIds.some((sid) => couponStripeIds.has(sid));
-
-  const discountCount = customers.filter(hasDiscount).length;
   const errorCount    = customers.filter((c) => c.hasPaymentError).length;
   const isDelayed = (c: CustomerRow) => {
     const { status } = clientStatus(c);
@@ -179,7 +171,6 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
         if (activeMonthIds && !c.stripeIds.some((sid) => activeMonthIds.has(sid))) return false;
         if (filter === "recurring"   && !c.isRecurring)   return false;
         if (filter === "occasional"  &&  c.isRecurring)   return false;
-        if (filter === "discount"    && !hasDiscount(c))   return false;
         if (filter === "error"       && !c.hasPaymentError)  return false;
         if (filter === "delayed"     && !isDelayed(c))       return false;
         if (filter === "family"      && !c.isFamily)         return false;
@@ -245,7 +236,6 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
     { key: "occasional", label: "Ocasionales" },
     { key: "delayed",    label: "Retraso en renovar", count: delayedCount },
     { key: "family",     label: "Familiares", count: familyCount },
-    { key: "discount",   label: "Descuento", count: discountCount },
     { key: "error",      label: "Error de pago", count: errorCount },
   ];
 
