@@ -131,13 +131,13 @@ export default function ClientesMatrizComprasV2({
           >
             Candidatos a upsell
           </button>
-          {activeFilterCount >= 2 && (
+          {activeFilterCount >= 1 && (
             <ClearFiltersButtonV2 onClick={clearFilters} className="hidden sm:flex" />
           )}
         </div>
       </div>
 
-      {activeFilterCount >= 2 && (
+      {activeFilterCount >= 1 && (
         <div className="sm:hidden mt-2">
           <ClearFiltersButtonV2 onClick={clearFilters} />
         </div>

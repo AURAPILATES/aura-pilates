@@ -330,11 +330,13 @@ export function originLabel(method: string): string {
 }
 
 export function MoreOptionsMenu({
-  onlyRecurring, setOnlyRecurring, originFilter, setOriginFilter,
+  onlyRecurring, setOnlyRecurring, onlyNoContact, setOnlyNoContact, originFilter, setOriginFilter,
   amountMin, setAmountMin, amountMax, setAmountMax, onExport, onPapelera,
 }: {
   onlyRecurring: boolean;
   setOnlyRecurring: (v: boolean | ((prev: boolean) => boolean)) => void;
+  onlyNoContact: boolean;
+  setOnlyNoContact: (v: boolean | ((prev: boolean) => boolean)) => void;
   originFilter: string;
   setOriginFilter: (v: string) => void;
   amountMin: string;
@@ -369,7 +371,7 @@ export function MoreOptionsMenu({
     setOpen((v) => !v);
   }
 
-  const hasActive = onlyRecurring || originFilter !== "all" || amountMin !== "" || amountMax !== "";
+  const hasActive = onlyRecurring || onlyNoContact || originFilter !== "all" || amountMin !== "" || amountMax !== "";
 
   return (
     <div ref={wrapRef} className="relative">
@@ -439,6 +441,17 @@ export function MoreOptionsMenu({
             </svg>
             Solo recurrentes
           </button>
+          <button
+            onClick={() => setOnlyNoContact((v) => !v)}
+            className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors ${
+              onlyNoContact ? "text-navy font-medium bg-navy/[0.04]" : "text-navy/60 hover:bg-navy/[0.04]"
+            }`}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="17" y1="8" x2="23" y2="14"/><line x1="23" y1="8" x2="17" y2="14"/>
+            </svg>
+            Sin contacto
+          </button>
           <div className="border-t border-navy/[0.06] my-1" />
           <button
             onClick={() => { onExport(); setOpen(false); }}
@@ -498,6 +511,7 @@ export default function TransaccionesList({
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [showAddCash, setShowAddCash] = useState(false);
   const [onlyRecurring, setOnlyRecurring] = useState(false);
+  const [onlyNoContact, setOnlyNoContact] = useState(false);
   const [directionFilter, setDirectionFilter] = useState<"all" | "in" | "out">("all");
   const [amountMin, setAmountMin] = useState("");
   const [amountMax, setAmountMax] = useState("");
@@ -551,6 +565,7 @@ export default function TransaccionesList({
     if (expandedCatFilters.length > 0 && !expandedCatFilters.includes(t.category ?? "__none__")) return false;
     if (originFilter !== "all" && t.payment_method !== originFilter) return false;
     if (onlyRecurring && !recurringPeriods[t.id]) return false;
+    if (onlyNoContact && (t.contact ?? "").trim() !== "") return false;
     return true;
   });
 
@@ -580,7 +595,7 @@ export default function TransaccionesList({
 
   // ── Paginación (desktop) - corta sortedFiltered/filtered antes de agrupar por mes,
   // así cada página tiene siempre PAGE_SIZE movimientos aunque abarque varios meses.
-  useEffect(() => { setPage(0); }, [search, catFilters, originFilter, onlyRecurring, directionFilter, amountMin, amountMax, currentRange, sortKey, sortDir]);
+  useEffect(() => { setPage(0); }, [search, catFilters, originFilter, onlyRecurring, onlyNoContact, directionFilter, amountMin, amountMax, currentRange, sortKey, sortDir]);
   const totalPages = Math.max(1, Math.ceil(sortedFiltered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages - 1);
   const pagedFlat = isMobile ? sortedFiltered : sortedFiltered.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
@@ -687,6 +702,8 @@ export default function TransaccionesList({
         onOriginFilterChange={setOriginFilter}
         onlyRecurring={onlyRecurring}
         onToggleOnlyRecurring={() => setOnlyRecurring((v) => !v)}
+        onlyNoContact={onlyNoContact}
+        onToggleOnlyNoContact={() => setOnlyNoContact((v) => !v)}
         directionFilter={directionFilter}
         onDirectionFilterChange={setDirectionFilter}
         amountMin={amountMin}

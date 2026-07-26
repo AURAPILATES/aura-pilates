@@ -114,6 +114,8 @@ type Props = {
   onOriginFilterChange: (v: string) => void;
   onlyRecurring: boolean;
   onToggleOnlyRecurring: () => void;
+  onlyNoContact: boolean;
+  onToggleOnlyNoContact: () => void;
   directionFilter: "all" | "in" | "out";
   onDirectionFilterChange: (v: "all" | "in" | "out") => void;
   amountMin: string;
@@ -169,6 +171,7 @@ function SortArrowV2({ active, dir }: { active: boolean; dir: "asc" | "desc" }) 
 export default function TransaccionesListV2({
   categories, uncategorizedCount, search, onSearchChange, catFilters, onCatFiltersChange,
   originFilter, onOriginFilterChange, onlyRecurring, onToggleOnlyRecurring,
+  onlyNoContact, onToggleOnlyNoContact,
   directionFilter, onDirectionFilterChange,
   amountMin, onAmountMinChange, amountMax, onAmountMaxChange,
   totalIn, totalOut, neto,
@@ -186,13 +189,14 @@ export default function TransaccionesListV2({
   const pageIds = byMonth.flatMap(([, txns]) => txns.map((t) => t.id));
   const allPageSelected = pageIds.length > 0 && pageIds.every((id) => selectedIds.has(id));
   const somePageSelected = pageIds.some((id) => selectedIds.has(id));
-  const filtersActive = catFilters.length > 0 || onlyRecurring || originFilter !== "all" || amountMin !== "" || amountMax !== "";
+  const filtersActive = catFilters.length > 0 || onlyRecurring || onlyNoContact || originFilter !== "all" || amountMin !== "" || amountMax !== "";
   const activeFilterCount =
-    (catFilters.length > 0 ? 1 : 0) + (onlyRecurring ? 1 : 0) + (originFilter !== "all" ? 1 : 0) +
+    (catFilters.length > 0 ? 1 : 0) + (onlyRecurring ? 1 : 0) + (onlyNoContact ? 1 : 0) + (originFilter !== "all" ? 1 : 0) +
     (amountMin !== "" || amountMax !== "" ? 1 : 0) + (directionFilter !== "all" ? 1 : 0);
   function clearFilters() {
     onCatFiltersChange([]);
     if (onlyRecurring) onToggleOnlyRecurring();
+    if (onlyNoContact) onToggleOnlyNoContact();
     onOriginFilterChange("all");
     onAmountMinChange("");
     onAmountMaxChange("");
@@ -279,6 +283,8 @@ export default function TransaccionesListV2({
           <MoreOptionsMenu
             onlyRecurring={onlyRecurring}
             setOnlyRecurring={onToggleOnlyRecurring}
+            onlyNoContact={onlyNoContact}
+            setOnlyNoContact={onToggleOnlyNoContact}
             originFilter={originFilter}
             setOriginFilter={onOriginFilterChange}
             amountMin={amountMin}
@@ -288,13 +294,13 @@ export default function TransaccionesListV2({
             onExport={onExportCsv}
             onPapelera={onPapelera}
           />
-          {activeFilterCount >= 2 && (
+          {activeFilterCount >= 1 && (
             <ClearFiltersButtonV2 onClick={clearFilters} className="hidden sm:flex" />
           )}
         </div>
       </div>
 
-      {activeFilterCount >= 2 && (
+      {activeFilterCount >= 1 && (
         <div className="sm:hidden mt-2">
           <ClearFiltersButtonV2 onClick={clearFilters} />
         </div>

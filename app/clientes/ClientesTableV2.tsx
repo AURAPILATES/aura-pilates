@@ -93,13 +93,10 @@ export default function ClientesTableV2({
             ))}
             <option value={SESSION_PLAN}>Por sesión</option>
           </Select>
-          {activeFilterCount >= 2 && (
-            <ClearFiltersButtonV2 onClick={clearFilters} className="hidden sm:flex" />
-          )}
         </div>
       </div>
 
-      {activeFilterCount >= 2 && (
+      {activeFilterCount >= 1 && (
         <div className="sm:hidden mt-2">
           <ClearFiltersButtonV2 onClick={clearFilters} />
         </div>
@@ -111,7 +108,7 @@ export default function ClientesTableV2({
           onChange={onFilterChange}
           options={filterLabels.map((f) => ({ ...f, countTone: f.key === "error" ? "danger" as const : "warning" as const }))}
         />
-        {activeFilterCount >= 2 && (
+        {activeFilterCount >= 1 && (
           <ClearFiltersButtonV2 onClick={clearFilters} className="hidden sm:flex" />
         )}
       </div>

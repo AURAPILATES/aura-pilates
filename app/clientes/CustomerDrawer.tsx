@@ -117,23 +117,22 @@ export default function CustomerDrawer({ customer, payments, onClose }: Props) {
                   : customer.discount.name}
               </span>
             )}
-            <button
-              type="button"
-              onClick={toggleFamily}
+          </div>
+          <label className={`flex items-center gap-2 mt-3 w-fit cursor-pointer select-none ${savingFamily ? "opacity-50 pointer-events-none" : ""}`}>
+            <input
+              type="checkbox"
+              checked={isFamily}
+              onChange={toggleFamily}
               disabled={savingFamily}
-              title={isFamily ? "Quitar de Familiares" : "Marcar como Familiar"}
-              className={`text-xs px-2.5 py-1 rounded-full font-medium flex items-center gap-1.5 transition-colors disabled:opacity-50 ${
-                isFamily
-                  ? "bg-rose-50 dark:bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-200/70 dark:border-rose-500/30"
-                  : "bg-navy/[0.04] text-navy/50 border border-transparent hover:text-navy hover:bg-navy/[0.07]"
-              }`}
-            >
+              className="w-[15px] h-[15px] rounded-[4px] border-border accent-rose-500 focus:ring-rose-500/20 cursor-pointer"
+            />
+            <span className={`text-xs font-medium flex items-center gap-1 ${isFamily ? "text-rose-600 dark:text-rose-400" : "text-navy/60"}`}>
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
                 <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" />
               </svg>
-              {isFamily ? "Familiar" : "Marcar como familiar"}
-            </button>
-          </div>
+              Familiar
+            </span>
+          </label>
         </div>
       }
       footer={(() => {
