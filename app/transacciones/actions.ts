@@ -670,6 +670,7 @@ export async function addCashTransaction(input: {
   amount: number;
   concept: string;
   category: string | null;
+  contact?: string | null;
   notes?: string;
   paymentMethod?: PaymentMethod;
 }): Promise<void> {
@@ -679,7 +680,7 @@ export async function addCashTransaction(input: {
     amount: input.amount,
     balance: null,
     concept: input.concept.trim() || null,
-    contact: null,
+    contact: input.contact?.trim() || null,
     category: input.category,
     notes: input.notes?.trim() || null,
     source: "manual",

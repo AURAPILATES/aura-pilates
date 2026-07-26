@@ -21,8 +21,63 @@ function revalidateAll() {
   revalidatePath("/configuracion");
 }
 
+// La jerarquía de categorías admite hasta 3 niveles (índices 0, 1, 2).
+const MAX_CATEGORY_DEPTH = 2;
+
+/** Helpers de árbol sobre la lista de categorías (profundidad, altura de subárbol y
+ * descendientes) para validar en servidor que anidar no supere 3 niveles ni cree ciclos. */
+function hierarchyHelpers(all: { id: string; parent_id: string | null }[]) {
+  const byId = new Map(all.map((r) => [r.id, r]));
+  const childrenOf = new Map<string, string[]>();
+  for (const r of all) {
+    if (!r.parent_id) continue;
+    const arr = childrenOf.get(r.parent_id) ?? [];
+    arr.push(r.id);
+    childrenOf.set(r.parent_id, arr);
+  }
+  const depthOf = (nodeId: string): number => {
+    let d = 0;
+    let cur = byId.get(nodeId);
+    const seen = new Set<string>();
+    while (cur?.parent_id && !seen.has(cur.id)) {
+      seen.add(cur.id);
+      cur = byId.get(cur.parent_id);
+      if (cur) d++;
+    }
+    return d;
+  };
+  const heightOf = (nodeId: string): number => {
+    const kids = childrenOf.get(nodeId) ?? [];
+    return kids.length === 0 ? 0 : 1 + Math.max(...kids.map(heightOf));
+  };
+  const descendantsOf = (nodeId: string): Set<string> => {
+    const set = new Set<string>();
+    const stack = [nodeId];
+    while (stack.length) {
+      const n = stack.pop()!;
+      for (const c of childrenOf.get(n) ?? []) {
+        if (!set.has(c)) { set.add(c); stack.push(c); }
+      }
+    }
+    return set;
+  };
+  return { depthOf, heightOf, descendantsOf };
+}
+
+async function loadHierarchy(supabase: ReturnType<typeof createServerClient>) {
+  const { data, error } = await supabase.from("categories").select("id, parent_id");
+  if (error) throw new Error(error.message);
+  return hierarchyHelpers((data ?? []) as { id: string; parent_id: string | null }[]);
+}
+
 export async function createCategory(data: CategoryInput) {
   const supabase = createServerClient();
+  if (data.parent_id) {
+    const { depthOf } = await loadHierarchy(supabase);
+    if (depthOf(data.parent_id) + 1 > MAX_CATEGORY_DEPTH) {
+      throw new Error("Se superarían los tres niveles de categorías permitidos.");
+    }
+  }
   const { error } = await supabase.from("categories").insert(data);
   if (error) throw new Error(error.message);
   await applyCategoryKeywordsToTransactions(data.value, data.auto_keywords);
@@ -32,16 +87,15 @@ export async function createCategory(data: CategoryInput) {
 export async function updateCategory(id: string, data: CategoryInput) {
   const supabase = createServerClient();
   if (data.parent_id) {
-    // La pantalla solo soporta dos niveles (padre → hijas); si esta categoría
-    // ya tiene hijas propias, convertirla en hija de otra la dejaría a 3
-    // niveles y las nietas dejarían de mostrarse en el árbol.
-    const { count, error: countError } = await supabase
-      .from("categories")
-      .select("id", { count: "exact", head: true })
-      .eq("parent_id", id);
-    if (countError) throw new Error(countError.message);
-    if (count && count > 0) {
-      throw new Error("Esta categoría tiene subcategorías propias y no puede moverse bajo otra categoría.");
+    // Máximo 3 niveles: la nueva rama (padre + esta categoría + sus descendientes) no puede
+    // superar la profundidad permitida, y una categoría no puede colgar de sí misma ni de
+    // una de sus subcategorías (ciclo).
+    const { depthOf, heightOf, descendantsOf } = await loadHierarchy(supabase);
+    if (data.parent_id === id || descendantsOf(id).has(data.parent_id)) {
+      throw new Error("Una categoría no puede depender de sí misma ni de una de sus subcategorías.");
+    }
+    if (depthOf(data.parent_id) + 1 + heightOf(id) > MAX_CATEGORY_DEPTH) {
+      throw new Error("Se superarían los tres niveles de categorías permitidos.");
     }
   }
   const { error } = await supabase.from("categories").update(data).eq("id", id);

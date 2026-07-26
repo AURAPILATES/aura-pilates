@@ -28,6 +28,21 @@ export default function CategoriasManagerV2({
   onDragStart, onDragOver, onDragLeave, onDrop, onDragEnd,
   onNewCategory, onEditCategory, onViewTransactions,
 }: Props) {
+  // Profundidad de cada categoría (0 = raíz) para indentar los niveles anidados. Se calcula
+  // sobre todas las categorías visibles; si un ancestro no está presente (búsqueda filtrada),
+  // el recorrido se detiene y la indentación se acorta, sin romperse.
+  const byId = new Map(groups.flatMap((g) => g.ordered).map((c) => [c.id, c]));
+  function depthOf(cat: Category): number {
+    let d = 0;
+    let cur: Category | undefined = cat;
+    const seen = new Set<string>();
+    while (cur?.parent_id && !seen.has(cur.id)) {
+      seen.add(cur.id);
+      cur = byId.get(cur.parent_id);
+      if (cur) d++;
+    }
+    return d;
+  }
   return (
     <div>
       <div className="flex items-center gap-[10px]">
@@ -52,7 +67,8 @@ export default function CategoriasManagerV2({
               <p className="pt-2.5 pb-1 text-[11.5px] text-faint font-medium">{group.subsectionLabel}</p>
             )}
             {group.ordered.map((cat) => {
-              const isSub = !!cat.parent_id;
+              const depth = depthOf(cat);
+              const isSub = depth > 0;
               const isDragging = draggedId === cat.id;
               const isDragOver = dragOverId === cat.id && draggedId !== null && draggedId !== cat.id;
               return (
@@ -67,7 +83,7 @@ export default function CategoriasManagerV2({
                   className={`flex items-center gap-3 border-t border-subtle py-[9px] transition-colors ${
                     isDragOver ? "bg-navy/[0.04]" : ""
                   } ${isDragging ? "opacity-40" : ""}`}
-                  style={{ paddingLeft: isSub ? 28 : 0 }}
+                  style={{ paddingLeft: depth * 28 }}
                 >
                   <svg width="10" height="16" viewBox="0 0 10 16" fill="var(--color-faint)" className="shrink-0 cursor-grab active:cursor-grabbing">
                     <circle cx="2.5" cy="3" r="1.3" /><circle cx="7.5" cy="3" r="1.3" />

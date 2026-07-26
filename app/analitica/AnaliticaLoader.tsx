@@ -71,29 +71,43 @@ function groupExpensesByTopCategory(
   dbCatById: Map<string, Category>,
   fallbackColors: string[],
 ): TopExpenseSeg[] {
+  // Sube hasta la categoría raíz (soporta 3+ niveles): así el desglose agrupa cada gasto bajo
+  // su categoría de primer nivel aunque esté a dos o más niveles de profundidad.
+  const topAncestorOf = (cat: Category): Category => {
+    let cur = cat;
+    const seen = new Set<string>();
+    while (cur.parent_id && !seen.has(cur.id)) {
+      seen.add(cur.id);
+      const p = dbCatById.get(cur.parent_id);
+      if (!p) break;
+      cur = p;
+    }
+    return cur;
+  };
   const topMap = new Map<string, TopExpenseSeg>();
   expByCategory.forEach((e, i) => {
     const dbCat = dbCatByValue.get(e.category);
-    const parent = dbCat?.parent_id ? dbCatById.get(dbCat.parent_id) : undefined;
-    const topKey = parent?.value ?? dbCat?.value ?? e.category;
+    const top = dbCat ? topAncestorOf(dbCat) : undefined;
+    const isDescendant = !!(dbCat && top && top.id !== dbCat.id);
+    const topKey = top?.value ?? dbCat?.value ?? e.category;
 
     if (!topMap.has(topKey)) {
       topMap.set(topKey, {
         key: topKey,
-        label: parent?.label ?? dbCat?.label ?? e.category,
-        color: parent?.text_color ?? dbCat?.text_color ?? fallbackColors[i % fallbackColors.length],
-        iconKey: parent?.emoji ?? dbCat?.emoji,
+        label: top?.label ?? dbCat?.label ?? e.category,
+        color: top?.text_color ?? dbCat?.text_color ?? fallbackColors[i % fallbackColors.length],
+        iconKey: top?.emoji ?? dbCat?.emoji,
         group: e.group,
         count: 0,
         total: 0,
         children: [],
       });
     }
-    const top = topMap.get(topKey)!;
-    top.count += e.count;
-    top.total += e.total;
-    if (parent && dbCat) {
-      top.children.push({ value: e.category, label: dbCat.label, count: e.count, total: e.total, color: dbCat.text_color, iconKey: dbCat.emoji });
+    const topSeg = topMap.get(topKey)!;
+    topSeg.count += e.count;
+    topSeg.total += e.total;
+    if (isDescendant && dbCat) {
+      topSeg.children.push({ value: e.category, label: dbCat.label, count: e.count, total: e.total, color: dbCat.text_color, iconKey: dbCat.emoji });
     }
   });
   const result = [...topMap.values()];

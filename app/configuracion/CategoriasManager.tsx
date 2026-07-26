@@ -2,6 +2,7 @@
 import React, { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { Category, GroupType } from "@/lib/categories";
+import { sortCategoriesHierarchical, categoryDisplayLabel } from "@/lib/categories";
 import { economicGroupOf, type EconomicGroup } from "@/lib/economicGroups";
 import { siblingColor } from "@/lib/colorVariants";
 import { normalizeText } from "@/lib/normalizeText";
@@ -33,18 +34,24 @@ const ECONOMIC_ORDER: EconomicGroup[] = ["personal", "operational", "capex"];
 
 /** Cada padre presente en `list` va seguido de sus subcategorías presentes en `list`. */
 function byParentOrdered(list: Category[]): Category[] {
+  const present = new Set(list.map((c) => c.id));
   const byParent = new Map<string | null, Category[]>();
   for (const c of list) {
-    const key = c.parent_id ?? null;
+    // Si el padre no está en esta sublista (p.ej. por grupo/naturaleza), se trata como raíz
+    // para no perder la categoría; así también funcionan los niveles anidados.
+    const key = c.parent_id && present.has(c.parent_id) ? c.parent_id : null;
     if (!byParent.has(key)) byParent.set(key, []);
     byParent.get(key)!.push(c);
   }
   for (const l of byParent.values()) l.sort((a, b) => a.sort_order - b.sort_order);
   const result: Category[] = [];
-  for (const parent of byParent.get(null) ?? []) {
-    result.push(parent);
-    result.push(...(byParent.get(parent.id) ?? []));
-  }
+  const visit = (key: string | null) => {
+    for (const cat of byParent.get(key) ?? []) {
+      result.push(cat);
+      visit(cat.id);
+    }
+  };
+  visit(null);
   return result;
 }
 
@@ -196,18 +203,52 @@ export default function CategoriasManager({
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const editorHasChildren =
-    editor?.mode === "edit" && categories.some((c) => c.parent_id === editor.cat.id);
-
-  /** Trx de una categoría + las de sus hijas (las categorías padre son el sumatorio de su rama). */
+  /** Trx propias + las de toda su rama de descendientes (una categoría padre es el sumatorio
+   * de su subárbol, a cualquier profundidad). */
   function totalCount(cat: Category): number {
     const own = categoryCounts[cat.value] ?? 0;
-    if (cat.parent_id) return own;
     const childrenCount = categories
       .filter((c) => c.parent_id === cat.id)
-      .reduce((sum, c) => sum + (categoryCounts[c.value] ?? 0), 0);
+      .reduce((sum, c) => sum + totalCount(c), 0);
     return own + childrenCount;
   }
+
+  // ── Jerarquía de hasta 3 niveles (índices 0,1,2) ──────────────────────────────
+  const MAX_DEPTH = 2;
+  function depthOf(cat: Category): number {
+    let d = 0;
+    let cur: Category | undefined = cat;
+    const seen = new Set<string>();
+    while (cur?.parent_id && !seen.has(cur.id)) {
+      seen.add(cur.id);
+      cur = categories.find((c) => c.id === cur!.parent_id);
+      if (cur) d++;
+    }
+    return d;
+  }
+  function subtreeHeight(cat: Category): number {
+    const children = categories.filter((c) => c.parent_id === cat.id);
+    return children.length === 0 ? 0 : 1 + Math.max(...children.map(subtreeHeight));
+  }
+  function descendantIds(cat: Category): Set<string> {
+    const ids = new Set<string>();
+    const stack = [cat.id];
+    while (stack.length) {
+      const id = stack.pop()!;
+      for (const c of categories) {
+        if (c.parent_id === id && !ids.has(c.id)) { ids.add(c.id); stack.push(c.id); }
+      }
+    }
+    return ids;
+  }
+  // Padres válidos para la categoría del editor: los que, tras anidarla, no superen los 3
+  // niveles y no creen un ciclo (excluye la propia categoría y sus descendientes).
+  const editingCat = editor?.mode === "edit" ? editor.cat : null;
+  const editingHeight = editingCat ? subtreeHeight(editingCat) : 0;
+  const excludedParentIds = editingCat ? new Set([editingCat.id, ...descendantIds(editingCat)]) : new Set<string>();
+  const parentOptions = sortCategoriesHierarchical(categories).filter(
+    (c) => !excludedParentIds.has(c.id) && depthOf(c) + 1 + editingHeight <= MAX_DEPTH,
+  );
 
   function handleDrop(list: Category[], targetId: string) {
     const dragId = draggedId;
@@ -346,17 +387,26 @@ export default function CategoriasManager({
     });
   }
 
-  // Filtro de búsqueda: mantiene visible el padre de cualquier hijo que coincida, para no
-  // perder el contexto de jerarquía aunque el propio padre no coincida con el texto buscado.
+  // Filtro de búsqueda: mantiene visibles todos los ancestros de cualquier categoría que
+  // coincida, para no perder el contexto de jerarquía (a cualquier profundidad) aunque el
+  // padre o abuelo no coincidan con el texto buscado.
   const q = normalizeText(search).trim();
   const filteredCategories = q
     ? (() => {
         const directMatch = (c: Category) =>
           normalizeText(c.label).includes(q) || normalizeText(c.auto_keywords ?? "").includes(q);
-        const matchedIds = new Set(categories.filter(directMatch).map((c) => c.id));
-        return categories.filter(
-          (c) => directMatch(c) || categories.some((child) => child.parent_id === c.id && matchedIds.has(child.id)),
-        );
+        const byId = new Map(categories.map((c) => [c.id, c]));
+        const visibleIds = new Set(categories.filter(directMatch).map((c) => c.id));
+        for (const id of [...visibleIds]) {
+          let cur = byId.get(id);
+          const seen = new Set<string>();
+          while (cur?.parent_id && !seen.has(cur.id)) {
+            seen.add(cur.id);
+            visibleIds.add(cur.parent_id);
+            cur = byId.get(cur.parent_id);
+          }
+        }
+        return categories.filter((c) => visibleIds.has(c.id));
       })()
     : categories;
 
@@ -564,19 +614,18 @@ export default function CategoriasManager({
                 <label className="block text-xs font-semibold text-navy/45 uppercase tracking-wider mb-2">
                   Categoría padre <span className="font-normal normal-case text-navy/35">(opcional, para crear una subcategoría)</span>
                 </label>
-                {editorHasChildren ? (
+                {parentOptions.length === 0 ? (
                   <p className="text-[11px] text-navy/45 leading-snug bg-navy/[0.04] rounded-xl px-4 py-3">
-                    Esta categoría tiene subcategorías propias, así que no puede moverse bajo otra categoría
-                    (la pantalla solo soporta dos niveles y sus hijas dejarían de verse).
+                    {editingHeight >= MAX_DEPTH
+                      ? "Esta categoría ya tiene su propia jerarquía de subcategorías, así que no puede anidarse bajo otra (el máximo son tres niveles)."
+                      : "No hay ninguna categoría bajo la que anidar esta."}
                   </p>
                 ) : (
                   <Select value={form.parent_id ?? ""} onChange={(e) => handleParentSelect(e.target.value)}>
                     <option value="">- Sin categoría padre -</option>
-                    {categories
-                      .filter((c) => !c.parent_id && (editor.mode !== "edit" || c.id !== editor.cat.id))
-                      .map((c) => (
-                        <option key={c.id} value={c.id}>{c.label}</option>
-                      ))}
+                    {parentOptions.map((c) => (
+                      <option key={c.id} value={c.id}>{categoryDisplayLabel(c, categories)}</option>
+                    ))}
                   </Select>
                 )}
               </div>

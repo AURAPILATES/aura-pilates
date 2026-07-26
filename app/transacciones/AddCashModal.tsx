@@ -26,6 +26,7 @@ export default function AddCashModal({ categories, onClose }: { categories: Cate
   const [amount, setAmount] = useState("");
   const [isIncome, setIsIncome] = useState(true);
   const [concept, setConcept] = useState("");
+  const [contact, setContact] = useState("");
   const [notes, setNotes] = useState("");
   const [category, setCategory] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("efectivo");
@@ -45,6 +46,7 @@ export default function AddCashModal({ categories, onClose }: { categories: Cate
         amount: isIncome ? Math.abs(parsedAmount) : -Math.abs(parsedAmount),
         concept,
         category: category || null,
+        contact: contact || null,
         notes,
         paymentMethod,
       });
@@ -104,7 +106,20 @@ export default function AddCashModal({ categories, onClose }: { categories: Cate
               type="text"
               value={concept}
               onChange={(e) => setConcept(e.target.value)}
-              placeholder="ej: clase suelta pagada en caja"
+              placeholder="ej: pago salario"
+              className="w-full border border-navy/[0.12] rounded-lg px-3 py-2 text-sm text-navy focus:outline-none focus:border-primary/40"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs text-navy/55 mb-1.5">
+              Contacto <span className="text-navy/35">(opcional)</span>
+            </label>
+            <input
+              type="text"
+              value={contact}
+              onChange={(e) => setContact(e.target.value)}
+              placeholder="ej: a quién se le paga o de quién se cobra"
               className="w-full border border-navy/[0.12] rounded-lg px-3 py-2 text-sm text-navy focus:outline-none focus:border-primary/40"
             />
           </div>

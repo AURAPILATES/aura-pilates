@@ -23,28 +23,47 @@ export type Category = {
   economic_group: string | null;
 };
 
-/** "Suministros > Agua" si `cat` es una subcategoría, o solo "Agua" si no tiene padre. */
-export function categoryDisplayLabel(cat: Pick<Category, "label" | "parent_id">, all: Pick<Category, "id" | "label">[]): string {
-  if (!cat.parent_id) return cat.label;
-  const parent = all.find((c) => c.id === cat.parent_id);
-  return parent ? `${parent.label} > ${cat.label}` : cat.label;
+/** Ruta jerárquica completa hasta la raíz: "Impuestos > IRPF > Modelo 111", o solo "Agua" si
+ * no tiene padre. Soporta cualquier profundidad (protegido contra ciclos). */
+export function categoryDisplayLabel(
+  cat: Pick<Category, "label" | "parent_id">,
+  all: Pick<Category, "id" | "label" | "parent_id">[],
+): string {
+  const byId = new Map(all.map((c) => [c.id, c]));
+  const parts: string[] = [cat.label];
+  const seen = new Set<string>();
+  let parentId = cat.parent_id;
+  while (parentId && !seen.has(parentId)) {
+    seen.add(parentId);
+    const parent = byId.get(parentId);
+    if (!parent) break;
+    parts.unshift(parent.label);
+    parentId = parent.parent_id;
+  }
+  return parts.join(" > ");
 }
 
-/** Categorías ordenadas para listas/selects: cada padre seguido inmediatamente de sus subcategorías. */
+/** Categorías ordenadas para listas/selects: cada padre seguido inmediatamente de sus
+ * descendientes (a cualquier profundidad, recorrido en profundidad). */
 export function sortCategoriesHierarchical(categories: Category[]): Category[] {
+  const present = new Set(categories.map((c) => c.id));
   const byParent = new Map<string | null, Category[]>();
   for (const c of categories) {
-    const key = c.parent_id ?? null;
+    // Si el padre no está en la lista (p.ej. filtrada), se trata como raíz para no perderlo.
+    const key = c.parent_id && present.has(c.parent_id) ? c.parent_id : null;
     if (!byParent.has(key)) byParent.set(key, []);
     byParent.get(key)!.push(c);
   }
   for (const list of byParent.values()) list.sort((a, b) => a.sort_order - b.sort_order);
 
   const result: Category[] = [];
-  for (const parent of byParent.get(null) ?? []) {
-    result.push(parent);
-    result.push(...(byParent.get(parent.id) ?? []));
-  }
+  const visit = (parentKey: string | null) => {
+    for (const cat of byParent.get(parentKey) ?? []) {
+      result.push(cat);
+      visit(cat.id);
+    }
+  };
+  visit(null);
   return result;
 }
 

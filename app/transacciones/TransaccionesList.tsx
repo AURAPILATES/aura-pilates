@@ -545,15 +545,24 @@ export default function TransaccionesList({
     if (cat && cat !== "all") setCatFilters([cat]);
   }, [searchParams]);
 
-  // Filtrar por una categoría padre debe incluir también las transacciones de sus hijas.
+  // Filtrar por una categoría debe incluir también las transacciones de toda su rama de
+  // subcategorías, a cualquier profundidad (padre → hijas → nietas…).
   const expandedCatFilters = useMemo(() => {
     if (catFilters.length === 0) return catFilters;
+    const childrenByParent = new Map<string, Category[]>();
+    for (const c of categories) {
+      if (!c.parent_id) continue;
+      if (!childrenByParent.has(c.parent_id)) childrenByParent.set(c.parent_id, []);
+      childrenByParent.get(c.parent_id)!.push(c);
+    }
     const expanded = new Set(catFilters);
-    for (const value of catFilters) {
-      const parent = categories.find((c) => c.value === value);
-      if (!parent || parent.parent_id) continue;
-      for (const child of categories) {
-        if (child.parent_id === parent.id) expanded.add(child.value);
+    const stack = catFilters
+      .map((value) => categories.find((c) => c.value === value))
+      .filter((c): c is Category => !!c);
+    while (stack.length) {
+      const cat = stack.pop()!;
+      for (const child of childrenByParent.get(cat.id) ?? []) {
+        if (!expanded.has(child.value)) { expanded.add(child.value); stack.push(child); }
       }
     }
     return [...expanded];
