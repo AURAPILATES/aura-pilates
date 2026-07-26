@@ -73,6 +73,7 @@ export default function ClientesTableV2({
   function clearFilters() {
     onFilterChange("all");
     onPlanFilterChange("");
+    onSearchChange("");
   }
 
   return (

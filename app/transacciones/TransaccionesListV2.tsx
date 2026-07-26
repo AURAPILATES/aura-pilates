@@ -201,6 +201,7 @@ export default function TransaccionesListV2({
     onAmountMinChange("");
     onAmountMaxChange("");
     onDirectionFilterChange("all");
+    onSearchChange("");
   }
 
   function scrollToMonth(key: string) {

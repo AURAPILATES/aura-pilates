@@ -81,6 +81,7 @@ export default function ClientesMatrizComprasV2({
     onPurchaseCountFilterChange("");
     if (onlyInactive) onToggleOnlyInactive();
     if (onlyUpsell) onToggleOnlyUpsell();
+    onSearchChange("");
   }
 
   return (
