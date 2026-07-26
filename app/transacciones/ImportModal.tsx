@@ -14,12 +14,13 @@ import Button from "@/app/components/Button";
 import Select from "@/app/components/Select";
 import { CategoryPill } from "./TransaccionesList";
 
-const CASH_ACCOUNTS: { value: PaymentMethod; label: string }[] = [
+const ORIGIN_OPTIONS: { value: PaymentMethod; label: string }[] = [
+  { value: "banco", label: "CaixaBank" },
   { value: "efectivo", label: "Efectivo Aura" },
-  { value: "carles", label: "Carles" },
   { value: "victor", label: "Víctor" },
   { value: "celia", label: "Celia" },
   { value: "olga", label: "Olga" },
+  { value: "carles", label: "Carles" },
 ];
 
 // ── CSV parser ────────────────────────────────────────────────────────────────
@@ -195,6 +196,20 @@ function fmtDateShort(d: string) {
   return `${parseInt(day)} ${months[parseInt(m) - 1]}`;
 }
 
+function fmtDateLong(d: string) {
+  return d.split("-").reverse().join("/");
+}
+
+function dateRange(rows: ImportRow[]): { min: string; max: string } {
+  let min = rows[0].date;
+  let max = rows[0].date;
+  for (const r of rows) {
+    if (r.date < min) min = r.date;
+    if (r.date > max) max = r.date;
+  }
+  return { min, max };
+}
+
 type ContactDraft = {
   pattern: string;
   bankPatterns: string[];
@@ -277,8 +292,7 @@ function DraftPatternsEditor({ patterns, onChange }: { patterns: string[]; onCha
 
 export default function ImportModal({ onClose }: { onClose: () => void }) {
   const [state, setState] = useState<State>({ kind: "idle" });
-  const [isCash, setIsCash] = useState(false);
-  const [cashAccount, setCashAccount] = useState<PaymentMethod>("efectivo");
+  const [origin, setOrigin] = useState<PaymentMethod>("banco");
   const fileRef = useRef<HTMLInputElement>(null);
   const [historial, setHistorial] = useState<ImportBatch[]>([]);
   const [confirmUndo, setConfirmUndo] = useState<string | null>(null);
@@ -401,7 +415,7 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
   async function handleForceImport(rows: ImportRow[], batchId: string) {
     setForcingDuplicates(true);
     try {
-      await forceImportTransactions(rows, isCash ? cashAccount : "banco", batchId);
+      await forceImportTransactions(rows, origin, batchId);
       const keys = new Set(rows.map((r) => `${r.date}|${r.amount}|${r.concept}`));
       setState((prev) => {
         if (prev.kind !== "done") return prev;
@@ -415,7 +429,7 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
   async function doImport(rows: ImportRow[]) {
     setState({ kind: "importing" });
     try {
-      const res = await importTransactions(rows, isCash ? cashAccount : "banco");
+      const res = await importTransactions(rows, origin);
       setState({ kind: "done", imported: res.imported, skipped: res.skipped, skippedRows: res.skippedRows, batchId: res.batchId });
       if (res.batchId) {
         getRecentImports().then(setHistorial).catch(() => {});
@@ -645,17 +659,36 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
           )}
 
           {/* ── Preview ── */}
-          {state.kind === "preview" && (
+          {state.kind === "preview" && (() => {
+            const { min, max } = dateRange(state.rows);
+            return (
             <div>
-              <p className="text-sm text-navy/55 mb-3">
-                <span className="font-medium text-navy">{state.filename}</span>
-                {" · "}<strong className="text-navy">{state.rows.length}</strong> movimientos detectados
-              </p>
+              <div className="flex items-center gap-3 p-4 bg-primary/[0.06] border border-primary/15 rounded-xl mb-4">
+                <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                  </svg>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-navy truncate">{state.filename}</p>
+                  <p className="text-xs text-navy/55 mt-0.5">
+                    {fmtDateLong(min)} a {fmtDateLong(max)} · <strong className="text-navy/70 font-semibold">{state.rows.length}</strong> movimientos
+                  </p>
+                </div>
+              </div>
               {!!state.appliedCount && (
                 <p className="text-xs text-primary/70 mb-3">
                   {state.appliedCount} {state.appliedCount === 1 ? "movimiento anterior actualizado" : "movimientos anteriores actualizados"} con el contacto que acabas de confirmar.
                 </p>
               )}
+              <div className="mb-4">
+                <p className="text-[11px] font-semibold text-navy/40 uppercase tracking-wider mb-1.5">Origen o banco</p>
+                <Select value={origin} onChange={(e) => setOrigin(e.target.value as PaymentMethod)}>
+                  {ORIGIN_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </Select>
+              </div>
               <div className="border border-navy/[0.07] rounded-xl overflow-hidden mb-4">
                 <table className="w-full text-xs">
                   <thead>
@@ -668,7 +701,7 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                   <tbody>
                     {state.rows.slice(0, 5).map((r, i) => (
                       <tr key={i} className="border-b border-navy/[0.04] last:border-0">
-                        <td className="px-3 py-2 text-navy/60 whitespace-nowrap tabular-nums">{r.date.split("-").reverse().join("/")}</td>
+                        <td className="px-3 py-2 text-navy/60 whitespace-nowrap tabular-nums">{fmtDateLong(r.date)}</td>
                         <td className="px-3 py-2 text-navy truncate max-w-[200px]">{r.concept ?? r.bankDetails ?? "-"}</td>
                         <td className={`px-3 py-2 text-right font-semibold tabular-nums ${r.amount >= 0 ? "text-success" : "text-navy/70"}`}>
                           {r.amount >= 0 ? "+" : "−"}{fmtAmt(r.amount)} €
@@ -686,26 +719,6 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
               <p className="text-xs text-navy/45 mb-4">
                 Las categorías se asignarán automáticamente según las palabras clave configuradas. Puedes cambiarlas después.
               </p>
-              <label className="flex items-center gap-2 mb-4 text-sm text-navy/70 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={isCash}
-                  onChange={(e) => setIsCash(e.target.checked)}
-                  className="rounded border-navy/[0.2] accent-primary cursor-pointer"
-                />
-                Estos movimientos son en efectivo (no del banco)
-              </label>
-              {isCash && (
-                <Select
-                  value={cashAccount}
-                  onChange={(e) => setCashAccount(e.target.value as PaymentMethod)}
-                  className="mb-4"
-                >
-                  {CASH_ACCOUNTS.map((a) => (
-                    <option key={a.value} value={a.value}>{a.label}</option>
-                  ))}
-                </Select>
-              )}
               <div className="flex gap-2">
                 <button
                   onClick={() => setState({ kind: "idle" })}
@@ -718,7 +731,8 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                 </Button>
               </div>
             </div>
-          )}
+            );
+          })()}
 
           {/* ── Importing ── */}
           {state.kind === "importing" && (
@@ -760,7 +774,7 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                     {state.skippedRows.map((r, i) => (
                       <div key={i} className="flex items-center gap-3 px-4 py-2.5">
                         <span className="text-xs text-navy/45 whitespace-nowrap tabular-nums shrink-0">
-                          {r.date.split("-").reverse().join("/")}
+                          {fmtDateLong(r.date)}
                         </span>
                         <span className="text-xs text-navy truncate flex-1">
                           {r.concept ?? r.bankDetails ?? "-"}
