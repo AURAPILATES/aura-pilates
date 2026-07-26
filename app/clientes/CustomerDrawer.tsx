@@ -1,8 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import Drawer from "@/app/components/Drawer";
 import { fmt } from "@/lib/analytics";
+import { setClientFamilyAction } from "@/app/actions/setClientFamily";
 import type { StripePayment } from "@/lib/stripePayments";
 import {
   type CustomerRow,
@@ -21,7 +23,23 @@ type Props = {
 };
 
 export default function CustomerDrawer({ customer, payments, onClose }: Props) {
+  const router = useRouter();
   const [stripeOpen, setStripeOpen] = useState(false);
+  const [isFamily, setIsFamily] = useState(!!customer.isFamily);
+  const [savingFamily, startSaveFamily] = useTransition();
+
+  function toggleFamily() {
+    const next = !isFamily;
+    setIsFamily(next); // optimista
+    startSaveFamily(async () => {
+      try {
+        await setClientFamilyAction(customer.id, next);
+        router.refresh(); // recarga la tabla para actualizar el filtro y el recuento
+      } catch {
+        setIsFamily(!next); // revierte si falla
+      }
+    });
+  }
 
   const customerPayments = useMemo(
     () =>
@@ -99,6 +117,22 @@ export default function CustomerDrawer({ customer, payments, onClose }: Props) {
                   : customer.discount.name}
               </span>
             )}
+            <button
+              type="button"
+              onClick={toggleFamily}
+              disabled={savingFamily}
+              title={isFamily ? "Quitar de Familiares" : "Marcar como Familiar"}
+              className={`text-xs px-2.5 py-1 rounded-full font-medium flex items-center gap-1.5 transition-colors disabled:opacity-50 ${
+                isFamily
+                  ? "bg-rose-50 dark:bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-200/70 dark:border-rose-500/30"
+                  : "bg-navy/[0.04] text-navy/50 border border-transparent hover:text-navy hover:bg-navy/[0.07]"
+              }`}
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" />
+              </svg>
+              {isFamily ? "Familiar" : "Marcar como familiar"}
+            </button>
           </div>
         </div>
       }

@@ -8,6 +8,7 @@ export type ChurnFields = {
   lastSubProduct?: string | null;
   isActive?: boolean;
   isNew?: boolean;
+  isFamily?: boolean;
 };
 
 export type EnrichedCustomer = StripeCustomer & ChurnFields;
@@ -16,7 +17,7 @@ export type EnrichedCustomer = StripeCustomer & ChurnFields;
 export function enrichCustomers(
   customers: StripeCustomer[],
   payments: StripePayment[],
-  opts?: { activeIds?: Set<string>; newCustomerIds?: Set<string> },
+  opts?: { activeIds?: Set<string>; newCustomerIds?: Set<string>; familyIds?: Set<string> },
 ): EnrichedCustomer[] {
   const lastSubById  = new Map<string, { date: string; product: string }>();
   const lastPackById = new Map<string, { date: string; product: string }>();
@@ -56,6 +57,7 @@ export function enrichCustomers(
       // Solo cuenta como "nuevo" si tiene un único perfil de Stripe bajo su email: si tuviera
       // más de uno, su primer pago real podría estar en otro stripeId fuera del período.
       isNew:    opts?.newCustomerIds ? opts.newCustomerIds.has(c.id)                        : undefined,
+      isFamily: opts?.familyIds      ? opts.familyIds.has(c.id)                             : undefined,
     };
   });
 }

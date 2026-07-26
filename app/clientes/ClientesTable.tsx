@@ -7,12 +7,12 @@ import { productAbbr, PRODUCT_FILTERS } from "./ClientesMatrizCompras";
 import type { StripeCustomer } from "@/lib/stripeCustomers";
 import type { StripePayment } from "@/lib/stripePayments";
 
-export type CustomerRow = StripeCustomer & { daysSinceLastSub?: number | null; daysSinceLastPack?: number | null; lastPackProduct?: string | null; lastSubProduct?: string | null; isActive?: boolean; isNew?: boolean };
+export type CustomerRow = StripeCustomer & { daysSinceLastSub?: number | null; daysSinceLastPack?: number | null; lastPackProduct?: string | null; lastSubProduct?: string | null; isActive?: boolean; isNew?: boolean; isFamily?: boolean };
 export type ClientesTableHandle = { openCustomer: (id: string) => void };
 
 export type SortKey = "totalSpent" | "lastPaymentDate" | "name";
 export type SortDir = "asc" | "desc";
-export type Filter  = "all" | "recurring" | "occasional" | "discount" | "error" | "delayed";
+export type Filter  = "all" | "recurring" | "occasional" | "discount" | "error" | "delayed" | "family";
 const PAGE_SIZE = 25;
 
 export function fmtDate(d: string) {
@@ -162,6 +162,7 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
     return status === "sinpagar" || status === "caducado";
   };
   const delayedCount = customers.filter(isDelayed).length;
+  const familyCount  = customers.filter((c) => c.isFamily).length;
 
   const activeMonthIds = useMemo(() => {
     if (!activeMonth) return null;
@@ -180,6 +181,7 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
         if (filter === "discount"    && !hasDiscount(c))   return false;
         if (filter === "error"       && !c.hasPaymentError)  return false;
         if (filter === "delayed"     && !isDelayed(c))       return false;
+        if (filter === "family"      && !c.isFamily)         return false;
         if (planFilter && currentPlanProduct(c) !== planFilter) return false;
         if (!q) return true;
         const dSub  = c.daysSinceLastSub  ?? Infinity;
@@ -241,6 +243,7 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
     { key: "recurring",  label: "Recurrentes" },
     { key: "occasional", label: "Ocasionales" },
     { key: "delayed",    label: "Retraso en renovar", count: delayedCount },
+    { key: "family",     label: "Familiares", count: familyCount },
     { key: "discount",   label: "Descuento", count: discountCount },
     { key: "error",      label: "Error de pago", count: errorCount },
   ];

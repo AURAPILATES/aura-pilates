@@ -34,6 +34,24 @@ type Props = {
   onExportCsv: () => void;
 };
 
+function HomeIcon({ size = 11 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" />
+    </svg>
+  );
+}
+
+/** Distintivo de cliente "Familiar" (marca manual). */
+function FamiliarBadge({ compact = false }: { compact?: boolean }) {
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full font-semibold whitespace-nowrap bg-rose-50 dark:bg-rose-500/15 text-rose-600 dark:text-rose-400 ${compact ? "px-[6px] py-[1px] text-[11px]" : "px-[8px] py-[2px] text-[11px]"}`}>
+      <HomeIcon size={compact ? 9 : 10} />
+      Familiar
+    </span>
+  );
+}
+
 function SortArrowV2({ active, dir }: { active: boolean; dir: SortDir }) {
   return (
     <svg
@@ -157,7 +175,10 @@ export default function ClientesTableV2({
                     <div className="flex items-center gap-[11px] min-w-0">
                       <Avatar seed={c.id} initials={initials(c.name, c.email)} size={30} />
                       <div className="min-w-0">
-                        <p className="text-[14px] font-semibold text-navy truncate">{c.name ?? "-"}</p>
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <p className="text-[14px] font-semibold text-navy truncate">{c.name ?? "-"}</p>
+                          {c.isFamily && <FamiliarBadge />}
+                        </div>
                         {c.email && <p className="text-[12px] text-faint truncate">{c.email}</p>}
                       </div>
                     </div>
@@ -190,7 +211,10 @@ export default function ClientesTableV2({
                 >
                   <Avatar seed={c.id} initials={initials(c.name, c.email)} size={32} />
                   <div className="flex-1 min-w-0">
-                    <p className="text-[14px] font-semibold text-navy truncate">{c.name ?? "-"}</p>
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <p className="text-[14px] font-semibold text-navy truncate">{c.name ?? "-"}</p>
+                      {c.isFamily && <FamiliarBadge compact />}
+                    </div>
                     <div className="flex items-center gap-1.5 mt-0.5">
                       <span className={`inline-block px-[7px] py-[1px] rounded-[6px] text-[11px] font-medium whitespace-nowrap ${planColorCls}`}>
                         {planLabel}
