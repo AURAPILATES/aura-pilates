@@ -43,8 +43,20 @@ function CustomerRowItem({
           <span className="text-xs text-navy/45">
             Último pago: <span className="text-navy/65">{fmtDate(c.lastPaymentDate)}</span>
           </span>
-          <span className="text-xs font-semibold text-navy">{fmt(c.totalSpent)}</span>
+          <span className="text-xs text-navy/45">
+            Histórico: <span className="text-navy/65 font-semibold">{fmt(c.totalSpent)}</span>
+          </span>
         </div>
+        {showError && c.paymentErrorDate && (
+          <p
+            className="text-xs text-navy/45 mt-1 truncate"
+            title={c.paymentErrorPlan ?? undefined}
+          >
+            Último intento: <span className="text-navy/65">{fmtDate(c.paymentErrorDate)}</span>
+            {c.paymentErrorAmount != null && <> · <span className="text-navy/65 font-medium">{fmt(c.paymentErrorAmount)}</span></>}
+            {c.paymentErrorPlan && <> · <span className="text-navy/65">{c.paymentErrorPlan}</span></>}
+          </p>
+        )}
         {showError && c.paymentErrorReason && (
           <p className="text-xs text-danger mt-1">{c.paymentErrorReason}</p>
         )}

@@ -26,6 +26,8 @@ export type StripeCustomer = {
   hasPaymentError: boolean; // delinquent OR invoice intentada y no cobrada
   paymentErrorReason: string | null; // motivo legible del último fallo de cobro
   paymentErrorDate: string | null; // fecha del fallo más reciente, para saber si un "hablado con clienta" sigue vigente
+  paymentErrorAmount: number | null; // importe (€) que Stripe intentó cobrar en el último reintento fallido
+  paymentErrorPlan: string | null; // plan/producto del cobro fallido, si se conoce
 };
 
 // ── Cached raw customer list from Stripe ──────────────────────────────────────
@@ -55,16 +57,35 @@ function describePaymentError(err: Stripe.PaymentIntent.LastPaymentError | null 
   return err.message ?? "Cobro fallido";
 }
 
-// Pagos fallidos en los últimos 30 días: devuelve customerId + fecha y motivo del fallo más reciente
+// Plan/producto de una factura fallida, si se puede deducir de sus líneas.
+// Cogemos la línea de mayor importe (evita quedarnos con un ajuste de prorrateo) y
+// preferimos el nickname del precio ("Plus"), luego el del plan, y por último la
+// descripción de la línea (más verbosa). Best-effort: puede ser null.
+function invoicePlanLabel(inv: Stripe.Invoice): string | null {
+  const lines = (inv.lines?.data ?? []) as unknown as {
+    amount?: number | null;
+    description?: string | null;
+    price?: { nickname?: string | null } | null;
+    plan?: { nickname?: string | null } | null;
+  }[];
+  if (lines.length === 0) return null;
+  const line = lines.reduce((a, b) => ((b.amount ?? 0) > (a.amount ?? 0) ? b : a));
+  return line.price?.nickname ?? line.plan?.nickname ?? line.description ?? null;
+}
+
+type FailedPayment = { failedAt: string; reason: string | null; amount: number | null; plan: string | null };
+
+// Pagos fallidos en los últimos 30 días: devuelve customerId + fecha, motivo, importe
+// y plan del reintento fallido más reciente
 export const fetchFailedPayments = unstable_cache(
-  async (): Promise<{ customerId: string; failedAt: string; reason: string | null }[]> => {
+  async (): Promise<({ customerId: string } & FailedPayment)[]> => {
     const cutoff = Math.floor(Date.now() / 1000) - 30 * 86400;
-    const map = new Map<string, { failedAt: string; reason: string | null }>(); // stripeId → fallo más reciente
+    const map = new Map<string, FailedPayment>(); // stripeId → fallo más reciente
 
     const toDate = (ts: number) => new Date(ts * 1000).toISOString().split("T")[0];
-    const setIfNewer = (cid: string, date: string, reason: string | null) => {
+    const setIfNewer = (cid: string, v: FailedPayment) => {
       const ex = map.get(cid);
-      if (!ex || date > ex.failedAt) map.set(cid, { failedAt: date, reason });
+      if (!ex || v.failedAt > ex.failedAt) map.set(cid, v);
     };
 
     // Facturas abiertas que Stripe ya intentó cobrar
@@ -79,17 +100,28 @@ export const fetchFailedPayments = unstable_cache(
       if (!cid) continue;
       const pi = (inv as unknown as { payment_intent?: Stripe.PaymentIntent | string | null }).payment_intent;
       const reason = pi && typeof pi !== "string" ? describePaymentError(pi.last_payment_error) : null;
-      setIfNewer(cid, toDate(inv.created), reason ?? "Factura no cobrada");
+      const cents = inv.amount_due ?? inv.total ?? null;
+      setIfNewer(cid, {
+        failedAt: toDate(inv.created),
+        reason: reason ?? "Factura no cobrada",
+        amount: typeof cents === "number" ? cents / 100 : null,
+        plan: invoicePlanLabel(inv),
+      });
     }
 
     // PaymentIntents fallidos (requires_payment_method + last_payment_error)
     for await (const pi of stripe.paymentIntents.list({ limit: 100, created: { gte: cutoff } })) {
       if (pi.status !== "requires_payment_method" || !pi.last_payment_error) continue;
       const cid = typeof pi.customer === "string" ? pi.customer : (pi.customer as Stripe.Customer | null)?.id ?? null;
-      if (cid) setIfNewer(cid, toDate(pi.created), describePaymentError(pi.last_payment_error));
+      if (cid) setIfNewer(cid, {
+        failedAt: toDate(pi.created),
+        reason: describePaymentError(pi.last_payment_error),
+        amount: typeof pi.amount === "number" ? pi.amount / 100 : null,
+        plan: pi.description ?? null,
+      });
     }
 
-    return [...map.entries()].map(([customerId, v]) => ({ customerId, failedAt: v.failedAt, reason: v.reason }));
+    return [...map.entries()].map(([customerId, v]) => ({ customerId, ...v }));
   },
   ["stripe-failed-payments"],
   { revalidate: 3600, tags: ["stripe"] },
@@ -138,6 +170,8 @@ export async function loadStripeCustomers(
     hasPaymentError: boolean;
     paymentErrorReason: string | null;
     paymentErrorDate: string | null;
+    paymentErrorAmount: number | null;
+    paymentErrorPlan: string | null;
   };
 
   // Último pago exitoso por stripeId (ya tenemos los pagos cargados)
@@ -186,6 +220,8 @@ export async function loadStripeCustomers(
       hasPaymentError,
       paymentErrorReason: hasPaymentError ? (failed?.reason ?? (c.delinquent ? "Cuenta morosa en Stripe" : null)) : null,
       paymentErrorDate: hasPaymentError ? (failed?.failedAt ?? null) : null,
+      paymentErrorAmount: hasPaymentError ? (failed?.amount ?? null) : null,
+      paymentErrorPlan: hasPaymentError ? (failed?.plan ?? null) : null,
     });
   }
 
@@ -205,6 +241,9 @@ export async function loadStripeCustomers(
     // Sort by createdAt ascending so the oldest is primary
     group.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
     const primary = group[0];
+    // Todos los datos del error (motivo, fecha, importe, plan) vienen de la MISMA entrada,
+    // para que sean coherentes entre sí.
+    const errEntry = group.find((r) => r.hasPaymentError) ?? null;
     const merged = group.reduce(
       (acc, r) => ({
         total: acc.total + r.stats.total,
@@ -228,8 +267,10 @@ export async function loadStripeCustomers(
       discount:        primary.discount,
       delinquent:      group.some((r) => r.delinquent),
       hasPaymentError: group.some((r) => r.hasPaymentError),
-      paymentErrorReason: group.find((r) => r.hasPaymentError)?.paymentErrorReason ?? null,
-      paymentErrorDate: group.find((r) => r.hasPaymentError)?.paymentErrorDate ?? null,
+      paymentErrorReason: errEntry?.paymentErrorReason ?? null,
+      paymentErrorDate: errEntry?.paymentErrorDate ?? null,
+      paymentErrorAmount: errEntry?.paymentErrorAmount ?? null,
+      paymentErrorPlan: errEntry?.paymentErrorPlan ?? null,
     };
   }
 

@@ -154,7 +154,7 @@ export default function ClientesTableV2({
               status === "baja"
                 ? { color: "#dc2626", label: c.isRecurring ? `Baja · ${days}d` : `Pack vencido · ${days}d`, action: c.isRecurring ? "Contactar para recuperar" : "Ofrecer renovación" }
                 : status === "sinpagar"
-                ? { color: "#b45309", label: `Sin pagar · ${days}d tarde`, action: "Revisar cobro fallido" }
+                ? { color: "#b45309", label: `Sin pagar · ${days}d tarde`, action: c.hasPaymentError ? "Revisar cobro fallido" : "Contactar para renovar" }
                 : status === "caducado"
                 ? { color: "#b45309", label: `Pack vencido · ${days}d`, action: "Ofrecer renovación" }
                 : status === "porvencer"
