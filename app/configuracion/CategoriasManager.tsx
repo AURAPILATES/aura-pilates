@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useTransition, useEffect } from "react";
+import React, { useState, useTransition, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import type { Category, GroupType } from "@/lib/categories";
 import { sortCategoriesHierarchical, categoryDisplayLabel } from "@/lib/categories";
@@ -199,6 +199,17 @@ export default function CategoriasManager({
   const [form, setForm] = useState<Omit<Category, "id" | "created_at">>(EMPTY);
   const [selectedColor, setSelectedColor] = useState(DEFAULT_COLOR);
   const [error, setError] = useState<string | null>(null);
+  // Selector desplegable de Color/Icono (uno u otro abierto), con cierre al clicar fuera.
+  const [openPicker, setOpenPicker] = useState<null | "color" | "icon">(null);
+  const pickerWrapRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!openPicker) return;
+    const handle = (e: MouseEvent) => {
+      if (!pickerWrapRef.current?.contains(e.target as Node)) setOpenPicker(null);
+    };
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, [openPicker]);
   const [isPending, startTransition] = useTransition();
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
@@ -496,69 +507,93 @@ export default function CategoriasManager({
                 />
               </div>
 
-              {/* Color */}
-              <div>
-                <label className="block text-xs font-semibold text-navy/45 uppercase tracking-wider mb-3">Color</label>
-                {form.parent_id ? (
-                  <div className="flex items-center gap-3">
-                    <span className="w-9 h-9 rounded-full shrink-0" style={{ backgroundColor: selectedColor }} />
-                    <p className="text-[11px] text-navy/45 leading-snug">
-                      Hereda el tono de su categoría padre, con un matiz distinto para diferenciarla de sus hermanas.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="flex flex-wrap gap-3">
-                    {PALETTE.map((hex) => (
+              {/* Color e Icono, en dos selectores compactos lado a lado */}
+              <div ref={pickerWrapRef} className="grid grid-cols-2 gap-3">
+                {/* Color */}
+                <div className="relative">
+                  <label className="block text-xs font-semibold text-navy/45 uppercase tracking-wider mb-2">Color</label>
+                  {form.parent_id ? (
+                    <div className="flex items-center gap-2 border border-navy/[0.12] rounded-xl px-3 py-2.5" title="Hereda el tono de su categoría padre, con un matiz distinto para diferenciarla de sus hermanas.">
+                      <span className="w-6 h-6 rounded-full shrink-0" style={{ backgroundColor: selectedColor }} />
+                      <span className="text-[11px] text-navy/45 leading-tight">Hereda del padre</span>
+                    </div>
+                  ) : (
+                    <>
                       <button
-                        key={hex}
-                        onClick={() => handleColorSelect(hex)}
-                        className="w-9 h-9 rounded-full transition-transform hover:scale-110 relative"
-                        style={{ backgroundColor: hex }}
-                        title={hex}
+                        type="button"
+                        onClick={() => setOpenPicker((p) => (p === "color" ? null : "color"))}
+                        className="w-full flex items-center justify-between gap-2 border border-navy/[0.12] rounded-xl px-3 py-2.5 hover:border-navy/40 transition-colors"
                       >
-                        {selectedColor === hex && (
-                          <span className="absolute inset-0 rounded-full ring-2 ring-offset-2 ring-current" style={{ color: hex }} />
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Icono */}
-              <div>
-                <label className="block text-xs font-semibold text-navy/45 uppercase tracking-wider mb-3">Icono</label>
-                <div className="grid grid-cols-7 gap-2">
-                  {ICONS.map(({ key }) => {
-                    const isSelected = form.emoji === key;
-                    return (
-                      <button
-                        key={key}
-                        onClick={() => handleIconSelect(key)}
-                        className={`relative flex items-center justify-center rounded-full w-10 h-10 transition-all ${
-                          isSelected ? "scale-110" : "hover:scale-105"
-                        }`}
-                        style={{ backgroundColor: selectedColor }}
-                        title={key}
-                      >
-                        {isSelected && (
-                          <span className="absolute inset-0 rounded-full" style={{ boxShadow: `0 0 0 2px var(--color-card), 0 0 0 3.5px ${selectedColor}` }} />
-                        )}
-                        <svg
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="white"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          {ICON_MAP.get(key)}
+                        <span className="w-6 h-6 rounded-full shrink-0" style={{ backgroundColor: selectedColor }} />
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={`text-navy/35 transition-transform ${openPicker === "color" ? "rotate-180" : ""}`}>
+                          <polyline points="6 9 12 15 18 9" />
                         </svg>
                       </button>
-                    );
-                  })}
+                      {openPicker === "color" && (
+                        <div className="absolute z-20 top-full mt-1.5 left-0 bg-card border border-navy/10 rounded-xl shadow-lg p-3">
+                          <div className="grid grid-cols-6 gap-2">
+                            {PALETTE.map((hex) => (
+                              <button
+                                key={hex}
+                                type="button"
+                                onClick={() => { handleColorSelect(hex); setOpenPicker(null); }}
+                                className="w-7 h-7 rounded-full transition-transform hover:scale-110 relative"
+                                style={{ backgroundColor: hex }}
+                                title={hex}
+                              >
+                                {selectedColor === hex && (
+                                  <span className="absolute inset-0 rounded-full ring-2 ring-offset-2 ring-current" style={{ color: hex }} />
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+
+                {/* Icono */}
+                <div className="relative">
+                  <label className="block text-xs font-semibold text-navy/45 uppercase tracking-wider mb-2">Icono</label>
+                  <button
+                    type="button"
+                    onClick={() => setOpenPicker((p) => (p === "icon" ? null : "icon"))}
+                    className="w-full flex items-center justify-between gap-2 border border-navy/[0.12] rounded-xl px-3 py-[7px] hover:border-navy/40 transition-colors"
+                  >
+                    <CategoryIcon iconKey={form.emoji} color={selectedColor} size={28} />
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={`text-navy/35 transition-transform ${openPicker === "icon" ? "rotate-180" : ""}`}>
+                      <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                  </button>
+                  {openPicker === "icon" && (
+                    <div className="absolute z-20 top-full mt-1.5 right-0 w-[236px] max-w-[80vw] max-h-[240px] overflow-y-auto bg-card border border-navy/10 rounded-xl shadow-lg p-3">
+                      <div className="grid grid-cols-6 gap-2">
+                        {ICONS.map(({ key }) => {
+                          const isSelected = form.emoji === key;
+                          return (
+                            <button
+                              key={key}
+                              type="button"
+                              onClick={() => { handleIconSelect(key); setOpenPicker(null); }}
+                              className={`relative flex items-center justify-center rounded-full w-8 h-8 transition-all ${
+                                isSelected ? "scale-110" : "hover:scale-105"
+                              }`}
+                              style={{ backgroundColor: selectedColor }}
+                              title={key}
+                            >
+                              {isSelected && (
+                                <span className="absolute inset-0 rounded-full" style={{ boxShadow: `0 0 0 2px var(--color-card), 0 0 0 3.5px ${selectedColor}` }} />
+                              )}
+                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                {ICON_MAP.get(key)}
+                              </svg>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
