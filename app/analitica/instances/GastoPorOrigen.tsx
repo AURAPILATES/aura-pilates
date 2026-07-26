@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChartCard } from "@/components/charts";
+import { ChartCard, CollapsibleTable } from "@/components/charts";
 import Drawer from "@/app/components/Drawer";
 import { fmt, pct } from "@/lib/analytics";
 import { OriginIcon, originLabel } from "@/app/transacciones/TransaccionesList";
@@ -28,8 +28,25 @@ const ORIGIN_COLORS: Record<string, string> = {
 };
 const FALLBACK_COLOR = "#64748B";
 
+const MONTHS_ES = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+
 function fmtDate(d: string) {
   return d.split("-").reverse().join("/");
+}
+
+function monthLabel(ym: string): string {
+  const [y, m] = ym.split("-");
+  return `${MONTHS_ES[parseInt(m, 10) - 1]}'${y.slice(2)}`;
+}
+
+/** Suma de gasto por mes (YYYY-MM) de un origen, a partir de sus transacciones. */
+function spendByMonth(o: OriginSpend): Map<string, number> {
+  const m = new Map<string, number>();
+  for (const t of o.txns) {
+    const k = t.date.slice(0, 7);
+    m.set(k, (m.get(k) ?? 0) + Math.abs(t.amount));
+  }
+  return m;
 }
 
 /** Desglose del dinero gastado por origen de pago (banco, efectivo, socios) en el período
@@ -48,6 +65,11 @@ export default function GastoPorOrigen({
 
   const total = origins.reduce((s, o) => s + o.total, 0);
   const max = origins.reduce((m, o) => Math.max(m, o.total), 0);
+
+  // Columnas de la tabla: los meses presentes dentro del período que se está viendo.
+  const months = [...new Set(origins.flatMap((o) => o.txns.map((t) => t.date.slice(0, 7))))].sort();
+  const originMonthly = origins.map((o) => ({ origin: o.origin, total: o.total, byMonth: spendByMonth(o) }));
+  const monthColTotals = months.map((m) => originMonthly.reduce((s, o) => s + (o.byMonth.get(m) ?? 0), 0));
 
   const selectedTxns = selected
     ? [...selected.txns].sort((a, b) => b.date.localeCompare(a.date))
@@ -93,6 +115,49 @@ export default function GastoPorOrigen({
             );
           })}
         </div>
+      )}
+
+      {origins.length > 0 && (
+        <CollapsibleTable>
+          <table className="w-full min-w-max text-xs">
+            <thead>
+              <tr className="border-b border-navy/[0.07]">
+                <th className="text-left py-2 pr-3 text-navy/45 font-semibold uppercase tracking-wide">Origen</th>
+                {months.map((m) => (
+                  <th key={m} className="text-right py-2 pr-3 text-navy/45 font-semibold uppercase tracking-wide whitespace-nowrap">
+                    {monthLabel(m)}
+                  </th>
+                ))}
+                <th className="text-right py-2 text-navy/45 font-semibold uppercase tracking-wide">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {originMonthly.map((o) => (
+                <tr key={o.origin} className="border-b border-navy/[0.04]">
+                  <td className="py-1.5 pr-3 text-navy whitespace-nowrap">
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: ORIGIN_COLORS[o.origin] ?? FALLBACK_COLOR }} />
+                      {originLabel(o.origin)}
+                    </span>
+                  </td>
+                  {months.map((m) => (
+                    <td key={m} className="py-1.5 pr-3 text-right text-navy/80 tabular-nums">
+                      {o.byMonth.get(m) ? fmt(o.byMonth.get(m)!) : "-"}
+                    </td>
+                  ))}
+                  <td className="py-1.5 text-right text-navy font-semibold tabular-nums">{fmt(o.total)}</td>
+                </tr>
+              ))}
+              <tr className="border-t border-navy/[0.12] bg-navy/[0.025]">
+                <td className="py-2 pr-3 text-navy font-semibold whitespace-nowrap">Total</td>
+                {monthColTotals.map((v, i) => (
+                  <td key={months[i]} className="py-2 pr-3 text-right text-navy font-semibold tabular-nums">{v ? fmt(v) : "-"}</td>
+                ))}
+                <td className="py-2 text-right text-navy font-bold tabular-nums">{fmt(total)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </CollapsibleTable>
       )}
 
       {selected && (
