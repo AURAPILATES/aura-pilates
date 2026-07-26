@@ -20,7 +20,7 @@ import { loadStripeCustomers } from "@/lib/stripeCustomers";
 import { buildPrimaryIdMap, enrichCustomers, hasActiveSub } from "@/lib/customerEnrichment";
 import { estimatedMRR } from "@/lib/stripeRecurrence";
 
-import { loadTransactionsCached, expensesByCategoryAll, financingExpensesByCategory, getLatestImportDate, findCategory, type EconomicGroup, type Transaction } from "@/lib/transactions";
+import { loadTransactionsCached, expensesByCategoryAll, financingExpensesByCategory, getLatestImportDate, findCategory, type EconomicGroup, type Transaction, type PaymentMethod } from "@/lib/transactions";
 import { formatRelativeTime } from "@/lib/formatRelativeTime";
 import { loadCategoriesCached, NON_CASHFLOW_GROUP_TYPES, type Category } from "@/lib/categories";
 import { loadRecurringExpensesCached, forecastConfirmedExpenses } from "@/lib/recurringExpenses";
@@ -45,6 +45,7 @@ import { pad2 } from "@/lib/periodCalculation";
 import AnaliticaKPIs from "./AnaliticaKPIs";
 import ClientesPaymentsBreakdown from "@/app/clientes/ClientesPaymentsBreakdown";
 import PrevisionGastos from "./PrevisionGastos";
+import GastoPorOrigen, { type OriginSpend } from "./instances/GastoPorOrigen";
 import HorarioReporting from "./instances/HorarioReporting";
 import VolumenBruto from "./instances/VolumenBruto";
 import AnaliticaTabs from "./AnaliticaTabs";
@@ -258,6 +259,22 @@ export default async function AnaliticaLoader({
   const dbCatByValue = new Map(dbCategories.map((c) => [c.value, c]));
   const dbCatById = new Map(dbCategories.map((c) => [c.id, c]));
   const expByCategory = expensesByCategoryAll(txnsMain, dbCategories);
+
+  // ── Gasto por origen de pago (banco / efectivo / socios) ───────────────────
+  // Salidas reales del período (importe negativo), excluyendo traspasos internos, agrupadas
+  // por la cuenta/persona de la que sale el dinero. Mismo criterio "cashflow" que el desglose.
+  const originExpenseMap = new Map<PaymentMethod, OriginSpend>();
+  for (const t of txnsMain) {
+    if (t.amount >= 0) continue;
+    const cat = t.category ? findCategory(dbCategories, t.category) : undefined;
+    if (cat && NON_CASHFLOW_GROUP_TYPES.has(cat.group_type)) continue;
+    const acc = originExpenseMap.get(t.payment_method) ?? { origin: t.payment_method, total: 0, count: 0, txns: [] };
+    acc.total += Math.abs(t.amount);
+    acc.count += 1;
+    acc.txns.push({ date: t.date, amount: t.amount, concept: t.concept ?? "", contact: t.contact ?? "" });
+    originExpenseMap.set(t.payment_method, acc);
+  }
+  const expenseByOrigin = [...originExpenseMap.values()].sort((a, b) => b.total - a.total);
 
   // ── Budgets / Financiación ────────────────────────────────────────────────
   const budgetSpent = computeSpent(budgets, txnsAll);
@@ -620,6 +637,7 @@ export default async function AnaliticaLoader({
                 rangeLabel={periodLabel}
                 lastUpdated={bancoLastUpdated}
               />
+              <GastoPorOrigen origins={expenseByOrigin} rangeLabel={periodLabel} lastUpdated={bancoLastUpdated} />
               <PrevisionGastos forecasts={recurringForecasts} categories={dbCategories} avgSuministros={avgSuministros} />
               <Financiacion initialBudgets={budgets} spent={budgetSpent} />
               <Breakeven points={breakevenPoints} lastUpdated={bancoLastUpdated} />

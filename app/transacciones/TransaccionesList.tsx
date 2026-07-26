@@ -519,7 +519,7 @@ export default function TransaccionesList({
     if (!cat || cat === "all") return [];
     return [cat];
   });
-  const [originFilter, setOriginFilter] = useState("all");
+  const [originFilter, setOriginFilter] = useState(searchParams.get("origen") ?? "all");
   const [showPapelera,  setShowPapelera]  = useState(false);
   const [, startTransition] = useTransition();
   const [sortKey, setSortKey] = useState<"date" | "amount" | "concept" | null>(null);
