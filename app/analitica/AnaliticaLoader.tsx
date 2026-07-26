@@ -25,7 +25,7 @@ import { formatRelativeTime } from "@/lib/formatRelativeTime";
 import { loadCategoriesCached, NON_CASHFLOW_GROUP_TYPES, type Category } from "@/lib/categories";
 import { loadRecurringExpensesCached, forecastConfirmedExpenses } from "@/lib/recurringExpenses";
 import DesglosGastosUnificado from "./instances/DesglosGastosUnificado";
-import IvaRetenciones from "./instances/IvaRetenciones";
+import IvaRetenciones, { type FiscalTxnItem } from "./instances/IvaRetenciones";
 import VentasPor from "./instances/VentasPor";
 import type { IngresosPorFuenteRow } from "./instances/IngresosPorFuenteBody";
 import EvolucionInscritos from "./instances/EvolucionInscritos";
@@ -451,6 +451,10 @@ export default async function AnaliticaLoader({
   // ── IVA soportado / retenciones practicadas por trimestre, a partir de las reglas de
   // contacto (Configuración → Contactos) aplicadas en cada movimiento al importarlo ──
   const fiscalByQuarter = new Map<string, { iva: number; retencion: number; count: number }>();
+  // Detalle por trimestre para poder explorar cada celda: qué gastos aportan el IVA soportado
+  // y las retenciones (los que Julia gestiona por contacto).
+  const soportadoByQuarter = new Map<string, FiscalTxnItem[]>();
+  const retencionByQuarter = new Map<string, FiscalTxnItem[]>();
   for (const t of txnsAll) {
     if (!t.iva_rate && !t.retencion_rate) continue;
     const { ivaAmount, retencionAmount } = taxBreakdown(t.amount, t.iva_rate ?? 0, t.retencion_rate ?? 0);
@@ -460,18 +464,36 @@ export default async function AnaliticaLoader({
     acc.retencion += retencionAmount;
     acc.count += 1;
     fiscalByQuarter.set(q, acc);
+    const label = t.contact || t.concept || "Sin concepto";
+    const base = Math.abs(t.amount);
+    if (ivaAmount > 0) {
+      const list = soportadoByQuarter.get(q) ?? [];
+      list.push({ date: t.date, label, base, amount: Math.abs(ivaAmount) });
+      soportadoByQuarter.set(q, list);
+    }
+    if (retencionAmount > 0) {
+      const list = retencionByQuarter.get(q) ?? [];
+      list.push({ date: t.date, label, base, amount: Math.abs(retencionAmount) });
+      retencionByQuarter.set(q, list);
+    }
   }
   // ── IVA repercutido por trimestre, a partir de las ventas (Stripe + USC), que ya
-  // incluyen el 21% de IVA en el importe bruto ──
+  // incluyen el 21% de IVA en el importe bruto ── + desglose por mes para explorar la celda.
   const ivaRepercutidoByQuarter = new Map<string, number>();
-  for (const p of paymentsAll) {
-    const q = fiscalQuarterOf(p.date);
-    ivaRepercutidoByQuarter.set(q, (ivaRepercutidoByQuarter.get(q) ?? 0) + ivaRepercutidoFromGross(p.amount));
-  }
+  const repercutidoByMonthByQuarter = new Map<string, Map<string, number>>();
+  const addRepercutido = (dateStr: string, gross: number) => {
+    const q = fiscalQuarterOf(dateStr);
+    const iva = ivaRepercutidoFromGross(gross);
+    ivaRepercutidoByQuarter.set(q, (ivaRepercutidoByQuarter.get(q) ?? 0) + iva);
+    const byMonth = repercutidoByMonthByQuarter.get(q) ?? new Map<string, number>();
+    const m = dateStr.slice(0, 7);
+    byMonth.set(m, (byMonth.get(m) ?? 0) + iva);
+    repercutidoByMonthByQuarter.set(q, byMonth);
+  };
+  for (const p of paymentsAll) addRepercutido(p.date, p.amount);
   for (const s of momenceSalesAll) {
     if (s.method !== "urban-sports-club") continue;
-    const q = fiscalQuarterOf(s.paymentDate);
-    ivaRepercutidoByQuarter.set(q, (ivaRepercutidoByQuarter.get(q) ?? 0) + ivaRepercutidoFromGross(s.amount));
+    addRepercutido(s.paymentDate, s.amount);
   }
 
   // ── Resumen fiscal por trimestre: IVA neto a pagar (repercutido − soportado) + retenciones ──
@@ -515,7 +537,15 @@ export default async function AnaliticaLoader({
   // Mismo resumen que fiscalSummaryByQuarter pero como lista ordenada (más reciente primero)
   // para la tabla "por trimestre" de IvaRetenciones.
   const quarterlyFiscalRows = [...fiscalSummaryByQuarter.entries()]
-    .map(([quarter, v]) => ({ quarter, ...v }))
+    .map(([quarter, v]) => ({
+      quarter,
+      ...v,
+      soportadoTxns: (soportadoByQuarter.get(quarter) ?? []).slice().sort((a, b) => b.date.localeCompare(a.date)),
+      retencionTxns: (retencionByQuarter.get(quarter) ?? []).slice().sort((a, b) => b.date.localeCompare(a.date)),
+      repercutidoByMonth: [...(repercutidoByMonthByQuarter.get(quarter) ?? new Map<string, number>()).entries()]
+        .map(([month, amount]) => ({ month, amount }))
+        .sort((a, b) => a.month.localeCompare(b.month)),
+    }))
     .sort((a, b) => b.quarter.localeCompare(a.quarter))
     .slice(0, 6);
 
