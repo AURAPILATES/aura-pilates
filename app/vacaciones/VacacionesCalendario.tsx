@@ -11,6 +11,7 @@ import {
   addAusenciasAction,
   removeAusenciasAction,
   createPersonaAction,
+  updatePersonaDiasExtraAction,
   archivePersonaAction,
   unarchivePersonaAction,
   deletePersonaAction,
@@ -38,6 +39,7 @@ type Persona = {
   inicioContrato: string;
   jornadaDias: number;
   diasTotales: number;
+  diasExtra: number;
   vacaciones: string[];
   enfermedad: string[];
   familiar: string[];
@@ -53,6 +55,11 @@ const ABSENCE_TYPES: { key: AbsenceKey; label: string; dotHex: string }[] = [
 
 function getAbsenceDates(p: Persona, key: AbsenceKey): string[] {
   return p[key] ?? [];
+}
+
+// Total efectivo de vacaciones = días por convenio (proporcional) + días extra concedidos
+function totalVacaciones(p: Persona): number {
+  return p.diasTotales + p.diasExtra;
 }
 
 function groupRanges(dates: string[]): { start: string; end: string; count: number }[] {
@@ -112,9 +119,9 @@ function generateSuggestions(personas: Persona[], festivos: string[]): Suggestio
   const todayDate = new Date(TODAY + "T12:00:00");
 
   personas.forEach((p) => {
-    const remaining = p.diasTotales - p.vacaciones.length;
+    const remaining = totalVacaciones(p) - p.vacaciones.length;
     if (p.vacaciones.length === 0) {
-      suggestions.push({ type: "warning", text: `${p.nombre} tiene ${p.diasTotales} días de vacaciones sin planificar aún.` });
+      suggestions.push({ type: "warning", text: `${p.nombre} tiene ${totalVacaciones(p)} días de vacaciones sin planificar aún.` });
     } else if (remaining > 0) {
       suggestions.push({ type: "info", text: `${p.nombre} tiene ${remaining} ${remaining === 1 ? "día pendiente" : "días pendientes"} de planificar.` });
     }
@@ -553,8 +560,8 @@ function AñadirAusenciaModal({
                     </div>
                     <div className="flex justify-between text-xs text-navy/55">
                       <span>Restantes</span>
-                      <span className={`font-medium ${persona.diasTotales - vacUsadas - newDates.length < 0 ? "text-danger" : "text-navy"}`}>
-                        {persona.diasTotales - vacUsadas - newDates.length}
+                      <span className={`font-medium ${totalVacaciones(persona) - vacUsadas - newDates.length < 0 ? "text-danger" : "text-navy"}`}>
+                        {totalVacaciones(persona) - vacUsadas - newDates.length}
                       </span>
                     </div>
                   </>
@@ -572,6 +579,7 @@ function AñadirAusenciaModal({
 function AusenciasModal({ persona, idx, onClose }: { persona: Persona; idx: number; onClose: () => void }) {
   const colors = PERSON_COLORS[idx];
   const vacUsadas = persona.vacaciones.length;
+  const total = totalVacaciones(persona);
 
   return (
     <Drawer title="Resumen de ausencias" subtitle={`${persona.nombre} · ${YEAR}`} onClose={onClose} maxWidth="max-w-sm">
@@ -582,7 +590,7 @@ function AusenciasModal({ persona, idx, onClose }: { persona: Persona; idx: numb
                 <div className={`w-2 h-2 rounded-full ${colors.dot}`} />
                 <span className="text-sm font-medium text-navy">Vacaciones</span>
               </div>
-              <span className="text-sm font-medium text-navy tabular-nums">{vacUsadas} / {persona.diasTotales} días</span>
+              <span className="text-sm font-medium text-navy tabular-nums">{vacUsadas} / {total} días</span>
             </div>
             <div className="ml-4 mt-1.5 space-y-1">
               <div className="flex justify-between text-xs text-navy/55">
@@ -590,12 +598,18 @@ function AusenciasModal({ persona, idx, onClose }: { persona: Persona; idx: numb
                 <span>{persona.diasTotales} días</span>
               </div>
               <div className="flex justify-between text-xs text-navy/55">
+                <span>Días extra concedidos</span>
+                <span className={persona.diasExtra > 0 ? "text-navy font-medium" : ""}>
+                  {persona.diasExtra > 0 ? `+${persona.diasExtra}` : persona.diasExtra} días
+                </span>
+              </div>
+              <div className="flex justify-between text-xs text-navy/55">
                 <span>Planificados</span>
                 <span>{vacUsadas} días</span>
               </div>
               <div className="flex justify-between text-xs text-navy/55">
                 <span>Restantes</span>
-                <span>{persona.diasTotales - vacUsadas} días</span>
+                <span>{total - vacUsadas} días</span>
               </div>
             </div>
           </div>
@@ -654,18 +668,77 @@ function DateBadge({ dateStr }: { dateStr: string }) {
   );
 }
 
+// ── Editor de días extra (dentro del modo edición) ────────────────────────────
+
+function DiasExtraEditor({ current, onSave }: { current: number; onSave: (v: number) => Promise<void> }) {
+  const [val, setVal] = useState(current);
+  const [saving, setSaving] = useState(false);
+  useEffect(() => setVal(current), [current]);
+  const dirty = val !== current;
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      await onSave(val);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="mt-2 border border-navy/10 rounded-lg px-3 py-2.5">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-xs font-medium text-navy">Días extra</p>
+          <p className="text-[10px] text-navy/45">Se suman a los del convenio</p>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => setVal((v) => Math.max(0, v - 1))}
+            disabled={val <= 0}
+            className="w-6 h-6 rounded-md border border-navy/15 text-navy/60 hover:text-navy hover:border-navy/30 disabled:opacity-30 transition-colors flex items-center justify-center leading-none"
+          >−</button>
+          <input
+            type="number" min={0} max={365} value={val}
+            onChange={(e) => setVal(Math.max(0, Math.round(Number(e.target.value) || 0)))}
+            className="w-12 text-center text-sm border border-navy/[0.12] rounded-md py-1 focus:outline-none focus:ring-1 focus:ring-primary/30 text-navy tabular-nums"
+          />
+          <button
+            type="button"
+            onClick={() => setVal((v) => Math.min(365, v + 1))}
+            className="w-6 h-6 rounded-md border border-navy/15 text-navy/60 hover:text-navy hover:border-navy/30 transition-colors flex items-center justify-center leading-none"
+          >+</button>
+        </div>
+      </div>
+      {dirty && (
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={saving}
+          className="mt-2 w-full text-xs font-semibold text-app-bg bg-navy hover:bg-navy/85 rounded-md py-1.5 transition-colors disabled:opacity-40"
+        >
+          {saving ? "Guardando…" : "Guardar días extra"}
+        </button>
+      )}
+    </div>
+  );
+}
+
 function PersonCard({
   persona,
   idx,
   onAdd,
   onDeleteRange,
   onArchive,
+  onUpdateDiasExtra,
 }: {
   persona: Persona;
   idx: number;
   onAdd: (typeKey: AbsenceKey, dates: string[]) => Promise<void>;
   onDeleteRange: (typeKey: AbsenceKey, start: string, end: string) => Promise<void>;
   onArchive: () => Promise<void>;
+  onUpdateDiasExtra: (diasExtra: number) => Promise<void>;
 }) {
   const [showModal, setShowModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -673,7 +746,8 @@ function PersonCard({
   const [archiving, setArchiving] = useState(false);
   const colors = PERSON_COLORS[idx % PERSON_COLORS.length];
   const used = persona.vacaciones.length;
-  const remaining = persona.diasTotales - used;
+  const total = totalVacaciones(persona);
+  const remaining = total - used;
 
   const allRanges = ABSENCE_TYPES.flatMap((t) =>
     groupRanges(getAbsenceDates(persona, t.key)).map((r) => ({ ...r, typeKey: t.key, typeLabel: t.label, dotHex: t.dotHex }))
@@ -737,10 +811,10 @@ function PersonCard({
           {/* Donut + stats */}
           <div className="flex items-center gap-5">
             <div className="relative shrink-0">
-              <Donut used={used} total={persona.diasTotales} stroke={colors.stroke} />
+              <Donut used={used} total={total} stroke={colors.stroke} />
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <p className="text-sm font-semibold text-navy leading-tight">{used}</p>
-                <p className="text-[9px] text-navy/55 leading-tight">de {persona.diasTotales}</p>
+                <p className="text-[9px] text-navy/55 leading-tight">de {total}</p>
               </div>
             </div>
             <div className="flex gap-4">
@@ -755,6 +829,9 @@ function PersonCard({
               <div>
                 <p className="text-xs text-navy/55 mb-0.5">Restantes</p>
                 <p className={`text-2xl font-semibold ${remaining < 0 ? "text-danger" : "text-navy/55"}`}>{remaining}</p>
+                {persona.diasExtra > 0 && (
+                  <p className="text-[10px] text-income/80 mt-0.5">incl. +{persona.diasExtra} extra</p>
+                )}
               </div>
             </div>
           </div>
@@ -840,7 +917,10 @@ function PersonCard({
             </div>
           )}
 
-          {/* Archivar button - visible only in edit mode */}
+          {/* Días extra + archivar - visibles solo en modo edición */}
+          {editMode && (
+            <DiasExtraEditor current={persona.diasExtra} onSave={onUpdateDiasExtra} />
+          )}
           {editMode && (
             <button
               onClick={handleArchive}
@@ -1269,6 +1349,19 @@ export default function VacacionesCalendario({
     }
   }, [router, personas]);
 
+  const handleUpdateDiasExtra = useCallback(async (personaId: string, diasExtra: number) => {
+    const snapshot = personas;
+    setPersonas((prev) => prev.map((p) => (p.id === personaId ? { ...p, diasExtra } : p)));
+    try {
+      await updatePersonaDiasExtraAction(personaId, diasExtra);
+      router.refresh();
+    } catch (err) {
+      setPersonas(snapshot);
+      alert("Error al guardar días extra. Comprueba la consola.");
+      console.error(err);
+    }
+  }, [router, personas]);
+
   const handleArchive = useCallback(async (personaId: string) => {
     const snapshot = personas;
     setPersonas((prev) => prev.filter((p) => p.id !== personaId));
@@ -1399,6 +1492,7 @@ export default function VacacionesCalendario({
               onAdd={(typeKey, dates) => handleAdd(p.id, typeKey, dates)}
               onDeleteRange={(typeKey, start, end) => handleDeleteRange(p.id, typeKey, start, end)}
               onArchive={() => handleArchive(p.id)}
+              onUpdateDiasExtra={(diasExtra) => handleUpdateDiasExtra(p.id, diasExtra)}
             />
           );
         })}

@@ -42,6 +42,17 @@ export async function createPersonaAction(data: {
   revalidatePath("/vacaciones");
 }
 
+export async function updatePersonaDiasExtraAction(id: string, diasExtra: number) {
+  const supabase = createServerClient();
+  const value = Math.max(0, Math.round(diasExtra));
+  const { error } = await supabase
+    .from("personas")
+    .update({ dias_extra: value })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath("/vacaciones");
+}
+
 export async function archivePersonaAction(id: string) {
   const supabase = createServerClient();
   const { error } = await supabase

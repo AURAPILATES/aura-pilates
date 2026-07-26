@@ -9,6 +9,7 @@ export type Persona = {
   inicioContrato: string;
   jornadaDias: number;
   diasTotales: number;
+  diasExtra: number;
   vacaciones: string[];
   enfermedad: string[];
   familiar: string[];
@@ -21,6 +22,7 @@ type PersonaRow = {
   inicio_contrato: string;
   jornada_dias: number;
   dias_totales: number;
+  dias_extra: number;
   archived: boolean;
 };
 
@@ -36,7 +38,7 @@ export async function loadPersonas(): Promise<{ personas: Persona[]; festivos: s
   const [{ data: rows, error: pErr }, { data: aus, error: aErr }] = await Promise.all([
     supabase
       .from("personas")
-      .select("id, nombre, inicio_contrato, jornada_dias, dias_totales")
+      .select("id, nombre, inicio_contrato, jornada_dias, dias_totales, dias_extra")
       .eq("archived", false)
       .order("nombre"),
     supabase
@@ -56,6 +58,7 @@ export async function loadPersonas(): Promise<{ personas: Persona[]; festivos: s
       inicioContrato: p.inicio_contrato,
       jornadaDias: p.jornada_dias,
       diasTotales: p.dias_totales,
+      diasExtra: p.dias_extra ?? 0,
       vacaciones: byType("vacaciones"),
       enfermedad: byType("enfermedad"),
       familiar: byType("familiar"),
