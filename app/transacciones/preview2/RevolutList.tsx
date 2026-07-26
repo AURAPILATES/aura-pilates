@@ -3,6 +3,7 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import type { Transaction } from "@/lib/transactions";
 import type { Category } from "@/lib/categories";
+import { normalizeText } from "@/lib/normalizeText";
 import { CatIcon } from "../catIcons";
 
 const MONTHS_ES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
@@ -72,8 +73,8 @@ export default function RevolutList({ transactions, categories, uncategorizedCou
   });
 
   const filtered = transactions.filter((t) => {
-    const q = search.toLowerCase();
-    if (q && !t.contact?.toLowerCase().includes(q) && !t.concept?.toLowerCase().includes(q)) return false;
+    const q = normalizeText(search);
+    if (q && !normalizeText(t.contact).includes(q) && !normalizeText(t.concept).includes(q)) return false;
     return true;
   });
 

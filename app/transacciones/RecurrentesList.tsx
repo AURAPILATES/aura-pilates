@@ -8,6 +8,7 @@ import Button from "@/app/components/Button";
 import Select from "@/app/components/Select";
 import type { Category } from "@/lib/categories";
 import { PERIOD_BUCKETS } from "@/lib/recurring";
+import { normalizeText } from "@/lib/normalizeText";
 import type { RecurringExpense, RecurringExpenseEndType } from "@/lib/recurringExpenses";
 import type { Contact } from "./actions";
 import { CategoryBadge, CategoryPill } from "./TransaccionesList";
@@ -181,11 +182,12 @@ function ContactPickerDrawer({ contacts, title, onPick, onClose }: {
 }) {
   const [query, setQuery] = useState("");
   const q = query.trim().toLowerCase();
+  const nq = normalizeText(query).trim();
 
   const filtered = useMemo(() => {
     const sorted = [...contacts].sort((a, b) => a.label.localeCompare(b.label));
-    return q ? sorted.filter((c) => c.label.toLowerCase().includes(q)) : sorted;
-  }, [contacts, q]);
+    return nq ? sorted.filter((c) => normalizeText(c.label).includes(nq)) : sorted;
+  }, [contacts, nq]);
 
   const exact = contacts.some((c) => c.label.toLowerCase() === q);
 
@@ -715,13 +717,13 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
     return () => mq.removeEventListener("change", handler);
   }, []);
 
-  const q = search.trim().toLowerCase();
+  const q = normalizeText(search).trim();
   const filteredPending = useMemo(
-    () => (q ? pending.filter((p) => p.label.toLowerCase().includes(q)) : pending),
+    () => (q ? pending.filter((p) => normalizeText(p.label).includes(q)) : pending),
     [pending, q],
   );
   const filteredConfirmed = useMemo(
-    () => (q ? confirmed.filter((c) => c.expense.label.toLowerCase().includes(q)) : confirmed),
+    () => (q ? confirmed.filter((c) => normalizeText(c.expense.label).includes(q)) : confirmed),
     [confirmed, q],
   );
 

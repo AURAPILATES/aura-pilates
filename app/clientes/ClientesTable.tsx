@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect, forwardRef, useImperativeHandle } from "r
 import CustomerDrawer from "./CustomerDrawer";
 import ClientesTableV2 from "./ClientesTableV2";
 import { productAbbr, PRODUCT_FILTERS } from "./ClientesMatrizCompras";
+import { normalizeText } from "@/lib/normalizeText";
 import type { StripeCustomer } from "@/lib/stripeCustomers";
 import type { StripePayment } from "@/lib/stripePayments";
 
@@ -172,7 +173,7 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
   }, [payments, activeMonth]);
 
   const filtered = useMemo(() => {
-    const q = search.toLowerCase().trim();
+    const q = normalizeText(search).trim();
     return customers
       .filter((c) => {
         if (activeMonthIds && !c.stripeIds.some((sid) => activeMonthIds.has(sid))) return false;
@@ -188,10 +189,10 @@ const ClientesTable = forwardRef<ClientesTableHandle, Props>(function ClientesTa
         const dPack = c.daysSinceLastPack ?? Infinity;
         const planType    = dSub <= dPack && dSub < Infinity ? "sub" : dPack < Infinity ? "pack" : "session";
         const planProduct = planType === "sub" ? c.lastSubProduct : planType === "pack" ? c.lastPackProduct : null;
-        const planText    = planProduct ? `${planProduct} ${productAbbr(planProduct)}`.toLowerCase() : "por sesión";
+        const planText    = planProduct ? normalizeText(`${planProduct} ${productAbbr(planProduct)}`) : "por sesion";
         return (
-          c.name?.toLowerCase().includes(q) ||
-          c.email?.toLowerCase().includes(q) ||
+          normalizeText(c.name).includes(q) ||
+          normalizeText(c.email).includes(q) ||
           planText.includes(q)
         );
       })

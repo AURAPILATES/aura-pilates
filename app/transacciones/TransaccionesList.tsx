@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import type { Transaction, PaymentMethod } from "@/lib/transactions";
 import type { Category } from "@/lib/categories";
 import { sortCategoriesHierarchical, categoryDisplayLabel } from "@/lib/categories";
+import { normalizeText } from "@/lib/normalizeText";
 import { seriesKeyFor } from "@/lib/recurring";
 import type { RecurringExpense } from "@/lib/recurringExpenses";
 import { updateTransactionCategory, updateTransactionConcept, updateTransactionBankDetails, updateTransactionDate, updateTransactionPaymentMethod, softDeleteTransactions, type Contact } from "./actions";
@@ -545,8 +546,8 @@ export default function TransaccionesList({
   }, [catFilters, categories]);
 
   const baseFiltered = transactions.filter((t) => {
-    const q = search.toLowerCase();
-    if (q && !t.contact?.toLowerCase().includes(q) && !t.concept?.toLowerCase().includes(q) && !t.bank_details?.toLowerCase().includes(q)) return false;
+    const q = normalizeText(search);
+    if (q && !normalizeText(t.contact).includes(q) && !normalizeText(t.concept).includes(q) && !normalizeText(t.bank_details).includes(q)) return false;
     if (expandedCatFilters.length > 0 && !expandedCatFilters.includes(t.category ?? "__none__")) return false;
     if (originFilter !== "all" && t.payment_method !== originFilter) return false;
     if (onlyRecurring && !recurringPeriods[t.id]) return false;

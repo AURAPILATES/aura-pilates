@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { normalizeText } from "@/lib/normalizeText";
 import type { StripePayment } from "@/lib/stripePayments";
 import type { CustomerRow } from "./ClientesTable";
 import CustomerDrawer from "./CustomerDrawer";
@@ -108,10 +109,10 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
   const lastMonth = months[months.length - 1];
 
   const visibleMatrix = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = normalizeText(search).trim();
     let rows = matrix.filter(({ customer, products, byMonth, firstPurchase, isUpsellCandidate, purchaseCount }) => {
       if (q) {
-        const label = (customer.name ?? customer.email ?? "").toLowerCase();
+        const label = normalizeText(customer.name ?? customer.email ?? "");
         if (!label.includes(q)) return false;
       }
       if (productFilter && !products.has(productFilter)) return false;

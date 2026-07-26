@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { normalizeText } from "@/lib/normalizeText";
 import type { Contact } from "./actions";
 
 export type ContactPickResult = { contactId: number; label: string } | { newLabel: string };
@@ -36,9 +37,9 @@ export default function ContactPicker({
   useEffect(() => setDraft(value), [value]);
 
   const options = useMemo(() => {
-    const q = draft.trim().toLowerCase();
+    const q = normalizeText(draft).trim();
     const sorted = [...contacts].sort((a, b) => a.label.localeCompare(b.label));
-    return q ? sorted.filter((c) => c.label.toLowerCase().includes(q)) : sorted;
+    return q ? sorted.filter((c) => normalizeText(c.label).includes(q)) : sorted;
   }, [contacts, draft]);
 
   const exactMatch = useMemo(

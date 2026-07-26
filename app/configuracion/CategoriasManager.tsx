@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import type { Category, GroupType } from "@/lib/categories";
 import { economicGroupOf, type EconomicGroup } from "@/lib/economicGroups";
 import { siblingColor } from "@/lib/colorVariants";
+import { normalizeText } from "@/lib/normalizeText";
 import { createCategory, updateCategory, deleteCategory, reorderCategories, updateCategoryColors } from "./actions";
 import ChipsInput from "@/app/components/ChipsInput";
 import Button from "@/app/components/Button";
@@ -347,11 +348,11 @@ export default function CategoriasManager({
 
   // Filtro de búsqueda: mantiene visible el padre de cualquier hijo que coincida, para no
   // perder el contexto de jerarquía aunque el propio padre no coincida con el texto buscado.
-  const q = search.trim().toLowerCase();
+  const q = normalizeText(search).trim();
   const filteredCategories = q
     ? (() => {
         const directMatch = (c: Category) =>
-          c.label.toLowerCase().includes(q) || (c.auto_keywords ?? "").toLowerCase().includes(q);
+          normalizeText(c.label).includes(q) || normalizeText(c.auto_keywords ?? "").includes(q);
         const matchedIds = new Set(categories.filter(directMatch).map((c) => c.id));
         return categories.filter(
           (c) => directMatch(c) || categories.some((child) => child.parent_id === c.id && matchedIds.has(child.id)),

@@ -3,6 +3,7 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import type { Transaction } from "@/lib/transactions";
 import type { Category } from "@/lib/categories";
+import { normalizeText } from "@/lib/normalizeText";
 
 const SOCIO_INITIALS: Record<string, { initials: string; cls: string }> = {
   victor: { initials: "V",  cls: "bg-[#EDE9FE] dark:bg-[#382f5c] text-[#5B21B6] dark:text-[#c4b5fd]" },
@@ -103,8 +104,8 @@ export default function PreviewList({ transactions, categories, uncategorizedCou
   });
 
   const filtered = transactions.filter((t) => {
-    const q = search.toLowerCase();
-    if (q && !t.contact?.toLowerCase().includes(q) && !t.concept?.toLowerCase().includes(q)) return false;
+    const q = normalizeText(search);
+    if (q && !normalizeText(t.contact).includes(q) && !normalizeText(t.concept).includes(q)) return false;
     return true;
   });
 

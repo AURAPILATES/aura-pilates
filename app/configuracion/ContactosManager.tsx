@@ -3,6 +3,7 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { Category } from "@/lib/categories";
 import { contactKeyFor } from "@/lib/contactRules";
+import { normalizeText } from "@/lib/normalizeText";
 import {
   type Contact, type ContactStats, updateContact, deleteContact, applyContactToExisting,
   addPatternToContact, removeContactPattern, recomputeContactsFromBankDetails, cleanupContactPatterns,
@@ -372,9 +373,9 @@ export default function ContactosManager({ contacts: initialContacts, categories
   }
 
   const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = normalizeText(search).trim();
     if (!q) return contacts;
-    return contacts.filter((c) => c.label.toLowerCase().includes(q) || c.patterns.some((p) => p.toLowerCase().includes(q)));
+    return contacts.filter((c) => normalizeText(c.label).includes(q) || c.patterns.some((p) => normalizeText(p).includes(q)));
   }, [contacts, search]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
