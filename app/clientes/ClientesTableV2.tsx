@@ -151,16 +151,20 @@ export default function ClientesTableV2({
             const planProduct = planType === "sub" ? c.lastSubProduct : planType === "pack" ? c.lastPackProduct : null;
             const planLabel = planProduct ? productAbbr(planProduct) : "Por sesión";
             const planColorCls = planProduct ? productColor(planProduct) : "bg-navy/[0.05] text-navy/50";
-            const statusCfg =
-              status === "baja"
-                ? { color: "#dc2626", label: c.isRecurring ? `Baja · ${days}d` : `Pack vencido · ${days}d`, action: c.isRecurring ? "Contactar para recuperar" : "Ofrecer renovación" }
-                : status === "sinpagar"
-                ? { color: "#b45309", label: `Sin pagar · ${days}d tarde`, action: c.hasPaymentError ? "Revisar cobro fallido" : "Contactar para renovar" }
-                : status === "caducado"
-                ? { color: "#b45309", label: `Pack vencido · ${days}d`, action: "Ofrecer renovación" }
-                : status === "porvencer"
-                ? { color: "#d4a017", label: `Vence en ${days}d`, action: undefined }
-                : { color: "#16a34a", label: "Al día", action: undefined };
+            const errorDays = c.paymentErrorDate
+              ? Math.floor((Date.now() - new Date(c.paymentErrorDate + "T00:00:00").getTime()) / 86400000)
+              : null;
+            const statusCfg = c.hasPaymentError
+              ? { color: "#dc2626", label: `Error de pago${errorDays != null ? ` · ${errorDays}d` : ""}`, action: "Revisar cobro fallido" }
+              : status === "baja"
+              ? { color: "#dc2626", label: c.isRecurring ? `Baja · ${days}d` : `Pack vencido · ${days}d`, action: c.isRecurring ? "Contactar para recuperar" : "Ofrecer renovación" }
+              : status === "sinpagar"
+              ? { color: "#b45309", label: `Sin pagar · ${days}d tarde`, action: "Contactar para renovar" }
+              : status === "caducado"
+              ? { color: "#b45309", label: `Pack vencido · ${days}d`, action: "Ofrecer renovación" }
+              : status === "porvencer"
+              ? { color: "#d4a017", label: `Vence en ${days}d`, action: undefined }
+              : { color: "#16a34a", label: "Al día", action: undefined };
             return (
               <div key={c.id}>
                 {/* Fila escritorio */}

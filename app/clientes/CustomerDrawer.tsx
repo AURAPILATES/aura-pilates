@@ -49,6 +49,10 @@ export default function CustomerDrawer({ customer, payments, onClose }: Props) {
     [payments, customer],
   );
 
+  const errorDaysAgo = customer.paymentErrorDate
+    ? Math.floor((Date.now() - new Date(customer.paymentErrorDate + "T00:00:00").getTime()) / 86400000)
+    : null;
+
   return (
     <Drawer
       maxWidth="max-w-[460px]"
@@ -228,6 +232,29 @@ export default function CustomerDrawer({ customer, payments, onClose }: Props) {
       <p className="px-6 pt-4 pb-2 text-[11px] font-semibold text-navy/40 uppercase tracking-wider">
         Historial de pagos
       </p>
+
+      {customer.hasPaymentError && (
+        <div className="mx-6 mb-3 p-4 bg-danger/[0.06] border border-danger/20 rounded-xl">
+          <p className="text-xs font-bold text-danger uppercase tracking-wider mb-2">Error de pago</p>
+          <div className="space-y-1 text-xs text-navy/70">
+            {customer.paymentErrorDate && (
+              <p>
+                Último intento: <span className="font-medium text-navy">{fmtDate(customer.paymentErrorDate)}</span>
+                {errorDaysAgo != null && (
+                  <span className="text-navy/45"> (hace {errorDaysAgo} {errorDaysAgo === 1 ? "día" : "días"})</span>
+                )}
+              </p>
+            )}
+            {customer.paymentErrorAmount != null && (
+              <p>Precio: <span className="font-medium text-navy">{fmt(customer.paymentErrorAmount)}</span></p>
+            )}
+            {customer.paymentErrorReason && (
+              <p>Motivo: <span className="font-medium text-navy">{customer.paymentErrorReason}</span></p>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="divide-y divide-navy/[0.05]">
         {customerPayments.length === 0 && (
           <p className="px-6 py-8 text-sm text-center text-navy/40">Sin pagos registrados</p>
