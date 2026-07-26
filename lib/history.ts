@@ -1,21 +1,28 @@
 import { createServerClient } from "./supabase";
 import { MomenceEvent } from "./momence";
 
-// Saves past events from an API response to Supabase, one row per day.
+const madridDay = (dt: string | Date) =>
+  new Date(dt).toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" });
+
+// Saves closed days from an API response to Supabase, one row per day.
 // Skips days already saved - call this on every page load.
+//
+// Solo se guardan días YA CERRADOS (anteriores a hoy en Madrid). El día en
+// curso nunca se captura: si se congelara a media mañana quedarían fuera las
+// clases de la tarde, y como el día ya constaría "guardado" no se volvería a
+// tocar, perdiéndose para siempre. El cron de medianoche captura el día
+// completo una vez terminado.
 export async function saveHistoricalEvents(events: MomenceEvent[]) {
   const db = createServerClient();
-  const now = new Date();
+  const todayKey = madridDay(new Date());
 
-  const past = events.filter(
-    (e) => new Date(e.dateTime) < now && e.published && !e.isCancelled && !e.isDeleted
+  const closedDays = events.filter(
+    (e) => e.published && !e.isCancelled && !e.isDeleted && madridDay(e.dateTime) < todayKey
   );
 
   const byDay = new Map<string, MomenceEvent[]>();
-  for (const e of past) {
-    const key = new Date(e.dateTime).toLocaleDateString("sv-SE", {
-      timeZone: "Europe/Madrid",
-    });
+  for (const e of closedDays) {
+    const key = madridDay(e.dateTime);
     if (!byDay.has(key)) byDay.set(key, []);
     byDay.get(key)!.push(e);
   }
