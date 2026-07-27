@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import type { Category } from "@/lib/categories";
 import { contactKeyFor } from "@/lib/contactRules";
 import { normalizeText } from "@/lib/normalizeText";
+import { CONTACT_GROUP_ORDER, CONTACT_GROUP_LABELS, contactGroupOf, type ContactGroup } from "@/lib/contactGroups";
 import {
   type Contact, type ContactStats, updateContact, deleteContact, applyContactToExisting,
   addPatternToContact, removeContactPattern, recomputeContactsFromBankDetails, cleanupContactPatterns,
@@ -109,7 +110,7 @@ function ContactDetailDrawer({ contact, categories, stats, onChange, onRemove, o
   contact: Contact;
   categories: Category[];
   stats: ContactStats | undefined;
-  onChange: (patch: Partial<{ label: string; category: string | null; ivaRate: number; retencionRate: number; noTax: boolean; patterns: string[] }>) => void;
+  onChange: (patch: Partial<{ label: string; category: string | null; ivaRate: number; retencionRate: number; noTax: boolean; group: string | null; patterns: string[] }>) => void;
   onRemove: () => void;
   onClose: () => void;
 }) {
@@ -225,6 +226,32 @@ function ContactDetailDrawer({ contact, categories, stats, onChange, onRemove, o
         </div>
 
         <div className="p-4 border-b border-navy/[0.06]">
+          <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-2">Grupo</p>
+          <div className="grid grid-cols-3 gap-2">
+            {CONTACT_GROUP_ORDER.map((g) => {
+              const active = contactGroupOf(contact.label, contact.group) === g;
+              return (
+                <button
+                  key={g}
+                  type="button"
+                  onClick={() => onChange({ group: g })}
+                  className={`text-[13px] px-2 py-2 rounded-xl border transition-colors ${
+                    active
+                      ? "border-navy bg-navy/[0.06] text-navy font-semibold"
+                      : "border-navy/[0.10] text-navy/50 hover:border-navy/20"
+                  }`}
+                >
+                  {CONTACT_GROUP_LABELS[g]}
+                </button>
+              );
+            })}
+          </div>
+          {contact.group == null && (
+            <p className="text-[11px] text-navy/35 mt-1.5">Deducido del nombre. Fíjalo a mano si necesitas otro grupo.</p>
+          )}
+        </div>
+
+        <div className="p-4 border-b border-navy/[0.06]">
           <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-2">Categoría</p>
           <CategoryPill category={contact.category} categories={categories} onChange={(cat) => onChange({ category: cat })} />
         </div>
@@ -283,6 +310,7 @@ export default function ContactosManager({ contacts: initialContacts, categories
   const [cleaning, setCleaning] = useState(false);
   const [cleaned, setCleaned] = useState<{ updated: number; merged: number } | null>(null);
   const [search, setSearch] = useState("");
+  const [groupFilter, setGroupFilter] = useState<"all" | ContactGroup>("all");
   const [page, setPage] = useState(0);
   const [selectedId, setSelectedId] = useState<number | null>(() => {
     const raw = searchParams.get("contacto");
@@ -355,14 +383,15 @@ export default function ContactosManager({ contacts: initialContacts, categories
     }
   }
 
-  function patchContact(id: number, patch: Partial<{ label: string; category: string | null; ivaRate: number; retencionRate: number; noTax: boolean; patterns: string[] }>) {
+  function patchContact(id: number, patch: Partial<{ label: string; category: string | null; ivaRate: number; retencionRate: number; noTax: boolean; group: string | null; patterns: string[] }>) {
     setContacts((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)));
-    const rest: { label?: string; category?: string | null; ivaRate?: number; retencionRate?: number; noTax?: boolean } = {};
+    const rest: { label?: string; category?: string | null; ivaRate?: number; retencionRate?: number; noTax?: boolean; group?: string | null } = {};
     if (patch.label !== undefined) rest.label = patch.label;
     if (patch.category !== undefined) rest.category = patch.category;
     if (patch.ivaRate !== undefined) rest.ivaRate = patch.ivaRate;
     if (patch.retencionRate !== undefined) rest.retencionRate = patch.retencionRate;
     if (patch.noTax !== undefined) rest.noTax = patch.noTax;
+    if (patch.group !== undefined) rest.group = patch.group;
     if (Object.keys(rest).length) startTransition(() => { updateContact(id, rest); });
   }
 
@@ -372,11 +401,20 @@ export default function ContactosManager({ contacts: initialContacts, categories
     startTransition(() => { deleteContact(id); });
   }
 
+  const groupCounts = useMemo(() => {
+    const counts: Record<ContactGroup, number> = { proveedor: 0, instructor: 0, socio: 0 };
+    for (const c of contacts) counts[contactGroupOf(c.label, c.group)] += 1;
+    return counts;
+  }, [contacts]);
+
   const filtered = useMemo(() => {
     const q = normalizeText(search).trim();
-    if (!q) return contacts;
-    return contacts.filter((c) => normalizeText(c.label).includes(q) || c.patterns.some((p) => normalizeText(p).includes(q)));
-  }, [contacts, search]);
+    return contacts.filter((c) => {
+      if (groupFilter !== "all" && contactGroupOf(c.label, c.group) !== groupFilter) return false;
+      if (!q) return true;
+      return normalizeText(c.label).includes(q) || c.patterns.some((p) => normalizeText(p).includes(q));
+    });
+  }, [contacts, search, groupFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages - 1);
@@ -389,6 +427,9 @@ export default function ContactosManager({ contacts: initialContacts, categories
       <ContactosManagerV2
         search={search}
         onSearchChange={(v) => { setSearch(v); setPage(0); }}
+        groupFilter={groupFilter}
+        onGroupFilterChange={(g) => { setGroupFilter(g); setPage(0); }}
+        groupCounts={groupCounts}
         rows={pageRows}
         totalCount={filtered.length}
         page={safePage}

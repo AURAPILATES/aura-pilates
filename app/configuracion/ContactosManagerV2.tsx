@@ -5,7 +5,9 @@ import { CategoryBadge } from "@/app/transacciones/TransaccionesList";
 import Avatar from "@/app/components/Avatar";
 import SearchInputV2 from "@/app/components/v2/SearchInputV2";
 import TablePaginationV2 from "@/app/components/v2/TablePaginationV2";
+import FilterPillGroupV2 from "@/app/components/v2/FilterPillGroupV2";
 import { PrimaryButtonV2 } from "@/app/components/v2/ButtonsV2";
+import { CONTACT_GROUP_ORDER, CONTACT_GROUP_LABELS, type ContactGroup } from "@/lib/contactGroups";
 import TaxBadgeV2 from "@/app/components/v2/TaxBadgeV2";
 import { tableHeadClassV2, tableRowClassV2, tableCardClassV2, gridColsV2 } from "@/app/components/v2/tableStylesV2";
 import { knownDomain, initials, fmtDate as fmtContactDate } from "./ContactosManager";
@@ -15,6 +17,9 @@ const COLS = "2fr 1.3fr .6fr .6fr .7fr .8fr";
 type Props = {
   search: string;
   onSearchChange: (v: string) => void;
+  groupFilter: "all" | ContactGroup;
+  onGroupFilterChange: (g: "all" | ContactGroup) => void;
+  groupCounts: Record<ContactGroup, number>;
   rows: Contact[];
   totalCount: number;
   page: number;
@@ -135,7 +140,7 @@ function BulkActionBarV2({
 }
 
 export default function ContactosManagerV2({
-  search, onSearchChange, rows, totalCount, page, pageSize, onPageChange,
+  search, onSearchChange, groupFilter, onGroupFilterChange, groupCounts, rows, totalCount, page, pageSize, onPageChange,
   categories, contactStats, onRowClick, onViewTransactions, onNewContact, onCleanup, cleaning, cleaned, onRecompute, recomputing, recomputed,
   pendingRecomputeCount, pendingCleanupCount,
   selectedIds, onToggleSelect, onClearSelection, onBulkDelete, onBulkSetIva, onBulkSetRetencion, onBulkSetCategory,
@@ -171,6 +176,17 @@ export default function ContactosManagerV2({
           onClick={onNewContact}
           label="Nuevo contacto"
           icon={<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>}
+        />
+      </div>
+
+      <div className="mt-3">
+        <FilterPillGroupV2
+          active={groupFilter}
+          onChange={onGroupFilterChange}
+          options={[
+            { key: "all" as const, label: "Todos" },
+            ...CONTACT_GROUP_ORDER.map((g) => ({ key: g, label: CONTACT_GROUP_LABELS[g], count: groupCounts[g] })),
+          ]}
         />
       </div>
 
