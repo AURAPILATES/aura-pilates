@@ -260,6 +260,8 @@ export default function CategoriasManager({
   const parentOptions = sortCategoriesHierarchical(categories).filter(
     (c) => !excludedParentIds.has(c.id) && depthOf(c) + 1 + editingHeight <= MAX_DEPTH,
   );
+  // Con categoría padre, el grupo y la naturaleza económica se heredan de ella (no se editan).
+  const hasParent = !!form.parent_id;
 
   function handleDrop(list: Category[], targetId: string) {
     const dragId = draggedId;
@@ -307,7 +309,20 @@ export default function CategoriasManager({
     );
     const hex = parent ? siblingColor(parent.text_color, siblings.length, siblings.length + 1) : DEFAULT_COLOR;
     setSelectedColor(hex);
-    setForm((f) => ({ ...f, parent_id: parentId, ...deriveColors(hex) }));
+    setForm((f) => ({
+      ...f,
+      parent_id: parentId,
+      ...deriveColors(hex),
+      // El grupo y la naturaleza económica se heredan del padre (el hijo cuelga de su rama).
+      ...(parent
+        ? {
+            group_type: parent.group_type,
+            economic_group: parent.group_type === "operational"
+              ? economicGroupOf(parent.label, parent.economic_group)
+              : parent.economic_group,
+          }
+        : {}),
+    }));
   }
 
   function handleIconSelect(key: string) {
@@ -319,6 +334,15 @@ export default function CategoriasManager({
     setForm({ ...EMPTY, sort_order: categories.length + 1 });
     setEditor({ mode: "new" });
     setError(null);
+  }
+
+  /** Abre el editor "nueva categoría" ya vinculada a un padre (color/grupo/naturaleza heredados). */
+  function openNewWithParent(parentId: string) {
+    setSelectedColor(DEFAULT_COLOR);
+    setForm({ ...EMPTY, sort_order: categories.length + 1 });
+    setEditor({ mode: "new" });
+    setError(null);
+    handleParentSelect(parentId);
   }
 
   function openEdit(cat: Category) {
@@ -461,6 +485,7 @@ export default function CategoriasManager({
         onDrop={handleDrop}
         onDragEnd={() => { setDraggedId(null); setDragOverId(null); }}
         onNewCategory={openNew}
+        onNewSubcategory={openNewWithParent}
         onEditCategory={openEdit}
         onViewTransactions={(cat) => router.push(`/transacciones?categoria=${encodeURIComponent(cat.value)}`)}
       />
@@ -597,53 +622,6 @@ export default function CategoriasManager({
                 </div>
               </div>
 
-              {/* Grupo */}
-              <div>
-                <label className="block text-xs font-semibold text-navy/45 uppercase tracking-wider mb-2">Grupo</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {GROUP_ORDER.map((g) => (
-                    <button
-                      key={g}
-                      onClick={() => setForm((f) => ({ ...f, group_type: g }))}
-                      className={`text-sm px-3 py-2 rounded-xl border transition-colors ${
-                        form.group_type === g
-                          ? "border-navy bg-navy/[0.06] text-navy font-semibold"
-                          : "border-navy/[0.10] text-navy/50 hover:border-navy/20"
-                      }`}
-                    >
-                      {GROUP_LABELS[g]}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Naturaleza económica (solo aplica dentro de Operacional) */}
-              {form.group_type === "operational" && (
-                <div>
-                  <label className="block text-xs font-semibold text-navy/45 uppercase tracking-wider mb-2">
-                    Naturaleza económica
-                  </label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {ECONOMIC_ORDER.map((eg) => (
-                      <button
-                        key={eg}
-                        onClick={() => setForm((f) => ({ ...f, economic_group: eg }))}
-                        className={`text-sm px-3 py-2 rounded-xl border transition-colors ${
-                          economicGroupOf(form.label, form.economic_group) === eg
-                            ? "border-navy bg-navy/[0.06] text-navy font-semibold"
-                            : "border-navy/[0.10] text-navy/50 hover:border-navy/20"
-                        }`}
-                      >
-                        {ECONOMIC_LABELS[eg]}
-                      </button>
-                    ))}
-                  </div>
-                  <p className="text-[11px] text-navy/35 mt-1.5">
-                    Por defecto se deduce del nombre. Fíjalo a mano si necesitas que se quede en un grupo concreto al renombrar.
-                  </p>
-                </div>
-              )}
-
               {/* Categoría padre */}
               <div>
                 <label className="block text-xs font-semibold text-navy/45 uppercase tracking-wider mb-2">
@@ -664,6 +642,60 @@ export default function CategoriasManager({
                   </Select>
                 )}
               </div>
+
+              {/* Grupo */}
+              <div>
+                <label className="block text-xs font-semibold text-navy/45 uppercase tracking-wider mb-2">Grupo</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {GROUP_ORDER.map((g) => (
+                    <button
+                      key={g}
+                      disabled={hasParent}
+                      onClick={() => setForm((f) => ({ ...f, group_type: g }))}
+                      className={`text-sm px-3 py-2 rounded-xl border transition-colors ${
+                        form.group_type === g
+                          ? "border-navy bg-navy/[0.06] text-navy font-semibold"
+                          : `border-navy/[0.10] text-navy/50 ${hasParent ? "" : "hover:border-navy/20"}`
+                      } ${hasParent ? "opacity-50 cursor-not-allowed" : ""}`}
+                    >
+                      {GROUP_LABELS[g]}
+                    </button>
+                  ))}
+                </div>
+                {hasParent && (
+                  <p className="text-[11px] text-navy/35 mt-1.5">Grupo y naturaleza se heredan de la categoría padre.</p>
+                )}
+              </div>
+
+              {/* Naturaleza económica (solo aplica dentro de Operacional) */}
+              {form.group_type === "operational" && (
+                <div>
+                  <label className="block text-xs font-semibold text-navy/45 uppercase tracking-wider mb-2">
+                    Naturaleza económica
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {ECONOMIC_ORDER.map((eg) => (
+                      <button
+                        key={eg}
+                        disabled={hasParent}
+                        onClick={() => setForm((f) => ({ ...f, economic_group: eg }))}
+                        className={`text-sm px-3 py-2 rounded-xl border transition-colors ${
+                          economicGroupOf(form.label, form.economic_group) === eg
+                            ? "border-navy bg-navy/[0.06] text-navy font-semibold"
+                            : `border-navy/[0.10] text-navy/50 ${hasParent ? "" : "hover:border-navy/20"}`
+                        } ${hasParent ? "opacity-50 cursor-not-allowed" : ""}`}
+                      >
+                        {ECONOMIC_LABELS[eg]}
+                      </button>
+                    ))}
+                  </div>
+                  {!hasParent && (
+                    <p className="text-[11px] text-navy/35 mt-1.5">
+                      Por defecto se deduce del nombre. Fíjalo a mano si necesitas que se quede en un grupo concreto al renombrar.
+                    </p>
+                  )}
+                </div>
+              )}
 
               {/* Conceptos bancarios */}
               <div>

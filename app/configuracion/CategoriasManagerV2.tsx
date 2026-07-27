@@ -19,6 +19,7 @@ type Props = {
   onDrop: (list: Category[], targetId: string) => void;
   onDragEnd: () => void;
   onNewCategory: () => void;
+  onNewSubcategory: (parentId: string) => void;
   onEditCategory: (cat: Category) => void;
   onViewTransactions: (cat: Category) => void;
 };
@@ -26,7 +27,7 @@ type Props = {
 export default function CategoriasManagerV2({
   totalCategories, groups, totalCount, search, onSearchChange, draggedId, dragOverId,
   onDragStart, onDragOver, onDragLeave, onDrop, onDragEnd,
-  onNewCategory, onEditCategory, onViewTransactions,
+  onNewCategory, onNewSubcategory, onEditCategory, onViewTransactions,
 }: Props) {
   // Profundidad de cada categoría (0 = raíz) para indentar los niveles anidados. Se calcula
   // sobre todas las categorías visibles; si un ancestro no está presente (búsqueda filtrada),
@@ -100,6 +101,16 @@ export default function CategoriasManagerV2({
                       {cat.auto_keywords && <p className="text-[11.5px] text-faint truncate">{cat.auto_keywords}</p>}
                     </div>
                   </button>
+                  {depth < 2 && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onNewSubcategory(cat.id); }}
+                      title={`Añadir subcategoría a "${cat.label}"`}
+                      className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center transition-transform hover:scale-110"
+                      style={{ backgroundColor: `${cat.text_color}1f`, color: cat.text_color }}
+                    >
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
+                    </button>
+                  )}
                   <span className="text-[12.5px] text-faint whitespace-nowrap shrink-0">{totalCount(cat)} trx</span>
                   <button
                     onClick={(e) => { e.stopPropagation(); onViewTransactions(cat); }}
