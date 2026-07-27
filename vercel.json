@@ -10,11 +10,11 @@
     },
     {
       "path": "/api/cron/snapshot-events",
-      "schedule": "0 22 * * *"
+      "schedule": "30 20 * * *"
     },
     {
       "path": "/api/cron/snapshot-events",
-      "schedule": "0 1 * * *"
+      "schedule": "0 22 * * *"
     },
     {
       "path": "/api/cron/warm-cache",

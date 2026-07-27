@@ -4,43 +4,62 @@ import { MomenceEvent } from "./momence";
 const madridDay = (dt: string | Date) =>
   new Date(dt).toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" });
 
-// Saves closed days from an API response to Supabase, one row per day.
-// Skips days already saved - call this on every page load.
+// Guarda el histórico de clases en Supabase, una fila por día. Llamar en cada
+// carga de página y desde el cron.
 //
-// Solo se guardan días YA CERRADOS (anteriores a hoy en Madrid). El día en
-// curso nunca se captura: si se congelara a media mañana quedarían fuera las
-// clases de la tarde, y como el día ya constaría "guardado" no se volvería a
-// tocar, perdiéndose para siempre. El cron de medianoche captura el día
-// completo una vez terminado.
+// La API pública de Momence solo devuelve clases de HOY en adelante: nunca días
+// pasados (el día desaparece al cruzar la medianoche de Madrid). Por eso un día
+// solo se puede capturar mientras aún es "hoy", según van terminando sus clases.
+//
+// La captura es AUTO-SANABLE: la fila de hoy se AMPLÍA (unión por id) en cada
+// llamada, nunca encoge. Si una visita temprana solo vio las clases de la mañana,
+// una llamada posterior añade las de la tarde. Así se evita el fallo anterior, en
+// el que el día se congelaba con la primera captura parcial.
+//
+// Como la API descarta el día a medianoche, un cron a última hora de la tarde
+// (ver vercel.json) garantiza una captura completa antes de que desaparezca.
 export async function saveHistoricalEvents(events: MomenceEvent[]) {
   const db = createServerClient();
-  const todayKey = madridDay(new Date());
+  const now = new Date();
+  const todayKey = madridDay(now);
 
-  const closedDays = events.filter(
-    (e) => e.published && !e.isCancelled && !e.isDeleted && madridDay(e.dateTime) < todayKey
+  // Clases de HOY que ya han empezado (cuentan como impartidas).
+  const finishedToday = events.filter(
+    (e) =>
+      e.published &&
+      !e.isCancelled &&
+      !e.isDeleted &&
+      madridDay(e.dateTime) === todayKey &&
+      new Date(e.dateTime) < now,
+  );
+  if (finishedToday.length === 0) return;
+
+  const { data: rows, error: readError } = await db
+    .from("momence_history")
+    .select("events")
+    .eq("date", todayKey)
+    .limit(1);
+  if (readError) throw new Error(`saveHistoricalEvents (lectura): ${readError.message}`);
+  const existing = rows?.[0];
+  const stored = (existing?.events ?? []) as MomenceEvent[];
+
+  // Unión por id; la versión viva manda (ocupación más fresca del día en curso).
+  const byId = new Map<number, MomenceEvent>();
+  for (const e of stored) byId.set(e.id, e);
+  for (const e of finishedToday) byId.set(e.id, e);
+  const merged = [...byId.values()].sort(
+    (a, b) => +new Date(a.dateTime) - +new Date(b.dateTime),
   );
 
-  const byDay = new Map<string, MomenceEvent[]>();
-  for (const e of closedDays) {
-    const key = madridDay(e.dateTime);
-    if (!byDay.has(key)) byDay.set(key, []);
-    byDay.get(key)!.push(e);
-  }
-
-  const { data: existing, error: readError } = await db
-    .from("momence_history")
-    .select("date")
-    .in("date", Array.from(byDay.keys()));
-  if (readError) throw new Error(`saveHistoricalEvents (lectura): ${readError.message}`);
-  const savedDates = new Set((existing ?? []).map((r) => r.date));
-
-  const toInsert = Array.from(byDay.entries())
-    .filter(([date]) => !savedDates.has(date))
-    .map(([date, dayEvents]) => ({ date, events: dayEvents }));
-
-  if (toInsert.length > 0) {
-    const { error } = await db.from("momence_history").insert(toInsert);
-    if (error) throw new Error(`saveHistoricalEvents: ${error.message}`);
+  if (!existing) {
+    const { error } = await db.from("momence_history").insert({ date: todayKey, events: merged });
+    if (error) throw new Error(`saveHistoricalEvents (insert): ${error.message}`);
+  } else if (merged.length !== stored.length) {
+    const { error } = await db
+      .from("momence_history")
+      .update({ events: merged })
+      .eq("date", todayKey);
+    if (error) throw new Error(`saveHistoricalEvents (update): ${error.message}`);
   }
 }
 
