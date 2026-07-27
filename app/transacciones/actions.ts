@@ -494,6 +494,7 @@ export type NewContactDraft = {
   category: string | null;
   ivaRate: number;
   retencionRate: number;
+  group?: string | null;
   attachToContactId: number | null;
 };
 
@@ -530,7 +531,7 @@ export async function saveNewContacts(drafts: NewContactDraft[]): Promise<{ upda
     } else if (d.action === "create") {
       const { data: contact, error } = await supabase
         .from("contacts")
-        .insert({ label: d.label, category: d.category, iva_rate: d.ivaRate, retencion_rate: d.retencionRate })
+        .insert({ label: d.label, category: d.category, iva_rate: d.ivaRate, retencion_rate: d.retencionRate, contact_group: d.group ?? "proveedor" })
         .select("id, category, iva_rate, retencion_rate")
         .single();
       if (error) throw new Error(error.message);

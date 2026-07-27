@@ -7,6 +7,7 @@ import {
   type ImportRow, type ImportBatch, type NewContactDraft, type Contact,
 } from "./actions";
 import { contactKeyFor, cleanContactLabel, cleanBankText, matchesPattern, pickIdentifyingText } from "@/lib/contactRules";
+import { CONTACT_GROUP_ORDER, CONTACT_GROUP_LABELS, type ContactGroup } from "@/lib/contactGroups";
 import { type Category } from "@/lib/categories";
 import type { PaymentMethod } from "@/lib/transactions";
 import Drawer from "@/app/components/Drawer";
@@ -224,6 +225,7 @@ type ContactDraft = {
   category: string | null;
   ivaRate: number;
   retencionRate: number;
+  group: ContactGroup;
   attachToContactId: number | null;
 };
 
@@ -364,6 +366,7 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
               category: existing?.category ?? suggestCategory(row, categories),
               ivaRate: existing?.ivaRate ?? 0,
               retencionRate: existing?.retencionRate ?? 0,
+              group: "proveedor",
               attachToContactId: existing?.id ?? null,
             };
           });
@@ -395,6 +398,7 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
         category: d.category,
         ivaRate: d.ivaRate,
         retencionRate: d.retencionRate,
+        group: d.group,
         attachToContactId: d.attachToContactId,
       }));
       const { updated } = await saveNewContacts(payload);
@@ -610,6 +614,23 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                                 categories={categories}
                                 onChange={(cat) => updateDraft(d.pattern, { category: cat })}
                               />
+                            </div>
+                            <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1.5">Grupo</p>
+                            <div className="grid grid-cols-3 gap-2 mb-3">
+                              {CONTACT_GROUP_ORDER.map((g) => (
+                                <button
+                                  key={g}
+                                  type="button"
+                                  onClick={() => updateDraft(d.pattern, { group: g })}
+                                  className={`text-[12px] px-2 py-1.5 rounded-lg border transition-colors ${
+                                    d.group === g
+                                      ? "border-navy bg-navy/[0.06] text-navy font-semibold"
+                                      : "border-navy/[0.10] text-navy/50 hover:border-navy/20"
+                                  }`}
+                                >
+                                  {CONTACT_GROUP_LABELS[g]}
+                                </button>
+                              ))}
                             </div>
                             <div className="flex gap-2">
                               <label className="flex-1 flex items-center gap-1.5 text-xs text-navy/50">
