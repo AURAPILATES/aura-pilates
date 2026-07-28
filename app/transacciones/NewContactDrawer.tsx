@@ -7,6 +7,7 @@ import Drawer from "@/app/components/Drawer";
 import ChipsInput from "@/app/components/ChipsInput";
 import Button from "@/app/components/Button";
 import { CategoryPill } from "./TransaccionesList";
+import { CONTACT_GROUP_ORDER, CONTACT_GROUP_LABELS, type ContactGroup } from "@/lib/contactGroups";
 
 function AutomationIcon() {
   return (
@@ -43,6 +44,7 @@ export default function NewContactDrawer({
   const [category, setCategory] = useState<string | null>(initialCategory);
   const [ivaRate, setIvaRate] = useState(String(initialIvaRate));
   const [retencionRate, setRetencionRate] = useState(String(initialRetencionRate));
+  const [group, setGroup] = useState<ContactGroup>("proveedor");
   const [noTax, setNoTax] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -59,6 +61,7 @@ export default function NewContactDrawer({
         ivaRate: parseFloat(ivaRate.replace(",", ".")) || 0,
         retencionRate: parseFloat(retencionRate.replace(",", ".")) || 0,
         noTax,
+        group,
         patterns,
       });
       onCreated(contact);
@@ -113,6 +116,25 @@ export default function NewContactDrawer({
         <div>
           <label className="block text-xs font-medium text-navy/55 mb-1">Categoría</label>
           <CategoryPill category={category} categories={categories} onChange={setCategory} />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-navy/55 mb-1.5">Grupo</label>
+          <div className="grid grid-cols-3 gap-2">
+            {CONTACT_GROUP_ORDER.map((g) => (
+              <button
+                key={g}
+                type="button"
+                onClick={() => setGroup(g)}
+                className={`text-[13px] px-2 py-2 rounded-lg border transition-colors ${
+                  group === g
+                    ? "border-navy bg-navy/[0.06] text-navy font-semibold"
+                    : "border-navy/[0.10] text-navy/50 hover:border-navy/20"
+                }`}
+              >
+                {CONTACT_GROUP_LABELS[g]}
+              </button>
+            ))}
+          </div>
         </div>
         <div className="flex gap-3">
           <div className="flex-1">
