@@ -305,8 +305,8 @@ export default function ContactosManagerV2({
                     <div><CategoryBadge category={c.category} categories={categories} /></div>
                     <div><TaxBadgeV2 value={c.ivaRate} isError={bothMissing} zeroIsExplicit={c.noTax} /></div>
                     <div><TaxBadgeV2 value={c.retencionRate} isError={bothMissing} zeroIsExplicit={c.noTax} /></div>
-                    <p className="text-[13px] font-semibold text-navy">{stats?.count ?? "-"}</p>
-                    <div className="flex items-center justify-end gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[12.5px] text-faint whitespace-nowrap shrink-0">{stats?.count ?? 0} trx</span>
                       <button
                         onClick={(e) => { e.stopPropagation(); onViewTransactions(c); }}
                         title={`Ver movimientos de "${c.label}"`}
@@ -314,8 +314,8 @@ export default function ContactosManagerV2({
                       >
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="11" cy="11" r="6.5" /><path d="M20 20l-3.8-3.8" /></svg>
                       </button>
-                      <span className="text-[12.5px] text-muted whitespace-nowrap">{lastDate ? fmtContactDate(lastDate) : "-"}</span>
                     </div>
+                    <p className="text-right text-[12.5px] text-muted whitespace-nowrap">{lastDate ? fmtContactDate(lastDate) : "-"}</p>
                   </div>
                 </div>
 
