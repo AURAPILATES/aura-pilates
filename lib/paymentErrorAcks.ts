@@ -34,3 +34,9 @@ export async function ackPaymentError(customerId: string, errorDate: string | nu
     .upsert({ customer_id: customerId, error_date: errorDate, acked_at: new Date().toISOString() });
   if (error) throw new Error(`ackPaymentError: ${error.message}`);
 }
+
+export async function unackPaymentError(customerId: string): Promise<void> {
+  const db = createServerClient();
+  const { error } = await db.from("payment_error_acks").delete().eq("customer_id", customerId);
+  if (error) throw new Error(`unackPaymentError: ${error.message}`);
+}

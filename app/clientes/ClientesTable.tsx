@@ -8,7 +8,7 @@ import { normalizeText } from "@/lib/normalizeText";
 import type { StripeCustomer } from "@/lib/stripeCustomers";
 import type { StripePayment } from "@/lib/stripePayments";
 
-export type CustomerRow = StripeCustomer & { daysSinceLastSub?: number | null; daysSinceLastPack?: number | null; lastPackProduct?: string | null; lastSubProduct?: string | null; isActive?: boolean; isNew?: boolean; isFamily?: boolean };
+export type CustomerRow = StripeCustomer & { daysSinceLastSub?: number | null; daysSinceLastPack?: number | null; lastPackProduct?: string | null; lastSubProduct?: string | null; isActive?: boolean; isNew?: boolean; isFamily?: boolean; paymentErrorAcked?: boolean };
 export type ClientesTableHandle = { openCustomer: (id: string) => void };
 
 export type SortKey = "totalSpent" | "lastPaymentDate" | "name";

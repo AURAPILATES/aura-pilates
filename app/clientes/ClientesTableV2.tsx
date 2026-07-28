@@ -155,7 +155,7 @@ export default function ClientesTableV2({
               ? Math.floor((Date.now() - new Date(c.paymentErrorDate + "T00:00:00").getTime()) / 86400000)
               : null;
             const statusCfg = c.hasPaymentError
-              ? { color: "#dc2626", label: `Error de pago${errorDays != null ? ` · ${errorDays}d` : ""}`, action: "Revisar cobro fallido" }
+              ? { color: "#dc2626", label: `Error de pago${errorDays != null ? ` · ${errorDays}d` : ""}`, action: c.paymentErrorAcked ? "✓ Hablado con cliente" : "Revisar cobro fallido" }
               : status === "baja"
               ? { color: "#dc2626", label: c.isRecurring ? `Baja · ${days}d` : `Pack vencido · ${days}d`, action: c.isRecurring ? "Contactar para recuperar" : "Ofrecer renovación" }
               : status === "sinpagar"
@@ -200,7 +200,9 @@ export default function ClientesTableV2({
                         {statusCfg.label}
                       </span>
                       {statusCfg.action && (
-                        <p className="text-[11px] text-faint italic mt-1">{statusCfg.action}</p>
+                        <p className={`text-[11px] italic mt-1 ${c.hasPaymentError && c.paymentErrorAcked ? "text-success not-italic font-medium" : "text-faint"}`}>
+                          {statusCfg.action}
+                        </p>
                       )}
                     </div>
                   </div>

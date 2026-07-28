@@ -2,7 +2,7 @@ import { loadStripePaymentsCached } from "@/lib/stripePayments";
 import { loadStripeCustomers } from "@/lib/stripeCustomers";
 import { enrichCustomers } from "@/lib/customerEnrichment";
 import { loadFamilyClientIds } from "@/lib/clientFamily";
-import { loadPaymentErrorAcks, isPaymentErrorAcked } from "@/lib/paymentErrorAcks";
+import { loadPaymentErrorAcks } from "@/lib/paymentErrorAcks";
 import ClientesShell from "./ClientesShell";
 
 type Props = {
@@ -17,16 +17,10 @@ export default async function ClientesLoader({ curMonth }: Props) {
     loadPaymentErrorAcks(),
   ]);
 
-  const enriched = enrichCustomers(customers, payments, { familyIds });
-
-  // Un error de pago ya reconocido ("Ya hablé con ella") en Analítica deja de contar aquí
-  // también, para que la lista y el recuento de "Error de pago" sean idénticos en Clientes y
-  // Analítica. Mismo criterio que AnaliticaLoader.
-  const customersWithChurn = enriched.map((c) =>
-    c.hasPaymentError && isPaymentErrorAcked(paymentErrorAcks.get(c.id), c.paymentErrorDate)
-      ? { ...c, hasPaymentError: false }
-      : c,
-  );
+  // "Hablado con cliente" es una anotación (paymentErrorAcked), no oculta el error: el error de
+  // pago real sigue contando y mostrándose hasta que Stripe cobre con éxito. Mismo criterio que
+  // AnaliticaLoader, para que Clientes y Analítica coincidan.
+  const customersWithChurn = enrichCustomers(customers, payments, { familyIds, paymentErrorAcks });
 
   return <ClientesShell customers={customersWithChurn} payments={payments} />;
 }

@@ -40,7 +40,7 @@ import { catalogFromMomence, revenueByProductByMonth } from "@/lib/productRevenu
 import { computeSubscriptionCohorts, computeRetentionCohorts } from "@/lib/subscriptionCohort";
 import RetencionCohorte from "./instances/RetencionCohorte";
 import { loadBusinessEvents } from "@/lib/businessEvents";
-import { loadPaymentErrorAcks, isPaymentErrorAcked } from "@/lib/paymentErrorAcks";
+import { loadPaymentErrorAcks } from "@/lib/paymentErrorAcks";
 import { pad2 } from "@/lib/periodCalculation";
 import AnaliticaKPIs from "./AnaliticaKPIs";
 import ClientesPaymentsBreakdown from "@/app/clientes/ClientesPaymentsBreakdown";
@@ -571,18 +571,13 @@ export default async function AnaliticaLoader({
 
   const mainPayerIds = new Set(pMain.filter((p) => p.customerId).map((p) => p.customerId!));
 
-  const customersRaw = enrichCustomers(stripeCustomersAll, paymentsAll, {
+  // "Hablado con cliente" es una anotación (paymentErrorAcked), no oculta el error: el error de
+  // pago real sigue contando y mostrándose hasta que Stripe cobre con éxito.
+  const customers = enrichCustomers(stripeCustomersAll, paymentsAll, {
     activeIds: mainPayerIds,
     newCustomerIds: mainNewCustomerIds,
+    paymentErrorAcks,
   });
-
-  // Si ya se marcó "hablado con clienta" para este error y no ha fallado un cobro más
-  // reciente desde entonces, deja de contar como error de pago pendiente.
-  const customers = customersRaw.map((c) =>
-    c.hasPaymentError && isPaymentErrorAcked(paymentErrorAcks.get(c.id), c.paymentErrorDate)
-      ? { ...c, hasPaymentError: false }
-      : c,
-  );
 
   // ── Activos por email, deduplicados ──
   const payingCustomers = customers.filter((c) => c.stripeIds.some((sid) => mainPayerIds.has(sid)));

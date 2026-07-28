@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Drawer from "@/app/components/Drawer";
 import { fmt } from "@/lib/analytics";
 import { setClientFamilyAction } from "@/app/actions/setClientFamily";
+import { ackPaymentErrorAction, unackPaymentErrorAction } from "@/app/actions/ackPaymentError";
 import type { StripePayment } from "@/lib/stripePayments";
 import {
   type CustomerRow,
@@ -52,6 +53,23 @@ export default function CustomerDrawer({ customer, payments, onClose }: Props) {
   const errorDaysAgo = customer.paymentErrorDate
     ? Math.floor((Date.now() - new Date(customer.paymentErrorDate + "T00:00:00").getTime()) / 86400000)
     : null;
+
+  const [acked, setAcked] = useState(!!customer.paymentErrorAcked);
+  const [savingAck, startSaveAck] = useTransition();
+
+  function toggleAcked() {
+    const next = !acked;
+    setAcked(next); // optimista
+    startSaveAck(async () => {
+      try {
+        if (next) await ackPaymentErrorAction(customer.id, customer.paymentErrorDate);
+        else await unackPaymentErrorAction(customer.id);
+        router.refresh();
+      } catch {
+        setAcked(!next); // revierte si falla
+      }
+    });
+  }
 
   return (
     <Drawer
@@ -252,6 +270,17 @@ export default function CustomerDrawer({ customer, payments, onClose }: Props) {
               <p>Motivo: <span className="font-medium text-navy">{customer.paymentErrorReason}</span></p>
             )}
           </div>
+          <label className={`flex items-center gap-2 mt-3 pt-3 border-t border-danger/15 cursor-pointer select-none ${savingAck ? "opacity-60 pointer-events-none" : ""}`}>
+            <input
+              type="checkbox"
+              checked={acked}
+              onChange={toggleAcked}
+              className="w-[15px] h-[15px] rounded-[4px] border-danger/30 accent-danger focus:ring-danger/20 cursor-pointer"
+            />
+            <span className={`text-xs font-medium ${acked ? "text-success" : "text-navy/60"}`}>
+              Hablado con cliente
+            </span>
+          </label>
         </div>
       )}
 

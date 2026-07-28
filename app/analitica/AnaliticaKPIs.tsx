@@ -8,7 +8,7 @@ import Drawer from "@/app/components/Drawer";
 import DeltaBadge, { pctDelta, type DeltaDirection } from "@/components/charts/DeltaBadge";
 import { InfoDot } from "@/components/charts";
 import { isChurned, type EnrichedCustomer } from "@/lib/customerEnrichment";
-import { ackPaymentErrorAction } from "@/app/actions/ackPaymentError";
+import { ackPaymentErrorAction, unackPaymentErrorAction } from "@/app/actions/ackPaymentError";
 
 type DrawerKey = "convert" | "churn" | "error" | null;
 
@@ -24,15 +24,7 @@ const extIcon = (
   </svg>
 );
 
-function CustomerRowItem({
-  c, showError, onAck, acking, acked,
-}: {
-  c: EnrichedCustomer;
-  showError?: boolean;
-  onAck?: () => void;
-  acking?: boolean;
-  acked?: boolean;
-}) {
+function CustomerRowItem({ c }: { c: EnrichedCustomer }) {
   const latestId = c.stripeIds[c.stripeIds.length - 1];
   return (
     <div className="px-6 py-4 flex items-center justify-between gap-4 hover:bg-navy/[0.015] transition-colors">
@@ -47,45 +39,80 @@ function CustomerRowItem({
             Histórico: <span className="text-navy/65 font-semibold">{fmt(c.totalSpent)}</span>
           </span>
         </div>
-        {showError && c.paymentErrorDate && (
-          <p
-            className="text-xs text-navy/45 mt-1 truncate"
-            title={c.paymentErrorPlan ?? undefined}
-          >
-            Último intento: <span className="text-navy/65">{fmtDate(c.paymentErrorDate)}</span>
-            {c.paymentErrorAmount != null && <> · <span className="text-navy/65 font-medium">{fmt(c.paymentErrorAmount)}</span></>}
-            {c.paymentErrorPlan && <> · <span className="text-navy/65">{c.paymentErrorPlan}</span></>}
-          </p>
-        )}
-        {showError && c.paymentErrorReason && (
-          <p className="text-xs text-danger mt-1">{c.paymentErrorReason}</p>
-        )}
       </div>
-      <div className="shrink-0 flex flex-col items-end gap-1.5">
+      <a
+        href={`https://dashboard.stripe.com/customers/${latestId}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-[#635bff] rounded-lg hover:bg-[#4f46e5] transition-colors"
+      >
+        {extIcon}
+        Stripe
+      </a>
+    </div>
+  );
+}
+
+/** Fila del drawer "Error de pago": misma caja roja suave que en el drawer de cliente
+ * (Clientes > CustomerDrawer), sin el historial de compras - aquí solo interesa el error. */
+function PaymentErrorRow({
+  c, acked, onToggleAck, saving,
+}: {
+  c: EnrichedCustomer;
+  acked: boolean;
+  onToggleAck: () => void;
+  saving: boolean;
+}) {
+  const latestId = c.stripeIds[c.stripeIds.length - 1];
+  const errorDaysAgo = c.paymentErrorDate
+    ? Math.floor((Date.now() - new Date(c.paymentErrorDate + "T00:00:00").getTime()) / 86400000)
+    : null;
+  return (
+    <div className="px-6 py-4">
+      <div className="flex items-center justify-between gap-4 mb-3">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-navy truncate">{c.name ?? "Sin nombre"}</p>
+          {c.email && <p className="text-xs text-navy/50 truncate">{c.email}</p>}
+        </div>
         <a
           href={`https://dashboard.stripe.com/customers/${latestId}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-[#635bff] rounded-lg hover:bg-[#4f46e5] transition-colors"
+          className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-[#635bff] rounded-lg hover:bg-[#4f46e5] transition-colors"
         >
           {extIcon}
           Stripe
         </a>
-        {onAck && (
-          <button
-            type="button"
-            onClick={onAck}
-            disabled={acking || acked}
-            title="Ya hablé con la clienta sobre este cobro fallido: deja de estar aquí como pendiente hasta que falle un cobro nuevo."
-            className={`flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors whitespace-nowrap disabled:cursor-default ${
-              acked
-                ? "border-success/30 bg-success/10 text-success"
-                : "border-navy/15 text-navy/60 hover:text-navy hover:border-navy/30"
-            }`}
-          >
-            {acked ? "Hablado ✓" : acking ? "Guardando…" : "Ya hablé con ella"}
-          </button>
-        )}
+      </div>
+      <div className="p-4 bg-danger/[0.06] border border-danger/20 rounded-xl">
+        <p className="text-xs font-bold text-danger uppercase tracking-wider mb-2">Error de pago</p>
+        <div className="space-y-1 text-xs text-navy/70">
+          {c.paymentErrorDate && (
+            <p>
+              Último intento: <span className="font-medium text-navy">{fmtDate(c.paymentErrorDate)}</span>
+              {errorDaysAgo != null && (
+                <span className="text-navy/45"> (hace {errorDaysAgo} {errorDaysAgo === 1 ? "día" : "días"})</span>
+              )}
+            </p>
+          )}
+          {c.paymentErrorAmount != null && (
+            <p>Precio: <span className="font-medium text-navy">{fmt(c.paymentErrorAmount)}</span></p>
+          )}
+          {c.paymentErrorReason && (
+            <p>Motivo: <span className="font-medium text-navy">{c.paymentErrorReason}</span></p>
+          )}
+        </div>
+        <label className={`flex items-center gap-2 mt-3 pt-3 border-t border-danger/15 cursor-pointer select-none ${saving ? "opacity-60 pointer-events-none" : ""}`}>
+          <input
+            type="checkbox"
+            checked={acked}
+            onChange={onToggleAck}
+            className="w-[15px] h-[15px] rounded-[4px] border-danger/30 accent-danger focus:ring-danger/20 cursor-pointer"
+          />
+          <span className={`text-xs font-medium ${acked ? "text-success" : "text-navy/60"}`}>
+            Hablado con cliente
+          </span>
+        </label>
       </div>
     </div>
   );
@@ -145,14 +172,22 @@ export default function AnaliticaKPIs({
   const router = useRouter();
   const [drawer, setDrawer] = useState<DrawerKey>(null);
   const [ackingId, setAckingId] = useState<string | null>(null);
-  const [ackedIds, setAckedIds] = useState<Set<string>>(new Set());
+  const [ackOverrides, setAckOverrides] = useState<Record<string, boolean>>({});
 
-  async function handleAck(c: EnrichedCustomer) {
+  function isAcked(c: EnrichedCustomer): boolean {
+    return ackOverrides[c.id] ?? !!c.paymentErrorAcked;
+  }
+
+  async function handleToggleAck(c: EnrichedCustomer) {
+    const next = !isAcked(c);
+    setAckOverrides((prev) => ({ ...prev, [c.id]: next })); // optimista
     setAckingId(c.id);
     try {
-      await ackPaymentErrorAction(c.id, c.paymentErrorDate);
-      setAckedIds((prev) => new Set(prev).add(c.id));
+      if (next) await ackPaymentErrorAction(c.id, c.paymentErrorDate);
+      else await unackPaymentErrorAction(c.id);
       router.refresh();
+    } catch {
+      setAckOverrides((prev) => ({ ...prev, [c.id]: !next })); // revierte si falla
     } finally {
       setAckingId(null);
     }
@@ -263,16 +298,19 @@ export default function AnaliticaKPIs({
               {cfg.customers.length === 0 && (
                 <p className="px-6 py-12 text-center text-sm text-navy/40">Sin clientes en este grupo.</p>
               )}
-              {cfg.customers.map((c) => (
-                <CustomerRowItem
-                  key={c.id}
-                  c={c}
-                  showError={drawer === "error"}
-                  onAck={drawer === "error" ? () => handleAck(c) : undefined}
-                  acking={ackingId === c.id}
-                  acked={ackedIds.has(c.id)}
-                />
-              ))}
+              {cfg.customers.map((c) =>
+                drawer === "error" ? (
+                  <PaymentErrorRow
+                    key={c.id}
+                    c={c}
+                    acked={isAcked(c)}
+                    onToggleAck={() => handleToggleAck(c)}
+                    saving={ackingId === c.id}
+                  />
+                ) : (
+                  <CustomerRowItem key={c.id} c={c} />
+                ),
+              )}
             </div>
           </Drawer>
         );

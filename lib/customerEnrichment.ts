@@ -1,5 +1,6 @@
 import type { StripeCustomer } from "./stripeCustomers";
 import type { StripePayment } from "./stripePayments";
+import { isPaymentErrorAcked, type PaymentErrorAck } from "./paymentErrorAcks";
 
 export type ChurnFields = {
   daysSinceLastSub?: number | null;
@@ -9,6 +10,8 @@ export type ChurnFields = {
   isActive?: boolean;
   isNew?: boolean;
   isFamily?: boolean;
+  /** Alguien ya habló con el cliente sobre su error de pago activo - anotación, no lo oculta. */
+  paymentErrorAcked?: boolean;
 };
 
 export type EnrichedCustomer = StripeCustomer & ChurnFields;
@@ -17,7 +20,7 @@ export type EnrichedCustomer = StripeCustomer & ChurnFields;
 export function enrichCustomers(
   customers: StripeCustomer[],
   payments: StripePayment[],
-  opts?: { activeIds?: Set<string>; newCustomerIds?: Set<string>; familyIds?: Set<string> },
+  opts?: { activeIds?: Set<string>; newCustomerIds?: Set<string>; familyIds?: Set<string>; paymentErrorAcks?: Map<string, PaymentErrorAck> },
 ): EnrichedCustomer[] {
   const lastSubById  = new Map<string, { date: string; product: string }>();
   const lastPackById = new Map<string, { date: string; product: string }>();
@@ -58,6 +61,9 @@ export function enrichCustomers(
       // más de uno, su primer pago real podría estar en otro stripeId fuera del período.
       isNew:    opts?.newCustomerIds ? opts.newCustomerIds.has(c.id)                        : undefined,
       isFamily: opts?.familyIds      ? opts.familyIds.has(c.id)                             : undefined,
+      paymentErrorAcked: opts?.paymentErrorAcks
+        ? c.hasPaymentError && isPaymentErrorAcked(opts.paymentErrorAcks.get(c.id), c.paymentErrorDate)
+        : undefined,
     };
   });
 }
