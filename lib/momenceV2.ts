@@ -267,3 +267,74 @@ export function getSessionBookingsV2(
     Math.min(pageSize, 100),
   );
 }
+
+// ---------------------------------------------------------------------------
+// Miembros / suscripciones (equivalente v2 de getCustomers + activeSubscriptions)
+// ---------------------------------------------------------------------------
+
+export type MomenceV2HostMember = {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneNumber: string | null;
+  pictureUrl: string | null;
+  firstSeen: string;
+  lastSeen: string;
+  // visits / customerFields / customerTags existen en el schema; se añaden cuando se usen.
+  [key: string]: unknown;
+};
+
+export type MomenceV2BoughtMembershipType =
+  | "subscription" | "on-demand-subscription" | "package-events" | "package-money" | "patron";
+
+// Suscripción/pack comprado por un miembro. Más rico que el activeSubscriptions
+// de la API interna: distingue 5 tipos y separa créditos de eventos vs dinero.
+export type MomenceV2BoughtMembership = {
+  id: number;
+  type: MomenceV2BoughtMembershipType;
+  startDate: string | null;
+  endDate: string | null;
+  isFrozen: boolean;
+  eventCreditsLeft: number | null;
+  eventCreditsTotal: number | null;
+  moneyCreditsLeft: number | null;
+  moneyCreditsTotal: number | null;
+  membership: { id: number; name: string } | null;
+};
+
+// Lista de miembros. `filterPreset: "with-active-membership"` trae solo los que
+// tienen una suscripción/pack activo (útil para churn).
+export async function getMembersV2(opts: {
+  query?: string;
+  filterPreset?: "with-active-membership";
+  pageSize?: number;
+} = {}): Promise<MomenceV2HostMember[]> {
+  const { pageSize = 100, ...rest } = opts;
+  const params: Record<string, string | number | boolean> = { sortBy: "lastSeenAt", sortOrder: "DESC" };
+  for (const [k, v] of Object.entries(rest)) if (v !== undefined) params[k] = v as string;
+  // /host/members tope pageSize en 100 (devuelve 400 si se pide más).
+  return fetchAllPages<MomenceV2HostMember>("/host/members", params, Math.min(pageSize, 100));
+}
+
+// Suscripciones/packs activos de un miembro. `includeFrozen` incluye los congelados.
+export function getMemberBoughtMembershipsV2(
+  memberId: number,
+  opts: { includeFrozen?: boolean; pageSize?: number } = {},
+): Promise<MomenceV2BoughtMembership[]> {
+  const { includeFrozen = true, pageSize = 100 } = opts;
+  return fetchAllPages<MomenceV2BoughtMembership>(
+    `/host/members/${memberId}/bought-memberships/active`,
+    { includeFrozen },
+    Math.min(pageSize, 100),
+  );
+}
+
+// Health check para el banner de desconexión. Hace una llamada real mínima
+// (1 miembro) en vez de solo pedir token: así valida que el token es aceptado
+// de verdad (detecta credenciales inválidas, no solo fallo al autenticar).
+// Lanza el error real si algo falla; los transitorios ya se reintentan dentro.
+export async function checkV2Connection(): Promise<boolean> {
+  await fetchV2<{ pagination: unknown }>("/host/members", { page: 0, pageSize: 1 });
+  return true;
+}
