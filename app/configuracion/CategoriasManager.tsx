@@ -698,8 +698,8 @@ export default function CategoriasManager({
               )}
 
               {/* Conceptos bancarios */}
-              <div>
-                <label className="flex items-center gap-1.5 text-xs font-semibold text-navy/45 uppercase tracking-wider mb-2">
+              <div className="p-3.5 bg-primary/[0.06] border border-primary/15 rounded-xl">
+                <label className="flex items-center gap-1.5 text-xs font-semibold text-primary/80 uppercase tracking-wider mb-2">
                   <AutomationIcon />
                   Conceptos bancarios
                 </label>

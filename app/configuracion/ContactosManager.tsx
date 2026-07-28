@@ -257,16 +257,18 @@ function ContactDetailDrawer({ contact, categories, stats, onChange, onRemove, o
         </div>
 
         <div className="p-4 border-b border-navy/[0.06]">
-          <p className="flex items-center gap-1.5 text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-2">
-            <AutomationIcon />
-            Conceptos bancarios
-          </p>
-          <PatternsEditor
-            contactId={contact.id}
-            patterns={contact.patterns}
-            onAdd={(p) => onChange({ patterns: [...contact.patterns, p] })}
-            onRemove={(p) => onChange({ patterns: contact.patterns.filter((x) => x !== p) })}
-          />
+          <div className="p-3.5 bg-primary/[0.06] border border-primary/15 rounded-xl">
+            <p className="flex items-center gap-1.5 text-[11px] font-semibold text-primary/80 uppercase tracking-wider mb-2">
+              <AutomationIcon />
+              Conceptos bancarios
+            </p>
+            <PatternsEditor
+              contactId={contact.id}
+              patterns={contact.patterns}
+              onAdd={(p) => onChange({ patterns: [...contact.patterns, p] })}
+              onRemove={(p) => onChange({ patterns: contact.patterns.filter((x) => x !== p) })}
+            />
+          </div>
         </div>
 
         <div className="p-4">

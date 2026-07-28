@@ -100,8 +100,8 @@ export default function NewContactDrawer({
             className="w-full px-3 py-2 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40"
           />
         </div>
-        <div>
-          <label className="flex items-center gap-1.5 text-xs font-medium text-navy/55 mb-1.5">
+        <div className="p-3.5 bg-primary/[0.06] border border-primary/15 rounded-xl">
+          <label className="flex items-center gap-1.5 text-xs font-semibold text-primary/80 mb-1.5">
             <AutomationIcon />
             Conceptos bancarios
           </label>

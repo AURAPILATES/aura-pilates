@@ -584,12 +584,14 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                                 <option key={c.id} value={c.id}>{c.label}</option>
                               ))}
                             </Select>
-                            <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1.5">Concepto bancario</p>
-                            <DraftPatternsEditor
-                              patterns={d.bankPatterns}
-                              onChange={(bankPatterns) => updateDraft(d.pattern, { bankPatterns })}
-                            />
-                            <p className="text-[11px] text-navy/35 mt-1.5">Se usará para reconocer este contacto en futuros movimientos.</p>
+                            <div className="p-3 bg-primary/[0.06] border border-primary/15 rounded-xl">
+                              <p className="text-[10px] font-semibold text-primary/80 uppercase tracking-wider mb-1.5">Concepto bancario</p>
+                              <DraftPatternsEditor
+                                patterns={d.bankPatterns}
+                                onChange={(bankPatterns) => updateDraft(d.pattern, { bankPatterns })}
+                              />
+                              <p className="text-[11px] text-navy/35 mt-1.5">Se usará para reconocer este contacto en futuros movimientos.</p>
+                            </div>
                           </>
                         ) : (
                           <>
@@ -601,12 +603,14 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                               placeholder="Nombre contacto"
                               className="w-full mb-3 px-2.5 py-1.5 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40"
                             />
-                            <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1.5">Concepto bancario</p>
-                            <DraftPatternsEditor
-                              patterns={d.bankPatterns}
-                              onChange={(bankPatterns) => updateDraft(d.pattern, { bankPatterns })}
-                            />
-                            <p className="text-[11px] text-navy/35 mt-1.5 mb-3">Se usará para reconocer este contacto en futuros movimientos.</p>
+                            <div className="p-3 mb-3 bg-primary/[0.06] border border-primary/15 rounded-xl">
+                              <p className="text-[10px] font-semibold text-primary/80 uppercase tracking-wider mb-1.5">Concepto bancario</p>
+                              <DraftPatternsEditor
+                                patterns={d.bankPatterns}
+                                onChange={(bankPatterns) => updateDraft(d.pattern, { bankPatterns })}
+                              />
+                              <p className="text-[11px] text-navy/35 mt-1.5">Se usará para reconocer este contacto en futuros movimientos.</p>
+                            </div>
                             <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1.5">Etiqueta</p>
                             <div className="mb-3">
                               <CategoryPill
