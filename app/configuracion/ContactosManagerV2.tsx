@@ -290,10 +290,15 @@ export default function ContactosManagerV2({
                           />
                         </label>
                       </span>
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <p className="text-[13.5px] font-medium text-navy truncate">{c.label}</p>
-                        {duplicateId != null && (
-                          <DuplicateBadge onClick={() => onOpenDuplicate(c.id, duplicateId)} />
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <p className="text-[13.5px] font-medium text-navy truncate">{c.label}</p>
+                          {duplicateId != null && (
+                            <DuplicateBadge onClick={() => onOpenDuplicate(c.id, duplicateId)} />
+                          )}
+                        </div>
+                        {c.patterns.length > 0 && (
+                          <p className="text-[11.5px] text-faint truncate">{c.patterns.join(", ")}</p>
                         )}
                       </div>
                     </div>
@@ -333,6 +338,9 @@ export default function ContactosManagerV2({
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="text-[14px] font-medium text-navy truncate">{c.label}</p>
+                    {c.patterns.length > 0 && (
+                      <p className="text-[11.5px] text-faint truncate">{c.patterns.join(", ")}</p>
+                    )}
                     <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                       {duplicateId != null && (
                         <DuplicateBadge onClick={() => onOpenDuplicate(c.id, duplicateId)} />
