@@ -31,6 +31,24 @@ export type Transaction = {
 /** Tipos de categoría que no representan un gasto real (ventas, aportaciones/financiación, traspasos internos). */
 const NON_EXPENSE_GROUP_TYPES = new Set(["income", "transfer", "internal"]);
 
+/** ¿Es este movimiento un ingreso de Urban Sports Club? Urban paga por transferencia (no por
+ * Stripe) y se reconoce por su contacto: al importar, el concepto "Urban" se enlaza al contacto
+ * "Urban Sports". Por eso Urban se calcula desde el banco, nunca desde Stripe ni desde el CSV. */
+export function isUrbanIncome(t: Transaction): boolean {
+  return t.amount > 0 && /urban/i.test(t.contact ?? "");
+}
+
+/** Ingresos de Urban por mes ("YYYY-MM" → importe), a partir de las transacciones del banco. */
+export function urbanRevenueByMonth(txns: Transaction[]): Map<string, number> {
+  const map = new Map<string, number>();
+  for (const t of txns) {
+    if (!isUrbanIncome(t)) continue;
+    const m = t.date.slice(0, 7);
+    map.set(m, (map.get(m) ?? 0) + t.amount);
+  }
+  return map;
+}
+
 /** Busca la categoría de una transacción por su `value`, sin sensibilidad a mayúsculas/minúsculas
  * (las categorías guardan el value con distinta capitalización según cuándo se crearon). */
 export function findCategory(categories: Category[], value: string): Category | undefined {

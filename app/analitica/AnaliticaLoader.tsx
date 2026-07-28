@@ -3,12 +3,11 @@ import { pctDelta } from "@/components/charts/DeltaBadge";
 import { saveHistoricalEvents, loadHistoricalEvents } from "@/lib/history";
 import { getLatestSyncRuns } from "@/lib/syncRuns";
 import { taxBreakdown, fiscalQuarterOf, ivaRepercutidoFromGross, netIvaAPagar } from "@/lib/taxCalc";
-import { loadSales, benvingudaConversion, subscriberFirstPurchase } from "@/lib/sales";
+import { benvingudaConversion, subscriberFirstPurchase } from "@/lib/sales";
 import PrimeraCompra from "./instances/PrimeraCompra";
 import {
   loadStripePaymentsCached,
   loadPaymentsBreakdown,
-  stripeByMethod,
   totalRevenue as stripeTotalRevenue,
   revenueForMonth as stripeRevenueForMonth,
   totalFees as stripeTotalFees,
@@ -20,7 +19,7 @@ import { loadStripeCustomers } from "@/lib/stripeCustomers";
 import { buildPrimaryIdMap, enrichCustomers, hasActiveSub } from "@/lib/customerEnrichment";
 import { estimatedMRR } from "@/lib/stripeRecurrence";
 
-import { loadTransactionsCached, expensesByCategoryAll, financingExpensesByCategory, getLatestImportDate, findCategory, type EconomicGroup, type Transaction, type PaymentMethod } from "@/lib/transactions";
+import { loadTransactionsCached, expensesByCategoryAll, financingExpensesByCategory, getLatestImportDate, findCategory, isUrbanIncome, urbanRevenueByMonth, type EconomicGroup, type Transaction, type PaymentMethod } from "@/lib/transactions";
 import { formatRelativeTime } from "@/lib/formatRelativeTime";
 import { loadCategoriesCached, NON_CASHFLOW_GROUP_TYPES, type Category } from "@/lib/categories";
 import { loadRecurringExpensesCached, forecastConfirmedExpenses } from "@/lib/recurringExpenses";
@@ -198,8 +197,7 @@ export default async function AnaliticaLoader({
     ? ([syncRuns.momence_events, syncRuns.momence_subscribers].find((r) => r && !r.ok) ?? null)
     : null;
 
-  // Stripe/Momence se leen en vivo en cada carga; el banco depende de la última subida manual de CSV.
-  const liveLastUpdated = formatRelativeTime(now.toISOString());
+  // El banco depende de la última importación manual en Transacciones.
   const bancoLastUpdated = formatRelativeTime(bancoLastImport);
 
   // Mapa stripeId → cliente fusionado por email, para agrupar cohortes/clientes por persona real
@@ -223,36 +221,16 @@ export default async function AnaliticaLoader({
 
   const salesAll = toSales(paymentsAll);
 
-  // Momence CSV: export manual, ya no se actualiza en tiempo real. Solo se usa para
-  // Urban Sports Club (paga por transferencia bancaria, sin fuente en vivo) y para
-  // breakeven histórico. Conversión del pack y "de dónde vienen los suscriptores" usan
-  // salesAll (Stripe + producto inferido por importe, igual que en Clientes) - en vivo.
-  const momenceSalesAll = loadSales();
-
-  // ── Urban Sports Club: ingresos desde Momence CSV (USC paga por transferencia, no Stripe) ──
-  const uscSales   = momenceSalesAll.filter((s) => s.method === "urban-sports-club" && s.paymentDate >= mainFrom && s.paymentDate <= mainTo);
-  const uscRevenue = uscSales.reduce((sum, s) => sum + s.amount, 0);
-  const uscCount   = uscSales.length;
+  // ── Urban Sports Club: ingresos desde el banco (paga por transferencia, no por Stripe) ──
+  // Se reconoce por su contacto: al importar en Transacciones, el concepto "Urban" se enlaza al
+  // contacto "Urban Sports". Ya no depende del CSV manual de Momence (ver isUrbanIncome).
+  const uscByMonth = urbanRevenueByMonth(txnsAll);
+  const uscRevenue = txnsMain.filter(isUrbanIncome).reduce((sum, t) => sum + t.amount, 0);
+  const uscRevComp = txnsComp.filter(isUrbanIncome).reduce((sum, t) => sum + t.amount, 0);
   const revComp    = stripeTotalRevenue(pComp);
   const stripeFeesComp = stripeTotalFees(pComp);
-  const uscRevComp = momenceSalesAll.filter((s) =>
-    s.method === "urban-sports-club" &&
-    s.paymentDate >= compFrom &&
-    s.paymentDate <= compTo
-  ).reduce((sum, s) => sum + s.amount, 0);
-  const q1Revenue = totalRev + uscRevenue;
-  const q1RevComp = revComp + uscRevComp;
 
-  // Última fecha con datos reales de Urban (el CSV no se actualiza solo) - se usa para
-  // acotar "Por producto" / "Por canal de pago" y que Stripe y Urban cubran el mismo periodo.
-  const uscDates = momenceSalesAll.filter((s) => s.method === "urban-sports-club").map((s) => s.paymentDate);
-  const uscLastDate = uscDates.length > 0 ? uscDates.sort().reverse()[0] : null;
-  const uscLastDateLabel = uscLastDate ? uscLastDate.split("-").reverse().join("/") : null;
-
-  const paymentsBounded = uscLastDate ? pMain.filter((p) => p.date <= uscLastDate) : pMain;
   const productCatalog = catalogFromMomence(membershipsAll, productsAll);
-
-  const byMethodBounded = stripeByMethod(paymentsBounded);
 
   // Las transacciones guardan el `value` de la categoría (no el `label`, que puede cambiar
   // p.ej. al convertir "Electricidad" en la subcategoría "Luz"), así que el lookup va por value.
@@ -280,7 +258,7 @@ export default async function AnaliticaLoader({
   const budgetSpent = computeSpent(budgets, txnsAll);
 
   // ── Breakeven desde el inicio ────────────────────────────────────────────
-  const breakevenPoints = computeBreakeven(paymentsAll, momenceSalesAll, txnsAll, dbCategories);
+  const breakevenPoints = computeBreakeven(paymentsAll, uscByMonth, txnsAll, dbCategories);
 
   // ── Conversión Pack Benvinguda 2x1 → Suscripción ──────────────────────────
   const conversionSummary = benvingudaConversion(salesAll);
@@ -291,23 +269,11 @@ export default async function AnaliticaLoader({
   // ── MRR/ARR por suscripción (suscriptores activos reales en Momence) ──────
   const subscriptionTiers = subscriptionTiersFromMemberships(membershipsAll);
   // ── Evolución de ingresos + altas/bajas/reactivaciones (histórico completo, solo Stripe) ──
-  // Antes se recortaba TODO paymentsAll a uscLastDate "para que Stripe y Urban cubran el mismo
-  // período" - pero estos tres usos son 100% Stripe (Urban no aparece en ninguno), así que ese
-  // recorte solo servía para tirar datos de Stripe recientes cada vez que el CSV manual de Urban
-  // se quedaba desactualizado. Solo "Ingresos por fuente" (más abajo) compara Stripe vs. Urban de
-  // verdad, así que es el único que sigue acotado a uscLastDate.
   const monthlyStripeRevenue = revenueByProductByMonth(paymentsAll, productCatalog);
-  const uscByMonth = new Map<string, number>();
-  for (const s of momenceSalesAll) {
-    if (s.method !== "urban-sports-club") continue;
-    const m = s.paymentDate.slice(0, 7);
-    uscByMonth.set(m, (uscByMonth.get(m) ?? 0) + s.amount);
-  }
 
-  // Ingresos por fuente: bruto, comisión y neto de Stripe por mes + USC neto. Stripe muestra
-  // su histórico completo y real (sin recortar a uscLastDate) - Urban depende de un CSV manual
-  // que se queda atrás, pero eso no debe ocultar ingresos de Stripe ya confirmados. La tarjeta
-  // avisa por su cuenta de hasta cuándo llegan los datos de Urban (ver uscLastDateLabel).
+  // Ingresos por fuente: bruto, comisión y neto de Stripe por mes + Urban neto. Stripe sale de
+  // su API (histórico completo) y Urban del banco (transferencias con contacto "Urban Sports",
+  // ver uscByMonth) - dos fuentes disjuntas, sin doble conteo (Urban no pasa por Stripe).
   const monthlyStripeGrossMap = new Map<string, number>();
   const monthlyStripeFeesMap  = new Map<string, number>();
   const monthlyStripeNetMap   = new Map<string, number>();
@@ -456,6 +422,10 @@ export default async function AnaliticaLoader({
   const soportadoByQuarter = new Map<string, FiscalTxnItem[]>();
   const retencionByQuarter = new Map<string, FiscalTxnItem[]>();
   for (const t of txnsAll) {
+    // Solo gastos: el IVA soportado y las retenciones practicadas se dan sobre pagos a terceros.
+    // Un ingreso (p.ej. Urban, contacto con IVA 21%) lleva IVA repercutido, no soportado - se
+    // cuenta más abajo en addRepercutido, nunca aquí, o se restaría en vez de sumarse.
+    if (t.amount >= 0) continue;
     if (!t.iva_rate && !t.retencion_rate) continue;
     const { ivaAmount, retencionAmount } = taxBreakdown(t.amount, t.iva_rate ?? 0, t.retencion_rate ?? 0);
     const q = fiscalQuarterOf(t.date);
@@ -477,8 +447,8 @@ export default async function AnaliticaLoader({
       retencionByQuarter.set(q, list);
     }
   }
-  // ── IVA repercutido por trimestre, a partir de las ventas (Stripe + USC), que ya
-  // incluyen el 21% de IVA en el importe bruto ── + desglose por mes para explorar la celda.
+  // ── IVA repercutido por trimestre, a partir de las ventas (Stripe + Urban del banco), que
+  // ya incluyen el 21% de IVA en el importe bruto ── + desglose por mes para explorar la celda.
   const ivaRepercutidoByQuarter = new Map<string, number>();
   const repercutidoByMonthByQuarter = new Map<string, Map<string, number>>();
   const addRepercutido = (dateStr: string, gross: number) => {
@@ -491,9 +461,9 @@ export default async function AnaliticaLoader({
     repercutidoByMonthByQuarter.set(q, byMonth);
   };
   for (const p of paymentsAll) addRepercutido(p.date, p.amount);
-  for (const s of momenceSalesAll) {
-    if (s.method !== "urban-sports-club") continue;
-    addRepercutido(s.paymentDate, s.amount);
+  for (const t of txnsAll) {
+    if (!isUrbanIncome(t)) continue;
+    addRepercutido(t.date, t.amount);
   }
 
   // ── Resumen fiscal por trimestre: IVA neto a pagar (repercutido − soportado) + retenciones ──
@@ -646,8 +616,7 @@ export default async function AnaliticaLoader({
                 uscGrossComp={uscRevComp}
                 monthly={monthlyByFuente}
                 dateRange={periodLabel}
-                uscLastDateLabel={uscLastDateLabel}
-                lastUpdated={uscLastDateLabel ? `Urban al día ${uscLastDateLabel}` : liveLastUpdated}
+                lastUpdated={`Stripe en vivo · Urban según Transacciones (${bancoLastUpdated})`}
                 monthlyProducto={monthlyStripeRevenue}
                 cohorts={subscriptionCohorts}
                 events={businessEvents}

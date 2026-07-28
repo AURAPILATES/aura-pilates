@@ -1,5 +1,4 @@
 import type { StripePayment } from "./stripePayments";
-import type { Sale } from "./sales";
 import { expensesByMonth, type Transaction } from "./transactions";
 import type { Category } from "./categories";
 
@@ -20,11 +19,12 @@ export type BreakevenPoint = {
 };
 
 // Ingresos totales desde el inicio: Stripe (todo, no solo suscripciones) + Urban Sports Club
-// (USC paga por transferencia mensual, registrado en el CSV de Momence, no en Stripe).
-// Gastos: operacionales + inversión inicial (mismas categorías que el resto de Finanzas).
+// (USC paga por transferencia mensual, reconocido por su contacto en el banco - ver
+// urbanRevenueByMonth -, no en Stripe). Gastos: operacionales + inversión inicial (mismas
+// categorías que el resto de Finanzas).
 export function computeBreakeven(
   payments: StripePayment[],
-  sales: Sale[],
+  uscByMonth: Map<string, number>,
   txns: Transaction[],
   categories: Category[],
 ): BreakevenPoint[] {
@@ -33,10 +33,8 @@ export function computeBreakeven(
     const m = p.date.slice(0, 7);
     revByMonth.set(m, (revByMonth.get(m) ?? 0) + p.amount);
   }
-  for (const s of sales) {
-    if (s.method !== "urban-sports-club") continue;
-    const m = s.paymentDate.slice(0, 7);
-    revByMonth.set(m, (revByMonth.get(m) ?? 0) + s.amount);
+  for (const [m, amount] of uscByMonth) {
+    revByMonth.set(m, (revByMonth.get(m) ?? 0) + amount);
   }
 
   const expByMonth = expensesByMonth(txns, categories);

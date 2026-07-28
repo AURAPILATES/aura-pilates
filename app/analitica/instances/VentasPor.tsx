@@ -93,7 +93,6 @@ export default function VentasPor({
   uscGrossComp,
   monthly,
   dateRange,
-  uscLastDateLabel,
   lastUpdated,
   monthlyProducto,
   cohorts,
@@ -110,9 +109,6 @@ export default function VentasPor({
   uscGrossComp: number;
   monthly: IngresosPorFuenteRow[];
   dateRange?: string;
-  /** Última fecha con datos reales de Urban en el CSV manual de Momence - Stripe sigue
-   * mostrando su histórico completo y real, sin recortar a esta fecha. */
-  uscLastDateLabel?: string | null;
   lastUpdated?: string | null;
   monthlyProducto: MonthlyProductRevenue[];
   cohorts: MonthlySubStats[];
@@ -262,12 +258,10 @@ export default function VentasPor({
         }
         dataSource={
           view === "fuente"
-            ? (uscLastDateLabel
-                ? `Stripe API (precio de venta, antes de comisión), datos en vivo hasta hoy. Urban Sports Club: Momence CSV (11 €/clase, importación manual en Transacciones), solo hasta el ${uscLastDateLabel}.`
-                : "Stripe API (precio de venta, antes de comisión) + Urban Sports Club Momence CSV (11 €/clase, importación manual en Transacciones)")
+            ? "Stripe API (precio de venta, antes de comisión), en vivo. Urban Sports Club: transferencias del banco importadas en Transacciones (reconocidas por el contacto «Urban Sports»), no por Stripe."
             : "Solo Stripe - no incluye Urban Sports Club. Producto identificado contra el catálogo de precios en vivo de Momence · altas/bajas/reactivaciones por patrón de pagos de suscripción en Stripe"
         }
-        sources={view === "fuente" ? ["stripe", "momence"] : ["stripe"]}
+        sources={view === "fuente" ? ["stripe", "excel"] : ["stripe"]}
         lastUpdated={lastUpdated}
         aiInsight={
           view === "producto" && trendSummary.length > 0 && (
@@ -304,11 +298,6 @@ export default function VentasPor({
                     helper: totalBruto > 0 ? `${Math.round((s.value / totalBruto) * 100)}%` : "-",
                   }))}
                 />
-                {uscLastDateLabel && (
-                  <p className="text-[11px] text-warning bg-warning/10 rounded-[8px] px-2.5 py-1.5 mt-4">
-                    Urban solo tiene datos hasta el {uscLastDateLabel} (importación manual en Transacciones)
-                  </p>
-                )}
               </div>
             </div>
 
