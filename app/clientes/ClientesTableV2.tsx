@@ -69,7 +69,7 @@ export default function ClientesTableV2({
 }: Props) {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const filtersActive = !!planFilter;
-  const activeFilterCount = (filter !== "all" ? 1 : 0) + (planFilter ? 1 : 0);
+  const activeFilterCount = (filter !== "all" ? 1 : 0) + (planFilter ? 1 : 0) + (search.trim() ? 1 : 0);
   function clearFilters() {
     onFilterChange("all");
     onPlanFilterChange("");
