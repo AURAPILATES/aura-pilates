@@ -426,6 +426,9 @@ export default async function AnaliticaLoader({
     // Un ingreso (p.ej. Urban, contacto con IVA 21%) lleva IVA repercutido, no soportado - se
     // cuenta más abajo en addRepercutido, nunca aquí, o se restaría en vez de sumarse.
     if (t.amount >= 0) continue;
+    // "Efectivo Aura" es dinero en caja que no se declara - no debe generar IVA soportado ni
+    // retenciones aproximadas (esas cifras son una aproximación de lo que sí se declara).
+    if (t.payment_method === "efectivo") continue;
     if (!t.iva_rate && !t.retencion_rate) continue;
     const { ivaAmount, retencionAmount } = taxBreakdown(t.amount, t.iva_rate ?? 0, t.retencion_rate ?? 0);
     const q = fiscalQuarterOf(t.date);
@@ -463,6 +466,8 @@ export default async function AnaliticaLoader({
   for (const p of paymentsAll) addRepercutido(p.date, p.amount);
   for (const t of txnsAll) {
     if (!isUrbanIncome(t)) continue;
+    // "Efectivo Aura" no se declara, así que no debe contar como IVA repercutido aproximado.
+    if (t.payment_method === "efectivo") continue;
     addRepercutido(t.date, t.amount);
   }
 

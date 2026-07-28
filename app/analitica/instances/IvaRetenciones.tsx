@@ -135,7 +135,7 @@ export default function IvaRetenciones({
         </span>
       ),
       valueClassName: ivaNeto < 0 ? "text-success" : "text-navy",
-      tooltip: "Repercutido: 21% extraído del bruto de ventas (Stripe + Urban Sports Club). Soportado: según el % de IVA asignado por contacto en cada gasto importado (Configuración → Contactos). Resultado = repercutido − soportado.",
+      tooltip: "Repercutido: 21% extraído del bruto de ventas (Stripe + Urban Sports Club). Soportado: según el % de IVA asignado por contacto en cada gasto importado (Configuración → Contactos). Excluye movimientos de Efectivo Aura (no se declara). Resultado = repercutido − soportado.",
       helper: (
         <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-navy/45">
           <span>Repercutido (Ventas) {fmt(ivaRepercutido)}</span>
@@ -146,7 +146,7 @@ export default function IvaRetenciones({
     {
       label: `IRPF · ${quarterStatus}`,
       value: fmt(retenciones),
-      tooltip: "Retenciones practicadas según el % de IRPF asignado por contacto (nóminas, alquileres, profesionales) en cada gasto importado.",
+      tooltip: "Retenciones practicadas según el % de IRPF asignado por contacto (nóminas, alquileres, profesionales) en cada gasto importado. Excluye movimientos de Efectivo Aura (no se declara).",
     },
   ];
 
@@ -156,7 +156,7 @@ export default function IvaRetenciones({
       subtitle={`Próximo vencimiento: ${dueLabel}`}
       dateRange={quarterLabel}
       kpiItems={kpiItems}
-      dataSource="IVA repercutido: 21% extraído del bruto de ventas (Stripe + USC). IVA soportado y retenciones: según el % de IVA/IRPF asignado por contacto en cada gasto importado."
+      dataSource="IVA repercutido: 21% extraído del bruto de ventas (Stripe + USC). IVA soportado y retenciones: según el % de IVA/IRPF asignado por contacto en cada gasto importado. Excluye movimientos de Efectivo Aura, que no se declara."
       sources={["stripe", "excel"]}
       lastUpdated={lastUpdated}
     >
@@ -292,19 +292,19 @@ function DetailDrawer({ selected, onClose }: { selected: { row: QuarterlyFiscalR
     repercutido: {
       title: "IVA repercutido",
       value: row.ivaRepercutido,
-      note: "21% extraído del bruto de ventas (Stripe + Urban Sports Club), por mes.",
+      note: "21% extraído del bruto de ventas (Stripe + Urban Sports Club), por mes. Excluye Efectivo Aura.",
       items: row.repercutidoByMonth.map((m) => ({ label: monthLabel(m.month), amount: m.amount })),
     },
     soportado: {
       title: "IVA soportado",
       value: row.ivaSoportado,
-      note: "IVA de los gastos, según el % asignado a cada contacto.",
+      note: "IVA de los gastos, según el % asignado a cada contacto. Excluye Efectivo Aura.",
       items: row.soportadoTxns.map((t) => ({ label: t.label, sub: `${fmtDate(t.date)} · base ${fmt(t.base)}`, amount: t.amount })),
     },
     retencion: {
       title: "IRPF retenido",
       value: row.retenciones,
-      note: "Retenciones practicadas, según el % de IRPF asignado a cada contacto.",
+      note: "Retenciones practicadas, según el % de IRPF asignado a cada contacto. Excluye Efectivo Aura.",
       items: row.retencionTxns.map((t) => ({ label: t.label, sub: `${fmtDate(t.date)} · base ${fmt(t.base)}`, amount: t.amount })),
     },
   };
