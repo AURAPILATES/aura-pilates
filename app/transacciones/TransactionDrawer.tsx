@@ -287,6 +287,7 @@ export default function TransactionDrawer({
   onUpdateDate,
   onUpdatePaymentMethod,
   onUpdateDirection,
+  onUpdateIsRefund,
   onDelete,
 }: {
   transaction: Transaction;
@@ -301,6 +302,7 @@ export default function TransactionDrawer({
   onUpdateDate: (id: string, value: string) => void;
   onUpdatePaymentMethod: (id: string, value: PaymentMethod) => void;
   onUpdateDirection: (id: string, isIncome: boolean) => void;
+  onUpdateIsRefund: (id: string, isRefund: boolean) => void;
   onDelete: (id: string) => void;
 }) {
   const t = transaction;
@@ -313,6 +315,12 @@ export default function TransactionDrawer({
     if (next === isIncome) return;
     setIsIncome(next);
     onUpdateDirection(t.id, next);
+  }
+
+  const [isRefund, setIsRefund] = useState(t.is_refund);
+  function changeIsRefund(next: boolean) {
+    setIsRefund(next);
+    onUpdateIsRefund(t.id, next);
   }
 
   return (
@@ -365,6 +373,21 @@ export default function TransactionDrawer({
             fullWidth
           />
         )}
+
+        <label className={`flex items-start gap-2.5 px-3 py-2.5 rounded-lg border cursor-pointer transition-colors ${
+          isRefund ? "border-primary/30 bg-primary/[0.05]" : "border-navy/[0.1] hover:bg-navy/[0.02]"
+        }`}>
+          <input
+            type="checkbox"
+            checked={isRefund}
+            onChange={(e) => changeIsRefund(e.target.checked)}
+            className="w-4 h-4 mt-0.5 rounded border-navy/[0.25] accent-primary focus:ring-2 focus:ring-primary/15 cursor-pointer"
+          />
+          <span>
+            <span className="block text-sm font-medium text-navy">Es una devolución</span>
+            <span className="block text-xs text-navy/45 mt-0.5">No cuenta como ingreso ni gasto (p. ej. una comisión y su condonación en otro movimiento)</span>
+          </span>
+        </label>
 
         <Field label="Concepto" value={t.concept ?? ""} onSave={(v) => onUpdateConcept(t.id, v)} />
         <Field label="Más datos" value={t.bank_details ?? ""} onSave={(v) => onUpdateBankDetails(t.id, v)} />

@@ -4,8 +4,8 @@ import { useState } from "react";
 import dynamic from "next/dynamic";
 import { BarChart2, Activity } from "react-feather";
 import type { Transaction } from "@/lib/transactions";
-import { findCategory } from "@/lib/transactions";
-import { NON_CASHFLOW_GROUP_TYPES, type Category } from "@/lib/categories";
+import { isCashflowTransaction } from "@/lib/transactions";
+import type { Category } from "@/lib/categories";
 import { ChartCard, ChartTypeToggle, ToggleGroup, Legend, CollapsibleTable, type MultiKpiItem } from "@/components/charts";
 import type { VolumenBrutoRow } from "./VolumenBrutoBody";
 
@@ -56,8 +56,7 @@ function groupData(txns: Transaction[], categories: Category[], period: Period):
   const map = new Map<string, { income: number; expense: number }>();
 
   for (const t of txns) {
-    const cat = t.category ? findCategory(categories, t.category) : undefined;
-    if (cat && NON_CASHFLOW_GROUP_TYPES.has(cat.group_type)) continue;
+    if (!isCashflowTransaction(t, categories)) continue;
 
     const key = getPeriodKey(t.date, period);
     const p = map.get(key) ?? { income: 0, expense: 0 };

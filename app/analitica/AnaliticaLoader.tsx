@@ -19,7 +19,7 @@ import { loadStripeCustomers } from "@/lib/stripeCustomers";
 import { buildPrimaryIdMap, enrichCustomers, hasActiveSub } from "@/lib/customerEnrichment";
 import { estimatedMRR } from "@/lib/stripeRecurrence";
 
-import { loadTransactionsCached, expensesByCategoryAll, financingExpensesByCategory, getLatestImportDate, findCategory, isUrbanIncome, urbanRevenueByMonth, type EconomicGroup, type Transaction, type PaymentMethod } from "@/lib/transactions";
+import { loadTransactionsCached, expensesByCategoryAll, financingExpensesByCategory, getLatestImportDate, findCategory, isUrbanIncome, urbanRevenueByMonth, isCashflowTransaction, type EconomicGroup, type Transaction, type PaymentMethod } from "@/lib/transactions";
 import { formatRelativeTime } from "@/lib/formatRelativeTime";
 import { loadCategoriesCached, NON_CASHFLOW_GROUP_TYPES, type Category } from "@/lib/categories";
 import { loadRecurringExpensesCached, forecastConfirmedExpenses } from "@/lib/recurringExpenses";
@@ -244,8 +244,7 @@ export default async function AnaliticaLoader({
   const originExpenseMap = new Map<PaymentMethod, OriginSpend>();
   for (const t of txnsMain) {
     if (t.amount >= 0) continue;
-    const cat = t.category ? findCategory(dbCategories, t.category) : undefined;
-    if (cat && NON_CASHFLOW_GROUP_TYPES.has(cat.group_type)) continue;
+    if (!isCashflowTransaction(t, dbCategories)) continue;
     const acc = originExpenseMap.get(t.payment_method) ?? { origin: t.payment_method, total: 0, count: 0, txns: [] };
     acc.total += Math.abs(t.amount);
     acc.count += 1;
@@ -302,7 +301,7 @@ export default async function AnaliticaLoader({
 
   const transactionsByCategory: Record<string, { date: string; amount: number; concept: string; contact: string }[]> = {};
   for (const t of txnsMain) {
-    if (!t.category) continue;
+    if (!t.category || t.is_refund) continue;
     // Las categorías de tipo "transfer" (Financiación) también incluyen la entrada del propio
     // préstamo (importe positivo) - eso no es un gasto y no debe colarse en el gráfico/drawer
     // de Desglose de gastos, así que aquí solo cuentan los pagos (importe negativo).
@@ -339,6 +338,7 @@ export default async function AnaliticaLoader({
   const expenseByMonth = new Map<string, number>();
   const SUMINISTROS_CATS = new Set(["Electricidad", "Agua"]);
   for (const t of txnsAll) {
+    if (t.is_refund) continue;
     const cat = t.category ? findCategory(dbCategories, t.category) : undefined;
     const m = t.date.slice(0, 7);
     const isCashflow = !cat || !NON_CASHFLOW_GROUP_TYPES.has(cat.group_type);
@@ -389,8 +389,7 @@ export default async function AnaliticaLoader({
   function cashflowNet(txns: Transaction[]): number {
     let net = 0;
     for (const t of txns) {
-      const cat = t.category ? findCategory(dbCategories, t.category) : undefined;
-      if (cat && NON_CASHFLOW_GROUP_TYPES.has(cat.group_type)) continue;
+      if (!isCashflowTransaction(t, dbCategories)) continue;
       net += t.amount;
     }
     return net;
@@ -425,7 +424,7 @@ export default async function AnaliticaLoader({
     // Solo gastos: el IVA soportado y las retenciones practicadas se dan sobre pagos a terceros.
     // Un ingreso (p.ej. Urban, contacto con IVA 21%) lleva IVA repercutido, no soportado - se
     // cuenta más abajo en addRepercutido, nunca aquí, o se restaría en vez de sumarse.
-    if (t.amount >= 0) continue;
+    if (t.amount >= 0 || t.is_refund) continue;
     // "Efectivo Aura" es dinero en caja que no se declara - no debe generar IVA soportado ni
     // retenciones aproximadas (esas cifras son una aproximación de lo que sí se declara).
     if (t.payment_method === "efectivo") continue;
@@ -465,7 +464,7 @@ export default async function AnaliticaLoader({
   };
   for (const p of paymentsAll) addRepercutido(p.date, p.amount);
   for (const t of txnsAll) {
-    if (!isUrbanIncome(t)) continue;
+    if (!isUrbanIncome(t) || t.is_refund) continue;
     // "Efectivo Aura" no se declara, así que no debe contar como IVA repercutido aproximado.
     if (t.payment_method === "efectivo") continue;
     addRepercutido(t.date, t.amount);

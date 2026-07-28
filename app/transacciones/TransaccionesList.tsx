@@ -8,7 +8,7 @@ import { sortCategoriesHierarchical, categoryDisplayLabel } from "@/lib/categori
 import { normalizeText } from "@/lib/normalizeText";
 import { seriesKeyFor } from "@/lib/recurring";
 import type { RecurringExpense } from "@/lib/recurringExpenses";
-import { updateTransactionCategory, updateTransactionConcept, updateTransactionBankDetails, updateTransactionDate, updateTransactionPaymentMethod, updateTransactionAmount, softDeleteTransactions, type Contact } from "./actions";
+import { updateTransactionCategory, updateTransactionConcept, updateTransactionBankDetails, updateTransactionDate, updateTransactionPaymentMethod, updateTransactionAmount, updateTransactionIsRefund, softDeleteTransactions, type Contact } from "./actions";
 import Select from "@/app/components/Select";
 import AddCashModal from "./AddCashModal";
 import PapeleraDrawer from "./PapeleraDrawer";
@@ -635,8 +635,10 @@ export default function TransaccionesList({
     return [...map.entries()].sort((a, b) => b[0].localeCompare(a[0]));
   }, [pagedFlat]);
 
-  const totalIn  = baseFiltered.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0);
-  const totalOut = baseFiltered.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0);
+  // Las devoluciones se siguen mostrando en la lista, pero no cuentan en los totales de arriba
+  // (su contrapartida ya vive en otro movimiento aparte, ver isCashflowTransaction).
+  const totalIn  = baseFiltered.filter((t) => t.amount > 0 && !t.is_refund).reduce((s, t) => s + t.amount, 0);
+  const totalOut = baseFiltered.filter((t) => t.amount < 0 && !t.is_refund).reduce((s, t) => s + Math.abs(t.amount), 0);
   const neto     = totalIn - totalOut;
 
   function handleCategoryChange(id: string, category: string | null) {
@@ -660,6 +662,9 @@ export default function TransaccionesList({
     const amount = isIncome ? Math.abs(txn.amount) : -Math.abs(txn.amount);
     if (amount === txn.amount) return;
     startTransition(() => updateTransactionAmount(id, amount));
+  }
+  function handleIsRefundChange(id: string, isRefund: boolean) {
+    startTransition(() => updateTransactionIsRefund(id, isRefund));
   }
   function handleDeleteOne(id: string) {
     startTransition(async () => { await softDeleteTransactions([id]); });
@@ -786,6 +791,7 @@ export default function TransaccionesList({
           onUpdateDate={handleDateChange}
           onUpdatePaymentMethod={handlePaymentMethodChange}
           onUpdateDirection={handleDirectionChange}
+          onUpdateIsRefund={handleIsRefundChange}
           onDelete={handleDeleteOne}
         />
       )}

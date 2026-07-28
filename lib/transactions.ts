@@ -1,7 +1,7 @@
 import { createServerClient } from "@/lib/supabase";
 import { unstable_cache } from "next/cache";
 import { economicGroupOf, type EconomicGroup } from "@/lib/economicGroups";
-import type { Category } from "@/lib/categories";
+import { NON_CASHFLOW_GROUP_TYPES, type Category } from "@/lib/categories";
 export type { EconomicGroup };
 
 export type ContactType = "empleado" | "socio" | "proveedor" | "administracion" | "banco" | null;
@@ -26,6 +26,9 @@ export type Transaction = {
   deleted_at: string | null;
   iva_rate: number | null;
   retencion_rate: number | null;
+  /** Marca manual "Es una devolución" (p.ej. una comisión y su condonación en otro movimiento
+   * aparte): se excluye de ingresos/gastos en todos los cálculos, ver isCashflowTransaction. */
+  is_refund: boolean;
 };
 
 /** Tipos de categoría que no representan un gasto real (ventas, aportaciones/financiación, traspasos internos). */
@@ -42,7 +45,7 @@ export function isUrbanIncome(t: Transaction): boolean {
 export function urbanRevenueByMonth(txns: Transaction[]): Map<string, number> {
   const map = new Map<string, number>();
   for (const t of txns) {
-    if (!isUrbanIncome(t)) continue;
+    if (!isUrbanIncome(t) || t.is_refund) continue;
     const m = t.date.slice(0, 7);
     map.set(m, (map.get(m) ?? 0) + t.amount);
   }
@@ -63,6 +66,20 @@ function isExpenseCategory(category: string, categories: Category[]): boolean {
   return !cat || !NON_EXPENSE_GROUP_TYPES.has(cat.group_type);
 }
 
+/** ¿Cuenta este movimiento como ingreso/gasto real "según el banco"? No cuentan los traspasos
+ * internos/financiación (ver NON_CASHFLOW_GROUP_TYPES) ni los movimientos marcados a mano como
+ * "Devolución" - su contrapartida ya vive en otro movimiento aparte (p.ej. una comisión de
+ * tarjeta y su condonación), así que contar ambos sumaría o restaría de más. Se usa en todos
+ * los cálculos de ingresos/gastos de Analítica y en los totales de Transacciones. */
+export function isCashflowTransaction(
+  t: Pick<Transaction, "category" | "is_refund">,
+  categories: Category[],
+): boolean {
+  if (t.is_refund) return false;
+  const cat = t.category ? findCategory(categories, t.category) : undefined;
+  return !cat || !NON_CASHFLOW_GROUP_TYPES.has(cat.group_type);
+}
+
 /** Gastos de financiación: categorías de tipo "transfer" (p.ej. cuotas de préstamo), que
  * `expensesByCategoryAll` excluye a propósito para no mezclarlas con traspasos internos
  * reales. Aquí sí cuentan como gasto real - solo el pago (importe negativo), nunca la
@@ -70,7 +87,7 @@ function isExpenseCategory(category: string, categories: Category[]): boolean {
 export function financingExpensesByCategory(txns: Transaction[], categories: Category[]) {
   const map = new Map<string, { count: number; total: number }>();
   for (const t of txns) {
-    if (t.amount >= 0 || !t.category) continue;
+    if (t.amount >= 0 || !t.category || t.is_refund) continue;
     const cat = findCategory(categories, t.category);
     if (!cat || cat.group_type !== "transfer") continue;
     const d = map.get(t.category) ?? { count: 0, total: 0 };
@@ -130,7 +147,7 @@ export const loadTransactionsCached = unstable_cache(
 export function expensesByMonth(txns: Transaction[], categories: Category[]): Map<string, number> {
   const map = new Map<string, number>();
   for (const t of txns) {
-    if (t.amount >= 0 || !t.category) continue;
+    if (t.amount >= 0 || !t.category || t.is_refund) continue;
     if (!isExpenseCategory(t.category, categories)) continue;
     const month = t.date.slice(0, 7);
     map.set(month, (map.get(month) ?? 0) + Math.abs(t.amount));
@@ -143,7 +160,7 @@ export function expensesByMonth(txns: Transaction[], categories: Category[]): Ma
 export function expensesByCategoryAll(txns: Transaction[], categories: Category[]) {
   const map = new Map<string, { count: number; total: number; group: EconomicGroup }>();
   for (const t of txns) {
-    if (t.amount >= 0 || t.category === null) continue;
+    if (t.amount >= 0 || t.category === null || t.is_refund) continue;
     if (!isExpenseCategory(t.category, categories)) continue;
     const cat = findCategory(categories, t.category);
     const d = map.get(t.category) ?? { count: 0, total: 0, group: economicGroupOf(cat?.label ?? t.category, cat?.economic_group) };
