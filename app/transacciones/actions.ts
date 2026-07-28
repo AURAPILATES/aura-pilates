@@ -210,6 +210,58 @@ export async function deleteContact(id: number): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
+/** Pares de contactos ("idMenor:idMayor") marcados a mano como "no está duplicado", para que
+ * la detección automática de duplicados deje de sugerirlos (ver lib/duplicateContacts.ts). */
+export async function getDismissedContactDuplicates(): Promise<string[]> {
+  const supabase = createServerClient();
+  const { data, error } = await supabase.from("dismissed_contact_duplicates").select("contact_id_a, contact_id_b");
+  if (error) throw new Error(error.message);
+  return ((data ?? []) as { contact_id_a: number; contact_id_b: number }[]).map(
+    (r) => `${r.contact_id_a}:${r.contact_id_b}`,
+  );
+}
+
+export async function dismissContactDuplicate(idA: number, idB: number): Promise<void> {
+  const [a, b] = idA < idB ? [idA, idB] : [idB, idA];
+  const supabase = createServerClient();
+  const { error } = await supabase
+    .from("dismissed_contact_duplicates")
+    .upsert({ contact_id_a: a, contact_id_b: b }, { onConflict: "contact_id_a,contact_id_b" });
+  if (error) throw new Error(error.message);
+}
+
+/** Fusiona dos contactos duplicados: mueve los conceptos bancarios de `mergeId` a `keepId`,
+ * renombra los movimientos ya guardados con el nombre de `mergeId` para que sigan
+ * encontrándose bajo el contacto que se conserva, reaplica categoría/IVA/retención de `keepId`
+ * a los movimientos que ahora coinciden con esos conceptos, y elimina el contacto sobrante. */
+export async function mergeContacts(keepId: number, mergeId: number): Promise<{ updated: number }> {
+  if (keepId === mergeId) return { updated: 0 };
+  const supabase = createServerClient();
+
+  const [{ data: keep }, { data: merge }] = await Promise.all([
+    supabase.from("contacts").select("id, label, category, iva_rate, retencion_rate").eq("id", keepId).single(),
+    supabase.from("contacts").select("id, label, contact_concepts(pattern)").eq("id", mergeId).single(),
+  ]);
+  if (!keep || !merge) throw new Error("Contacto no encontrado.");
+
+  const movedPatterns = (merge.contact_concepts as { pattern: string }[]).map((c) => c.pattern);
+  if (movedPatterns.length) {
+    const { error } = await supabase.from("contact_concepts").update({ contact_id: keepId }).in("pattern", movedPatterns);
+    if (error) throw new Error(error.message);
+  }
+
+  const { error: renameError } = await supabase.from("transactions").update({ contact: keep.label }).eq("contact", merge.label);
+  if (renameError) throw new Error(renameError.message);
+
+  const updated = await applyPatternsToTransactions(supabase, new Set(movedPatterns), keep);
+
+  const { error: deleteError } = await supabase.from("contacts").delete().eq("id", mergeId);
+  if (deleteError) throw new Error(deleteError.message);
+
+  revalidateTag("transactions");
+  return { updated };
+}
+
 /** Añade un patrón (concepto bancario) más que identifique a un contacto ya existente, p. ej.
  * cuando una empresa factura con un texto distinto al habitual. */
 export async function addPatternToContact(contactId: number, pattern: string): Promise<void> {
@@ -494,6 +546,7 @@ export type NewContactDraft = {
   category: string | null;
   ivaRate: number;
   retencionRate: number;
+  noTax?: boolean;
   group?: string | null;
   attachToContactId: number | null;
 };
@@ -531,7 +584,7 @@ export async function saveNewContacts(drafts: NewContactDraft[]): Promise<{ upda
     } else if (d.action === "create") {
       const { data: contact, error } = await supabase
         .from("contacts")
-        .insert({ label: d.label, category: d.category, iva_rate: d.ivaRate, retencion_rate: d.retencionRate, contact_group: d.group ?? "proveedor" })
+        .insert({ label: d.label, category: d.category, iva_rate: d.ivaRate, retencion_rate: d.retencionRate, no_tax: d.noTax ?? false, contact_group: d.group ?? "proveedor" })
         .select("id, category, iva_rate, retencion_rate")
         .single();
       if (error) throw new Error(error.message);

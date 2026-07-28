@@ -2,14 +2,14 @@ import { loadCategories } from "@/lib/categories";
 import { loadBusinessEvents } from "@/lib/businessEvents";
 import { loadCategoryCounts } from "@/lib/transactions";
 import { getPricingReport } from "@/lib/stripePayments";
-import { getContacts, getContactsStats, recomputeContactsFromBankDetails, cleanupContactPatterns } from "@/app/transacciones/actions";
+import { getContacts, getContactsStats, recomputeContactsFromBankDetails, cleanupContactPatterns, getDismissedContactDuplicates } from "@/app/transacciones/actions";
 import ConfiguracionTabs from "./ConfiguracionTabs";
 import MobileNav from "@/app/components/MobileNav";
 
 export const dynamic = "force-dynamic";
 
 export default async function ConfiguracionPage() {
-  const [categories, events, categoryCounts, contacts, contactStats, pendingRecompute, pendingCleanup, pricingRows] = await Promise.all([
+  const [categories, events, categoryCounts, contacts, contactStats, pendingRecompute, pendingCleanup, pricingRows, dismissedDuplicates] = await Promise.all([
     loadCategories(),
     loadBusinessEvents(),
     loadCategoryCounts(),
@@ -18,6 +18,7 @@ export default async function ConfiguracionPage() {
     recomputeContactsFromBankDetails(true),
     cleanupContactPatterns(true),
     getPricingReport(),
+    getDismissedContactDuplicates(),
   ]);
 
   return (
@@ -38,6 +39,7 @@ export default async function ConfiguracionPage() {
           pendingRecomputeCount={pendingRecompute.updated}
           pendingCleanupCount={pendingCleanup.updated + pendingCleanup.merged}
           pricingRows={pricingRows}
+          dismissedDuplicates={dismissedDuplicates}
         />
       </main>
     </div>

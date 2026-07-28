@@ -5,9 +5,11 @@ import type { Category } from "@/lib/categories";
 import { contactKeyFor } from "@/lib/contactRules";
 import { normalizeText } from "@/lib/normalizeText";
 import { CONTACT_GROUP_ORDER, CONTACT_GROUP_LABELS, contactGroupOf, type ContactGroup } from "@/lib/contactGroups";
+import { findDuplicatePairs, duplicateKey } from "@/lib/duplicateContacts";
 import {
   type Contact, type ContactStats, updateContact, deleteContact, applyContactToExisting,
   addPatternToContact, removeContactPattern, recomputeContactsFromBankDetails, cleanupContactPatterns,
+  dismissContactDuplicate, mergeContacts,
 } from "@/app/transacciones/actions";
 import Drawer from "@/app/components/Drawer";
 import Button from "@/app/components/Button";
@@ -15,6 +17,7 @@ import ChipsInput from "@/app/components/ChipsInput";
 import { CategoryPill } from "@/app/transacciones/TransaccionesList";
 import NewContactDrawer, { AutomationIcon } from "@/app/transacciones/NewContactDrawer";
 import ContactosManagerV2 from "./ContactosManagerV2";
+import ContactDuplicateDrawer from "./ContactDuplicateDrawer";
 
 const PAGE_SIZE = 25;
 
@@ -296,12 +299,13 @@ function ContactDetailDrawer({ contact, categories, stats, onChange, onRemove, o
   );
 }
 
-export default function ContactosManager({ contacts: initialContacts, categories, contactStats, pendingRecomputeCount, pendingCleanupCount }: {
+export default function ContactosManager({ contacts: initialContacts, categories, contactStats, pendingRecomputeCount, pendingCleanupCount, dismissedDuplicates: initialDismissed }: {
   contacts: Contact[];
   categories: Category[];
   contactStats: Record<number, ContactStats>;
   pendingRecomputeCount: number;
   pendingCleanupCount: number;
+  dismissedDuplicates: string[];
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -319,6 +323,8 @@ export default function ContactosManager({ contacts: initialContacts, categories
     return raw ? parseInt(raw, 10) : null;
   });
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [dismissed, setDismissed] = useState<Set<string>>(() => new Set(initialDismissed));
+  const [duplicatePair, setDuplicatePair] = useState<{ aId: number; bId: number } | null>(null);
   const [, startTransition] = useTransition();
 
   function toggleSelectContact(id: number) {
@@ -403,6 +409,26 @@ export default function ContactosManager({ contacts: initialContacts, categories
     startTransition(() => { deleteContact(id); });
   }
 
+  async function handleDismissDuplicate(aId: number, bId: number) {
+    setDismissed((prev) => new Set(prev).add(duplicateKey(aId, bId)));
+    setDuplicatePair(null);
+    await dismissContactDuplicate(aId, bId);
+  }
+
+  async function handleMergeDuplicate(keepId: number, mergeId: number) {
+    const merged = contacts.find((c) => c.id === mergeId);
+    if (!merged) return;
+    setContacts((prev) =>
+      prev
+        .filter((c) => c.id !== mergeId)
+        .map((c) => (c.id === keepId ? { ...c, patterns: [...new Set([...c.patterns, ...merged.patterns])] } : c)),
+    );
+    setDuplicatePair(null);
+    if (selectedId === mergeId) setSelectedId(null);
+    await mergeContacts(keepId, mergeId);
+    router.refresh();
+  }
+
   const groupCounts = useMemo(() => {
     const counts: Record<ContactGroup, number> = { proveedor: 0, instructor: 0, socio: 0 };
     for (const c of contacts) counts[contactGroupOf(c.label, c.group)] += 1;
@@ -424,6 +450,22 @@ export default function ContactosManager({ contacts: initialContacts, categories
 
   const selected = selectedId !== null ? contacts.find((c) => c.id === selectedId) ?? null : null;
 
+  // Detección de posibles duplicados (por nombre parecido o mismos conceptos bancarios),
+  // descontando los pares ya marcados a mano como "no está duplicado".
+  const duplicateMatchOf = useMemo(() => {
+    const map = new Map<number, number>();
+    for (const p of findDuplicatePairs(contacts)) {
+      if (dismissed.has(duplicateKey(p.aId, p.bId))) continue;
+      if (!map.has(p.aId)) map.set(p.aId, p.bId);
+      if (!map.has(p.bId)) map.set(p.bId, p.aId);
+    }
+    return map;
+  }, [contacts, dismissed]);
+
+  const duplicateContacts = duplicatePair
+    ? { a: contacts.find((c) => c.id === duplicatePair.aId), b: contacts.find((c) => c.id === duplicatePair.bId) }
+    : null;
+
   return (
     <div>
       <ContactosManagerV2
@@ -440,6 +482,8 @@ export default function ContactosManager({ contacts: initialContacts, categories
         categories={categories}
         contactStats={contactStats}
         onRowClick={(id) => setSelectedId(id)}
+        duplicateMatchOf={duplicateMatchOf}
+        onOpenDuplicate={(aId, bId) => setDuplicatePair({ aId, bId })}
         onViewTransactions={(c) => router.push(`/transacciones?buscar=${encodeURIComponent(c.label)}`)}
         onNewContact={() => setCreating(true)}
         onCleanup={handleCleanup}
@@ -478,6 +522,19 @@ export default function ContactosManager({ contacts: initialContacts, categories
           onChange={(patch) => patchContact(selected.id, patch)}
           onRemove={() => removeContact(selected.id)}
           onClose={() => setSelectedId(null)}
+        />
+      )}
+
+      {duplicateContacts?.a && duplicateContacts?.b && (
+        <ContactDuplicateDrawer
+          contactA={duplicateContacts.a}
+          contactB={duplicateContacts.b}
+          statsA={contactStats[duplicateContacts.a.id]}
+          statsB={contactStats[duplicateContacts.b.id]}
+          categories={categories}
+          onMerge={handleMergeDuplicate}
+          onDismiss={() => handleDismissDuplicate(duplicateContacts.a!.id, duplicateContacts.b!.id)}
+          onClose={() => setDuplicatePair(null)}
         />
       )}
     </div>

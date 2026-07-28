@@ -28,6 +28,8 @@ type Props = {
   categories: Category[];
   contactStats: Record<number, ContactStats>;
   onRowClick: (id: number) => void;
+  duplicateMatchOf: Map<number, number>;
+  onOpenDuplicate: (aId: number, bId: number) => void;
   onViewTransactions: (contact: Contact) => void;
   onNewContact: () => void;
   onCleanup: () => void;
@@ -49,6 +51,24 @@ type Props = {
 
 const IVA_RATES = [21, 10, 4];
 const IRPF_RATES = [15, 7, 19];
+
+/** Aviso de posible contacto duplicado (mismo nombre parecido o mismos conceptos bancarios,
+ * ver lib/duplicateContacts.ts). Al tocarlo abre el drawer de comparación en vez del detalle
+ * normal del contacto. */
+function DuplicateBadge({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={(e) => { e.stopPropagation(); onClick(); }}
+      className="shrink-0 inline-flex items-center gap-1 bg-warning/10 text-warning border border-warning/25 rounded-full px-2 py-[2px] text-[10.5px] font-semibold whitespace-nowrap hover:bg-warning/15 transition-colors"
+    >
+      <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+      </svg>
+      Posible duplicado
+    </button>
+  );
+}
 
 /** Barra flotante de acciones masivas. En escritorio la selección se activa con el checkbox
  * al hover; en móvil con el modo selección (tocar una fila la marca). Misma UI que las barras
@@ -141,7 +161,7 @@ function BulkActionBarV2({
 
 export default function ContactosManagerV2({
   search, onSearchChange, groupFilter, onGroupFilterChange, groupCounts, rows, totalCount, page, pageSize, onPageChange,
-  categories, contactStats, onRowClick, onViewTransactions, onNewContact, onCleanup, cleaning, cleaned, onRecompute, recomputing, recomputed,
+  categories, contactStats, onRowClick, duplicateMatchOf, onOpenDuplicate, onViewTransactions, onNewContact, onCleanup, cleaning, cleaned, onRecompute, recomputing, recomputed,
   pendingRecomputeCount, pendingCleanupCount,
   selectedIds, onToggleSelect, onClearSelection, onBulkDelete, onBulkSetIva, onBulkSetRetencion, onBulkSetCategory,
 }: Props) {
@@ -243,6 +263,7 @@ export default function ContactosManagerV2({
             const lastDate = stats?.latest?.[0]?.date;
             const bothMissing = !c.noTax && !(c.ivaRate > 0) && !(c.retencionRate > 0);
             const isSelected = selectedIds.has(c.id);
+            const duplicateId = duplicateMatchOf.get(c.id) ?? null;
             return (
               <div key={c.id}>
                 {/* Fila escritorio */}
@@ -269,7 +290,12 @@ export default function ContactosManagerV2({
                           />
                         </label>
                       </span>
-                      <p className="text-[13.5px] font-medium text-navy truncate">{c.label}</p>
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <p className="text-[13.5px] font-medium text-navy truncate">{c.label}</p>
+                        {duplicateId != null && (
+                          <DuplicateBadge onClick={() => onOpenDuplicate(c.id, duplicateId)} />
+                        )}
+                      </div>
                     </div>
                     <div><CategoryBadge category={c.category} categories={categories} /></div>
                     <div><TaxBadgeV2 value={c.ivaRate} isError={bothMissing} zeroIsExplicit={c.noTax} /></div>
@@ -308,6 +334,9 @@ export default function ContactosManagerV2({
                   <div className="flex-1 min-w-0">
                     <p className="text-[14px] font-medium text-navy truncate">{c.label}</p>
                     <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                      {duplicateId != null && (
+                        <DuplicateBadge onClick={() => onOpenDuplicate(c.id, duplicateId)} />
+                      )}
                       <CategoryBadge category={c.category} categories={categories} />
                       {bothMissing ? (
                         <TaxBadgeV2 value={0} isError />

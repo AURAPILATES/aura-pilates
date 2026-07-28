@@ -30,9 +30,10 @@ type Props = {
   pendingRecomputeCount: number;
   pendingCleanupCount: number;
   pricingRows: PricingRow[];
+  dismissedDuplicates: string[];
 };
 
-export default function ConfiguracionTabs({ categories, events, categoryCounts, contacts, contactStats, pendingRecomputeCount, pendingCleanupCount, pricingRows }: Props) {
+export default function ConfiguracionTabs({ categories, events, categoryCounts, contacts, contactStats, pendingRecomputeCount, pendingCleanupCount, pricingRows, dismissedDuplicates }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialTab = (["contactos", "historial", "precios"] as const).find((t) => t === searchParams.get("tab")) ?? "categorias";
@@ -55,6 +56,7 @@ export default function ConfiguracionTabs({ categories, events, categoryCounts, 
           contactStats={contactStats}
           pendingRecomputeCount={pendingRecomputeCount}
           pendingCleanupCount={pendingCleanupCount}
+          dismissedDuplicates={dismissedDuplicates}
         />
       ) : tab === "precios" ? (
         <PreciosViewer rows={pricingRows} />

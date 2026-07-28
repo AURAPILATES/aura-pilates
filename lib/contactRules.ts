@@ -24,7 +24,7 @@ function looksLikeCode(word: string): boolean {
 /** Sufijos genéricos de forma jurídica o términos bancarios que el extracto añade pero que no
  * identifican al contacto (GmbH, S.L., "client"...). No es identificación de empresa, solo ruido
  * a quitar antes de guardar el patrón de coincidencia. */
-const NOISE_WORDS = new Set([
+export const NOISE_WORDS = new Set([
   "gmbh", "ltd", "inc", "llc", "corp", "plc", "srl", "kg", "ag", "nv", "bv", "co",
   "sl", "sa", "slu", "sau", "sll", "scp",
   "client", "cliente", "clientes", "sucursal",
