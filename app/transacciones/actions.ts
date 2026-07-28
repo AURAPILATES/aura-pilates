@@ -15,7 +15,16 @@ export type ImportRow = {
   bankDetails: string | null;
 };
 
-type ContactInfo = { label: string; category: string | null; iva_rate: number; retencion_rate: number };
+type ContactInfo = { label: string; category: string | null; iva_rate: number; retencion_rate: number; no_tax?: boolean };
+
+/** Tipos efectivos de IVA/retención de un contacto: si tiene marcado "Sin IVA ni retenciones"
+ * se ignoran los porcentajes guardados (por si se marcó la casilla después de rellenarlos, o
+ * se dejaron sin borrar) - así el checkbox se respeta en todos los sitios que copian estos
+ * tipos de un contacto a un movimiento (importación, asignación manual, fusión de contactos...). */
+function effectiveTaxRates(contact: { iva_rate: number; retencion_rate: number; no_tax?: boolean }): { iva_rate: number | null; retencion_rate: number | null } {
+  if (contact.no_tax) return { iva_rate: null, retencion_rate: null };
+  return { iva_rate: contact.iva_rate, retencion_rate: contact.retencion_rate };
+}
 
 function buildAutoCategory(categories: { value: string; auto_keywords: string | null }[]) {
   return function (row: ImportRow): string | null {
@@ -39,6 +48,7 @@ function buildRowInsert(
 ) {
   return function (row: ImportRow) {
     const contact = matchContact(contactKeyFor(row.concept, row.bankDetails), patterns);
+    const tax = contact ? effectiveTaxRates(contact) : { iva_rate: null, retencion_rate: null };
     return {
       date: row.date,
       value_date: row.valueDate,
@@ -48,8 +58,8 @@ function buildRowInsert(
       bank_details: row.bankDetails,
       contact: contact?.label ?? null,
       category: contact?.category ?? autoCategory(row),
-      iva_rate: contact ? contact.iva_rate : null,
-      retencion_rate: contact ? contact.retencion_rate : null,
+      iva_rate: tax.iva_rate,
+      retencion_rate: tax.retencion_rate,
     };
   };
 }
@@ -62,7 +72,7 @@ async function loadContactPatternMap(
 ): Promise<PatternEntry[]> {
   const { data } = await supabase
     .from("contact_concepts")
-    .select("pattern, contacts(label, category, iva_rate, retencion_rate)");
+    .select("pattern, contacts(label, category, iva_rate, retencion_rate, no_tax)");
   const entries: PatternEntry[] = [];
   for (const row of (data ?? []) as ContactConceptJoinRow[]) {
     const c = Array.isArray(row.contacts) ? row.contacts[0] : row.contacts;
@@ -239,7 +249,7 @@ export async function mergeContacts(keepId: number, mergeId: number): Promise<{ 
   const supabase = createServerClient();
 
   const [{ data: keep }, { data: merge }] = await Promise.all([
-    supabase.from("contacts").select("id, label, category, iva_rate, retencion_rate").eq("id", keepId).single(),
+    supabase.from("contacts").select("id, label, category, iva_rate, retencion_rate, no_tax").eq("id", keepId).single(),
     supabase.from("contacts").select("id, label, contact_concepts(pattern)").eq("id", mergeId).single(),
   ]);
   if (!keep || !merge) throw new Error("Contacto no encontrado.");
@@ -298,7 +308,7 @@ export async function ignorePatterns(patterns: string[]): Promise<void> {
 export async function applyPatternsToTransactions(
   supabase: ReturnType<typeof createServerClient>,
   patterns: Set<string>,
-  contact: { category: string | null; iva_rate: number; retencion_rate: number },
+  contact: { category: string | null; iva_rate: number; retencion_rate: number; no_tax?: boolean },
 ): Promise<number> {
   if (patterns.size === 0) return 0;
   const { data: txns } = await supabase
@@ -314,9 +324,10 @@ export async function applyPatternsToTransactions(
     .map((t: { id: string }) => t.id);
   if (matchingIds.length === 0) return 0;
 
+  const tax = effectiveTaxRates(contact);
   const { error } = await supabase
     .from("transactions")
-    .update({ category: contact.category, iva_rate: contact.iva_rate, retencion_rate: contact.retencion_rate })
+    .update({ category: contact.category, iva_rate: tax.iva_rate, retencion_rate: tax.retencion_rate })
     .in("id", matchingIds);
   if (error) throw new Error(error.message);
   return matchingIds.length;
@@ -369,7 +380,7 @@ export async function applyContactToExisting(contactId: number): Promise<{ updat
   const supabase = createServerClient();
   const { data: contact } = await supabase
     .from("contacts")
-    .select("category, iva_rate, retencion_rate, contact_concepts(pattern)")
+    .select("category, iva_rate, retencion_rate, no_tax, contact_concepts(pattern)")
     .eq("id", contactId)
     .single();
   if (!contact) return { updated: 0 };
@@ -464,7 +475,7 @@ export async function cleanupContactPatterns(dryRun = false): Promise<{ updated:
   return { updated, merged };
 }
 
-export type ResolvedContact = { id: number; category: string | null; iva_rate: number; retencion_rate: number };
+export type ResolvedContact = { id: number; category: string | null; iva_rate: number; retencion_rate: number; no_tax?: boolean };
 
 /** Busca un contacto por nombre (sin distinguir mayúsculas); si no existe lo crea, y registra
  * `pattern` (concepto + más datos, ya limpios) como uno de sus conceptos de reconocimiento -
@@ -477,7 +488,7 @@ export async function resolveOrCreateContact(
 ): Promise<ResolvedContact> {
   const { data: existing } = await supabase
     .from("contacts")
-    .select("id, category, iva_rate, retencion_rate")
+    .select("id, category, iva_rate, retencion_rate, no_tax")
     .ilike("label", label)
     .maybeSingle();
 
@@ -486,7 +497,7 @@ export async function resolveOrCreateContact(
     const { data: created, error: createError } = await supabase
       .from("contacts")
       .insert({ label })
-      .select("id, category, iva_rate, retencion_rate")
+      .select("id, category, iva_rate, retencion_rate, no_tax")
       .single();
     if (createError) throw new Error(createError.message);
     contact = created;
@@ -527,10 +538,11 @@ export async function assignContactToTransaction(transactionId: string, contactL
 
   const pattern = contactKeyFor(t.concept, t.bank_details);
   const contact = await resolveOrCreateContact(supabase, label, pattern);
+  const tax = effectiveTaxRates(contact);
 
   const { error: updError } = await supabase
     .from("transactions")
-    .update({ contact: label, category: contact.category, iva_rate: contact.iva_rate, retencion_rate: contact.retencion_rate })
+    .update({ contact: label, category: contact.category, iva_rate: tax.iva_rate, retencion_rate: tax.retencion_rate })
     .eq("id", transactionId);
   if (updError) throw new Error(updError.message);
 
@@ -577,7 +589,7 @@ export async function saveNewContacts(drafts: NewContactDraft[]): Promise<{ upda
 
       const { data: contact } = await supabase
         .from("contacts")
-        .select("category, iva_rate, retencion_rate")
+        .select("category, iva_rate, retencion_rate, no_tax")
         .eq("id", d.attachToContactId)
         .single();
       if (contact) updated += await applyPatternsToTransactions(supabase, new Set(patterns), contact);
@@ -585,7 +597,7 @@ export async function saveNewContacts(drafts: NewContactDraft[]): Promise<{ upda
       const { data: contact, error } = await supabase
         .from("contacts")
         .insert({ label: d.label, category: d.category, iva_rate: d.ivaRate, retencion_rate: d.retencionRate, no_tax: d.noTax ?? false, contact_group: d.group ?? "proveedor" })
-        .select("id, category, iva_rate, retencion_rate")
+        .select("id, category, iva_rate, retencion_rate, no_tax")
         .single();
       if (error) throw new Error(error.message);
       const { error: patError } = await supabase
@@ -615,25 +627,45 @@ export async function importTransactions(
   const autoCategory = buildAutoCategory(cats ?? []);
   const buildRow = buildRowInsert(rulesByKey, autoCategory);
 
-  // Deduplicate: load existing in same date range
+  // Deduplicate: load existing in same date range. Un movimiento es "posible duplicado" si
+  // coincide en fecha e importe exactos con uno ya guardado, y su nombre (concepto o "más
+  // datos") coincide del todo o en parte con el del existente (concepto, "más datos" o
+  // contacto) - no hace falta que el origen/banco sea el mismo, ni que el texto sea idéntico
+  // carácter a carácter (el mismo movimiento puede llegar recortado distinto según el export).
   const dates = rows.map((r) => r.date).sort();
   const { data: existing } = await supabase
     .from("transactions")
-    .select("date, amount, concept, payment_method")
+    .select("date, amount, concept, bank_details, contact")
     .gte("date", dates[0])
     .lte("date", dates[dates.length - 1]);
 
-  const seen = new Set(
-    (existing ?? []).map(
-      (t: { date: string; amount: number; concept: string | null; payment_method: string }) =>
-        `${t.date}|${t.amount}|${(t.concept ?? "").toLowerCase().slice(0, 50)}|${t.payment_method}`,
-    ),
-  );
+  const existingByDateAmount = new Map<string, { concept: string | null; bank_details: string | null; contact: string | null }[]>();
+  for (const t of (existing ?? []) as { date: string; amount: number; concept: string | null; bank_details: string | null; contact: string | null }[]) {
+    const key = `${t.date}|${t.amount}`;
+    const list = existingByDateAmount.get(key) ?? [];
+    list.push(t);
+    existingByDateAmount.set(key, list);
+  }
+
+  function norm(s: string | null | undefined): string {
+    return (s ?? "").trim().toLowerCase();
+  }
+  function namesOverlap(a: string | null, b: string | null): boolean {
+    const na = norm(a);
+    const nb = norm(b);
+    if (!na || !nb) return false;
+    return na.includes(nb) || nb.includes(na);
+  }
+  function isDuplicate(r: ImportRow): boolean {
+    const candidates = existingByDateAmount.get(`${r.date}|${r.amount}`);
+    if (!candidates) return false;
+    const rowName = r.concept || r.bankDetails;
+    return candidates.some((t) => namesOverlap(rowName, t.concept) || namesOverlap(rowName, t.bank_details) || namesOverlap(rowName, t.contact));
+  }
 
   const skippedRows: ImportRow[] = [];
   const filteredRows = rows.filter((r) => {
-    const key = `${r.date}|${r.amount}|${(r.concept ?? "").toLowerCase().slice(0, 50)}|${paymentMethod}`;
-    if (seen.has(key)) { skippedRows.push(r); return false; }
+    if (isDuplicate(r)) { skippedRows.push(r); return false; }
     return true;
   });
   const toInsert = filteredRows.map((r) => ({
@@ -771,16 +803,74 @@ export async function updateTransactionAmount(id: string, amount: number) {
   revalidateTag("transactions");
 }
 
+export type RefundCandidate = { id: string; date: string; amount: number; label: string };
+
+/** Busca movimientos que podrían ser la contrapartida de `transactionId` al marcarlo como
+ * "Devolución": mismo importe en signo opuesto, dentro de una ventana de fechas cercana, sin
+ * enlazar ya con otro movimiento. Ordenados por cercanía de fecha (el más probable primero). */
+export async function findRefundCandidates(transactionId: string): Promise<RefundCandidate[]> {
+  const supabase = createServerClient();
+  const { data: source } = await supabase
+    .from("transactions")
+    .select("id, date, amount")
+    .eq("id", transactionId)
+    .single();
+  if (!source) return [];
+
+  const DAYS_WINDOW = 7;
+  const from = new Date(source.date + "T12:00:00");
+  from.setDate(from.getDate() - DAYS_WINDOW);
+  const to = new Date(source.date + "T12:00:00");
+  to.setDate(to.getDate() + DAYS_WINDOW);
+
+  const { data, error } = await supabase
+    .from("transactions")
+    .select("id, date, amount, concept, contact")
+    .eq("amount", -source.amount)
+    .is("deleted_at", null)
+    .is("refund_link_id", null)
+    .neq("id", transactionId)
+    .gte("date", from.toISOString().slice(0, 10))
+    .lte("date", to.toISOString().slice(0, 10));
+  if (error) throw new Error(error.message);
+
+  const sourceTime = new Date(source.date + "T12:00:00").getTime();
+  return ((data ?? []) as { id: string; date: string; amount: number; concept: string | null; contact: string | null }[])
+    .map((t) => ({ id: t.id, date: t.date, amount: t.amount, label: t.contact || t.concept || "Sin concepto" }))
+    .sort((a, b) =>
+      Math.abs(new Date(a.date + "T12:00:00").getTime() - sourceTime) -
+      Math.abs(new Date(b.date + "T12:00:00").getTime() - sourceTime),
+    );
+}
+
 /** Marca/desmarca un movimiento como "Devolución" (revierte otro, p.ej. una comisión y su
  * condonación) para que deje de contar como ingreso/gasto en Analítica y en los totales de
- * Transacciones, sin dejar de mostrarse en la lista. */
-export async function updateTransactionIsRefund(id: string, isRefund: boolean) {
+ * Transacciones, sin dejar de mostrarse en la lista. Si se marca con un `linkedId`, el
+ * movimiento contrario se marca y enlaza también (búsqueda ver findRefundCandidates); al
+ * desmarcar, si había un enlace, se desmarca y desenlaza el otro lado también - siempre que
+ * ese otro lado siga apuntando aquí (por si mientras tanto se reenlazó con un tercero). */
+export async function setTransactionRefund(id: string, isRefund: boolean, linkedId?: string | null): Promise<void> {
   const supabase = createServerClient();
+  const { data: current } = await supabase.from("transactions").select("refund_link_id").eq("id", id).single();
+  const prevLink = current?.refund_link_id ?? null;
+  const nextLink = isRefund ? (linkedId ?? null) : null;
+
   const { error } = await supabase
     .from("transactions")
-    .update({ is_refund: isRefund })
+    .update({ is_refund: isRefund, refund_link_id: nextLink })
     .eq("id", id);
   if (error) throw new Error(error.message);
+
+  if (prevLink && prevLink !== nextLink) {
+    const { data: other } = await supabase.from("transactions").select("refund_link_id").eq("id", prevLink).single();
+    if (other?.refund_link_id === id) {
+      await supabase.from("transactions").update({ is_refund: false, refund_link_id: null }).eq("id", prevLink);
+    }
+  }
+  if (nextLink) {
+    await supabase.from("transactions").update({ is_refund: true, refund_link_id: id }).eq("id", nextLink);
+  }
+
   revalidateTag("transactions");
 }
 
@@ -916,12 +1006,13 @@ export async function createRecurringExpenseFromTransaction(
   if (contactId != null) {
     const { data: contact, error: contactError } = await supabase
       .from("contacts")
-      .select("category, iva_rate, retencion_rate")
+      .select("category, iva_rate, retencion_rate, no_tax")
       .eq("id", contactId)
       .single();
     if (contactError || !contact) throw new Error(contactError?.message ?? "Contacto no encontrado");
-    ivaRate = contact.iva_rate;
-    retencionRate = contact.retencion_rate;
+    const tax = effectiveTaxRates(contact);
+    ivaRate = tax.iva_rate ?? 0;
+    retencionRate = tax.retencion_rate ?? 0;
     category = contact.category ?? t.category;
   }
 

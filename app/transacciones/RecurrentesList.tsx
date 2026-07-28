@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { ChevronRight } from "react-feather";
 import Drawer from "@/app/components/Drawer";
@@ -169,6 +170,61 @@ function EndOfRecurrenceFields({ value, onChange, disabled }: { value: EndFields
         />
       )}
     </div>
+  );
+}
+
+/** Al pulsar "Confirmar" en un pendiente directamente desde la tabla (sin abrir el detalle),
+ * preguntamos primero si la recurrencia lleva fecha de finalización o número de repeticiones -
+ * por defecto es indefinida. Reutiliza el mismo control "Finaliza" que los drawers para no
+ * divergir. Se monta en <body> vía portal para que el overlay `fixed` cubra el viewport aunque
+ * el botón que lo abre viva dentro de una tabla/tarjeta con contexto de posicionamiento. */
+function ConfirmEndDatePrompt({ row, onConfirm, onClose }: {
+  row: PendingSeriesRow;
+  onConfirm: (end: EndFields) => Promise<void>;
+  onClose: () => void;
+}) {
+  const [end, setEnd] = useState<EndFields>(defaultEnd());
+  const [saving, setSaving] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    const handler = (ev: KeyboardEvent) => { if (ev.key === "Escape") onClose(); };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [onClose]);
+
+  async function handleConfirm() {
+    setSaving(true);
+    try { await onConfirm(end); onClose(); } finally { setSaving(false); }
+  }
+
+  if (!mounted) return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-navy/20 backdrop-blur-[2px]" onClick={onClose} />
+      <div className="relative w-full max-w-sm bg-card rounded-2xl shadow-2xl overflow-hidden">
+        <div className="px-5 pt-5 pb-4 border-b border-navy/[0.07]">
+          <h2 className="text-base font-bold text-navy">¿Fecha de finalización?</h2>
+          <p className="text-xs text-navy/45 mt-0.5 truncate">
+            {row.label} · {fmtEUR(Math.abs(row.amount))} · <span className="capitalize">{row.period}</span>
+          </p>
+        </div>
+        <div className="px-5 py-4">
+          <EndOfRecurrenceFields value={end} onChange={setEnd} disabled={saving} />
+          <p className="text-xs text-navy/40 mt-3">Por defecto es indefinida. Puedes cambiarlo más tarde en el detalle.</p>
+        </div>
+        <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-navy/[0.07]">
+          <button onClick={onClose} disabled={saving} className="text-xs text-navy/50 hover:text-navy px-3 py-2 transition-colors disabled:opacity-40">
+            Cancelar
+          </button>
+          <Button onClick={handleConfirm} disabled={saving}>
+            {saving ? "Confirmando…" : "Confirmar recurrente"}
+          </Button>
+        </div>
+      </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -700,6 +756,8 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
   const [names, setNames] = useState<Record<string, string>>({});
   const [openPendingKey, setOpenPendingKey] = useState<string | null>(null);
   const [openConfirmedId, setOpenConfirmedId] = useState<number | null>(null);
+  // Pendiente para el que se pregunta la fecha de finalización antes de confirmarlo desde la tabla.
+  const [endPromptKey, setEndPromptKey] = useState<string | null>(null);
   const [creatingManual, setCreatingManual] = useState(false);
   const [manualPick, setManualPick] = useState<ContactPick>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -738,6 +796,7 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
 
   const openPendingRow = openPendingKey != null ? pending.find((p) => p.keys[0] === openPendingKey) ?? null : null;
   const openConfirmedRow = openConfirmedId != null ? confirmed.find((c) => c.expense.id === openConfirmedId) ?? null : null;
+  const endPromptRow = endPromptKey != null ? pending.find((p) => p.keys[0] === endPromptKey) ?? null : null;
 
   function periodFor(row: PendingSeriesRow): string {
     return periods[row.keys[0]] ?? row.period;
@@ -774,12 +833,12 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
     return 0;
   }
 
-  function buildConfirmRow(row: PendingSeriesRow): ConfirmRecurringRow | null {
+  function buildConfirmRow(row: PendingSeriesRow, endOverride?: EndFields): ConfirmRecurringRow | null {
     const pick = pickFor(row);
     if (!pick) return null;
     const period = periodFor(row);
     const periodDays = PERIOD_BUCKETS.find((b) => b.label === period)?.days ?? row.periodDays;
-    const end = endFor(row);
+    const end = endOverride ?? endFor(row);
     return {
       keys: row.keys,
       label: nameFor(row),
@@ -798,8 +857,8 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
     };
   }
 
-  async function confirmRow(row: PendingSeriesRow) {
-    const confirmRowPayload = buildConfirmRow(row);
+  async function confirmRow(row: PendingSeriesRow, endOverride?: EndFields) {
+    const confirmRowPayload = buildConfirmRow(row, endOverride);
     if (!confirmRowPayload) return;
     await confirmRecurringExpenses([confirmRowPayload]);
     router.refresh();
@@ -889,7 +948,7 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
         retencionRateFor={retencionRateFor}
         onOpenPending={(row) => setOpenPendingKey(row.keys[0])}
         onOpenConfirmed={(row) => setOpenConfirmedId(row.expense.id)}
-        onConfirmRow={confirmRow}
+        onConfirmRow={(row) => { setEndPromptKey(row.keys[0]); return Promise.resolve(); }}
         confirmedPage={confirmedPage}
         pageSize={PAGE_SIZE}
         onConfirmedPageChange={setConfirmedPage}
@@ -929,6 +988,14 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
           contacts={contacts}
           onClose={() => setOpenConfirmedId(null)}
           onOpenContactPicker={() => setPickerOpen(true)}
+        />
+      )}
+
+      {endPromptRow && (
+        <ConfirmEndDatePrompt
+          row={endPromptRow}
+          onConfirm={(end) => confirmRow(endPromptRow, end)}
+          onClose={() => setEndPromptKey(null)}
         />
       )}
 

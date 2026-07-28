@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { RotateCcw } from "react-feather";
 import Drawer from "@/app/components/Drawer";
 import Button from "@/app/components/Button";
 import Select from "@/app/components/Select";
@@ -13,7 +14,10 @@ import { CategoryPill, SourceAvatar } from "./TransaccionesList";
 import { ToggleGroup } from "@/components/charts";
 import ContactPicker from "./ContactPicker";
 import NewContactDrawer from "./NewContactDrawer";
-import { createRecurringExpenseFromTransaction, removeRecurringExpenseForTransaction, assignContactToTransaction, type Contact } from "./actions";
+import {
+  createRecurringExpenseFromTransaction, removeRecurringExpenseForTransaction, assignContactToTransaction,
+  findRefundCandidates, setTransactionRefund, type Contact, type RefundCandidate,
+} from "./actions";
 
 const PAYMENT_METHOD_OPTIONS: { value: PaymentMethod; label: string }[] = [
   { value: "efectivo", label: "Efectivo Aura" },
@@ -274,12 +278,121 @@ function MarkRecurringControl({
   );
 }
 
+/** Casilla "Es una devolución", al fondo del drawer. Al marcarla busca automáticamente el
+ * movimiento contrario (mismo importe en signo opuesto, fecha cercana): si hay uno solo lo
+ * enlaza y marca directamente; si hay varios, deja elegir; si no hay ninguno, marca solo este
+ * movimiento con un aviso. Al desmarcar, desenlaza también el otro lado. */
+function RefundControl({
+  transactionId,
+  initiallyRefund,
+  initialLinked,
+}: {
+  transactionId: string;
+  initiallyRefund: boolean;
+  initialLinked: RefundCandidate | null;
+}) {
+  const [checked, setChecked] = useState(initiallyRefund);
+  const [linked, setLinked] = useState<RefundCandidate | null>(initialLinked);
+  const [candidates, setCandidates] = useState<RefundCandidate[] | null>(null);
+  const [searching, setSearching] = useState(false);
+  const [noMatch, setNoMatch] = useState(false);
+  const router = useRouter();
+
+  async function mark(candidate: RefundCandidate | null) {
+    setLinked(candidate);
+    setNoMatch(!candidate);
+    await setTransactionRefund(transactionId, true, candidate?.id ?? null);
+    router.refresh();
+  }
+
+  async function handleCheck(next: boolean) {
+    setChecked(next);
+    setCandidates(null);
+    if (!next) {
+      setLinked(null);
+      setNoMatch(false);
+      await setTransactionRefund(transactionId, false);
+      router.refresh();
+      return;
+    }
+    setSearching(true);
+    try {
+      const found = await findRefundCandidates(transactionId);
+      if (found.length === 0) await mark(null);
+      else if (found.length === 1) await mark(found[0]);
+      else setCandidates(found);
+    } finally {
+      setSearching(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-2.5 pt-3 border-t border-navy/[0.06]">
+      <label className={`flex items-start gap-2.5 px-3 py-2.5 rounded-lg border cursor-pointer transition-colors ${
+        checked ? "border-primary/30 bg-primary/[0.05]" : "border-navy/[0.1] hover:bg-navy/[0.02]"
+      }`}>
+        <input
+          type="checkbox"
+          checked={checked}
+          disabled={searching}
+          onChange={(e) => handleCheck(e.target.checked)}
+          className="w-4 h-4 mt-0.5 rounded border-navy/[0.25] accent-primary focus:ring-2 focus:ring-primary/15 cursor-pointer disabled:opacity-50"
+        />
+        <span className="flex-1 min-w-0">
+          <span className="flex items-center gap-1.5 text-sm font-medium text-navy">
+            <RotateCcw size={13} className="shrink-0 text-primary" />
+            Es una devolución
+          </span>
+          <span className="block text-xs text-navy/45 mt-0.5">
+            {searching
+              ? "Buscando el movimiento contrario…"
+              : "No cuenta como ingreso ni gasto (p. ej. una comisión y su condonación en otro movimiento)"}
+          </span>
+        </span>
+      </label>
+
+      {linked && (
+        <p className="text-xs text-navy/55 bg-navy/[0.03] rounded-lg px-3 py-2 ml-1">
+          Vinculada con <strong className="text-navy">{linked.label}</strong> · {fmtDate(linked.date)} · {linked.amount > 0 ? "+" : "−"}{fmtAmt(linked.amount)}
+        </p>
+      )}
+      {noMatch && !linked && (
+        <p className="text-xs text-warning bg-warning/[0.08] rounded-lg px-3 py-2 ml-1">
+          No se ha encontrado un movimiento con importe opuesto cerca de esta fecha. Márcalo también a mano cuando lo veas.
+        </p>
+      )}
+      {candidates && (
+        <div className="rounded-lg border border-navy/[0.1] overflow-hidden ml-1">
+          <p className="text-[11px] text-navy/45 px-3 pt-2 pb-1">Varios movimientos coinciden - elige con cuál vincular:</p>
+          {candidates.map((c) => (
+            <button
+              key={c.id}
+              onClick={() => mark(c)}
+              className="w-full flex items-center justify-between gap-2 px-3 py-2 text-sm text-left hover:bg-navy/[0.03] border-t border-navy/[0.06] transition-colors"
+            >
+              <span className="min-w-0 truncate text-navy">{c.label}</span>
+              <span className="shrink-0 text-navy/50 text-xs whitespace-nowrap">{fmtDate(c.date)} · {c.amount > 0 ? "+" : "−"}{fmtAmt(c.amount)}</span>
+            </button>
+          ))}
+          <button
+            onClick={() => mark(null)}
+            className="w-full px-3 py-2 text-xs text-navy/45 hover:text-navy border-t border-navy/[0.06] transition-colors text-left"
+          >
+            Ninguno de estos - marcar solo este movimiento
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function TransactionDrawer({
   transaction,
   categories,
   contacts,
   recurringPeriod,
   recurringExpense,
+  linkedTransaction,
   onClose,
   onUpdateConcept,
   onUpdateBankDetails,
@@ -287,7 +400,6 @@ export default function TransactionDrawer({
   onUpdateDate,
   onUpdatePaymentMethod,
   onUpdateDirection,
-  onUpdateIsRefund,
   onDelete,
 }: {
   transaction: Transaction;
@@ -295,6 +407,7 @@ export default function TransactionDrawer({
   contacts: Contact[];
   recurringPeriod?: string;
   recurringExpense?: RecurringExpense | null;
+  linkedTransaction: RefundCandidate | null;
   onClose: () => void;
   onUpdateConcept: (id: string, value: string) => void;
   onUpdateBankDetails: (id: string, value: string) => void;
@@ -302,7 +415,6 @@ export default function TransactionDrawer({
   onUpdateDate: (id: string, value: string) => void;
   onUpdatePaymentMethod: (id: string, value: PaymentMethod) => void;
   onUpdateDirection: (id: string, isIncome: boolean) => void;
-  onUpdateIsRefund: (id: string, isRefund: boolean) => void;
   onDelete: (id: string) => void;
 }) {
   const t = transaction;
@@ -315,12 +427,6 @@ export default function TransactionDrawer({
     if (next === isIncome) return;
     setIsIncome(next);
     onUpdateDirection(t.id, next);
-  }
-
-  const [isRefund, setIsRefund] = useState(t.is_refund);
-  function changeIsRefund(next: boolean) {
-    setIsRefund(next);
-    onUpdateIsRefund(t.id, next);
   }
 
   return (
@@ -373,21 +479,6 @@ export default function TransactionDrawer({
             fullWidth
           />
         )}
-
-        <label className={`flex items-start gap-2.5 px-3 py-2.5 rounded-lg border cursor-pointer transition-colors ${
-          isRefund ? "border-primary/30 bg-primary/[0.05]" : "border-navy/[0.1] hover:bg-navy/[0.02]"
-        }`}>
-          <input
-            type="checkbox"
-            checked={isRefund}
-            onChange={(e) => changeIsRefund(e.target.checked)}
-            className="w-4 h-4 mt-0.5 rounded border-navy/[0.25] accent-primary focus:ring-2 focus:ring-primary/15 cursor-pointer"
-          />
-          <span>
-            <span className="block text-sm font-medium text-navy">Es una devolución</span>
-            <span className="block text-xs text-navy/45 mt-0.5">No cuenta como ingreso ni gasto (p. ej. una comisión y su condonación en otro movimiento)</span>
-          </span>
-        </label>
 
         <Field label="Concepto" value={t.concept ?? ""} onSave={(v) => onUpdateConcept(t.id, v)} />
         <Field label="Más datos" value={t.bank_details ?? ""} onSave={(v) => onUpdateBankDetails(t.id, v)} />
@@ -464,6 +555,12 @@ export default function TransactionDrawer({
           initialEndType={recurringExpense?.end_type}
           initialEndDate={recurringExpense?.end_date}
           initialEndCount={recurringExpense?.end_count}
+        />
+
+        <RefundControl
+          transactionId={t.id}
+          initiallyRefund={t.is_refund}
+          initialLinked={linkedTransaction}
         />
       </div>
     </Drawer>

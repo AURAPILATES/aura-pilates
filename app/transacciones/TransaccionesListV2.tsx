@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { RotateCcw } from "react-feather";
 import type { Transaction } from "@/lib/transactions";
 import { sortCategoriesHierarchical, categoryDisplayLabel, type Category } from "@/lib/categories";
 import DateFilter from "@/app/components/DateFilter";
@@ -17,7 +18,7 @@ import {
 import { CatIcon } from "./catIcons";
 import ImportButton from "./ImportButton";
 
-const COLS = "2.1fr .95fr 1.1fr .7fr .95fr";
+const COLS = "1.9fr 1.15fr 1.1fr .9fr .7fr .95fr";
 
 /** Barra flotante de acciones masivas, centrada abajo - aparece al seleccionar filas en la
  * tabla de escritorio (checkbox al hover, ver fila de escritorio más abajo). Solo escritorio:
@@ -376,8 +377,9 @@ export default function TransaccionesListV2({
                 Concepto<SortArrowV2 active={sortKey === "concept"} dir={sortDir} />
               </span>
             </span>
-            <span>Origen</span>
+            <span>Contacto</span>
             <span>Categoría</span>
+            <span>Origen</span>
             <span
               className={`flex items-center cursor-pointer select-none ${sortKey === "date" ? "text-navy" : ""}`}
               onClick={() => onToggleSort("date")}
@@ -415,8 +417,10 @@ export default function TransaccionesListV2({
                 </div>
                 {monthTxns.map((t) => {
                   const recurringPeriod = recurringPeriods[t.id];
-                  const primary = t.contact || t.concept || "-";
-                  const secondary = t.contact && t.concept && t.concept !== t.contact ? t.concept : null;
+                  const concept = t.concept || "—";
+                  // Escritorio: "más datos" (bank_details) va gris bajo el concepto; el contacto tiene columna propia.
+                  // Móvil (sin columnas): el contacto va gris como subtítulo bajo el concepto.
+                  const mobileContact = t.contact && t.contact !== t.concept ? t.contact : null;
                   const cat = t.category ? categories.find((c) => c.value === t.category) : undefined;
                   const accent = cat ? cat.text_color : CAT_FALLBACK.color;
                   const iconKey = cat ? cat.emoji : CAT_FALLBACK.emoji;
@@ -436,7 +440,7 @@ export default function TransaccionesListV2({
                                 className={`w-[30px] h-[30px] rounded-[8px] items-center justify-center ${isSelected ? "hidden" : "flex group-hover:hidden"}`}
                                 style={{ backgroundColor: accent }}
                               >
-                                <CatIcon iconKey={iconKey} name={cat?.label ?? primary} color="#fff" size={14} />
+                                <CatIcon iconKey={iconKey} name={cat?.label ?? concept} color="#fff" size={14} />
                               </span>
                               <label
                                 onClick={(e) => e.stopPropagation()}
@@ -452,27 +456,31 @@ export default function TransaccionesListV2({
                             </span>
                             <div className="min-w-0">
                               <div className="flex items-center gap-1.5 min-w-0">
-                                <p className="text-[13.5px] font-semibold text-navy truncate">{primary}</p>
+                                <p className="text-[13.5px] font-semibold text-navy truncate">{concept}</p>
                                 {recurringPeriod && (
                                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-navy/35">
                                     <path d="M1 4v6h6M23 20v-6h-6" /><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15" />
                                   </svg>
                                 )}
                                 {t.is_refund && (
-                                  <span className="shrink-0 text-[10px] font-semibold text-primary bg-primary/10 border border-primary/20 px-1.5 py-0.5 rounded-full whitespace-nowrap">
+                                  <span className="shrink-0 inline-flex items-center gap-1 text-[10px] font-semibold text-primary bg-primary/10 border border-primary/20 px-1.5 py-0.5 rounded-full whitespace-nowrap">
+                                    <RotateCcw size={9} className="shrink-0" />
                                     Devolución
                                   </span>
                                 )}
                               </div>
-                              {secondary && <p className="text-[11px] text-faint truncate">{secondary}</p>}
+                              {t.bank_details && <p className="text-[11px] text-faint truncate">{t.bank_details}</p>}
                             </div>
+                          </div>
+                          <div className="text-[12.5px] text-muted truncate min-w-0">
+                            {t.contact || <span className="text-faint">—</span>}
+                          </div>
+                          <div onClick={(e) => e.stopPropagation()}>
+                            <CategoryPill category={t.category} categories={categories} onChange={(cat) => onCategoryChange(t.id, cat)} />
                           </div>
                           <div className="flex items-center gap-1.5 text-[12px] text-muted min-w-0">
                             <OriginIcon method={t.payment_method} />
                             <span className="truncate">{originLabel(t.payment_method)}</span>
-                          </div>
-                          <div onClick={(e) => e.stopPropagation()}>
-                            <CategoryPill category={t.category} categories={categories} onChange={(cat) => onCategoryChange(t.id, cat)} />
                           </div>
                           <div className="text-[12.5px] text-muted whitespace-nowrap">{fmtDate(t.date)}</div>
                           <div className="text-right">
@@ -500,22 +508,23 @@ export default function TransaccionesListV2({
                           </span>
                         ) : (
                           <span className="w-[32px] h-[32px] shrink-0 rounded-[10px] flex items-center justify-center" style={{ backgroundColor: accent }}>
-                            <CatIcon iconKey={iconKey} name={cat?.label ?? primary} color="#fff" size={15} />
+                            <CatIcon iconKey={iconKey} name={cat?.label ?? concept} color="#fff" size={15} />
                           </span>
                         )}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5 min-w-0">
-                            <p className="text-[14px] font-semibold text-navy truncate">{primary}</p>
+                            <p className="text-[14px] font-semibold text-navy truncate">{concept}</p>
                             {recurringPeriod && (
                               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-navy/35">
                                 <path d="M1 4v6h6M23 20v-6h-6" /><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15" />
                               </svg>
                             )}
                           </div>
-                          {secondary && <p className="text-[12px] text-muted truncate mt-0.5">{secondary}</p>}
+                          {mobileContact && <p className="text-[12px] text-muted truncate mt-0.5">{mobileContact}</p>}
                           <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                             {t.is_refund && (
-                              <span className="shrink-0 text-[10px] font-semibold text-primary bg-primary/10 border border-primary/20 px-1.5 py-0.5 rounded-full whitespace-nowrap">
+                              <span className="shrink-0 inline-flex items-center gap-1 text-[10px] font-semibold text-primary bg-primary/10 border border-primary/20 px-1.5 py-0.5 rounded-full whitespace-nowrap">
+                                <RotateCcw size={9} className="shrink-0" />
                                 Devolución
                               </span>
                             )}
