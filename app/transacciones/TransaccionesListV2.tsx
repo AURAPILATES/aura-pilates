@@ -458,6 +458,11 @@ export default function TransaccionesListV2({
                                     <path d="M1 4v6h6M23 20v-6h-6" /><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15" />
                                   </svg>
                                 )}
+                                {t.is_refund && (
+                                  <span className="shrink-0 text-[10px] font-semibold text-primary bg-primary/10 border border-primary/20 px-1.5 py-0.5 rounded-full whitespace-nowrap">
+                                    Devolución
+                                  </span>
+                                )}
                               </div>
                               {secondary && <p className="text-[11px] text-faint truncate">{secondary}</p>}
                             </div>
@@ -509,6 +514,11 @@ export default function TransaccionesListV2({
                           </div>
                           {secondary && <p className="text-[12px] text-muted truncate mt-0.5">{secondary}</p>}
                           <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                            {t.is_refund && (
+                              <span className="shrink-0 text-[10px] font-semibold text-primary bg-primary/10 border border-primary/20 px-1.5 py-0.5 rounded-full whitespace-nowrap">
+                                Devolución
+                              </span>
+                            )}
                             <CategoryBadge category={t.category} categories={categories} hideIcon />
                           </div>
                         </div>

@@ -771,6 +771,19 @@ export async function updateTransactionAmount(id: string, amount: number) {
   revalidateTag("transactions");
 }
 
+/** Marca/desmarca un movimiento como "Devolución" (revierte otro, p.ej. una comisión y su
+ * condonación) para que deje de contar como ingreso/gasto en Analítica y en los totales de
+ * Transacciones, sin dejar de mostrarse en la lista. */
+export async function updateTransactionIsRefund(id: string, isRefund: boolean) {
+  const supabase = createServerClient();
+  const { error } = await supabase
+    .from("transactions")
+    .update({ is_refund: isRefund })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidateTag("transactions");
+}
+
 export async function softDeleteTransactions(ids: string[]): Promise<void> {
   if (!ids.length) return;
   const supabase = createServerClient();
