@@ -8,7 +8,7 @@ import { sortCategoriesHierarchical, categoryDisplayLabel } from "@/lib/categori
 import { normalizeText } from "@/lib/normalizeText";
 import { seriesKeyFor } from "@/lib/recurring";
 import type { RecurringExpense } from "@/lib/recurringExpenses";
-import { updateTransactionCategory, updateTransactionConcept, updateTransactionBankDetails, updateTransactionDate, updateTransactionPaymentMethod, updateTransactionAmount, updateTransactionIsRefund, softDeleteTransactions, type Contact } from "./actions";
+import { updateTransactionCategory, updateTransactionConcept, updateTransactionBankDetails, updateTransactionDate, updateTransactionPaymentMethod, updateTransactionAmount, softDeleteTransactions, type Contact, type RefundCandidate } from "./actions";
 import Select from "@/app/components/Select";
 import AddCashModal from "./AddCashModal";
 import PapeleraDrawer from "./PapeleraDrawer";
@@ -532,6 +532,13 @@ export default function TransaccionesList({
   const [amountMax, setAmountMax] = useState("");
   const [drawerTxnId, setDrawerTxnId] = useState<string | null>(null);
   const drawerTxn = drawerTxnId ? transactions.find((t) => t.id === drawerTxnId) ?? null : null;
+  // Movimiento vinculado como "Devolución" del que está abierto en el drawer, si tiene uno.
+  const drawerTxnLinked: RefundCandidate | null = drawerTxn?.refund_link_id
+    ? (() => {
+        const l = transactions.find((t) => t.id === drawerTxn.refund_link_id);
+        return l ? { id: l.id, date: l.date, amount: l.amount, label: l.contact || l.concept || "Sin concepto" } : null;
+      })()
+    : null;
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [page, setPage] = useState(0);
   // En móvil no hay paginador (la franja de meses necesita ver todos los meses a la vez para
@@ -663,9 +670,6 @@ export default function TransaccionesList({
     if (amount === txn.amount) return;
     startTransition(() => updateTransactionAmount(id, amount));
   }
-  function handleIsRefundChange(id: string, isRefund: boolean) {
-    startTransition(() => updateTransactionIsRefund(id, isRefund));
-  }
   function handleDeleteOne(id: string) {
     startTransition(async () => { await softDeleteTransactions([id]); });
   }
@@ -784,6 +788,7 @@ export default function TransaccionesList({
           contacts={contacts}
           recurringPeriod={recurringPeriods[drawerTxn.id]}
           recurringExpense={recurringExpenses.find((e) => e.key === seriesKeyFor(drawerTxn, allTransactions ?? transactions)) ?? null}
+          linkedTransaction={drawerTxnLinked}
           onClose={() => setDrawerTxnId(null)}
           onUpdateConcept={handleConceptChange}
           onUpdateBankDetails={handleBankDetailsChange}
@@ -791,7 +796,6 @@ export default function TransaccionesList({
           onUpdateDate={handleDateChange}
           onUpdatePaymentMethod={handlePaymentMethodChange}
           onUpdateDirection={handleDirectionChange}
-          onUpdateIsRefund={handleIsRefundChange}
           onDelete={handleDeleteOne}
         />
       )}

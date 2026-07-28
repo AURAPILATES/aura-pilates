@@ -29,6 +29,9 @@ export type Transaction = {
   /** Marca manual "Es una devolución" (p.ej. una comisión y su condonación en otro movimiento
    * aparte): se excluye de ingresos/gastos en todos los cálculos, ver isCashflowTransaction. */
   is_refund: boolean;
+  /** Movimiento contrario vinculado (mismo importe en signo opuesto), si se encontró/eligió al
+   * marcar "Es una devolución". Los dos lados se mantienen en sincronía, ver setTransactionRefund. */
+  refund_link_id: string | null;
 };
 
 /** Tipos de categoría que no representan un gasto real (ventas, aportaciones/financiación, traspasos internos). */

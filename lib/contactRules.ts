@@ -122,15 +122,25 @@ function isGenericLabel(s: string): boolean {
   return tokens.every((t) => GENERIC_WORDS.has(t));
 }
 
+/** ¿El texto entero es solo un código de banco (referencia de operación, IBAN parcial...) sin
+ * ninguna palabra que identifique al contacto? Ej. "PRES.32611770812". No sirve como nombre de
+ * contacto aunque no esté en GENERIC_WORDS (esa lista es de palabras genéricas, no de códigos). */
+function isCodeOnly(s: string): boolean {
+  const words = s.trim().replace(/[,\-–—*]/g, " ").split(/\s+/).filter(Boolean);
+  if (words.length === 0) return true;
+  return words.every((w) => looksLikeCode(w) || isNoiseWord(w));
+}
+
 /** Decide cuál de "concepto" o "más datos" identifica mejor al contacto real. En
  * transferencias suele ser "más datos" (ej. "SXPYDKKK -Stripe Technology Eu"); en recibos o
  * domiciliaciones suele ser el concepto (ej. "IBERDROLA CLIENT.") y "más datos" es solo una
  * descripción genérica que se repite igual para contactos distintos ("Recibo de suministros",
- * "Recibos varios"). Prioriza el que no sea genérico. */
+ * "Recibos varios"). Prioriza el que no sea genérico ni un código puro (ej. "PRES.32611770812",
+ * que el banco ya guarda como concepto bancario y no debe sugerirse como nombre). */
 export function pickIdentifyingText(concept: string | null, bankDetails: string | null): string {
   const c = concept?.trim() || "";
   const b = bankDetails?.trim() || "";
-  if (b && !isGenericLabel(b)) return b;
-  if (c && !isGenericLabel(c)) return c;
+  if (b && !isGenericLabel(b) && !isCodeOnly(b)) return b;
+  if (c && !isGenericLabel(c) && !isCodeOnly(c)) return c;
   return b || c;
 }

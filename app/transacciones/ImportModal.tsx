@@ -17,6 +17,7 @@ import Select from "@/app/components/Select";
 import ChipsInput from "@/app/components/ChipsInput";
 import { ToggleGroup } from "@/components/charts";
 import { CategoryPill } from "./TransaccionesList";
+import { AutomationIcon } from "./NewContactDrawer";
 
 const ORIGIN_OPTIONS: { value: PaymentMethod; label: string }[] = [
   { value: "banco", label: "CaixaBank" },
@@ -229,14 +230,20 @@ type ContactDraft = {
   noTax: boolean;
   group: ContactGroup;
   attachToContactId: number | null;
+  /** Fusionar con OTRO contacto nuevo detectado en este mismo archivo (en vez de uno ya
+   * guardado) - guarda su patrón. Mutuamente excluyente con attachToContactId. */
+  attachToDraftPattern: string | null;
+  /** Contacto ya guardado cuyo nombre coincide del todo o en parte - se preselecciona "Añadir
+   * a existente" con este contacto y se muestra primero en el desplegable. */
+  suggestedContactId: number | null;
 };
 
 type State =
   | { kind: "idle" }
+  | { kind: "preview"; rows: ImportRow[]; filename: string; drafts: ContactDraft[]; appliedCount?: number }
   | { kind: "review-contacts"; drafts: ContactDraft[]; rows: ImportRow[]; filename: string }
-  | { kind: "preview"; rows: ImportRow[]; filename: string; appliedCount?: number }
   | { kind: "importing" }
-  | { kind: "done"; imported: number; skipped: number; skippedRows: ImportRow[]; batchId: string }
+  | { kind: "done"; imported: number; skipped: number; skippedRows: ImportRow[]; batchId: string; appliedCount?: number }
   | { kind: "error"; message: string };
 
 /** Sugerencia de categoría por palabra clave para prerellenar el formulario de revisión -
@@ -263,6 +270,23 @@ function initialsOf(label: string): string {
   if (words.length === 0) return "?";
   if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
   return (words[0][0] + words[1][0]).toUpperCase();
+}
+
+/** ¿Podrían ser el mismo contacto? Coincidencia por nombre completo o parcial (uno contiene al
+ * otro), no exige igualdad exacta - así "Aura Pilates Stud" (ya guardado, recortado por el
+ * banco) reconoce "Aura Pilates Studio" (sugerido ahora). */
+function looksLikeSameContact(a: string, b: string): boolean {
+  const na = a.trim().toLowerCase();
+  const nb = b.trim().toLowerCase();
+  if (!na || !nb) return false;
+  return na.includes(nb) || nb.includes(na);
+}
+
+/** Contacto ya guardado que probablemente sea este mismo, por nombre o por alguno de sus
+ * conceptos bancarios ya reconocidos. */
+function findPossibleContact(cleaned: string, sample: string, contacts: Contact[]): Contact | undefined {
+  return contacts.find((c) => looksLikeSameContact(c.label, cleaned))
+    ?? contacts.find((c) => c.patterns.some((p) => looksLikeSameContact(p, sample)));
 }
 
 export default function ImportModal({ onClose }: { onClose: () => void }) {
@@ -327,31 +351,29 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
           if (!newContacts.has(pattern)) newContacts.set(pattern, row);
         }
 
-        if (newContacts.size === 0) {
-          setState({ kind: "preview", rows, filename: file.name });
-        } else {
-          const drafts: ContactDraft[] = [...newContacts.entries()].map(([pattern, row]) => {
-            const sample = pickIdentifyingText(row.concept, row.bankDetails) || "(sin concepto)";
-            const cleaned = cleanContactLabel(sample);
-            const bankPatterns = [cleanBankText(sample) || sample];
-            const existing = contacts.find((c) => c.label.toLowerCase() === cleaned.toLowerCase());
-            return {
-              pattern, bankPatterns, sample,
-              count: countByPattern.get(pattern) ?? 1,
-              lastDate: lastDateByPattern.get(pattern) ?? row.date,
-              totalAmount: sumByPattern.get(pattern) ?? row.amount,
-              action: existing ? "attach" : "create",
-              label: cleaned,
-              category: existing?.category ?? suggestCategory(row, categories),
-              ivaRate: existing?.ivaRate ?? 0,
-              retencionRate: existing?.retencionRate ?? 0,
-              noTax: existing?.noTax ?? false,
-              group: "proveedor",
-              attachToContactId: existing?.id ?? null,
-            };
-          });
-          setState({ kind: "review-contacts", drafts, rows, filename: file.name });
-        }
+        const drafts: ContactDraft[] = [...newContacts.entries()].map(([pattern, row]) => {
+          const sample = pickIdentifyingText(row.concept, row.bankDetails) || "(sin concepto)";
+          const cleaned = cleanContactLabel(sample);
+          const bankPatterns = [cleanBankText(sample) || sample];
+          const existing = findPossibleContact(cleaned, sample, contacts);
+          return {
+            pattern, bankPatterns, sample,
+            count: countByPattern.get(pattern) ?? 1,
+            lastDate: lastDateByPattern.get(pattern) ?? row.date,
+            totalAmount: sumByPattern.get(pattern) ?? row.amount,
+            action: existing ? "attach" : "create",
+            label: cleaned,
+            category: existing?.category ?? suggestCategory(row, categories),
+            ivaRate: existing?.ivaRate ?? 0,
+            retencionRate: existing?.retencionRate ?? 0,
+            noTax: existing?.noTax ?? false,
+            group: "proveedor",
+            attachToContactId: existing?.id ?? null,
+            attachToDraftPattern: null,
+            suggestedContactId: existing?.id ?? null,
+          };
+        });
+        setState({ kind: "preview", rows, filename: file.name, drafts });
       } catch (err) {
         setState({ kind: "error", message: err instanceof Error ? err.message : "Error al leer el archivo." });
       }
@@ -367,10 +389,23 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
     });
   }
 
-  async function handleConfirmContacts(drafts: ContactDraft[], rows: ImportRow[], filename: string) {
+  async function handleConfirmContacts(drafts: ContactDraft[], rows: ImportRow[]) {
     setSavingContacts(true);
     try {
-      const payload: NewContactDraft[] = drafts.map((d) => ({
+      // Resuelve fusiones: un draft con attachToDraftPattern apunta a OTRO contacto detectado
+      // en este mismo archivo (no uno ya guardado) - se absorbe en el destino (sus "conceptos
+      // para reconocerlo" pasan a él) y no genera su propio contacto.
+      const byPattern = new Map(drafts.map((d) => [d.pattern, { ...d, bankPatterns: [...d.bankPatterns] }]));
+      for (const d of drafts) {
+        if (d.action !== "attach" || !d.attachToDraftPattern) continue;
+        const target = byPattern.get(d.attachToDraftPattern);
+        if (target) target.bankPatterns = [...new Set([...target.bankPatterns, ...d.bankPatterns])];
+      }
+      const effectiveDrafts = drafts
+        .filter((d) => !(d.action === "attach" && d.attachToDraftPattern))
+        .map((d) => byPattern.get(d.pattern)!);
+
+      const payload: NewContactDraft[] = effectiveDrafts.map((d) => ({
         pattern: d.pattern,
         bankPatterns: d.bankPatterns.length ? d.bankPatterns : [d.pattern],
         action: d.action,
@@ -391,7 +426,7 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
         }
         return next;
       });
-      setState({ kind: "preview", rows, filename, appliedCount: updated });
+      await doImport(rows, updated);
     } finally {
       setSavingContacts(false);
     }
@@ -411,11 +446,11 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
     }
   }
 
-  async function doImport(rows: ImportRow[]) {
+  async function doImport(rows: ImportRow[], appliedCount?: number) {
     setState({ kind: "importing" });
     try {
       const res = await importTransactions(rows, origin);
-      setState({ kind: "done", imported: res.imported, skipped: res.skipped, skippedRows: res.skippedRows, batchId: res.batchId });
+      setState({ kind: "done", imported: res.imported, skipped: res.skipped, skippedRows: res.skippedRows, batchId: res.batchId, appliedCount });
       if (res.batchId) {
         getRecentImports().then(setHistorial).catch(() => {});
       }
@@ -496,7 +531,94 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
             </div>
           )}
 
-          {/* ── Review contacts: contactos nuevos detectados en el archivo ── */}
+          {/* ── Preview: resumen de lo que se va a importar (primero) ── */}
+          {state.kind === "preview" && (() => {
+            const { min, max } = dateRange(state.rows);
+            return (
+            <div>
+              <div className="flex items-center gap-3 p-4 bg-primary/[0.06] border border-primary/15 rounded-xl mb-4">
+                <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+                  </svg>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-navy truncate">{state.filename}</p>
+                  <p className="text-xs text-navy/55 mt-0.5">
+                    {fmtDateLong(min)} a {fmtDateLong(max)} · <strong className="text-navy/70 font-semibold">{state.rows.length}</strong> movimientos
+                  </p>
+                </div>
+              </div>
+              <div className="mb-4">
+                <p className="text-[11px] font-semibold text-navy/40 uppercase tracking-wider mb-1.5">Origen o banco</p>
+                <Select value={origin} onChange={(e) => setOrigin(e.target.value as PaymentMethod)}>
+                  {ORIGIN_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </Select>
+              </div>
+              <div className="border border-navy/[0.07] rounded-xl overflow-hidden mb-4">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="bg-navy/[0.02] border-b border-navy/[0.06]">
+                      <th className="text-left px-3 py-2 text-navy/45 font-semibold uppercase tracking-wide">Fecha</th>
+                      <th className="text-left px-3 py-2 text-navy/45 font-semibold uppercase tracking-wide">Concepto</th>
+                      <th className="text-right px-3 py-2 text-navy/45 font-semibold uppercase tracking-wide">Importe</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {state.rows.slice(0, 5).map((r, i) => (
+                      <tr key={i} className="border-b border-navy/[0.04] last:border-0">
+                        <td className="px-3 py-2 text-navy/60 whitespace-nowrap tabular-nums">{fmtDateLong(r.date)}</td>
+                        <td className="px-3 py-2 text-navy truncate max-w-[200px]">{r.concept ?? r.bankDetails ?? "-"}</td>
+                        <td className={`px-3 py-2 text-right font-semibold tabular-nums ${r.amount >= 0 ? "text-success" : "text-navy/70"}`}>
+                          {r.amount >= 0 ? "+" : "−"}{fmtAmt(r.amount)} €
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {state.rows.length > 5 && (
+                  <p className="text-center text-xs text-navy/35 py-2 border-t border-navy/[0.04]">
+                    y {state.rows.length - 5} más…
+                  </p>
+                )}
+              </div>
+              {state.drafts.length > 0 ? (
+                <p className="flex items-center gap-1.5 text-xs text-navy/45 mb-4">
+                  <UserPlus size={13} className="text-primary shrink-0" />
+                  Se {state.drafts.length === 1 ? "ha detectado" : "han detectado"} <strong className="text-navy font-semibold">{state.drafts.length}</strong> {state.drafts.length === 1 ? "contacto nuevo" : "contactos nuevos"} - los revisarás en el siguiente paso.
+                </p>
+              ) : (
+                <p className="text-xs text-navy/45 mb-4">
+                  Las categorías se asignarán automáticamente según las palabras clave configuradas. Puedes cambiarlas después.
+                </p>
+              )}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setState({ kind: "idle" })}
+                  className="flex-1 py-2.5 text-sm text-navy/60 border border-navy/15 rounded-lg hover:bg-navy/[0.03] transition-colors"
+                >
+                  Cambiar archivo
+                </button>
+                {state.drafts.length > 0 ? (
+                  <Button
+                    onClick={() => setState({ kind: "review-contacts", drafts: state.drafts, rows: state.rows, filename: state.filename })}
+                    className="flex-1"
+                  >
+                    Continuar
+                  </Button>
+                ) : (
+                  <Button onClick={() => doImport(state.rows)} className="flex-1">
+                    Importar {state.rows.length} movimientos
+                  </Button>
+                )}
+              </div>
+            </div>
+            );
+          })()}
+
+          {/* ── Review contacts: contactos nuevos detectados (segundo paso) ── */}
           {state.kind === "review-contacts" && (
             <div className="flex flex-col flex-1 min-h-0">
               <div className="shrink-0 mb-3">
@@ -511,6 +633,13 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
               <div className="space-y-4 mb-4 flex-1 min-h-0 overflow-y-auto pr-1">
                 {state.drafts.map((d) => {
                   const isIncome = d.totalAmount >= 0;
+                  const siblingCreateDrafts = state.drafts.filter((sd) => sd.pattern !== d.pattern && sd.action === "create");
+                  const hasAttachTargets = contacts.length > 0 || siblingCreateDrafts.length > 0;
+                  const sortedContacts = [...contacts].sort((a, b) => {
+                    if (a.id === d.suggestedContactId) return -1;
+                    if (b.id === d.suggestedContactId) return 1;
+                    return 0;
+                  });
                   return (
                   <div key={d.pattern} className="border border-navy/[0.08] rounded-xl p-5">
                     <div className="flex items-start justify-between gap-3 mb-4">
@@ -542,7 +671,7 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                       <div className="flex items-center justify-between gap-2">
                         <p className="text-xs text-navy/40 italic">Descartado - no se creará un contacto para esto.</p>
                         <button
-                          onClick={() => updateDraft(d.pattern, { action: contacts.some((c) => c.id === d.attachToContactId) ? "attach" : "create" })}
+                          onClick={() => updateDraft(d.pattern, { action: (d.attachToDraftPattern || contacts.some((c) => c.id === d.attachToContactId)) ? "attach" : "create" })}
                           className="text-xs text-primary hover:text-primary/75 transition-colors shrink-0 whitespace-nowrap"
                         >
                           Deshacer
@@ -551,11 +680,11 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                     ) : (
                       <>
                         <div className="flex items-center justify-between gap-2 mb-3.5">
-                          {contacts.length > 0 ? (
+                          {hasAttachTargets ? (
                             <ToggleGroup
                               value={d.action}
                               onChange={(v) => updateDraft(d.pattern, v === "attach"
-                                ? { action: "attach", attachToContactId: d.attachToContactId ?? contacts[0].id }
+                                ? { action: "attach", attachToContactId: d.attachToContactId ?? d.suggestedContactId ?? contacts[0]?.id ?? null }
                                 : { action: "create" })}
                               options={[
                                 { value: "create", label: "Contacto nuevo" },
@@ -575,15 +704,31 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                           <>
                             <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1.5">Contacto</p>
                             <Select
-                              value={d.attachToContactId ?? ""}
-                              onChange={(e) => updateDraft(d.pattern, { attachToContactId: parseInt(e.target.value, 10) })}
+                              value={d.attachToDraftPattern ? `draft:${d.attachToDraftPattern}` : d.attachToContactId != null ? `contact:${d.attachToContactId}` : ""}
+                              onChange={(e) => {
+                                const v = e.target.value;
+                                if (v.startsWith("draft:")) updateDraft(d.pattern, { attachToDraftPattern: v.slice(6), attachToContactId: null });
+                                else if (v.startsWith("contact:")) updateDraft(d.pattern, { attachToContactId: parseInt(v.slice(8), 10), attachToDraftPattern: null });
+                              }}
                               className="mb-3.5"
                             >
-                              {contacts.map((c) => (
-                                <option key={c.id} value={c.id}>{c.label}</option>
+                              {sortedContacts.map((c) => (
+                                <option key={`c-${c.id}`} value={`contact:${c.id}`}>
+                                  {c.label}{c.id === d.suggestedContactId ? " (posible coincidencia)" : ""}
+                                </option>
                               ))}
+                              {siblingCreateDrafts.length > 0 && (
+                                <optgroup label="Otros contactos de este archivo">
+                                  {siblingCreateDrafts.map((sd) => (
+                                    <option key={`d-${sd.pattern}`} value={`draft:${sd.pattern}`}>{sd.label || sd.sample}</option>
+                                  ))}
+                                </optgroup>
+                              )}
                             </Select>
-                            <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1.5">Conceptos para reconocerlo</p>
+                            <label className="flex items-center gap-1.5 text-[10px] font-semibold text-navy/40 uppercase tracking-wider mb-1.5">
+                              <AutomationIcon />
+                              Conceptos para reconocerlo
+                            </label>
                             <ChipsInput
                               values={d.bankPatterns}
                               onChange={(bankPatterns) => updateDraft(d.pattern, { bankPatterns })}
@@ -601,7 +746,10 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                               placeholder="Nombre del contacto"
                               className="w-full mb-3.5 px-2.5 py-1.5 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40"
                             />
-                            <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1.5">Conceptos para reconocerlo</p>
+                            <label className="flex items-center gap-1.5 text-[10px] font-semibold text-navy/40 uppercase tracking-wider mb-1.5">
+                              <AutomationIcon />
+                              Conceptos para reconocerlo
+                            </label>
                             <ChipsInput
                               values={d.bankPatterns}
                               onChange={(bankPatterns) => updateDraft(d.pattern, { bankPatterns })}
@@ -678,13 +826,14 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
               </div>
               <div className="flex gap-2 shrink-0">
                 <button
-                  onClick={() => setState({ kind: "idle" })}
-                  className="flex-1 py-2.5 text-sm text-navy/60 border border-navy/15 rounded-lg hover:bg-navy/[0.03] transition-colors"
+                  onClick={() => handleConfirmContacts(state.drafts.map((d) => ({ ...d, action: "ignore" as const })), state.rows)}
+                  disabled={savingContacts}
+                  className="flex-1 py-2.5 text-sm text-navy/60 border border-navy/15 rounded-lg hover:bg-navy/[0.03] transition-colors disabled:opacity-50"
                 >
                   Descartar todo
                 </button>
                 <Button
-                  onClick={() => handleConfirmContacts(state.drafts, state.rows, state.filename)}
+                  onClick={() => handleConfirmContacts(state.drafts, state.rows)}
                   disabled={savingContacts}
                   className="flex-1"
                 >
@@ -693,82 +842,6 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
               </div>
             </div>
           )}
-
-          {/* ── Preview ── */}
-          {state.kind === "preview" && (() => {
-            const { min, max } = dateRange(state.rows);
-            return (
-            <div>
-              <div className="flex items-center gap-3 p-4 bg-primary/[0.06] border border-primary/15 rounded-xl mb-4">
-                <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
-                  </svg>
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-navy truncate">{state.filename}</p>
-                  <p className="text-xs text-navy/55 mt-0.5">
-                    {fmtDateLong(min)} a {fmtDateLong(max)} · <strong className="text-navy/70 font-semibold">{state.rows.length}</strong> movimientos
-                  </p>
-                </div>
-              </div>
-              {!!state.appliedCount && (
-                <p className="text-xs text-primary/70 mb-3">
-                  {state.appliedCount} {state.appliedCount === 1 ? "movimiento anterior actualizado" : "movimientos anteriores actualizados"} con el contacto que acabas de confirmar.
-                </p>
-              )}
-              <div className="mb-4">
-                <p className="text-[11px] font-semibold text-navy/40 uppercase tracking-wider mb-1.5">Origen o banco</p>
-                <Select value={origin} onChange={(e) => setOrigin(e.target.value as PaymentMethod)}>
-                  {ORIGIN_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
-                  ))}
-                </Select>
-              </div>
-              <div className="border border-navy/[0.07] rounded-xl overflow-hidden mb-4">
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr className="bg-navy/[0.02] border-b border-navy/[0.06]">
-                      <th className="text-left px-3 py-2 text-navy/45 font-semibold uppercase tracking-wide">Fecha</th>
-                      <th className="text-left px-3 py-2 text-navy/45 font-semibold uppercase tracking-wide">Concepto</th>
-                      <th className="text-right px-3 py-2 text-navy/45 font-semibold uppercase tracking-wide">Importe</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {state.rows.slice(0, 5).map((r, i) => (
-                      <tr key={i} className="border-b border-navy/[0.04] last:border-0">
-                        <td className="px-3 py-2 text-navy/60 whitespace-nowrap tabular-nums">{fmtDateLong(r.date)}</td>
-                        <td className="px-3 py-2 text-navy truncate max-w-[200px]">{r.concept ?? r.bankDetails ?? "-"}</td>
-                        <td className={`px-3 py-2 text-right font-semibold tabular-nums ${r.amount >= 0 ? "text-success" : "text-navy/70"}`}>
-                          {r.amount >= 0 ? "+" : "−"}{fmtAmt(r.amount)} €
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {state.rows.length > 5 && (
-                  <p className="text-center text-xs text-navy/35 py-2 border-t border-navy/[0.04]">
-                    y {state.rows.length - 5} más…
-                  </p>
-                )}
-              </div>
-              <p className="text-xs text-navy/45 mb-4">
-                Las categorías se asignarán automáticamente según las palabras clave configuradas. Puedes cambiarlas después.
-              </p>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setState({ kind: "idle" })}
-                  className="flex-1 py-2.5 text-sm text-navy/60 border border-navy/15 rounded-lg hover:bg-navy/[0.03] transition-colors"
-                >
-                  Cambiar archivo
-                </button>
-                <Button onClick={() => doImport(state.rows)} className="flex-1">
-                  Importar {state.rows.length} movimientos
-                </Button>
-              </div>
-            </div>
-            );
-          })()}
 
           {/* ── Importing ── */}
           {state.kind === "importing" && (
@@ -789,6 +862,11 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
               <p className="text-base font-bold text-navy mb-1">{state.imported} movimientos importados</p>
               {state.skippedRows.length > 0 && (
                 <p className="text-sm text-navy/45">{state.skippedRows.length} posibles duplicados</p>
+              )}
+              {!!state.appliedCount && (
+                <p className="text-xs text-primary/70 mt-1">
+                  {state.appliedCount} {state.appliedCount === 1 ? "movimiento anterior actualizado" : "movimientos anteriores actualizados"} con los contactos que acabas de confirmar.
+                </p>
               )}
               <Button onClick={onClose} className="mt-5">
                 Cerrar
