@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import type { Transaction } from "@/lib/transactions";
 import { sortCategoriesHierarchical, categoryDisplayLabel, type Category } from "@/lib/categories";
 import DateFilter from "@/app/components/DateFilter";
@@ -189,10 +190,16 @@ export default function TransaccionesListV2({
   const pageIds = byMonth.flatMap(([, txns]) => txns.map((t) => t.id));
   const allPageSelected = pageIds.length > 0 && pageIds.every((id) => selectedIds.has(id));
   const somePageSelected = pageIds.some((id) => selectedIds.has(id));
-  const filtersActive = catFilters.length > 0 || onlyRecurring || onlyNoContact || originFilter !== "all" || amountMin !== "" || amountMax !== "";
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  // El rango de fechas vive en la URL (range/from/to), no en el estado de React.
+  const dateActive = (searchParams.get("range") ?? "all") !== "all" || !!searchParams.get("from") || !!searchParams.get("to");
+
+  const filtersActive = catFilters.length > 0 || onlyRecurring || onlyNoContact || originFilter !== "all" || amountMin !== "" || amountMax !== "" || dateActive;
   const activeFilterCount =
     (catFilters.length > 0 ? 1 : 0) + (onlyRecurring ? 1 : 0) + (onlyNoContact ? 1 : 0) + (originFilter !== "all" ? 1 : 0) +
-    (amountMin !== "" || amountMax !== "" ? 1 : 0) + (directionFilter !== "all" ? 1 : 0);
+    (amountMin !== "" || amountMax !== "" ? 1 : 0) + (directionFilter !== "all" ? 1 : 0) + (search.trim() ? 1 : 0) + (dateActive ? 1 : 0);
   function clearFilters() {
     onCatFiltersChange([]);
     if (onlyRecurring) onToggleOnlyRecurring();
@@ -202,6 +209,11 @@ export default function TransaccionesListV2({
     onAmountMaxChange("");
     onDirectionFilterChange("all");
     onSearchChange("");
+    // Filtros que viven en la URL: rango de fechas + deep-links (categoría/origen/búsqueda).
+    const params = new URLSearchParams(searchParams.toString());
+    for (const k of ["range", "from", "to", "categoria", "origen", "buscar"]) params.delete(k);
+    const qs = params.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname);
   }
 
   function scrollToMonth(key: string) {

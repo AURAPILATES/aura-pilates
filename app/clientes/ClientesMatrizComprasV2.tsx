@@ -74,7 +74,7 @@ export default function ClientesMatrizComprasV2({
   const filtersActive = !!productFilter || !!firstPurchaseFilter || !!purchaseCountFilter || onlyInactive || onlyUpsell;
   const activeFilterCount =
     (productFilter ? 1 : 0) + (firstPurchaseFilter ? 1 : 0) + (purchaseCountFilter ? 1 : 0) +
-    (onlyInactive ? 1 : 0) + (onlyUpsell ? 1 : 0);
+    (onlyInactive ? 1 : 0) + (onlyUpsell ? 1 : 0) + (search.trim() ? 1 : 0);
   function clearFilters() {
     onProductFilterChange("");
     onFirstPurchaseFilterChange("");
