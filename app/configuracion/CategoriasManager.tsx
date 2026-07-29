@@ -501,10 +501,9 @@ export default function CategoriasManager({
               <CategoryIcon iconKey={form.emoji} color={selectedColor} size={44} />
               <div className="flex-1 min-w-0">
                 <p className="text-base font-semibold text-navy truncate">
-                  {form.label || (editor.mode === "new" ? "Nueva categoría" : "Editar categoría")}
-                </p>
-                <p className="text-xs text-navy/40 font-mono mt-0.5">
-                  {editor.mode === "edit" ? editor.cat.value : "nueva"}
+                  {form.label || (editor.mode === "new"
+                    ? (form.parent_id ? "Nueva subcategoría" : "Nueva categoría")
+                    : "Editar categoría")}
                 </p>
               </div>
               <button
@@ -652,7 +651,7 @@ export default function CategoriasManager({
                       key={g}
                       disabled={hasParent}
                       onClick={() => setForm((f) => ({ ...f, group_type: g }))}
-                      className={`text-sm px-3 py-2 rounded-xl border transition-colors ${
+                      className={`text-xs px-3 py-2 rounded-xl border transition-colors ${
                         form.group_type === g
                           ? "border-navy bg-navy/[0.06] text-navy font-semibold"
                           : `border-navy/[0.10] text-navy/50 ${hasParent ? "" : "hover:border-navy/20"}`
@@ -679,7 +678,7 @@ export default function CategoriasManager({
                         key={eg}
                         disabled={hasParent}
                         onClick={() => setForm((f) => ({ ...f, economic_group: eg }))}
-                        className={`text-sm px-3 py-2 rounded-xl border transition-colors ${
+                        className={`text-xs px-3 py-2 rounded-xl border transition-colors ${
                           economicGroupOf(form.label, form.economic_group) === eg
                             ? "border-navy bg-navy/[0.06] text-navy font-semibold"
                             : `border-navy/[0.10] text-navy/50 ${hasParent ? "" : "hover:border-navy/20"}`

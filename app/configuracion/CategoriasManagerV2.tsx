@@ -101,7 +101,7 @@ export default function CategoriasManagerV2({
                       {cat.auto_keywords && <p className="text-[11.5px] text-faint truncate">{cat.auto_keywords}</p>}
                     </div>
                   </button>
-                  {depth < 2 && (
+                  {depth === 0 && (
                     <button
                       onClick={(e) => { e.stopPropagation(); onNewSubcategory(cat.id); }}
                       title={`Añadir subcategoría a "${cat.label}"`}
@@ -119,9 +119,6 @@ export default function CategoriasManagerV2({
                   >
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="11" cy="11" r="6.5" /><path d="M20 20l-3.8-3.8" /></svg>
                   </button>
-                  <span className="shrink-0 text-border">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 6l6 6-6 6" /></svg>
-                  </span>
                 </div>
               );
             })}
