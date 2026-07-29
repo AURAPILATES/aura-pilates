@@ -632,10 +632,13 @@ export async function importTransactions(
   // datos") coincide del todo o en parte con el del existente (concepto, "más datos" o
   // contacto) - no hace falta que el origen/banco sea el mismo, ni que el texto sea idéntico
   // carácter a carácter (el mismo movimiento puede llegar recortado distinto según el export).
+  // Solo se comparan movimientos vivos: un movimiento en la papelera (deleted_at != null) no
+  // debe bloquear su reimportación - si no, borrar y volver a importar deja el hueco vacío.
   const dates = rows.map((r) => r.date).sort();
   const { data: existing } = await supabase
     .from("transactions")
     .select("date, amount, concept, bank_details, contact")
+    .is("deleted_at", null)
     .gte("date", dates[0])
     .lte("date", dates[dates.length - 1]);
 

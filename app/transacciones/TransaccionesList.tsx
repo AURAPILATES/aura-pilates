@@ -639,8 +639,14 @@ export default function TransaccionesList({
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(t);
     }
-    return [...map.entries()].sort((a, b) => b[0].localeCompare(a[0]));
-  }, [pagedFlat]);
+    // Los bloques de mes siguen la dirección del orden por fecha: al ordenar fecha ascendente,
+    // el mes más antiguo va arriba (si no, las filas quedan ascendentes dentro de meses
+    // descendentes y la lista se ve descolocada). Por defecto y en otros órdenes: más reciente arriba.
+    const monthAsc = sortKey === "date" && sortDir === "asc";
+    return [...map.entries()].sort((a, b) =>
+      monthAsc ? a[0].localeCompare(b[0]) : b[0].localeCompare(a[0]),
+    );
+  }, [pagedFlat, sortKey, sortDir]);
 
   // Las devoluciones se siguen mostrando en la lista, pero no cuentan en los totales de arriba
   // (su contrapartida ya vive en otro movimiento aparte, ver isCashflowTransaction).
