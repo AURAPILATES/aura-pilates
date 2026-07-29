@@ -5,6 +5,7 @@ import { Edit2, Trash2, Plus } from "react-feather";
 import type { Budget } from "@/lib/budgets";
 import { saveBudgetsAction } from "@/app/actions/saveBudgets";
 import { ChartCard } from "@/components/charts";
+import ChipsInput from "@/app/components/ChipsInput";
 
 function fmtEur(n: number) {
   return n.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
@@ -25,7 +26,7 @@ export default function Financiacion({
   function addBudget() {
     setBudgets((prev) => [
       ...prev,
-      { id: crypto.randomUUID(), name: "", limit: 0, contactKeyword: "" },
+      { id: crypto.randomUUID(), name: "", limit: 0, contactKeyword: "", bankKeywords: [] },
     ]);
   }
 
@@ -33,7 +34,7 @@ export default function Financiacion({
     setBudgets((prev) => prev.filter((b) => b.id !== id));
   }
 
-  function updateBudget(id: string, field: keyof Budget, value: string | number) {
+  function updateBudget(id: string, field: keyof Budget, value: string | number | string[]) {
     setBudgets((prev) => prev.map((b) => (b.id === id ? { ...b, [field]: value } : b)));
   }
 
@@ -161,37 +162,47 @@ export default function Financiacion({
           )}
 
           {budgets.map((b) => (
-            <div key={b.id} className="flex flex-col sm:grid sm:grid-cols-[1fr_130px_160px_32px] gap-2 items-start sm:items-center">
-              <input
-                type="text"
-                value={b.name}
-                onChange={(e) => updateBudget(b.id, "name", e.target.value)}
-                placeholder="ej: Préstamo Caixabank 40k"
-                className="w-full text-sm border border-navy/[0.12] rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary/30 text-navy"
-              />
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={b.limit || ""}
-                onChange={(e) => updateBudget(b.id, "limit", parseFloat(e.target.value) || 0)}
-                placeholder="0.00"
-                className="w-full text-sm border border-navy/[0.12] rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary/30 text-navy tabular-nums"
-              />
-              <input
-                type="text"
-                value={b.contactKeyword}
-                onChange={(e) => updateBudget(b.id, "contactKeyword", e.target.value)}
-                placeholder="ej: Julia, TR, Caixabank…"
-                className="w-full text-sm border border-navy/[0.12] rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary/30 text-navy"
-              />
-              <button
-                onClick={() => deleteBudget(b.id)}
-                className="p-1.5 text-navy/25 hover:text-danger hover:bg-danger/5 rounded-lg transition-colors"
-                aria-label="Eliminar"
-              >
-                <Trash2 size={14} />
-              </button>
+            <div key={b.id} className="border border-navy/[0.08] rounded-xl p-3 space-y-2.5">
+              <div className="flex flex-col sm:grid sm:grid-cols-[1fr_130px_160px_32px] gap-2 items-start sm:items-center">
+                <input
+                  type="text"
+                  value={b.name}
+                  onChange={(e) => updateBudget(b.id, "name", e.target.value)}
+                  placeholder="ej: Préstamo Caixabank 40k"
+                  className="w-full text-sm border border-navy/[0.12] rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary/30 text-navy"
+                />
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={b.limit || ""}
+                  onChange={(e) => updateBudget(b.id, "limit", parseFloat(e.target.value) || 0)}
+                  placeholder="0.00"
+                  className="w-full text-sm border border-navy/[0.12] rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary/30 text-navy tabular-nums"
+                />
+                <input
+                  type="text"
+                  value={b.contactKeyword}
+                  onChange={(e) => updateBudget(b.id, "contactKeyword", e.target.value)}
+                  placeholder="ej: Julia, TR, Caixabank…"
+                  className="w-full text-sm border border-navy/[0.12] rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary/30 text-navy"
+                />
+                <button
+                  onClick={() => deleteBudget(b.id)}
+                  className="p-1.5 text-navy/25 hover:text-danger hover:bg-danger/5 rounded-lg transition-colors shrink-0"
+                  aria-label="Eliminar"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+              <div>
+                <p className="text-[11px] text-navy/40 uppercase tracking-wide mb-1">Palabras clave bancarias (opcional)</p>
+                <ChipsInput
+                  values={b.bankKeywords}
+                  onChange={(next) => updateBudget(b.id, "bankKeywords", next)}
+                  placeholder="ej: 3019-56-00, PRES.3… (Enter para añadir)"
+                />
+              </div>
             </div>
           ))}
 
@@ -206,6 +217,8 @@ export default function Financiacion({
           {budgets.length > 0 && (
             <p className="text-[11px] text-navy/35 pt-1 leading-relaxed">
               La clave de contacto se compara con el campo Contacto de tus transacciones bancarias (no distingue mayúsculas).
+              Las palabras clave bancarias se comparan directamente con el concepto y &quot;más datos&quot; del movimiento, sin pasar por
+              Contactos - úsalas cuando el banco mande un concepto genérico + una referencia que Contactos ignore por parecer un código.
             </p>
           )}
         </div>

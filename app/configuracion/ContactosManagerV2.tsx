@@ -12,7 +12,7 @@ import TaxBadgeV2 from "@/app/components/v2/TaxBadgeV2";
 import { tableHeadClassV2, tableRowClassV2, tableCardClassV2, gridColsV2 } from "@/app/components/v2/tableStylesV2";
 import { knownDomain, initials, fmtDate as fmtContactDate } from "./ContactosManager";
 
-const COLS = "2fr 1.3fr .6fr .6fr .7fr .8fr";
+const COLS = "2fr 1.3fr .6fr .6fr 1.3fr";
 
 type Props = {
   search: string;
@@ -250,8 +250,10 @@ export default function ContactosManagerV2({
             <span>Categoría</span>
             <span>IVA</span>
             <span>IRPF</span>
-            <span>Movim.</span>
-            <span className="text-right">Últ. mov.</span>
+            <span className="flex items-center justify-end gap-3 text-right">
+              <span>Movim.</span>
+              <span>Últ. mov.</span>
+            </span>
           </div>
         </div>
 
@@ -305,17 +307,19 @@ export default function ContactosManagerV2({
                     <div><CategoryBadge category={c.category} categories={categories} /></div>
                     <div><TaxBadgeV2 value={c.ivaRate} isError={bothMissing} zeroIsExplicit={c.noTax} /></div>
                     <div><TaxBadgeV2 value={c.retencionRate} isError={bothMissing} zeroIsExplicit={c.noTax} /></div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[12.5px] text-faint whitespace-nowrap shrink-0">{stats?.count ?? 0} trx</span>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); onViewTransactions(c); }}
-                        title={`Ver movimientos de "${c.label}"`}
-                        className="shrink-0 text-border hover:text-muted transition-colors"
-                      >
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="11" cy="11" r="6.5" /><path d="M20 20l-3.8-3.8" /></svg>
-                      </button>
+                    <div className="flex items-center justify-end gap-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[12.5px] text-faint whitespace-nowrap shrink-0">{stats?.count ?? 0} trx</span>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onViewTransactions(c); }}
+                          title={`Ver movimientos de "${c.label}"`}
+                          className="shrink-0 text-border hover:text-muted transition-colors"
+                        >
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="11" cy="11" r="6.5" /><path d="M20 20l-3.8-3.8" /></svg>
+                        </button>
+                      </div>
+                      <p className="text-[12.5px] text-muted whitespace-nowrap">{lastDate ? fmtContactDate(lastDate) : "-"}</p>
                     </div>
-                    <p className="text-right text-[12.5px] text-muted whitespace-nowrap">{lastDate ? fmtContactDate(lastDate) : "-"}</p>
                   </div>
                 </div>
 

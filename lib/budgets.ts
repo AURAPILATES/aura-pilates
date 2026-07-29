@@ -6,6 +6,10 @@ export type Budget = {
   name: string;
   limit: number;
   contactKeyword: string;
+  /** Palabras clave comparadas directamente contra concepto/"más datos" de cada movimiento
+   * (sin pasar por Contactos) - para bancos que mandan un concepto genérico + una referencia
+   * numérica que el reconocimiento de contactos descarta por parecer un código variable. */
+  bankKeywords: string[];
 };
 
 export const loadBudgetsCached = unstable_cache(
@@ -29,6 +33,7 @@ export async function loadBudgets(): Promise<Budget[]> {
     name: row.name,
     limit: Number(row.limit),
     contactKeyword: row.contact_keyword,
+    bankKeywords: ((row.bank_keywords ?? "") as string).split(",").map((s) => s.trim()).filter(Boolean),
   }));
 }
 
@@ -42,6 +47,7 @@ export async function saveBudgets(budgets: Budget[]): Promise<void> {
         name: b.name,
         limit: b.limit,
         contact_keyword: b.contactKeyword,
+        bank_keywords: b.bankKeywords.join(", ") || null,
         position: i,
       }))
     );
@@ -50,14 +56,21 @@ export async function saveBudgets(budgets: Budget[]): Promise<void> {
 
 export function computeSpent(
   budgets: Budget[],
-  txns: { contact: string | null; amount: number }[],
+  txns: { contact: string | null; concept: string | null; bank_details: string | null; amount: number }[],
 ): Record<string, number> {
   const result: Record<string, number> = {};
   for (const b of budgets) {
     const kw = b.contactKeyword.trim().toLowerCase();
-    if (!kw) { result[b.id] = 0; continue; }
+    const bankKws = b.bankKeywords.map((k) => k.trim().toLowerCase()).filter(Boolean);
+    if (!kw && bankKws.length === 0) { result[b.id] = 0; continue; }
     result[b.id] = txns
-      .filter((t) => t.contact?.toLowerCase().includes(kw))
+      .filter((t) => {
+        if (kw && t.contact?.toLowerCase().includes(kw)) return true;
+        if (bankKws.length === 0) return false;
+        const concept = t.concept?.toLowerCase() ?? "";
+        const details = t.bank_details?.toLowerCase() ?? "";
+        return bankKws.some((k) => concept.includes(k) || details.includes(k));
+      })
       .reduce((sum, t) => sum + Math.abs(t.amount), 0);
   }
   return result;

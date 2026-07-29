@@ -15,6 +15,7 @@ export default async function Analitica(props: {
   const sp = await props.searchParams;
 
   const { from: mainFrom, to: mainTo, compFrom, compTo, periodLabel, compDateRange } = resolveCalendarPeriod(sp);
+  const activeTab = sp.tab === "clientes" ? "clientes" : "ingresosGastos";
 
   return (
     <div>
@@ -26,7 +27,7 @@ export default async function Analitica(props: {
       </div>
 
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 pt-6 pb-16">
-        <Suspense fallback={<AnaliticaSkeleton />}>
+        <Suspense fallback={<AnaliticaSkeleton tab={activeTab} />}>
           <AnaliticaTabProvider>
             <AnaliticaTabNav />
 
@@ -34,7 +35,7 @@ export default async function Analitica(props: {
               <AnaliticaFilterBar />
             </Suspense>
 
-            <Suspense fallback={<AnaliticaSkeleton />}>
+            <Suspense fallback={<AnaliticaSkeleton tab={activeTab} />}>
               <AnaliticaLoader
                 mainFrom={mainFrom}
                 mainTo={mainTo}

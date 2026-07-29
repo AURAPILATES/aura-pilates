@@ -585,10 +585,18 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                 )}
               </div>
               {state.drafts.length > 0 ? (
-                <p className="flex items-center gap-1.5 text-xs text-navy/45 mb-4">
-                  <UserPlus size={13} className="text-primary shrink-0" />
-                  Se {state.drafts.length === 1 ? "ha detectado" : "han detectado"} <strong className="text-navy font-semibold">{state.drafts.length}</strong> {state.drafts.length === 1 ? "contacto nuevo" : "contactos nuevos"} - los revisarás en el siguiente paso.
-                </p>
+                <div className="flex items-center gap-3 mb-4 px-3.5 py-3 bg-primary/[0.06] border border-primary/15 rounded-xl">
+                  <span className="shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                    <UserPlus size={15} className="text-primary" />
+                  </span>
+                  <p className="text-xs text-navy/70 leading-snug">
+                    Se {state.drafts.length === 1 ? "ha detectado" : "han detectado"}{" "}
+                    <strong className="text-navy font-semibold">
+                      {state.drafts.length} {state.drafts.length === 1 ? "contacto nuevo" : "contactos nuevos"}
+                    </strong>
+                    . Los revisarás en el siguiente paso.
+                  </p>
+                </div>
               ) : (
                 <p className="text-xs text-navy/45 mb-4">
                   Las categorías se asignarán automáticamente según las palabras clave configuradas. Puedes cambiarlas después.
