@@ -1,5 +1,5 @@
 import { createServerClient } from "./supabase";
-import { unstable_cache } from "next/cache";
+import { unstable_cache, revalidateTag } from "next/cache";
 
 export type Budget = {
   id: string;
@@ -47,11 +47,12 @@ export async function saveBudgets(budgets: Budget[]): Promise<void> {
         name: b.name,
         limit: b.limit,
         contact_keyword: b.contactKeyword,
-        bank_keywords: b.bankKeywords.join(", ") || null,
+        bank_keywords: (b.bankKeywords ?? []).join(", ") || null,
         position: i,
       }))
     );
   }
+  revalidateTag("budgets");
 }
 
 export function computeSpent(
@@ -61,7 +62,9 @@ export function computeSpent(
   const result: Record<string, number> = {};
   for (const b of budgets) {
     const kw = b.contactKeyword.trim().toLowerCase();
-    const bankKws = b.bankKeywords.map((k) => k.trim().toLowerCase()).filter(Boolean);
+    // (b.bankKeywords ?? []): un Budget cacheado antes de añadir este campo (unstable_cache
+    // puede servir la forma vieja hasta que caduque/se resalve) no lo trae todavía.
+    const bankKws = (b.bankKeywords ?? []).map((k) => k.trim().toLowerCase()).filter(Boolean);
     if (!kw && bankKws.length === 0) { result[b.id] = 0; continue; }
     result[b.id] = txns
       .filter((t) => {

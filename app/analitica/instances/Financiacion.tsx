@@ -198,7 +198,7 @@ export default function Financiacion({
               <div>
                 <p className="text-[11px] text-navy/40 uppercase tracking-wide mb-1">Palabras clave bancarias (opcional)</p>
                 <ChipsInput
-                  values={b.bankKeywords}
+                  values={b.bankKeywords ?? []}
                   onChange={(next) => updateBudget(b.id, "bankKeywords", next)}
                   placeholder="ej: 3019-56-00, PRES.3… (Enter para añadir)"
                 />
