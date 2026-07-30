@@ -38,8 +38,10 @@ import { getSubscriptionsBaseV2, getActiveSubscriberEmailsV2 } from "@/lib/subsc
 import { getAtRiskV2, type AtRiskCustomerInfo } from "@/lib/atRiskV2";
 import { getTeacherStatsV2 } from "@/lib/teacherStatsV2";
 import { getTeacherConversionV2 } from "@/lib/teacherConversionV2";
+import { getSubscriberFirstClassV2 } from "@/lib/subscriberFirstClassV2";
 import RendimientoProfesoras from "./instances/RendimientoProfesoras";
 import ConversionProfesora from "./instances/ConversionProfesora";
+import PrimeraClaseSuscriptores from "./instances/PrimeraClaseSuscriptores";
 import { getMemberships, getProducts, getCustomers, getEvents } from "@/lib/momence";
 import { catalogFromMomence, revenueByProductByMonth } from "@/lib/productRevenue";
 import { computeSubscriptionCohorts, computeRetentionCohorts } from "@/lib/subscriptionCohort";
@@ -279,6 +281,9 @@ export default async function AnaliticaLoader({
   // ── Conversión por profesora: 1ª clase asistida (Momence v2) × volvió a pagar (Stripe) ──
   // Lee la asistencia capturada en class_bookings_v2; si aún no hay backfill, devuelve vacío.
   const teacherConversionV2 = await getTeacherConversionV2(salesAll).catch(() => null);
+
+  // ── Primera clase de los suscriptores (por profesora y franja horaria, Momence × Stripe) ──
+  const subscriberFirstClassV2 = await getSubscriberFirstClassV2(salesAll).catch(() => null);
 
   // ── MRR/ARR por suscripción (suscriptores activos reales en Momence) ──────
   const subscriptionTiers = subscriptionTiersFromMemberships(membershipsAll);
@@ -720,6 +725,7 @@ export default async function AnaliticaLoader({
               />
               <RendimientoProfesoras data={teacherStatsV2} dateRange={periodLabel} />
               <ConversionProfesora data={teacherConversionV2} />
+              <PrimeraClaseSuscriptores data={subscriberFirstClassV2} />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <PrimeraCompra summary={firstPurchaseSummary} />
                 <ClientesPaymentsBreakdown
