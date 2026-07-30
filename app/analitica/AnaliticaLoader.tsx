@@ -34,7 +34,7 @@ import Breakeven from "./instances/Breakeven";
 import { computeBreakeven } from "@/lib/breakeven";
 import ConversionPack from "./instances/ConversionPack";
 import { subscriptionTiersFromMemberships } from "@/lib/mrr";
-import { getSubscriptionsBaseV2 } from "@/lib/subscriptionsV2";
+import { getSubscriptionsBaseV2, getActiveSubscriberEmailsV2 } from "@/lib/subscriptionsV2";
 import { getAtRiskV2 } from "@/lib/atRiskV2";
 import { getMemberships, getProducts, getCustomers, getEvents } from "@/lib/momence";
 import { catalogFromMomence, revenueByProductByMonth } from "@/lib/productRevenue";
@@ -274,6 +274,8 @@ export default async function AnaliticaLoader({
   // Base real de suscripción desde el snapshot v2 (subscriber_snapshots_v2).
   const subscriptionsBaseV2 = await getSubscriptionsBaseV2(subscriptionTiers);
   const atRiskV2 = await getAtRiskV2();
+  // Verdad de "quién sigue suscrito en Momence", para depurar las inferencias por Stripe.
+  const activeSubEmailsV2 = await getActiveSubscriberEmailsV2();
   // ── Evolución de ingresos + altas/bajas/reactivaciones (histórico completo, solo Stripe) ──
   const monthlyStripeRevenue = revenueByProductByMonth(paymentsAll, productCatalog);
 
@@ -581,7 +583,7 @@ export default async function AnaliticaLoader({
     return c.stripeIds.reduce((s, sid) => s + (packCounts.get(sid) ?? 0), 0);
   }
   const convertCandidates = customers.filter(
-    (c) => packCountForCustomer(c) >= 2 && !hasActiveSub(c),
+    (c) => packCountForCustomer(c) >= 2 && !hasActiveSub(c) && !activeSubEmailsV2.has((c.email ?? "").toLowerCase()),
   );
 
   const activeCustomersData = activeCustomersByMonth(paymentsAll);
@@ -670,6 +672,7 @@ export default async function AnaliticaLoader({
               <AnaliticaKPIs
                 customers={customers}
                 convertCandidates={convertCandidates}
+                activeSubEmailsV2={activeSubEmailsV2}
                 spendPerClient={spendPerClient}
                 occupancyAvg={occupancyAvg}
                 avgPerClass={avgPerClass}

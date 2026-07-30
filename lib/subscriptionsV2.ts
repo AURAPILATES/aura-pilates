@@ -18,6 +18,28 @@ export type SubscriptionsBaseV2 = {
   totalArr: number;
 };
 
+// Emails (en minúscula) con una suscripción activa NO congelada en el último
+// snapshot v2. Fuente de verdad de "quién sigue suscrito ahora mismo en Momence",
+// para cruzar con las inferencias por Stripe (churn/convertir) y quitar falsos
+// positivos. Devuelve Set vacío si aún no hay snapshot.
+export async function getActiveSubscriberEmailsV2(): Promise<Set<string>> {
+  const db = createServerClient();
+  const { data: latest } = await db
+    .from("subscriber_snapshots_v2")
+    .select("date")
+    .order("date", { ascending: false })
+    .limit(1);
+  const date = latest?.[0]?.date as string | undefined;
+  if (!date) return new Set();
+  const { data } = await db
+    .from("subscriber_snapshots_v2")
+    .select("email")
+    .eq("date", date)
+    .eq("type", "subscription")
+    .eq("is_frozen", false);
+  return new Set((data ?? []).map((r) => String(r.email).toLowerCase()));
+}
+
 // Base real de suscripción desde el snapshot v2 (subscriber_snapshots_v2), que a
 // diferencia de la API interna captura TODAS las suscripciones (~84 vs ~22).
 // Cuenta por suscripción (fila), igual que el panel de Momence: si una persona

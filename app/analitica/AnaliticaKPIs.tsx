@@ -157,10 +157,12 @@ type DrawerEntry = { title: string; subtitle: string; customers: EnrichedCustome
 
 export default function AnaliticaKPIs({
   customers, convertCandidates, spendPerClient, occupancyAvg, avgPerClass,
-  spendPerClientComp, occupancyAvgComp, avgPerClassComp,
+  spendPerClientComp, occupancyAvgComp, avgPerClassComp, activeSubEmailsV2,
 }: {
   customers: EnrichedCustomer[];
   convertCandidates: EnrichedCustomer[];
+  /** Emails con suscripción activa en Momence (snapshot v2), para depurar el churn inferido por Stripe. */
+  activeSubEmailsV2: Set<string>;
   spendPerClient: number;
   occupancyAvg: number;
   avgPerClass: number;
@@ -193,7 +195,9 @@ export default function AnaliticaKPIs({
     }
   }
 
-  const churnList      = customers.filter(isChurned);
+  // Stripe infiere el churn por huecos de pago (46-76 d); quitamos a quien Momence
+  // (v2) confirma que SIGUE con suscripción activa: eran falsos positivos.
+  const churnList      = customers.filter(isChurned).filter((c) => !activeSubEmailsV2.has((c.email ?? "").toLowerCase()));
   const delinquentList = customers.filter((c) => c.hasPaymentError);
 
   const drawerConfig: Record<Exclude<DrawerKey, null>, DrawerEntry> = {
@@ -232,7 +236,7 @@ export default function AnaliticaKPIs({
           label="Sin renovar"
           value={churnList.length}
           valueClassName={churnList.length > 0 ? "text-danger" : "text-navy/50"}
-          tooltip="Suscriptoras con historial en Stripe que llevan entre 46 y 76 días sin renovar. Ventana crítica: probablemente cancelaron pero aún se puede recuperar."
+          tooltip="Suscriptoras con historial en Stripe que llevan entre 46 y 76 días sin renovar Y que ya no figuran como suscripción activa en Momence (cruzado con la API v2 para quitar falsos positivos). Ventana crítica: probablemente cancelaron pero aún se puede recuperar."
           onClick={churnList.length > 0 ? () => setDrawer("churn") : undefined}
         />
         <StatBox
