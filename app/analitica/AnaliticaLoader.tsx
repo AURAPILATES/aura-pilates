@@ -35,11 +35,13 @@ import { computeBreakeven } from "@/lib/breakeven";
 import ConversionPack from "./instances/ConversionPack";
 import { subscriptionTiersFromMemberships } from "@/lib/mrr";
 import { getSubscriptionsBaseV2 } from "@/lib/subscriptionsV2";
+import { getAtRiskV2 } from "@/lib/atRiskV2";
 import { getMemberships, getProducts, getCustomers, getEvents } from "@/lib/momence";
 import { catalogFromMomence, revenueByProductByMonth } from "@/lib/productRevenue";
 import { computeSubscriptionCohorts, computeRetentionCohorts } from "@/lib/subscriptionCohort";
 import RetencionCohorte from "./instances/RetencionCohorte";
 import SuscripcionesBase from "./instances/SuscripcionesBase";
+import NecesitaAtencion from "./instances/NecesitaAtencion";
 import { loadBusinessEvents } from "@/lib/businessEvents";
 import { loadPaymentErrorAcks } from "@/lib/paymentErrorAcks";
 import { pad2 } from "@/lib/periodCalculation";
@@ -271,6 +273,7 @@ export default async function AnaliticaLoader({
   const subscriptionTiers = subscriptionTiersFromMemberships(membershipsAll);
   // Base real de suscripción desde el snapshot v2 (subscriber_snapshots_v2).
   const subscriptionsBaseV2 = await getSubscriptionsBaseV2(subscriptionTiers);
+  const atRiskV2 = await getAtRiskV2();
   // ── Evolución de ingresos + altas/bajas/reactivaciones (histórico completo, solo Stripe) ──
   const monthlyStripeRevenue = revenueByProductByMonth(paymentsAll, productCatalog);
 
@@ -675,6 +678,7 @@ export default async function AnaliticaLoader({
                 avgPerClassComp={avgPerClassComp}
               />
               <SuscripcionesBase data={subscriptionsBaseV2} />
+              <NecesitaAtencion data={atRiskV2} />
               <EvolucionInscritos data={activeCustomersData} />
               <HorarioReporting
                 data={{
