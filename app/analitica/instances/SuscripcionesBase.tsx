@@ -22,9 +22,19 @@ export default function SuscripcionesBase({ data }: { data: SubscriptionsBaseV2 
           label: "Suscripciones activas",
           value: String(data.totalSubscriptions),
           helper: `${data.totalMembers} personas`,
+          tooltip: "Suscripciones activas y no congeladas ahora mismo en Momence. Se cuenta por suscripción, igual que el panel de Momence: si alguien tiene 2 del mismo plan, cuentan 2. '· personas' = clientes distintos.",
         },
-        { label: "MRR", value: fmtEur(data.totalMrr), valueClassName: "text-primary" },
-        { label: "ARR", value: fmtEur(data.totalArr) },
+        {
+          label: "MRR",
+          value: fmtEur(data.totalMrr),
+          valueClassName: "text-primary",
+          tooltip: "Ingreso Recurrente Mensual: suscripciones activas × precio del plan. La facturación mensual esperada solo por suscripciones (no incluye packs ni clases sueltas).",
+        },
+        {
+          label: "ARR",
+          value: fmtEur(data.totalArr),
+          tooltip: "Ingreso Recurrente Anual = MRR × 12. Proyección a 12 meses si la base de suscripción se mantiene igual.",
+        },
       ]}
       dataSource="Snapshot diario de Momence (API v2) · suscripciones activas no congeladas, contadas por suscripción igual que el panel de Momence"
       sources={["momence"]}

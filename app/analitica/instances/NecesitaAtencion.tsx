@@ -31,9 +31,22 @@ export default function NecesitaAtencion({ data }: { data: AtRiskV2 }) {
       title="Necesita atención"
       subtitle="Packs por agotarse o caducar y suscripciones congeladas — momento de contactar"
       kpiItems={[
-        { label: "En riesgo", value: String(data.items.length), valueClassName: "text-warning" },
-        { label: "Sin créditos", value: String(data.counts["Sin créditos"]) },
-        { label: "Caduca pronto", value: String(data.counts["Caduca pronto"]) },
+        {
+          label: "En riesgo",
+          value: String(data.items.length),
+          valueClassName: "text-warning",
+          tooltip: "Total de clientes que necesitan atención ahora: packs por agotarse o agotados, packs por caducar y suscripciones congeladas. Excluye clases sueltas (compra única).",
+        },
+        {
+          label: "Sin créditos",
+          value: String(data.counts["Sin créditos"]),
+          tooltip: "Packs multi-clase con 0 clases restantes: han gastado todo el bono. Momento ideal para proponer renovación o pasar a suscripción.",
+        },
+        {
+          label: "Caduca pronto",
+          value: String(data.counts["Caduca pronto"]),
+          tooltip: "Packs que caducan en ≤14 días con clases aún sin usar: conviene avisar antes de que se pierdan.",
+        },
       ]}
       dataSource="Snapshot diario de Momence (API v2) · packs multi-clase con ≤2 créditos o que caducan en ≤14 días, y suscripciones congeladas. Excluye clases sueltas (one-off)."
       sources={["momence"]}
