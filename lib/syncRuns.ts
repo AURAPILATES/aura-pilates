@@ -1,7 +1,7 @@
 import { createServerClient } from "./supabase";
 import { sendSyncFailureAlert } from "./alertEmail";
 
-export type SyncSource = "momence_events" | "momence_subscribers" | "momence_subscribers_v2";
+export type SyncSource = "momence_events" | "momence_subscribers" | "momence_subscribers_v2" | "momence_attendance_v2";
 
 // Deja constancia de cada ejecución de los cron de Momence (éxito o fallo),
 // para poder distinguir "no había nada que sincronizar" de "la sync falló

@@ -36,6 +36,10 @@ import ConversionPack from "./instances/ConversionPack";
 import { subscriptionTiersFromMemberships } from "@/lib/mrr";
 import { getSubscriptionsBaseV2, getActiveSubscriberEmailsV2 } from "@/lib/subscriptionsV2";
 import { getAtRiskV2, type AtRiskCustomerInfo } from "@/lib/atRiskV2";
+import { getTeacherStatsV2 } from "@/lib/teacherStatsV2";
+import { getTeacherConversionV2 } from "@/lib/teacherConversionV2";
+import RendimientoProfesoras from "./instances/RendimientoProfesoras";
+import ConversionProfesora from "./instances/ConversionProfesora";
 import { getMemberships, getProducts, getCustomers, getEvents } from "@/lib/momence";
 import { catalogFromMomence, revenueByProductByMonth } from "@/lib/productRevenue";
 import { computeSubscriptionCohorts, computeRetentionCohorts } from "@/lib/subscriptionCohort";
@@ -158,6 +162,7 @@ export default async function AnaliticaLoader({
     paymentsAll, membershipsAll, productsAll, customersAll,
     txnsAll, dbCategories, budgets, businessEvents, recurringExpenses, breakdown, breakdownComp,
     bancoLastImport, paymentErrorAcks, syncRuns, liveMomenceEvents, historicalMomenceEvents,
+    teacherStatsV2,
   ] = await Promise.all([
     loadStripePaymentsCached(),
     getMemberships(),
@@ -175,6 +180,8 @@ export default async function AnaliticaLoader({
     getLatestSyncRuns().catch(() => null),
     getEvents(),
     loadHistoricalEvents(),
+    // Live desde la API v2; si Momence v2 falla, no debe tumbar toda la página.
+    getTeacherStatsV2(mainFrom, mainTo).catch(() => null),
   ]);
   await saveHistoricalEvents(liveMomenceEvents);
 
@@ -268,6 +275,10 @@ export default async function AnaliticaLoader({
 
   // ── ¿De dónde vienen los suscriptores? (primera compra) ───────────────────
   const firstPurchaseSummary = subscriberFirstPurchase(salesAll);
+
+  // ── Conversión por profesora: 1ª clase asistida (Momence v2) × volvió a pagar (Stripe) ──
+  // Lee la asistencia capturada en class_bookings_v2; si aún no hay backfill, devuelve vacío.
+  const teacherConversionV2 = await getTeacherConversionV2(salesAll).catch(() => null);
 
   // ── MRR/ARR por suscripción (suscriptores activos reales en Momence) ──────
   const subscriptionTiers = subscriptionTiersFromMemberships(membershipsAll);
@@ -707,6 +718,8 @@ export default async function AnaliticaLoader({
                   businessEvents,
                 }}
               />
+              <RendimientoProfesoras data={teacherStatsV2} dateRange={periodLabel} />
+              <ConversionProfesora data={teacherConversionV2} />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <PrimeraCompra summary={firstPurchaseSummary} />
                 <ClientesPaymentsBreakdown
