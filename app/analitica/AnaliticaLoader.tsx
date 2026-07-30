@@ -35,7 +35,7 @@ import { computeBreakeven } from "@/lib/breakeven";
 import ConversionPack from "./instances/ConversionPack";
 import { subscriptionTiersFromMemberships } from "@/lib/mrr";
 import { getSubscriptionsBaseV2, getActiveSubscriberEmailsV2 } from "@/lib/subscriptionsV2";
-import { getAtRiskV2 } from "@/lib/atRiskV2";
+import { getAtRiskV2, type AtRiskCustomerInfo } from "@/lib/atRiskV2";
 import { getMemberships, getProducts, getCustomers, getEvents } from "@/lib/momence";
 import { catalogFromMomence, revenueByProductByMonth } from "@/lib/productRevenue";
 import { computeSubscriptionCohorts, computeRetentionCohorts } from "@/lib/subscriptionCohort";
@@ -586,6 +586,21 @@ export default async function AnaliticaLoader({
     (c) => packCountForCustomer(c) >= 2 && !hasActiveSub(c) && !activeSubEmailsV2.has((c.email ?? "").toLowerCase()),
   );
 
+  // Info de cliente (cruzada por email con Stripe) para el drawer de "Necesita atención".
+  const atRiskEmails = new Set(atRiskV2.items.map((i) => i.email.toLowerCase()));
+  const atRiskCustomerInfo: Record<string, AtRiskCustomerInfo> = {};
+  for (const c of customers) {
+    const email = (c.email ?? "").toLowerCase();
+    if (!email || !atRiskEmails.has(email) || atRiskCustomerInfo[email]) continue;
+    atRiskCustomerInfo[email] = {
+      name: c.name ?? null,
+      stripeId: c.stripeIds[c.stripeIds.length - 1] ?? null,
+      lastPaymentDate: c.lastPaymentDate ?? null,
+      totalSpent: c.totalSpent,
+      paymentError: !!c.paymentErrorDate,
+    };
+  }
+
   const activeCustomersData = activeCustomersByMonth(paymentsAll);
 
   return (
@@ -681,7 +696,7 @@ export default async function AnaliticaLoader({
                 avgPerClassComp={avgPerClassComp}
               />
               <SuscripcionesBase data={subscriptionsBaseV2} />
-              <NecesitaAtencion data={atRiskV2} />
+              <NecesitaAtencion data={atRiskV2} customerInfo={atRiskCustomerInfo} />
               <EvolucionInscritos data={activeCustomersData} />
               <HorarioReporting
                 data={{

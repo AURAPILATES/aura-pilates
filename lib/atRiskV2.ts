@@ -9,6 +9,7 @@ const EXPIRING_DAYS = 14;
 export type AtRiskReason = "Congelada" | "Sin créditos" | "Pocos créditos" | "Caduca pronto";
 
 export type AtRiskItem = {
+  memberId: number;
   email: string;
   membershipName: string;
   type: string;
@@ -23,7 +24,18 @@ export type AtRiskV2 = {
   counts: Record<AtRiskReason, number>;
 };
 
+// Datos de cliente (cruzados por email con los clientes de Stripe) para el drawer
+// de detalle de la lista de riesgo.
+export type AtRiskCustomerInfo = {
+  name: string | null;
+  stripeId: string | null;
+  lastPaymentDate: string | null;
+  totalSpent: number;
+  paymentError: boolean;
+};
+
 type Row = {
+  member_id: number;
   email: string;
   membership_name: string;
   type: string;
@@ -50,7 +62,7 @@ export async function getAtRiskV2(): Promise<AtRiskV2> {
 
   const { data } = await db
     .from("subscriber_snapshots_v2")
-    .select("email, membership_name, type, event_credits_left, event_credits_total, end_date, is_frozen")
+    .select("member_id, email, membership_name, type, event_credits_left, event_credits_total, end_date, is_frozen")
     .eq("date", date);
   const rows = (data ?? []) as Row[];
 
@@ -59,7 +71,7 @@ export async function getAtRiskV2(): Promise<AtRiskV2> {
 
   for (const r of rows) {
     if (r.is_frozen) {
-      items.push({ email: r.email, membershipName: r.membership_name, type: r.type, reason: "Congelada", detail: "congelada", severity: 4 });
+      items.push({ memberId: r.member_id, email: r.email, membershipName: r.membership_name, type: r.type, reason: "Congelada", detail: "congelada", severity: 4 });
       continue;
     }
 
@@ -71,11 +83,11 @@ export async function getAtRiskV2(): Promise<AtRiskV2> {
     const days = r.end_date ? Math.round((Date.parse(r.end_date) - now) / 86_400_000) : null;
 
     if (left !== null && left <= 0) {
-      items.push({ email: r.email, membershipName: r.membership_name, type: r.type, reason: "Sin créditos", detail: `0 de ${total} clases`, severity: 3 });
+      items.push({ memberId: r.member_id, email: r.email, membershipName: r.membership_name, type: r.type, reason: "Sin créditos", detail: `0 de ${total} clases`, severity: 3 });
     } else if (left !== null && left > 0 && left <= LOW_CREDITS && left < total) {
-      items.push({ email: r.email, membershipName: r.membership_name, type: r.type, reason: "Pocos créditos", detail: `${left} de ${total} clases`, severity: 2 });
+      items.push({ memberId: r.member_id, email: r.email, membershipName: r.membership_name, type: r.type, reason: "Pocos créditos", detail: `${left} de ${total} clases`, severity: 2 });
     } else if (days !== null && days >= 0 && days <= EXPIRING_DAYS) {
-      items.push({ email: r.email, membershipName: r.membership_name, type: r.type, reason: "Caduca pronto", detail: `caduca en ${days} d`, severity: 1 });
+      items.push({ memberId: r.member_id, email: r.email, membershipName: r.membership_name, type: r.type, reason: "Caduca pronto", detail: `caduca en ${days} d`, severity: 1 });
     }
   }
 
