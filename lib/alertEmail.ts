@@ -3,6 +3,7 @@ import { SyncSource } from "./syncRuns";
 const SOURCE_LABELS: Record<SyncSource, string> = {
   momence_events: "Histórico de clases (Momence)",
   momence_subscribers: "Snapshot de suscriptores (Momence)",
+  momence_subscribers_v2: "Snapshot de suscriptores v2 (Momence)",
 };
 
 function escapeHtml(s: string): string {

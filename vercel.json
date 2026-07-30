@@ -9,6 +9,14 @@
       "schedule": "0 6 * * *"
     },
     {
+      "path": "/api/cron/snapshot-subscribers-v2",
+      "schedule": "15 3 * * *"
+    },
+    {
+      "path": "/api/cron/snapshot-subscribers-v2",
+      "schedule": "15 6 * * *"
+    },
+    {
       "path": "/api/cron/snapshot-events",
       "schedule": "30 20 * * *"
     },
