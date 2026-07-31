@@ -117,6 +117,8 @@ export default function HorarioShell({
   const weekTotalSpots = events.reduce((s, e) => s + e.capacity, 0);
   const weekSoldSpots  = events.reduce((s, e) => s + e.ticketsSold, 0);
   const almostEmptyCount = events.filter((e) => e.ticketsSold <= 2).length;
+  // Demanda insatisfecha de la semana: personas en lista de espera (Momence v2, en vivo).
+  const weekWaitlist = events.reduce((s, e) => s + (e.waitlistCount ?? 0), 0);
 
   const prevWeek  = addDays(weekMonday, -7);
   const nextWeek  = addDays(weekMonday, 7);
@@ -325,7 +327,7 @@ export default function HorarioShell({
               {events.length === 0 ? (
                 <p className="text-sm text-navy/40 mb-6">Sin clases esta semana.</p>
               ) : (
-                <div className="grid grid-cols-4 gap-3 mb-5">
+                <div className={`grid ${weekWaitlist > 0 ? "grid-cols-5" : "grid-cols-4"} gap-3 mb-5`}>
                   <KpiCard label="Ocupación media esta semana" value={`${Math.round(weekOcc * 100)}%`} valueColor={occText(weekOcc)} />
                   <KpiCard label="Plazas vendidas" value={String(weekSoldSpots)} />
                   <KpiCard label="Plazas libres"   value={String(weekFreeSpots)} />
@@ -335,6 +337,14 @@ export default function HorarioShell({
                     valueColor={almostEmptyCount > 0 ? "text-danger" : "text-navy/30"}
                     tooltip="Clases con 2 o menos plazas vendidas"
                   />
+                  {weekWaitlist > 0 && (
+                    <KpiCard
+                      label="En lista de espera"
+                      value={String(weekWaitlist)}
+                      valueColor="text-[#a38540] dark:text-[#ceba8d]"
+                      tooltip="Personas en lista de espera esta semana (Momence, en vivo): demanda que no cabe en la parrilla actual"
+                    />
+                  )}
                 </div>
               )}
 
@@ -404,6 +414,11 @@ function MobileClassCard({ event: e, onSelect }: { event: MomenceEvent; onSelect
         <p className="text-sm font-semibold text-navy truncate">{e.title}</p>
         {e.teacher && <p className="text-xs text-navy/50 truncate">{e.teacher}</p>}
       </div>
+      {(e.waitlistCount ?? 0) > 0 && (
+        <span className="shrink-0 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-[#f5f0e0] dark:bg-[#393013] text-[#a38540] dark:text-[#ceba8d]">
+          +{e.waitlistCount}
+        </span>
+      )}
       <div className="w-16 shrink-0">
         <div className="h-1 bg-navy/[0.08] rounded-full overflow-hidden">
           <div className={`h-full rounded-full ${status.dot}`} style={{ width: `${pctVal}%` }} />

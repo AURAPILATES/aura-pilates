@@ -231,7 +231,12 @@ export default memo(function HorarioCalendar({
                     >
                       <div className="px-2.5 pt-2 pb-2 overflow-hidden">
                         <div className="flex items-center justify-between mb-0.5">
-                          <span className="text-[10px] font-semibold text-navy/55 font-mono">{e.ticketsSold}/{e.capacity}</span>
+                          <span className="text-[10px] font-semibold text-navy/55 font-mono">
+                            {e.ticketsSold}/{e.capacity}
+                            {(e.waitlistCount ?? 0) > 0 && (
+                              <span title={`${e.waitlistCount} en lista de espera`}> +{e.waitlistCount}⏳</span>
+                            )}
+                          </span>
                           <span className={`text-[10px] font-bold ${style.pct}`}>{pctVal}%</span>
                         </div>
                         <p className="text-xs font-bold text-navy leading-tight truncate">{e.title}</p>

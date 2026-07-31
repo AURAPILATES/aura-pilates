@@ -73,6 +73,10 @@ export type MomenceEvent = {
   isCancelled: boolean;
   isDeleted: boolean;
   allowWaitlist: boolean;
+  /** Personas en lista de espera. NO viene de la API interna: lo enriquece HorarioLoader desde
+   * el detalle de la API v2 (getWaitlistCountsV2) para clases futuras llenas o casi llenas.
+   * undefined = no consultado (clase pasada o con hueco de sobra). */
+  waitlistCount?: number;
   capacity: number;
   spotsRemaining: number;
   ticketsSold: number;

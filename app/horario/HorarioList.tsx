@@ -89,6 +89,15 @@ export default memo(function HorarioList({
                       {e.teacher && <p className="text-xs text-navy/45 truncate">{e.teacher}</p>}
                     </div>
 
+                    {(e.waitlistCount ?? 0) > 0 && (
+                      <span
+                        className="shrink-0 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-[#f5f0e0] dark:bg-[#393013] text-[#a38540] dark:text-[#ceba8d]"
+                        title="Personas en lista de espera (Momence, en vivo): demanda que no cabe en la clase"
+                      >
+                        {e.waitlistCount} en espera
+                      </span>
+                    )}
+
                     <div className="flex items-center gap-2.5 shrink-0">
                       <div className="w-24 shrink-0">
                         <div className="h-1 bg-navy/[0.08] rounded-full overflow-hidden">

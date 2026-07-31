@@ -254,6 +254,27 @@ export function getSessionDetailV2(sessionId: number): Promise<MomenceV2SessionD
   return fetchV2<MomenceV2SessionDetail>(`/host/sessions/${sessionId}`);
 }
 
+// Lista de espera de varias sesiones (id → nº de personas en espera). El dato solo está en el
+// DETALLE de cada sesión (waitlistBookingCount), así que es N+1: se pide en lotes paralelos.
+// El id de sesión v2 es el MISMO que el id de evento de la API interna (verificado contra
+// momence_history × class_sessions_v2), así que se puede llamar con ids de MomenceEvent.
+// Tolerante a fallos: una sesión que falle simplemente no aparece en el mapa.
+export async function getWaitlistCountsV2(sessionIds: number[]): Promise<Map<number, number>> {
+  const BATCH = 10;
+  const map = new Map<number, number>();
+  for (let i = 0; i < sessionIds.length; i += BATCH) {
+    const chunk = sessionIds.slice(i, i + BATCH);
+    const results = await Promise.allSettled(chunk.map((id) => getSessionDetailV2(id)));
+    for (let j = 0; j < results.length; j++) {
+      const r = results[j];
+      if (r.status === "fulfilled" && r.value.waitlistBookingCount != null) {
+        map.set(chunk[j], r.value.waitlistBookingCount);
+      }
+    }
+  }
+  return map;
+}
+
 // Reservas de una sesión: quién reservó, si hizo check-in, cuántas plazas, si
 // canceló. Esto es lo que la API interna nunca expuso.
 export function getSessionBookingsV2(

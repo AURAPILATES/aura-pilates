@@ -89,9 +89,12 @@ export default function HorarioDrawer({
       </div>
 
       {/* Stats grid */}
-      <div className="grid grid-cols-2 gap-3 px-6 py-5 border-b border-navy/[0.07]">
+      <div className={`grid ${(e.waitlistCount ?? 0) > 0 ? "grid-cols-3" : "grid-cols-2"} gap-3 px-6 py-5 border-b border-navy/[0.07]`}>
         <StatCard label="Apuntadas" value={`${e.ticketsSold} / ${e.capacity}`} />
         <StatCard label="Plazas libres" value={String(e.spotsRemaining)} accent={e.spotsRemaining === 0 ? "text-danger" : "text-success"} />
+        {(e.waitlistCount ?? 0) > 0 && (
+          <StatCard label="En espera" value={String(e.waitlistCount)} accent="text-[#a38540] dark:text-[#ceba8d]" />
+        )}
       </div>
 
       {/* Slots */}
