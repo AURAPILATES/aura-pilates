@@ -78,23 +78,25 @@ async function main() {
   for (let i = 0; i < sessions.length; i += BOOKINGS_BATCH) {
     const chunk = sessions.slice(i, i + BOOKINGS_BATCH);
     const results = await Promise.all(
-      chunk.map(async (s) => ({ s, bookings: (await getJson(tok, `/host/sessions/${s.id}/bookings`, { includeCancelled: false, page: 0, pageSize: 100 })).payload ?? [] })),
+      chunk.map(async (s) => ({ s, bookings: (await getJson(tok, `/host/sessions/${s.id}/bookings`, { includeCancelled: true, page: 0, pageSize: 100 })).payload ?? [] })),
     );
     for (const { s, bookings } of results) {
       const tName = teacherName(s.teacher);
       const tId = s.teacher?.id ?? null;
+      const active = bookings.filter((b) => b.cancelledAt === null);
       sessionRows.push({
         session_id: s.id, starts_at: s.startsAt, ends_at: s.endsAt ?? null,
         teacher_id: tId, teacher_name: tName, type: s.type,
-        capacity: s.capacity ?? 0, booking_count: bookings.length,
-        checked_in_count: bookings.filter((b) => b.checkedIn).length,
+        capacity: s.capacity ?? 0, booking_count: active.length,
+        checked_in_count: active.filter((b) => b.checkedIn).length,
         is_cancelled: false, captured_at: capturedAt,
       });
       for (const b of bookings) {
         bookingRows.push({
           booking_id: b.id, session_id: s.id, session_starts_at: s.startsAt,
           teacher_id: tId, teacher_name: tName, member_id: b.member.id,
-          email: b.member.email ?? null, checked_in: b.checkedIn, captured_at: capturedAt,
+          email: b.member.email ?? null, checked_in: b.checkedIn,
+          cancelled: b.cancelledAt !== null, captured_at: capturedAt,
         });
       }
     }

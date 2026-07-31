@@ -57,7 +57,8 @@ export type MemberClient = {
   // none = asistió sin rastro de pago (el "sin pago detectado" de la vista de actividad).
   coverage: "paid" | "urban" | "none";
   attended: number;
-  noShows: number;
+  noShows: number;      // reservó y no vino (sin cancelar)
+  cancellations: number; // reservas que canceló
   firstClassDate: string | null;
   firstTeacher: string | null;
   lastClassDate: string | null;
@@ -76,7 +77,7 @@ type SnapRow = {
   event_credits_total: number | null;
 };
 
-type BookingRow = { member_id: number; teacher_name: string; session_starts_at: string; checked_in: boolean };
+type BookingRow = { member_id: number; teacher_name: string; session_starts_at: string; checked_in: boolean; cancelled: boolean };
 
 async function readAll<T>(build: (from: number, to: number) => PromiseLike<{ data: T[] | null }>): Promise<T[]> {
   const PAGE = 1000;
@@ -190,13 +191,15 @@ export async function getMemberClientsV2(
 
   // Asistencia por miembro.
   const bookings = await readAll<BookingRow>((from, to) =>
-    db.from("class_bookings_v2").select("member_id, teacher_name, session_starts_at, checked_in").order("session_starts_at", { ascending: true }).range(from, to),
+    db.from("class_bookings_v2").select("member_id, teacher_name, session_starts_at, checked_in, cancelled").order("session_starts_at", { ascending: true }).range(from, to),
   );
-  type Act = { attended: number; noShows: number; firstDate: string | null; firstTeacher: string | null; lastDate: string | null };
+  type Act = { attended: number; noShows: number; cancellations: number; firstDate: string | null; firstTeacher: string | null; lastDate: string | null };
   const actByMember = new Map<number, Act>();
   for (const b of bookings) {
-    const a = actByMember.get(b.member_id) ?? { attended: 0, noShows: 0, firstDate: null, firstTeacher: null, lastDate: null };
-    if (b.checked_in) {
+    const a = actByMember.get(b.member_id) ?? { attended: 0, noShows: 0, cancellations: 0, firstDate: null, firstTeacher: null, lastDate: null };
+    if (b.cancelled) {
+      a.cancellations += 1;
+    } else if (b.checked_in) {
       a.attended += 1;
       const date = b.session_starts_at.slice(0, 10);
       if (!a.firstDate) { a.firstDate = date; a.firstTeacher = b.teacher_name; }
@@ -265,6 +268,7 @@ export async function getMemberClientsV2(
       coverage,
       attended: act?.attended ?? 0,
       noShows: act?.noShows ?? 0,
+      cancellations: act?.cancellations ?? 0,
       firstClassDate: act?.firstDate ?? null,
       firstTeacher: act?.firstTeacher ?? null,
       lastClassDate: act?.lastDate ?? null,
@@ -292,6 +296,7 @@ export async function getMemberClientsV2(
       coverage: stripe.paymentCount > 0 ? "paid" : "none",
       attended: 0,
       noShows: 0,
+      cancellations: 0,
       firstClassDate: null,
       firstTeacher: null,
       lastClassDate: null,

@@ -50,13 +50,16 @@ export async function captureAttendanceWindow(
     const results = await Promise.all(
       chunk.map(async (s) => ({
         s,
-        bookings: await getSessionBookingsV2(s.id, { includeCancelled: false }),
+        // Incluye canceladas para poder contarlas por cliente; los conteos de la sesión
+        // (reservas/asistencia/ocupación) siguen siendo solo de las reservas activas.
+        bookings: await getSessionBookingsV2(s.id, { includeCancelled: true }),
       })),
     );
     for (const { s, bookings } of results) {
       const tName = teacherName(s.teacher);
       const tId = s.teacher?.id ?? null;
-      const checkedIn = bookings.filter((b) => b.checkedIn).length;
+      const active = bookings.filter((b) => b.cancelledAt === null);
+      const checkedIn = active.filter((b) => b.checkedIn).length;
       sessionRows.push({
         session_id: s.id,
         starts_at: s.startsAt,
@@ -65,7 +68,7 @@ export async function captureAttendanceWindow(
         teacher_name: tName,
         type: s.type,
         capacity: s.capacity ?? 0,
-        booking_count: bookings.length,
+        booking_count: active.length,
         checked_in_count: checkedIn,
         is_cancelled: false,
         captured_at: capturedAt,
@@ -80,6 +83,7 @@ export async function captureAttendanceWindow(
           member_id: b.member.id,
           email: b.member.email ?? null,
           checked_in: b.checkedIn,
+          cancelled: b.cancelledAt !== null,
           captured_at: capturedAt,
         });
       }
