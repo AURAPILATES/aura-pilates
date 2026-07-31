@@ -53,7 +53,11 @@ export type MemberClient = {
   lastSeen: string | null;
   plan: MemberPlan | null;
   activeSubCount: number;  // suscripciones activas no congeladas (>1 = posible duplicado/doble cobro)
+  // paid = rastro de pago (Stripe o membresía Momence, actual o pasada); urban = entra por Urban;
+  // none = asistió sin rastro de pago (el "sin pago detectado" de la vista de actividad).
+  coverage: "paid" | "urban" | "none";
   attended: number;
+  noShows: number;
   firstClassDate: string | null;
   firstTeacher: string | null;
   lastClassDate: string | null;
@@ -188,17 +192,27 @@ export async function getMemberClientsV2(
   const bookings = await readAll<BookingRow>((from, to) =>
     db.from("class_bookings_v2").select("member_id, teacher_name, session_starts_at, checked_in").order("session_starts_at", { ascending: true }).range(from, to),
   );
-  type Act = { attended: number; firstDate: string | null; firstTeacher: string | null; lastDate: string | null };
+  type Act = { attended: number; noShows: number; firstDate: string | null; firstTeacher: string | null; lastDate: string | null };
   const actByMember = new Map<number, Act>();
   for (const b of bookings) {
-    if (!b.checked_in) continue;
-    const a = actByMember.get(b.member_id) ?? { attended: 0, firstDate: null, firstTeacher: null, lastDate: null };
-    a.attended += 1;
-    const date = b.session_starts_at.slice(0, 10);
-    if (!a.firstDate) { a.firstDate = date; a.firstTeacher = b.teacher_name; }
-    a.lastDate = date;
+    const a = actByMember.get(b.member_id) ?? { attended: 0, noShows: 0, firstDate: null, firstTeacher: null, lastDate: null };
+    if (b.checked_in) {
+      a.attended += 1;
+      const date = b.session_starts_at.slice(0, 10);
+      if (!a.firstDate) { a.firstDate = date; a.firstTeacher = b.teacher_name; }
+      a.lastDate = date;
+    } else {
+      a.noShows += 1;
+    }
     actByMember.set(b.member_id, a);
   }
+
+  // Emails que han tenido ALGUNA membresía/pack en Momence (cualquier fecha de snapshot), para
+  // el coverage: alguien con un pack pasado ya caducado sí pagó, no es "sin pago detectado".
+  const everSnapRows = await readAll<{ email: string }>((from, to) =>
+    db.from("subscriber_snapshots_v2").select("email").range(from, to),
+  );
+  const everMembershipEmails = new Set(everSnapRows.map((r) => r.email.toLowerCase()));
 
   // Stripe por email.
   const stripeByEmail = new Map<string, EnrichedCustomer>();
@@ -226,11 +240,18 @@ export async function getMemberClientsV2(
     const email = m.email ? m.email.toLowerCase() : null;
     const sc = email ? stripeByEmail.get(email) : undefined;
     if (sc) usedStripe.add(sc.id);
+    const realPlan = planByMember.get(m.id) ?? null;
+    const isUrban = isUrbanEmail(m.email);
     // Plan real; si no tiene y es de Urban, "plan" Urban sintético.
-    const plan = planByMember.get(m.id) ?? (isUrbanEmail(m.email) ? URBAN_PLAN : null);
+    const plan = realPlan ?? (isUrban ? URBAN_PLAN : null);
     const act = actByMember.get(m.id);
     const stripe = sc ? toStripe(sc) : null;
     const lastActivity = [act?.lastDate ?? null, stripe?.lastPaymentDate ?? null].filter(Boolean).sort().pop() ?? null;
+    const coverage: MemberClient["coverage"] = isUrban
+      ? "urban"
+      : realPlan || (stripe && stripe.paymentCount > 0) || (email && everMembershipEmails.has(email))
+        ? "paid"
+        : "none";
     rows.push({
       id: `m${m.id}`,
       memberId: m.id,
@@ -241,7 +262,9 @@ export async function getMemberClientsV2(
       lastSeen: m.lastSeen ?? null,
       plan,
       activeSubCount: subCountByMember.get(m.id) ?? 0,
+      coverage,
       attended: act?.attended ?? 0,
+      noShows: act?.noShows ?? 0,
       firstClassDate: act?.firstDate ?? null,
       firstTeacher: act?.firstTeacher ?? null,
       lastClassDate: act?.lastDate ?? null,
@@ -266,7 +289,9 @@ export async function getMemberClientsV2(
       lastSeen: null,
       plan: null,
       activeSubCount: 0,
+      coverage: stripe.paymentCount > 0 ? "paid" : "none",
       attended: 0,
+      noShows: 0,
       firstClassDate: null,
       firstTeacher: null,
       lastClassDate: null,

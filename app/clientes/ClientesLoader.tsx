@@ -3,7 +3,6 @@ import { loadStripeCustomers } from "@/lib/stripeCustomers";
 import { enrichCustomers } from "@/lib/customerEnrichment";
 import { loadFamilyClientIds, loadFamilyMemberIds } from "@/lib/clientFamily";
 import { loadPaymentErrorAcks } from "@/lib/paymentErrorAcks";
-import { getClientActivityV2 } from "@/lib/clientActivityV2";
 import { getMemberClientsV2 } from "@/lib/memberClientsV2";
 import ClientesShell from "./ClientesShell";
 
@@ -25,22 +24,7 @@ export default async function ClientesLoader({ curMonth }: Props) {
   // AnaliticaLoader, para que Clientes y Analítica coincidan.
   const customersWithChurn = enrichCustomers(customers, payments, { familyIds, paymentErrorAcks });
 
-  // Emails con algún pago en Stripe: sirven para marcar "sin pago detectado" en la vista de
-  // actividad (asistencia real de Momence sin rastro de pago). Ver getClientActivityV2.
-  const paidEmails = new Set(
-    customersWithChurn.filter((c) => c.paymentCount > 0 && c.email).map((c) => c.email!.toLowerCase()),
-  );
-  const [activity, memberClients] = await Promise.all([
-    getClientActivityV2(paidEmails).catch(() => null),
-    getMemberClientsV2(customersWithChurn, familyMemberIds).catch(() => []),
-  ]);
+  const memberClients = await getMemberClientsV2(customersWithChurn, familyMemberIds).catch(() => []);
 
-  return (
-    <ClientesShell
-      customers={customersWithChurn}
-      payments={payments}
-      activity={activity}
-      clients={memberClients}
-    />
-  );
+  return <ClientesShell customers={customersWithChurn} payments={payments} clients={memberClients} />;
 }

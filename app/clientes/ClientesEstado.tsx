@@ -14,14 +14,14 @@ import MemberDrawer from "./MemberDrawer";
 import type { MemberClient, StatusTone, StatusKey } from "@/lib/memberClientsV2";
 import type { StripePayment } from "@/lib/stripePayments";
 
-const COLS = "2.4fr 1.3fr 1.5fr 1fr .9fr";
+const COLS = "2.2fr 1.15fr 1.35fr .8fr .95fr .85fr";
 const PAGE_SIZE = 25;
 
-type Filter = "all" | "duplicadas" | "activa" | "congelada" | "pack" | "sin_plan" | "inactivo" | "error";
-type SortKey = "name" | "totalSpent" | "lastClass";
+type Filter = "all" | "duplicadas" | "sin_pago" | "familiares" | "activa" | "congelada" | "pack" | "sin_plan" | "inactivo" | "error";
+type SortKey = "name" | "attended" | "totalSpent" | "lastClass";
 
-const STATUS_IN_FILTER: Record<Exclude<Filter, "all" | "duplicadas">, (k: StatusKey) => boolean> = {
-  activa: (k) => k === "activa",
+const STATUS_IN_FILTER: Record<"activa" | "congelada" | "pack" | "sin_plan" | "inactivo" | "error", (k: StatusKey) => boolean> = {
+  activa: (k) => k === "activa" || k === "urban",
   congelada: (k) => k === "congelada",
   pack: (k) => k === "pack" || k === "pack_bajo" || k === "pack_agotado",
   sin_plan: (k) => k === "sin_plan",
@@ -73,9 +73,12 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
   const [selected, setSelected] = useState<MemberClient | null>(null);
 
   const counts = useMemo(() => {
-    const c = { congelada: 0, sin_plan: 0, inactivo: 0, error: 0, duplicadas: 0 };
+    const c = { congelada: 0, sin_plan: 0, inactivo: 0, error: 0, duplicadas: 0, sin_pago: 0, familiares: 0, conClases: 0 };
     for (const r of clients) {
       if (r.activeSubCount >= 2) c.duplicadas++;
+      if (r.isFamily) c.familiares++;
+      if (r.coverage === "none" && r.attended > 0) c.sin_pago++;
+      if (r.attended > 0) c.conClases++;
       if (r.status.key === "congelada") c.congelada++;
       else if (r.status.key === "sin_plan") c.sin_plan++;
       else if (r.status.key === "inactivo") c.inactivo++;
@@ -86,17 +89,19 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
 
   const filtered = useMemo(() => {
     const q = normalizeText(search.trim());
-    const pred = filter === "all" || filter === "duplicadas" ? null : STATUS_IN_FILTER[filter];
     return clients
       .filter((r) => {
-        if (filter === "duplicadas" && r.activeSubCount < 2) return false;
-        if (pred && !pred(r.status.key)) return false;
+        if (filter === "duplicadas") { if (r.activeSubCount < 2) return false; }
+        else if (filter === "sin_pago") { if (!(r.coverage === "none" && r.attended > 0)) return false; }
+        else if (filter === "familiares") { if (!r.isFamily) return false; }
+        else if (filter !== "all") { if (!STATUS_IN_FILTER[filter](r.status.key)) return false; }
         if (!q) return true;
         return normalizeText(`${r.name} ${r.email ?? ""} ${r.plan?.name ?? ""}`).includes(q);
       })
       .sort((a, b) => {
         let diff = 0;
         if (sortKey === "totalSpent") diff = (a.stripe?.totalSpent ?? 0) - (b.stripe?.totalSpent ?? 0);
+        else if (sortKey === "attended") diff = a.attended - b.attended;
         else if (sortKey === "lastClass") diff = (a.lastClassDate ?? "").localeCompare(b.lastClassDate ?? "");
         else diff = a.name.localeCompare(b.name, "es");
         return sortDir === "desc" ? -diff : diff;
@@ -113,22 +118,30 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
   function changeSearch(v: string) { setSearch(v); setPage(0); }
 
   function downloadCsv() {
-    const head = ["Nombre", "Email", "Teléfono", "Plan", "Tipo", "Estado", "Detalle", "Clases", "Última clase", "Total gastado (€)"];
+    const head = ["Nombre", "Email", "Teléfono", "Plan", "Tipo", "Estado", "Detalle", "Clases", "No-shows", "Última clase", "Total gastado (€)"];
     const rows = filtered.map((r) => [
       r.name, r.email ?? "", r.phone ?? "",
-      r.plan?.name ?? "Sin plan", r.plan?.kind === "subscription" ? "Suscripción" : r.plan ? "Pack" : "",
+      r.plan?.name ?? "Sin plan", r.plan?.kind === "subscription" ? "Suscripción" : r.plan?.kind === "urban" ? "Urban" : r.plan ? "Pack" : "",
       r.status.label, r.status.detail ?? "",
-      String(r.attended), r.lastClassDate ?? "", r.stripe ? String(Math.round(r.stripe.totalSpent)) : "",
+      String(r.attended), String(r.noShows), r.lastClassDate ?? "", r.stripe ? String(Math.round(r.stripe.totalSpent)) : "",
     ]);
     const csv = [head, ...rows].map((row) => row.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
     const url = URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" }));
     const a = document.createElement("a");
-    a.href = url; a.download = "clientes-estado.csv"; a.click();
+    a.href = url; a.download = "clientes.csv"; a.click();
     URL.revokeObjectURL(url);
   }
 
   return (
     <div>
+      {/* Resumen */}
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-1 mb-4 text-[13px] text-muted">
+        <span><b className="text-navy font-semibold">{clients.length}</b> clientes</span>
+        <span><b className="text-navy font-semibold">{counts.conClases}</b> con clases</span>
+        {counts.sin_pago > 0 && <span><b className="text-[#b45309] dark:text-[#e8a572] font-semibold">{counts.sin_pago}</b> sin pago detectado</span>}
+        {counts.duplicadas > 0 && <span><b className="text-danger font-semibold">{counts.duplicadas}</b> con 2+ suscripciones</span>}
+      </div>
+
       <div className="flex items-center gap-[9px] flex-wrap">
         <SearchInputV2 value={search} onChange={changeSearch} placeholder="Buscar por nombre, email o plan…" className="min-w-[160px] flex-1" />
         <IconButtonV2 onClick={downloadCsv} title="Exportar a CSV">
@@ -150,7 +163,9 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
             { key: "congelada", label: "Congeladas", count: counts.congelada || undefined, countTone: "warning" },
             { key: "sin_plan", label: "Sin plan", count: counts.sin_plan || undefined, countTone: "warning" },
             { key: "inactivo", label: "Inactivos", count: counts.inactivo || undefined, countTone: "warning" },
+            { key: "sin_pago", label: "Sin pago", count: counts.sin_pago || undefined, countTone: "warning" },
             { key: "error", label: "Error de pago", count: counts.error || undefined, countTone: "danger" },
+            { key: "familiares", label: "Familiares", count: counts.familiares || undefined, countTone: "warning" },
           ]}
         />
       </div>
@@ -163,6 +178,9 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
             </span>
             <span>Plan</span>
             <span>Estado</span>
+            <span className="flex items-center cursor-pointer select-none" onClick={() => toggleSort("attended")}>
+              Clases<SortArrow active={sortKey === "attended"} dir={sortDir} />
+            </span>
             <span className="flex items-center cursor-pointer select-none" onClick={() => toggleSort("lastClass")}>
               Última clase<SortArrow active={sortKey === "lastClass"} dir={sortDir} />
             </span>
@@ -185,7 +203,10 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
                     <div className="flex items-center gap-[11px] min-w-0">
                       <Avatar seed={r.id} initials={initials(r.name, r.email)} size={30} />
                       <div className="min-w-0">
-                        <p className="text-[14px] font-semibold text-navy truncate">{r.name}</p>
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <p className="text-[14px] font-semibold text-navy truncate">{r.name}</p>
+                          {r.isFamily && <span className="shrink-0 text-[10px] font-semibold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/15 px-1.5 py-0.5 rounded-full">Familiar</span>}
+                        </div>
                         {r.email && <p className="text-[12px] text-faint truncate">{r.email}</p>}
                       </div>
                     </div>
@@ -194,7 +215,7 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
                       {r.activeSubCount >= 2 && (
                         <span title="Tiene varias suscripciones activas a la vez — posible doble cobro. Revísalo en Momence."
                           className="inline-flex items-center gap-1 px-[7px] py-[2px] rounded-full text-[11px] font-semibold bg-danger/10 text-danger whitespace-nowrap">
-                          ⚠ {r.activeSubCount} suscr.
+                          ⚠ {r.activeSubCount}
                         </span>
                       )}
                     </div>
@@ -205,10 +226,13 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
                       </span>
                       {r.status.detail && <p className="text-[11px] text-faint mt-0.5 truncate">{r.status.detail}</p>}
                     </div>
+                    <div>
+                      <p className="text-[14px] font-semibold text-navy tabular-nums">{r.attended}</p>
+                      {r.noShows > 0 && <p className="text-[11px] text-faint">{r.noShows} faltas</p>}
+                    </div>
                     <div className="text-[13px] text-muted">{r.lastClassDate ? timeAgo(r.lastClassDate) : "-"}</div>
                     <div>
                       <p className="text-[14px] font-semibold text-navy tabular-nums">{r.stripe ? fmt(r.stripe.totalSpent) : "-"}</p>
-                      {r.attended > 0 && <p className="text-[11px] text-faint">{r.attended} clases</p>}
                     </div>
                   </div>
                 </div>
@@ -217,7 +241,10 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
                 <div onClick={() => setSelected(r)} className="sm:hidden flex items-center gap-[10px] py-[10px] border-t border-subtle cursor-pointer active:bg-subtle">
                   <Avatar seed={r.id} initials={initials(r.name, r.email)} size={32} />
                   <div className="flex-1 min-w-0">
-                    <p className="text-[14px] font-semibold text-navy truncate">{r.name}</p>
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <p className="text-[14px] font-semibold text-navy truncate">{r.name}</p>
+                      {r.isFamily && <span className="shrink-0 text-[10px] font-semibold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/15 px-1 py-0.5 rounded-full">Fam</span>}
+                    </div>
                     <div className="flex items-center gap-1.5 mt-0.5">
                       <span className={`inline-block px-[7px] py-[1px] rounded-[6px] text-[11px] font-medium whitespace-nowrap ${pb.cls}`}>{pb.label}</span>
                       {r.activeSubCount >= 2 ? (
@@ -231,7 +258,7 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
                     </div>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-[13px] font-semibold text-navy tabular-nums">{r.stripe ? fmt(r.stripe.totalSpent) : "-"}</p>
+                    <p className="text-[13px] font-semibold text-navy tabular-nums">{r.attended} clases</p>
                     <p className="text-[11px] text-faint">{r.lastClassDate ? timeAgo(r.lastClassDate) : "sin clases"}</p>
                   </div>
                 </div>
