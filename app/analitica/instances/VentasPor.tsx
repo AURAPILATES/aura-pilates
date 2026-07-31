@@ -74,10 +74,15 @@ function groupByPeriod(rows: IngresosPorFuenteRow[], period: Period): IngresosPo
     map.set(key, {
       month: key,
       label: period === "año" ? y : key.replace("-", " "),
-      stripeGross: (existing?.stripeGross ?? 0) + r.stripeGross,
-      stripeFees:  (existing?.stripeFees  ?? 0) + r.stripeFees,
-      stripeNet:   (existing?.stripeNet   ?? 0) + r.stripeNet,
-      uscNet:      (existing?.uscNet      ?? 0) + r.uscNet,
+      stripeGross:    (existing?.stripeGross    ?? 0) + r.stripeGross,
+      stripeFees:     (existing?.stripeFees     ?? 0) + r.stripeFees,
+      stripeNet:      (existing?.stripeNet      ?? 0) + r.stripeNet,
+      uscNet:         (existing?.uscNet         ?? 0) + r.uscNet,
+      uscBank:        (existing?.uscBank        ?? 0) + r.uscBank,
+      urbanClasses:   (existing?.urbanClasses   ?? 0) + r.urbanClasses,
+      urbanEstimated: (existing?.urbanEstimated ?? 0) + r.urbanEstimated,
+      // El bloque (trimestre/año) es "parcialmente estimado" si algún mes suyo lo es.
+      urbanIsEstimated: (existing?.urbanIsEstimated ?? false) || r.urbanIsEstimated,
     });
   }
   return Array.from(map.values()).sort((a, b) => a.month.localeCompare(b.month));
@@ -142,6 +147,8 @@ export default function VentasPor({
   const tableStripeNet   = monthly.reduce((s, r) => s + r.stripeNet, 0);
   const tableUscNet      = monthly.reduce((s, r) => s + r.uscNet, 0);
   const tableTotalBruto  = tableStripeGross + tableUscNet;
+  const tableUrbanClasses = monthly.reduce((s, r) => s + r.urbanClasses, 0);
+  const hasUrbanClasses   = tableUrbanClasses > 0;
 
   const SOURCES = [
     { key: "stripe", label: "Stripe", color: "var(--chart-violet-1)", value: stripeGross },
@@ -258,7 +265,7 @@ export default function VentasPor({
         }
         dataSource={
           view === "fuente"
-            ? "Stripe API (precio de venta, antes de comisión), en vivo. Urban Sports Club: transferencias del banco importadas en Transacciones (reconocidas por el contacto «Urban Sports»), no por Stripe."
+            ? "Stripe API (precio de venta, antes de comisión), en vivo. Urban Sports Club (€): el importe real son las transferencias del banco importadas en Transacciones (contacto «Urban Sports»), no Stripe. El mes en curso, mientras el banco no ha ingresado, se muestra estimado = check-ins reales de Momence (API v2, en vivo) × tarifa pactada (Configuración → Tarifa Urban); al llegar la transferencia pasa al importe real."
             : "Solo Stripe - no incluye Urban Sports Club. Producto identificado contra el catálogo de precios en vivo de Momence · altas/bajas/reactivaciones por patrón de pagos de suscripción en Stripe"
         }
         sources={view === "fuente" ? ["stripe", "excel"] : ["stripe"]}
@@ -310,6 +317,11 @@ export default function VentasPor({
                     <th className="text-right py-2 pr-3 text-navy/45 font-semibold uppercase tracking-wide">Comis. Stripe</th>
                     <th className="text-right py-2 pr-3 text-navy/45 font-semibold uppercase tracking-wide">Stripe neto</th>
                     <th className="text-right py-2 pr-3 text-navy/45 font-semibold uppercase tracking-wide">Urban</th>
+                    {hasUrbanClasses && (
+                      <th className="text-right py-2 pr-3 text-navy/45 font-semibold uppercase tracking-wide whitespace-nowrap" title="Clases de Urban asistidas (check-ins de Momence, en vivo). Aún no facturado por el banco.">
+                        Urban clases<span className="text-primary">*</span>
+                      </th>
+                    )}
                     <th className="text-right py-2 text-navy/45 font-semibold uppercase tracking-wide">Total bruto</th>
                   </tr>
                 </thead>
@@ -320,7 +332,17 @@ export default function VentasPor({
                       <td className="py-2 pr-3 text-right text-navy tabular-nums">{row.stripeGross > 0 ? fmtEur(row.stripeGross) : "-"}</td>
                       <td className="py-2 pr-3 text-right text-danger tabular-nums">{row.stripeFees > 0 ? `−${fmtEur(row.stripeFees)}` : "-"}</td>
                       <td className="py-2 pr-3 text-right text-navy tabular-nums">{row.stripeNet > 0 ? fmtEur(row.stripeNet) : "-"}</td>
-                      <td className="py-2 pr-3 text-right text-navy tabular-nums">{row.uscNet > 0 ? fmtEur(row.uscNet) : "-"}</td>
+                      <td className="py-2 pr-3 text-right tabular-nums whitespace-nowrap">
+                        {row.uscNet > 0 ? (
+                          <span className={row.urbanIsEstimated ? "text-navy/70" : "text-navy"}>
+                            {fmtEur(row.uscNet)}
+                            {row.urbanIsEstimated && <span className="text-primary ml-1" title="Estimado: clases × tarifa. Aún no facturado por el banco.">est.*</span>}
+                          </span>
+                        ) : "-"}
+                      </td>
+                      {hasUrbanClasses && (
+                        <td className="py-2 pr-3 text-right text-navy/70 tabular-nums">{row.urbanClasses > 0 ? row.urbanClasses : "-"}</td>
+                      )}
                       <td className="py-2 text-right text-navy font-medium tabular-nums">{fmtEur(row.stripeGross + row.uscNet)}</td>
                     </tr>
                   ))}
@@ -332,10 +354,18 @@ export default function VentasPor({
                     <td className="py-2 pr-3 text-right text-danger font-semibold tabular-nums">−{fmtEur(tableStripeFees)}</td>
                     <td className="py-2 pr-3 text-right text-navy font-semibold tabular-nums">{fmtEur(tableStripeNet)}</td>
                     <td className="py-2 pr-3 text-right text-navy font-semibold tabular-nums">{fmtEur(tableUscNet)}</td>
+                    {hasUrbanClasses && (
+                      <td className="py-2 pr-3 text-right text-navy font-semibold tabular-nums">{tableUrbanClasses}</td>
+                    )}
                     <td className="py-2 text-right text-navy font-semibold tabular-nums">{fmtEur(tableTotalBruto)}</td>
                   </tr>
                 </tfoot>
               </table>
+              {hasUrbanClasses && (
+                <p className="text-[11px] text-navy/45 mt-2">
+                  <span className="text-primary">est.*</span> Urban del mes en curso, aún sin transferencia del banco: estimado = clases asistidas (check-ins reales de Momence, en vivo) × tarifa pactada. Provisional — cuando llegue la transferencia, ese mes pasa a mostrar el importe real del banco. La tarifa se configura en Configuración → Tarifa Urban.
+                </p>
+              )}
             </CollapsibleTable>
           </>
         ) : (

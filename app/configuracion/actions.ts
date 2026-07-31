@@ -132,3 +132,47 @@ export async function updateCategoryColors(updates: { id: string; bg_color: stri
   if (failed?.error) throw new Error(failed.error.message);
   revalidateAll();
 }
+
+// ── Tarifa Urban Sports Club (€/clase, con vigencia) ────────────────────────────────────────
+// Cambia el € estimado de Urban en Analítica → Ventas por > Fuente (mes en curso sin banco), así
+// que revalidamos también /analitica.
+type UrbanRateInput = { start_date: string; end_date: string | null; price_per_class: number };
+
+function validateUrbanRate(data: UrbanRateInput) {
+  if (!data.start_date) throw new Error("La fecha de inicio es obligatoria.");
+  if (data.end_date && data.end_date < data.start_date) {
+    throw new Error("La fecha de fin no puede ser anterior a la de inicio.");
+  }
+  if (!(data.price_per_class >= 0)) throw new Error("El precio debe ser un número igual o mayor que 0.");
+}
+
+function revalidateUrbanRates() {
+  revalidatePath("/configuracion");
+  revalidatePath("/analitica");
+}
+
+export async function createUrbanRate(data: UrbanRateInput) {
+  validateUrbanRate(data);
+  const supabase = createServerClient();
+  const { error } = await supabase.from("urban_rates").insert(data);
+  if (error) throw new Error(error.message);
+  revalidateUrbanRates();
+}
+
+export async function updateUrbanRate(id: string, data: UrbanRateInput) {
+  validateUrbanRate(data);
+  const supabase = createServerClient();
+  const { error } = await supabase
+    .from("urban_rates")
+    .update({ ...data, updated_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidateUrbanRates();
+}
+
+export async function deleteUrbanRate(id: string) {
+  const supabase = createServerClient();
+  const { error } = await supabase.from("urban_rates").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidateUrbanRates();
+}

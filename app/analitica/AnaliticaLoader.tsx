@@ -39,6 +39,8 @@ import { getAtRiskV2, type AtRiskCustomerInfo } from "@/lib/atRiskV2";
 import { getTeacherStatsV2 } from "@/lib/teacherStatsV2";
 import { getTeacherConversionV2 } from "@/lib/teacherConversionV2";
 import { getSubscriberFirstClassV2 } from "@/lib/subscriberFirstClassV2";
+import { urbanActivityByMonth } from "@/lib/clientActivityV2";
+import { loadUrbanRates } from "@/lib/urbanRates";
 import RendimientoProfesoras from "./instances/RendimientoProfesoras";
 import ConversionProfesora from "./instances/ConversionProfesora";
 import PrimeraClaseSuscriptores from "./instances/PrimeraClaseSuscriptores";
@@ -307,19 +309,49 @@ export default async function AnaliticaLoader({
     monthlyStripeFeesMap.set(m,  (monthlyStripeFeesMap.get(m)  ?? 0) + p.fee);
     monthlyStripeNetMap.set(m,   (monthlyStripeNetMap.get(m)   ?? 0) + p.net);
   }
-  const allMonthsFuente = new Set([...monthlyStripeNetMap.keys(), ...uscByMonth.keys()]);
+  // Actividad de Urban por mes (Momence v2, en vivo): clases asistidas + € estimado (check-ins ×
+  // tarifa pactada, ver loadUrbanRates). Sirve para rellenar el mes en curso cuando el banco aún
+  // no ha ingresado la transferencia. El € REAL sigue siendo el del banco (uscByMonth).
+  const urbanRates = await loadUrbanRates().catch(() => []);
+  const urbanActivity = await urbanActivityByMonth(urbanRates).catch(() => new Map<string, { classes: number; estimated: number }>());
+  const allMonthsFuente = new Set([...monthlyStripeNetMap.keys(), ...uscByMonth.keys(), ...urbanActivity.keys()]);
   const MONTH_ES_F: Record<string, string> = { "01":"Ene","02":"Feb","03":"Mar","04":"Abr","05":"May","06":"Jun","07":"Jul","08":"Ago","09":"Sep","10":"Oct","11":"Nov","12":"Dic" };
   const monthlyByFuente: IngresosPorFuenteRow[] = Array.from(allMonthsFuente).sort().map((m) => {
     const [y, mm] = m.split("-");
+    const uscBank = uscByMonth.get(m) ?? 0;
+    const act = urbanActivity.get(m);
+    const urbanClasses = act?.classes ?? 0;
+    const urbanEstimated = act?.estimated ?? 0;
+    // Efectivo: si el banco ya ingresó ese mes, manda el banco (real). Si no y hay clases, usamos
+    // el estimado (provisional). El flag deja marcar en la tabla/tooltip qué meses son estimados.
+    const urbanIsEstimated = uscBank <= 0 && urbanClasses > 0;
     return {
       month: m,
       label: `${MONTH_ES_F[mm] ?? mm}'${y.slice(2)}`,
       stripeGross: monthlyStripeGrossMap.get(m) ?? 0,
       stripeFees:  monthlyStripeFeesMap.get(m)  ?? 0,
       stripeNet:   monthlyStripeNetMap.get(m)   ?? 0,
-      uscNet:      uscByMonth.get(m)            ?? 0,
+      uscNet:      urbanIsEstimated ? urbanEstimated : uscBank,
+      uscBank,
+      urbanClasses,
+      urbanEstimated,
+      urbanIsEstimated,
     };
   });
+
+  // KPI de Urban "efectivo" = banco del período (uscRevenue) + estimado de los meses del período
+  // que aún no ha facturado el banco. Sin doble conteo: donde hay estimado, el banco es 0, así que
+  // no lo cuenta uscRevenue. Un mes cuenta si su "YYYY-MM" cae dentro del rango del período.
+  const estimatedUrbanInRange = (fromISO: string, toISO: string) => {
+    const fromM = fromISO.slice(0, 7);
+    const toM = toISO.slice(0, 7);
+    return monthlyByFuente.reduce(
+      (s, r) => (r.urbanIsEstimated && r.month >= fromM && r.month <= toM ? s + r.urbanEstimated : s),
+      0,
+    );
+  };
+  const uscRevenueEff = uscRevenue + estimatedUrbanInRange(mainFrom, mainTo);
+  const uscRevCompEff = uscRevComp + estimatedUrbanInRange(compFrom, compTo);
 
   const subscriptionCohorts = computeSubscriptionCohorts(paymentsAll, subscriptionTiers, primaryIdMap);
   const retentionCohorts = computeRetentionCohorts(paymentsAll, subscriptionTiers, 4, primaryIdMap);
@@ -654,10 +686,10 @@ export default async function AnaliticaLoader({
                 stripeGross={totalRev}
                 stripeFees={stripeFees}
                 stripeNet={stripeNet}
-                uscGross={uscRevenue}
+                uscGross={uscRevenueEff}
                 stripeGrossComp={revComp}
                 stripeFeesComp={stripeFeesComp}
-                uscGrossComp={uscRevComp}
+                uscGrossComp={uscRevCompEff}
                 monthly={monthlyByFuente}
                 dateRange={periodLabel}
                 lastUpdated={`Stripe en vivo · Urban según Transacciones (${bancoLastUpdated})`}

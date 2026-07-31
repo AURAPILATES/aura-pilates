@@ -2,6 +2,7 @@ import { loadCategories } from "@/lib/categories";
 import { loadBusinessEvents } from "@/lib/businessEvents";
 import { loadCategoryCounts } from "@/lib/transactions";
 import { getPricingReport } from "@/lib/stripePayments";
+import { loadUrbanRates } from "@/lib/urbanRates";
 import { getContacts, getContactsStats, recomputeContactsFromBankDetails, cleanupContactPatterns, getDismissedContactDuplicates } from "@/app/transacciones/actions";
 import ConfiguracionTabs from "./ConfiguracionTabs";
 import MobileNav from "@/app/components/MobileNav";
@@ -9,7 +10,7 @@ import MobileNav from "@/app/components/MobileNav";
 export const dynamic = "force-dynamic";
 
 export default async function ConfiguracionPage() {
-  const [categories, events, categoryCounts, contacts, contactStats, pendingRecompute, pendingCleanup, pricingRows, dismissedDuplicates] = await Promise.all([
+  const [categories, events, categoryCounts, contacts, contactStats, pendingRecompute, pendingCleanup, pricingRows, dismissedDuplicates, urbanRates] = await Promise.all([
     loadCategories(),
     loadBusinessEvents(),
     loadCategoryCounts(),
@@ -19,6 +20,7 @@ export default async function ConfiguracionPage() {
     cleanupContactPatterns(true),
     getPricingReport(),
     getDismissedContactDuplicates(),
+    loadUrbanRates().catch(() => []),
   ]);
 
   return (
@@ -40,6 +42,7 @@ export default async function ConfiguracionPage() {
           pendingCleanupCount={pendingCleanup.updated + pendingCleanup.merged}
           pricingRows={pricingRows}
           dismissedDuplicates={dismissedDuplicates}
+          urbanRates={urbanRates}
         />
       </main>
     </div>

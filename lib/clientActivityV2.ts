@@ -1,5 +1,6 @@
 import { createServerClient } from "./supabase";
 import { getMembersV2 } from "./momenceV2";
+import { rateForDate, type UrbanRate } from "./urbanRates";
 
 // Actividad de clientes desde la asistencia real de Momence (class_bookings_v2), con un flag
 // de "sin pago detectado": personas que han asistido a clase (checkedIn) pero de las que no
@@ -141,4 +142,37 @@ export async function getClientActivityV2(paidEmails: Set<string>): Promise<Clie
     freeCount: freeRows.length,
     freeClasses: freeRows.reduce((s, r) => s + r.attended, 0),
   };
+}
+
+// Actividad de Urban Sports Club por mes ("YYYY-MM"), desde la asistencia real capturada en
+// class_bookings_v2 (Momence v2). Es una señal EN VIVO del mes en curso, útil antes de que
+// llegue la transferencia del banco (que es la única fuente del dinero REAL de Urban).
+//   classes   = nº de clases asistidas (check-ins). Solo cuenta asistió, no no-shows.
+//   estimated = € estimado = suma de la tarifa pactada vigente en la fecha de cada clase
+//               (ver lib/urbanRates). No es el cobro real: Momence no expone lo que Urban paga.
+// Si una clase cae fuera de toda tarifa, suma a `classes` pero no a `estimated`.
+export type UrbanMonthActivity = { classes: number; estimated: number };
+
+export async function urbanActivityByMonth(
+  rates: UrbanRate[] = [],
+): Promise<Map<string, UrbanMonthActivity>> {
+  const db = createServerClient();
+  const bookings = await readAll<{ email: string | null; session_starts_at: string; checked_in: boolean }>(
+    (from, to) =>
+      db
+        .from("class_bookings_v2")
+        .select("email, session_starts_at, checked_in")
+        .range(from, to),
+  );
+  const byMonth = new Map<string, UrbanMonthActivity>();
+  for (const b of bookings) {
+    if (!b.checked_in || !isUrbanEmail(b.email)) continue;
+    const m = b.session_starts_at.slice(0, 7);
+    const acc = byMonth.get(m) ?? { classes: 0, estimated: 0 };
+    acc.classes += 1;
+    const rate = rateForDate(rates, b.session_starts_at);
+    if (rate != null) acc.estimated += rate;
+    byMonth.set(m, acc);
+  }
+  return byMonth;
 }

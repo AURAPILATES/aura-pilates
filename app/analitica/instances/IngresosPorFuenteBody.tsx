@@ -11,7 +11,17 @@ export type IngresosPorFuenteRow = {
   stripeGross: number;
   stripeFees: number;
   stripeNet: number;
+  /** € de Urban EFECTIVO usado por el gráfico/tabla: el del banco (real) si ese mes ya se
+   * facturó; si no, el estimado (check-ins × tarifa) para no dejar hueco en el mes en curso. */
   uscNet: number;
+  /** € REAL de Urban según el banco ese mes (0 si aún no llegó la transferencia). */
+  uscBank: number;
+  /** Clases de Urban asistidas ese mes (check-ins, Momence v2 en vivo). */
+  urbanClasses: number;
+  /** € estimado = clases × tarifa pactada vigente (ver [[project-momence-sales-migration]]). */
+  urbanEstimated: number;
+  /** true si uscNet viene del estimado (el banco aún no ingresó ese mes) → dato provisional. */
+  urbanIsEstimated: boolean;
 };
 
 const COLOR_STRIPE = "var(--chart-violet-1)";
@@ -38,9 +48,12 @@ function FuenteTooltip({ active, payload }: TooltipContentProps) {
       </div>
       <div className="flex items-center gap-1.5">
         <span className="w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: COLOR_USC }} />
-        <span className="text-navy/55">Urban</span>
+        <span className="text-navy/55">Urban{row.urbanIsEstimated ? " (est.)" : ""}</span>
         <span className="font-semibold text-navy ml-auto">{fmtEur(row.uscNet)}</span>
       </div>
+      {row.urbanIsEstimated && (
+        <p className="text-[10px] text-navy/40 mt-1 pl-3.5">{row.urbanClasses} clases × tarifa · provisional</p>
+      )}
     </div>
   );
 }
