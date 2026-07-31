@@ -4,6 +4,7 @@ import { enrichCustomers } from "@/lib/customerEnrichment";
 import { loadFamilyClientIds } from "@/lib/clientFamily";
 import { loadPaymentErrorAcks } from "@/lib/paymentErrorAcks";
 import { getClientActivityV2 } from "@/lib/clientActivityV2";
+import { getMemberClientsV2 } from "@/lib/memberClientsV2";
 import ClientesShell from "./ClientesShell";
 
 type Props = {
@@ -28,7 +29,17 @@ export default async function ClientesLoader({ curMonth }: Props) {
   const paidEmails = new Set(
     customersWithChurn.filter((c) => c.paymentCount > 0 && c.email).map((c) => c.email!.toLowerCase()),
   );
-  const activity = await getClientActivityV2(paidEmails).catch(() => null);
+  const [activity, memberClients] = await Promise.all([
+    getClientActivityV2(paidEmails).catch(() => null),
+    getMemberClientsV2(customersWithChurn).catch(() => []),
+  ]);
 
-  return <ClientesShell customers={customersWithChurn} payments={payments} activity={activity} />;
+  return (
+    <ClientesShell
+      customers={customersWithChurn}
+      payments={payments}
+      activity={activity}
+      clients={memberClients}
+    />
+  );
 }
