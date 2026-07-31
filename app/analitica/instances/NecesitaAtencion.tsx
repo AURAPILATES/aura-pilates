@@ -13,6 +13,19 @@ const BADGE: Record<AtRiskReason, string> = {
   "Sin créditos": "bg-danger/10 text-danger",
   "Pocos créditos": "bg-warning/10 text-warning",
   "Caduca pronto": "bg-warning/10 text-warning",
+  "Sin venir": "bg-danger/10 text-danger",
+  "Asistencia en caída": "bg-warning/10 text-warning",
+};
+
+// Por qué esta fila necesita atención en concreto — se muestra en la tabla (title) y en el
+// drawer, para que quede claro qué hacer con cada motivo sin tener que recordarlo.
+const EXPLANATION: Record<AtRiskReason, string> = {
+  "Congelada": "Ha congelado su suscripción o pack: sigue siendo cliente, pero no está viniendo ni pagando activamente. Buen momento para preguntar cuándo vuelve.",
+  "Sin créditos": "Ha gastado todas las clases de su pack y aún no ha renovado. Riesgo de que no vuelva si nadie le ofrece el siguiente paso (renovar o pasar a suscripción).",
+  "Pocos créditos": "Le quedan muy pocas clases del pack. Anticiparse a ofrecer renovación antes de que se quede sin plazas evita un hueco sin clase entre packs.",
+  "Caduca pronto": "Su pack caduca pronto y aún tiene clases sin usar: si no viene a tiempo, pierde lo que ya pagó. Avisarle es tanto retención como buen servicio.",
+  "Sin venir": "Sigue pagando la suscripción pero hace tiempo que no pisa el estudio. Es la señal más clara de baja inminente: paga por algo que no usa, y eso no dura.",
+  "Asistencia en caída": "Su ritmo de clases se ha reducido a la mitad o menos en el último mes frente al anterior. Suele preceder a dejar de venir del todo — conviene entender qué ha cambiado.",
 };
 
 function MomenceButton({ memberId }: { memberId: number }) {
@@ -78,13 +91,13 @@ export default function NecesitaAtencion({
     <>
       <ChartCard
         title="Necesita atención"
-        subtitle="Packs por agotarse o caducar y suscripciones congeladas — momento de contactar"
+        subtitle="Packs por agotarse o caducar, suscripciones congeladas y suscriptores que dejan de venir — momento de contactar"
         kpiItems={[
           {
             label: "En riesgo",
             value: String(data.items.length),
             valueClassName: "text-warning",
-            tooltip: "Total de clientes que necesitan atención ahora: packs por agotarse o agotados, packs por caducar y suscripciones congeladas. Excluye clases sueltas (compra única).",
+            tooltip: "Total de clientes que necesitan atención ahora: packs por agotarse o agotados, packs por caducar, suscripciones congeladas y suscriptores que han dejado de venir. Excluye clases sueltas (compra única).",
           },
           {
             label: "Sin créditos",
@@ -96,8 +109,13 @@ export default function NecesitaAtencion({
             value: String(data.counts["Caduca pronto"]),
             tooltip: "Packs que caducan en ≤14 días con clases aún sin usar: conviene avisar antes de que se pierdan.",
           },
+          {
+            label: "Sin venir",
+            value: String(data.counts["Sin venir"] + data.counts["Asistencia en caída"]),
+            tooltip: "Churn temprano por comportamiento: suscriptores activos que no pisan clase desde hace ≥21 días, o que en las últimas 4 semanas vienen la mitad o menos que en las 4 anteriores. Pagan pero no vienen — los siguientes en darse de baja si nadie les escribe. Ojo: en vacaciones (agosto) esta señal se dispara más de lo normal.",
+          },
         ]}
-        dataSource="Snapshot diario de Momence (API v2) · packs multi-clase con ≤2 créditos o que caducan en ≤14 días, y suscripciones congeladas. Excluye clases sueltas (one-off). Clica un cliente para ver el detalle."
+        dataSource="Snapshot diario de Momence (API v2) · packs multi-clase con ≤2 créditos o que caducan en ≤14 días, suscripciones congeladas, y churn temprano por comportamiento (asistencia real de class_bookings_v2: sin venir ≥21 días o frecuencia a la mitad en 4 semanas). Excluye clases sueltas (one-off). En períodos de vacaciones la señal de asistencia se dispara más. Clica un cliente para ver el detalle."
         sources={["momence"]}
         lastUpdated={`snapshot ${data.date}`}
       >
@@ -127,7 +145,10 @@ export default function NecesitaAtencion({
                     </td>
                     <td className="py-2 pr-3 text-navy/70">{it.membershipName}</td>
                     <td className="py-2 pr-3">
-                      <span className={`inline-block rounded px-1.5 py-0.5 text-xs font-medium ${BADGE[it.reason]}`}>
+                      <span
+                        className={`inline-block rounded px-1.5 py-0.5 text-xs font-medium cursor-help ${BADGE[it.reason]}`}
+                        title={EXPLANATION[it.reason]}
+                      >
                         {it.reason}
                       </span>
                     </td>
@@ -171,6 +192,11 @@ export default function NecesitaAtencion({
                 <span className="text-navy/50">Detalle</span>
                 <span className="text-navy/80 text-right tabular-nums">{selected.detail}</span>
               </div>
+            </div>
+
+            <div className="p-4 bg-warning/[0.06] border border-warning/15 rounded-xl">
+              <p className="text-xs font-semibold text-warning mb-1">¿Por qué necesita atención?</p>
+              <p className="text-xs text-navy/70 leading-relaxed">{EXPLANATION[selected.reason]}</p>
             </div>
 
             {info ? (
