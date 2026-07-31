@@ -81,6 +81,11 @@ export default function MemberDrawer({ client, payments, onClose }: { client: Me
             <span className={`text-xs px-2.5 py-1 rounded-full font-medium flex items-center gap-1 whitespace-nowrap ${TONE_CLS[client.status.tone]}`}>
               {client.status.label}{client.status.detail ? ` · ${client.status.detail}` : ""}
             </span>
+            {client.activeSubCount >= 2 && (
+              <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-danger/10 text-danger whitespace-nowrap" title="Varias suscripciones activas — posible doble cobro">
+                ⚠ {client.activeSubCount} suscripciones activas
+              </span>
+            )}
             {stripe?.discount && (
               <span className="text-xs bg-warning/10 text-warning px-2.5 py-1 rounded-full font-medium">
                 {stripe.discount.percentOff != null ? `-${stripe.discount.percentOff}%` : stripe.discount.name}

@@ -52,6 +52,7 @@ export type MemberClient = {
   firstSeen: string | null;
   lastSeen: string | null;
   plan: MemberPlan | null;
+  activeSubCount: number;  // suscripciones activas no congeladas (>1 = posible duplicado/doble cobro)
   attended: number;
   firstClassDate: string | null;
   firstTeacher: string | null;
@@ -148,6 +149,13 @@ export async function getMemberClientsV2(stripeCustomers: EnrichedCustomer[]): P
     : [];
   // Un miembro puede tener varias membresías activas: priorizamos suscripción; entre packs, el
   // de más créditos restantes.
+  // Suscripciones activas no congeladas por miembro (mismo criterio que el panel de Momence):
+  // >1 = la persona tiene varias suscripciones a la vez (posible duplicado / doble cobro).
+  const subCountByMember = new Map<number, number>();
+  for (const r of snapRows) {
+    if (r.type === "subscription" && !r.is_frozen) subCountByMember.set(r.member_id, (subCountByMember.get(r.member_id) ?? 0) + 1);
+  }
+
   const planByMember = new Map<number, MemberPlan>();
   for (const r of snapRows) {
     const kind: PlanKind = isSubscriptionType(r.type) ? "subscription" : "pack";
@@ -221,6 +229,7 @@ export async function getMemberClientsV2(stripeCustomers: EnrichedCustomer[]): P
       firstSeen: m.firstSeen ?? null,
       lastSeen: m.lastSeen ?? null,
       plan,
+      activeSubCount: subCountByMember.get(m.id) ?? 0,
       attended: act?.attended ?? 0,
       firstClassDate: act?.firstDate ?? null,
       firstTeacher: act?.firstTeacher ?? null,
@@ -245,6 +254,7 @@ export async function getMemberClientsV2(stripeCustomers: EnrichedCustomer[]): P
       firstSeen: null,
       lastSeen: null,
       plan: null,
+      activeSubCount: 0,
       attended: 0,
       firstClassDate: null,
       firstTeacher: null,

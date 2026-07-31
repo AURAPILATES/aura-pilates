@@ -17,10 +17,10 @@ import type { StripePayment } from "@/lib/stripePayments";
 const COLS = "2.4fr 1.3fr 1.5fr 1fr .9fr";
 const PAGE_SIZE = 25;
 
-type Filter = "all" | "activa" | "congelada" | "pack" | "sin_plan" | "inactivo" | "error";
+type Filter = "all" | "duplicadas" | "activa" | "congelada" | "pack" | "sin_plan" | "inactivo" | "error";
 type SortKey = "name" | "totalSpent" | "lastClass";
 
-const STATUS_IN_FILTER: Record<Exclude<Filter, "all">, (k: StatusKey) => boolean> = {
+const STATUS_IN_FILTER: Record<Exclude<Filter, "all" | "duplicadas">, (k: StatusKey) => boolean> = {
   activa: (k) => k === "activa",
   congelada: (k) => k === "congelada",
   pack: (k) => k === "pack" || k === "pack_bajo" || k === "pack_agotado",
@@ -72,8 +72,9 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
   const [selected, setSelected] = useState<MemberClient | null>(null);
 
   const counts = useMemo(() => {
-    const c = { congelada: 0, sin_plan: 0, inactivo: 0, error: 0 };
+    const c = { congelada: 0, sin_plan: 0, inactivo: 0, error: 0, duplicadas: 0 };
     for (const r of clients) {
+      if (r.activeSubCount >= 2) c.duplicadas++;
       if (r.status.key === "congelada") c.congelada++;
       else if (r.status.key === "sin_plan") c.sin_plan++;
       else if (r.status.key === "inactivo") c.inactivo++;
@@ -84,9 +85,10 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
 
   const filtered = useMemo(() => {
     const q = normalizeText(search.trim());
-    const pred = filter === "all" ? null : STATUS_IN_FILTER[filter];
+    const pred = filter === "all" || filter === "duplicadas" ? null : STATUS_IN_FILTER[filter];
     return clients
       .filter((r) => {
+        if (filter === "duplicadas" && r.activeSubCount < 2) return false;
         if (pred && !pred(r.status.key)) return false;
         if (!q) return true;
         return normalizeText(`${r.name} ${r.email ?? ""} ${r.plan?.name ?? ""}`).includes(q);
@@ -141,6 +143,7 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
           onChange={changeFilter}
           options={[
             { key: "all", label: "Todos" },
+            { key: "duplicadas", label: "2+ suscripciones", count: counts.duplicadas || undefined, countTone: "danger" },
             { key: "activa", label: "Al día" },
             { key: "pack", label: "Packs" },
             { key: "congelada", label: "Congeladas", count: counts.congelada || undefined, countTone: "warning" },
@@ -185,8 +188,14 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
                         {r.email && <p className="text-[12px] text-faint truncate">{r.email}</p>}
                       </div>
                     </div>
-                    <div>
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <span className={`inline-block px-[11px] py-1 rounded-[8px] text-[12.5px] font-medium whitespace-nowrap ${pb.cls}`}>{pb.label}</span>
+                      {r.activeSubCount >= 2 && (
+                        <span title="Tiene varias suscripciones activas a la vez — posible doble cobro. Revísalo en Momence."
+                          className="inline-flex items-center gap-1 px-[7px] py-[2px] rounded-full text-[11px] font-semibold bg-danger/10 text-danger whitespace-nowrap">
+                          ⚠ {r.activeSubCount} suscr.
+                        </span>
+                      )}
                     </div>
                     <div className="min-w-0">
                       <span className={`inline-flex items-center gap-[7px] rounded-full px-[10px] py-[3px] text-[12.5px] font-medium whitespace-nowrap ${TONE_CLS[r.status.tone]}`}>
@@ -210,10 +219,14 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
                     <p className="text-[14px] font-semibold text-navy truncate">{r.name}</p>
                     <div className="flex items-center gap-1.5 mt-0.5">
                       <span className={`inline-block px-[7px] py-[1px] rounded-[6px] text-[11px] font-medium whitespace-nowrap ${pb.cls}`}>{pb.label}</span>
-                      <span className="inline-flex items-center gap-1 text-[11px] text-muted whitespace-nowrap">
-                        <span className={`w-[5px] h-[5px] rounded-full shrink-0 ${TONE_DOT[r.status.tone]}`} />
-                        {r.status.label}
-                      </span>
+                      {r.activeSubCount >= 2 ? (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-danger whitespace-nowrap">⚠ {r.activeSubCount} suscr.</span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[11px] text-muted whitespace-nowrap">
+                          <span className={`w-[5px] h-[5px] rounded-full shrink-0 ${TONE_DOT[r.status.tone]}`} />
+                          {r.status.label}
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div className="text-right shrink-0">

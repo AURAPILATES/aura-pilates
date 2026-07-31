@@ -187,6 +187,19 @@ export async function loadStripeCustomers(
     fetchFailedPayments(),
   ]);
   const failedByStripeId = new Map(failedPayments.map((f) => [f.customerId, f]));
+
+  // Stripe deja algunos clientes sin email/nombre (pagos creados vía Momence dejan el objeto
+  // cliente vacío), pero el dato real viaja en billing_details del cargo. Lo recuperamos de los
+  // pagos para que el cruce por email (dedup de clientes, enlace con Momence) no pierda a esas
+  // personas ni su gasto. Ver caso Eva Moreno (cus sin email pero pago con billing evmorenor@…).
+  const billingEmailByCustomerId = new Map<string, string>();
+  const billingNameByCustomerId = new Map<string, string>();
+  for (const p of payments) {
+    if (!p.customerId) continue;
+    if (p.customerEmail && !billingEmailByCustomerId.has(p.customerId)) billingEmailByCustomerId.set(p.customerId, p.customerEmail);
+    if (p.customerName && !billingNameByCustomerId.has(p.customerId)) billingNameByCustomerId.set(p.customerId, p.customerName);
+  }
+
   const raw_customers: RawEntry[] = [];
 
   for (const c of stripeCustomers) {
@@ -210,8 +223,8 @@ export async function loadStripeCustomers(
 
     raw_customers.push({
       id: c.id,
-      name: c.name ?? null,
-      email: c.email ?? null,
+      name: c.name ?? billingNameByCustomerId.get(c.id) ?? null,
+      email: c.email ?? billingEmailByCustomerId.get(c.id) ?? null,
       createdAt: new Date(c.created * 1000).toISOString().split("T")[0],
       discount,
       stats,
