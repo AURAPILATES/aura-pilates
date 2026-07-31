@@ -1,11 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
+import { Users, Activity, Clock, AlertTriangle, Copy } from "react-feather";
 import Avatar from "@/app/components/Avatar";
 import SearchInputV2 from "@/app/components/v2/SearchInputV2";
 import TablePaginationV2 from "@/app/components/v2/TablePaginationV2";
 import FilterPillGroupV2 from "@/app/components/v2/FilterPillGroupV2";
 import { IconButtonV2 } from "@/app/components/v2/ButtonsV2";
+import { InfoDot } from "@/components/charts";
 import { tableHeadClassV2, tableRowClassV2, tableCardClassV2, gridColsV2 } from "@/app/components/v2/tableStylesV2";
 import { normalizeText } from "@/lib/normalizeText";
 import { fmt } from "@/lib/analytics";
@@ -13,6 +15,28 @@ import { initials, fmtDate, timeAgo } from "./ClientesTable";
 import MemberDrawer from "./MemberDrawer";
 import type { MemberClient, StatusTone, StatusKey } from "@/lib/memberClientsV2";
 import type { StripePayment } from "@/lib/stripePayments";
+
+function StatBox({ icon, label, value, valueClassName, tooltip, onClick, active }: {
+  icon: ReactNode; label: string; value: ReactNode; valueClassName?: string; tooltip: string; onClick?: () => void; active?: boolean;
+}) {
+  const Comp = onClick ? "button" : "div";
+  return (
+    <Comp
+      type={onClick ? "button" : undefined}
+      onClick={onClick}
+      className={`w-full text-left bg-card border rounded-[14px] px-4 py-3.5 transition-colors ${
+        active ? "border-navy/40" : "border-border"
+      } ${onClick ? "hover:bg-navy/[0.015] cursor-pointer" : ""}`}
+    >
+      <div className="flex items-center gap-1.5 text-navy/50 mb-2">
+        {icon}
+        <span className="text-[12.5px] font-medium">{label}</span>
+        <InfoDot text={tooltip} />
+      </div>
+      <span className={`text-2xl font-medium leading-tight tabular-nums ${valueClassName ?? "text-navy"}`}>{value}</span>
+    </Comp>
+  );
+}
 
 const COLS = "2.1fr 1.05fr .85fr 1.3fr .55fr .95fr .9fr .9fr .8fr";
 const PAGE_SIZE = 25;
@@ -132,6 +156,7 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
   }
   function changeFilter(f: Filter) { setFilter(f); setPage(0); }
   function changeSearch(v: string) { setSearch(v); setPage(0); }
+  function toggleBox(f: Filter) { setFilter((cur) => (cur === f ? "all" : f)); setPage(0); }
 
   function downloadCsv() {
     const head = ["Nombre", "Email", "Teléfono", "Plan", "Renueva", "Estado", "Detalle", "Clases", "Cancelaciones", "No-shows", "Primera clase", "Última clase", "Total pagado (€)"];
@@ -151,13 +176,35 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
 
   return (
     <div>
-      {/* Resumen */}
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-1 mb-4 text-[13px] text-muted">
-        <span><b className="text-navy font-semibold">{clients.length}</b> clientes</span>
-        <span><b className="text-navy font-semibold">{counts.conClases}</b> con clases</span>
-        {counts.renueva_pronto > 0 && <span><b className="text-[#b45309] dark:text-[#e8a572] font-semibold">{counts.renueva_pronto}</b> renuevan pronto</span>}
-        {counts.sin_pago > 0 && <span><b className="text-[#b45309] dark:text-[#e8a572] font-semibold">{counts.sin_pago}</b> sin pago detectado</span>}
-        {counts.duplicadas > 0 && <span><b className="text-danger font-semibold">{counts.duplicadas}</b> con 2+ suscripciones</span>}
+      {/* KPIs en caja (clic → filtra la tabla) */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-5">
+        <StatBox
+          icon={<Users size={14} />} label="Clientes" value={clients.length}
+          tooltip="Total de clientes del censo de Momence (incluye efectivo y Urban)."
+          onClick={() => toggleBox("all")} active={filter === "all"}
+        />
+        <StatBox
+          icon={<Activity size={14} />} label="Con clases" value={counts.conClases}
+          tooltip="Clientes que han asistido a alguna clase (checkedIn)."
+        />
+        <StatBox
+          icon={<Clock size={14} />} label="Renuevan pronto" value={counts.renueva_pronto}
+          valueClassName={counts.renueva_pronto > 0 ? "text-[#b45309] dark:text-[#e8a572]" : "text-navy/50"}
+          tooltip="Suscripción o pack que caduca en 14 días o menos. Momento clave para retener."
+          onClick={() => toggleBox("renueva_pronto")} active={filter === "renueva_pronto"}
+        />
+        <StatBox
+          icon={<AlertTriangle size={14} />} label="Sin pago detectado" value={counts.sin_pago}
+          valueClassName={counts.sin_pago > 0 ? "text-[#b45309] dark:text-[#e8a572]" : "text-navy/50"}
+          tooltip="Asistieron a clase sin rastro de pago (ni Stripe ni membresía Momence). Revisa antes de actuar (efectivo no se detecta)."
+          onClick={() => toggleBox("sin_pago")} active={filter === "sin_pago"}
+        />
+        <StatBox
+          icon={<Copy size={14} />} label="2+ suscripciones" value={counts.duplicadas}
+          valueClassName={counts.duplicadas > 0 ? "text-danger" : "text-navy/50"}
+          tooltip="Clientes con varias suscripciones activas a la vez — posible doble cobro. Revísalos en Momence."
+          onClick={() => toggleBox("duplicadas")} active={filter === "duplicadas"}
+        />
       </div>
 
       <div className="flex items-center gap-[9px] flex-wrap">
