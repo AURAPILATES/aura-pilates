@@ -17,11 +17,12 @@ import type { StripePayment } from "@/lib/stripePayments";
 const COLS = "2.2fr 1.15fr 1.35fr .8fr .95fr .85fr";
 const PAGE_SIZE = 25;
 
-type Filter = "all" | "duplicadas" | "sin_pago" | "familiares" | "activa" | "congelada" | "pack" | "sin_plan" | "inactivo" | "error";
+type Filter = "all" | "duplicadas" | "sin_pago" | "familiares" | "activa" | "urban" | "congelada" | "pack" | "sin_plan" | "inactivo" | "error";
 type SortKey = "name" | "attended" | "totalSpent" | "lastClass";
 
-const STATUS_IN_FILTER: Record<"activa" | "congelada" | "pack" | "sin_plan" | "inactivo" | "error", (k: StatusKey) => boolean> = {
-  activa: (k) => k === "activa" || k === "urban",
+const STATUS_IN_FILTER: Record<"activa" | "urban" | "congelada" | "pack" | "sin_plan" | "inactivo" | "error", (k: StatusKey) => boolean> = {
+  activa: (k) => k === "activa",
+  urban: (k) => k === "urban",
   congelada: (k) => k === "congelada",
   pack: (k) => k === "pack" || k === "pack_bajo" || k === "pack_agotado",
   sin_plan: (k) => k === "sin_plan",
@@ -73,12 +74,13 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
   const [selected, setSelected] = useState<MemberClient | null>(null);
 
   const counts = useMemo(() => {
-    const c = { congelada: 0, sin_plan: 0, inactivo: 0, error: 0, duplicadas: 0, sin_pago: 0, familiares: 0, conClases: 0 };
+    const c = { congelada: 0, sin_plan: 0, inactivo: 0, error: 0, duplicadas: 0, sin_pago: 0, familiares: 0, conClases: 0, urban: 0 };
     for (const r of clients) {
       if (r.activeSubCount >= 2) c.duplicadas++;
       if (r.isFamily) c.familiares++;
       if (r.coverage === "none" && r.attended > 0) c.sin_pago++;
       if (r.attended > 0) c.conClases++;
+      if (r.status.key === "urban") c.urban++;
       if (r.status.key === "congelada") c.congelada++;
       else if (r.status.key === "sin_plan") c.sin_plan++;
       else if (r.status.key === "inactivo") c.inactivo++;
@@ -159,6 +161,7 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
             { key: "all", label: "Todos" },
             { key: "duplicadas", label: "2+ suscripciones", count: counts.duplicadas || undefined, countTone: "danger" },
             { key: "activa", label: "Al día" },
+            { key: "urban", label: "Urban", count: counts.urban || undefined },
             { key: "pack", label: "Packs" },
             { key: "congelada", label: "Congeladas", count: counts.congelada || undefined, countTone: "warning" },
             { key: "sin_plan", label: "Sin plan", count: counts.sin_plan || undefined, countTone: "warning" },
