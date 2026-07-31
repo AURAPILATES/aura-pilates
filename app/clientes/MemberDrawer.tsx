@@ -4,7 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Drawer from "@/app/components/Drawer";
 import { fmt } from "@/lib/analytics";
-import { setClientFamilyAction } from "@/app/actions/setClientFamily";
+import { setFamilyMemberAction } from "@/app/actions/setClientFamily";
 import { ackPaymentErrorAction, unackPaymentErrorAction } from "@/app/actions/ackPaymentError";
 import { momenceCustomerUrl } from "@/lib/momenceLinks";
 import type { StripePayment } from "@/lib/stripePayments";
@@ -32,11 +32,11 @@ export default function MemberDrawer({ client, payments, onClose }: { client: Me
   );
 
   function toggleFamily() {
-    if (!stripe) return;
+    if (client.memberId == null) return;
     const next = !isFamily;
     setIsFamily(next);
     startSaveFamily(async () => {
-      try { await setClientFamilyAction(stripe.primaryId, next); router.refresh(); }
+      try { await setFamilyMemberAction(client.memberId!, next); router.refresh(); }
       catch { setIsFamily(!next); }
     });
   }
@@ -92,7 +92,7 @@ export default function MemberDrawer({ client, payments, onClose }: { client: Me
               </span>
             )}
           </div>
-          {stripe && (
+          {client.memberId != null && (
             <label className={`flex items-center gap-2 mt-3 w-fit cursor-pointer select-none ${savingFamily ? "opacity-50 pointer-events-none" : ""}`}>
               <input type="checkbox" checked={isFamily} onChange={toggleFamily} disabled={savingFamily}
                 className="w-[15px] h-[15px] rounded-[4px] border-border accent-rose-500 cursor-pointer" />

@@ -1,7 +1,7 @@
 import { loadStripePaymentsCached } from "@/lib/stripePayments";
 import { loadStripeCustomers } from "@/lib/stripeCustomers";
 import { enrichCustomers } from "@/lib/customerEnrichment";
-import { loadFamilyClientIds } from "@/lib/clientFamily";
+import { loadFamilyClientIds, loadFamilyMemberIds } from "@/lib/clientFamily";
 import { loadPaymentErrorAcks } from "@/lib/paymentErrorAcks";
 import { getClientActivityV2 } from "@/lib/clientActivityV2";
 import { getMemberClientsV2 } from "@/lib/memberClientsV2";
@@ -13,9 +13,10 @@ type Props = {
 
 export default async function ClientesLoader({ curMonth }: Props) {
   const payments = await loadStripePaymentsCached();
-  const [customers, familyIds, paymentErrorAcks] = await Promise.all([
+  const [customers, familyIds, familyMemberIds, paymentErrorAcks] = await Promise.all([
     loadStripeCustomers(payments, curMonth),
     loadFamilyClientIds(),
+    loadFamilyMemberIds(),
     loadPaymentErrorAcks(),
   ]);
 
@@ -31,7 +32,7 @@ export default async function ClientesLoader({ curMonth }: Props) {
   );
   const [activity, memberClients] = await Promise.all([
     getClientActivityV2(paidEmails).catch(() => null),
-    getMemberClientsV2(customersWithChurn).catch(() => []),
+    getMemberClientsV2(customersWithChurn, familyMemberIds).catch(() => []),
   ]);
 
   return (

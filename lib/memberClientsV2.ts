@@ -10,7 +10,7 @@ import type { StripeDiscount } from "./stripeCustomers";
 //  - Dinero desde Stripe (total, pagos, errores de cobro), cruzado por email.
 // Sustituye los "malabares" de la pestaña Estado. Ver [[project-profesoras-v2]].
 
-export type PlanKind = "subscription" | "pack";
+export type PlanKind = "subscription" | "pack" | "urban";
 
 export type MemberPlan = {
   name: string;
@@ -24,7 +24,7 @@ export type MemberPlan = {
 export type StatusTone = "success" | "warning" | "danger" | "muted";
 export type StatusKey =
   | "activa" | "congelada" | "pack" | "pack_bajo" | "pack_agotado"
-  | "sin_plan" | "inactivo" | "error_pago";
+  | "urban" | "sin_plan" | "inactivo" | "error_pago";
 
 export type MemberStatus = { key: StatusKey; label: string; tone: StatusTone; detail?: string };
 
@@ -88,6 +88,12 @@ async function readAll<T>(build: (from: number, to: number) => PromiseLike<{ dat
 
 const isSubscriptionType = (t: string) => t === "subscription" || t === "on-demand-subscription" || t === "patron";
 
+// Los miembros de Urban Sports Club llegan con un email del dominio de Urban y no tienen
+// suscripción propia en Momence (reservan vía Urban). Se les asigna un "plan" Urban sintético
+// para que no queden vacíos ni caigan en "sin plan"/"inactivo".
+const isUrbanEmail = (email: string | null) => !!email && email.toLowerCase().includes("urbansportsclub.com");
+const URBAN_PLAN: MemberPlan = { name: "Urban", kind: "urban", isFrozen: false, creditsLeft: null, creditsTotal: null, endDate: null };
+
 function daysSince(dateStr: string): number {
   return Math.floor((Date.now() - new Date(dateStr).getTime()) / 86_400_000);
 }
@@ -103,6 +109,7 @@ function computeStatus(plan: MemberPlan | null, stripe: MemberStripe | null, las
     return { key: "error_pago", label: "Error de pago", tone: "danger", detail: d != null ? `hace ${d}d` : undefined };
   }
   if (plan) {
+    if (plan.kind === "urban") return { key: "urban", label: "Urban", tone: "success" };
     if (plan.kind === "subscription") {
       return plan.isFrozen
         ? { key: "congelada", label: "Congelada", tone: "warning" }
@@ -129,7 +136,10 @@ function computeStatus(plan: MemberPlan | null, stripe: MemberStripe | null, las
   return { key: "inactivo", label: "Sin actividad", tone: "muted" };
 }
 
-export async function getMemberClientsV2(stripeCustomers: EnrichedCustomer[]): Promise<MemberClient[]> {
+export async function getMemberClientsV2(
+  stripeCustomers: EnrichedCustomer[],
+  familyMemberIds: Set<number> = new Set(),
+): Promise<MemberClient[]> {
   const db = createServerClient();
 
   // Roster real de Momence.
@@ -216,7 +226,8 @@ export async function getMemberClientsV2(stripeCustomers: EnrichedCustomer[]): P
     const email = m.email ? m.email.toLowerCase() : null;
     const sc = email ? stripeByEmail.get(email) : undefined;
     if (sc) usedStripe.add(sc.id);
-    const plan = planByMember.get(m.id) ?? null;
+    // Plan real; si no tiene y es de Urban, "plan" Urban sintético.
+    const plan = planByMember.get(m.id) ?? (isUrbanEmail(m.email) ? URBAN_PLAN : null);
     const act = actByMember.get(m.id);
     const stripe = sc ? toStripe(sc) : null;
     const lastActivity = [act?.lastDate ?? null, stripe?.lastPaymentDate ?? null].filter(Boolean).sort().pop() ?? null;
@@ -235,7 +246,7 @@ export async function getMemberClientsV2(stripeCustomers: EnrichedCustomer[]): P
       firstTeacher: act?.firstTeacher ?? null,
       lastClassDate: act?.lastDate ?? null,
       stripe,
-      isFamily: !!sc?.isFamily,
+      isFamily: familyMemberIds.has(m.id),
       status: computeStatus(plan, stripe, lastActivity),
     });
   }

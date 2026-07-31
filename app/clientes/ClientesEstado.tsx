@@ -44,6 +44,7 @@ const TONE_DOT: Record<StatusTone, string> = {
 
 function planBadge(plan: MemberClient["plan"]): { label: string; cls: string } {
   if (!plan) return { label: "Sin plan", cls: "bg-navy/[0.05] text-navy/50" };
+  if (plan.kind === "urban") return { label: "Urban", cls: "bg-[#3b82f6]/10 text-[#3b82f6]" };
   const n = plan.name.toLowerCase();
   if (plan.kind === "subscription") {
     if (n.includes("bàsic") || n.includes("basic")) return { label: plan.name, cls: "bg-violet-50 dark:bg-violet-500/15 text-violet-600 dark:text-violet-400" };
