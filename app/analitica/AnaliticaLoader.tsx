@@ -19,7 +19,7 @@ import { loadStripeCustomers } from "@/lib/stripeCustomers";
 import { buildPrimaryIdMap, enrichCustomers, hasActiveSub } from "@/lib/customerEnrichment";
 import { estimatedMRR } from "@/lib/stripeRecurrence";
 
-import { loadTransactionsCached, expensesByCategoryAll, financingExpensesByCategory, getLatestImportDate, findCategory, isUrbanIncome, urbanRevenueByMonth, isCashflowTransaction, type EconomicGroup, type Transaction, type PaymentMethod } from "@/lib/transactions";
+import { loadTransactionsCached, expensesByCategoryAll, financingExpensesByCategory, getLatestImportDate, findCategory, isUrbanIncome, urbanRevenueByMonth, urbanRevenueByActivityMonth, isCashflowTransaction, type EconomicGroup, type Transaction, type PaymentMethod } from "@/lib/transactions";
 import { formatRelativeTime } from "@/lib/formatRelativeTime";
 import { loadCategoriesCached, NON_CASHFLOW_GROUP_TYPES, type Category } from "@/lib/categories";
 import { loadRecurringExpensesCached, forecastConfirmedExpenses } from "@/lib/recurringExpenses";
@@ -240,8 +240,6 @@ export default async function AnaliticaLoader({
   // Se reconoce por su contacto: al importar en Transacciones, el concepto "Urban" se enlaza al
   // contacto "Urban Sports". Ya no depende del CSV manual de Momence (ver isUrbanIncome).
   const uscByMonth = urbanRevenueByMonth(txnsAll);
-  const uscRevenue = txnsMain.filter(isUrbanIncome).reduce((sum, t) => sum + t.amount, 0);
-  const uscRevComp = txnsComp.filter(isUrbanIncome).reduce((sum, t) => sum + t.amount, 0);
   const revComp    = stripeTotalRevenue(pComp);
   const stripeFeesComp = stripeTotalFees(pComp);
 
@@ -311,14 +309,17 @@ export default async function AnaliticaLoader({
   }
   // Actividad de Urban por mes (Momence v2, en vivo): clases asistidas + € estimado (check-ins ×
   // tarifa pactada, ver loadUrbanRates). Sirve para rellenar el mes en curso cuando el banco aún
-  // no ha ingresado la transferencia. El € REAL sigue siendo el del banco (uscByMonth).
+  // no ha ingresado la transferencia. El € REAL sigue siendo el del banco, asignado al MES DE LAS
+  // CLASES (Urban paga a mes vencido: la transferencia del 14-jul es de las clases de junio), para
+  // que dinero y actividad caigan en la misma barra y solo el mes abierto quede como estimado.
   const urbanRates = await loadUrbanRates().catch(() => []);
   const urbanActivity = await urbanActivityByMonth(urbanRates).catch(() => new Map<string, { classes: number; estimated: number }>());
-  const allMonthsFuente = new Set([...monthlyStripeNetMap.keys(), ...uscByMonth.keys(), ...urbanActivity.keys()]);
+  const uscByActivityMonth = urbanRevenueByActivityMonth(txnsAll);
+  const allMonthsFuente = new Set([...monthlyStripeNetMap.keys(), ...uscByActivityMonth.keys(), ...urbanActivity.keys()]);
   const MONTH_ES_F: Record<string, string> = { "01":"Ene","02":"Feb","03":"Mar","04":"Abr","05":"May","06":"Jun","07":"Jul","08":"Ago","09":"Sep","10":"Oct","11":"Nov","12":"Dic" };
   const monthlyByFuente: IngresosPorFuenteRow[] = Array.from(allMonthsFuente).sort().map((m) => {
     const [y, mm] = m.split("-");
-    const uscBank = uscByMonth.get(m) ?? 0;
+    const uscBank = uscByActivityMonth.get(m) ?? 0;
     const act = urbanActivity.get(m);
     const urbanClasses = act?.classes ?? 0;
     const urbanEstimated = act?.estimated ?? 0;
@@ -339,19 +340,19 @@ export default async function AnaliticaLoader({
     };
   });
 
-  // KPI de Urban "efectivo" = banco del período (uscRevenue) + estimado de los meses del período
-  // que aún no ha facturado el banco. Sin doble conteo: donde hay estimado, el banco es 0, así que
-  // no lo cuenta uscRevenue. Un mes cuenta si su "YYYY-MM" cae dentro del rango del período.
-  const estimatedUrbanInRange = (fromISO: string, toISO: string) => {
+  // KPI de Urban "efectivo" = suma del uscNet mensual (banco por mes de actividad, o estimado si
+  // ese mes aún no se facturó) de los meses que caen en el período. Misma cifra que ven las barras
+  // del gráfico, así KPI y gráfico no pueden divergir. Un mes cuenta por su "YYYY-MM".
+  const urbanEffInRange = (fromISO: string, toISO: string) => {
     const fromM = fromISO.slice(0, 7);
     const toM = toISO.slice(0, 7);
     return monthlyByFuente.reduce(
-      (s, r) => (r.urbanIsEstimated && r.month >= fromM && r.month <= toM ? s + r.urbanEstimated : s),
+      (s, r) => (r.month >= fromM && r.month <= toM ? s + r.uscNet : s),
       0,
     );
   };
-  const uscRevenueEff = uscRevenue + estimatedUrbanInRange(mainFrom, mainTo);
-  const uscRevCompEff = uscRevComp + estimatedUrbanInRange(compFrom, compTo);
+  const uscRevenueEff = urbanEffInRange(mainFrom, mainTo);
+  const uscRevCompEff = urbanEffInRange(compFrom, compTo);
 
   const subscriptionCohorts = computeSubscriptionCohorts(paymentsAll, subscriptionTiers, primaryIdMap);
   const retentionCohorts = computeRetentionCohorts(paymentsAll, subscriptionTiers, 4, primaryIdMap);

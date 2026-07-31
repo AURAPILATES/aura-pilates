@@ -55,6 +55,30 @@ export function urbanRevenueByMonth(txns: Transaction[]): Map<string, number> {
   return map;
 }
 
+/** "YYYY-MM" del mes anterior a una fecha ISO. */
+function prevMonth(dateISO: string): string {
+  const [y, m] = dateISO.slice(0, 7).split("-").map(Number);
+  return m === 1 ? `${y - 1}-12` : `${y}-${pad2seg(m - 1)}`;
+}
+function pad2seg(n: number): string {
+  return n < 10 ? `0${n}` : String(n);
+}
+
+/** Ingresos de Urban por MES DE ACTIVIDAD ("YYYY-MM" → importe): cada transferencia se asigna al
+ * mes anterior a su fecha, porque Urban paga a mes vencido (transferencia del 12-14 de M paga las
+ * clases de M-1; verificado con el histórico del banco). Es el criterio del gráfico de Ventas por
+ * Fuente, que alinea el € con las clases del mes; IVA/breakeven/transacciones siguen usando
+ * urbanRevenueByMonth (criterio de caja: el mes en que el dinero llega). */
+export function urbanRevenueByActivityMonth(txns: Transaction[]): Map<string, number> {
+  const map = new Map<string, number>();
+  for (const t of txns) {
+    if (!isUrbanIncome(t) || t.is_refund) continue;
+    const m = prevMonth(t.date);
+    map.set(m, (map.get(m) ?? 0) + t.amount);
+  }
+  return map;
+}
+
 /** Busca la categoría de una transacción por su `value`, sin sensibilidad a mayúsculas/minúsculas
  * (las categorías guardan el value con distinta capitalización según cuándo se crearon). */
 export function findCategory(categories: Category[], value: string): Category | undefined {

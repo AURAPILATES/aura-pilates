@@ -242,7 +242,7 @@ export default function VentasPor({
             : (months.length > 0 ? `${periodLabel(months[0], period)} – ${periodLabel(months[months.length - 1], period)}` : undefined)
         }
         kpiItems={[
-          { label: "Ventas totales", value: <ResponsiveEur value={totalBruto} />, helper: "Stripe bruto + Urban", delta: ventasDelta },
+          { label: "Ventas totales", value: <ResponsiveEur value={totalBruto} />, helper: "Stripe bruto + Urban", tooltip: "Stripe bruto + Urban del período. El € de Urban se asigna al mes de las clases (Urban paga a mes vencido por transferencia); el mes aún sin facturar entra estimado: clases asistidas en Momence × tarifa pactada.", delta: ventasDelta },
           { label: "Comisión Stripe", value: <ResponsiveEur value={stripeFees} prefix="−" />, valueClassName: "text-danger", helper: `Neto: ${fmtEur(stripeNet)}`, delta: comisionDelta },
           { label: "Ventas netas", value: <ResponsiveEur value={ventasNetas} />, tooltip: "Ventas totales - comisión Stripe - 21%", delta: netasDelta },
         ]}
@@ -265,7 +265,7 @@ export default function VentasPor({
         }
         dataSource={
           view === "fuente"
-            ? "Stripe API (precio de venta, antes de comisión), en vivo. Urban Sports Club (€): el importe real son las transferencias del banco importadas en Transacciones (contacto «Urban Sports»), no Stripe. El mes en curso, mientras el banco no ha ingresado, se muestra estimado = check-ins reales de Momence (API v2, en vivo) × tarifa pactada (Configuración → Tarifa Urban); al llegar la transferencia pasa al importe real."
+            ? "Stripe API (precio de venta, antes de comisión), en vivo. Urban Sports Club (€): el importe real son las transferencias del banco (contacto «Urban Sports»), asignadas al mes de las clases que pagan (Urban paga a mes vencido: la transferencia de mediados de julio es de las clases de junio). El mes aún sin facturar se muestra estimado = check-ins reales de Momence (API v2, en vivo) × tarifa pactada (Configuración → Tarifa Urban); al llegar su transferencia pasa al importe real."
             : "Solo Stripe - no incluye Urban Sports Club. Producto identificado contra el catálogo de precios en vivo de Momence · altas/bajas/reactivaciones por patrón de pagos de suscripción en Stripe"
         }
         sources={view === "fuente" ? ["stripe", "excel"] : ["stripe"]}
@@ -363,7 +363,7 @@ export default function VentasPor({
               </table>
               {hasUrbanClasses && (
                 <p className="text-[11px] text-navy/45 mt-2">
-                  <span className="text-primary">est.*</span> Urban del mes en curso, aún sin transferencia del banco: estimado = clases asistidas (check-ins reales de Momence, en vivo) × tarifa pactada. Provisional — cuando llegue la transferencia, ese mes pasa a mostrar el importe real del banco. La tarifa se configura en Configuración → Tarifa Urban.
+                  <span className="text-primary">est.*</span> Mes de Urban aún sin facturar: estimado = clases asistidas (check-ins reales de Momence, en vivo) × tarifa pactada. Urban paga a mes vencido, así que cada transferencia del banco se asigna al mes de las clases que paga; cuando llegue la del mes marcado, pasará a mostrar el importe real. La tarifa se configura en Configuración → Precios.
                 </p>
               )}
             </CollapsibleTable>

@@ -51,9 +51,16 @@ function FuenteTooltip({ active, payload }: TooltipContentProps) {
         <span className="text-navy/55">Urban{row.urbanIsEstimated ? " (est.)" : ""}</span>
         <span className="font-semibold text-navy ml-auto">{fmtEur(row.uscNet)}</span>
       </div>
-      {row.urbanIsEstimated && (
-        <p className="text-[10px] text-navy/40 mt-1 pl-3.5">{row.urbanClasses} clases × tarifa · provisional</p>
-      )}
+      {row.urbanIsEstimated ? (
+        <p className="text-[10px] text-navy/40 mt-1 pl-3.5 max-w-[190px]">
+          {row.urbanClasses} clases × tarifa, en vivo de Momence. Provisional: Urban paga a mes vencido; al llegar su transferencia pasará al importe real.
+        </p>
+      ) : row.uscNet > 0 ? (
+        <p className="text-[10px] text-navy/40 mt-1 pl-3.5 max-w-[190px]">
+          Transferencia real del banco, asignada a este mes (Urban paga sus clases a mes vencido).
+          {row.urbanClasses > 0 && ` ${row.urbanClasses} clases.`}
+        </p>
+      ) : null}
     </div>
   );
 }
