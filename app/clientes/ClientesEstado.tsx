@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, type ReactNode } from "react";
-import { Users, Activity, Clock, AlertTriangle, Copy } from "react-feather";
+import { Users, Activity, Clock, AlertTriangle, Copy, TrendingDown, TrendingUp } from "react-feather";
 import Avatar from "@/app/components/Avatar";
 import SearchInputV2 from "@/app/components/v2/SearchInputV2";
 import TablePaginationV2 from "@/app/components/v2/TablePaginationV2";
@@ -43,7 +43,8 @@ const PAGE_SIZE = 25;
 
 type Filter =
   | "all" | "duplicadas" | "sin_pago" | "familiares" | "renueva_pronto"
-  | "activa" | "urban" | "congelada" | "pack" | "sin_plan" | "inactivo" | "error";
+  | "activa" | "urban" | "congelada" | "pack" | "sin_plan" | "inactivo" | "error"
+  | "infrautiliza" | "al_limite";
 type SortKey = "name" | "attended" | "cancellations" | "totalSpent" | "firstClass" | "lastClass" | "renew";
 
 const STATUS_IN_FILTER: Record<"activa" | "urban" | "congelada" | "pack" | "sin_plan" | "inactivo" | "error", (k: StatusKey) => boolean> = {
@@ -107,13 +108,15 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
   const [selected, setSelected] = useState<MemberClient | null>(null);
 
   const counts = useMemo(() => {
-    const c = { congelada: 0, sin_plan: 0, inactivo: 0, error: 0, duplicadas: 0, sin_pago: 0, familiares: 0, urban: 0, renueva_pronto: 0, conClases: 0 };
+    const c = { congelada: 0, sin_plan: 0, inactivo: 0, error: 0, duplicadas: 0, sin_pago: 0, familiares: 0, urban: 0, renueva_pronto: 0, conClases: 0, infrautiliza: 0, al_limite: 0 };
     for (const r of clients) {
       if (r.activeSubCount >= 2) c.duplicadas++;
       if (r.isFamily) c.familiares++;
       if (r.coverage === "none" && r.attended > 0) c.sin_pago++;
       if (r.attended > 0) c.conClases++;
       if (renewsSoon(r)) c.renueva_pronto++;
+      if (r.planUsage?.level === "bajo") c.infrautiliza++;
+      else if (r.planUsage?.level === "alto") c.al_limite++;
       if (r.status.key === "urban") c.urban++;
       else if (r.status.key === "congelada") c.congelada++;
       else if (r.status.key === "sin_plan") c.sin_plan++;
@@ -131,6 +134,8 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
         else if (filter === "sin_pago") { if (!(r.coverage === "none" && r.attended > 0)) return false; }
         else if (filter === "familiares") { if (!r.isFamily) return false; }
         else if (filter === "renueva_pronto") { if (!renewsSoon(r)) return false; }
+        else if (filter === "infrautiliza") { if (r.planUsage?.level !== "bajo") return false; }
+        else if (filter === "al_limite") { if (r.planUsage?.level !== "alto") return false; }
         else if (filter !== "all") { if (!STATUS_IN_FILTER[filter](r.status.key)) return false; }
         if (!q) return true;
         return normalizeText(`${r.name} ${r.email ?? ""} ${r.plan?.name ?? ""}`).includes(q);
@@ -159,13 +164,14 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
   function toggleBox(f: Filter) { setFilter((cur) => (cur === f ? "all" : f)); setPage(0); }
 
   function downloadCsv() {
-    const head = ["Nombre", "Email", "Teléfono", "Plan", "Renueva", "Estado", "Detalle", "Clases", "Cancelaciones", "No-shows", "Primera clase", "Última clase", "Total pagado (€)"];
+    const head = ["Nombre", "Email", "Teléfono", "Plan", "Renueva", "Estado", "Detalle", "Clases", "Cancelaciones", "No-shows", "Primera clase", "Última clase", "Total pagado (€)", "Uso del plan"];
     const rows = filtered.map((r) => [
       r.name, r.email ?? "", r.phone ?? "",
       r.plan?.name ?? "Sin plan", r.plan?.endDate ? r.plan.endDate.slice(0, 10) : "",
       r.status.label, r.status.detail ?? "",
       String(r.attended), String(r.cancellations), String(r.noShows),
       r.firstClassDate ?? "", r.lastClassDate ?? "", r.stripe ? String(Math.round(r.stripe.totalSpent)) : "",
+      r.planUsage ? `${r.planUsage.attended}/${r.planUsage.limit} (${r.planUsage.level})` : "",
     ]);
     const csv = [head, ...rows].map((row) => row.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
     const url = URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" }));
@@ -177,7 +183,7 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
   return (
     <div>
       {/* KPIs en caja (clic → filtra la tabla) */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-5">
         <StatBox
           icon={<Users size={14} />} label="Clientes" value={clients.length}
           tooltip="Total de clientes del censo de Momence (incluye efectivo y Urban)."
@@ -205,6 +211,12 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
           tooltip="Clientes con varias suscripciones activas a la vez — posible doble cobro. Revísalos en Momence."
           onClick={() => toggleBox("duplicadas")} active={filter === "duplicadas"}
         />
+        <StatBox
+          icon={<TrendingDown size={14} />} label="Infrautilizan su plan" value={counts.infrautiliza}
+          valueClassName={counts.infrautiliza > 0 ? "text-[#b45309] dark:text-[#e8a572]" : "text-navy/50"}
+          tooltip="Suscripción con muy pocas clases asistidas frente a las que incluye (Bàsic/Plus/Pro), a mitad de su período de facturación o más. Pagan por algo que apenas usan — riesgo de baja o downgrade."
+          onClick={() => toggleBox("infrautiliza")} active={filter === "infrautiliza"}
+        />
       </div>
 
       <div className="flex items-center gap-[9px] flex-wrap">
@@ -226,6 +238,8 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
             { key: "activa", label: "Al día" },
             { key: "urban", label: "Urban", count: counts.urban || undefined },
             { key: "pack", label: "Packs" },
+            { key: "al_limite", label: "Posible upsell", count: counts.al_limite || undefined, countTone: "warning" },
+            { key: "infrautiliza", label: "Infrautiliza plan", count: counts.infrautiliza || undefined, countTone: "warning" },
             { key: "renueva_pronto", label: "Renueva pronto", count: counts.renueva_pronto || undefined, countTone: "warning" },
             { key: "congelada", label: "Congeladas", count: counts.congelada || undefined, countTone: "warning" },
             { key: "sin_plan", label: "Sin plan", count: counts.sin_plan || undefined, countTone: "warning" },
@@ -275,6 +289,12 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
                       <span className={`inline-block px-[10px] py-1 rounded-[8px] text-[12.5px] font-medium whitespace-nowrap ${pb.cls}`}>{pb.label}</span>
                       {r.activeSubCount >= 2 && (
                         <span title="Varias suscripciones activas a la vez — posible doble cobro." className="inline-flex items-center gap-1 px-[6px] py-[2px] rounded-full text-[11px] font-semibold bg-danger/10 text-danger whitespace-nowrap">⚠ {r.activeSubCount}</span>
+                      )}
+                      {r.planUsage?.level === "bajo" && (
+                        <span title={`Infrautiliza el plan: ${r.planUsage.attended} de ~${r.planUsage.limit} clases en el período actual.`} className="inline-flex items-center gap-1 px-[6px] py-[2px] rounded-full text-[11px] font-semibold bg-[#b45309]/10 text-[#b45309] dark:text-[#e8a572] whitespace-nowrap">▽ {r.planUsage.attended}/{r.planUsage.limit}</span>
+                      )}
+                      {r.planUsage?.level === "alto" && (
+                        <span title={`Al límite o por encima de su plan: ${r.planUsage.attended} de ${r.planUsage.limit} clases — candidata a subir de plan.`} className="inline-flex items-center gap-1 px-[6px] py-[2px] rounded-full text-[11px] font-semibold bg-primary/10 text-primary whitespace-nowrap">△ {r.planUsage.attended}/{r.planUsage.limit}</span>
                       )}
                     </div>
                     <div className={`text-[13px] tabular-nums ${dRenew != null && dRenew <= 14 ? "text-[#b45309] dark:text-[#e8a572] font-medium" : "text-muted"}`}>

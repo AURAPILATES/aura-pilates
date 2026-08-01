@@ -290,6 +290,25 @@ export function getSessionBookingsV2(
 }
 
 // ---------------------------------------------------------------------------
+// Catálogo de membresías (planes) — límites de uso por período, p.ej. "Bàsic incluye 4
+// clases/30 días". Sirve para comparar clases asistidas vs lo que el plan permite
+// ("¿amortiza su plan?"). Distinto de MemberBoughtMembership (lo que un miembro TIENE).
+// ---------------------------------------------------------------------------
+
+export type MomenceV2MembershipCatalog = {
+  id: number;
+  name: string;
+  type: string;
+  usageLimitForSessions: number | null;
+  duration: number | null;
+  durationUnit: string | null;
+};
+
+export async function getMembershipsV2(): Promise<MomenceV2MembershipCatalog[]> {
+  return fetchAllPages<MomenceV2MembershipCatalog>("/host/memberships", {}, 100);
+}
+
+// ---------------------------------------------------------------------------
 // Miembros / suscripciones (equivalente v2 de getCustomers + activeSubscriptions)
 // ---------------------------------------------------------------------------
 
@@ -336,6 +355,24 @@ export async function getMembersV2(opts: {
   for (const [k, v] of Object.entries(rest)) if (v !== undefined) params[k] = v as string;
   // /host/members tope pageSize en 100 (devuelve 400 si se pide más).
   return fetchAllPages<MomenceV2HostMember>("/host/members", params, Math.min(pageSize, 100));
+}
+
+// Notas CRM de un miembro (creadas a mano en Momence). Campos según el schema OpenAPI oficial
+// (static.momence.com/schema/api-v2-schema.yaml, HostMemberNoteDto). `note` puede traer HTML.
+export type MomenceV2MemberNote = {
+  id: number;
+  createdAt: string;
+  modifiedAt: string | null;
+  type: "regular" | "soap";
+  note: string;
+};
+
+export function getMemberNotesV2(
+  memberId: number,
+  opts: { pageSize?: number } = {},
+): Promise<MomenceV2MemberNote[]> {
+  const { pageSize = 50 } = opts;
+  return fetchAllPages<MomenceV2MemberNote>(`/host/members/${memberId}/notes`, {}, Math.min(pageSize, 50));
 }
 
 // Suscripciones/packs activos de un miembro. `includeFrozen` incluye los congelados.

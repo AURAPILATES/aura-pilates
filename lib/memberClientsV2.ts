@@ -1,5 +1,5 @@
 import { createServerClient } from "./supabase";
-import { getMembersV2 } from "./momenceV2";
+import { getMembersV2, getMembershipsV2 } from "./momenceV2";
 import type { EnrichedCustomer } from "./customerEnrichment";
 import type { StripeDiscount } from "./stripeCustomers";
 
@@ -20,6 +20,31 @@ export type MemberPlan = {
   creditsTotal: number | null;
   endDate: string | null; // ISO
 };
+
+// ¿Amortiza su plan? Solo para suscripciones (Bàsic/Plus/Pro incluyen N clases cada 30 días,
+// según el catálogo de Momence): clases asistidas en el último período vs el límite del plan.
+// "bajo" = paga mucho más de lo que usa (riesgo de baja/downgrade); "alto" = siempre al límite o
+// por encima (candidata a subir de plan). Solo se calcula si la suscripción lleva activa al
+// menos un período completo (si no, no hay comparación justa).
+export type PlanUsageLevel = "bajo" | "normal" | "alto";
+export type PlanUsage = {
+  attended: number;
+  limit: number;
+  periodDays: number;
+  ratio: number;
+  level: PlanUsageLevel;
+};
+
+const PLAN_USAGE_LOW = 0.4;
+const PLAN_USAGE_HIGH = 0.9;
+// El período de una suscripción se juzga contra su ventana real (start_date→end_date de la
+// bought-membership, ~30 días para Bàsic/Plus/Pro) - NO es la antigüedad de la suscripción:
+// Momence reinicia start_date en cada renovación. "Bajo" solo hace falta el 40% del período para
+// ser significativo (0 clases a media suscripción ya es señal). "Alto" exige el 75% para evitar
+// falsos positivos de alguien simplemente al día con su ritmo semanal (que a mitad de período
+// puede superar el 100% prorrateado solo por cómo caen las clases esa semana).
+const MIN_ELAPSED_LOW = 0.4;
+const MIN_ELAPSED_HIGH = 0.75;
 
 export type StatusTone = "success" | "warning" | "danger" | "muted";
 export type StatusKey =
@@ -65,6 +90,7 @@ export type MemberClient = {
   stripe: MemberStripe | null;
   isFamily: boolean;
   status: MemberStatus;
+  planUsage: PlanUsage | null;
 };
 
 type SnapRow = {
@@ -72,6 +98,7 @@ type SnapRow = {
   membership_name: string | null;
   type: string;
   is_frozen: boolean;
+  start_date: string | null;
   end_date: string | null;
   event_credits_left: number | null;
   event_credits_total: number | null;
@@ -157,7 +184,7 @@ export async function getMemberClientsV2(
     ? await readAll<SnapRow>((from, to) =>
         db
           .from("subscriber_snapshots_v2")
-          .select("member_id, membership_name, type, is_frozen, end_date, event_credits_left, event_credits_total")
+          .select("member_id, membership_name, type, is_frozen, start_date, end_date, event_credits_left, event_credits_total")
           .eq("date", snapDate)
           .range(from, to),
       )
@@ -172,6 +199,7 @@ export async function getMemberClientsV2(
   }
 
   const planByMember = new Map<number, MemberPlan>();
+  const planStartByMember = new Map<number, string | null>();
   for (const r of snapRows) {
     const kind: PlanKind = isSubscriptionType(r.type) ? "subscription" : "pack";
     const plan: MemberPlan = {
@@ -183,11 +211,15 @@ export async function getMemberClientsV2(
       endDate: r.end_date,
     };
     const prev = planByMember.get(r.member_id);
-    if (!prev) { planByMember.set(r.member_id, plan); continue; }
+    if (!prev) { planByMember.set(r.member_id, plan); planStartByMember.set(r.member_id, r.start_date); continue; }
     if (prev.kind === "subscription") continue; // ya tiene suscripción, gana
-    if (plan.kind === "subscription") { planByMember.set(r.member_id, plan); continue; }
-    if ((plan.creditsLeft ?? 0) > (prev.creditsLeft ?? 0)) planByMember.set(r.member_id, plan);
+    if (plan.kind === "subscription") { planByMember.set(r.member_id, plan); planStartByMember.set(r.member_id, r.start_date); continue; }
+    if ((plan.creditsLeft ?? 0) > (prev.creditsLeft ?? 0)) { planByMember.set(r.member_id, plan); planStartByMember.set(r.member_id, r.start_date); }
   }
+
+  // Catálogo de planes (límite de clases por período), para "¿amortiza su plan?".
+  const catalog = await getMembershipsV2().catch(() => []);
+  const catalogByName = new Map(catalog.filter((c) => c.usageLimitForSessions).map((c) => [c.name, c]));
 
   // Asistencia por miembro.
   const bookings = await readAll<BookingRow>((from, to) =>
@@ -195,6 +227,9 @@ export async function getMemberClientsV2(
   );
   type Act = { attended: number; noShows: number; cancellations: number; firstDate: string | null; firstTeacher: string | null; lastDate: string | null };
   const actByMember = new Map<number, Act>();
+  // Timestamps (ms) de clases asistidas por miembro, para calcular "¿amortiza su plan?"
+  // (clases en el último período vs el límite del plan) sin volver a leer bookings.
+  const attendedDatesByMember = new Map<number, number[]>();
   for (const b of bookings) {
     const a = actByMember.get(b.member_id) ?? { attended: 0, noShows: 0, cancellations: 0, firstDate: null, firstTeacher: null, lastDate: null };
     if (b.cancelled) {
@@ -204,10 +239,37 @@ export async function getMemberClientsV2(
       const date = b.session_starts_at.slice(0, 10);
       if (!a.firstDate) { a.firstDate = date; a.firstTeacher = b.teacher_name; }
       a.lastDate = date;
+      const arr = attendedDatesByMember.get(b.member_id) ?? [];
+      arr.push(Date.parse(b.session_starts_at));
+      attendedDatesByMember.set(b.member_id, arr);
     } else {
       a.noShows += 1;
     }
     actByMember.set(b.member_id, a);
+  }
+
+  // ¿Amortiza su plan? Compara contra la ventana REAL del período de facturación actual
+  // (start_date→end_date de la bought-membership), prorrateando el límite del plan según cuánto
+  // ha transcurrido. Ver umbrales MIN_ELAPSED_LOW/HIGH arriba.
+  function computePlanUsage(memberId: number, plan: MemberPlan | null, startDate: string | null): PlanUsage | null {
+    if (!plan || plan.kind !== "subscription" || plan.isFrozen || !startDate || !plan.endDate) return null;
+    const cat = catalogByName.get(plan.name);
+    if (!cat || !cat.usageLimitForSessions) return null;
+    const periodStart = Date.parse(startDate);
+    const periodEnd = Date.parse(plan.endDate);
+    const periodDays = (periodEnd - periodStart) / 86_400_000;
+    if (periodDays <= 0) return null;
+    const now = Date.now();
+    const elapsedDays = (Math.min(now, periodEnd) - periodStart) / 86_400_000;
+    const elapsedFrac = elapsedDays / periodDays;
+    if (elapsedFrac < MIN_ELAPSED_LOW) return null; // muy pronto en el período para juzgar
+    const attended = (attendedDatesByMember.get(memberId) ?? []).filter((t) => t >= periodStart && t <= now).length;
+    const limit = cat.usageLimitForSessions;
+    const expected = limit * elapsedFrac;
+    const ratio = expected > 0 ? attended / expected : 0;
+    const level: PlanUsageLevel =
+      ratio <= PLAN_USAGE_LOW ? "bajo" : elapsedFrac >= MIN_ELAPSED_HIGH && ratio >= PLAN_USAGE_HIGH ? "alto" : "normal";
+    return { attended, limit, periodDays: Math.round(periodDays), ratio, level };
   }
 
   // Emails que han tenido ALGUNA membresía/pack en Momence (cualquier fecha de snapshot), para
@@ -275,6 +337,7 @@ export async function getMemberClientsV2(
       stripe,
       isFamily: familyMemberIds.has(m.id),
       status: computeStatus(plan, stripe, lastActivity),
+      planUsage: computePlanUsage(m.id, realPlan, planStartByMember.get(m.id) ?? null),
     });
   }
 
@@ -303,6 +366,7 @@ export async function getMemberClientsV2(
       stripe,
       isFamily: !!c.isFamily,
       status: computeStatus(null, stripe, stripe.lastPaymentDate),
+      planUsage: null,
     });
   }
 

@@ -1,15 +1,23 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Drawer from "@/app/components/Drawer";
 import { fmt } from "@/lib/analytics";
 import { setFamilyMemberAction } from "@/app/actions/setClientFamily";
 import { ackPaymentErrorAction, unackPaymentErrorAction } from "@/app/actions/ackPaymentError";
+import { getMemberNotesAction } from "@/app/actions/getMemberNotes";
 import { momenceCustomerUrl } from "@/lib/momenceLinks";
 import type { StripePayment } from "@/lib/stripePayments";
 import type { MemberClient, StatusTone } from "@/lib/memberClientsV2";
+import type { MomenceV2MemberNote } from "@/lib/momenceV2";
 import { fmtDate, timeAgo, initials, paymentExpiry } from "./ClientesTable";
+
+// El campo `note` puede traer HTML (schema oficial de Momence); lo pasamos a texto plano para
+// mostrarlo simple y sin riesgo de inyectar markup, ya que aquí solo enseñamos texto corto.
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+}
 
 const TONE_CLS: Record<StatusTone, string> = {
   success: "bg-success/10 text-success",
@@ -25,6 +33,15 @@ export default function MemberDrawer({ client, payments, onClose }: { client: Me
   const [savingFamily, startSaveFamily] = useTransition();
   const [acked, setAcked] = useState(!!stripe?.paymentErrorAcked);
   const [savingAck, startSaveAck] = useTransition();
+  const [notes, setNotes] = useState<MomenceV2MemberNote[] | null>(null);
+
+  useEffect(() => {
+    setNotes(null);
+    if (client.memberId == null) return;
+    let cancelled = false;
+    getMemberNotesAction(client.memberId).then((ns) => { if (!cancelled) setNotes(ns); });
+    return () => { cancelled = true; };
+  }, [client.memberId]);
 
   const customerPayments = useMemo(
     () => (stripe ? payments.filter((p) => stripe.stripeIds.includes(p.customerId ?? "")).sort((a, b) => b.date.localeCompare(a.date)) : []),
@@ -148,6 +165,16 @@ export default function MemberDrawer({ client, payments, onClose }: { client: Me
               <p>Créditos: <span className="font-medium text-navy">{plan.creditsLeft} de {plan.creditsTotal} clases</span></p>
             )}
             {plan.endDate && <p>Caduca: <span className="font-medium text-navy">{fmtDate(plan.endDate.slice(0, 10))}</span></p>}
+            {client.planUsage && (
+              <p>
+                Uso del período:{" "}
+                <span className={`font-medium ${client.planUsage.level === "bajo" ? "text-[#b45309] dark:text-[#e8a572]" : client.planUsage.level === "alto" ? "text-primary" : "text-navy"}`}>
+                  {client.planUsage.attended} de {client.planUsage.limit} clases
+                </span>
+                {client.planUsage.level === "bajo" && <span className="text-[#b45309] dark:text-[#e8a572]"> · infrautiliza el plan</span>}
+                {client.planUsage.level === "alto" && <span className="text-primary"> · al límite, candidata a subir de plan</span>}
+              </p>
+            )}
           </div>
         </div>
       )}
@@ -170,6 +197,25 @@ export default function MemberDrawer({ client, payments, onClose }: { client: Me
           <p className="text-sm text-navy/40">Sin clases asistidas registradas.</p>
         )}
       </div>
+
+      {/* Notas CRM (Momence) - carga bajo demanda al abrir la ficha */}
+      {client.memberId != null && notes && (
+        notes.length > 0 ? (
+          <div className="px-6 py-4 border-b border-navy/[0.06]">
+            <p className="text-[11px] font-semibold text-navy/40 uppercase tracking-wider mb-2">Notas (Momence)</p>
+            <div className="space-y-2.5">
+              {notes.map((n) => (
+                <div key={n.id} className="p-3 bg-navy/[0.03] rounded-lg">
+                  <p className="text-sm text-navy/80 whitespace-pre-wrap">{stripHtml(n.note)}</p>
+                  <p className="text-[11px] text-navy/40 mt-1">{fmtDate(n.createdAt.slice(0, 10))}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <p className="px-6 py-2 text-xs text-navy/35">Sin notas en Momence.</p>
+        )
+      )}
 
       {/* Error de pago */}
       {stripe?.hasPaymentError && (
