@@ -156,7 +156,7 @@ export default function HorarioShell({
                 >
                   {chevLeft}
                 </button>
-                <span className="text-[14px] font-semibold text-navy px-2 min-w-[110px] text-center">
+                <span className="text-[14px] font-semibold text-navy px-2 w-[168px] shrink-0 text-center tabular-nums">
                   Semana {weekLabel(weekMonday)}
                 </span>
                 <button
