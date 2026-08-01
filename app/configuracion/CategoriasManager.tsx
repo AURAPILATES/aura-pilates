@@ -210,6 +210,14 @@ export default function CategoriasManager({
     document.addEventListener("mousedown", handle);
     return () => document.removeEventListener("mousedown", handle);
   }, [openPicker]);
+  // Este panel (nueva/editar categoría) no usa el <Drawer> compartido (es un panel lateral
+  // a medida), así que no hereda su cierre con Escape - lo replicamos aquí.
+  useEffect(() => {
+    if (!editor) return;
+    const handler = (ev: KeyboardEvent) => { if (ev.key === "Escape") closeEditor(); };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [editor]);
   const [isPending, startTransition] = useTransition();
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
