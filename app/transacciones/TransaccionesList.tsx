@@ -6,6 +6,7 @@ import type { Transaction, PaymentMethod } from "@/lib/transactions";
 import type { Category } from "@/lib/categories";
 import { sortCategoriesHierarchical, categoryDisplayLabel } from "@/lib/categories";
 import { normalizeText } from "@/lib/normalizeText";
+import { drawerNav } from "@/lib/drawerNav";
 import { seriesKeyFor } from "@/lib/recurring";
 import type { RecurringExpense } from "@/lib/recurringExpenses";
 import { updateTransactionCategory, updateTransactionConcept, updateTransactionBankDetails, updateTransactionDate, updateTransactionPaymentMethod, updateTransactionAmount, softDeleteTransactions, type Contact, type RefundCandidate } from "./actions";
@@ -787,24 +788,32 @@ export default function TransaccionesList({
       {showPapelera && (
         <PapeleraDrawer onClose={() => setShowPapelera(false)} />
       )}
-      {drawerTxn && (
-        <TransactionDrawer
-          transaction={drawerTxn}
-          categories={categories}
-          contacts={contacts}
-          recurringPeriod={recurringPeriods[drawerTxn.id]}
-          recurringExpense={recurringExpenses.find((e) => e.key === seriesKeyFor(drawerTxn, allTransactions ?? transactions)) ?? null}
-          linkedTransaction={drawerTxnLinked}
-          onClose={() => setDrawerTxnId(null)}
-          onUpdateConcept={handleConceptChange}
-          onUpdateBankDetails={handleBankDetailsChange}
-          onUpdateCategory={handleCategoryChange}
-          onUpdateDate={handleDateChange}
-          onUpdatePaymentMethod={handlePaymentMethodChange}
-          onUpdateDirection={handleDirectionChange}
-          onDelete={handleDeleteOne}
-        />
-      )}
+      {drawerTxn && (() => {
+        const { prev, next } = drawerNav(sortedFiltered, drawerTxn.id, (t) => t.id);
+        return (
+          <TransactionDrawer
+            key={drawerTxn.id}
+            transaction={drawerTxn}
+            categories={categories}
+            contacts={contacts}
+            recurringPeriod={recurringPeriods[drawerTxn.id]}
+            recurringExpense={recurringExpenses.find((e) => e.key === seriesKeyFor(drawerTxn, allTransactions ?? transactions)) ?? null}
+            linkedTransaction={drawerTxnLinked}
+            onClose={() => setDrawerTxnId(null)}
+            onPrev={prev ? () => setDrawerTxnId(prev.id) : undefined}
+            onNext={next ? () => setDrawerTxnId(next.id) : undefined}
+            hasPrev={!!prev}
+            hasNext={!!next}
+            onUpdateConcept={handleConceptChange}
+            onUpdateBankDetails={handleBankDetailsChange}
+            onUpdateCategory={handleCategoryChange}
+            onUpdateDate={handleDateChange}
+            onUpdatePaymentMethod={handlePaymentMethodChange}
+            onUpdateDirection={handleDirectionChange}
+            onDelete={handleDeleteOne}
+          />
+        );
+      })()}
     </div>
   );
 }

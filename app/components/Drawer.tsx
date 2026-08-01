@@ -14,6 +14,10 @@ export default function Drawer({
   children,
   footer,
   maxWidth = "max-w-md",
+  onPrev,
+  onNext,
+  hasPrev = false,
+  hasNext = false,
 }: {
   title?: string;
   subtitle?: string;
@@ -22,6 +26,12 @@ export default function Drawer({
   children: React.ReactNode;
   footer?: React.ReactNode;
   maxWidth?: string;
+  /** Navegar al registro anterior/siguiente de la lista (↑/↓ de teclado). Omitir ambos oculta
+   * la caja de flechas - solo aparece cuando el consumidor la pide explícitamente. */
+  onPrev?: () => void;
+  onNext?: () => void;
+  hasPrev?: boolean;
+  hasNext?: boolean;
 }) {
   useEffect(() => {
     openDrawers.push(onClose);
@@ -33,11 +43,19 @@ export default function Drawer({
 
   useEffect(() => {
     const handler = (ev: KeyboardEvent) => {
-      if (ev.key === "Escape" && openDrawers[openDrawers.length - 1] === onClose) onClose();
+      if (openDrawers[openDrawers.length - 1] !== onClose) return;
+      if (ev.key === "Escape") { onClose(); return; }
+      if (!onPrev && !onNext) return;
+      // No interceptar flechas si el foco está en un campo editable (inputs de fecha/número
+      // dentro del propio drawer, p.ej. tarifas o formularios).
+      const el = ev.target as HTMLElement | null;
+      if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT" || el.isContentEditable)) return;
+      if (ev.key === "ArrowUp" && hasPrev && onPrev) { ev.preventDefault(); onPrev(); }
+      else if (ev.key === "ArrowDown" && hasNext && onNext) { ev.preventDefault(); onNext(); }
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [onClose]);
+  }, [onClose, onPrev, onNext, hasPrev, hasNext]);
 
   // Se monta en <body> para que el `fixed` cubra el viewport aunque el botón que lo abre viva
   // dentro de un contenedor que crea contexto de posicionamiento (p.ej. una cabecera sticky
@@ -58,14 +76,43 @@ export default function Drawer({
               </>
             )}
           </div>
-          <button
-            onClick={onClose}
-            className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full hover:bg-navy/5 text-navy/40 hover:text-navy transition-colors"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            {(onPrev || onNext) && (
+              <div className="flex items-center rounded-lg border border-navy/[0.12] bg-card overflow-hidden">
+                <button
+                  type="button"
+                  onClick={onPrev}
+                  disabled={!hasPrev}
+                  title="Anterior (↑)"
+                  className="w-7 h-7 flex items-center justify-center text-navy/40 hover:text-navy hover:bg-navy/[0.04] disabled:opacity-25 disabled:hover:bg-transparent disabled:cursor-default transition-colors"
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="18 15 12 9 6 15" />
+                  </svg>
+                </button>
+                <div className="w-px h-4 bg-navy/[0.12]" />
+                <button
+                  type="button"
+                  onClick={onNext}
+                  disabled={!hasNext}
+                  title="Siguiente (↓)"
+                  className="w-7 h-7 flex items-center justify-center text-navy/40 hover:text-navy hover:bg-navy/[0.04] disabled:opacity-25 disabled:hover:bg-transparent disabled:cursor-default transition-colors"
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </button>
+              </div>
+            )}
+            <button
+              onClick={onClose}
+              className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full hover:bg-navy/5 text-navy/40 hover:text-navy transition-colors"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          </div>
         </div>
         <div className="flex-1 overflow-y-auto">{children}</div>
         {footer && <div className="border-t border-navy/[0.07] px-6 py-4 shrink-0">{footer}</div>}

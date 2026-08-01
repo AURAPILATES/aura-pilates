@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import type { Category } from "@/lib/categories";
 import { contactKeyFor } from "@/lib/contactRules";
 import { normalizeText } from "@/lib/normalizeText";
+import { drawerNav } from "@/lib/drawerNav";
 import { CONTACT_GROUP_ORDER, CONTACT_GROUP_LABELS, contactGroupOf, type ContactGroup } from "@/lib/contactGroups";
 import { findDuplicatePairs, duplicateKey } from "@/lib/duplicateContacts";
 import {
@@ -109,13 +110,17 @@ function PatternsEditor({ contactId, patterns, onAdd, onRemove }: {
   );
 }
 
-function ContactDetailDrawer({ contact, categories, stats, onChange, onRemove, onClose }: {
+function ContactDetailDrawer({ contact, categories, stats, onChange, onRemove, onClose, onPrev, onNext, hasPrev, hasNext }: {
   contact: Contact;
   categories: Category[];
   stats: ContactStats | undefined;
   onChange: (patch: Partial<{ label: string; category: string | null; ivaRate: number; retencionRate: number; noTax: boolean; group: string | null; patterns: string[] }>) => void;
   onRemove: () => void;
   onClose: () => void;
+  onPrev?: () => void;
+  onNext?: () => void;
+  hasPrev?: boolean;
+  hasNext?: boolean;
 }) {
   const [label, setLabel] = useState(contact.label);
   const [applying, setApplying] = useState(false);
@@ -140,6 +145,10 @@ function ContactDetailDrawer({ contact, categories, stats, onChange, onRemove, o
   return (
     <Drawer
       onClose={onClose}
+      onPrev={onPrev}
+      onNext={onNext}
+      hasPrev={hasPrev}
+      hasNext={hasNext}
       header={
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-semibold shrink-0">
@@ -514,16 +523,24 @@ export default function ContactosManager({ contacts: initialContacts, categories
         />
       )}
 
-      {selected && (
-        <ContactDetailDrawer
-          contact={selected}
-          categories={categories}
-          stats={contactStats[selected.id]}
-          onChange={(patch) => patchContact(selected.id, patch)}
-          onRemove={() => removeContact(selected.id)}
-          onClose={() => setSelectedId(null)}
-        />
-      )}
+      {selected && (() => {
+        const { prev, next } = drawerNav(filtered, selected.id, (c) => c.id);
+        return (
+          <ContactDetailDrawer
+            key={selected.id}
+            contact={selected}
+            categories={categories}
+            stats={contactStats[selected.id]}
+            onChange={(patch) => patchContact(selected.id, patch)}
+            onRemove={() => removeContact(selected.id)}
+            onClose={() => setSelectedId(null)}
+            onPrev={prev ? () => setSelectedId(prev.id) : undefined}
+            onNext={next ? () => setSelectedId(next.id) : undefined}
+            hasPrev={!!prev}
+            hasNext={!!next}
+          />
+        );
+      })()}
 
       {duplicateContacts?.a && duplicateContacts?.b && (
         <ContactDuplicateDrawer

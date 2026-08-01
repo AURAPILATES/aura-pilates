@@ -21,9 +21,13 @@ type Props = {
   customer: CustomerRow;
   payments: StripePayment[];
   onClose: () => void;
+  onPrev?: () => void;
+  onNext?: () => void;
+  hasPrev?: boolean;
+  hasNext?: boolean;
 };
 
-export default function CustomerDrawer({ customer, payments, onClose }: Props) {
+export default function CustomerDrawer({ customer, payments, onClose, onPrev, onNext, hasPrev, hasNext }: Props) {
   const router = useRouter();
   const [stripeOpen, setStripeOpen] = useState(false);
   const [isFamily, setIsFamily] = useState(!!customer.isFamily);
@@ -74,6 +78,10 @@ export default function CustomerDrawer({ customer, payments, onClose }: Props) {
   return (
     <Drawer
       maxWidth="max-w-[460px]"
+      onPrev={onPrev}
+      onNext={onNext}
+      hasPrev={hasPrev}
+      hasNext={hasNext}
       header={
         <div>
           <div className="flex items-center gap-4">

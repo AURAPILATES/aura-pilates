@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { normalizeText } from "@/lib/normalizeText";
+import { drawerNav } from "@/lib/drawerNav";
 import type { StripePayment } from "@/lib/stripePayments";
 import type { CustomerRow } from "./ClientesTable";
 import CustomerDrawer from "./CustomerDrawer";
@@ -229,9 +230,21 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
         onRowClick={setSelected}
         onExportCsv={downloadCsv}
       />
-      {selected && (
-        <CustomerDrawer key={selected.id} customer={selected} payments={payments} onClose={() => setSelected(null)} />
-      )}
+      {selected && (() => {
+        const { prev, next } = drawerNav(visibleMatrix.map((r) => r.customer), selected.id, (c) => c.id);
+        return (
+          <CustomerDrawer
+            key={selected.id}
+            customer={selected}
+            payments={payments}
+            onClose={() => setSelected(null)}
+            onPrev={prev ? () => setSelected(prev) : undefined}
+            onNext={next ? () => setSelected(next) : undefined}
+            hasPrev={!!prev}
+            hasNext={!!next}
+          />
+        );
+      })()}
     </div>
   );
 }

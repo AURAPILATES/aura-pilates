@@ -26,7 +26,10 @@ const TONE_CLS: Record<StatusTone, string> = {
   muted: "bg-navy/[0.06] text-navy/55",
 };
 
-export default function MemberDrawer({ client, payments, onClose }: { client: MemberClient; payments: StripePayment[]; onClose: () => void }) {
+export default function MemberDrawer({ client, payments, onClose, onPrev, onNext, hasPrev, hasNext }: {
+  client: MemberClient; payments: StripePayment[]; onClose: () => void;
+  onPrev?: () => void; onNext?: () => void; hasPrev?: boolean; hasNext?: boolean;
+}) {
   const router = useRouter();
   const stripe = client.stripe;
   const [isFamily, setIsFamily] = useState(client.isFamily);
@@ -79,6 +82,10 @@ export default function MemberDrawer({ client, payments, onClose }: { client: Me
     <Drawer
       maxWidth="max-w-[460px]"
       onClose={onClose}
+      onPrev={onPrev}
+      onNext={onNext}
+      hasPrev={hasPrev}
+      hasNext={hasNext}
       header={
         <div>
           <div className="flex items-center gap-4">

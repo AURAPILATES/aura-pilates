@@ -394,6 +394,10 @@ export default function TransactionDrawer({
   recurringExpense,
   linkedTransaction,
   onClose,
+  onPrev,
+  onNext,
+  hasPrev,
+  hasNext,
   onUpdateConcept,
   onUpdateBankDetails,
   onUpdateCategory,
@@ -409,6 +413,10 @@ export default function TransactionDrawer({
   recurringExpense?: RecurringExpense | null;
   linkedTransaction: RefundCandidate | null;
   onClose: () => void;
+  onPrev?: () => void;
+  onNext?: () => void;
+  hasPrev?: boolean;
+  hasNext?: boolean;
   onUpdateConcept: (id: string, value: string) => void;
   onUpdateBankDetails: (id: string, value: string) => void;
   onUpdateCategory: (id: string, value: string | null) => void;
@@ -433,6 +441,10 @@ export default function TransactionDrawer({
     <Drawer
       title="Detalle del movimiento"
       onClose={onClose}
+      onPrev={onPrev}
+      onNext={onNext}
+      hasPrev={hasPrev}
+      hasNext={hasNext}
       footer={
         <div className="flex gap-3">
           <button

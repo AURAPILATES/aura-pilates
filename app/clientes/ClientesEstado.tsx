@@ -10,6 +10,7 @@ import { IconButtonV2 } from "@/app/components/v2/ButtonsV2";
 import { InfoDot } from "@/components/charts";
 import { tableHeadClassV2, tableRowClassV2, tableCardClassV2, gridColsV2 } from "@/app/components/v2/tableStylesV2";
 import { normalizeText } from "@/lib/normalizeText";
+import { drawerNav } from "@/lib/drawerNav";
 import { fmt } from "@/lib/analytics";
 import { initials, fmtDate, timeAgo } from "./ClientesTable";
 import MemberDrawer from "./MemberDrawer";
@@ -359,9 +360,21 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
         <TablePaginationV2 page={page} totalItems={filtered.length} pageSize={PAGE_SIZE} onPageChange={setPage} />
       </div>
 
-      {selected && (
-        <MemberDrawer client={selected} payments={payments} onClose={() => setSelected(null)} />
-      )}
+      {selected && (() => {
+        const { prev, next } = drawerNav(filtered, selected.id, (r) => r.id);
+        return (
+          <MemberDrawer
+            key={selected.id}
+            client={selected}
+            payments={payments}
+            onClose={() => setSelected(null)}
+            onPrev={prev ? () => setSelected(prev) : undefined}
+            onNext={next ? () => setSelected(next) : undefined}
+            hasPrev={!!prev}
+            hasNext={!!next}
+          />
+        );
+      })()}
     </div>
   );
 }
