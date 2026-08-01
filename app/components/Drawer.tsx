@@ -6,6 +6,14 @@ import { createPortal } from "react-dom";
  * TransactionDrawer) - Escape solo debe cerrar el de más arriba, no todos a la vez. */
 const openDrawers: Array<() => void> = [];
 
+/** Si ya se montó un portal de Drawer alguna vez en esta carga de página. El gate
+ * mounted/useEffect de abajo existe para el PRIMER portal (evita createPortal(...,
+ * document.body) durante el render de servidor, que no tiene document -> mismatch de
+ * hidratación). Una vez confirmado que estamos en cliente, un drawer que se remonta (p.ej.
+ * key={record.id} al navegar ↑/↓ entre registros) no necesita repetir esa espera de un ciclo
+ * de render: sin esto, cada remonte pintaba un frame vacío -> parpadeo visible al navegar. */
+let hasMountedPortalBefore = false;
+
 export default function Drawer({
   title,
   subtitle,
@@ -60,8 +68,11 @@ export default function Drawer({
   // Se monta en <body> para que el `fixed` cubra el viewport aunque el botón que lo abre viva
   // dentro de un contenedor que crea contexto de posicionamiento (p.ej. una cabecera sticky
   // con backdrop-blur, que contendría el fixed y lo dejaría recortado arriba).
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const [mounted, setMounted] = useState(hasMountedPortalBefore);
+  useEffect(() => {
+    hasMountedPortalBefore = true;
+    setMounted(true);
+  }, []);
 
   const overlay = (
     <div className="fixed inset-0 z-50 flex justify-end">
