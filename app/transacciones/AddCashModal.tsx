@@ -5,7 +5,7 @@ import { sortCategoriesHierarchical, categoryDisplayLabel } from "@/lib/categori
 import type { PaymentMethod } from "@/lib/transactions";
 import { addCashTransaction } from "./actions";
 import Drawer from "@/app/components/Drawer";
-import Button from "@/app/components/Button";
+import Button, { SecondaryButton } from "@/app/components/Button";
 import Select from "@/app/components/Select";
 import { ToggleGroup } from "@/components/charts";
 
@@ -62,9 +62,14 @@ export default function AddCashModal({ categories, onClose }: { categories: Cate
       title="Añadir movimiento manual"
       onClose={onClose}
       footer={
-        <Button onClick={handleSave} disabled={!canSave || saving} className="w-full">
-          {saving ? "Guardando…" : "Guardar movimiento"}
-        </Button>
+        <div className="flex gap-3">
+          <SecondaryButton onClick={onClose} disabled={saving} className="flex-1">
+            Cancelar
+          </SecondaryButton>
+          <Button onClick={handleSave} disabled={!canSave || saving} className="flex-1">
+            {saving ? "Guardando…" : "Guardar"}
+          </Button>
+        </div>
       }
     >
         <div className="px-6 py-5 space-y-4">

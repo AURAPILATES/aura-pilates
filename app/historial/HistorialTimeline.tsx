@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Drawer from "@/app/components/Drawer";
-import Button from "@/app/components/Button";
+import Button, { SecondaryButton } from "@/app/components/Button";
 import { PrimaryButtonV2 } from "@/app/components/v2/ButtonsV2";
 import FilterPillGroupV2 from "@/app/components/v2/FilterPillGroupV2";
 import Select from "@/app/components/Select";
@@ -71,16 +71,11 @@ function EventForm({
       title={title}
       onClose={onCancel}
       footer={
-        <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={isPending}
-            className="px-4 py-2 text-sm text-navy/55 hover:text-navy transition-colors disabled:opacity-40"
-          >
+        <div className="flex gap-3">
+          <SecondaryButton onClick={onCancel} disabled={isPending} className="flex-1">
             Cancelar
-          </button>
-          <Button onClick={() => onSave(form)} disabled={!form.titulo.trim() || !form.fecha || isPending}>
+          </SecondaryButton>
+          <Button onClick={() => onSave(form)} disabled={!form.titulo.trim() || !form.fecha || isPending} className="flex-1">
             {isPending ? "Guardando…" : "Guardar"}
           </Button>
         </div>

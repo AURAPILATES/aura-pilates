@@ -9,7 +9,7 @@ import { normalizeText } from "@/lib/normalizeText";
 import { drawerNav } from "@/lib/drawerNav";
 import { createCategory, updateCategory, deleteCategory, reorderCategories, updateCategoryColors } from "./actions";
 import ChipsInput from "@/app/components/ChipsInput";
-import Button from "@/app/components/Button";
+import Button, { SecondaryButton, DeleteButton, DangerButtonSolid } from "@/app/components/Button";
 import Select from "@/app/components/Select";
 import { AutomationIcon } from "@/app/transacciones/NewContactDrawer";
 import CategoriasManagerV2 from "./CategoriasManagerV2";
@@ -197,6 +197,7 @@ export default function CategoriasManager({
   const [categories, setCategories] = useState(categoriesProp);
   useEffect(() => setCategories(categoriesProp), [categoriesProp]);
   const [editor, setEditor] = useState<EditorState | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [form, setForm] = useState<Omit<Category, "id" | "created_at">>(EMPTY);
   const [selectedColor, setSelectedColor] = useState(DEFAULT_COLOR);
   const [error, setError] = useState<string | null>(null);
@@ -363,11 +364,13 @@ export default function CategoriasManager({
     });
     setEditor({ mode: "edit", cat });
     setError(null);
+    setConfirmDelete(false);
   }
 
   function closeEditor() {
     setEditor(null);
     setError(null);
+    setConfirmDelete(false);
   }
 
   function handleSave() {
@@ -768,27 +771,33 @@ export default function CategoriasManager({
               )}
             </div>
 
-            {/* Footer */}
-            <div className="px-5 py-4 border-t border-navy/[0.08] flex items-center gap-3">
-              {editor.mode === "edit" && (
-                <button
-                  onClick={handleDelete}
-                  disabled={isPending}
-                  className="text-sm text-navy/40 hover:text-danger transition-colors disabled:opacity-40 mr-auto"
-                >
-                  Eliminar
-                </button>
-              )}
-              <button
-                onClick={closeEditor}
-                className="text-sm text-navy/50 hover:text-navy transition-colors px-4 py-2"
-              >
-                Cancelar
-              </button>
-              <Button onClick={handleSave} disabled={isPending || !form.label.trim()}>
-                {isPending ? "Guardando…" : "Guardar"}
-              </Button>
-            </div>
+            {/* Footer - nunca más de 2 botones: crear = Cancelar+Guardar, editar =
+                Guardar+Eliminar (la X ya cierra, no hace falta Cancelar); al pulsar Eliminar,
+                el footer pasa a Cancelar+Eliminar (confirmación), nunca los 3 a la vez. */}
+            {editor.mode === "edit" && confirmDelete ? (
+              <div className="px-5 py-4 border-t border-navy/[0.08] flex items-center gap-3">
+                <p className="text-xs text-navy/55 flex-1">¿Eliminar esta categoría?</p>
+                <SecondaryButton onClick={() => setConfirmDelete(false)} disabled={isPending}>
+                  Cancelar
+                </SecondaryButton>
+                <DangerButtonSolid onClick={handleDelete} disabled={isPending}>
+                  {isPending ? "Eliminando…" : "Eliminar"}
+                </DangerButtonSolid>
+              </div>
+            ) : (
+              <div className="px-5 py-4 border-t border-navy/[0.08] flex items-center gap-3">
+                {editor.mode === "edit" ? (
+                  <DeleteButton onClick={() => setConfirmDelete(true)} disabled={isPending} />
+                ) : (
+                  <SecondaryButton onClick={closeEditor} disabled={isPending}>
+                    Cancelar
+                  </SecondaryButton>
+                )}
+                <Button onClick={handleSave} disabled={isPending || !form.label.trim()} className="flex-1">
+                  {isPending ? "Guardando…" : "Guardar"}
+                </Button>
+              </div>
+            )}
           </div>
         </>
       )}

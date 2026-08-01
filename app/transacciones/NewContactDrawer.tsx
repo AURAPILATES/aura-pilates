@@ -5,7 +5,7 @@ import { contactKeyFor } from "@/lib/contactRules";
 import { createContact, type Contact } from "./actions";
 import Drawer from "@/app/components/Drawer";
 import ChipsInput from "@/app/components/ChipsInput";
-import Button from "@/app/components/Button";
+import Button, { SecondaryButton } from "@/app/components/Button";
 import { CategoryPill } from "./TransaccionesList";
 import { CONTACT_GROUP_ORDER, CONTACT_GROUP_LABELS, type ContactGroup } from "@/lib/contactGroups";
 
@@ -79,14 +79,11 @@ export default function NewContactDrawer({
       onClose={onCancel}
       footer={
         <div className="flex gap-2">
-          <button
-            onClick={onCancel}
-            className="flex-1 py-2.5 text-sm text-navy/60 border border-navy/15 rounded-lg hover:bg-navy/[0.03] transition-colors"
-          >
+          <SecondaryButton onClick={onCancel} className="flex-1">
             Cancelar
-          </button>
+          </SecondaryButton>
           <Button onClick={handleSave} disabled={saving} className="flex-1">
-            {saving ? "Guardando…" : "Guardar contacto"}
+            {saving ? "Guardando…" : "Guardar"}
           </Button>
         </div>
       }

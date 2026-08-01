@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { RotateCcw } from "react-feather";
 import Drawer from "@/app/components/Drawer";
-import Button from "@/app/components/Button";
+import Button, { DeleteButton } from "@/app/components/Button";
 import Select from "@/app/components/Select";
 import type { Transaction, PaymentMethod } from "@/lib/transactions";
 import type { Category } from "@/lib/categories";
@@ -447,15 +447,7 @@ export default function TransactionDrawer({
       hasNext={hasNext}
       footer={
         <div className="flex gap-3">
-          <button
-            onClick={() => { onDelete(t.id); onClose(); }}
-            className="flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-danger border border-danger/20 rounded-lg hover:bg-danger/5 transition-colors"
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-            </svg>
-            Eliminar
-          </button>
+          <DeleteButton onClick={() => { onDelete(t.id); onClose(); }} />
           <Button onClick={onClose} className="flex-1">Guardar</Button>
         </div>
       }

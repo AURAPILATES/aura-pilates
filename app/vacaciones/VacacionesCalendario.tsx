@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Drawer from "@/app/components/Drawer";
-import Button from "@/app/components/Button";
+import Button, { SecondaryButton } from "@/app/components/Button";
 import { PrimaryButtonV2, IconButtonV2 } from "@/app/components/v2/ButtonsV2";
 import FilterPillGroupV2 from "@/app/components/v2/FilterPillGroupV2";
 import { ToggleGroup } from "@/components/charts";
@@ -291,12 +291,12 @@ function NuevoInstructorModal({
       onClose={onClose}
       maxWidth="max-w-sm"
       footer={
-        <div className="flex justify-end gap-3">
-          <button onClick={onClose} className="px-4 py-2.5 text-sm text-navy/55 hover:text-navy transition-colors">
+        <div className="flex gap-3">
+          <SecondaryButton onClick={onClose} className="flex-1">
             Cancelar
-          </button>
-          <Button onClick={handleSubmit} disabled={!nombre.trim() || saving}>
-            {saving ? "Creando…" : "Crear instructor"}
+          </SecondaryButton>
+          <Button onClick={handleSubmit} disabled={!nombre.trim() || saving} className="flex-1">
+            {saving ? "Guardando…" : "Guardar"}
           </Button>
         </div>
       }
@@ -433,9 +433,12 @@ function AñadirAusenciaModal({
       onClose={onClose}
       maxWidth="max-w-xl"
       footer={
-        <div className="flex justify-end">
-          <Button onClick={handleSolicitar} disabled={newDates.length === 0 || saving}>
-            {saving ? "Guardando…" : "Añadir"}
+        <div className="flex gap-3">
+          <SecondaryButton onClick={onClose} className="flex-1">
+            Cancelar
+          </SecondaryButton>
+          <Button onClick={handleSolicitar} disabled={newDates.length === 0 || saving} className="flex-1">
+            {saving ? "Guardando…" : "Guardar"}
           </Button>
         </div>
       }

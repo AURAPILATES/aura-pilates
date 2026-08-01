@@ -4,7 +4,7 @@ import type { Category } from "@/lib/categories";
 import type { Contact, ContactStats } from "@/app/transacciones/actions";
 import { CONTACT_GROUP_LABELS, contactGroupOf } from "@/lib/contactGroups";
 import Drawer from "@/app/components/Drawer";
-import Button from "@/app/components/Button";
+import Button, { SecondaryButton } from "@/app/components/Button";
 import Avatar from "@/app/components/Avatar";
 import { CategoryBadge } from "@/app/transacciones/TransaccionesList";
 import { knownDomain, initials, fmtAmt } from "./ContactosManager";
@@ -60,13 +60,9 @@ export default function ContactDuplicateDrawer({
       onClose={onClose}
       footer={
         <div className="flex gap-3">
-          <button
-            onClick={onDismiss}
-            disabled={saving}
-            className="flex-1 py-2.5 text-sm font-semibold text-navy/60 border border-navy/15 rounded-lg hover:bg-navy/[0.03] transition-colors disabled:opacity-40"
-          >
+          <SecondaryButton onClick={onDismiss} disabled={saving} className="flex-1">
             No está duplicado
-          </button>
+          </SecondaryButton>
           <Button onClick={handleMerge} disabled={saving} className="flex-1">
             {saving ? "Fusionando…" : "Fusionar"}
           </Button>

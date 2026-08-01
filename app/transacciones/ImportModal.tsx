@@ -12,7 +12,7 @@ import { CONTACT_GROUP_ORDER, CONTACT_GROUP_LABELS, type ContactGroup } from "@/
 import { type Category } from "@/lib/categories";
 import type { PaymentMethod } from "@/lib/transactions";
 import Drawer from "@/app/components/Drawer";
-import Button from "@/app/components/Button";
+import Button, { SecondaryButton } from "@/app/components/Button";
 import Select from "@/app/components/Select";
 import ChipsInput from "@/app/components/ChipsInput";
 import { ToggleGroup } from "@/components/charts";
@@ -603,12 +603,9 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                 </p>
               )}
               <div className="flex gap-2">
-                <button
-                  onClick={() => setState({ kind: "idle" })}
-                  className="flex-1 py-2.5 text-sm text-navy/60 border border-navy/15 rounded-lg hover:bg-navy/[0.03] transition-colors"
-                >
+                <SecondaryButton onClick={() => setState({ kind: "idle" })} className="flex-1">
                   Cambiar archivo
-                </button>
+                </SecondaryButton>
                 {state.drafts.length > 0 ? (
                   <Button
                     onClick={() => setState({ kind: "review-contacts", drafts: state.drafts, rows: state.rows, filename: state.filename })}
@@ -833,13 +830,13 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                 })}
               </div>
               <div className="flex gap-2 shrink-0">
-                <button
+                <SecondaryButton
                   onClick={() => handleConfirmContacts(state.drafts.map((d) => ({ ...d, action: "ignore" as const })), state.rows)}
                   disabled={savingContacts}
-                  className="flex-1 py-2.5 text-sm text-navy/60 border border-navy/15 rounded-lg hover:bg-navy/[0.03] transition-colors disabled:opacity-50"
+                  className="flex-1"
                 >
                   Descartar todo
-                </button>
+                </SecondaryButton>
                 <Button
                   onClick={() => handleConfirmContacts(state.drafts, state.rows)}
                   disabled={savingContacts}

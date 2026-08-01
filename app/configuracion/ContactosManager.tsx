@@ -13,7 +13,7 @@ import {
   dismissContactDuplicate, mergeContacts,
 } from "@/app/transacciones/actions";
 import Drawer from "@/app/components/Drawer";
-import Button from "@/app/components/Button";
+import Button, { SecondaryButton, DeleteButton, DangerButtonSolid } from "@/app/components/Button";
 import ChipsInput from "@/app/components/ChipsInput";
 import { CategoryPill } from "@/app/transacciones/TransaccionesList";
 import NewContactDrawer, { AutomationIcon } from "@/app/transacciones/NewContactDrawer";
@@ -162,25 +162,13 @@ function ContactDetailDrawer({ contact, categories, stats, onChange, onRemove, o
           <div className="flex items-center justify-between gap-2">
             <p className="text-sm text-navy/60">¿Eliminar este contacto?</p>
             <div className="flex items-center gap-2">
-              <button onClick={() => setConfirmDelete(false)} className="px-4 py-2.5 text-sm text-navy/60 border border-navy/15 rounded-lg hover:bg-navy/[0.03] transition-colors">
-                Cancelar
-              </button>
-              <button onClick={onRemove} className="px-4 py-2.5 text-sm font-semibold text-white bg-danger rounded-lg hover:bg-danger/85 transition-colors">
-                Confirmar
-              </button>
+              <SecondaryButton onClick={() => setConfirmDelete(false)}>Cancelar</SecondaryButton>
+              <DangerButtonSolid onClick={onRemove}>Eliminar</DangerButtonSolid>
             </div>
           </div>
         ) : (
           <div className="flex gap-3">
-            <button
-              onClick={() => setConfirmDelete(true)}
-              className="flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-danger border border-danger/20 rounded-lg hover:bg-danger/5 transition-colors"
-            >
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-              </svg>
-              Eliminar
-            </button>
+            <DeleteButton onClick={() => setConfirmDelete(true)} />
             <Button
               onClick={handleApply}
               disabled={applying}
