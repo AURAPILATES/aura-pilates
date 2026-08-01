@@ -6,6 +6,7 @@ import { sortCategoriesHierarchical, categoryDisplayLabel } from "@/lib/categori
 import { economicGroupOf, type EconomicGroup } from "@/lib/economicGroups";
 import { siblingColor } from "@/lib/colorVariants";
 import { normalizeText } from "@/lib/normalizeText";
+import { drawerNav } from "@/lib/drawerNav";
 import { createCategory, updateCategory, deleteCategory, reorderCategories, updateCategoryColors } from "./actions";
 import ChipsInput from "@/app/components/ChipsInput";
 import Button from "@/app/components/Button";
@@ -210,14 +211,6 @@ export default function CategoriasManager({
     document.addEventListener("mousedown", handle);
     return () => document.removeEventListener("mousedown", handle);
   }, [openPicker]);
-  // Este panel (nueva/editar categoría) no usa el <Drawer> compartido (es un panel lateral
-  // a medida), así que no hereda su cierre con Escape - lo replicamos aquí.
-  useEffect(() => {
-    if (!editor) return;
-    const handler = (ev: KeyboardEvent) => { if (ev.key === "Escape") closeEditor(); };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, [editor]);
   const [isPending, startTransition] = useTransition();
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
@@ -476,6 +469,27 @@ export default function CategoriasManager({
     }
   }
 
+  // Anterior/siguiente para el editor: navega sobre el mismo orden visible en pantalla (respeta
+  // la búsqueda), solo tiene sentido editando una categoría existente (no al crear una nueva).
+  const flatCategoryOrder = displayGroups.flatMap((g) => g.ordered);
+  const { prev: prevCat, next: nextCat } =
+    editor?.mode === "edit" ? drawerNav(flatCategoryOrder, editor.cat.id, (c) => c.id) : { prev: null, next: null };
+
+  // Este panel (nueva/editar categoría) no usa el <Drawer> compartido (es un panel lateral a
+  // medida), así que no hereda ni su cierre con Escape ni la navegación ↑/↓ - se replican aquí.
+  useEffect(() => {
+    if (!editor) return;
+    const handler = (ev: KeyboardEvent) => {
+      if (ev.key === "Escape") { closeEditor(); return; }
+      const el = ev.target as HTMLElement | null;
+      if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT" || el.isContentEditable)) return;
+      if (ev.key === "ArrowUp" && prevCat) { ev.preventDefault(); openEdit(prevCat); }
+      else if (ev.key === "ArrowDown" && nextCat) { ev.preventDefault(); openEdit(nextCat); }
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [editor, prevCat, nextCat]);
+
   return (
     <div className="relative">
       {/* ── Lista ── */}
@@ -514,14 +528,43 @@ export default function CategoriasManager({
                     : "Editar categoría")}
                 </p>
               </div>
-              <button
-                onClick={closeEditor}
-                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-navy/5 text-navy/40 hover:text-navy transition-colors"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                </svg>
-              </button>
+              <div className="flex items-center gap-2 shrink-0">
+                {editor.mode === "edit" && (
+                  <div className="flex items-center rounded-lg border border-navy/[0.12] bg-card overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => prevCat && openEdit(prevCat)}
+                      disabled={!prevCat}
+                      title="Categoría anterior (↑)"
+                      className="w-7 h-7 flex items-center justify-center text-navy/40 hover:text-navy hover:bg-navy/[0.04] disabled:opacity-25 disabled:hover:bg-transparent disabled:cursor-default transition-colors"
+                    >
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="18 15 12 9 6 15" />
+                      </svg>
+                    </button>
+                    <div className="w-px h-4 bg-navy/[0.12]" />
+                    <button
+                      type="button"
+                      onClick={() => nextCat && openEdit(nextCat)}
+                      disabled={!nextCat}
+                      title="Siguiente categoría (↓)"
+                      className="w-7 h-7 flex items-center justify-center text-navy/40 hover:text-navy hover:bg-navy/[0.04] disabled:opacity-25 disabled:hover:bg-transparent disabled:cursor-default transition-colors"
+                    >
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="6 9 12 15 18 9" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+                <button
+                  onClick={closeEditor}
+                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-navy/5 text-navy/40 hover:text-navy transition-colors"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                </button>
+              </div>
             </div>
 
             {/* Form */}
