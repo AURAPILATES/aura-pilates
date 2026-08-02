@@ -108,19 +108,26 @@
    en la clase `nav-rail` de <html> (persistido en localStorage). Solo aplica en escritorio,
    donde la sidebar es fija; en móvil se usa el menú hamburguesa, no cambia. */
 .app-sidebar {
-  width: 252px;
+  width: 232px;
   transition: width 0.15s ease;
 }
 .nav-rail .app-sidebar {
   width: 72px;
 }
 @media (min-width: 640px) {
+  /* Contenido como panel flotante: tarjeta blanca con esquinas redondeadas, separada
+     del fondo crudo por un margen de 8px (0 hacia la sidebar, con la que queda a ras). */
   .app-content {
-    padding-left: 252px;
-    transition: padding-left 0.15s ease;
+    margin: 8px 8px 8px 232px;
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
+    border-radius: 14px;
+    box-shadow: var(--shadow-card);
+    min-height: calc(100vh - 16px);
+    transition: margin-left 0.15s ease;
   }
   .nav-rail .app-content {
-    padding-left: 72px;
+    margin-left: 72px;
   }
 }
 /* Etiquetas de texto y filas que no caben en modo rail: se ocultan y los iconos quedan
