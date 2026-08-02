@@ -27,7 +27,8 @@ export default function ThemeToggle({ className = "" }: { className?: string }) 
       role="switch"
       aria-checked={dark}
       aria-label={dark ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
-      className={`w-full flex items-center gap-[9px] px-3 py-2.5 rounded-lg text-[13px] font-medium text-navy/55 hover:bg-navy/[0.04] hover:text-navy transition-colors ${className}`}
+      title="Modo oscuro"
+      className={`nav-row w-full flex items-center gap-[9px] px-3 py-2.5 rounded-lg text-[13px] font-medium text-navy/55 hover:bg-navy/[0.04] hover:text-navy transition-colors ${className}`}
     >
       <span className="text-navy/40">
         {dark ? (
@@ -40,8 +41,8 @@ export default function ThemeToggle({ className = "" }: { className?: string }) 
           </svg>
         )}
       </span>
-      <span className="flex-1 text-left">Modo oscuro</span>
-      <span className={`shrink-0 relative w-9 h-5 rounded-full transition-colors ${dark ? "bg-primary" : "bg-navy/20"}`}>
+      <span className="nav-label flex-1 text-left">Modo oscuro</span>
+      <span className={`nav-rail-hide shrink-0 relative w-9 h-5 rounded-full transition-colors ${dark ? "bg-primary" : "bg-navy/20"}`}>
         <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${dark ? "translate-x-4" : "translate-x-0"}`} />
       </span>
     </button>

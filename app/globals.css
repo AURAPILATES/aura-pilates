@@ -9,7 +9,9 @@
   --font-mono: 'DM Mono', monospace;
   --font-display: 'Playfair Display', serif;
 
-  --color-app-bg: #f6f5f2;
+  --color-app-bg: #F4F2ED;
+  --color-nav-bg: #EDE9E0;
+  --color-nav-border: #E7E2D9;
   --color-card: #ffffff;
   --color-navy: #1c1917;
   /* Color fijo (no invierte con el tema) para chips/tooltips sólidos que
@@ -45,7 +47,9 @@
 }
 
 .dark {
-  --color-app-bg: #1a1820;
+  --color-app-bg: #131210;
+  --color-nav-bg: #0E0D0C;
+  --color-nav-border: #302E29;
   --color-card: #242129;
   --color-navy: #e6e3e8;
   --color-primary: #8a75ff;
@@ -71,6 +75,22 @@
   color-scheme: dark;
 }
 
+/* Skin alternativo "precision" (en comparación con el actual, "editorial"): sidebar y
+ * fondo casi blancos, sin línea de separación entre nav y contenido. Toggle temporal
+ * (SkinToggle) para comparar en la app real antes de decidir cuál se queda; solo toca
+ * fondo general + sidebar, el resto de la paleta (botones, badges, gráficos) no cambia
+ * todavía con este selector. */
+[data-skin="precision"] {
+  --color-app-bg: #F7F7F5;
+  --color-nav-bg: #F7F7F5;
+  --color-nav-border: transparent;
+}
+[data-skin="precision"].dark {
+  --color-app-bg: #0D0F12;
+  --color-nav-bg: #0D0F12;
+  --color-nav-border: transparent;
+}
+
 /* Recharts hace focusable el <svg> del gráfico para navegación por teclado
    (tabIndex + role="application"). Sin esto, el navegador dibuja su contorno
    de foco por defecto también al hacer clic con el ratón. */
@@ -83,24 +103,37 @@
   border-radius: 4px;
 }
 
-/* Sidebar oculta a voluntad del usuario (toggle persistido en localStorage). Solo aplica en
-   escritorio, donde la sidebar es fija; en móvil se usa el menú hamburguesa, no cambia. */
-.nav-hidden .app-sidebar {
-  display: none;
+/* Ancho del sidebar y su modo colapsado "rail" (solo iconos, sin texto). Sustituye al
+   anterior "ocultar del todo": la barra se encoge pero sigue visible y navegable. Estado
+   en la clase `nav-rail` de <html> (persistido en localStorage). Solo aplica en escritorio,
+   donde la sidebar es fija; en móvil se usa el menú hamburguesa, no cambia. */
+.app-sidebar {
+  width: 252px;
+  transition: width 0.15s ease;
+}
+.nav-rail .app-sidebar {
+  width: 72px;
 }
 @media (min-width: 640px) {
-  .nav-hidden .app-content {
-    padding-left: 0;
+  .app-content {
+    padding-left: 252px;
+    transition: padding-left 0.15s ease;
+  }
+  .nav-rail .app-content {
+    padding-left: 72px;
   }
 }
-/* El botón flotante para reabrir la sidebar solo se muestra cuando está oculta (y en escritorio). */
-.nav-reopen {
+/* Etiquetas de texto y filas que no caben en modo rail: se ocultan y los iconos quedan
+   centrados, pero siguen siendo clicables. */
+.nav-rail .nav-label,
+.nav-rail .nav-rail-hide {
   display: none;
 }
-@media (min-width: 640px) {
-  .nav-hidden .nav-reopen {
-    display: flex;
-  }
+.nav-rail .nav-row {
+  justify-content: center;
+  padding-left: 0;
+  padding-right: 0;
+  gap: 0;
 }
 
 /* Envoltorio de cada tabla suelta. Por defecto va sobre una tarjeta blanca que "flota"

@@ -31,15 +31,16 @@ export default function TableStyleToggle({ className = "" }: { className?: strin
       role="switch"
       aria-checked={boxed}
       aria-label={boxed ? "Mostrar tablas sueltas" : "Mostrar tablas en tarjeta"}
-      className={`w-full flex items-center gap-[9px] px-3 py-2.5 rounded-lg text-[13px] font-medium text-navy/55 hover:bg-navy/[0.04] hover:text-navy transition-colors ${className}`}
+      title="Tablas en tarjeta"
+      className={`nav-row w-full flex items-center gap-[9px] px-3 py-2.5 rounded-lg text-[13px] font-medium text-navy/55 hover:bg-navy/[0.04] hover:text-navy transition-colors ${className}`}
     >
       <span className="text-navy/40">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
           <rect x="3" y="4" width="18" height="16" rx="2" /><line x1="3" y1="10" x2="21" y2="10" /><line x1="3" y1="15" x2="21" y2="15" />
         </svg>
       </span>
-      <span className="flex-1 text-left">Tablas en tarjeta</span>
-      <span className={`shrink-0 relative w-9 h-5 rounded-full transition-colors ${boxed ? "bg-primary" : "bg-navy/20"}`}>
+      <span className="nav-label flex-1 text-left">Tablas en tarjeta</span>
+      <span className={`nav-rail-hide shrink-0 relative w-9 h-5 rounded-full transition-colors ${boxed ? "bg-primary" : "bg-navy/20"}`}>
         <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${boxed ? "translate-x-4" : "translate-x-0"}`} />
       </span>
     </button>

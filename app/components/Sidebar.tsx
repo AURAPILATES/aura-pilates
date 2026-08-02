@@ -6,7 +6,8 @@ import { usePathname } from "next/navigation";
 import SyncStatusPanel from "./SyncStatusPanel";
 import ThemeToggle from "./ThemeToggle";
 import TableStyleToggle from "./TableStyleToggle";
-import { HideNavButton } from "./NavVisibility";
+import SkinToggle from "./SkinToggle";
+import { ToggleNavButton } from "./NavVisibility";
 import { usePendingRecurringCount } from "./usePendingRecurringCount";
 import { navGroups, IconSettings } from "./sidebarNav";
 
@@ -15,10 +16,10 @@ export default function Sidebar() {
   const pendingRecurringCount = usePendingRecurringCount();
 
   return (
-    <aside className="app-sidebar hidden sm:flex fixed top-0 left-0 h-screen w-[220px] flex-col bg-[#f9f9f7] dark:bg-[#171520] border-r border-navy/[0.07] z-30">
-      {/* Logo + ocultar menú */}
-      <div className="px-5 py-5 flex items-center justify-between gap-2">
-        <Link href="/">
+    <aside className="app-sidebar hidden sm:flex fixed top-0 left-0 h-screen flex-col bg-nav-bg border-r border-nav-border z-30">
+      {/* Logo + colapsar menú */}
+      <div className="nav-row px-5 py-5 flex items-center justify-between gap-2">
+        <Link href="/" className="nav-rail-hide">
           <Image
             src="/logotipo.png"
             alt="Aura Pilates Studio"
@@ -28,7 +29,7 @@ export default function Sidebar() {
             priority
           />
         </Link>
-        <HideNavButton />
+        <ToggleNavButton />
       </div>
 
       {/* Nav links */}
@@ -43,16 +44,17 @@ export default function Sidebar() {
                   <Link
                     key={href}
                     href={href}
-                    className={`flex items-center gap-[9px] px-3 py-2.5 rounded-lg text-[13px] font-medium transition-colors ${
+                    title={label}
+                    className={`nav-row flex items-center gap-[9px] px-3 py-2.5 rounded-lg text-[13px] font-medium transition-colors ${
                       active
                         ? "bg-navy/[0.04] text-navy"
                         : "text-navy/55 hover:bg-navy/[0.04] hover:text-navy"
                     }`}
                   >
                     <span className={active ? "text-navy" : "text-navy/40"}>{icon}</span>
-                    <span className="flex-1">{label}</span>
+                    <span className="nav-label flex-1">{label}</span>
                     {href === "/transacciones" && pendingRecurringCount > 0 && (
-                      <span className="shrink-0 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-warning text-white text-[10px] font-bold px-1">
+                      <span className="nav-rail-hide shrink-0 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-warning text-white text-[10px] font-bold px-1">
                         {pendingRecurringCount}
                       </span>
                     )}
@@ -65,7 +67,7 @@ export default function Sidebar() {
       </nav>
 
       {/* Sync status */}
-      <div className="border-t border-navy/[0.06]">
+      <div className="nav-rail-hide border-t border-navy/[0.06]">
         <SyncStatusPanel />
       </div>
 
@@ -73,7 +75,8 @@ export default function Sidebar() {
       <div className="px-3 py-4 border-t border-navy/[0.06] space-y-0.5">
         <Link
           href="/configuracion"
-          className={`flex items-center gap-[9px] px-3 py-2.5 rounded-lg text-[13px] font-medium transition-colors ${
+          title="Configuración"
+          className={`nav-row flex items-center gap-[9px] px-3 py-2.5 rounded-lg text-[13px] font-medium transition-colors ${
             pathname === "/configuracion"
               ? "bg-navy/[0.04] text-navy"
               : "text-navy/55 hover:bg-navy/[0.04] hover:text-navy"
@@ -82,10 +85,11 @@ export default function Sidebar() {
           <span className={pathname === "/configuracion" ? "text-navy" : "text-navy/40"}>
             <IconSettings />
           </span>
-          Configuración
+          <span className="nav-label">Configuración</span>
         </Link>
         <ThemeToggle />
         <TableStyleToggle />
+        <SkinToggle />
       </div>
     </aside>
   );
