@@ -5,7 +5,6 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import SyncStatusPanel from "./SyncStatusPanel";
 import ThemeToggle from "./ThemeToggle";
-import SkinToggle from "./SkinToggle";
 import { ToggleNavButton } from "./NavVisibility";
 import { usePendingRecurringCount } from "./usePendingRecurringCount";
 import { navGroups, IconSettings } from "./sidebarNav";
@@ -44,13 +43,11 @@ export default function Sidebar() {
                     key={href}
                     href={href}
                     title={label}
-                    className={`nav-row flex items-center gap-[9px] px-3 py-2.5 rounded-lg text-[13px] font-medium transition-colors ${
-                      active
-                        ? "bg-navy/[0.04] text-navy"
-                        : "text-navy/55 hover:bg-navy/[0.04] hover:text-navy"
+                    className={`nav-row flex items-center gap-[9px] px-3 py-2.5 rounded-lg text-[13px] font-normal text-[#3a362f] transition-colors ${
+                      active ? "bg-navy/[0.04]" : "hover:bg-navy/[0.04]"
                     }`}
                   >
-                    <span className={active ? "text-navy" : "text-navy/40"}>{icon}</span>
+                    <span className="text-[#3a362f]">{icon}</span>
                     <span className="nav-label flex-1">{label}</span>
                     {href === "/transacciones" && pendingRecurringCount > 0 && (
                       <span className="nav-rail-hide shrink-0 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-primary text-white text-[10px] font-bold px-1">
@@ -75,19 +72,16 @@ export default function Sidebar() {
         <Link
           href="/configuracion"
           title="Configuración"
-          className={`nav-row flex items-center gap-[9px] px-3 py-2.5 rounded-lg text-[13px] font-medium transition-colors ${
-            pathname === "/configuracion"
-              ? "bg-navy/[0.04] text-navy"
-              : "text-navy/55 hover:bg-navy/[0.04] hover:text-navy"
+          className={`nav-row flex items-center gap-[9px] px-3 py-2.5 rounded-lg text-[13px] font-normal text-[#3a362f] transition-colors ${
+            pathname === "/configuracion" ? "bg-navy/[0.04]" : "hover:bg-navy/[0.04]"
           }`}
         >
-          <span className={pathname === "/configuracion" ? "text-navy" : "text-navy/40"}>
+          <span className="text-[#3a362f]">
             <IconSettings />
           </span>
           <span className="nav-label">Configuración</span>
         </Link>
         <ThemeToggle />
-        <SkinToggle />
       </div>
     </aside>
   );

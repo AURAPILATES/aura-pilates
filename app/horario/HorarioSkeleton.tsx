@@ -8,10 +8,10 @@ export default function HorarioSkeleton() {
     <div>
       {/* Sticky header */}
       <div className="sticky top-0 z-20 bg-card/95 backdrop-blur-sm border-b border-navy/[0.06] sm:rounded-t-[14px]">
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 h-[45px] flex items-center justify-between gap-3">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-5 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <MobileNav />
-            <span className="text-sm font-bold text-navy uppercase tracking-widest">Horario</span>
+            <span className="text-[26px] font-bold text-navy">Horario</span>
             <div className="hidden sm:flex items-center border border-navy/[0.12] rounded-lg bg-card p-0.5 gap-0.5 animate-pulse">
               <div className="w-16 h-6 rounded-md bg-navy/10" />
               <div className="w-16 h-6 rounded-md bg-navy/[0.04]" />

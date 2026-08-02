@@ -5,13 +5,13 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-sans: 'Inter', sans-serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   --font-mono: 'DM Mono', monospace;
   --font-display: 'Playfair Display', serif;
 
-  --color-app-bg: #F4F2ED;
-  --color-nav-bg: #EDE9E0;
-  --color-nav-border: #E7E2D9;
+  --color-app-bg: #F7F7F5;
+  --color-nav-bg: #F7F7F5;
+  --color-nav-border: transparent;
   --color-card: #ffffff;
   --color-navy: #1c1917;
   /* Color fijo (no invierte con el tema) para chips/tooltips sólidos que
@@ -37,6 +37,25 @@
   --radius-md: 0.3125rem;
 }
 
+/* Base tipográfica y de scroll/selección del rediseño. */
+body {
+  text-rendering: optimizeLegibility;
+}
+::selection {
+  background: var(--color-primary);
+  color: #fff;
+}
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 8px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
 /* Paleta de series de gráficos (no genera utilidades Tailwind, solo se consume vía
    var() en atributos SVG/estilos inline de los gráficos personalizados). */
 :root {
@@ -47,9 +66,9 @@
 }
 
 .dark {
-  --color-app-bg: #131210;
-  --color-nav-bg: #0E0D0C;
-  --color-nav-border: #302E29;
+  --color-app-bg: #0D0F12;
+  --color-nav-bg: #0D0F12;
+  --color-nav-border: transparent;
   --color-card: #242129;
   --color-navy: #e6e3e8;
   --color-primary: #8a75ff;
@@ -73,22 +92,6 @@
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.25);
 
   color-scheme: dark;
-}
-
-/* Skin alternativo "precision" (en comparación con el actual, "editorial"): sidebar y
- * fondo casi blancos, sin línea de separación entre nav y contenido. Toggle temporal
- * (SkinToggle) para comparar en la app real antes de decidir cuál se queda; solo toca
- * fondo general + sidebar, el resto de la paleta (botones, badges, gráficos) no cambia
- * todavía con este selector. */
-[data-skin="precision"] {
-  --color-app-bg: #F7F7F5;
-  --color-nav-bg: #F7F7F5;
-  --color-nav-border: transparent;
-}
-[data-skin="precision"].dark {
-  --color-app-bg: #0D0F12;
-  --color-nav-bg: #0D0F12;
-  --color-nav-border: transparent;
 }
 
 /* Recharts hace focusable el <svg> del gráfico para navegación por teclado
