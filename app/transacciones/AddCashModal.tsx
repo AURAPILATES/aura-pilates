@@ -7,6 +7,7 @@ import { addCashTransaction } from "./actions";
 import Drawer from "@/app/components/Drawer";
 import Button, { SecondaryButton } from "@/app/components/Button";
 import Select from "@/app/components/Select";
+import UnitInput from "@/app/components/UnitInput";
 import { ToggleGroup } from "@/components/charts";
 
 const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
@@ -94,14 +95,13 @@ export default function AddCashModal({ categories, onClose }: { categories: Cate
           </div>
 
           <div>
-            <label className="block text-xs text-navy/55 mb-1.5">Importe (€)</label>
-            <input
-              type="text"
-              inputMode="decimal"
+            <label className="block text-xs text-navy/55 mb-1.5">Importe</label>
+            <UnitInput
+              unit="€"
+              unitSide="left"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder="0,00"
-              className="w-full border border-navy/[0.12] rounded-lg px-3 py-2 text-sm text-navy focus:outline-none focus:border-primary/40"
             />
           </div>
 

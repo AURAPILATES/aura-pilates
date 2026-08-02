@@ -16,6 +16,7 @@ import Drawer from "@/app/components/Drawer";
 import Button, { SecondaryButton, DeleteButton, DangerButtonSolid } from "@/app/components/Button";
 import ChipsInput from "@/app/components/ChipsInput";
 import Checkbox from "@/app/components/Checkbox";
+import UnitInput from "@/app/components/UnitInput";
 import { CategoryPill } from "@/app/transacciones/TransaccionesList";
 import NewContactDrawer, { AutomationIcon } from "@/app/transacciones/NewContactDrawer";
 import ContactosManagerV2 from "./ContactosManagerV2";
@@ -67,9 +68,8 @@ export function initials(label: string) {
 function RateInput({ value, onSave }: { value: number; onSave: (v: number) => void }) {
   const [draft, setDraft] = useState(String(value));
   return (
-    <input
-      type="text"
-      inputMode="decimal"
+    <UnitInput
+      unit="%"
       value={draft}
       onChange={(e) => setDraft(e.target.value)}
       onBlur={() => {
@@ -77,7 +77,6 @@ function RateInput({ value, onSave }: { value: number; onSave: (v: number) => vo
         setDraft(String(v));
         if (v !== value) onSave(v);
       }}
-      className="w-16 px-1.5 py-1 text-sm text-right border border-navy/15 rounded-md focus:outline-none focus:border-primary/40"
     />
   );
 }
@@ -207,13 +206,15 @@ function ContactDetailDrawer({ contact, categories, stats, onChange, onRemove, o
             onBlur={() => { if (label.trim() && label !== contact.label) onChange({ label: label.trim() }); }}
             className="w-full px-3 py-2 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40"
           />
-          <div className="flex items-center gap-4">
-            <label className="flex items-center gap-2 text-xs text-navy/45">
-              IVA <RateInput value={contact.ivaRate} onSave={(v) => onChange({ ivaRate: v })} />%
-            </label>
-            <label className="flex items-center gap-2 text-xs text-navy/45">
-              IRPF <RateInput value={contact.retencionRate} onSave={(v) => onChange({ retencionRate: v })} />%
-            </label>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <p className="text-[10px] font-semibold text-navy/35 uppercase tracking-wider mb-1">IVA</p>
+              <RateInput value={contact.ivaRate} onSave={(v) => onChange({ ivaRate: v })} />
+            </div>
+            <div>
+              <p className="text-[10px] font-semibold text-navy/35 uppercase tracking-wider mb-1">IRPF</p>
+              <RateInput value={contact.retencionRate} onSave={(v) => onChange({ retencionRate: v })} />
+            </div>
           </div>
           <label className="flex items-center gap-2 text-xs text-navy/55 cursor-pointer">
             <Checkbox checked={contact.noTax} onChange={(e) => onChange({ noTax: e.target.checked })} tone="primary" />

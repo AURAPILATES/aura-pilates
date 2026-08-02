@@ -16,6 +16,7 @@ import Button, { SecondaryButton } from "@/app/components/Button";
 import Select from "@/app/components/Select";
 import ChipsInput from "@/app/components/ChipsInput";
 import Checkbox from "@/app/components/Checkbox";
+import UnitInput from "@/app/components/UnitInput";
 import { ToggleGroup } from "@/components/charts";
 import { CategoryPill } from "./TransaccionesList";
 import { AutomationIcon } from "./NewContactDrawer";
@@ -791,27 +792,23 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                               ))}
                             </div>
                             <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1.5">Impuestos</p>
-                            <div className="flex gap-2 mb-2.5">
-                              <label className="flex-1 flex items-center gap-1.5 text-xs text-navy/50">
-                                IVA
-                                <input
-                                  type="number" min={0} max={100} step={0.5}
+                            <div className="grid grid-cols-2 gap-2 mb-2.5">
+                              <div>
+                                <p className="text-[10px] font-semibold text-navy/35 uppercase tracking-wider mb-1">IVA</p>
+                                <UnitInput
+                                  unit="%"
                                   value={d.ivaRate}
                                   onChange={(e) => updateDraft(d.pattern, { ivaRate: parseFloat(e.target.value) || 0 })}
-                                  className="w-full px-2 py-1.5 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40"
                                 />
-                                %
-                              </label>
-                              <label className="flex-1 flex items-center gap-1.5 text-xs text-navy/50">
-                                IRPF
-                                <input
-                                  type="number" min={0} max={100} step={0.5}
+                              </div>
+                              <div>
+                                <p className="text-[10px] font-semibold text-navy/35 uppercase tracking-wider mb-1">IRPF</p>
+                                <UnitInput
+                                  unit="%"
                                   value={d.retencionRate}
                                   onChange={(e) => updateDraft(d.pattern, { retencionRate: parseFloat(e.target.value) || 0 })}
-                                  className="w-full px-2 py-1.5 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40"
                                 />
-                                %
-                              </label>
+                              </div>
                             </div>
                             <label className="flex items-center gap-2 text-xs text-navy/55 cursor-pointer">
                               <Checkbox checked={d.noTax} onChange={(e) => updateDraft(d.pattern, { noTax: e.target.checked })} tone="primary" />

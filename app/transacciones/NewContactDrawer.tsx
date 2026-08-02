@@ -6,6 +6,7 @@ import { createContact, type Contact } from "./actions";
 import Drawer from "@/app/components/Drawer";
 import ChipsInput from "@/app/components/ChipsInput";
 import Checkbox from "@/app/components/Checkbox";
+import UnitInput from "@/app/components/UnitInput";
 import Button, { SecondaryButton } from "@/app/components/Button";
 import { CategoryPill } from "./TransaccionesList";
 import { CONTACT_GROUP_ORDER, CONTACT_GROUP_LABELS, type ContactGroup } from "@/lib/contactGroups";
@@ -134,20 +135,14 @@ export default function NewContactDrawer({
             ))}
           </div>
         </div>
-        <div className="flex gap-3">
-          <div className="flex-1">
-            <label className="block text-xs font-medium text-navy/55 mb-1">IVA %</label>
-            <input
-              type="text" inputMode="decimal" value={ivaRate} onChange={(e) => setIvaRate(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40"
-            />
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <p className="text-[10px] font-semibold text-navy/35 uppercase tracking-wider mb-1">IVA</p>
+            <UnitInput unit="%" value={ivaRate} onChange={(e) => setIvaRate(e.target.value)} />
           </div>
-          <div className="flex-1">
-            <label className="block text-xs font-medium text-navy/55 mb-1">Retención %</label>
-            <input
-              type="text" inputMode="decimal" value={retencionRate} onChange={(e) => setRetencionRate(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40"
-            />
+          <div>
+            <p className="text-[10px] font-semibold text-navy/35 uppercase tracking-wider mb-1">Retención</p>
+            <UnitInput unit="%" value={retencionRate} onChange={(e) => setRetencionRate(e.target.value)} />
           </div>
         </div>
         <label className="flex items-center gap-2 text-xs text-navy/55 cursor-pointer">
