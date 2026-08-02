@@ -13,31 +13,36 @@ type Props<T extends string> = {
   className?: string;
 };
 
-/** Subpestañas de sección del rediseño en prueba: subrayado 2px, sin caja. En pantallas
+/** Subpestañas de sección del rediseño en prueba, estilo "carpeta": la pestaña activa es una
+ * caja con esquinas superiores redondeadas cuyo borde inferior pinta encima de la línea
+ * divisoria, dando la sensación de que se funde con el contenido de debajo. En pantallas
  * estrechas, si no caben todas, la fila hace scroll horizontal en vez de partirse en líneas. */
 export default function SectionTabsV2<T extends string>({ tabs, active, onChange, className = "" }: Props<T>) {
   return (
-    <div className={`overflow-x-auto scrollbar-none border-b border-[#eee] dark:border-[#4c4c4c] ${className}`}>
-      <div className="flex gap-5 sm:gap-[22px] w-max min-w-full">
-        {tabs.map(({ key, label, badge }) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => onChange(key)}
-            className={`flex items-center gap-[7px] pb-[11px] text-[14px] whitespace-nowrap transition-colors -mb-px shrink-0 ${
-              active === key
-                ? "text-navy font-semibold border-b-2 border-navy"
-                : "text-muted border-b-2 border-transparent hover:text-navy"
-            }`}
-          >
-            {label}
-            {!!badge && (
-              <span className="shrink-0 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-primary/10 text-primary text-[11px] font-semibold px-1">
-                {badge}
-              </span>
-            )}
-          </button>
-        ))}
+    <div className={`overflow-x-auto scrollbar-none border-b border-border ${className}`}>
+      <div className="flex gap-1 w-max min-w-full">
+        {tabs.map(({ key, label, badge }) => {
+          const isActive = active === key;
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => onChange(key)}
+              className={`relative -mb-px flex items-center gap-[7px] px-[15px] py-[9px] rounded-t-[9px] border text-[13.5px] whitespace-nowrap transition-colors shrink-0 ${
+                isActive
+                  ? "z-10 bg-card border-border border-b-card text-navy font-semibold"
+                  : "border-transparent text-muted hover:text-navy"
+              }`}
+            >
+              {label}
+              {!!badge && (
+                <span className="shrink-0 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-primary/10 text-primary text-[11px] font-semibold px-1">
+                  {badge}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
