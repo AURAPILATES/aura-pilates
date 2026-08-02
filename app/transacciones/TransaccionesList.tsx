@@ -387,22 +387,30 @@ export function MoreOptionsMenu({
     setOpen((v) => !v);
   }
 
-  const hasActive = onlyRecurring || onlyNoContact || originFilter !== "all" || amountMin !== "" || amountMax !== "";
+  const activeCount =
+    (onlyRecurring ? 1 : 0) + (onlyNoContact ? 1 : 0) + (originFilter !== "all" ? 1 : 0) +
+    (amountMin !== "" || amountMax !== "" ? 1 : 0);
+  const hasActive = activeCount > 0;
 
   return (
     <div ref={wrapRef} className="relative">
       <button
         ref={btnRef}
         onClick={handleToggle}
-        title="Más opciones"
-        className={`relative shrink-0 flex items-center justify-center w-9 h-9 border rounded-xl transition-colors ${
-          hasActive ? "border-primary/40 text-primary bg-primary/5" : "text-navy/50 hover:text-navy border-navy/[0.12] bg-card hover:bg-navy/[0.02]"
+        title="Más filtros"
+        className={`shrink-0 flex items-center gap-2 px-3 py-2 text-[13.5px] font-medium border rounded-[10px] transition-colors whitespace-nowrap ${
+          hasActive ? "border-primary/40 text-primary bg-primary/5" : "text-strong border-border bg-card hover:bg-navy/[0.02]"
         }`}
       >
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/><circle cx="5" cy="12" r="1.5"/>
+          <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
         </svg>
-        {hasActive && <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-primary" />}
+        <span className="hidden sm:inline">Más filtros</span>
+        {hasActive && (
+          <span className="flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full bg-primary text-white text-[10.5px] font-bold">
+            {activeCount}
+          </span>
+        )}
       </button>
       {open && dropPos && createPortal(
         <div
@@ -654,6 +662,8 @@ export default function TransaccionesList({
   const totalIn  = baseFiltered.filter((t) => t.amount > 0 && !t.is_refund).reduce((s, t) => s + t.amount, 0);
   const totalOut = baseFiltered.filter((t) => t.amount < 0 && !t.is_refund).reduce((s, t) => s + Math.abs(t.amount), 0);
   const neto     = totalIn - totalOut;
+  const countIn  = baseFiltered.filter((t) => t.amount > 0 && !t.is_refund).length;
+  const countOut = baseFiltered.filter((t) => t.amount < 0 && !t.is_refund).length;
 
   function handleCategoryChange(id: string, category: string | null) {
     startTransition(() => updateTransactionCategory(id, category));
@@ -759,6 +769,8 @@ export default function TransaccionesList({
         onAmountMaxChange={setAmountMax}
         totalIn={totalIn}
         totalOut={totalOut}
+        countIn={countIn}
+        countOut={countOut}
         neto={neto}
         sortKey={sortKey}
         sortDir={sortDir}

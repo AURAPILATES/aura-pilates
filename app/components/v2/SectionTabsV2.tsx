@@ -32,7 +32,7 @@ export default function SectionTabsV2<T extends string>({ tabs, active, onChange
           >
             {label}
             {!!badge && (
-              <span className="shrink-0 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-[#b45309] dark:bg-[#e8a572] text-white text-[11px] font-semibold px-1">
+              <span className="shrink-0 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-primary/10 text-primary text-[11px] font-semibold px-1">
                 {badge}
               </span>
             )}

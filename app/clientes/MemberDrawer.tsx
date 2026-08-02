@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Avatar from "@/app/components/Avatar";
 import Drawer from "@/app/components/Drawer";
 import { fmt } from "@/lib/analytics";
 import { setFamilyMemberAction } from "@/app/actions/setClientFamily";
@@ -89,9 +90,7 @@ export default function MemberDrawer({ client, payments, onClose, onPrev, onNext
       header={
         <div>
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-              <span className="text-base font-bold text-primary">{initials(client.name, client.email)}</span>
-            </div>
+            <Avatar seed={client.id} initials={initials(client.name, client.email)} size={48} />
             <div className="min-w-0">
               <h2 className="text-base font-bold text-navy leading-tight truncate">{client.name}</h2>
               {client.email && <p className="text-xs text-navy/50 truncate">{client.email}</p>}

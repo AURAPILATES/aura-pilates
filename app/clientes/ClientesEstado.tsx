@@ -17,8 +17,8 @@ import MemberDrawer from "./MemberDrawer";
 import type { MemberClient, StatusTone, StatusKey } from "@/lib/memberClientsV2";
 import type { StripePayment } from "@/lib/stripePayments";
 
-function StatBox({ icon, label, value, valueClassName, tooltip, onClick, active }: {
-  icon: ReactNode; label: string; value: ReactNode; valueClassName?: string; tooltip: string; onClick?: () => void; active?: boolean;
+function StatBox({ icon, label, value, valueClassName, dotClassName, tooltip, onClick, active }: {
+  icon: ReactNode; label: string; value: ReactNode; valueClassName?: string; dotClassName?: string; tooltip: string; onClick?: () => void; active?: boolean;
 }) {
   const Comp = onClick ? "button" : "div";
   return (
@@ -30,6 +30,7 @@ function StatBox({ icon, label, value, valueClassName, tooltip, onClick, active 
       } ${onClick ? "hover:bg-navy/[0.015] cursor-pointer" : ""}`}
     >
       <div className="flex items-center gap-1.5 text-navy/50 mb-2">
+        {dotClassName && <span className={`shrink-0 w-[7px] h-[7px] rounded-full ${dotClassName}`} />}
         {icon}
         <span className="text-[12.5px] font-medium">{label}</span>
         <InfoDot text={tooltip} />
@@ -197,24 +198,28 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
         <StatBox
           icon={<Clock size={14} />} label="Renuevan pronto" value={counts.renueva_pronto}
           valueClassName={counts.renueva_pronto > 0 ? "text-[#b45309] dark:text-[#e8a572]" : "text-navy/50"}
+          dotClassName={counts.renueva_pronto > 0 ? "bg-[#b45309] dark:bg-[#e8a572]" : undefined}
           tooltip="Suscripción o pack que caduca en 14 días o menos. Momento clave para retener."
           onClick={() => toggleBox("renueva_pronto")} active={filter === "renueva_pronto"}
         />
         <StatBox
           icon={<AlertTriangle size={14} />} label="Sin pago detectado" value={counts.sin_pago}
           valueClassName={counts.sin_pago > 0 ? "text-[#b45309] dark:text-[#e8a572]" : "text-navy/50"}
+          dotClassName={counts.sin_pago > 0 ? "bg-[#b45309] dark:bg-[#e8a572]" : undefined}
           tooltip="Asistieron a clase sin rastro de pago (ni Stripe ni membresía Momence). Revisa antes de actuar (efectivo no se detecta)."
           onClick={() => toggleBox("sin_pago")} active={filter === "sin_pago"}
         />
         <StatBox
           icon={<Copy size={14} />} label="2+ suscripciones" value={counts.duplicadas}
           valueClassName={counts.duplicadas > 0 ? "text-danger" : "text-navy/50"}
+          dotClassName={counts.duplicadas > 0 ? "bg-danger" : undefined}
           tooltip="Clientes con varias suscripciones activas a la vez — posible doble cobro. Revísalos en Momence."
           onClick={() => toggleBox("duplicadas")} active={filter === "duplicadas"}
         />
         <StatBox
           icon={<TrendingDown size={14} />} label="Infrautilizan su plan" value={counts.infrautiliza}
           valueClassName={counts.infrautiliza > 0 ? "text-[#b45309] dark:text-[#e8a572]" : "text-navy/50"}
+          dotClassName={counts.infrautiliza > 0 ? "bg-[#b45309] dark:bg-[#e8a572]" : undefined}
           tooltip="Suscripción con muy pocas clases asistidas frente a las que incluye (Bàsic/Plus/Pro), a mitad de su período de facturación o más. Pagan por algo que apenas usan — riesgo de baja o downgrade."
           onClick={() => toggleBox("infrautiliza")} active={filter === "infrautiliza"}
         />

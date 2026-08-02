@@ -126,6 +126,8 @@ type Props = {
   onAmountMaxChange: (v: string) => void;
   totalIn: number;
   totalOut: number;
+  countIn: number;
+  countOut: number;
   neto: number;
   sortKey: SortKey | null;
   sortDir: "asc" | "desc";
@@ -176,7 +178,7 @@ export default function TransaccionesListV2({
   onlyNoContact, onToggleOnlyNoContact,
   directionFilter, onDirectionFilterChange,
   amountMin, onAmountMinChange, amountMax, onAmountMaxChange,
-  totalIn, totalOut, neto,
+  totalIn, totalOut, countIn, countOut, neto,
   sortKey, sortDir, onToggleSort, byMonth, onRowClick,
   onExportCsv, onAddCash, onPapelera, page, totalItems, pageSize, onPageChange, recurringPeriods,
   onCategoryChange,
@@ -201,6 +203,10 @@ export default function TransaccionesListV2({
   const activeFilterCount =
     (catFilters.length > 0 ? 1 : 0) + (onlyRecurring ? 1 : 0) + (onlyNoContact ? 1 : 0) + (originFilter !== "all" ? 1 : 0) +
     (amountMin !== "" || amountMax !== "" ? 1 : 0) + (directionFilter !== "all" ? 1 : 0) + (search.trim() ? 1 : 0) + (dateActive ? 1 : 0);
+  const totalCount = countIn + countOut;
+  const pctIn = totalCount > 0 ? (countIn / totalCount * 100).toFixed(1).replace(".", ",") : "0";
+  const pctOut = totalCount > 0 ? (countOut / totalCount * 100).toFixed(1).replace(".", ",") : "0";
+
   function clearFilters() {
     onCatFiltersChange([]);
     if (onlyRecurring) onToggleOnlyRecurring();
@@ -237,10 +243,16 @@ export default function TransaccionesListV2({
             directionFilter === "in" ? "border-[#16a34a]/30 dark:border-[#7cdfa0]/30 bg-[#16a34a]/[0.05] dark:bg-[#7cdfa0]/[0.05]" : "border-border bg-card"
           }`}
         >
-          <p className="text-[10px] sm:text-[10.5px] tracking-wide uppercase text-faint font-semibold truncate">Entradas</p>
+          <p className="flex items-center gap-1.5 text-[10px] sm:text-[10.5px] tracking-wide uppercase text-faint font-semibold truncate">
+            <span className="shrink-0 w-[7px] h-[7px] rounded-full bg-[#0d8037] dark:bg-[#78e39f]" />
+            Entradas
+          </p>
           <p className="text-[15px] sm:text-[22px] font-bold text-[#0d8037] dark:text-[#78e39f] mt-[5px] tracking-tight truncate">
             <span className="sm:hidden">{fmtAmtCompact(totalIn)}</span>
             <span className="hidden sm:inline">{fmtAmt(totalIn)}</span>
+          </p>
+          <p className="hidden sm:block text-[11.5px] text-faint mt-0.5 truncate">
+            {countIn} movimiento{countIn !== 1 ? "s" : ""} · {pctIn}%
           </p>
         </button>
         <button
@@ -250,24 +262,35 @@ export default function TransaccionesListV2({
             directionFilter === "out" ? "border-[#b53e0d]/30 dark:border-[#e69675]/30 bg-[#b53e0d]/[0.05] dark:bg-[#e69675]/[0.05]" : "border-border bg-card"
           }`}
         >
-          <p className="text-[10px] sm:text-[10.5px] tracking-wide uppercase text-faint font-semibold truncate">Salidas</p>
+          <p className="flex items-center gap-1.5 text-[10px] sm:text-[10.5px] tracking-wide uppercase text-faint font-semibold truncate">
+            <span className="shrink-0 w-[7px] h-[7px] rounded-full bg-[#b53e0d] dark:bg-[#e69675]" />
+            Salidas
+          </p>
           <p className="text-[15px] sm:text-[22px] font-bold text-[#b53e0d] dark:text-[#e69675] mt-[5px] tracking-tight truncate">
             <span className="sm:hidden">{fmtAmtCompact(totalOut)}</span>
             <span className="hidden sm:inline">{fmtAmt(totalOut)}</span>
           </p>
+          <p className="hidden sm:block text-[11.5px] text-faint mt-0.5 truncate">
+            {countOut} movimiento{countOut !== 1 ? "s" : ""} · {pctOut}%
+          </p>
         </button>
         <div className="border border-border rounded-[14px] px-3 sm:px-4 py-[11px] sm:py-[13px] bg-card min-w-0">
           <p className="text-[10px] sm:text-[10.5px] tracking-wide uppercase text-faint font-semibold truncate">Diferencia</p>
-          <div className="flex items-baseline gap-1.5 mt-[5px]">
+          <div className="flex items-baseline gap-1.5 mt-[5px] flex-wrap">
             <span className={`text-[15px] sm:text-[22px] font-bold tracking-tight truncate ${neto >= 0 ? "text-navy" : "text-[#b53e0d] dark:text-[#e69675]"}`}>
               {neto < 0 && "−"}
               <span className="sm:hidden">{fmtAmtCompact(neto)}</span>
               <span className="hidden sm:inline">{fmtAmt(Math.abs(neto))}</span>
             </span>
             {totalIn > 0 && (
-              <span className="hidden sm:inline text-[11.5px] text-faint whitespace-nowrap">margen {(neto / totalIn * 100).toFixed(1).replace(".", ",")}%</span>
+              <span className="hidden sm:inline text-[11px] font-medium text-[#0d8037] dark:text-[#78e39f] bg-[#0d8037]/10 dark:bg-[#78e39f]/10 rounded-full px-1.5 py-0.5 whitespace-nowrap">
+                margen {(neto / totalIn * 100).toFixed(1).replace(".", ",")}%
+              </span>
             )}
           </div>
+          <p className="hidden sm:block text-[11.5px] text-faint mt-0.5 truncate">
+            {totalCount} movimiento{totalCount !== 1 ? "s" : ""} en total
+          </p>
         </div>
       </div>
 

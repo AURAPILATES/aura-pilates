@@ -5,7 +5,6 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import SyncStatusPanel from "./SyncStatusPanel";
 import ThemeToggle from "./ThemeToggle";
-import TableStyleToggle from "./TableStyleToggle";
 import SkinToggle from "./SkinToggle";
 import { ToggleNavButton } from "./NavVisibility";
 import { usePendingRecurringCount } from "./usePendingRecurringCount";
@@ -54,7 +53,7 @@ export default function Sidebar() {
                     <span className={active ? "text-navy" : "text-navy/40"}>{icon}</span>
                     <span className="nav-label flex-1">{label}</span>
                     {href === "/transacciones" && pendingRecurringCount > 0 && (
-                      <span className="nav-rail-hide shrink-0 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-warning text-white text-[10px] font-bold px-1">
+                      <span className="nav-rail-hide shrink-0 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-primary text-white text-[10px] font-bold px-1">
                         {pendingRecurringCount}
                       </span>
                     )}
@@ -88,7 +87,6 @@ export default function Sidebar() {
           <span className="nav-label">Configuración</span>
         </Link>
         <ThemeToggle />
-        <TableStyleToggle />
         <SkinToggle />
       </div>
     </aside>

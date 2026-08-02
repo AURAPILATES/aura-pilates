@@ -7,7 +7,6 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import SyncStatusPanel from "./SyncStatusPanel";
 import ThemeToggle from "./ThemeToggle";
-import TableStyleToggle from "./TableStyleToggle";
 import { usePendingRecurringCount } from "./usePendingRecurringCount";
 
 const groups = [
@@ -170,7 +169,7 @@ export default function MobileNav() {
                       <span className={active ? "text-navy" : "text-navy/40"}>{icon}</span>
                       <span className="flex-1">{label}</span>
                       {href === "/transacciones" && pendingRecurringCount > 0 && (
-                        <span className="shrink-0 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-warning text-white text-[10px] font-bold px-1">
+                        <span className="shrink-0 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-primary text-white text-[10px] font-bold px-1">
                           {pendingRecurringCount}
                         </span>
                       )}
@@ -202,7 +201,6 @@ export default function MobileNav() {
             Configuración
           </Link>
           <ThemeToggle />
-          <TableStyleToggle />
         </div>
       </div>
     </>
