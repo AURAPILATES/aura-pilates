@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Avatar from "@/app/components/Avatar";
 import Drawer from "@/app/components/Drawer";
+import Checkbox from "@/app/components/Checkbox";
 import { fmt } from "@/lib/analytics";
 import { setFamilyMemberAction } from "@/app/actions/setClientFamily";
 import { ackPaymentErrorAction, unackPaymentErrorAction } from "@/app/actions/ackPaymentError";
@@ -117,8 +118,7 @@ export default function MemberDrawer({ client, payments, onClose, onPrev, onNext
           </div>
           {client.memberId != null && (
             <label className={`flex items-center gap-2 mt-3 w-fit cursor-pointer select-none ${savingFamily ? "opacity-50 pointer-events-none" : ""}`}>
-              <input type="checkbox" checked={isFamily} onChange={toggleFamily} disabled={savingFamily}
-                className="w-[15px] h-[15px] rounded-[4px] border-border accent-rose-500 cursor-pointer" />
+              <Checkbox checked={isFamily} onChange={toggleFamily} disabled={savingFamily} tone="rose" />
               <span className={`text-xs font-medium ${isFamily ? "text-rose-600 dark:text-rose-400" : "text-navy/60"}`}>Familiar</span>
             </label>
           )}
@@ -236,7 +236,7 @@ export default function MemberDrawer({ client, payments, onClose, onPrev, onNext
             {stripe.paymentErrorReason && <p>Motivo: <span className="font-medium text-navy">{stripe.paymentErrorReason}</span></p>}
           </div>
           <label className={`flex items-center gap-2 mt-3 pt-3 border-t border-danger/15 cursor-pointer select-none ${savingAck ? "opacity-60 pointer-events-none" : ""}`}>
-            <input type="checkbox" checked={acked} onChange={toggleAcked} className="w-[15px] h-[15px] rounded-[4px] accent-danger cursor-pointer" />
+            <Checkbox checked={acked} onChange={toggleAcked} tone="danger" />
             <span className={`text-xs font-medium ${acked ? "text-success" : "text-navy/60"}`}>Hablado con cliente</span>
           </label>
         </div>

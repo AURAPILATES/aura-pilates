@@ -5,6 +5,7 @@ import { contactKeyFor } from "@/lib/contactRules";
 import { createContact, type Contact } from "./actions";
 import Drawer from "@/app/components/Drawer";
 import ChipsInput from "@/app/components/ChipsInput";
+import Checkbox from "@/app/components/Checkbox";
 import Button, { SecondaryButton } from "@/app/components/Button";
 import { CategoryPill } from "./TransaccionesList";
 import { CONTACT_GROUP_ORDER, CONTACT_GROUP_LABELS, type ContactGroup } from "@/lib/contactGroups";
@@ -150,12 +151,7 @@ export default function NewContactDrawer({
           </div>
         </div>
         <label className="flex items-center gap-2 text-xs text-navy/55 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={noTax}
-            onChange={(e) => setNoTax(e.target.checked)}
-            className="w-[15px] h-[15px] rounded-[4px] border-navy/25 text-primary focus:ring-primary/20 cursor-pointer"
-          />
+          <Checkbox checked={noTax} onChange={(e) => setNoTax(e.target.checked)} tone="primary" />
           Sin IVA ni retenciones
         </label>
         {error && <p className="text-xs text-danger">{error}</p>}

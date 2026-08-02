@@ -15,6 +15,7 @@ import {
 import Drawer from "@/app/components/Drawer";
 import Button, { SecondaryButton, DeleteButton, DangerButtonSolid } from "@/app/components/Button";
 import ChipsInput from "@/app/components/ChipsInput";
+import Checkbox from "@/app/components/Checkbox";
 import { CategoryPill } from "@/app/transacciones/TransaccionesList";
 import NewContactDrawer, { AutomationIcon } from "@/app/transacciones/NewContactDrawer";
 import ContactosManagerV2 from "./ContactosManagerV2";
@@ -215,12 +216,7 @@ function ContactDetailDrawer({ contact, categories, stats, onChange, onRemove, o
             </label>
           </div>
           <label className="flex items-center gap-2 text-xs text-navy/55 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={contact.noTax}
-              onChange={(e) => onChange({ noTax: e.target.checked })}
-              className="w-[15px] h-[15px] rounded-[4px] border-navy/25 text-primary focus:ring-primary/20 cursor-pointer"
-            />
+            <Checkbox checked={contact.noTax} onChange={(e) => onChange({ noTax: e.target.checked })} tone="primary" />
             Sin IVA ni retenciones
           </label>
         </div>

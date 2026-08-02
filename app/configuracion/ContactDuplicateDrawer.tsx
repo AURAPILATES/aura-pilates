@@ -6,6 +6,7 @@ import { CONTACT_GROUP_LABELS, contactGroupOf } from "@/lib/contactGroups";
 import Drawer from "@/app/components/Drawer";
 import Button, { SecondaryButton } from "@/app/components/Button";
 import Avatar from "@/app/components/Avatar";
+import Radio from "@/app/components/Radio";
 import { CategoryBadge } from "@/app/transacciones/TransaccionesList";
 import { knownDomain, initials, fmtAmt } from "./ContactosManager";
 
@@ -73,13 +74,7 @@ export default function ContactDuplicateDrawer({
         {pairs.map(({ contact: c, stats }) => (
           <div key={c.id} className="p-4 space-y-3.5">
             <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="radio"
-                name="keep-contact"
-                checked={keepId === c.id}
-                onChange={() => setKeepId(c.id)}
-                className="w-[15px] h-[15px] accent-primary cursor-pointer"
-              />
+              <Radio name="keep-contact" checked={keepId === c.id} onChange={() => setKeepId(c.id)} />
               <span className="text-xs font-semibold text-navy/45 uppercase tracking-wider">Mantener esta ficha</span>
             </label>
 

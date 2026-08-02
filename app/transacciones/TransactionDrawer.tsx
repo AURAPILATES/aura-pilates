@@ -5,6 +5,7 @@ import { RotateCcw } from "react-feather";
 import Drawer from "@/app/components/Drawer";
 import Button, { DeleteButton } from "@/app/components/Button";
 import Select from "@/app/components/Select";
+import Checkbox from "@/app/components/Checkbox";
 import type { Transaction, PaymentMethod } from "@/lib/transactions";
 import type { Category } from "@/lib/categories";
 import { PERIOD_BUCKETS } from "@/lib/recurring";
@@ -212,12 +213,7 @@ function MarkRecurringControl({
   return (
     <div className="flex flex-col gap-3 pt-3 border-t border-navy/[0.06]">
       <label className="flex items-center gap-2 text-sm font-medium text-navy cursor-pointer">
-        <input
-          type="checkbox"
-          checked={checked}
-          onChange={(e) => toggle(e.target.checked)}
-          className="w-4 h-4 rounded border-navy/[0.25] accent-navy focus:ring-2 focus:ring-navy/15"
-        />
+        <Checkbox checked={checked} onChange={(e) => toggle(e.target.checked)} />
         {isIncome ? "Es un ingreso recurrente" : "Es un gasto recurrente"}
       </label>
       {checked && (
@@ -331,12 +327,12 @@ function RefundControl({
       <label className={`flex items-start gap-2.5 px-3 py-2.5 rounded-lg border cursor-pointer transition-colors ${
         checked ? "border-primary/30 bg-primary/[0.05]" : "border-navy/[0.1] hover:bg-navy/[0.02]"
       }`}>
-        <input
-          type="checkbox"
+        <Checkbox
           checked={checked}
           disabled={searching}
           onChange={(e) => handleCheck(e.target.checked)}
-          className="w-4 h-4 mt-0.5 rounded border-navy/[0.25] accent-primary focus:ring-2 focus:ring-primary/15 cursor-pointer disabled:opacity-50"
+          tone="primary"
+          className="mt-0.5 disabled:opacity-50"
         />
         <span className="flex-1 min-w-0">
           <span className="flex items-center gap-1.5 text-sm font-medium text-navy">

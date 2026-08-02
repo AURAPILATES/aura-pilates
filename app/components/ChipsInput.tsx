@@ -23,9 +23,9 @@ export default function ChipsInput({ values, onChange, placeholder = "+ añadir�
   return (
     <div className="flex flex-wrap items-center gap-1.5">
       {values.map((v) => (
-        <span key={v} className="inline-flex items-center gap-1 px-2 py-0.5 bg-navy/[0.04] rounded-full text-[11px] text-navy/55">
+        <span key={v} className="inline-flex items-center gap-1.5 h-[26px] pl-2.5 pr-1.5 bg-card border border-border rounded-[7px] text-[12px] text-navy">
           {v}
-          <button onClick={() => onChange(values.filter((x) => x !== v))} className="text-navy/30 hover:text-danger transition-colors">✕</button>
+          <button onClick={() => onChange(values.filter((x) => x !== v))} className="text-faint hover:text-danger transition-colors leading-none">✕</button>
         </span>
       ))}
       <input
@@ -35,7 +35,7 @@ export default function ChipsInput({ values, onChange, placeholder = "+ añadir�
         onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(); } }}
         onBlur={add}
         placeholder={placeholder}
-        className="w-36 px-1.5 py-0.5 text-[11px] border border-navy/15 rounded-full focus:outline-none focus:border-primary/40"
+        className="h-[26px] w-32 px-2.5 text-[12px] bg-transparent border border-dashed border-border rounded-[7px] focus:outline-none focus:border-solid focus:border-primary/40 placeholder:text-faint"
       />
     </div>
   );

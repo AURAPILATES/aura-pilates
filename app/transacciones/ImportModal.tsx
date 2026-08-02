@@ -15,6 +15,7 @@ import Drawer from "@/app/components/Drawer";
 import Button, { SecondaryButton } from "@/app/components/Button";
 import Select from "@/app/components/Select";
 import ChipsInput from "@/app/components/ChipsInput";
+import Checkbox from "@/app/components/Checkbox";
 import { ToggleGroup } from "@/components/charts";
 import { CategoryPill } from "./TransaccionesList";
 import { AutomationIcon } from "./NewContactDrawer";
@@ -813,12 +814,7 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                               </label>
                             </div>
                             <label className="flex items-center gap-2 text-xs text-navy/55 cursor-pointer">
-                              <input
-                                type="checkbox"
-                                checked={d.noTax}
-                                onChange={(e) => updateDraft(d.pattern, { noTax: e.target.checked })}
-                                className="w-[15px] h-[15px] rounded-[4px] border-navy/25 text-primary focus:ring-primary/20 cursor-pointer"
-                              />
+                              <Checkbox checked={d.noTax} onChange={(e) => updateDraft(d.pattern, { noTax: e.target.checked })} tone="primary" />
                               Sin IVA ni retenciones
                             </label>
                           </>

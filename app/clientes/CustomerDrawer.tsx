@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Drawer from "@/app/components/Drawer";
+import Checkbox from "@/app/components/Checkbox";
 import { fmt } from "@/lib/analytics";
 import { setClientFamilyAction } from "@/app/actions/setClientFamily";
 import { ackPaymentErrorAction, unackPaymentErrorAction } from "@/app/actions/ackPaymentError";
@@ -149,13 +150,7 @@ export default function CustomerDrawer({ customer, payments, onClose, onPrev, on
             )}
           </div>
           <label className={`flex items-center gap-2 mt-3 w-fit cursor-pointer select-none ${savingFamily ? "opacity-50 pointer-events-none" : ""}`}>
-            <input
-              type="checkbox"
-              checked={isFamily}
-              onChange={toggleFamily}
-              disabled={savingFamily}
-              className="w-[15px] h-[15px] rounded-[4px] border-border accent-rose-500 focus:ring-rose-500/20 cursor-pointer"
-            />
+            <Checkbox checked={isFamily} onChange={toggleFamily} disabled={savingFamily} tone="rose" />
             <span className={`text-xs font-medium flex items-center gap-1 ${isFamily ? "text-rose-600 dark:text-rose-400" : "text-navy/60"}`}>
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
                 <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" />
@@ -279,12 +274,7 @@ export default function CustomerDrawer({ customer, payments, onClose, onPrev, on
             )}
           </div>
           <label className={`flex items-center gap-2 mt-3 pt-3 border-t border-danger/15 cursor-pointer select-none ${savingAck ? "opacity-60 pointer-events-none" : ""}`}>
-            <input
-              type="checkbox"
-              checked={acked}
-              onChange={toggleAcked}
-              className="w-[15px] h-[15px] rounded-[4px] border-danger/30 accent-danger focus:ring-danger/20 cursor-pointer"
-            />
+            <Checkbox checked={acked} onChange={toggleAcked} tone="danger" />
             <span className={`text-xs font-medium ${acked ? "text-success" : "text-navy/60"}`}>
               Hablado con cliente
             </span>
