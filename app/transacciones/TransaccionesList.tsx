@@ -795,7 +795,7 @@ export default function TransaccionesList({
       />
 
       {showAddCash && (
-        <AddCashModal categories={categories} onClose={() => setShowAddCash(false)} />
+        <AddCashModal categories={categories} contacts={contacts} onClose={() => setShowAddCash(false)} />
       )}
       {showPapelera && (
         <PapeleraDrawer onClose={() => setShowPapelera(false)} />

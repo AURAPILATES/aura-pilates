@@ -764,17 +764,29 @@ export async function addCashTransaction(input: {
   amount: number;
   concept: string;
   category: string | null;
-  contact?: string | null;
+  contactId?: number | null;
+  newContactLabel?: string | null;
   notes?: string;
   paymentMethod?: PaymentMethod;
 }): Promise<void> {
   const supabase = createServerClient();
+
+  let contactLabel: string | null = null;
+  if (input.contactId != null) {
+    const { data, error } = await supabase.from("contacts").select("label").eq("id", input.contactId).single();
+    if (error || !data) throw new Error(error?.message ?? "Contacto no encontrado");
+    contactLabel = data.label;
+  } else if (input.newContactLabel?.trim()) {
+    contactLabel = input.newContactLabel.trim();
+    await resolveOrCreateContact(supabase, contactLabel, []);
+  }
+
   const { error } = await supabase.from("transactions").insert({
     date: input.date,
     amount: input.amount,
     balance: null,
     concept: input.concept.trim() || null,
-    contact: input.contact?.trim() || null,
+    contact: contactLabel,
     category: input.category,
     notes: input.notes?.trim() || null,
     source: "manual",
