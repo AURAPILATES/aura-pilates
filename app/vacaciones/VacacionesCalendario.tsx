@@ -278,12 +278,12 @@ function NuevoInstructorModal({
     setUserEdited(true);
   }
 
-  async function handleSubmit() {
+  async function handleSubmit(close: () => void) {
     if (!nombre.trim()) return;
     setSaving(true);
     await onCreate({ nombre: nombre.trim(), inicio_contrato: inicioContrato, jornada_dias: jornadaDias, dias_totales: diasTotales });
     setSaving(false);
-    onClose();
+    close();
   }
 
   return (
@@ -291,16 +291,16 @@ function NuevoInstructorModal({
       title="Nuevo instructor"
       onClose={onClose}
       maxWidth="max-w-sm"
-      footer={
+      footer={(close) => (
         <div className="flex gap-3">
-          <SecondaryButton onClick={onClose} className="flex-1">
+          <SecondaryButton onClick={close} className="flex-1">
             Cancelar
           </SecondaryButton>
-          <Button onClick={handleSubmit} disabled={!nombre.trim() || saving} className="flex-1">
+          <Button onClick={() => handleSubmit(close)} disabled={!nombre.trim() || saving} className="flex-1">
             {saving ? "Guardando…" : "Guardar"}
           </Button>
         </div>
-      }
+      )}
     >
       <div className="px-6 py-5 space-y-4">
         <div>
@@ -404,12 +404,12 @@ function AñadirAusenciaModal({
   const alreadyExists = duration === "day" && existingDates.includes(dateFrom);
   const selectedType = ABSENCE_TYPES.find((t) => t.key === absenceType)!;
 
-  async function handleSolicitar() {
+  async function handleSolicitar(close: () => void) {
     if (newDates.length === 0) return;
     setSaving(true);
     try {
       await onAdd(absenceType, newDates);
-      onClose();
+      close();
     } catch (err) {
       console.error("Error al guardar ausencia:", err);
       alert("Error al guardar. Comprueba la consola.");
@@ -433,16 +433,16 @@ function AñadirAusenciaModal({
       subtitle={persona.nombre}
       onClose={onClose}
       maxWidth="max-w-xl"
-      footer={
+      footer={(close) => (
         <div className="flex gap-3">
-          <SecondaryButton onClick={onClose} className="flex-1">
+          <SecondaryButton onClick={close} className="flex-1">
             Cancelar
           </SecondaryButton>
-          <Button onClick={handleSolicitar} disabled={newDates.length === 0 || saving} className="flex-1">
+          <Button onClick={() => handleSolicitar(close)} disabled={newDates.length === 0 || saving} className="flex-1">
             {saving ? "Guardando…" : "Guardar"}
           </Button>
         </div>
-      }
+      )}
     >
         <div className="flex flex-col sm:flex-row">
           <div className="flex-1 px-6 py-5 space-y-5">

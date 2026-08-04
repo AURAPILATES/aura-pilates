@@ -617,10 +617,10 @@ function RecurringExpenseDrawer({ row, categories, contacts, onClose, onOpenCont
     }
   }
 
-  async function cancel() {
+  async function cancel(close: () => void) {
     await setRecurringExpenseStatus(e.id, "cancelled");
     router.refresh();
-    onClose();
+    close();
   }
 
   return (
@@ -635,16 +635,16 @@ function RecurringExpenseDrawer({ row, categories, contacts, onClose, onOpenCont
           </div>
         </div>
       }
-      footer={
+      footer={(close) =>
         confirmCancel ? (
           <div className="flex gap-3">
             <SecondaryButton onClick={() => setConfirmCancel(false)} className="flex-1">Cancelar</SecondaryButton>
-            <DangerButtonSolid onClick={cancel} className="flex-1">Confirmar baja</DangerButtonSolid>
+            <DangerButtonSolid onClick={() => cancel(close)} className="flex-1">Confirmar baja</DangerButtonSolid>
           </div>
         ) : (
           <div className="flex gap-3">
             <DangerButton onClick={() => setConfirmCancel(true)}>Dar de baja</DangerButton>
-            <Button onClick={onClose} className="flex-1">Guardar</Button>
+            <Button onClick={close} className="flex-1">Guardar</Button>
           </div>
         )
       }

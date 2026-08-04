@@ -74,7 +74,7 @@ export default function AddCashModal({ categories, contacts, onClose }: { catego
   const parsedAmount = parseFloat(amount.replace(",", "."));
   const canSave = !isNaN(parsedAmount) && parsedAmount > 0 && date.length === 10;
 
-  async function handleSave() {
+  async function handleSave(close: () => void) {
     if (!canSave) return;
     setSaving(true);
     setError(null);
@@ -89,7 +89,7 @@ export default function AddCashModal({ categories, contacts, onClose }: { catego
         notes,
         paymentMethod,
       });
-      onClose();
+      close();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al guardar.");
       setSaving(false);
@@ -100,16 +100,16 @@ export default function AddCashModal({ categories, contacts, onClose }: { catego
     <Drawer
       title="Añadir movimiento manual"
       onClose={onClose}
-      footer={
+      footer={(close) => (
         <div className="flex gap-3">
-          <SecondaryButton onClick={onClose} disabled={saving} className="flex-1">
+          <SecondaryButton onClick={close} disabled={saving} className="flex-1">
             Cancelar
           </SecondaryButton>
-          <Button onClick={handleSave} disabled={!canSave || saving} className="flex-1">
+          <Button onClick={() => handleSave(close)} disabled={!canSave || saving} className="flex-1">
             {saving ? "Guardando…" : "Guardar"}
           </Button>
         </div>
-      }
+      )}
     >
         <div className="px-6 py-5 space-y-4">
           <ToggleGroup
