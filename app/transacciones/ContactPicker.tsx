@@ -2,6 +2,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { normalizeText } from "@/lib/normalizeText";
+import Avatar from "@/app/components/Avatar";
+import { knownDomain, initials } from "@/app/configuracion/ContactosManager";
 import type { Contact } from "./actions";
 
 export type ContactPickResult = { contactId: number; label: string } | { newLabel: string };
@@ -95,6 +97,11 @@ export default function ContactPicker({
 
   return (
     <div ref={wrapRef} className="relative">
+      {draft.trim().length > 0 && (
+        <div className="absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none">
+          <Avatar seed={draft} initials={initials(draft)} logoDomain={knownDomain(draft)} size={20} />
+        </div>
+      )}
       <input
         ref={inputRef}
         type="text"
@@ -113,7 +120,7 @@ export default function ContactPicker({
           if (e.key === "Escape") { setDraft(value); setOpen(false); (e.target as HTMLInputElement).blur(); }
         }}
         placeholder={placeholder}
-        className="w-full text-sm font-medium text-navy border border-navy/[0.12] rounded-lg pl-3 pr-8 py-2 outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15 transition disabled:opacity-50"
+        className={`w-full text-sm font-medium text-navy border border-navy/[0.12] rounded-lg pr-8 py-2 outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15 transition disabled:opacity-50 ${draft.trim().length > 0 ? "pl-9" : "pl-3"}`}
       />
       {draft.trim().length > 0 ? (
         <button

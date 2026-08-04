@@ -17,6 +17,7 @@ import {
 } from "./TransaccionesList";
 import { CatIcon } from "./catIcons";
 import ImportButton from "./ImportButton";
+import HeaderPortal from "@/app/components/HeaderPortal";
 
 const COLS = "1.9fr 1.15fr 1.1fr .9fr .7fr .95fr";
 
@@ -313,7 +314,9 @@ export default function TransaccionesListV2({
           </button>
         )}
         <FiltersToggleButtonV2 open={filtersOpen} active={filtersActive} onClick={() => setFiltersOpen((v) => !v)} />
-        <ImportButton v2 onManual={onAddCash} className="sm:order-2" />
+        <HeaderPortal>
+          <ImportButton v2 onManual={onAddCash} />
+        </HeaderPortal>
         <div className={`${filtersOpen ? "flex" : "hidden"} sm:flex sm:order-1 items-center gap-[10px] flex-wrap w-full sm:w-auto`}>
           <DateFilter variant="v2" />
           <CategoryMultiFilter selected={catFilters} categories={categories} onChange={onCatFiltersChange} />
@@ -331,6 +334,17 @@ export default function TransaccionesListV2({
             onExport={onExportCsv}
             onPapelera={onPapelera}
           />
+          {uncategorizedCount > 0 && (
+            <button
+              onClick={() => onCatFiltersChange(catFilters.includes("__none__") ? catFilters.filter((v) => v !== "__none__") : [...catFilters, "__none__"])}
+              className="shrink-0 h-9 inline-flex items-center gap-[7px] bg-[#fef3e2] dark:bg-[#392a13] text-[#b45309] dark:text-[#e8a572] border border-dashed border-[#f6dcb8] dark:border-[#6f522a] rounded-[10px] px-3 text-[12.5px] font-medium whitespace-nowrap"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 3l9 16H3z" /><path d="M12 10v4M12 17v.5" />
+              </svg>
+              {uncategorizedCount} sin etiquetar
+            </button>
+          )}
           {activeFilterCount >= 1 && (
             <ClearFiltersButtonV2 onClick={clearFilters} className="hidden sm:flex" />
           )}
@@ -340,20 +354,6 @@ export default function TransaccionesListV2({
       {activeFilterCount >= 1 && (
         <div className="sm:hidden mt-2">
           <ClearFiltersButtonV2 onClick={clearFilters} />
-        </div>
-      )}
-
-      {uncategorizedCount > 0 && (
-        <div className="mt-3">
-          <button
-            onClick={() => onCatFiltersChange(catFilters.includes("__none__") ? catFilters.filter((v) => v !== "__none__") : [...catFilters, "__none__"])}
-            className="inline-flex items-center gap-[7px] bg-[#fef3e2] dark:bg-[#392a13] text-[#b45309] dark:text-[#e8a572] border border-[#f6dcb8] dark:border-[#6f522a] rounded-full px-3 py-[5px] text-[12.5px] font-medium"
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 3l9 16H3z" /><path d="M12 10v4M12 17v.5" />
-            </svg>
-            {uncategorizedCount} sin etiquetar
-          </button>
         </div>
       )}
 

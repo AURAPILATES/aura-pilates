@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Drawer from "@/app/components/Drawer";
 import Button, { SecondaryButton } from "@/app/components/Button";
 import { PrimaryButtonV2, IconButtonV2 } from "@/app/components/v2/ButtonsV2";
+import HeaderPortal from "@/app/components/HeaderPortal";
 import FilterPillGroupV2 from "@/app/components/v2/FilterPillGroupV2";
 import { ToggleGroup } from "@/components/charts";
 import { useRouter } from "next/navigation";
@@ -1415,11 +1416,13 @@ export default function VacacionesCalendario({
                 <polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/>
               </svg>
             </IconButtonV2>
-            <PrimaryButtonV2
-              onClick={() => setShowNuevoModal(true)}
-              label="Nuevo instructor"
-              icon={<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>}
-            />
+            <HeaderPortal>
+              <PrimaryButtonV2
+                onClick={() => setShowNuevoModal(true)}
+                label="Nuevo instructor"
+                icon={<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>}
+              />
+            </HeaderPortal>
           </div>
         </div>
       </section>

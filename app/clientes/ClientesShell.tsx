@@ -5,6 +5,7 @@ import type { CustomerRow } from "./ClientesTable";
 import ClientesMatrizCompras from "./ClientesMatrizCompras";
 import ClientesEstado from "./ClientesEstado";
 import SectionTabsV2, { type SectionTabV2 } from "@/app/components/v2/SectionTabsV2";
+import HeaderPortal from "@/app/components/HeaderPortal";
 import type { StripePayment } from "@/lib/stripePayments";
 import type { MemberClient } from "@/lib/memberClientsV2";
 
@@ -29,7 +30,10 @@ export default function ClientesShell({ customers, payments, clients }: Props) {
 
   return (
     <>
-      <SectionTabsV2 className="mb-5" active={tab} onChange={setTab} tabs={TABS} />
+      <HeaderPortal target="header-tabs">
+        <SectionTabsV2 active={tab} onChange={setTab} tabs={TABS} />
+      </HeaderPortal>
+      <div className="pt-5" />
 
       {mounted.clientes && (
         <div className={tab === "clientes" ? "" : "hidden"}>

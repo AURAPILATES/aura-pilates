@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import type { Transaction } from "@/lib/transactions";
 import type { Category } from "@/lib/categories";
 import SectionTabsV2 from "@/app/components/v2/SectionTabsV2";
+import HeaderPortal from "@/app/components/HeaderPortal";
 import TransaccionesList from "./TransaccionesList";
 import RecurrentesList, { type PendingSeriesRow, type ConfirmedExpenseRow } from "./RecurrentesList";
 import type { Contact } from "./actions";
@@ -59,27 +60,31 @@ export default function TransaccionesTabs({
 
   return (
     <div>
-      <SectionTabsV2 className="mb-[18px]" active={tab} onChange={selectTab} tabs={tabsWithBadge} />
+      <HeaderPortal target="header-tabs">
+        <SectionTabsV2 active={tab} onChange={selectTab} tabs={tabsWithBadge} />
+      </HeaderPortal>
 
-      {tab === "movimientos" ? (
-        <TransaccionesList
-          transactions={transactions}
-          allTransactions={allTransactions}
-          categories={categories}
-          uncategorizedCount={uncategorizedCount}
-          recurringPeriods={recurringPeriods}
-          recurringExpenses={recurringExpenses}
-          contacts={contacts}
-        />
-      ) : (
-        <RecurrentesList
-          pending={pendingRecurring}
-          confirmed={confirmedRecurring}
-          archived={archivedRecurring}
-          categories={categories}
-          contacts={contacts}
-        />
-      )}
+      <div className="pt-[26px]">
+        {tab === "movimientos" ? (
+          <TransaccionesList
+            transactions={transactions}
+            allTransactions={allTransactions}
+            categories={categories}
+            uncategorizedCount={uncategorizedCount}
+            recurringPeriods={recurringPeriods}
+            recurringExpenses={recurringExpenses}
+            contacts={contacts}
+          />
+        ) : (
+          <RecurrentesList
+            pending={pendingRecurring}
+            confirmed={confirmedRecurring}
+            archived={archivedRecurring}
+            categories={categories}
+            contacts={contacts}
+          />
+        )}
+      </div>
     </div>
   );
 }

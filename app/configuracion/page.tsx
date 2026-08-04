@@ -25,13 +25,17 @@ export default async function ConfiguracionPage() {
 
   return (
     <div>
-      <div className="sticky top-0 z-20 bg-card/95 backdrop-blur-sm border-b border-navy/[0.06] sm:rounded-t-[14px]">
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-5 flex items-center gap-3">
-          <MobileNav />
-          <h1 className="text-[26px] font-bold text-navy">Configuración</h1>
+      <div className="sticky top-0 z-20 bg-card/95 backdrop-blur-sm sm:rounded-t-[14px]">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-5 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <MobileNav />
+            <h1 className="text-[26px] font-bold text-navy">Configuración</h1>
+          </div>
+          <div id="header-actions" className="flex items-center gap-2 shrink-0" />
         </div>
+        <div id="header-tabs" />
       </div>
-      <main className="max-w-[1600px] mx-auto px-4 sm:px-6 pt-6 pb-16">
+      <main className="max-w-[1600px] mx-auto px-4 sm:px-6 pt-1.5 pb-16">
         <ConfiguracionTabs
           categories={categories}
           events={events}

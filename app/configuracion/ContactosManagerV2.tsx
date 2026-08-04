@@ -7,6 +7,7 @@ import SearchInputV2 from "@/app/components/v2/SearchInputV2";
 import TablePaginationV2 from "@/app/components/v2/TablePaginationV2";
 import FilterPillGroupV2 from "@/app/components/v2/FilterPillGroupV2";
 import { PrimaryButtonV2 } from "@/app/components/v2/ButtonsV2";
+import HeaderPortal from "@/app/components/HeaderPortal";
 import { CONTACT_GROUP_ORDER, CONTACT_GROUP_LABELS, type ContactGroup } from "@/lib/contactGroups";
 import TaxBadgeV2 from "@/app/components/v2/TaxBadgeV2";
 import { tableHeadClassV2, tableRowClassV2, tableCardClassV2, gridColsV2 } from "@/app/components/v2/tableStylesV2";
@@ -192,11 +193,13 @@ export default function ContactosManagerV2({
             </svg>
           </button>
         )}
-        <PrimaryButtonV2
-          onClick={onNewContact}
-          label="Nuevo contacto"
-          icon={<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>}
-        />
+        <HeaderPortal>
+          <PrimaryButtonV2
+            onClick={onNewContact}
+            label="Nuevo contacto"
+            icon={<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>}
+          />
+        </HeaderPortal>
       </div>
 
       <div className="mt-3">

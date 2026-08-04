@@ -8,6 +8,7 @@ import type { Contact, ContactStats } from "@/app/transacciones/actions";
 import type { PricingRow } from "@/lib/stripePayments";
 import type { UrbanRate } from "@/lib/urbanRates";
 import SectionTabsV2 from "@/app/components/v2/SectionTabsV2";
+import HeaderPortal from "@/app/components/HeaderPortal";
 import CategoriasManager from "./CategoriasManager";
 import ContactosManager from "./ContactosManager";
 import HistorialTimeline from "@/app/historial/HistorialTimeline";
@@ -49,26 +50,30 @@ export default function ConfiguracionTabs({ categories, events, categoryCounts, 
 
   return (
     <div>
-      <SectionTabsV2 className="mb-6" active={tab} onChange={selectTab} tabs={TABS} />
-      {tab === "categorias" ? (
-        <CategoriasManager categories={categories} categoryCounts={categoryCounts} />
-      ) : tab === "contactos" ? (
-        <ContactosManager
-          contacts={contacts}
-          categories={categories}
-          contactStats={contactStats}
-          pendingRecomputeCount={pendingRecomputeCount}
-          pendingCleanupCount={pendingCleanupCount}
-          dismissedDuplicates={dismissedDuplicates}
-        />
-      ) : tab === "precios" ? (
-        <>
-          <TarifaUrbanManager rates={urbanRates} />
-          <PreciosViewer rows={pricingRows} />
-        </>
-      ) : (
-        <HistorialTimeline events={events} />
-      )}
+      <HeaderPortal target="header-tabs">
+        <SectionTabsV2 active={tab} onChange={selectTab} tabs={TABS} />
+      </HeaderPortal>
+      <div className="pt-6">
+        {tab === "categorias" ? (
+          <CategoriasManager categories={categories} categoryCounts={categoryCounts} />
+        ) : tab === "contactos" ? (
+          <ContactosManager
+            contacts={contacts}
+            categories={categories}
+            contactStats={contactStats}
+            pendingRecomputeCount={pendingRecomputeCount}
+            pendingCleanupCount={pendingCleanupCount}
+            dismissedDuplicates={dismissedDuplicates}
+          />
+        ) : tab === "precios" ? (
+          <>
+            <TarifaUrbanManager rates={urbanRates} />
+            <PreciosViewer rows={pricingRows} />
+          </>
+        ) : (
+          <HistorialTimeline events={events} />
+        )}
+      </div>
     </div>
   );
 }

@@ -2,6 +2,7 @@ import type { Category } from "@/lib/categories";
 import { CategoryIcon } from "./CategoriasManager";
 import SearchInputV2 from "@/app/components/v2/SearchInputV2";
 import { PrimaryButtonV2 } from "@/app/components/v2/ButtonsV2";
+import HeaderPortal from "@/app/components/HeaderPortal";
 
 type DisplayGroup = { sectionLabel?: string; subsectionLabel?: string; ordered: Category[] };
 
@@ -48,11 +49,13 @@ export default function CategoriasManagerV2({
     <div>
       <div className="flex items-center gap-[10px]">
         <SearchInputV2 value={search} onChange={onSearchChange} placeholder="Buscar categoría…" className="flex-1 min-w-[160px]" />
-        <PrimaryButtonV2
-          onClick={onNewCategory}
-          label="Nueva categoría"
-          icon={<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>}
-        />
+        <HeaderPortal>
+          <PrimaryButtonV2
+            onClick={onNewCategory}
+            label="Nueva categoría"
+            icon={<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>}
+          />
+        </HeaderPortal>
       </div>
 
       <div className="mt-[14px]">

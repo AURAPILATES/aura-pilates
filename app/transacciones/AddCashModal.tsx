@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import type { Category } from "@/lib/categories";
-import { sortCategoriesHierarchical, categoryDisplayLabel } from "@/lib/categories";
 import type { PaymentMethod } from "@/lib/transactions";
 import { matchesPattern } from "@/lib/contactRules";
 import { addCashTransaction, type Contact } from "./actions";
@@ -11,6 +10,7 @@ import Select from "@/app/components/Select";
 import UnitInput from "@/app/components/UnitInput";
 import { ToggleGroup } from "@/components/charts";
 import ContactPicker from "./ContactPicker";
+import { CategoryPill } from "./TransaccionesList";
 
 const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
   { value: "efectivo", label: "Efectivo Aura" },
@@ -191,12 +191,11 @@ export default function AddCashModal({ categories, contacts, onClose }: { catego
 
           <div>
             <label className="block text-xs text-navy/55 mb-1.5">Categoría</label>
-            <Select value={category} onChange={(e) => { categoryTouched.current = true; setCategory(e.target.value); }}>
-              <option value="">Sin categoría</option>
-              {sortCategoriesHierarchical(categories).map((c) => (
-                <option key={c.value} value={c.value}>{categoryDisplayLabel(c, categories)}</option>
-              ))}
-            </Select>
+            <CategoryPill
+              category={category || null}
+              categories={categories}
+              onChange={(cat) => { categoryTouched.current = true; setCategory(cat || ""); }}
+            />
           </div>
 
           <div>
