@@ -20,9 +20,12 @@ export default async function Analitica(props: {
   return (
     <div>
       <div className="sticky top-0 z-20 bg-card/95 backdrop-blur-sm sm:rounded-t-[14px]">
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-5 flex items-center gap-3">
-          <MobileNav />
-          <h1 className="text-[26px] font-bold text-navy">Analítica</h1>
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-5 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <MobileNav />
+            <h1 className="text-[26px] font-bold text-navy">Analítica</h1>
+          </div>
+          <div id="header-actions" className="flex items-center gap-2 shrink-0" />
         </div>
         <div id="header-tabs" />
       </div>
@@ -31,12 +34,7 @@ export default async function Analitica(props: {
         <Suspense fallback={<AnaliticaSkeleton tab={activeTab} />}>
           <AnaliticaTabProvider>
             <AnaliticaTabNav />
-
-            <div className="pt-4">
-              <Suspense fallback={<div className="h-10" />}>
-                <AnaliticaFilterBar />
-              </Suspense>
-            </div>
+            <AnaliticaFilterBar />
 
             <Suspense fallback={<AnaliticaSkeleton tab={activeTab} />}>
               <AnaliticaLoader

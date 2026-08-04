@@ -26,11 +26,11 @@ function StatBox({ icon, label, value, valueClassName, dotClassName, tooltip, on
     <Comp
       type={onClick ? "button" : undefined}
       onClick={onClick}
-      className={`w-full text-left bg-card border rounded-[14px] px-4 py-3.5 transition-colors ${
+      className={`w-full text-left bg-card border rounded-[14px] px-3.5 py-3 transition-colors ${
         active ? "border-navy/40" : "border-border"
       } ${onClick ? "hover:bg-navy/[0.015] cursor-pointer" : ""}`}
     >
-      <div className="flex items-center gap-1.5 text-navy/50 mb-2">
+      <div className="flex items-center gap-1.5 text-navy/50 mb-1.5">
         {dotClassName && <span className={`shrink-0 w-[7px] h-[7px] rounded-full ${dotClassName}`} />}
         {icon}
         <span className="text-[12.5px] font-medium">{label}</span>
@@ -350,39 +350,39 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
                       <Avatar seed={r.id} initials={initials(r.name, r.email)} size={30} />
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5 min-w-0">
-                          <p className="text-[14px] font-semibold text-navy truncate">{r.name}</p>
-                          {r.isFamily && <span className="shrink-0 text-[10px] font-semibold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/15 px-1.5 py-0.5 rounded-full">Familiar</span>}
+                          <p className="text-[13px] font-medium text-navy truncate">{r.name}</p>
+                          {r.isFamily && <span className="shrink-0 text-[10px] font-semibold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/15 px-[5px] py-[1px] rounded-full">Familiar</span>}
                         </div>
                         {r.email && <p className="text-[12px] text-faint truncate">{r.email}</p>}
                       </div>
                     </div>
                     <div className="flex items-center gap-1.5 flex-wrap min-w-0">
-                      <span className={`inline-block px-[10px] py-1 rounded-[8px] text-[12.5px] font-medium whitespace-nowrap ${pb.cls}`}>{pb.label}</span>
+                      <span className={`inline-block px-2 py-[3px] rounded-[8px] text-[12.5px] font-medium whitespace-nowrap ${pb.cls}`}>{pb.label}</span>
                       {r.activeSubCount >= 2 && (
-                        <span title="Varias suscripciones activas a la vez — posible doble cobro." className="inline-flex items-center gap-1 px-[6px] py-[2px] rounded-full text-[11px] font-semibold bg-danger/10 text-danger whitespace-nowrap">⚠ {r.activeSubCount}</span>
+                        <span title="Varias suscripciones activas a la vez — posible doble cobro." className="inline-flex items-center gap-1 px-[5px] py-[1px] rounded-full text-[11px] font-semibold bg-danger/10 text-danger whitespace-nowrap">⚠ {r.activeSubCount}</span>
                       )}
                       {r.planUsage?.level === "bajo" && (
-                        <span title={`Infrautiliza el plan: ${r.planUsage.attended} de ~${r.planUsage.limit} clases en el período actual.`} className="inline-flex items-center gap-1 px-[6px] py-[2px] rounded-full text-[11px] font-semibold bg-[#b45309]/10 text-[#b45309] dark:text-[#e8a572] whitespace-nowrap">▽ {r.planUsage.attended}/{r.planUsage.limit}</span>
+                        <span title={`Infrautiliza el plan: ${r.planUsage.attended} de ~${r.planUsage.limit} clases en el período actual.`} className="inline-flex items-center gap-1 px-[5px] py-[1px] rounded-full text-[11px] font-semibold bg-[#b45309]/10 text-[#b45309] dark:text-[#e8a572] whitespace-nowrap">▽ {r.planUsage.attended}/{r.planUsage.limit}</span>
                       )}
                       {r.planUsage?.level === "alto" && (
-                        <span title={`Al límite o por encima de su plan: ${r.planUsage.attended} de ${r.planUsage.limit} clases — candidata a subir de plan.`} className="inline-flex items-center gap-1 px-[6px] py-[2px] rounded-full text-[11px] font-semibold bg-primary/10 text-primary whitespace-nowrap">△ {r.planUsage.attended}/{r.planUsage.limit}</span>
+                        <span title={`Al límite o por encima de su plan: ${r.planUsage.attended} de ${r.planUsage.limit} clases — candidata a subir de plan.`} className="inline-flex items-center gap-1 px-[5px] py-[1px] rounded-full text-[11px] font-semibold bg-primary/10 text-primary whitespace-nowrap">△ {r.planUsage.attended}/{r.planUsage.limit}</span>
                       )}
                     </div>
                     <div className={`text-[13px] tabular-nums ${dRenew != null && dRenew <= 14 ? "text-[#b45309] dark:text-[#e8a572] font-medium" : "text-muted"}`}>
                       {r.plan?.endDate ? fmtDate(r.plan.endDate.slice(0, 10)) : "-"}
                     </div>
                     <div className="min-w-0">
-                      <span className={`inline-flex items-center gap-[7px] rounded-full px-[10px] py-[3px] text-[12.5px] font-medium whitespace-nowrap ${TONE_CLS[r.status.tone]}`}>
+                      <span className={`inline-flex items-center gap-[7px] rounded-full px-2 py-[2px] text-[12.5px] font-medium whitespace-nowrap ${TONE_CLS[r.status.tone]}`}>
                         <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${TONE_DOT[r.status.tone]}`} />
                         {r.status.label}
                       </span>
                       {r.status.detail && <p className="text-[11px] text-faint mt-0.5 truncate">{r.status.detail}</p>}
                     </div>
-                    <div className="text-[14px] font-semibold text-navy tabular-nums">{r.attended}</div>
+                    <div className="text-[13px] font-medium text-navy tabular-nums">{r.attended}</div>
                     <div className={`text-[13px] tabular-nums ${r.cancellations > r.attended && r.cancellations > 2 ? "text-danger font-medium" : "text-muted"}`}>{r.cancellations}</div>
                     <div className="text-[13px] text-muted tabular-nums">{r.firstClassDate ? fmtDate(r.firstClassDate) : "-"}</div>
                     <div className="text-[13px] text-muted">{r.lastClassDate ? timeAgo(r.lastClassDate) : "-"}</div>
-                    <div className="text-[14px] font-semibold text-navy tabular-nums">{r.stripe ? fmt(r.stripe.totalSpent) : "-"}</div>
+                    <div className="text-[13px] font-medium text-navy tabular-nums">{r.stripe ? fmt(r.stripe.totalSpent) : "-"}</div>
                   </div>
                 );
               })
@@ -403,7 +403,7 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 min-w-0">
                       <p className="text-[14px] font-semibold text-navy truncate">{r.name}</p>
-                      {r.isFamily && <span className="shrink-0 text-[10px] font-semibold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/15 px-1 py-0.5 rounded-full">Fam</span>}
+                      {r.isFamily && <span className="shrink-0 text-[10px] font-semibold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/15 px-1 py-[1px] rounded-full">Fam</span>}
                     </div>
                     <div className="flex items-center gap-1.5 mt-0.5">
                       <span className={`inline-block px-[7px] py-[1px] rounded-[6px] text-[11px] font-medium whitespace-nowrap ${pb.cls}`}>{pb.label}</span>
@@ -418,7 +418,7 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
                     </div>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-[13px] font-semibold text-navy tabular-nums">{r.attended} clases</p>
+                    <p className="text-[12px] font-medium text-navy tabular-nums">{r.attended} clases</p>
                     <p className="text-[11px] text-faint">{r.lastClassDate ? timeAgo(r.lastClassDate) : "sin clases"}</p>
                   </div>
                 </div>

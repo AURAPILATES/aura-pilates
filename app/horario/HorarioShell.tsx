@@ -10,6 +10,7 @@ import HorarioList from "./HorarioList";
 import HorarioCalendar from "./HorarioCalendar";
 import HorarioDrawer from "./HorarioDrawer";
 import MobileNav from "@/app/components/MobileNav";
+import HeaderPortal from "@/app/components/HeaderPortal";
 import { ToggleGroup } from "@/components/charts";
 import SharedSelect from "@/app/components/Select";
 
@@ -138,9 +139,12 @@ export default function HorarioShell({
           STICKY HEADER
       ══════════════════════════════════════════════════════════════════════ */}
       <div className="sticky top-0 z-20 bg-card/95 backdrop-blur-sm sm:rounded-t-[14px]">
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-5 flex items-center gap-3">
-          <MobileNav />
-          <span className="text-[26px] font-bold text-navy">Horario</span>
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-5 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <MobileNav />
+            <span className="text-[26px] font-bold text-navy">Horario</span>
+          </div>
+          <div id="header-actions" className="flex items-center gap-2 shrink-0" />
         </div>
       </div>
 
@@ -159,55 +163,27 @@ export default function HorarioShell({
           </div>
         )}
 
-        {/* Week nav / view toggle (desktop) */}
-        <div className="hidden sm:flex items-center justify-start gap-3 mb-6">
-          <div className="flex items-center gap-2 shrink-0 pb-2">
-              <div className="flex items-center gap-0.5">
-                <button
-                  onClick={() => router.push(`?week=${prevWeek}`)}
-                  disabled={weekMonday <= MIN_WEEK}
-                  className="w-7 h-7 flex items-center justify-center rounded-md border border-navy/[0.12] bg-card text-navy/50 disabled:opacity-20 hover:text-navy hover:bg-navy/[0.03] transition-colors"
-                >
-                  {chevLeft}
-                </button>
-                <span className="text-[14px] font-semibold text-navy px-2 w-[168px] shrink-0 text-center tabular-nums">
-                  Semana {weekLabel(weekMonday)}
-                </span>
-                <button
-                  onClick={() => router.push(`?week=${nextWeek}`)}
-                  className="w-7 h-7 flex items-center justify-center rounded-md border border-navy/[0.12] bg-card text-navy/50 hover:text-navy hover:bg-navy/[0.03] transition-colors"
-                >
-                  {chevRight}
-                </button>
-              </div>
-              <div className="w-px h-5 bg-navy/[0.12]" />
-              <ToggleGroup
-                options={[
-                  {
-                    value: "calendario",
-                    label: "Calendario",
-                    icon: (
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-                      </svg>
-                    ),
-                  },
-                  {
-                    value: "lista",
-                    label: "Lista",
-                    icon: (
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                        <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
-                        <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
-                      </svg>
-                    ),
-                  },
-                ]}
-                value={view}
-                onChange={(v) => setView(v as typeof view)}
-              />
+        {/* Navegador de semana: en escritorio vive en el header, junto al título. */}
+        <HeaderPortal>
+          <div className="hidden sm:flex items-center gap-0.5">
+            <button
+              onClick={() => router.push(`?week=${prevWeek}`)}
+              disabled={weekMonday <= MIN_WEEK}
+              className="w-7 h-7 flex items-center justify-center rounded-md border border-navy/[0.12] bg-card text-navy/50 disabled:opacity-20 hover:text-navy hover:bg-navy/[0.03] transition-colors"
+            >
+              {chevLeft}
+            </button>
+            <span className="text-[14px] font-semibold text-navy px-2 w-[168px] shrink-0 text-center tabular-nums">
+              Semana {weekLabel(weekMonday)}
+            </span>
+            <button
+              onClick={() => router.push(`?week=${nextWeek}`)}
+              className="w-7 h-7 flex items-center justify-center rounded-md border border-navy/[0.12] bg-card text-navy/50 hover:text-navy hover:bg-navy/[0.03] transition-colors"
+            >
+              {chevRight}
+            </button>
           </div>
-        </div>
+        </HeaderPortal>
 
         {hiddenEvents.length > 0 && (
           <HiddenEventsPanel events={hiddenEvents} />
@@ -375,6 +351,32 @@ export default function HorarioShell({
                     Limpiar
                   </button>
                 )}
+                <span className="flex-1" />
+                <ToggleGroup
+                  options={[
+                    {
+                      value: "calendario",
+                      label: "Calendario",
+                      icon: (
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                        </svg>
+                      ),
+                    },
+                    {
+                      value: "lista",
+                      label: "Lista",
+                      icon: (
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
+                          <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+                        </svg>
+                      ),
+                    },
+                  ]}
+                  value={view}
+                  onChange={(v) => setView(v as typeof view)}
+                />
               </div>
 
 

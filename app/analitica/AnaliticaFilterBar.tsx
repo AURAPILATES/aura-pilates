@@ -6,6 +6,7 @@ import { ChevronDown, ChevronLeft, ChevronRight } from "react-feather";
 import { pad2, resolveCalendarPeriod } from "@/lib/periodCalculation";
 import Select from "@/app/components/Select";
 import Button from "@/app/components/Button";
+import HeaderPortal from "@/app/components/HeaderPortal";
 
 const MONTHS = [
   { value: "month_01", label: "Enero" },
@@ -213,7 +214,7 @@ function CalendarRangePicker({
   );
 }
 
-function AnaliticaFilterBarInner() {
+function AnaliticaFilterBarInner({ compact = false }: { compact?: boolean }) {
   const router = useRouter();
   const pathname = usePathname();
   const sp = useSearchParams();
@@ -344,7 +345,7 @@ function AnaliticaFilterBarInner() {
   const disabled = activePeriod === "all";
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center sm:flex-wrap gap-3 sm:gap-2 mb-4 pb-4 border-b border-border">
+    <div className={compact ? "flex items-center gap-2" : "flex flex-col sm:flex-row sm:items-center sm:flex-wrap gap-3 sm:gap-2 mb-4 pb-4 border-b border-border"}>
       <div ref={ref} className="relative">
         <div className="flex items-center bg-card border border-border rounded-[10px] text-navy overflow-hidden w-full sm:w-auto">
           <button
@@ -486,8 +487,8 @@ function AnaliticaFilterBarInner() {
       </div>
 
       {/* Compare with - disabled when period is "all" */}
-      <div className={`flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 sm:ml-auto ${disabled ? "opacity-35 pointer-events-none" : ""}`}>
-        <span className="text-[11px] text-navy/40">Comparar con</span>
+      <div className={`${compact ? "flex items-center gap-2" : "flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 sm:ml-auto"} ${disabled ? "opacity-35 pointer-events-none" : ""}`}>
+        <span className="text-[11px] text-navy/40 whitespace-nowrap">Comparar con</span>
         <Select value={compareWith} onChange={(e) => update({ compareWith: e.target.value })}>
           {COMPARE_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -500,8 +501,21 @@ function AnaliticaFilterBarInner() {
 
 export default function AnaliticaFilterBar() {
   return (
-    <Suspense fallback={<div className="h-10 mb-4" />}>
-      <AnaliticaFilterBarInner />
-    </Suspense>
+    <>
+      {/* Escritorio: junto al título, en el header sticky (sin padding lateral propio). */}
+      <HeaderPortal target="header-actions">
+        <div className="hidden sm:block">
+          <Suspense fallback={<div className="h-9 w-64" />}>
+            <AnaliticaFilterBarInner compact />
+          </Suspense>
+        </div>
+      </HeaderPortal>
+      {/* Móvil: se queda donde estaba, debajo de las pestañas. */}
+      <div className="sm:hidden">
+        <Suspense fallback={<div className="h-10 mb-4" />}>
+          <AnaliticaFilterBarInner />
+        </Suspense>
+      </div>
+    </>
   );
 }
