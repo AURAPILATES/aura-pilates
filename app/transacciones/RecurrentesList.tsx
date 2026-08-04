@@ -309,13 +309,13 @@ function ConfirmPendingDrawer({ row, period, pick, end, name, ivaRate, retencion
   const [saving, setSaving] = useState(false);
   const label = pickToLabel(pick, contacts);
 
-  async function handleConfirm() {
+  async function handleConfirm(close: () => void) {
     setSaving(true);
-    try { await onConfirm(); onClose(); } finally { setSaving(false); }
+    try { await onConfirm(); close(); } finally { setSaving(false); }
   }
-  async function handleIgnore() {
+  async function handleIgnore(close: () => void) {
     setSaving(true);
-    try { await onIgnore(); onClose(); } finally { setSaving(false); }
+    try { await onIgnore(); close(); } finally { setSaving(false); }
   }
 
   return (
@@ -330,16 +330,16 @@ function ConfirmPendingDrawer({ row, period, pick, end, name, ivaRate, retencion
           </div>
         </div>
       }
-      footer={
+      footer={(close) => (
         <div className="flex gap-3">
-          <SecondaryButton onClick={handleIgnore} disabled={saving} className="flex-1">
+          <SecondaryButton onClick={() => handleIgnore(close)} disabled={saving} className="flex-1">
             Ignorar
           </SecondaryButton>
-          <Button onClick={handleConfirm} disabled={saving || !pick} className="flex-1">
+          <Button onClick={() => handleConfirm(close)} disabled={saving || !pick} className="flex-1">
             Confirmar gasto recurrente
           </Button>
         </div>
-      }
+      )}
     >
       <div className="p-4 border-b border-navy/[0.06]">
         <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-1.5">Importe</p>
@@ -424,7 +424,7 @@ function NewManualRecurringDrawer({ categories, contacts, pick, onOpenContactPic
   const [error, setError] = useState<string | null>(null);
   const pickLabel = pickToLabel(pick, contacts);
 
-  async function handleCreate() {
+  async function handleCreate(close: () => void) {
     if (!label.trim()) { setError("Falta el nombre."); return; }
     const parsed = parseFloat(amount.replace(",", ".")) || 0;
     if (!parsed) { setError("Falta el importe."); return; }
@@ -446,7 +446,7 @@ function NewManualRecurringDrawer({ categories, contacts, pick, onOpenContactPic
         endDate: end.type === "date" ? end.date || null : null,
         endCount: end.type === "count" ? parseInt(end.count, 10) || null : null,
       });
-      onClose();
+      close();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al guardar.");
     } finally {
@@ -459,16 +459,16 @@ function NewManualRecurringDrawer({ categories, contacts, pick, onOpenContactPic
       title="Nuevo recurrente"
       subtitle="Sin transacción todavía - para anticipar un gasto futuro conocido"
       onClose={onClose}
-      footer={
+      footer={(close) => (
         <div className="flex gap-2">
-          <SecondaryButton onClick={onClose} className="flex-1">
+          <SecondaryButton onClick={close} className="flex-1">
             Cancelar
           </SecondaryButton>
-          <Button onClick={handleCreate} disabled={saving} className="flex-1">
+          <Button onClick={() => handleCreate(close)} disabled={saving} className="flex-1">
             {saving ? "Guardando…" : "Guardar"}
           </Button>
         </div>
-      }
+      )}
     >
       <div className="p-4 border-b border-navy/[0.06]">
         <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-1.5">Nombre</p>

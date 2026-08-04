@@ -37,7 +37,10 @@ export default function Drawer({
   header?: React.ReactNode;
   onClose: () => void;
   children: React.ReactNode;
-  footer?: React.ReactNode;
+  /** Puede recibir una función en vez de un nodo directo cuando el footer trae sus propios
+   * botones que cierran el drawer (p.ej. "Guardar", "Cancelar"): así también disparan la
+   * animación de salida en vez de desmontar al instante saltándose a requestClose. */
+  footer?: React.ReactNode | ((close: () => void) => React.ReactNode);
   maxWidth?: string;
   /** Navegar al registro anterior/siguiente de la lista (↑/↓ de teclado). Omitir ambos oculta
    * la caja de flechas - solo aparece cuando el consumidor la pide explícitamente. */
@@ -146,7 +149,11 @@ export default function Drawer({
           </div>
         </div>
         <div className="flex-1 overflow-y-auto">{children}</div>
-        {footer && <div className="border-t border-navy/[0.07] px-6 py-4 shrink-0">{footer}</div>}
+        {footer && (
+          <div className="border-t border-navy/[0.07] px-6 py-4 shrink-0">
+            {typeof footer === "function" ? footer(requestClose) : footer}
+          </div>
+        )}
       </div>
     </div>
   );

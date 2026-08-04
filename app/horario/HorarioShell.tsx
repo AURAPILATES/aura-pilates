@@ -149,6 +149,16 @@ export default function HorarioShell({
       ══════════════════════════════════════════════════════════════════════ */}
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 pt-1.5 pb-16">
 
+        {liveError && (
+          <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-warning/25 bg-warning/[0.08] px-4 py-3 text-warning">
+            <AlertTriangle size={16} className="shrink-0 mt-0.5" />
+            <p className="text-[13px] leading-snug">
+              No se ha podido conectar con Momence en vivo - se muestra el último horario guardado.{" "}
+              <span className="opacity-70">({sanitizeErrorMessage(liveError)})</span>
+            </p>
+          </div>
+        )}
+
         {/* Week nav / view toggle (desktop) */}
         <div className="hidden sm:flex items-center justify-start gap-3 mb-6">
           <div className="flex items-center gap-2 shrink-0 pb-2">
@@ -523,7 +533,7 @@ function KpiCard({ label, value, valueColor = "text-navy", tooltip }: {
 function OccFilterGroup({ occFilter, onChange }: { occFilter: OccFilter; onChange: (v: OccFilter) => void }) {
   return (
     <div className="overflow-x-auto scrollbar-none">
-      <div className="inline-flex items-center gap-0.5 bg-navy/5 p-[3px] rounded-[10px] w-max min-w-full sm:min-w-0">
+      <div className="inline-flex items-center gap-0.5 bg-navy/5 p-1 rounded-[10px] w-max min-w-full sm:min-w-0">
         {([
           { value: "all",  label: "Todas",      dot: "bg-navy/25" },
           { value: "low",  label: "Por llenar", dot: "bg-[#c03828] dark:bg-[#d88c83]" },
@@ -533,7 +543,7 @@ function OccFilterGroup({ occFilter, onChange }: { occFilter: OccFilter; onChang
           <button
             key={value}
             onClick={() => onChange(value)}
-            className={`shrink-0 flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-[7px] whitespace-nowrap transition-colors ${
+            className={`shrink-0 flex items-center gap-1.5 px-3.5 py-2 text-[13px] rounded-[7px] whitespace-nowrap transition-colors ${
               occFilter === value
                 ? "bg-card text-navy font-medium border border-navy/[0.07]"
                 : "text-navy/50 hover:text-navy"

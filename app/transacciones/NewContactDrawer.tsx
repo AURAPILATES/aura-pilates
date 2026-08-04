@@ -79,16 +79,16 @@ export default function NewContactDrawer({
       title="Nuevo contacto"
       subtitle="Categoría, IVA y retención reutilizables para futuras importaciones"
       onClose={onCancel}
-      footer={
+      footer={(close) => (
         <div className="flex gap-2">
-          <SecondaryButton onClick={onCancel} className="flex-1">
+          <SecondaryButton onClick={close} className="flex-1">
             Cancelar
           </SecondaryButton>
           <Button onClick={handleSave} disabled={saving} className="flex-1">
             {saving ? "Guardando…" : "Guardar"}
           </Button>
         </div>
-      }
+      )}
     >
       <div className="px-6 py-5 space-y-4">
         <div>

@@ -453,12 +453,12 @@ export default function TransactionDrawer({
       onNext={onNext}
       hasPrev={hasPrev}
       hasNext={hasNext}
-      footer={
+      footer={(close) => (
         <div className="flex gap-3">
-          <DeleteButton onClick={() => { onDelete(t.id); onClose(); }} />
-          <Button onClick={onClose} className="flex-1">Guardar</Button>
+          <DeleteButton onClick={() => { onDelete(t.id); close(); }} />
+          <Button onClick={close} className="flex-1">Guardar</Button>
         </div>
-      }
+      )}
     >
       <div className="px-6 py-5 flex flex-col gap-5">
         <div className="flex items-start justify-between">
