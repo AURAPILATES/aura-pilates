@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
-import { Users, Activity, Clock, AlertTriangle, Copy, TrendingDown, TrendingUp } from "react-feather";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
+import { Users, Clock, AlertTriangle, Copy } from "react-feather";
 import Avatar from "@/app/components/Avatar";
 import SearchInputV2 from "@/app/components/v2/SearchInputV2";
 import TablePaginationV2 from "@/app/components/v2/TablePaginationV2";
@@ -44,20 +45,23 @@ const COLS = "2.1fr 1.05fr .85fr 1.3fr .55fr .95fr .9fr .9fr .8fr";
 const PAGE_SIZE = 100;
 
 type Filter =
-  | "all" | "duplicadas" | "sin_pago" | "familiares" | "renueva_pronto"
-  | "activa" | "urban" | "congelada" | "pack" | "sin_plan" | "inactivo" | "error"
+  | "all" | "duplicadas" | "pago_pendiente" | "familiares" | "renueva_pronto"
+  | "activa" | "urban" | "congelada" | "pack" | "sin_plan" | "inactivo"
   | "infrautiliza" | "al_limite";
 type SortKey = "name" | "attended" | "cancellations" | "totalSpent" | "firstClass" | "lastClass" | "renew";
 
-const STATUS_IN_FILTER: Record<"activa" | "urban" | "congelada" | "pack" | "sin_plan" | "inactivo" | "error", (k: StatusKey) => boolean> = {
+const STATUS_IN_FILTER: Record<"activa" | "urban" | "congelada" | "pack" | "sin_plan" | "inactivo", (k: StatusKey) => boolean> = {
   activa: (k) => k === "activa",
   urban: (k) => k === "urban",
   congelada: (k) => k === "congelada",
   pack: (k) => k === "pack" || k === "pack_bajo" || k === "pack_agotado",
   sin_plan: (k) => k === "sin_plan",
   inactivo: (k) => k === "inactivo",
-  error: (k) => k === "error_pago",
 };
+
+// "Sin pago" (asistió sin rastro de cobro) y "Error de pago" (Stripe) son dos síntomas del
+// mismo problema de fondo - se muestran fusionados en un único KPI/filtro para no duplicar.
+const hasPagoPendiente = (r: MemberClient) => (r.coverage === "none" && r.attended > 0) || r.status.key === "error_pago";
 
 const TONE_CLS: Record<StatusTone, string> = {
   success: "bg-success/10 text-success",
@@ -101,6 +105,85 @@ function SortArrow({ active, dir }: { active: boolean; dir: "asc" | "desc" }) {
   );
 }
 
+/** Filtros secundarios (menos urgentes que los KPI o el tipo de plan): oportunidades de venta
+ * y una etiqueta manual, agrupados aparte para no competir por espacio con lo prioritario. */
+function MoreFiltersMenu({ filter, onChange, counts }: {
+  filter: Filter;
+  onChange: (f: Filter) => void;
+  counts: { al_limite: number; infrautiliza: number; familiares: number };
+}) {
+  const [open, setOpen] = useState(false);
+  const [dropPos, setDropPos] = useState<{ top: number; left: number } | null>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const dropRef = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function handle(e: MouseEvent) {
+      if (!wrapRef.current?.contains(e.target as Node) && !dropRef.current?.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, [open]);
+
+  function handleToggle() {
+    if (!open && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setDropPos({ top: rect.bottom + 4, left: rect.left });
+    }
+    setOpen((v) => !v);
+  }
+
+  const items: { key: Filter; label: string; count: number }[] = [
+    { key: "al_limite", label: "Posible upsell", count: counts.al_limite },
+    { key: "infrautiliza", label: "Infrautiliza plan", count: counts.infrautiliza },
+    { key: "familiares", label: "Familiares", count: counts.familiares },
+  ];
+  const hasActive = items.some((i) => i.key === filter);
+
+  return (
+    <div ref={wrapRef} className="relative">
+      <button
+        ref={btnRef}
+        type="button"
+        onClick={handleToggle}
+        title="Más filtros"
+        className={`shrink-0 flex items-center gap-2 px-3 py-2 text-[13.5px] font-medium border rounded-[10px] transition-colors whitespace-nowrap ${
+          hasActive ? "border-primary/40 text-primary bg-primary/5" : "text-navy/70 border-border bg-card hover:bg-navy/[0.02]"
+        }`}
+      >
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+        </svg>
+        <span className="hidden sm:inline">Más filtros</span>
+      </button>
+      {open && dropPos && createPortal(
+        <div
+          ref={dropRef}
+          className="fixed z-[9999] bg-card border border-navy/10 rounded-xl shadow-xl py-1"
+          style={{ top: dropPos.top, left: dropPos.left, width: "220px" }}
+        >
+          {items.map(({ key, label, count }) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => { onChange(filter === key ? "all" : key); setOpen(false); }}
+              className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-sm text-left transition-colors ${
+                filter === key ? "text-navy font-medium bg-navy/[0.04]" : "text-navy/60 hover:bg-navy/[0.04]"
+              }`}
+            >
+              {label}
+              {count > 0 && <span className="text-[11px] font-semibold text-[#b45309] dark:text-[#e8a572]">{count}</span>}
+            </button>
+          ))}
+        </div>,
+        document.body
+      )}
+    </div>
+  );
+}
+
 export default function ClientesEstado({ clients, payments }: { clients: MemberClient[]; payments: StripePayment[] }) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
@@ -110,12 +193,11 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
   const [selected, setSelected] = useState<MemberClient | null>(null);
 
   const counts = useMemo(() => {
-    const c = { congelada: 0, sin_plan: 0, inactivo: 0, error: 0, duplicadas: 0, sin_pago: 0, familiares: 0, urban: 0, renueva_pronto: 0, conClases: 0, infrautiliza: 0, al_limite: 0 };
+    const c = { congelada: 0, sin_plan: 0, inactivo: 0, pago_pendiente: 0, duplicadas: 0, familiares: 0, urban: 0, renueva_pronto: 0, infrautiliza: 0, al_limite: 0 };
     for (const r of clients) {
       if (r.activeSubCount >= 2) c.duplicadas++;
       if (r.isFamily) c.familiares++;
-      if (r.coverage === "none" && r.attended > 0) c.sin_pago++;
-      if (r.attended > 0) c.conClases++;
+      if (hasPagoPendiente(r)) c.pago_pendiente++;
       if (renewsSoon(r)) c.renueva_pronto++;
       if (r.planUsage?.level === "bajo") c.infrautiliza++;
       else if (r.planUsage?.level === "alto") c.al_limite++;
@@ -123,7 +205,6 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
       else if (r.status.key === "congelada") c.congelada++;
       else if (r.status.key === "sin_plan") c.sin_plan++;
       else if (r.status.key === "inactivo") c.inactivo++;
-      else if (r.status.key === "error_pago") c.error++;
     }
     return c;
   }, [clients]);
@@ -133,7 +214,7 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
     return clients
       .filter((r) => {
         if (filter === "duplicadas") { if (r.activeSubCount < 2) return false; }
-        else if (filter === "sin_pago") { if (!(r.coverage === "none" && r.attended > 0)) return false; }
+        else if (filter === "pago_pendiente") { if (!hasPagoPendiente(r)) return false; }
         else if (filter === "familiares") { if (!r.isFamily) return false; }
         else if (filter === "renueva_pronto") { if (!renewsSoon(r)) return false; }
         else if (filter === "infrautiliza") { if (r.planUsage?.level !== "bajo") return false; }
@@ -185,15 +266,11 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
   return (
     <div>
       {/* KPIs en caja (clic → filtra la tabla) */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-5">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
         <StatBox
           icon={<Users size={14} />} label="Clientes" value={clients.length}
           tooltip="Total de clientes del censo de Momence (incluye efectivo y Urban)."
           onClick={() => toggleBox("all")} active={filter === "all"}
-        />
-        <StatBox
-          icon={<Activity size={14} />} label="Con clases" value={counts.conClases}
-          tooltip="Clientes que han asistido a alguna clase (checkedIn)."
         />
         <StatBox
           icon={<Clock size={14} />} label="Renuevan pronto" value={counts.renueva_pronto}
@@ -203,11 +280,11 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
           onClick={() => toggleBox("renueva_pronto")} active={filter === "renueva_pronto"}
         />
         <StatBox
-          icon={<AlertTriangle size={14} />} label="Sin pago detectado" value={counts.sin_pago}
-          valueClassName={counts.sin_pago > 0 ? "text-[#b45309] dark:text-[#e8a572]" : "text-navy/50"}
-          dotClassName={counts.sin_pago > 0 ? "bg-[#b45309] dark:bg-[#e8a572]" : undefined}
-          tooltip="Asistieron a clase sin rastro de pago (ni Stripe ni membresía Momence). Revisa antes de actuar (efectivo no se detecta)."
-          onClick={() => toggleBox("sin_pago")} active={filter === "sin_pago"}
+          icon={<AlertTriangle size={14} />} label="Pago pendiente" value={counts.pago_pendiente}
+          valueClassName={counts.pago_pendiente > 0 ? "text-[#b45309] dark:text-[#e8a572]" : "text-navy/50"}
+          dotClassName={counts.pago_pendiente > 0 ? "bg-[#b45309] dark:bg-[#e8a572]" : undefined}
+          tooltip="Asistieron a clase sin rastro de pago, o su último cobro falló en Stripe. Revisa antes de actuar (efectivo no se detecta)."
+          onClick={() => toggleBox("pago_pendiente")} active={filter === "pago_pendiente"}
         />
         <StatBox
           icon={<Copy size={14} />} label="2+ suscripciones" value={counts.duplicadas}
@@ -216,17 +293,11 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
           tooltip="Clientes con varias suscripciones activas a la vez — posible doble cobro. Revísalos en Momence."
           onClick={() => toggleBox("duplicadas")} active={filter === "duplicadas"}
         />
-        <StatBox
-          icon={<TrendingDown size={14} />} label="Infrautilizan su plan" value={counts.infrautiliza}
-          valueClassName={counts.infrautiliza > 0 ? "text-[#b45309] dark:text-[#e8a572]" : "text-navy/50"}
-          dotClassName={counts.infrautiliza > 0 ? "bg-[#b45309] dark:bg-[#e8a572]" : undefined}
-          tooltip="Suscripción con muy pocas clases asistidas frente a las que incluye (Bàsic/Plus/Pro), a mitad de su período de facturación o más. Pagan por algo que apenas usan — riesgo de baja o downgrade."
-          onClick={() => toggleBox("infrautiliza")} active={filter === "infrautiliza"}
-        />
       </div>
 
       <div className="flex items-center gap-[9px] flex-wrap">
         <SearchInputV2 value={search} onChange={changeSearch} placeholder="Buscar por nombre, email o plan…" className="min-w-[160px] flex-1" />
+        <MoreFiltersMenu filter={filter} onChange={changeFilter} counts={counts} />
         <IconButtonV2 onClick={downloadCsv} title="Exportar a CSV">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
             <path d="M12 4v10M8 11l4 4 4-4M5 19h14" />
@@ -241,19 +312,12 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
           onChange={changeFilter}
           options={[
             { key: "all", label: "Todos" },
-            { key: "duplicadas", label: "2+ suscripciones", count: counts.duplicadas || undefined, countTone: "danger" },
             { key: "activa", label: "Al día" },
             { key: "urban", label: "Urban", count: counts.urban || undefined },
             { key: "pack", label: "Packs" },
-            { key: "al_limite", label: "Posible upsell", count: counts.al_limite || undefined, countTone: "warning" },
-            { key: "infrautiliza", label: "Infrautiliza plan", count: counts.infrautiliza || undefined, countTone: "warning" },
-            { key: "renueva_pronto", label: "Renueva pronto", count: counts.renueva_pronto || undefined, countTone: "warning" },
             { key: "congelada", label: "Congeladas", count: counts.congelada || undefined, countTone: "warning" },
             { key: "sin_plan", label: "Sin plan", count: counts.sin_plan || undefined, countTone: "warning" },
             { key: "inactivo", label: "Inactivos", count: counts.inactivo || undefined, countTone: "warning" },
-            { key: "sin_pago", label: "Sin pago", count: counts.sin_pago || undefined, countTone: "warning" },
-            { key: "error", label: "Error de pago", count: counts.error || undefined, countTone: "danger" },
-            { key: "familiares", label: "Familiares", count: counts.familiares || undefined, countTone: "warning" },
           ]}
         />
       </div>
