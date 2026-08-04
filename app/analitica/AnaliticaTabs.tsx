@@ -8,5 +8,9 @@ type Props = Record<Tab, ReactNode>;
 export default function AnaliticaTabs({ ingresosGastos, clientes }: Props) {
   const { tab } = useAnaliticaTab();
   const content: Props = { ingresosGastos, clientes };
-  return <>{content[tab]}</>;
+  return (
+    <div key={tab} className="tab-fade-in">
+      {content[tab]}
+    </div>
+  );
 }

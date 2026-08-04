@@ -236,6 +236,7 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
 
       <div className="mt-3">
         <FilterPillGroupV2
+          variant="segmented"
           active={filter}
           onChange={changeFilter}
           options={[

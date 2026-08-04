@@ -207,6 +207,7 @@ export default function HistorialTimeline({ events: initial }: { events: Busines
       {/* Header row */}
       <div className="flex items-start sm:items-center justify-between gap-3 flex-wrap">
         <FilterPillGroupV2
+          variant="segmented"
           className="flex-1 min-w-0"
           active={filterCat}
           onChange={setFilterCat}

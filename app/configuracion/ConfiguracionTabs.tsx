@@ -53,7 +53,7 @@ export default function ConfiguracionTabs({ categories, events, categoryCounts, 
       <HeaderPortal target="header-tabs">
         <SectionTabsV2 active={tab} onChange={selectTab} tabs={TABS} />
       </HeaderPortal>
-      <div className="pt-6">
+      <div key={tab} className="pt-6 tab-fade-in">
         {tab === "categorias" ? (
           <CategoriasManager categories={categories} categoryCounts={categoryCounts} />
         ) : tab === "contactos" ? (

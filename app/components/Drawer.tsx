@@ -1,10 +1,15 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
 /** Pila de drawers abiertos (puede haber varios apilados, ej. NewContactDrawer sobre
- * TransactionDrawer) - Escape solo debe cerrar el de más arriba, no todos a la vez. */
+ * TransactionDrawer) - Escape solo debe cerrar el de más arriba, no todos a la vez. Guarda
+ * requestClose (dispara la animación de salida), no el onClose real del padre. */
 const openDrawers: Array<() => void> = [];
+
+/** Debe coincidir con la duración de .drawer-panel-out/.drawer-veil-out en globals.css: el
+ * desmontaje real (onClose del padre) espera a que la animación de salida termine. */
+const DRAWER_CLOSE_MS = 180;
 
 /** Si ya se montó un portal de Drawer alguna vez en esta carga de página. El gate
  * mounted/useEffect de abajo existe para el PRIMER portal (evita createPortal(...,
@@ -41,18 +46,30 @@ export default function Drawer({
   hasPrev?: boolean;
   hasNext?: boolean;
 }) {
+  // Cerrar no desmonta al instante: marca "closing" (dispara la animación de salida vía
+  // clases CSS) y solo entonces, tras DRAWER_CLOSE_MS, llama al onClose real del padre -
+  // que es quien de verdad quita el drawer del árbol (p.ej. setSelected(null)).
+  const [closing, setClosing] = useState(false);
+  const requestClose = useCallback(() => setClosing(true), []);
+
   useEffect(() => {
-    openDrawers.push(onClose);
+    if (!closing) return;
+    const t = setTimeout(onClose, DRAWER_CLOSE_MS);
+    return () => clearTimeout(t);
+  }, [closing, onClose]);
+
+  useEffect(() => {
+    openDrawers.push(requestClose);
     return () => {
-      const idx = openDrawers.lastIndexOf(onClose);
+      const idx = openDrawers.lastIndexOf(requestClose);
       if (idx !== -1) openDrawers.splice(idx, 1);
     };
-  }, [onClose]);
+  }, [requestClose]);
 
   useEffect(() => {
     const handler = (ev: KeyboardEvent) => {
-      if (openDrawers[openDrawers.length - 1] !== onClose) return;
-      if (ev.key === "Escape") { onClose(); return; }
+      if (openDrawers[openDrawers.length - 1] !== requestClose) return;
+      if (ev.key === "Escape") { requestClose(); return; }
       if (!onPrev && !onNext) return;
       // No interceptar flechas si el foco está en un campo editable (inputs de fecha/número
       // dentro del propio drawer, p.ej. tarifas o formularios).
@@ -63,7 +80,7 @@ export default function Drawer({
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [onClose, onPrev, onNext, hasPrev, hasNext]);
+  }, [requestClose, onPrev, onNext, hasPrev, hasNext]);
 
   // Se monta en <body> para que el `fixed` cubra el viewport aunque el botón que lo abre viva
   // dentro de un contenedor que crea contexto de posicionamiento (p.ej. una cabecera sticky
@@ -76,8 +93,11 @@ export default function Drawer({
 
   const overlay = (
     <div className="fixed inset-0 z-50 flex justify-end">
-      <div className="absolute inset-0 bg-navy/20 backdrop-blur-[2px]" onClick={onClose} />
-      <div className={`relative w-full ${maxWidth} bg-card h-full flex flex-col shadow-2xl`}>
+      <div
+        className={`absolute inset-0 bg-navy/20 backdrop-blur-[2px] ${closing ? "drawer-veil-out" : "drawer-veil-in"}`}
+        onClick={requestClose}
+      />
+      <div className={`relative w-full ${maxWidth} bg-card h-full flex flex-col shadow-2xl ${closing ? "drawer-panel-out" : "drawer-panel-in"}`}>
         <div className="flex items-start justify-between gap-3 px-6 py-4 border-b border-navy/[0.07] shrink-0">
           <div className="min-w-0 flex-1">
             {header ?? (
@@ -116,7 +136,7 @@ export default function Drawer({
               </div>
             )}
             <button
-              onClick={onClose}
+              onClick={requestClose}
               className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full hover:bg-navy/5 text-navy/40 hover:text-navy transition-colors"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">

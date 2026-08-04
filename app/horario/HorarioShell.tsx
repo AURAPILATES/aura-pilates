@@ -2,8 +2,10 @@
 
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { AlertTriangle } from "react-feather";
 import { MomenceEvent } from "@/lib/momence";
 import { groupByDay, occupancyRate, pct } from "@/lib/analytics";
+import { sanitizeErrorMessage } from "@/lib/sanitizeErrorMessage";
 import HorarioList from "./HorarioList";
 import HorarioCalendar from "./HorarioCalendar";
 import HorarioDrawer from "./HorarioDrawer";
@@ -53,11 +55,13 @@ export default function HorarioShell({
   hiddenEvents,
   weekMonday,
   initialView,
+  liveError,
 }: {
   events: MomenceEvent[];
   hiddenEvents: MomenceEvent[];
   weekMonday: string;
   initialView: View;
+  liveError?: string | null;
 }) {
   const router = useRouter();
   const [view,     setView]     = useState<View>(initialView);

@@ -64,7 +64,7 @@ export default function TransaccionesTabs({
         <SectionTabsV2 active={tab} onChange={selectTab} tabs={tabsWithBadge} />
       </HeaderPortal>
 
-      <div className="pt-[26px]">
+      <div key={tab} className="pt-[26px] tab-fade-in">
         {tab === "movimientos" ? (
           <TransaccionesList
             transactions={transactions}

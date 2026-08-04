@@ -13,11 +13,19 @@ export default async function HorarioLoader({ weekMonday, initialView }: Props) 
   const monday = new Date(weekMonday + "T00:00:00");
   const sunday = new Date(monday.getTime() + 7 * 86400000 - 1);
 
-  const [liveEvents, historicalEvents] = await Promise.all([
-    getEvents(),
+  // getEvents() puede fallar si el token de Momence caduca - no debe tumbar toda la
+  // página (el resto de la app sigue siendo útil). Si falla, se muestra el último
+  // horario capturado (loadHistoricalEvents) con un aviso, en vez de un error en blanco.
+  const [liveResult, historicalEvents] = await Promise.all([
+    getEvents().then((events) => ({ ok: true as const, events })).catch((e) => ({
+      ok: false as const,
+      error: e instanceof Error ? e.message : String(e),
+    })),
     loadHistoricalEvents(),
   ]);
-  await saveHistoricalEvents(liveEvents);
+  const liveEvents = liveResult.ok ? liveResult.events : [];
+  const liveError = liveResult.ok ? null : liveResult.error;
+  if (liveResult.ok) await saveHistoricalEvents(liveResult.events);
 
   const allById = new Map(historicalEvents.map((e) => [e.id, e]));
   liveEvents.forEach((e) => allById.set(e.id, e));
@@ -57,6 +65,7 @@ export default async function HorarioLoader({ weekMonday, initialView }: Props) 
       hiddenEvents={hiddenWeekEvents}
       weekMonday={weekMonday}
       initialView={initialView}
+      liveError={liveError}
     />
   );
 }

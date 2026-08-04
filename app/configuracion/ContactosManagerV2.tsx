@@ -204,6 +204,7 @@ export default function ContactosManagerV2({
 
       <div className="mt-3">
         <FilterPillGroupV2
+          variant="segmented"
           active={groupFilter}
           onChange={onGroupFilterChange}
           options={[

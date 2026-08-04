@@ -36,12 +36,12 @@ export default function ClientesShell({ customers, payments, clients }: Props) {
       <div className="pt-5" />
 
       {mounted.clientes && (
-        <div className={tab === "clientes" ? "" : "hidden"}>
+        <div className={tab === "clientes" ? "tab-fade-in" : "hidden"}>
           <ClientesEstado clients={clients} payments={payments} />
         </div>
       )}
       {mounted.compras && (
-        <div className={tab === "compras" ? "" : "hidden"}>
+        <div className={tab === "compras" ? "tab-fade-in" : "hidden"}>
           <ClientesMatrizCompras customers={customers} payments={payments} />
         </div>
       )}

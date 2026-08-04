@@ -160,3 +160,46 @@ body {
   padding-left: 0;
   padding-right: 0;
 }
+
+/* Fundido suave al cambiar de subpestaña (ver SectionTabsV2): se aplica al contenedor
+   del contenido, con key={tab} donde el contenido se remonta, o directamente donde se
+   alterna hidden/visible (el cambio de display reinicia la animación igualmente). */
+@keyframes tab-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.tab-fade-in {
+  animation: tab-fade-in 0.18s ease-out;
+}
+
+/* Apertura/cierre de drawers (ver components/Drawer.tsx). Mismo timing y curva que la
+   maqueta de "Rediseño UI aplicación" (Aura Panel.dc.html: @keyframes drawerIn/veilIn):
+   velo con fundido simple, panel con fundido + deslizamiento leve desde la derecha. El
+   cierre usa las mismas curvas invertidas; Drawer.tsx retrasa el desmontaje real
+   (DRAWER_CLOSE_MS) para que la animación de salida llegue a completarse. */
+@keyframes drawer-veil-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes drawer-veil-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes drawer-panel-in {
+  from { opacity: 0; transform: translateX(26px) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes drawer-panel-out {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: translateX(26px) scale(0.985); }
+}
+.drawer-veil-in { animation: drawer-veil-in 0.2s ease; }
+.drawer-veil-out { animation: drawer-veil-out 0.18s ease forwards; }
+.drawer-panel-in { animation: drawer-panel-in 0.3s cubic-bezier(0.22, 1, 0.36, 1); }
+.drawer-panel-out { animation: drawer-panel-out 0.18s cubic-bezier(0.4, 0, 1, 1) forwards; }
