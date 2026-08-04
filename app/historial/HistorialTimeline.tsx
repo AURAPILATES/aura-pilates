@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Drawer from "@/app/components/Drawer";
 import Button, { SecondaryButton } from "@/app/components/Button";
 import { PrimaryButtonV2 } from "@/app/components/v2/ButtonsV2";
+import HeaderPortal from "@/app/components/HeaderPortal";
 import FilterPillGroupV2 from "@/app/components/v2/FilterPillGroupV2";
 import Select from "@/app/components/Select";
 import type { BusinessEvent, EventCategoria } from "@/lib/businessEvents";
@@ -214,13 +215,15 @@ export default function HistorialTimeline({ events: initial }: { events: Busines
             ...CATEGORIAS.map((c) => ({ key: c.value, label: c.label })),
           ]}
         />
+      </div>
 
+      <HeaderPortal target="header-actions">
         <PrimaryButtonV2
           onClick={() => { setShowForm(true); setEditing(null); setFormError(null); }}
           label="Registrar evento"
           icon={<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>}
         />
-      </div>
+      </HeaderPortal>
 
       {/* Add form */}
       {showForm && (

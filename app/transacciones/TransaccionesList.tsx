@@ -230,7 +230,7 @@ export function CategoryBadge({ category, categories, hideIcon = false }: { cate
   const iconName = cat?.label ?? label;
   return (
     <span
-      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium whitespace-nowrap"
+      className="inline-flex items-center gap-1 px-2.5 py-[3px] rounded-full text-[11px] font-medium whitespace-nowrap"
       style={{ backgroundColor: cfg.bg, color: cfg.color }}
     >
       {!hideIcon && <CatIcon iconKey={cfg.emoji} name={iconName} color={cfg.color} />}
@@ -514,7 +514,7 @@ type Props = {
   allTransactions?: Transaction[];
 };
 
-const PAGE_SIZE = 50;
+const PAGE_SIZE = 100;
 
 export default function TransaccionesList({
   transactions, categories, uncategorizedCount, recurringPeriods, recurringExpenses, contacts, allTransactions,

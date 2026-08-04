@@ -22,7 +22,7 @@ import NewContactDrawer, { AutomationIcon } from "@/app/transacciones/NewContact
 import ContactosManagerV2 from "./ContactosManagerV2";
 import ContactDuplicateDrawer from "./ContactDuplicateDrawer";
 
-const PAGE_SIZE = 25;
+const PAGE_SIZE = 100;
 
 /** Dominios de marcas reconocibles para mostrar su logo real (favicon de Google) en vez de
  * iniciales - solo para proveedores habituales de Aura Pilates. El resto cae a iniciales. */

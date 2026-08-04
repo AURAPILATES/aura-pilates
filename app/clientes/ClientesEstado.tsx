@@ -41,7 +41,7 @@ function StatBox({ icon, label, value, valueClassName, dotClassName, tooltip, on
 }
 
 const COLS = "2.1fr 1.05fr .85fr 1.3fr .55fr .95fr .9fr .9fr .8fr";
-const PAGE_SIZE = 25;
+const PAGE_SIZE = 100;
 
 type Filter =
   | "all" | "duplicadas" | "sin_pago" | "familiares" | "renueva_pronto"

@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Plus, Edit2, Trash2, Check, X } from "react-feather";
+import { Edit2, Trash2, Check, X } from "react-feather";
 import type { UrbanRate } from "@/lib/urbanRates";
 import { rateForDate } from "@/lib/urbanRates";
 import { createUrbanRate, updateUrbanRate, deleteUrbanRate } from "./actions";
+import { PrimaryButtonV2 } from "@/app/components/v2/ButtonsV2";
+import HeaderPortal from "@/app/components/HeaderPortal";
 
 // Configuración de la tarifa pactada con Urban Sports Club (€ por clase asistida), con vigencia
 // por rango de fechas. Con ella, Analítica → Ventas por > Fuente estima en vivo el € de Urban del
@@ -93,15 +95,17 @@ export default function TarifaUrbanManager({ rates }: { rates: UrbanRate[] }) {
             tarifa vigente se estima en vivo el € de Urban del mes en curso hasta que llega la transferencia.
           </p>
         </div>
-        {!adding && editingId === null && (
-          <button
-            onClick={() => { setError(null); setAdding(true); setDraft({ ...emptyDraft }); }}
-            className="shrink-0 inline-flex items-center gap-1.5 rounded-[5px] bg-navy px-3 py-1.5 text-[12.5px] font-medium text-white hover:bg-navy/90"
-          >
-            <Plus size={14} /> Añadir tarifa
-          </button>
-        )}
       </div>
+
+      {!adding && editingId === null && (
+        <HeaderPortal target="header-actions">
+          <PrimaryButtonV2
+            onClick={() => { setError(null); setAdding(true); setDraft({ ...emptyDraft }); }}
+            label="Añadir tarifa"
+            icon={<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>}
+          />
+        </HeaderPortal>
+      )}
 
       {activeRate != null && (
         <p className="text-[12.5px] text-muted mb-3">

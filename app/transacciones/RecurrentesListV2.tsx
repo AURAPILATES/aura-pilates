@@ -15,6 +15,7 @@ import TablePaginationV2 from "@/app/components/v2/TablePaginationV2";
 import TaxBadgeV2 from "@/app/components/v2/TaxBadgeV2";
 import SearchInputV2 from "@/app/components/v2/SearchInputV2";
 import { IconButtonV2, PrimaryButtonV2 } from "@/app/components/v2/ButtonsV2";
+import HeaderPortal from "@/app/components/HeaderPortal";
 import { tableHeadClassV2, tableRowClassV2, tableGroupClassV2, tableCardClassV2, gridColsV2 } from "@/app/components/v2/tableStylesV2";
 
 const COLS = "2.1fr 1.2fr 1.1fr .9fr .9fr 1fr";
@@ -268,20 +269,25 @@ export default function RecurrentesListV2({
             </svg>
           </button>
         )}
-        <IconButtonV2
-          onClick={() => setShowArchived(true)}
-          title={`Archivados${archived.length > 0 ? ` (${archived.length})` : ""}`}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="21 8 21 21 3 21 3 8" /><rect x="1" y="3" width="22" height="5" /><line x1="10" y1="12" x2="14" y2="12" />
-          </svg>
-        </IconButtonV2>
-        <PrimaryButtonV2
-          onClick={onNewManual}
-          label="Nuevo recurrente"
-          icon={<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>}
-        />
       </div>
+
+      <HeaderPortal>
+        <div className="flex items-center gap-2.5">
+          <IconButtonV2
+            onClick={() => setShowArchived(true)}
+            title={`Archivados${archived.length > 0 ? ` (${archived.length})` : ""}`}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="21 8 21 21 3 21 3 8" /><rect x="1" y="3" width="22" height="5" /><line x1="10" y1="12" x2="14" y2="12" />
+            </svg>
+          </IconButtonV2>
+          <PrimaryButtonV2
+            onClick={onNewManual}
+            label="Nuevo recurrente"
+            icon={<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>}
+          />
+        </div>
+      </HeaderPortal>
 
       {showArchived && (
         <Drawer

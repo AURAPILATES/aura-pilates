@@ -131,7 +131,7 @@ export default memo(function HorarioCalendar({
                   <span className={`font-medium ${pctColor(stats.occ)}`}>{Math.round(stats.occ * 100)}%</span>
                 </p>
               ) : (
-                <p className="text-xs mt-0.5 text-navy/25">-</p>
+                <p className="text-xs mt-0.5 text-navy/25">SIN CLASES</p>
               )}
             </div>
           );

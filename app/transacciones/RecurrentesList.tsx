@@ -64,7 +64,7 @@ type Props = {
   contacts: Contact[];
 };
 
-const PAGE_SIZE = 25;
+const PAGE_SIZE = 100;
 
 export function fmtDate(d: string): string {
   return d.split("-").reverse().join("/");

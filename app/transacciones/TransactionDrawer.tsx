@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { RotateCcw } from "react-feather";
+import { RotateCcw, Repeat } from "react-feather";
 import Drawer from "@/app/components/Drawer";
 import Button, { DeleteButton } from "@/app/components/Button";
 import Select from "@/app/components/Select";
@@ -47,7 +47,7 @@ function Field({ label, value, onSave }: { label: string; value: string; onSave:
   const [draft, setDraft] = useState(value);
   return (
     <div>
-      <p className="text-[11px] text-navy/40 uppercase tracking-wider mb-1">{label}</p>
+      <p className="text-xs text-navy/40 mb-1">{label}</p>
       <input
         type="text"
         value={draft}
@@ -211,16 +211,28 @@ function MarkRecurringControl({
   }
 
   return (
-    <div className="flex flex-col gap-3 pt-3 border-t border-navy/[0.06]">
-      <label className="flex items-center gap-2 text-sm font-medium text-navy cursor-pointer">
-        <Checkbox checked={checked} onChange={(e) => toggle(e.target.checked)} />
-        {isIncome ? "Es un ingreso recurrente" : "Es un gasto recurrente"}
+    <div className="flex flex-col gap-2.5 pt-3 border-t border-navy/[0.06]">
+      <label className={`flex items-start gap-2.5 px-3 py-2.5 rounded-lg border cursor-pointer transition-colors ${
+        checked ? "border-primary/30 bg-primary/[0.05]" : "border-navy/[0.1] hover:bg-navy/[0.02]"
+      }`}>
+        <Checkbox checked={checked} onChange={(e) => toggle(e.target.checked)} tone="primary" className="mt-0.5" />
+        <span className="flex-1 min-w-0">
+          <span className="flex items-center gap-1.5 text-sm font-medium text-navy">
+            <Repeat size={13} className="shrink-0 text-primary" />
+            {isIncome ? "Es un ingreso recurrente" : "Es un gasto recurrente"}
+          </span>
+          <span className="block text-xs text-navy/45 mt-0.5">
+            {isIncome
+              ? "Se repite cada periodo (p. ej. una nómina o cuota) y se tiene en cuenta en Previsiones."
+              : "Se repite cada periodo (p. ej. un alquiler o suscripción) y se tiene en cuenta en Previsiones."}
+          </span>
+        </span>
       </label>
       {checked && (
-        <div className="flex flex-col gap-3 pl-6">
+        <div className="flex flex-col gap-3 pl-1">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <p className="text-[11px] text-navy/40 uppercase tracking-wider mb-1">Periodicidad</p>
+              <p className="text-xs text-navy/40 mb-1">Periodicidad</p>
               <Select
                 value={period}
                 disabled={periodSaving}
@@ -232,7 +244,7 @@ function MarkRecurringControl({
               </Select>
             </div>
             <div>
-              <p className="text-[11px] text-navy/40 uppercase tracking-wider mb-1">Finaliza</p>
+              <p className="text-xs text-navy/40 mb-1">Finaliza</p>
               <Select
                 value={endType}
                 disabled={periodSaving}
@@ -484,7 +496,7 @@ export default function TransactionDrawer({
         <Field label="Más datos" value={t.bank_details ?? ""} onSave={(v) => onUpdateBankDetails(t.id, v)} />
 
         <div>
-          <p className="text-[11px] text-navy/40 uppercase tracking-wider mb-1">Contacto</p>
+          <p className="text-xs text-navy/40 mb-1">Contacto</p>
           <TransactionContactPicker
             transactionId={t.id}
             value={t.contact ?? ""}
@@ -500,13 +512,13 @@ export default function TransactionDrawer({
         </div>
 
         <div>
-          <p className="text-[11px] text-navy/40 uppercase tracking-wider mb-1.5">Categoría</p>
+          <p className="text-xs text-navy/40 mb-1.5">Categoría</p>
           <CategoryPill category={t.category} categories={categories} onChange={(cat) => onUpdateCategory(t.id, cat)} />
         </div>
 
         <div className="grid grid-cols-2 gap-4 pt-2 border-t border-navy/[0.06]">
           <div>
-            <p className="text-[11px] text-navy/40 uppercase tracking-wider mb-1">Fecha</p>
+            <p className="text-xs text-navy/40 mb-1">Fecha</p>
             {editableOrigin ? (
               <input
                 type="date"
@@ -522,7 +534,7 @@ export default function TransactionDrawer({
             )}
           </div>
           <div>
-            <p className="text-[11px] text-navy/40 uppercase tracking-wider mb-1">Origen</p>
+            <p className="text-xs text-navy/40 mb-1">Origen</p>
             {editableOrigin ? (
               <div className="flex items-center gap-2">
                 <SourceAvatar method={t.payment_method} size={18} />

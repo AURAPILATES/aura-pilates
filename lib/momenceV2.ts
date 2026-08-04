@@ -299,6 +299,8 @@ export type MomenceV2MembershipCatalog = {
   id: number;
   name: string;
   type: string;
+  disabled: boolean;
+  price: number;
   usageLimitForSessions: number | null;
   duration: number | null;
   durationUnit: string | null;

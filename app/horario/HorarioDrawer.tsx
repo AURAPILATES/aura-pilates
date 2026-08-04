@@ -1,8 +1,12 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { MomenceEvent } from "@/lib/momence";
 import { pct } from "@/lib/analytics";
 import Drawer from "@/app/components/Drawer";
+import { getSessionBookingsAction } from "@/app/actions/getSessionBookings";
+import { momenceCustomerUrl } from "@/lib/momenceLinks";
+import type { MomenceV2SessionBooking } from "@/lib/momenceV2";
 
 function occColors(occ: number) {
   if (occ >= 1.0) return { badge: "bg-success/10 text-success", bar: "bg-success" };
@@ -25,6 +29,15 @@ export default function HorarioDrawer({
 }) {
   const occ = e.capacity > 0 ? e.ticketsSold / e.capacity : 0;
   const colors = occColors(occ);
+  const isPast = new Date(e.dateTime).getTime() + e.duration * 60000 < Date.now();
+
+  const [bookings, setBookings] = useState<MomenceV2SessionBooking[] | null>(null);
+  useEffect(() => {
+    setBookings(null);
+    let cancelled = false;
+    getSessionBookingsAction(e.id).then((bs) => { if (!cancelled) setBookings(bs); });
+    return () => { cancelled = true; };
+  }, [e.id]);
 
   const time = new Date(e.dateTime).toLocaleTimeString("es-ES", {
     timeZone: "Europe/Madrid",
@@ -100,25 +113,56 @@ export default function HorarioDrawer({
       {/* Slots */}
       <div className="px-6 py-5">
         <p className="text-xs font-medium text-navy/45 uppercase tracking-wide mb-3">
-          Plazas ({e.capacity})
+          Plazas ({e.capacity}){isPast && bookings && bookings.length > 0 ? " · asistencia" : ""}
         </p>
         <div className="grid grid-cols-2 gap-2">
-          {Array.from({ length: e.capacity }, (_, i) => {
-            const filled = i < e.ticketsSold;
-            return (
-              <div
-                key={i}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
-                  filled
-                    ? "bg-navy/[0.04] text-navy/50"
-                    : "bg-success/5 border border-dashed border-success/30 text-success/60"
-                }`}
-              >
-                <span className={`w-2 h-2 rounded-full shrink-0 ${filled ? "bg-navy/30" : "bg-success/40"}`} />
-                <span>{filled ? `Alumna ${i + 1}` : "Plaza libre"}</span>
-              </div>
-            );
-          })}
+          {bookings === null ? (
+            // Cargando: placeholder mientras llega la asistencia real de Momence.
+            Array.from({ length: e.ticketsSold }, (_, i) => (
+              <div key={i} className="h-[34px] rounded-lg bg-navy/[0.04] animate-pulse" />
+            ))
+          ) : (
+            <>
+              {[...bookings]
+                .sort((a, b) => a.member.firstName.localeCompare(b.member.firstName, "es"))
+                .map((b) => {
+                  const dot = !isPast ? "bg-navy/30" : b.checkedIn ? "bg-success" : "bg-danger/60";
+                  return (
+                    <div key={b.id} className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-navy/[0.04] text-navy/60">
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${dot}`} />
+                      <a
+                        href={momenceCustomerUrl(b.member.id)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 min-w-0 truncate hover:text-navy hover:underline"
+                        title="Ver ficha en Momence"
+                      >
+                        {b.member.firstName} {b.member.lastName}
+                      </a>
+                      {isPast && !b.checkedIn && (
+                        <span className="text-[10px] font-medium text-danger shrink-0">No vino</span>
+                      )}
+                    </div>
+                  );
+                })}
+              {/* Plazas vendidas que no cuadran con las reservas traídas (fallo parcial de Momence). */}
+              {Array.from({ length: Math.max(0, e.ticketsSold - bookings.length) }, (_, i) => (
+                <div key={`extra-${i}`} className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-navy/[0.04] text-navy/50">
+                  <span className="w-2 h-2 rounded-full shrink-0 bg-navy/30" />
+                  <span>Alumna {bookings.length + i + 1}</span>
+                </div>
+              ))}
+            </>
+          )}
+          {Array.from({ length: Math.max(0, e.capacity - e.ticketsSold) }, (_, i) => (
+            <div
+              key={`free-${i}`}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-success/5 border border-dashed border-success/30 text-success/60"
+            >
+              <span className="w-2 h-2 rounded-full shrink-0 bg-success/40" />
+              <span>Plaza libre</span>
+            </div>
+          ))}
         </div>
       </div>
     </Drawer>

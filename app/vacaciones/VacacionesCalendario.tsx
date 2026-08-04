@@ -1397,35 +1397,30 @@ export default function VacacionesCalendario({
         />
       )}
 
-      {/* Instructores + Sugerencias / Archivados / Nuevo instructor (comparten fila: la acción
-          vive junto al primer contenido de la pantalla, no suelta en una fila propia) */}
-      <section>
-        <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
-          <h2 className="text-xs font-semibold text-navy/55 uppercase tracking-widest">Instructores</h2>
-          <div className="flex items-center gap-2.5">
-            <IconButtonV2 onClick={() => setShowSugerencias(true)} title="Sugerencias" className="relative">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9 18h6" /><path d="M10 22h4" /><path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z" />
-              </svg>
-              {suggestionsCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#b45309] dark:bg-[#e8a572] border border-white" />
-              )}
-            </IconButtonV2>
-            <IconButtonV2 onClick={openArchivados} title="Archivados">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/>
-              </svg>
-            </IconButtonV2>
-            <HeaderPortal>
-              <PrimaryButtonV2
-                onClick={() => setShowNuevoModal(true)}
-                label="Nuevo instructor"
-                icon={<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>}
-              />
-            </HeaderPortal>
-          </div>
+      {/* Sugerencias / Archivados / Nuevo instructor: viven en el header (junto al título),
+          no en una fila propia - por eso ya no hace falta la cabecera "Instructores" aquí. */}
+      <HeaderPortal>
+        <div className="flex items-center gap-2.5">
+          <IconButtonV2 onClick={() => setShowSugerencias(true)} title="Sugerencias" className="relative">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 18h6" /><path d="M10 22h4" /><path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z" />
+            </svg>
+            {suggestionsCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#b45309] dark:bg-[#e8a572] border border-white" />
+            )}
+          </IconButtonV2>
+          <IconButtonV2 onClick={openArchivados} title="Archivados">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/>
+            </svg>
+          </IconButtonV2>
+          <PrimaryButtonV2
+            onClick={() => setShowNuevoModal(true)}
+            label="Nuevo instructor"
+            icon={<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>}
+          />
         </div>
-      </section>
+      </HeaderPortal>
 
       {showSugerencias && (
         <Drawer title="Sugerencias" onClose={() => setShowSugerencias(false)}>

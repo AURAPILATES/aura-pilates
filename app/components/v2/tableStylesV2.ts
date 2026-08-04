@@ -5,15 +5,15 @@ import type { CSSProperties } from "react";
  * propia plantilla de columnas (grid-template-columns) vía `gridCols()` porque el número y
  * ancho de columnas varía por tabla. */
 export const tableHeadClassV2 =
-  "items-center gap-3 pb-[11px] border-b border-border text-[10.5px] tracking-wide uppercase text-faint font-semibold";
+  "items-center gap-3 pb-[9px] border-b border-border text-[10.5px] tracking-wide uppercase text-faint font-semibold";
 
 export const tableRowClassV2 =
-  "items-center gap-3 border-t border-subtle py-[9px] hover:bg-subtle transition-colors";
+  "items-center gap-3 border-t border-subtle py-[7px] hover:bg-subtle transition-colors";
 
 export const tableGroupClassV2 =
-  "flex items-center justify-between gap-2 py-[9px] text-[11.5px] font-bold tracking-wide text-muted";
+  "flex items-center justify-between gap-2 py-[7px] text-[11.5px] font-semibold tracking-wide text-muted";
 
-export const tableFootClassV2 = "px-0.5 py-3.5 text-[12.5px] text-faint";
+export const tableFootClassV2 = "px-0.5 py-3 text-[12.5px] text-faint";
 
 /** Envoltorio de cada tabla suelta, estilo "Ancho": sin caja propia, se apoya directamente
  * en el panel blanco del contenido. Los estilos viven en globals.css (.table-card). */

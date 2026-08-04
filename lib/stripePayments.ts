@@ -1,8 +1,8 @@
 import Stripe from "stripe";
 import { unstable_cache } from "next/cache";
 import { stripe } from "./stripe";
-import { getMemberships, getProducts } from "./momence";
-import { catalogFromMomence } from "./productRevenue";
+import { getMembershipsV2 } from "./momenceV2";
+import { catalogFromMomenceV2 } from "./productRevenue";
 
 export type StripePayment = {
   id: string;
@@ -55,8 +55,7 @@ export const getPricingReport = unstable_cache(
   async (): Promise<PricingRow[]> => {
     let catalog: { name: string; price: number }[] = [];
     try {
-      const [memberships, products] = await Promise.all([getMemberships(), getProducts()]);
-      catalog = catalogFromMomence(memberships, products);
+      catalog = catalogFromMomenceV2(await getMembershipsV2());
     } catch {
       // Momence caído o sin credenciales: seguimos con los precios de respaldo del código.
     }

@@ -58,7 +58,7 @@ export type MatrixRow = {
 export const PURCHASE_COUNT_FILTERS = ["1", "2", "3", "4", "5+"];
 
 export type SortKey = "name" | "total" | "first";
-const PAGE_SIZE = 30;
+const PAGE_SIZE = 100;
 
 export default function ClientesMatrizCompras({ customers, payments }: Props) {
   const [search, setSearch] = useState("");
