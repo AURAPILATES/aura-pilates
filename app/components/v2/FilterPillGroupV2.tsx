@@ -42,12 +42,10 @@ export default function FilterPillGroupV2<T extends string>({ options, active, o
               {label}
               {!!count && (
                 <span
-                  className={`text-[11px] font-semibold rounded-[5px] px-1.5 ${
-                    isActive && !segmented
-                      ? "bg-card text-[#b45309] dark:text-[#e8a572]"
-                      : countTone === "danger"
-                      ? "bg-[#fee2e2] dark:bg-[#391313] text-[#dc2626] dark:text-[#dd7e7e]"
-                      : "bg-[#fef3e2] dark:bg-[#392a13] text-[#b45309] dark:text-[#e8a572]"
+                  className={`shrink-0 min-w-[18px] h-[18px] flex items-center justify-center rounded-full text-[11px] font-semibold px-1 ${
+                    countTone === "danger"
+                      ? "bg-danger/10 text-danger"
+                      : "bg-primary/10 text-primary"
                   }`}
                 >
                   {count}
