@@ -1,5 +1,5 @@
-import { createServerClient } from "./supabase";
 import type { Sale } from "./sales";
+import { fetchCheckedInFirstClassRows, type FirstClassRow } from "./firstClassBookingsV2";
 
 // "La primera clase de los suscriptores": de quien alguna vez se suscribió (Stripe), en qué
 // clase entró — desglosado por profesora y por franja horaria. Combina la asistencia real de
@@ -15,13 +15,6 @@ export type SubscriberFirstClassV2 = {
   matchedRate: number;      // de todos los que se suscribieron, cuántos tienen clase registrada
   byTeacher: FirstClassBucket[];
   byHour: FirstClassBucket[];
-};
-
-type Row = {
-  member_id: number;
-  email: string | null;
-  teacher_name: string;
-  session_starts_at: string;
 };
 
 // Hora de la clase en calendario de Madrid (session_starts_at viene en UTC).
@@ -47,25 +40,11 @@ export async function getSubscriberFirstClassV2(sales: Sale[]): Promise<Subscrib
   }
   if (subscriberEmails.size === 0) return empty;
 
-  const db = createServerClient();
-  // PostgREST corta en 1000 filas; paginamos (class_bookings_v2 supera esa cifra).
-  const PAGE = 1000;
-  const rows: Row[] = [];
-  for (let from = 0; ; from += PAGE) {
-    const { data } = await db
-      .from("class_bookings_v2")
-      .select("member_id, email, teacher_name, session_starts_at")
-      .eq("checked_in", true)
-      .order("session_starts_at", { ascending: true })
-      .range(from, from + PAGE - 1);
-    const batch = (data ?? []) as Row[];
-    rows.push(...batch);
-    if (batch.length < PAGE) break;
-  }
+  const rows = await fetchCheckedInFirstClassRows();
   if (rows.length === 0) return empty;
 
   // Primera clase asistida por miembro (rows ya viene ordenado ascendente por fecha).
-  const firstByMember = new Map<number, Row>();
+  const firstByMember = new Map<number, FirstClassRow>();
   for (const r of rows) if (!firstByMember.has(r.member_id)) firstByMember.set(r.member_id, r);
 
   const byTeacher = new Map<string, number>();

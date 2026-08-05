@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { createServerClient } from "./supabase";
 
 // Tarifas pactadas con Urban Sports Club (€ por clase asistida), con vigencia por rango de
@@ -12,20 +13,26 @@ export type UrbanRate = {
   price_per_class: number;
 };
 
-export async function loadUrbanRates(): Promise<UrbanRate[]> {
-  const db = createServerClient();
-  const { data, error } = await db
-    .from("urban_rates")
-    .select("id, start_date, end_date, price_per_class")
-    .order("start_date", { ascending: false });
-  if (error) throw error;
-  return (data ?? []).map((r) => ({
-    id: r.id,
-    start_date: r.start_date,
-    end_date: r.end_date,
-    price_per_class: Number(r.price_per_class),
-  }));
-}
+// Cacheado (30 min): se edita muy de vez en cuando desde Config → Precios, que invalida el
+// caché al guardar (revalidateTag("urban_rates")), así que un cambio se ve al instante igual.
+export const loadUrbanRates = unstable_cache(
+  async (): Promise<UrbanRate[]> => {
+    const db = createServerClient();
+    const { data, error } = await db
+      .from("urban_rates")
+      .select("id, start_date, end_date, price_per_class")
+      .order("start_date", { ascending: false });
+    if (error) throw error;
+    return (data ?? []).map((r) => ({
+      id: r.id,
+      start_date: r.start_date,
+      end_date: r.end_date,
+      price_per_class: Number(r.price_per_class),
+    }));
+  },
+  ["urban-rates"],
+  { revalidate: 1800, tags: ["urban_rates"] },
+);
 
 // Tarifa aplicable a una fecha de clase ("YYYY-MM-DD"). Devuelve el € por clase o null si no
 // hay ninguna tarifa que cubra esa fecha (entonces no se estima nada para esa clase). Si dos

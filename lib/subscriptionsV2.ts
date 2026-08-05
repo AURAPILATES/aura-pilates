@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { createServerClient } from "./supabase";
 import type { SubscriptionTier } from "./mrr";
 
@@ -18,26 +19,41 @@ export type SubscriptionsBaseV2 = {
   totalArr: number;
 };
 
+type ActiveSubRow = { member_id: number; membership_name: string; email: string };
+
+// Cacheado (30 min, invalidable con el botón de sincronizar): getActiveSubscriberEmailsV2 y
+// getSubscriptionsBaseV2 hacían cada una su propia búsqueda de "último snapshot" + su propio
+// filtro (misma tabla, mismas condiciones type=subscription/is_frozen=false), sin caché. Se
+// comparte una única lectura.
+const fetchActiveSubscriptionSnapshot = unstable_cache(
+  async (): Promise<{ date: string | null; rows: ActiveSubRow[] }> => {
+    const db = createServerClient();
+    const { data: latest } = await db
+      .from("subscriber_snapshots_v2")
+      .select("date")
+      .order("date", { ascending: false })
+      .limit(1);
+    const date = (latest?.[0]?.date as string | undefined) ?? null;
+    if (!date) return { date: null, rows: [] };
+    const { data } = await db
+      .from("subscriber_snapshots_v2")
+      .select("member_id, membership_name, email")
+      .eq("date", date)
+      .eq("type", "subscription")
+      .eq("is_frozen", false);
+    return { date, rows: (data ?? []) as ActiveSubRow[] };
+  },
+  ["active-subscription-snapshot-v2"],
+  { revalidate: 1800, tags: ["momence"] },
+);
+
 // Emails (en minúscula) con una suscripción activa NO congelada en el último
 // snapshot v2. Fuente de verdad de "quién sigue suscrito ahora mismo en Momence",
 // para cruzar con las inferencias por Stripe (churn/convertir) y quitar falsos
 // positivos. Devuelve Set vacío si aún no hay snapshot.
 export async function getActiveSubscriberEmailsV2(): Promise<Set<string>> {
-  const db = createServerClient();
-  const { data: latest } = await db
-    .from("subscriber_snapshots_v2")
-    .select("date")
-    .order("date", { ascending: false })
-    .limit(1);
-  const date = latest?.[0]?.date as string | undefined;
-  if (!date) return new Set();
-  const { data } = await db
-    .from("subscriber_snapshots_v2")
-    .select("email")
-    .eq("date", date)
-    .eq("type", "subscription")
-    .eq("is_frozen", false);
-  return new Set((data ?? []).map((r) => String(r.email).toLowerCase()));
+  const { rows } = await fetchActiveSubscriptionSnapshot();
+  return new Set(rows.map((r) => r.email.toLowerCase()));
 }
 
 // Base real de suscripción desde el snapshot v2 (subscriber_snapshots_v2), que a
@@ -51,23 +67,8 @@ export async function getSubscriptionsBaseV2(tiers: SubscriptionTier[]): Promise
     date: null, tiers: [], totalSubscriptions: 0, totalMembers: 0, totalMrr: 0, totalArr: 0,
   };
 
-  const db = createServerClient();
-  const { data: latest } = await db
-    .from("subscriber_snapshots_v2")
-    .select("date")
-    .order("date", { ascending: false })
-    .limit(1);
-  const date = (latest?.[0]?.date as string | undefined) ?? null;
+  const { date, rows } = await fetchActiveSubscriptionSnapshot();
   if (!date) return empty;
-
-  const { data } = await db
-    .from("subscriber_snapshots_v2")
-    .select("member_id, membership_name")
-    .eq("date", date)
-    .eq("type", "subscription")
-    .eq("is_frozen", false);
-
-  const rows = (data ?? []) as { member_id: number; membership_name: string }[];
 
   const countByName = new Map<string, number>();
   const members = new Set<number>();

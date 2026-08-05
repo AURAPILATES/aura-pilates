@@ -14,6 +14,8 @@
 //
 // Solo GET / lectura: no llamamos a ningún endpoint que modifique datos.
 
+import { unstable_cache } from "next/cache";
+
 const BASE_V2 = "https://api.momence.com/api/v2";
 
 class MomenceV2HttpError extends Error {
@@ -306,9 +308,16 @@ export type MomenceV2MembershipCatalog = {
   durationUnit: string | null;
 };
 
-export async function getMembershipsV2(): Promise<MomenceV2MembershipCatalog[]> {
-  return fetchAllPages<MomenceV2MembershipCatalog>("/host/memberships", {}, 100);
-}
+// Cacheado: el catálogo de membresías apenas cambia y esta llamada se repetía sin caché en
+// cada carga de Clientes/Analítica (además de la copia ya cacheada de getPricingReport).
+// Invalidable a mano con el botón de sincronizar (revalidateTag("momence")).
+export const getMembershipsV2 = unstable_cache(
+  async (): Promise<MomenceV2MembershipCatalog[]> => {
+    return fetchAllPages<MomenceV2MembershipCatalog>("/host/memberships", {}, 100);
+  },
+  ["momence-v2-memberships"],
+  { revalidate: 1800, tags: ["momence"] },
+);
 
 // ---------------------------------------------------------------------------
 // Miembros / suscripciones (equivalente v2 de getCustomers + activeSubscriptions)
@@ -347,17 +356,24 @@ export type MomenceV2BoughtMembership = {
 
 // Lista de miembros. `filterPreset: "with-active-membership"` trae solo los que
 // tienen una suscripción/pack activo (útil para churn).
-export async function getMembersV2(opts: {
-  query?: string;
-  filterPreset?: "with-active-membership";
-  pageSize?: number;
-} = {}): Promise<MomenceV2HostMember[]> {
-  const { pageSize = 100, ...rest } = opts;
-  const params: Record<string, string | number | boolean> = { sortBy: "lastSeenAt", sortOrder: "DESC" };
-  for (const [k, v] of Object.entries(rest)) if (v !== undefined) params[k] = v as string;
-  // /host/members tope pageSize en 100 (devuelve 400 si se pide más).
-  return fetchAllPages<MomenceV2HostMember>("/host/members", params, Math.min(pageSize, 100));
-}
+// Cacheado: el roster de miembros es la llamada más pesada de Momence v2 (pagina de 100 en
+// 100) y se repetía sin caché en cada carga de Clientes/Analítica. Invalidable a mano con el
+// botón de sincronizar (revalidateTag("momence")).
+export const getMembersV2 = unstable_cache(
+  async (opts: {
+    query?: string;
+    filterPreset?: "with-active-membership";
+    pageSize?: number;
+  } = {}): Promise<MomenceV2HostMember[]> => {
+    const { pageSize = 100, ...rest } = opts;
+    const params: Record<string, string | number | boolean> = { sortBy: "lastSeenAt", sortOrder: "DESC" };
+    for (const [k, v] of Object.entries(rest)) if (v !== undefined) params[k] = v as string;
+    // /host/members tope pageSize en 100 (devuelve 400 si se pide más).
+    return fetchAllPages<MomenceV2HostMember>("/host/members", params, Math.min(pageSize, 100));
+  },
+  ["momence-v2-members"],
+  { revalidate: 1800, tags: ["momence"] },
+);
 
 // Notas CRM de un miembro (creadas a mano en Momence). Campos según el schema OpenAPI oficial
 // (static.momence.com/schema/api-v2-schema.yaml, HostMemberNoteDto). `note` puede traer HTML.

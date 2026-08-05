@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { createServerClient } from "./supabase";
 import { sendSyncFailureAlert } from "./alertEmail";
 
@@ -28,23 +29,31 @@ export async function logSyncRun(
   }
 }
 
-export async function getLatestSyncRuns(): Promise<
-  Record<SyncSource, { ok: boolean; ranAt: string; items: number | null; error: string | null } | null>
-> {
-  const db = createServerClient();
-  const sources: SyncSource[] = ["momence_events", "momence_subscribers"];
-  const result: Record<string, { ok: boolean; ranAt: string; items: number | null; error: string | null } | null> = {};
+// Cacheado (30 min): es un banner puramente informativo ("¿falló el último snapshot?"), no hace
+// falta reconsultarlo en cada carga de Analítica. Invalidable a mano con revalidateTag("momence").
+export const getLatestSyncRuns = unstable_cache(
+  async (): Promise<
+    Record<SyncSource, { ok: boolean; ranAt: string; items: number | null; error: string | null } | null>
+  > => {
+    const db = createServerClient();
+    const sources: SyncSource[] = ["momence_events", "momence_subscribers"];
+    const result: Record<string, { ok: boolean; ranAt: string; items: number | null; error: string | null } | null> = {};
 
-  for (const source of sources) {
-    const { data } = await db
-      .from("sync_runs")
-      .select("ok, ran_at, items, error")
-      .eq("source", source)
-      .order("ran_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    result[source] = data ? { ok: data.ok, ranAt: data.ran_at, items: data.items, error: data.error } : null;
-  }
+    await Promise.all(
+      sources.map(async (source) => {
+        const { data } = await db
+          .from("sync_runs")
+          .select("ok, ran_at, items, error")
+          .eq("source", source)
+          .order("ran_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        result[source] = data ? { ok: data.ok, ranAt: data.ran_at, items: data.items, error: data.error } : null;
+      }),
+    );
 
-  return result as Record<SyncSource, { ok: boolean; ranAt: string; items: number | null; error: string | null } | null>;
-}
+    return result as Record<SyncSource, { ok: boolean; ranAt: string; items: number | null; error: string | null } | null>;
+  },
+  ["latest-sync-runs"],
+  { revalidate: 1800, tags: ["momence"] },
+);

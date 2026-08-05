@@ -147,6 +147,7 @@ function validateUrbanRate(data: UrbanRateInput) {
 }
 
 function revalidateUrbanRates() {
+  revalidateTag("urban_rates");
   revalidatePath("/configuracion");
   revalidatePath("/analitica");
 }

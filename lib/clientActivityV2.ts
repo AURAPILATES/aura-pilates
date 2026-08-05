@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { createServerClient } from "./supabase";
 import { getMembersV2 } from "./momenceV2";
 import { rateForDate, type UrbanRate } from "./urbanRates";
@@ -153,17 +154,23 @@ export async function getClientActivityV2(paidEmails: Set<string>): Promise<Clie
 // Si una clase cae fuera de toda tarifa, suma a `classes` pero no a `estimated`.
 export type UrbanMonthActivity = { classes: number; estimated: number };
 
+// Cacheado (30 min, invalidable con el botón de sincronizar): esta lectura completa de
+// class_bookings_v2 se repetía en cada carga de Analítica sin caché.
+const fetchAllBookingsForUrban = unstable_cache(
+  async (): Promise<{ email: string | null; session_starts_at: string; checked_in: boolean }[]> => {
+    const db = createServerClient();
+    return readAll<{ email: string | null; session_starts_at: string; checked_in: boolean }>((from, to) =>
+      db.from("class_bookings_v2").select("email, session_starts_at, checked_in").range(from, to),
+    );
+  },
+  ["urban-activity-bookings-v2"],
+  { revalidate: 1800, tags: ["momence"] },
+);
+
 export async function urbanActivityByMonth(
   rates: UrbanRate[] = [],
 ): Promise<Map<string, UrbanMonthActivity>> {
-  const db = createServerClient();
-  const bookings = await readAll<{ email: string | null; session_starts_at: string; checked_in: boolean }>(
-    (from, to) =>
-      db
-        .from("class_bookings_v2")
-        .select("email, session_starts_at, checked_in")
-        .range(from, to),
-  );
+  const bookings = await fetchAllBookingsForUrban();
   const byMonth = new Map<string, UrbanMonthActivity>();
   for (const b of bookings) {
     if (!b.checked_in || !isUrbanEmail(b.email)) continue;

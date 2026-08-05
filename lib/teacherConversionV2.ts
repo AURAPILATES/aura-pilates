@@ -1,5 +1,5 @@
-import { createServerClient } from "./supabase";
 import type { Sale } from "./sales";
+import { fetchCheckedInFirstClassRows } from "./firstClassBookingsV2";
 
 // Conversión por profesora: de las personas cuya PRIMERA clase asistida (checkedIn) fue con
 // una profesora, ¿cuántas "volvieron a pagar" después? Combina dos fuentes:
@@ -26,13 +26,6 @@ export type TeacherConversionV2 = {
   matchedRate: number;
 };
 
-type FirstClassRow = {
-  member_id: number;
-  email: string | null;
-  teacher_name: string;
-  session_starts_at: string;
-};
-
 // ¿Es una venta que cuenta como "volver a pagar"? Suscripción, o un pack que no sea la
 // Benvinguda de entrada (ni una clase suelta, que es otra vía de entrada).
 function isConvertingSale(s: Sale): boolean {
@@ -42,23 +35,7 @@ function isConvertingSale(s: Sale): boolean {
 }
 
 export async function getTeacherConversionV2(sales: Sale[]): Promise<TeacherConversionV2> {
-  const db = createServerClient();
-  // PostgREST corta las lecturas en 1000 filas; class_bookings_v2 ya supera eso (>2000),
-  // así que paginamos con range() hasta agotar. Sin esto, se perderían las reservas más
-  // recientes y la conversión quedaría infravalorada.
-  const PAGE = 1000;
-  const rows: FirstClassRow[] = [];
-  for (let from = 0; ; from += PAGE) {
-    const { data } = await db
-      .from("class_bookings_v2")
-      .select("member_id, email, teacher_name, session_starts_at")
-      .eq("checked_in", true)
-      .order("session_starts_at", { ascending: true })
-      .range(from, from + PAGE - 1);
-    const batch = (data ?? []) as FirstClassRow[];
-    rows.push(...batch);
-    if (batch.length < PAGE) break;
-  }
+  const rows = await fetchCheckedInFirstClassRows();
 
   if (rows.length === 0) {
     return { hasData: false, rows: [], totalFirstTimers: 0, totalConverted: 0, rate: 0, matchedRate: 0 };

@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { createServerClient } from "./supabase";
 
 // Umbrales (ajustables): "pocos créditos" = quedan ≤2 y ya ha usado alguno;
@@ -77,22 +78,45 @@ async function readAllRows<T>(
   return all;
 }
 
+// ── Lecturas pesadas cacheadas (30 min, invalidable con el botón de sincronizar) ──────────────
+// Esta página leía el snapshot del día + TODO el histórico de check-ins de class_bookings_v2 en
+// cada carga de Analítica, sin caché.
+
+const fetchLatestSnapshot = unstable_cache(
+  async (): Promise<{ date: string | null; rows: Row[] }> => {
+    const db = createServerClient();
+    const { data: latest } = await db
+      .from("subscriber_snapshots_v2")
+      .select("date")
+      .order("date", { ascending: false })
+      .limit(1);
+    const date = (latest?.[0]?.date as string | undefined) ?? null;
+    if (!date) return { date: null, rows: [] };
+    const { data } = await db
+      .from("subscriber_snapshots_v2")
+      .select("member_id, email, membership_name, type, start_date, event_credits_left, event_credits_total, end_date, is_frozen")
+      .eq("date", date);
+    return { date, rows: (data ?? []) as Row[] };
+  },
+  ["at-risk-v2-latest-snapshot"],
+  { revalidate: 1800, tags: ["momence"] },
+);
+
+const fetchAllCheckins = unstable_cache(
+  async (): Promise<{ member_id: number; session_starts_at: string }[]> => {
+    const db = createServerClient();
+    return readAllRows<{ member_id: number; session_starts_at: string }>((from, to) =>
+      db.from("class_bookings_v2").select("member_id, session_starts_at").eq("checked_in", true).range(from, to),
+    );
+  },
+  ["at-risk-v2-all-checkins"],
+  { revalidate: 1800, tags: ["momence"] },
+);
+
 // Suscripciones/packs que necesitan atención (retención), desde el snapshot v2.
 export async function getAtRiskV2(): Promise<AtRiskV2> {
-  const db = createServerClient();
-  const { data: latest } = await db
-    .from("subscriber_snapshots_v2")
-    .select("date")
-    .order("date", { ascending: false })
-    .limit(1);
-  const date = (latest?.[0]?.date as string | undefined) ?? null;
+  const { date, rows } = await fetchLatestSnapshot();
   if (!date) return { date: null, items: [], counts: emptyCounts() };
-
-  const { data } = await db
-    .from("subscriber_snapshots_v2")
-    .select("member_id, email, membership_name, type, start_date, event_credits_left, event_credits_total, end_date, is_frozen")
-    .eq("date", date);
-  const rows = (data ?? []) as Row[];
 
   const now = Date.now();
   const items: AtRiskItem[] = [];
@@ -123,13 +147,7 @@ export async function getAtRiskV2(): Promise<AtRiskV2> {
   // Solo suscripciones (los packs ya se vigilan por créditos) no congeladas, una señal por
   // miembro. Una sola lectura de todos los check-ins da la última clase de cada miembro (para
   // "sin venir") y las dos ventanas de DROP_WINDOW días (para "asistencia en caída").
-  const checkins = await readAllRows<{ member_id: number; session_starts_at: string }>((from, to) =>
-    db
-      .from("class_bookings_v2")
-      .select("member_id, session_starts_at")
-      .eq("checked_in", true)
-      .range(from, to),
-  ).catch(() => []);
+  const checkins = await fetchAllCheckins().catch(() => []);
 
   const lastByMember = new Map<number, string>();
   const recentByMember = new Map<number, { last28: number; prev28: number }>();

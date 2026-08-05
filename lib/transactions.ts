@@ -141,16 +141,20 @@ export async function loadCategoryCounts(): Promise<Record<string, number>> {
   return counts;
 }
 
-export async function getLatestImportDate(): Promise<string | null> {
-  const supabase = createServerClient();
-  const { data } = await supabase
-    .from("transactions")
-    .select("created_at")
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .single();
-  return data?.created_at ?? null;
-}
+export const getLatestImportDate = unstable_cache(
+  async (): Promise<string | null> => {
+    const supabase = createServerClient();
+    const { data } = await supabase
+      .from("transactions")
+      .select("created_at")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
+    return data?.created_at ?? null;
+  },
+  ["latest-import-date"],
+  { revalidate: 300, tags: ["transactions"] },
+);
 
 export async function loadTransactions(
   from?: string | null,

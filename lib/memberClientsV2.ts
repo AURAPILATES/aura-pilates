@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { createServerClient } from "./supabase";
 import { getMembersV2, getMembershipsV2 } from "./momenceV2";
 import type { EnrichedCustomer } from "./customerEnrichment";
@@ -118,6 +119,57 @@ async function readAll<T>(build: (from: number, to: number) => PromiseLike<{ dat
   return all;
 }
 
+// ── Lecturas pesadas cacheadas (30 min, invalidable con el botón de sincronizar) ──────────────
+// Esta página leía el snapshot del día + TODO el histórico de class_bookings_v2 + TODOS los
+// emails con membresía de subscriber_snapshots_v2 en cada carga, sin caché: eran varios cientos
+// de ms de ida y vuelta a Supabase en cada visita a Clientes. Se cachean por separado, igual que
+// ya se hace con Stripe (ver lib/stripeCustomers.ts).
+
+const fetchLatestSnapRows = unstable_cache(
+  async (): Promise<SnapRow[]> => {
+    const db = createServerClient();
+    const { data: latest } = await db.from("subscriber_snapshots_v2").select("date").order("date", { ascending: false }).limit(1);
+    const snapDate = latest?.[0]?.date as string | undefined;
+    if (!snapDate) return [];
+    return readAll<SnapRow>((from, to) =>
+      db
+        .from("subscriber_snapshots_v2")
+        .select("member_id, membership_name, type, is_frozen, start_date, end_date, event_credits_left, event_credits_total")
+        .eq("date", snapDate)
+        .range(from, to),
+    );
+  },
+  ["member-clients-v2-latest-snap-rows"],
+  { revalidate: 1800, tags: ["momence"] },
+);
+
+const fetchAllBookingRowsV2 = unstable_cache(
+  async (): Promise<BookingRow[]> => {
+    const db = createServerClient();
+    return readAll<BookingRow>((from, to) =>
+      db
+        .from("class_bookings_v2")
+        .select("member_id, teacher_name, session_starts_at, checked_in, cancelled")
+        .order("session_starts_at", { ascending: true })
+        .range(from, to),
+    );
+  },
+  ["member-clients-v2-all-bookings"],
+  { revalidate: 1800, tags: ["momence"] },
+);
+
+// Emails (en minúscula) que han tenido ALGUNA membresía/pack en Momence, cualquier fecha de
+// snapshot - para el coverage de "sin pago detectado".
+const fetchEverMembershipEmails = unstable_cache(
+  async (): Promise<string[]> => {
+    const db = createServerClient();
+    const rows = await readAll<{ email: string }>((from, to) => db.from("subscriber_snapshots_v2").select("email").range(from, to));
+    return rows.map((r) => r.email.toLowerCase());
+  },
+  ["member-clients-v2-ever-membership-emails"],
+  { revalidate: 1800, tags: ["momence"] },
+);
+
 const isSubscriptionType = (t: string) => t === "subscription" || t === "on-demand-subscription" || t === "patron";
 
 // Los miembros de Urban Sports Club llegan con un email del dominio de Urban y no tienen
@@ -172,23 +224,11 @@ export async function getMemberClientsV2(
   stripeCustomers: EnrichedCustomer[],
   familyMemberIds: Set<number> = new Set(),
 ): Promise<MemberClient[]> {
-  const db = createServerClient();
-
   // Roster real de Momence.
   const members = await getMembersV2().catch(() => []);
 
   // Plan activo por miembro: último snapshot v2.
-  const { data: latest } = await db.from("subscriber_snapshots_v2").select("date").order("date", { ascending: false }).limit(1);
-  const snapDate = latest?.[0]?.date as string | undefined;
-  const snapRows = snapDate
-    ? await readAll<SnapRow>((from, to) =>
-        db
-          .from("subscriber_snapshots_v2")
-          .select("member_id, membership_name, type, is_frozen, start_date, end_date, event_credits_left, event_credits_total")
-          .eq("date", snapDate)
-          .range(from, to),
-      )
-    : [];
+  const snapRows = await fetchLatestSnapRows();
   // Un miembro puede tener varias membresías activas: priorizamos suscripción; entre packs, el
   // de más créditos restantes.
   // Suscripciones activas no congeladas por miembro (mismo criterio que el panel de Momence):
@@ -222,9 +262,7 @@ export async function getMemberClientsV2(
   const catalogByName = new Map(catalog.filter((c) => c.usageLimitForSessions).map((c) => [c.name, c]));
 
   // Asistencia por miembro.
-  const bookings = await readAll<BookingRow>((from, to) =>
-    db.from("class_bookings_v2").select("member_id, teacher_name, session_starts_at, checked_in, cancelled").order("session_starts_at", { ascending: true }).range(from, to),
-  );
+  const bookings = await fetchAllBookingRowsV2();
   type Act = { attended: number; noShows: number; cancellations: number; firstDate: string | null; firstTeacher: string | null; lastDate: string | null };
   const actByMember = new Map<number, Act>();
   // Timestamps (ms) de clases asistidas por miembro, para calcular "¿amortiza su plan?"
@@ -274,10 +312,7 @@ export async function getMemberClientsV2(
 
   // Emails que han tenido ALGUNA membresía/pack en Momence (cualquier fecha de snapshot), para
   // el coverage: alguien con un pack pasado ya caducado sí pagó, no es "sin pago detectado".
-  const everSnapRows = await readAll<{ email: string }>((from, to) =>
-    db.from("subscriber_snapshots_v2").select("email").range(from, to),
-  );
-  const everMembershipEmails = new Set(everSnapRows.map((r) => r.email.toLowerCase()));
+  const everMembershipEmails = new Set(await fetchEverMembershipEmails());
 
   // Stripe por email.
   const stripeByEmail = new Map<string, EnrichedCustomer>();

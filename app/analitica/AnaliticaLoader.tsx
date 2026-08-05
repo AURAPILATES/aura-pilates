@@ -187,7 +187,11 @@ export default async function AnaliticaLoader({
     // Live desde la API v2; si Momence v2 falla, no debe tumbar toda la página.
     getTeacherStatsV2(mainFrom, mainTo).catch(() => null),
   ]);
-  await saveHistoricalEvents(liveMomenceEvents);
+  // No bloquea el render: es un persist de "en vivo" para la próxima carga, no algo que esta
+  // página necesite esperar (los eventos ya combinados abajo salen de liveMomenceEvents).
+  void saveHistoricalEvents(liveMomenceEvents).catch((e) => {
+    console.error("saveHistoricalEvents falló:", e);
+  });
 
   const allMomenceEventsById = new Map(historicalMomenceEvents.map((e) => [e.id, e]));
   liveMomenceEvents.forEach((e) => allMomenceEventsById.set(e.id, e));
@@ -214,10 +218,6 @@ export default async function AnaliticaLoader({
 
   // El banco depende de la última importación manual en Transacciones.
   const bancoLastUpdated = formatRelativeTime(bancoLastImport);
-
-  // Mapa stripeId → cliente fusionado por email, para agrupar cohortes/clientes por persona real
-  const stripeCustomersAll = await loadStripeCustomers(paymentsAll, curMonth);
-  const primaryIdMap = buildPrimaryIdMap(stripeCustomersAll);
 
   const pMain = paymentsAll.filter((p) => p.date >= mainFrom && p.date <= mainTo);
   const pComp = paymentsAll.filter((p) => p.date >= compFrom && p.date <= compTo);
@@ -278,20 +278,35 @@ export default async function AnaliticaLoader({
   // ── ¿De dónde vienen los suscriptores? (primera compra) ───────────────────
   const firstPurchaseSummary = subscriberFirstPurchase(salesAll);
 
-  // ── Conversión por profesora: 1ª clase asistida (Momence v2) × volvió a pagar (Stripe) ──
-  // Lee la asistencia capturada en class_bookings_v2; si aún no hay backfill, devuelve vacío.
-  const teacherConversionV2 = await getTeacherConversionV2(salesAll).catch(() => null);
-
-  // ── Primera clase de los suscriptores (por profesora y franja horaria, Momence × Stripe) ──
-  const subscriberFirstClassV2 = await getSubscriberFirstClassV2(salesAll).catch(() => null);
-
   // ── MRR/ARR por suscripción (suscriptores activos reales en Momence) ──────
   const subscriptionTiers = subscriptionTiersFromMemberships(membershipsAll);
-  // Base real de suscripción desde el snapshot v2 (subscriber_snapshots_v2).
-  const subscriptionsBaseV2 = await getSubscriptionsBaseV2(subscriptionTiers);
-  const atRiskV2 = await getAtRiskV2();
-  // Verdad de "quién sigue suscrito en Momence", para depurar las inferencias por Stripe.
-  const activeSubEmailsV2 = await getActiveSubscriberEmailsV2();
+
+  // Lo siguiente es independiente entre sí (Stripe × Momence v2 por separado, cada uno con su
+  // propia caché), así que se lanza todo en paralelo en vez de esperar uno a uno.
+  const [
+    stripeCustomersAll,
+    teacherConversionV2,
+    subscriberFirstClassV2,
+    subscriptionsBaseV2,
+    atRiskV2,
+    activeSubEmailsV2,
+    urbanRates,
+  ] = await Promise.all([
+    // Mapa stripeId → cliente fusionado por email, para agrupar cohortes/clientes por persona real
+    loadStripeCustomers(paymentsAll, curMonth),
+    // Conversión por profesora: 1ª clase asistida (Momence v2) × volvió a pagar (Stripe).
+    // Lee la asistencia capturada en class_bookings_v2; si aún no hay backfill, devuelve vacío.
+    getTeacherConversionV2(salesAll).catch(() => null),
+    // Primera clase de los suscriptores (por profesora y franja horaria, Momence × Stripe)
+    getSubscriberFirstClassV2(salesAll).catch(() => null),
+    // Base real de suscripción desde el snapshot v2 (subscriber_snapshots_v2).
+    getSubscriptionsBaseV2(subscriptionTiers),
+    getAtRiskV2(),
+    // Verdad de "quién sigue suscrito en Momence", para depurar las inferencias por Stripe.
+    getActiveSubscriberEmailsV2(),
+    loadUrbanRates().catch(() => []),
+  ]);
+  const primaryIdMap = buildPrimaryIdMap(stripeCustomersAll);
   // ── Evolución de ingresos + altas/bajas/reactivaciones (histórico completo, solo Stripe) ──
   const monthlyStripeRevenue = revenueByProductByMonth(paymentsAll, productCatalog);
 
@@ -312,7 +327,6 @@ export default async function AnaliticaLoader({
   // no ha ingresado la transferencia. El € REAL sigue siendo el del banco, asignado al MES DE LAS
   // CLASES (Urban paga a mes vencido: la transferencia del 14-jul es de las clases de junio), para
   // que dinero y actividad caigan en la misma barra y solo el mes abierto quede como estimado.
-  const urbanRates = await loadUrbanRates().catch(() => []);
   const urbanActivity = await urbanActivityByMonth(urbanRates).catch(() => new Map<string, { classes: number; estimated: number }>());
   const uscByActivityMonth = urbanRevenueByActivityMonth(txnsAll);
   const allMonthsFuente = new Set([...monthlyStripeNetMap.keys(), ...uscByActivityMonth.keys(), ...urbanActivity.keys()]);
