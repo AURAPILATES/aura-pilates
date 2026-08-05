@@ -37,6 +37,7 @@ import { subscriptionTiersFromMemberships } from "@/lib/mrr";
 import { getSubscriptionsBaseV2, getActiveSubscriberEmailsV2 } from "@/lib/subscriptionsV2";
 import { getAtRiskV2, type AtRiskCustomerInfo } from "@/lib/atRiskV2";
 import { getTeacherStatsV2 } from "@/lib/teacherStatsV2";
+import { getSessionOccupancyRowsV2 } from "@/lib/occupancyV2";
 import { getTeacherConversionV2 } from "@/lib/teacherConversionV2";
 import { getSubscriberFirstClassV2 } from "@/lib/subscriberFirstClassV2";
 import { urbanActivityByMonth } from "@/lib/clientActivityV2";
@@ -166,7 +167,7 @@ export default async function AnaliticaLoader({
     paymentsAll, membershipsAll, productsAll, customersAll,
     txnsAll, dbCategories, budgets, businessEvents, recurringExpenses, breakdown, breakdownComp,
     bancoLastImport, paymentErrorAcks, syncRuns, liveMomenceEvents, historicalMomenceEvents,
-    teacherStatsV2,
+    teacherStatsV2, sessionOccupancyRowsV2,
   ] = await Promise.all([
     loadStripePaymentsCached(),
     getMemberships(),
@@ -186,6 +187,7 @@ export default async function AnaliticaLoader({
     loadHistoricalEvents(),
     // Live desde la API v2; si Momence v2 falla, no debe tumbar toda la página.
     getTeacherStatsV2(mainFrom, mainTo).catch(() => null),
+    getSessionOccupancyRowsV2(mainFrom, mainTo).catch(() => []),
   ]);
   // No bloquea el render: es un persist de "en vivo" para la próxima carga, no algo que esta
   // página necesite esperar (los eventos ya combinados abajo salen de liveMomenceEvents).
@@ -763,7 +765,7 @@ export default async function AnaliticaLoader({
               <EvolucionInscritos data={activeCustomersData} />
               <HorarioReporting
                 data={{
-                  main: mainEvents,
+                  rows: sessionOccupancyRowsV2,
                   periodLabel,
                   periodFrom: mainFrom,
                   periodTo: mainTo,

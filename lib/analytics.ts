@@ -158,12 +158,12 @@ export function groupByDay(events: MomenceEvent[]) {
     }));
 }
 
-const WEEKDAY_LABELS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
+export const WEEKDAY_LABELS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 const MADRID_WEEKDAY_ORDER = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]; // 0=Lunes, matches WEEKDAY_LABELS
 
 // Momence dateTime is UTC; class times must be read in Europe/Madrid, not the
 // server process timezone (getHours()/getDay() would read UTC on Vercel).
-function madridWeekdayAndHour(dateTime: string) {
+export function madridWeekdayAndHour(dateTime: string) {
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone: "Europe/Madrid",
     weekday: "short",
@@ -269,7 +269,7 @@ export function occupancyPeriodKey(dateKey: string, period: OccupancyPeriod): st
   }
 }
 
-function occupancyPeriodLabel(key: string, period: OccupancyPeriod): string {
+export function occupancyPeriodLabel(key: string, period: OccupancyPeriod): string {
   switch (period) {
     case "semana": {
       const [, m, d] = key.split("-");
@@ -304,6 +304,93 @@ export function occupancyByPeriod(events: MomenceEvent[], period: OccupancyPerio
       free: capacity - sold,
       occ: capacity > 0 ? sold / capacity : 0,
     }));
+}
+
+// ── Ocupación real (Momence v2, class_sessions_v2) ──────────────────────────────
+// Mismas formas que occupancyByPeriod/occupancyHeatmap de arriba, pero a partir de asistencia
+// real (checkedIn) en vez de reservas (ticketsSold) - sustituyen a esas dos en Analítica ›
+// Horario. El fetch (server-only, unstable_cache) vive en lib/occupancyV2.ts; estas funciones
+// son puras para poder recalcular el toggle de período en el cliente sin volver a pedir datos.
+// Ver [[project-profesoras-v2]].
+
+export type SessionOccRow = {
+  starts_at: string;
+  capacity: number;
+  booking_count: number;
+  checked_in_count: number;
+};
+
+export type OccupancyPeriodRowV2 = {
+  key: string;
+  label: string;
+  capacity: number;
+  /** Asistencia real (checkedIn) - métrica principal, sustituye a "sold" (reservas). */
+  attended: number;
+  /** Reservas activas - contexto secundario (demanda), ya no es la métrica principal. */
+  reserved: number;
+  free: number;
+  /** Ocupación REAL: attended / capacity. */
+  occ: number;
+  /** Ocupación reservada: reserved / capacity (para tooltip - demanda además de quién vino). */
+  occReserved: number;
+};
+
+export function occupancyByPeriodV2(rows: SessionOccRow[], period: OccupancyPeriod = "semana"): OccupancyPeriodRowV2[] {
+  const map = new Map<string, { attended: number; reserved: number; capacity: number }>();
+  for (const r of rows) {
+    const dateKey = new Date(r.starts_at).toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" });
+    const key = occupancyPeriodKey(dateKey, period);
+    const prev = map.get(key) ?? { attended: 0, reserved: 0, capacity: 0 };
+    map.set(key, {
+      attended: prev.attended + r.checked_in_count,
+      reserved: prev.reserved + r.booking_count,
+      capacity: prev.capacity + r.capacity,
+    });
+  }
+  return Array.from(map.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([key, { attended, reserved, capacity }]) => ({
+      key,
+      label: occupancyPeriodLabel(key, period),
+      capacity,
+      attended,
+      reserved,
+      free: capacity - attended,
+      occ: capacity > 0 ? attended / capacity : 0,
+      occReserved: capacity > 0 ? reserved / capacity : 0,
+    }));
+}
+
+export type OccupancyHeatCellV2 = {
+  weekday: number;
+  weekdayLabel: string;
+  hour: number;
+  avgOcc: number;
+  avgOccReserved: number;
+  count: number;
+};
+
+export function occupancyHeatmapV2(rows: SessionOccRow[]): OccupancyHeatCellV2[] {
+  const map = new Map<string, { totalOcc: number; totalOccReserved: number; count: number }>();
+  for (const r of rows) {
+    const { weekday: wd, hour } = madridWeekdayAndHour(r.starts_at);
+    const key = `${wd}-${hour}`;
+    const occ = r.capacity > 0 ? r.checked_in_count / r.capacity : 0;
+    const occReserved = r.capacity > 0 ? r.booking_count / r.capacity : 0;
+    const prev = map.get(key) ?? { totalOcc: 0, totalOccReserved: 0, count: 0 };
+    map.set(key, { totalOcc: prev.totalOcc + occ, totalOccReserved: prev.totalOccReserved + occReserved, count: prev.count + 1 });
+  }
+  return Array.from(map.entries()).map(([key, { totalOcc, totalOccReserved, count }]) => {
+    const [wd, hour] = key.split("-").map(Number);
+    return {
+      weekday: wd,
+      weekdayLabel: WEEKDAY_LABELS[wd],
+      hour,
+      avgOcc: totalOcc / count,
+      avgOccReserved: totalOccReserved / count,
+      count,
+    };
+  });
 }
 
 export function fmt(amount: number) {

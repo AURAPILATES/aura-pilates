@@ -74,9 +74,22 @@ export const getPricingReport = unstable_cache(
   { revalidate: 1800, tags: ["momence"] },
 );
 
+// Cada producto puede tener DOS precios candidatos válidos: el vigente hoy en Momence y el de
+// respaldo del código (última revisión manual). Antes solo se aceptaba el vigente, así que un
+// cambio de precio de un día para otro reclasificaba mal (o mandaba a "Con cupón") todos los
+// cobros históricos hechos al precio anterior. Aceptar ambos evita esa corrupción retroactiva;
+// no soluciona el caso de un descuento puntual que coincida con el precio de otro producto, eso
+// solo lo resuelve /host/sales de Momence (ver docs/fuentes-de-datos.md).
 async function resolveProductMap(): Promise<typeof PRODUCT_MAP> {
   const report = await getPricingReport();
-  return report.map((r) => ({ amount: r.price, name: r.name, type: r.type }));
+  const map: typeof PRODUCT_MAP = [];
+  for (const r of report) {
+    map.push({ amount: r.price, name: r.name, type: r.type });
+    if (r.livePrice !== null && Math.abs(r.livePrice - r.fallbackPrice) >= 1) {
+      map.push({ amount: r.fallbackPrice, name: r.name, type: r.type });
+    }
+  }
+  return map;
 }
 
 function inferProduct(

@@ -1,11 +1,11 @@
-import { MomenceEvent } from "@/lib/momence";
 import type { BusinessEvent } from "@/lib/businessEvents";
-import { occupancyHeatmap, pct } from "@/lib/analytics";
+import { occupancyHeatmapV2, pct, type SessionOccRow } from "@/lib/analytics";
 import { ChartCard } from "@/components/charts";
 import HorarioOcupacionEvolucion from "./HorarioOcupacionEvolucion";
 
 export type ReportingData = {
-  main: MomenceEvent[];
+  /** Clases ya impartidas con capacidad/reservas/asistencia real (class_sessions_v2, Momence API v2). */
+  rows: SessionOccRow[];
   periodLabel: string;
   periodFrom: string;
   periodTo: string;
@@ -23,10 +23,10 @@ const WEEKDAY_SHORT = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
 export default function HorarioReporting({ data }: { data: ReportingData }) {
   // El badge de fecha usa el mismo `periodLabel` del filtro global que el resto de cards
   // acotadas al período (p.ej. "2026" / "Jul 2026"), para que todas indiquen lo mismo.
-  const { main, periodLabel, businessEvents } = data;
+  const { rows, periodLabel, businessEvents } = data;
   const dateRange = periodLabel;
 
-  const heatmap    = occupancyHeatmap(main);
+  const heatmap    = occupancyHeatmapV2(rows);
   const heatmapHours = [...new Set(heatmap.map((c) => c.hour))].sort((a, b) => a - b);
   const heatCell = (wd: number, hour: number) => heatmap.find((c) => c.weekday === wd && c.hour === hour);
   const heatDayAvg = (wd: number) => {
@@ -44,19 +44,19 @@ export default function HorarioReporting({ data }: { data: ReportingData }) {
     <div className="space-y-4">
 
       <HorarioOcupacionEvolucion
-        events={main}
+        rows={rows}
         businessEvents={businessEvents}
         dateRange={dateRange}
       />
 
       <ChartCard
         title="Mapa de calor · Día × Hora"
-        subtitle="Ocupación media por franja horaria y día de la semana"
-        dataSource="Eventos activos en Momence dentro del período seleccionado"
+        subtitle="Ocupación real media por franja horaria y día de la semana"
+        dataSource="Asistencia real (checkedIn) de clases regulares ya impartidas dentro del período, capturada de Momence API v2. Antes mostraba reservas (no restaba no-shows); ahora es quién apareció de verdad ÷ plazas."
         sources={["momence"]}
       >
         {heatmap.length === 0 ? (
-          <p className="text-sm text-navy/45">Sin datos de clases pasadas.</p>
+          <p className="text-sm text-navy/45">Sin clases ya impartidas en este período todavía.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full border-collapse">

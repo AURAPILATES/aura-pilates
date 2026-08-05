@@ -15,7 +15,7 @@ export default function PrimeraCompra({ summary }: { summary: FirstPurchaseSumma
       title="¿Cómo llegan los suscriptores?"
       subtitle={`Primera compra de los ${totalSubscribers} clientes que alguna vez se suscribieron`}
       dateRange="Desde el inicio"
-      dataSource="Stripe, producto identificado por importe del cobro (estimación) · primera compra = la de fecha más antigua de cada cliente, sea cual sea el producto"
+      dataSource="Stripe (Momence no pasa qué producto se compró a Stripe): el producto se infiere comparando el importe del cobro con los precios conocidos, vigentes en el momento de cada cobro. Un pago con cupón/descuento que coincida por casualidad con el precio de otro producto puede identificarse mal - esto es una estimación, no el dato exacto de Momence. Primera compra = la de fecha más antigua de cada cliente, sea cual sea el producto."
       sources={["stripe"]}
       lastUpdated="ahora"
     >

@@ -266,7 +266,7 @@ export default function VentasPor({
         dataSource={
           view === "fuente"
             ? "Stripe API (precio de venta, antes de comisión), en vivo. Urban Sports Club (€): el importe real son las transferencias del banco (contacto «Urban Sports»), asignadas al mes de las clases que pagan (Urban paga a mes vencido: la transferencia de mediados de julio es de las clases de junio). El mes aún sin facturar se muestra estimado = check-ins reales de Momence (API v2, en vivo) × tarifa pactada (Configuración → Tarifa Urban); al llegar su transferencia pasa al importe real."
-            : "Solo Stripe - no incluye Urban Sports Club. Producto identificado contra el catálogo de precios en vivo de Momence · altas/bajas/reactivaciones por patrón de pagos de suscripción en Stripe"
+            : "Solo Stripe - no incluye Urban Sports Club. Momence no pasa qué producto se compró a Stripe: el producto se infiere comparando el importe de cada cobro con los precios conocidos (vigentes en el momento del cobro, no solo el precio de hoy). Es una estimación - un pago con cupón/descuento que coincida por casualidad con el precio de otro producto puede identificarse mal. Altas/bajas/reactivaciones por patrón de pagos de suscripción en Stripe."
         }
         sources={view === "fuente" ? ["stripe", "excel"] : ["stripe"]}
         lastUpdated={lastUpdated}

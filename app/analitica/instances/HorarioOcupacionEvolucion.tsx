@@ -2,8 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { BarChart2, Activity } from "react-feather";
-import { occupancyByPeriod, occupancyPeriodKey, type OccupancyPeriod } from "@/lib/analytics";
-import { MomenceEvent } from "@/lib/momence";
+import { occupancyByPeriodV2, occupancyPeriodKey, type OccupancyPeriod, type SessionOccRow } from "@/lib/analytics";
 import type { BusinessEvent, EventCategoria } from "@/lib/businessEvents";
 import { ChartCard, ChartTypeToggle, ToggleGroup, StaticLegend, type MultiKpiItem } from "@/components/charts";
 
@@ -71,12 +70,13 @@ const PERIODS: { key: OccupancyPeriod; label: string }[] = [
 ];
 
 export default function HorarioOcupacionEvolucion({
-  events,
+  rows,
   businessEvents,
   dateRange,
   kpiItems,
 }: {
-  events: MomenceEvent[];
+  /** Clases ya impartidas con capacidad/reservas/asistencia real (class_sessions_v2, Momence API v2). */
+  rows: SessionOccRow[];
   businessEvents?: BusinessEvent[];
   dateRange?: string;
   kpiItems?: MultiKpiItem[];
@@ -94,7 +94,7 @@ export default function HorarioOcupacionEvolucion({
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  const data = useMemo(() => occupancyByPeriod(events, period), [events, period]);
+  const data = useMemo(() => occupancyByPeriodV2(rows, period), [rows, period]);
 
   const eventsByPeriod = useMemo(() => {
     const map = new Map<string, BusinessEvent[]>();
@@ -125,14 +125,15 @@ export default function HorarioOcupacionEvolucion({
   function pctX(x: number) { return (x / SVG_W) * 100; }
   function pctY(y: number) { return (y / SVG_H) * 100; }
 
-  const linePath     = smoothPath(data.map((d, i) => [barCx(i), occY(d.occ)]));
-  const soldLinePath     = smoothPath(data.map((d, i) => [barCx(i), valY(d.sold)]));
+  const linePath         = smoothPath(data.map((d, i) => [barCx(i), occY(d.occ)]));
+  const attendedLinePath = smoothPath(data.map((d, i) => [barCx(i), valY(d.attended)]));
   const capacityLinePath = smoothPath(data.map((d, i) => [barCx(i), valY(d.capacity)]));
 
-  const totalSold     = data.reduce((s, d) => s + d.sold, 0);
+  const totalAttended = data.reduce((s, d) => s + d.attended, 0);
+  const totalReserved = data.reduce((s, d) => s + d.reserved, 0);
   const totalCapacity = data.reduce((s, d) => s + d.capacity, 0);
-  const totalFree     = totalCapacity - totalSold;
-  const avgOcc        = totalCapacity > 0 ? totalSold / totalCapacity : 0;
+  const totalFree     = totalCapacity - totalAttended;
+  const avgOcc         = totalCapacity > 0 ? totalAttended / totalCapacity : 0;
 
   const periodLabelLower = PERIODS.find((p) => p.key === period)!.label.toLowerCase();
 
@@ -144,8 +145,8 @@ export default function HorarioOcupacionEvolucion({
 
   if (data.length === 0) {
     return (
-      <ChartCard title="Evolución de la ocupación" subtitle={`Ocupado vs. total y % de ocupación por ${periodLabelLower}`} dateRange={dateRange} kpiItems={kpiItems}>
-        <p className="text-sm text-navy/45 py-6 text-center">Sin datos suficientes para este período.</p>
+      <ChartCard title="Evolución de la ocupación" subtitle={`Asistencia real vs. capacidad y % de ocupación por ${periodLabelLower}`} dateRange={dateRange} kpiItems={kpiItems}>
+        <p className="text-sm text-navy/45 py-6 text-center">Sin clases ya impartidas en este período todavía.</p>
       </ChartCard>
     );
   }
@@ -153,10 +154,10 @@ export default function HorarioOcupacionEvolucion({
   return (
     <ChartCard
       title="Evolución de la ocupación"
-      subtitle={`Ocupado vs. total y % de ocupación por ${periodLabelLower}`}
+      subtitle={`Asistencia real vs. capacidad y % de ocupación por ${periodLabelLower}`}
       dateRange={dateRange}
       kpiItems={kpiItems}
-      dataSource={`Eventos activos en Momence, agrupados por ${periodLabelLower}`}
+      dataSource={`Asistencia real (checkedIn) de clases regulares ya impartidas, capturada de Momence API v2, agrupada por ${periodLabelLower}. No incluye clases futuras/en curso (la asistencia solo es definitiva cuando la clase ya ha pasado). El % de reservas (demanda, antes de no-shows) sale en el detalle al pasar el ratón.`}
       sources={["momence"]}
       toolbar={
         <div className="flex items-center justify-between gap-3 w-full flex-nowrap">
@@ -179,9 +180,9 @@ export default function HorarioOcupacionEvolucion({
       <StaticLegend
         className="mb-4"
         items={[
-          { label: "Ocupado", color: "var(--chart-blue-1)", swatch: "dot" },
-          { label: "Libre", color: "var(--chart-blue-2)", swatch: "dot" },
-          { label: "% ocupación", color: "var(--color-income)", swatch: "line" },
+          { label: "Asistió", color: "var(--chart-blue-1)", swatch: "dot" },
+          { label: "No asistió / libre", color: "var(--chart-blue-2)", swatch: "dot" },
+          { label: "% ocupación real", color: "var(--color-income)", swatch: "line" },
         ]}
       />
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
@@ -238,12 +239,12 @@ export default function HorarioOcupacionEvolucion({
             })}
 
             {chartType === "bar" ? (
-              /* Stacked bars: sold (dark) + free (light) = capacity */
+              /* Stacked bars: attended (dark) + free/no-show (light) = capacity */
               data.map((d, i) => {
                 const x = barX(i);
-                const soldH = valH(d.sold);
-                const soldY = valY(d.sold);
-                const freeH = valH(d.capacity) - soldH;
+                const attendedH = valH(d.attended);
+                const attendedY = valY(d.attended);
+                const freeH = valH(d.capacity) - attendedH;
                 const isHov = hoveredKey === d.key;
                 return (
                   <g
@@ -254,8 +255,8 @@ export default function HorarioOcupacionEvolucion({
                     <rect x={x} y={MT} width={barW} height={CHART_H} fill="transparent" />
                     {d.capacity > 0 && (
                       <>
-                        <rect x={x} y={soldY - freeH} width={barW} height={freeH} fill="var(--chart-blue-2)" opacity={isHov ? 1 : 0.85} />
-                        <rect x={x} y={soldY} width={barW} height={soldH} fill="var(--chart-blue-1)" opacity={isHov ? 1 : 0.85} rx={soldH < 3 ? 0 : 2} />
+                        <rect x={x} y={attendedY - freeH} width={barW} height={freeH} fill="var(--chart-blue-2)" opacity={isHov ? 1 : 0.85} />
+                        <rect x={x} y={attendedY} width={barW} height={attendedH} fill="var(--chart-blue-1)" opacity={isHov ? 1 : 0.85} rx={attendedH < 3 ? 0 : 2} />
                       </>
                     )}
                   </g>
@@ -263,20 +264,20 @@ export default function HorarioOcupacionEvolucion({
               })
             ) : (
               <>
-                {/* Plazas totales (capacidad) y vendidas como líneas */}
+                {/* Plazas totales (capacidad) y asistencia real como líneas */}
                 <path d={capacityLinePath} fill="none" stroke="var(--chart-blue-2)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
-                <path d={soldLinePath} fill="none" stroke="var(--chart-blue-1)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+                <path d={attendedLinePath} fill="none" stroke="var(--chart-blue-1)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
                 {data.map((d, i) => (
                   <g key={d.key} onMouseEnter={() => setHoveredKey(d.key)} style={{ cursor: "default" }}>
                     <rect x={barX(i)} y={MT} width={barW} height={CHART_H} fill="transparent" />
                     <circle cx={barCx(i)} cy={valY(d.capacity)} r={hoveredKey === d.key ? 4 : 2.5} fill="var(--chart-blue-2)" stroke="var(--color-card)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
-                    <circle cx={barCx(i)} cy={valY(d.sold)} r={hoveredKey === d.key ? 4 : 2.5} fill="var(--chart-blue-1)" stroke="var(--color-card)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+                    <circle cx={barCx(i)} cy={valY(d.attended)} r={hoveredKey === d.key ? 4 : 2.5} fill="var(--chart-blue-1)" stroke="var(--color-card)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
                   </g>
                 ))}
               </>
             )}
 
-            {/* Occupancy % line */}
+            {/* Occupancy % line (ocupación REAL) */}
             <path d={linePath} fill="none" stroke="var(--color-income)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
             {data.map((d, i) => (
               <circle
@@ -328,7 +329,7 @@ export default function HorarioOcupacionEvolucion({
             if (i === -1) return null;
             const d = data[i];
             const cx = barCx(i);
-            const anchorY = Math.min(valY(d.sold), occY(d.occ));
+            const anchorY = Math.min(valY(d.attended), occY(d.occ));
             const flipL = pctX(cx) > 70;
             return (
               <div
@@ -340,8 +341,9 @@ export default function HorarioOcupacionEvolucion({
                 }}
               >
                 <p className="font-semibold text-navy">{d.label}</p>
-                <p className="text-navy/60 mt-0.5">{d.sold}/{d.capacity} plazas</p>
-                <p className="text-income font-semibold mt-0.5">{Math.round(d.occ * 100)}% ocupación</p>
+                <p className="text-navy/60 mt-0.5">{d.attended}/{d.capacity} plazas asistidas</p>
+                <p className="text-navy/40 mt-0.5">{d.reserved} reservas ({Math.round(d.occReserved * 100)}% demanda)</p>
+                <p className="text-income font-semibold mt-0.5">{Math.round(d.occ * 100)}% ocupación real</p>
               </div>
             );
           })()}
@@ -404,13 +406,13 @@ export default function HorarioOcupacionEvolucion({
         <div className="lg:col-span-1 min-w-0">
           <p className="text-xs font-medium text-navy/55 mb-2.5">Resumen</p>
           <div className="flex h-3 rounded-full overflow-hidden bg-navy/5 mb-4">
-            <div style={{ flex: `${totalCapacity > 0 ? totalSold / totalCapacity : 0} 0 0%`, backgroundColor: "var(--chart-blue-1)" }} />
+            <div style={{ flex: `${totalCapacity > 0 ? totalAttended / totalCapacity : 0} 0 0%`, backgroundColor: "var(--chart-blue-1)" }} />
             <div style={{ flex: `${totalCapacity > 0 ? totalFree / totalCapacity : 0} 0 0%`, backgroundColor: "var(--chart-blue-2)" }} />
           </div>
           <div className="space-y-2.5">
             {[
-              { key: "sold", label: "Ocupado", color: "var(--chart-blue-1)", value: totalSold, share: avgOcc },
-              { key: "free", label: "Libre", color: "var(--chart-blue-2)", value: totalFree, share: totalCapacity > 0 ? totalFree / totalCapacity : 0 },
+              { key: "attended", label: "Asistió", color: "var(--chart-blue-1)", value: totalAttended, share: avgOcc },
+              { key: "free", label: "No asistió / libre", color: "var(--chart-blue-2)", value: totalFree, share: totalCapacity > 0 ? totalFree / totalCapacity : 0 },
             ].map((s) => (
               <div key={s.key} className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-1.5 min-w-0">
@@ -423,6 +425,12 @@ export default function HorarioOcupacionEvolucion({
                 </div>
               </div>
             ))}
+            <div className="flex items-center justify-between gap-2 pt-1.5 border-t border-navy/[0.06]">
+              <span className="text-xs text-navy/50">Reservas (demanda)</span>
+              <span className="text-xs font-medium text-navy/70 tabular-nums">
+                {totalReserved} <span className="text-[11px] text-navy/40">{totalCapacity > 0 ? `· ${Math.round(totalReserved / totalCapacity * 100)}%` : ""}</span>
+              </span>
+            </div>
           </div>
         </div>
       </div>
