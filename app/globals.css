@@ -117,12 +117,18 @@ body {
 .nav-rail .app-sidebar {
   width: 72px;
 }
+/* Fondo blanco del contenido en todos los tamaños - en móvil sin margen/borde propios (el
+   menú hamburguesa sustituye a la sidebar fija), para que no se vea el crema del body por
+   detrás de los huecos entre tarjetas. */
+.app-content {
+  background: var(--color-card);
+  min-height: 100vh;
+}
 @media (min-width: 640px) {
   /* Contenido como panel flotante: tarjeta blanca con esquinas redondeadas, separada
      del fondo crudo por un margen de 8px (0 hacia la sidebar, con la que queda a ras). */
   .app-content {
     margin: 8px 8px 8px 232px;
-    background: var(--color-card);
     border: 1px solid var(--color-border);
     border-radius: 14px;
     box-shadow: var(--shadow-card);

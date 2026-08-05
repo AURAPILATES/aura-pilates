@@ -11,6 +11,7 @@ import { seriesKeyFor } from "@/lib/recurring";
 import type { RecurringExpense } from "@/lib/recurringExpenses";
 import { updateTransactionCategory, updateTransactionConcept, updateTransactionBankDetails, updateTransactionDate, updateTransactionPaymentMethod, updateTransactionAmount, softDeleteTransactions, type Contact, type RefundCandidate } from "./actions";
 import Select from "@/app/components/Select";
+import { IconButtonV2 } from "@/app/components/v2/ButtonsV2";
 import AddCashModal from "./AddCashModal";
 import PapeleraDrawer from "./PapeleraDrawer";
 import TransactionDrawer from "./TransactionDrawer";
@@ -217,7 +218,7 @@ export function CategoryMultiFilter({
 
 /** Pill visual de categoría, sin interacción - para mostrar en sitios de solo lectura como
  * la tabla de contactos. CategoryPill la usa por dentro para el botón interactivo. */
-export function CategoryBadge({ category, categories, hideIcon = false }: { category: string | null; categories: Category[]; hideIcon?: boolean }) {
+export function CategoryBadge({ category, categories, hideIcon = false, rounded = "rounded-full" }: { category: string | null; categories: Category[]; hideIcon?: boolean; rounded?: string }) {
   const cat = category ? categories.find((c) => c.value === category) : undefined;
   const cfg = cat ? {
     emoji: cat.emoji,
@@ -230,7 +231,7 @@ export function CategoryBadge({ category, categories, hideIcon = false }: { cate
   const iconName = cat?.label ?? label;
   return (
     <span
-      className="inline-flex items-center gap-1 px-2.5 py-[3px] rounded-full text-[11px] font-medium whitespace-nowrap"
+      className={`inline-flex items-center gap-1 px-2.5 py-[3px] ${rounded} text-[11px] font-medium whitespace-nowrap`}
       style={{ backgroundColor: cfg.bg, color: cfg.color }}
     >
       {!hideIcon && <CatIcon iconKey={cfg.emoji} name={iconName} color={cfg.color} />}
@@ -239,7 +240,7 @@ export function CategoryBadge({ category, categories, hideIcon = false }: { cate
   );
 }
 
-export function CategoryPill({ category, categories, onChange, hideIcon = false }: { category: string | null; categories: Category[]; onChange: (cat: string | null) => void; hideIcon?: boolean }) {
+export function CategoryPill({ category, categories, onChange, hideIcon = false, rounded = "rounded-full" }: { category: string | null; categories: Category[]; onChange: (cat: string | null) => void; hideIcon?: boolean; rounded?: string }) {
   const [open, setOpen] = useState(false);
   const [dropPos, setDropPos] = useState<{ left: number; top?: number; bottom?: number; maxHeight: number } | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -285,9 +286,9 @@ export function CategoryPill({ category, categories, onChange, hideIcon = false 
       <button
         ref={btnRef}
         onClick={handleToggle}
-        className="inline-block rounded-full hover:brightness-95 transition-all"
+        className={`inline-block ${rounded} hover:brightness-95 transition-all`}
       >
-        <CategoryBadge category={category} categories={categories} hideIcon={hideIcon} />
+        <CategoryBadge category={category} categories={categories} hideIcon={hideIcon} rounded={rounded} />
       </button>
       {open && dropPos && createPortal(
         <div
@@ -347,7 +348,7 @@ export function originLabel(method: string): string {
 
 export function MoreOptionsMenu({
   onlyRecurring, setOnlyRecurring, onlyNoContact, setOnlyNoContact, originFilter, setOriginFilter,
-  amountMin, setAmountMin, amountMax, setAmountMax, onExport, onPapelera,
+  amountMin, setAmountMin, amountMax, setAmountMax,
 }: {
   onlyRecurring: boolean;
   setOnlyRecurring: (v: boolean | ((prev: boolean) => boolean)) => void;
@@ -359,8 +360,6 @@ export function MoreOptionsMenu({
   setAmountMin: (v: string) => void;
   amountMax: string;
   setAmountMax: (v: string) => void;
-  onExport: () => void;
-  onPapelera: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [dropPos, setDropPos] = useState<{ top: number; left: number } | null>(null);
@@ -476,7 +475,54 @@ export function MoreOptionsMenu({
             </svg>
             Sin contacto
           </button>
-          <div className="border-t border-navy/[0.06] my-1" />
+        </div>,
+        document.body
+      )}
+    </div>
+  );
+}
+
+/** Botón de icono "⋮" (mismo estilo que el resto de la barra de filtros) con las acciones
+ * menos frecuentes de la tabla - separado de "Más filtros" porque no son filtros. */
+export function MoreActionsMenu({ onExport, onPapelera }: { onExport: () => void; onPapelera: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [dropPos, setDropPos] = useState<{ top: number; left: number } | null>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const dropRef = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function handle(e: MouseEvent) {
+      if (!wrapRef.current?.contains(e.target as Node) && !dropRef.current?.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, [open]);
+
+  function handleToggle() {
+    if (!open && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setDropPos({ top: rect.bottom + 4, left: rect.right - 190 });
+    }
+    setOpen((v) => !v);
+  }
+
+  return (
+    <div ref={wrapRef} className="relative">
+      <IconButtonV2 ref={btnRef} onClick={handleToggle} title="Más acciones">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <circle cx="12" cy="5" r="1.75" /><circle cx="12" cy="12" r="1.75" /><circle cx="12" cy="19" r="1.75" />
+        </svg>
+      </IconButtonV2>
+      {open && dropPos && createPortal(
+        <div
+          ref={dropRef}
+          className="fixed z-[9999] bg-card border border-navy/10 rounded-xl shadow-xl py-1"
+          style={{ top: dropPos.top, left: dropPos.left, width: "190px" }}
+        >
           <button
             onClick={() => { onExport(); setOpen(false); }}
             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-navy/60 hover:bg-navy/[0.04] transition-colors"

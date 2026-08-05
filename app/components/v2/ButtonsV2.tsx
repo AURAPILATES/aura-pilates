@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
 
 type PrimaryButtonV2Props = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children"> &
   (
@@ -38,12 +38,15 @@ export function PrimaryButtonV2({ className = "", type = "button", icon, label, 
 }
 
 /** Botón de icono secundario (exportar, etc.) - cuadrado con borde, radio 10. */
-export function IconButtonV2({ className = "", type = "button", ...props }: ButtonHTMLAttributes<HTMLButtonElement>) {
-  return (
-    <button
-      type={type}
-      className={`shrink-0 flex items-center justify-center w-[38px] h-[38px] text-muted border border-border rounded-[10px] bg-card hover:bg-navy/[0.02] transition-colors ${className}`}
-      {...props}
-    />
-  );
-}
+export const IconButtonV2 = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTMLButtonElement>>(
+  function IconButtonV2({ className = "", type = "button", ...props }, ref) {
+    return (
+      <button
+        ref={ref}
+        type={type}
+        className={`shrink-0 flex items-center justify-center w-[38px] h-[38px] text-muted border border-border rounded-[10px] bg-card hover:bg-navy/[0.02] transition-colors ${className}`}
+        {...props}
+      />
+    );
+  },
+);

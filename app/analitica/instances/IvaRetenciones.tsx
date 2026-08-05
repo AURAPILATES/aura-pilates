@@ -382,8 +382,8 @@ function DetailDrawer({ selected, onClose }: { selected: { row: QuarterlyFiscalR
             <div className="flex items-center justify-between pt-2.5">
               <span className="text-sm font-semibold text-navy">{composite[metric as "ivaNeto" | "total"].resultLabel}</span>
               <span className="inline-flex items-center gap-2 text-sm font-semibold text-navy tabular-nums">
-                {fmt(Math.abs(composite[metric as "ivaNeto" | "total"].value))}
                 {metric === "ivaNeto" && <ResultBadge favorable={row.ivaNeto < 0} />}
+                {fmt(Math.abs(composite[metric as "ivaNeto" | "total"].value))}
               </span>
             </div>
           </div>

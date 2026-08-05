@@ -211,13 +211,13 @@ export interface ToggleGroupProps {
 
 export function ToggleGroup({ options, value, onChange, className = "", fullWidth = false }: ToggleGroupProps) {
   return (
-    <div className={`flex gap-0.5 bg-navy/5 p-[3px] rounded-[10px] ${fullWidth ? "w-full" : ""} ${className}`}>
+    <div className={`flex gap-0.5 bg-navy/5 p-[5px] rounded-[10px] ${fullWidth ? "w-full" : ""} ${className}`}>
       {options.map((opt) => (
         <button
           key={opt.value}
           type="button"
           onClick={() => onChange(opt.value)}
-          className={`flex items-center justify-center gap-1.5 px-2.5 py-1 text-xs rounded-[7px] whitespace-nowrap transition-colors ${fullWidth ? "flex-1" : ""} ${
+          className={`flex items-center justify-center gap-1.5 p-[6px] text-xs rounded-[7px] whitespace-nowrap transition-colors ${fullWidth ? "flex-1" : ""} ${
             opt.value === value
               ? opt.activeClassName ?? "bg-card text-navy font-medium border border-navy/[0.07] shadow-card"
               : "text-navy/50 hover:text-navy"
@@ -246,7 +246,7 @@ export interface ChartTypeToggleProps {
 
 export function ChartTypeToggle({ options, value, onChange, className = "" }: ChartTypeToggleProps) {
   return (
-    <div className={`flex gap-0.5 bg-navy/5 p-[3px] rounded-[10px] ${className}`}>
+    <div className={`flex gap-0.5 bg-navy/5 p-[5px] rounded-[10px] ${className}`}>
       {options.map((opt) => (
         <button
           key={opt.value}

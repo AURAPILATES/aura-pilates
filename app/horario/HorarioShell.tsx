@@ -535,7 +535,7 @@ function KpiCard({ label, value, valueColor = "text-navy", tooltip }: {
 function OccFilterGroup({ occFilter, onChange }: { occFilter: OccFilter; onChange: (v: OccFilter) => void }) {
   return (
     <div className="overflow-x-auto scrollbar-none">
-      <div className="inline-flex items-center gap-0.5 bg-navy/5 p-1 rounded-[10px] w-max min-w-full sm:min-w-0">
+      <div className="inline-flex items-center gap-0.5 bg-navy/5 p-[5px] rounded-[10px] w-max min-w-full sm:min-w-0">
         {([
           { value: "all",  label: "Todas",      dot: "bg-navy/25" },
           { value: "low",  label: "Por llenar", dot: "bg-[#c03828] dark:bg-[#d88c83]" },
@@ -545,7 +545,7 @@ function OccFilterGroup({ occFilter, onChange }: { occFilter: OccFilter; onChang
           <button
             key={value}
             onClick={() => onChange(value)}
-            className={`shrink-0 flex items-center gap-1.5 px-3.5 py-2 text-[13px] rounded-[7px] whitespace-nowrap transition-colors ${
+            className={`shrink-0 flex items-center gap-1.5 p-[6px] text-[13px] rounded-[7px] whitespace-nowrap transition-colors ${
               occFilter === value
                 ? "bg-card text-navy font-medium border border-navy/[0.07]"
                 : "text-navy/50 hover:text-navy"

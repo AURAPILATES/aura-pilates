@@ -12,7 +12,7 @@ import FiltersToggleButtonV2 from "@/app/components/v2/FiltersToggleButtonV2";
 import ClearFiltersButtonV2 from "@/app/components/v2/ClearFiltersButtonV2";
 import { tableHeadClassV2, tableRowClassV2, tableFootClassV2, tableCardClassV2, gridColsV2 } from "@/app/components/v2/tableStylesV2";
 import {
-  MoreOptionsMenu, OriginIcon, originLabel, CategoryPill, CategoryBadge, CategoryMultiFilter,
+  MoreOptionsMenu, MoreActionsMenu, OriginIcon, originLabel, CategoryPill, CategoryBadge, CategoryMultiFilter,
   fmtAmt, fmtDate, CAT_FALLBACK, MONTHS_ES, type SortKey,
 } from "./TransaccionesList";
 import { CatIcon } from "./catIcons";
@@ -315,10 +315,15 @@ export default function TransaccionesListV2({
         )}
         <FiltersToggleButtonV2 open={filtersOpen} active={filtersActive} onClick={() => setFiltersOpen((v) => !v)} />
         <HeaderPortal>
+          <div className="hidden sm:block">
+            <DateFilter variant="v2" />
+          </div>
           <ImportButton v2 onManual={onAddCash} />
         </HeaderPortal>
         <div className={`${filtersOpen ? "flex" : "hidden"} sm:flex sm:order-1 items-center gap-[10px] flex-wrap w-full sm:w-auto`}>
-          <DateFilter variant="v2" />
+          <div className="sm:hidden">
+            <DateFilter variant="v2" />
+          </div>
           <CategoryMultiFilter selected={catFilters} categories={categories} onChange={onCatFiltersChange} />
           <MoreOptionsMenu
             onlyRecurring={onlyRecurring}
@@ -331,9 +336,8 @@ export default function TransaccionesListV2({
             setAmountMin={onAmountMinChange}
             amountMax={amountMax}
             setAmountMax={onAmountMaxChange}
-            onExport={onExportCsv}
-            onPapelera={onPapelera}
           />
+          <MoreActionsMenu onExport={onExportCsv} onPapelera={onPapelera} />
           {uncategorizedCount > 0 && (
             <button
               onClick={() => onCatFiltersChange(catFilters.includes("__none__") ? catFilters.filter((v) => v !== "__none__") : [...catFilters, "__none__"])}
@@ -379,10 +383,12 @@ export default function TransaccionesListV2({
         </div>
       )}
 
-      {/* Tabla agrupada por mes, en tarjeta blanca */}
-      <div className={`mt-2 sm:mt-[24px] ${tableCardClassV2} overflow-hidden`}>
+      {/* Tabla agrupada por mes, en tarjeta blanca - a sangre lateral: la cabecera y las
+          bandas de mes llegan al borde real de la tarjeta (fondo incluido), el contenido
+          se inserta con 20px fijos independientes del padding lateral de la página. */}
+      <div className={`mt-2 sm:mt-[24px] -mx-2 sm:-mx-6 ${tableCardClassV2} overflow-hidden`}>
         <div className="hidden sm:block">
-          <div className={tableHeadClassV2} style={gridColsV2(COLS)}>
+          <div className={`${tableHeadClassV2} px-5`} style={gridColsV2(COLS)}>
             <span className="flex items-center gap-[10px]">
               <span className="w-[30px] h-[30px] shrink-0 flex items-center justify-center">
                 <input
@@ -419,7 +425,7 @@ export default function TransaccionesListV2({
         </div>
 
         {byMonth.length === 0 ? (
-          <div className="py-12 text-center text-faint text-sm">Sin resultados</div>
+          <div className="py-12 px-5 text-center text-faint text-sm">Sin resultados</div>
         ) : (
           byMonth.map(([monthKey, monthTxns]) => {
             const monthNet = monthTxns.reduce((s, t) => s + t.amount, 0);
@@ -432,7 +438,7 @@ export default function TransaccionesListV2({
                 ref={(el) => { if (el) monthRefs.current.set(monthKey, el); else monthRefs.current.delete(monthKey); }}
                 className="scroll-mt-[104px]"
               >
-                <div className="table-band flex items-baseline justify-between py-2 bg-navy/[0.025] border-y border-border">
+                <div className="table-band flex items-baseline justify-between py-2 px-5 bg-navy/[0.025] border-y border-border">
                   <span className="text-[12.5px] font-semibold text-muted uppercase tracking-wide">{label}</span>
                   <span className={`text-[13px] font-semibold tabular-nums ${monthNet < 0 ? "text-[#b53e0d] dark:text-[#e69675]" : "text-[#13803a] dark:text-[#7cdfa0]"}`}>
                     {monthNet < 0 ? "−" : "+"}{fmtAmt(Math.abs(monthNet))}
@@ -453,7 +459,7 @@ export default function TransaccionesListV2({
                       {/* Fila escritorio */}
                       <div className="hidden sm:block">
                         <div
-                          className={`${tableRowClassV2} cursor-pointer group ${isSelected ? "bg-subtle" : ""}`}
+                          className={`${tableRowClassV2} px-5 cursor-pointer group ${isSelected ? "bg-subtle" : ""}`}
                           style={gridColsV2(COLS)}
                           onClick={() => onRowClick(t.id)}
                         >
@@ -479,7 +485,7 @@ export default function TransaccionesListV2({
                             </span>
                             <div className="min-w-0">
                               <div className="flex items-center gap-1.5 min-w-0">
-                                <p className="text-[13.5px] font-semibold text-navy truncate">{concept}</p>
+                                <p className="text-[13.5px] font-medium text-navy truncate">{concept}</p>
                                 {recurringPeriod && (
                                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-navy/35">
                                     <path d="M1 4v6h6M23 20v-6h-6" /><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15" />
@@ -499,7 +505,7 @@ export default function TransaccionesListV2({
                             {t.contact || <span className="text-faint">—</span>}
                           </div>
                           <div onClick={(e) => e.stopPropagation()}>
-                            <CategoryPill category={t.category} categories={categories} onChange={(cat) => onCategoryChange(t.id, cat)} />
+                            <CategoryPill category={t.category} categories={categories} onChange={(cat) => onCategoryChange(t.id, cat)} rounded="rounded-[6px]" />
                           </div>
                           <div className="flex items-center gap-1.5 text-[12px] text-muted min-w-0">
                             <OriginIcon method={t.payment_method} />
@@ -517,7 +523,7 @@ export default function TransaccionesListV2({
 
                       {/* Fila móvil */}
                       <div
-                        className={`sm:hidden flex items-start gap-[10px] py-[10px] border-t border-subtle cursor-pointer active:bg-subtle ${isSelected ? "bg-subtle" : ""}`}
+                        className={`sm:hidden flex items-start gap-[10px] py-[10px] px-5 border-t border-subtle cursor-pointer active:bg-subtle ${isSelected ? "bg-subtle" : ""}`}
                         onClick={() => (selectionMode ? onToggleSelect(t.id) : onRowClick(t.id))}
                       >
                         {selectionMode ? (
@@ -536,7 +542,7 @@ export default function TransaccionesListV2({
                         )}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5 min-w-0">
-                            <p className="text-[14px] font-semibold text-navy truncate">{concept}</p>
+                            <p className="text-[14px] font-medium text-navy truncate">{concept}</p>
                             {recurringPeriod && (
                               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-navy/35">
                                 <path d="M1 4v6h6M23 20v-6h-6" /><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15" />
