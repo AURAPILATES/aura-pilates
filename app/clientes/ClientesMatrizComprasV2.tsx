@@ -156,9 +156,9 @@ export default function ClientesMatrizComprasV2({
         </div>
       )}
 
-      <div className={`${isMobile ? "mt-2" : "mt-[24px]"} ${tableCardClassV2}`}>
+      <div className={`${isMobile ? "mt-2" : "mt-[24px]"} -mx-4 sm:-mx-6 ${tableCardClassV2} overflow-hidden`}>
         <div className="overflow-x-auto">
-          <div className={tableHeadClassV2} style={gridColsV2(cols)}>
+          <div className={`${tableHeadClassV2} px-5`} style={gridColsV2(cols)}>
             <span
               className={`cursor-pointer select-none ${sortKey === "name" ? "text-navy" : ""}`}
               onClick={() => onToggleSort("name")}
@@ -185,13 +185,13 @@ export default function ClientesMatrizComprasV2({
           </div>
 
           {rows.length === 0 ? (
-            <div className="py-6 text-center text-faint text-sm">Sin resultados</div>
+            <div className="py-6 px-5 text-center text-faint text-sm">Sin resultados</div>
           ) : (
             rows.map(({ customer, byMonth, totalPaid, firstPurchase }) => (
               <div
                 key={customer.id}
                 onClick={() => onRowClick(customer)}
-                className={`${tableRowClassV2} cursor-pointer`}
+                className={`${tableRowClassV2} px-5 cursor-pointer`}
                 style={gridColsV2(cols)}
               >
                 <p className="font-semibold text-navy truncate text-[13.5px]" title={customer.name ?? customer.email ?? undefined}>
@@ -229,7 +229,7 @@ export default function ClientesMatrizComprasV2({
           )}
 
           {rows.length > 0 && (
-            <div className={tableRowClassV2} style={gridColsV2(cols)}>
+            <div className={`${tableRowClassV2} px-5`} style={gridColsV2(cols)}>
               <p className="font-semibold text-muted text-[10.5px] uppercase tracking-wide">Total</p>
               {showFirstPurchase && <div />}
               {visibleMonths.map((m) => (

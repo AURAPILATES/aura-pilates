@@ -305,9 +305,9 @@ export default function RecurrentesListV2({
         </Drawer>
       )}
 
-      <div className={`mt-2 sm:mt-[24px] ${tableCardClassV2}`}>
+      <div className={`mt-2 sm:mt-[24px] -mx-2 sm:-mx-6 ${tableCardClassV2} overflow-hidden`}>
       <div className="hidden sm:block">
-        <div className={tableHeadClassV2} style={gridColsV2(COLS)}>
+        <div className={`${tableHeadClassV2} px-5`} style={gridColsV2(COLS)}>
           <span className="flex items-center gap-[10px]">
             <span className="w-[30px] h-[30px] shrink-0 flex items-center justify-center">
               <input
@@ -330,7 +330,7 @@ export default function RecurrentesListV2({
 
       {pending.length > 0 && (
         <>
-          <div className={tableGroupClassV2}>
+          <div className={`${tableGroupClassV2} px-5`}>
             <span className="flex items-center gap-2">
               <span className="w-[7px] h-[7px] rounded-full bg-[#b45309] dark:bg-[#e8a572]" />
               POR CONFIRMAR
@@ -350,7 +350,7 @@ export default function RecurrentesListV2({
                 <div className="hidden sm:block">
                   <div
                     onClick={() => onOpenPending(row)}
-                    className={`${tableRowClassV2} cursor-pointer`}
+                    className={`${tableRowClassV2} px-5 cursor-pointer`}
                     style={gridColsV2(COLS)}
                   >
                     <div className="flex items-center gap-[10px] min-w-0">
@@ -397,7 +397,7 @@ export default function RecurrentesListV2({
                 {/* Fila móvil */}
                 <div
                   onClick={() => onOpenPending(row)}
-                  className="sm:hidden flex items-center gap-[10px] py-[10px] border-t border-subtle cursor-pointer active:bg-subtle"
+                  className="sm:hidden flex items-center gap-[10px] py-[10px] px-5 border-t border-subtle cursor-pointer active:bg-subtle"
                 >
                   <span className="w-[32px] h-[32px] shrink-0 rounded-[10px] flex items-center justify-center" style={{ backgroundColor: icon.accent }}>
                     <CatIcon iconKey={icon.iconKey} name={icon.label ?? row.label} color="#fff" size={15} />
@@ -434,7 +434,7 @@ export default function RecurrentesListV2({
       )}
 
       {confirmed.length === 0 ? (
-        <p className="text-sm text-faint py-6">
+        <p className="text-sm text-faint py-6 px-5">
           {search.trim() ? "Sin resultados" : "Sin gastos recurrentes confirmados todavía."}
         </p>
       ) : (
@@ -453,7 +453,7 @@ export default function RecurrentesListV2({
               <div className="hidden sm:block">
                 <div
                   onClick={() => onOpenConfirmed(row)}
-                  className={`${tableRowClassV2} cursor-pointer group ${isSelected ? "bg-subtle" : ""}`}
+                  className={`${tableRowClassV2} px-5 cursor-pointer group ${isSelected ? "bg-subtle" : ""}`}
                   style={gridColsV2(COLS)}
                 >
                   <div className="flex items-center gap-[10px] min-w-0">
@@ -500,7 +500,7 @@ export default function RecurrentesListV2({
               {/* Fila móvil */}
               <div
                 onClick={() => (selectionMode ? onToggleSelect(e.id) : onOpenConfirmed(row))}
-                className={`sm:hidden flex items-center gap-[10px] py-[10px] border-t border-subtle cursor-pointer active:bg-subtle ${isSelected ? "bg-subtle" : ""}`}
+                className={`sm:hidden flex items-center gap-[10px] py-[10px] px-5 border-t border-subtle cursor-pointer active:bg-subtle ${isSelected ? "bg-subtle" : ""}`}
               >
                 {selectionMode ? (
                   <span className="w-[32px] h-[32px] shrink-0 rounded-[10px] flex items-center justify-center border border-border bg-card">

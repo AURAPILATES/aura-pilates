@@ -163,8 +163,6 @@ body {
 .table-band {
   margin-left: 0;
   margin-right: 0;
-  padding-left: 0;
-  padding-right: 0;
 }
 
 /* Fundido suave al cambiar de subpestaña (ver SectionTabsV2): se aplica al contenedor

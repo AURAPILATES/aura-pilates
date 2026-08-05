@@ -16,10 +16,10 @@ export default function PreciosViewer({ rows }: { rows: PricingRow[] }) {
         <PreciosGuiaDrawer />
       </div>
 
-      <div className={tableCardClassV2}>
+      <div className={`-mx-4 sm:-mx-6 ${tableCardClassV2} overflow-hidden`}>
       {/* Tabla - escritorio */}
       <div className="hidden sm:block">
-        <div className={tableHeadClassV2} style={gridColsV2(COLS)}>
+        <div className={`${tableHeadClassV2} px-5`} style={gridColsV2(COLS)}>
           <span>Producto</span>
           <span>Tipo</span>
           <span className="text-right">Precio en Momence</span>
@@ -31,7 +31,7 @@ export default function PreciosViewer({ rows }: { rows: PricingRow[] }) {
           const usingLive = row.livePrice !== null;
           const mismatch = usingLive && row.livePrice !== row.fallbackPrice;
           return (
-            <div key={row.name} className={tableRowClassV2} style={gridColsV2(COLS)}>
+            <div key={row.name} className={`${tableRowClassV2} px-5`} style={gridColsV2(COLS)}>
               <p className="text-[13.5px] font-medium text-navy truncate">{row.name}</p>
               <p className="text-[12.5px] text-muted">{row.type === "subscription" ? "Suscripción" : "Pack"}</p>
               <p className="text-right text-[13.5px] tabular-nums text-navy">
@@ -54,7 +54,7 @@ export default function PreciosViewer({ rows }: { rows: PricingRow[] }) {
           const usingLive = row.livePrice !== null;
           const mismatch = usingLive && row.livePrice !== row.fallbackPrice;
           return (
-            <div key={row.name} className="py-3">
+            <div key={row.name} className="py-3 px-5">
               <div className="flex items-start justify-between gap-2 mb-2">
                 <div className="min-w-0">
                   <p className="text-[13.5px] font-medium text-navy leading-snug">{row.name}</p>

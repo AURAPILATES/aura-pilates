@@ -322,11 +322,11 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
         />
       </div>
 
-      <div className={`mt-[20px] ${tableCardClassV2}`}>
+      <div className={`mt-[20px] -mx-4 sm:-mx-6 ${tableCardClassV2} overflow-hidden`}>
         {/* Escritorio (scroll horizontal si no caben las columnas) */}
         <div className="hidden sm:block overflow-x-auto">
           <div className="min-w-[1080px]">
-            <div className={tableHeadClassV2} style={gridColsV2(COLS)}>
+            <div className={`${tableHeadClassV2} px-5`} style={gridColsV2(COLS)}>
               <span className="flex items-center cursor-pointer select-none" onClick={() => toggleSort("name")}>Cliente<SortArrow active={sortKey === "name"} dir={sortDir} /></span>
               <span>Plan</span>
               <span className="flex items-center cursor-pointer select-none" onClick={() => toggleSort("renew")}>Renueva<SortArrow active={sortKey === "renew"} dir={sortDir} /></span>
@@ -339,13 +339,13 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
             </div>
 
             {pageRows.length === 0 ? (
-              <div className="py-12 text-center text-faint text-sm">No hay clientes que coincidan.</div>
+              <div className="py-12 px-5 text-center text-faint text-sm">No hay clientes que coincidan.</div>
             ) : (
               pageRows.map((r) => {
                 const pb = planBadge(r.plan);
                 const dRenew = daysToRenew(r);
                 return (
-                  <div key={r.id} onClick={() => setSelected(r)} className={`${tableRowClassV2} cursor-pointer`} style={gridColsV2(COLS)}>
+                  <div key={r.id} onClick={() => setSelected(r)} className={`${tableRowClassV2} px-5 cursor-pointer`} style={gridColsV2(COLS)}>
                     <div className="flex items-center gap-[11px] min-w-0">
                       <Avatar seed={r.id} initials={initials(r.name, r.email)} size={30} />
                       <div className="min-w-0">
@@ -393,12 +393,12 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
         {/* Móvil */}
         <div className="sm:hidden">
           {pageRows.length === 0 ? (
-            <div className="py-12 text-center text-faint text-sm">No hay clientes que coincidan.</div>
+            <div className="py-12 px-5 text-center text-faint text-sm">No hay clientes que coincidan.</div>
           ) : (
             pageRows.map((r) => {
               const pb = planBadge(r.plan);
               return (
-                <div key={r.id} onClick={() => setSelected(r)} className="flex items-center gap-[10px] py-[10px] border-t border-subtle cursor-pointer active:bg-subtle">
+                <div key={r.id} onClick={() => setSelected(r)} className="flex items-center gap-[10px] py-[10px] px-5 border-t border-subtle cursor-pointer active:bg-subtle">
                   <Avatar seed={r.id} initials={initials(r.name, r.email)} size={32} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 min-w-0">

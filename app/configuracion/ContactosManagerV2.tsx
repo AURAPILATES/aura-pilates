@@ -247,9 +247,9 @@ export default function ContactosManagerV2({
         </div>
       )}
 
-      <div className={`mt-[24px] ${tableCardClassV2}`}>
+      <div className={`mt-[24px] -mx-4 sm:-mx-6 ${tableCardClassV2} overflow-hidden`}>
         <div className="hidden sm:block">
-          <div className={tableHeadClassV2} style={gridColsV2(COLS)}>
+          <div className={`${tableHeadClassV2} px-5`} style={gridColsV2(COLS)}>
             <span>Nombre</span>
             <span>Categoría</span>
             <span>IVA</span>
@@ -262,7 +262,7 @@ export default function ContactosManagerV2({
         </div>
 
         {rows.length === 0 ? (
-          <div className="py-12 text-center text-faint text-sm">Ningún contacto coincide con la búsqueda.</div>
+          <div className="py-12 px-5 text-center text-faint text-sm">Ningún contacto coincide con la búsqueda.</div>
         ) : (
           rows.map((c) => {
             const stats = contactStats[c.id];
@@ -276,7 +276,7 @@ export default function ContactosManagerV2({
                 <div className="hidden sm:block">
                   <div
                     onClick={() => onRowClick(c.id)}
-                    className={`${tableRowClassV2} cursor-pointer group`}
+                    className={`${tableRowClassV2} px-5 cursor-pointer group`}
                     style={gridColsV2(COLS)}
                   >
                     <div className="flex items-center gap-[11px] min-w-0">
@@ -330,7 +330,7 @@ export default function ContactosManagerV2({
                 {/* Fila móvil */}
                 <div
                   onClick={() => (selectionMode ? onToggleSelect(c.id) : onRowClick(c.id))}
-                  className={`sm:hidden flex items-center gap-[10px] py-[10px] border-t border-subtle cursor-pointer active:bg-subtle ${isSelected ? "bg-subtle" : ""}`}
+                  className={`sm:hidden flex items-center gap-[10px] py-[10px] px-5 border-t border-subtle cursor-pointer active:bg-subtle ${isSelected ? "bg-subtle" : ""}`}
                 >
                   {selectionMode ? (
                     <span className="w-[32px] h-[32px] shrink-0 rounded-[10px] flex items-center justify-center border border-border bg-card">
