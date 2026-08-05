@@ -41,7 +41,15 @@ function ChartTooltip({ active, payload }: TooltipContentProps) {
   );
 }
 
-export default function VolumenBrutoBody({ data, chartType }: { data: VolumenBrutoRow[]; chartType: "bar" | "line" }) {
+export default function VolumenBrutoBody({
+  data,
+  chartType,
+  onBarClick,
+}: {
+  data: VolumenBrutoRow[];
+  chartType: "bar" | "line";
+  onBarClick?: (key: string) => void;
+}) {
   if (data.length === 0) {
     return <p className="text-sm text-navy/45 text-center py-10">Sin datos para este período</p>;
   }
@@ -56,10 +64,18 @@ export default function VolumenBrutoBody({ data, chartType }: { data: VolumenBru
           <Tooltip content={ChartTooltip} cursor={chartType === "bar" ? { fill: "color-mix(in srgb, var(--color-navy) 4%, transparent)" } : { stroke: "color-mix(in srgb, var(--color-navy) 20%, transparent)", strokeDasharray: "4 3" }} />
           {chartType === "bar" ? (
             <>
-              <Bar dataKey="income" fill={INCOME_COLOR} radius={[3, 3, 0, 0]}>
+              <Bar
+                dataKey="income" fill={INCOME_COLOR} radius={[3, 3, 0, 0]}
+                cursor={onBarClick ? "pointer" : undefined}
+                onClick={onBarClick ? (d: { payload?: VolumenBrutoRow }) => d.payload && onBarClick(d.payload.key) : undefined}
+              >
                 <LabelList dataKey="income" position="top" formatter={fmtLabel} style={{ fontSize: 10, fill: INCOME_COLOR, fontWeight: 600 }} />
               </Bar>
-              <Bar dataKey="expense" fill={EXPENSE_COLOR} radius={[3, 3, 0, 0]}>
+              <Bar
+                dataKey="expense" fill={EXPENSE_COLOR} radius={[3, 3, 0, 0]}
+                cursor={onBarClick ? "pointer" : undefined}
+                onClick={onBarClick ? (d: { payload?: VolumenBrutoRow }) => d.payload && onBarClick(d.payload.key) : undefined}
+              >
                 <LabelList dataKey="expense" position="top" formatter={fmtLabel} style={{ fontSize: 10, fill: EXPENSE_COLOR, fontWeight: 600 }} />
               </Bar>
             </>

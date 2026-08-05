@@ -315,6 +315,7 @@ export function occupancyByPeriod(events: MomenceEvent[], period: OccupancyPerio
 
 export type SessionOccRow = {
   starts_at: string;
+  teacher_name: string;
   capacity: number;
   booking_count: number;
   checked_in_count: number;

@@ -1,5 +1,11 @@
+"use client";
+
+import { useState } from "react";
 import ChartCard from "@/components/charts/ChartCard";
-import type { SubscriptionsBaseV2 } from "@/lib/subscriptionsV2";
+import Drawer from "@/app/components/Drawer";
+import { MomenceIcon } from "@/components/icons/SourceIcons";
+import { momenceCustomerUrl } from "@/lib/momenceLinks";
+import type { SubscriptionsBaseV2, TierMrrV2 } from "@/lib/subscriptionsV2";
 
 const fmtEur = (n: number) =>
   new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(n);
@@ -7,6 +13,8 @@ const fmtEur = (n: number) =>
 // Base real de suscripción (desde el snapshot v2 de Momence): suscripciones
 // activas por plan y su MRR/ARR. Antes esto no estaba visible en ningún sitio.
 export default function SuscripcionesBase({ data }: { data: SubscriptionsBaseV2 }) {
+  const [selected, setSelected] = useState<TierMrrV2 | null>(null);
+
   if (!data.date || data.tiers.length === 0) {
     return (
       <ChartCard title="Base de suscripción" subtitle="Aún no hay snapshot de suscripciones v2" />
@@ -14,9 +22,10 @@ export default function SuscripcionesBase({ data }: { data: SubscriptionsBaseV2 
   }
 
   return (
+    <>
     <ChartCard
       title="Base de suscripción"
-      subtitle="Suscripciones activas por plan y su MRR / ARR"
+      subtitle="Suscripciones activas por plan y su MRR / ARR. Toca un plan para ver los miembros."
       kpiItems={[
         {
           label: "Suscripciones activas",
@@ -53,8 +62,12 @@ export default function SuscripcionesBase({ data }: { data: SubscriptionsBaseV2 
           </thead>
           <tbody>
             {data.tiers.map((t) => (
-              <tr key={t.name} className="border-b border-navy/[0.04]">
-                <td className="py-2 pr-3 text-navy">{t.name}</td>
+              <tr
+                key={t.name}
+                onClick={() => setSelected(t)}
+                className="border-b border-navy/[0.04] cursor-pointer hover:bg-navy/[0.02] transition-colors"
+              >
+                <td className="py-2 pr-3 text-navy font-medium hover:underline">{t.name}</td>
                 <td className="py-2 pr-3 text-right text-navy tabular-nums">{t.activeCount}</td>
                 <td className="py-2 pr-3 text-right text-navy/55 tabular-nums">
                   {t.price > 0 ? fmtEur(t.price) : "—"}
@@ -74,5 +87,31 @@ export default function SuscripcionesBase({ data }: { data: SubscriptionsBaseV2 
         </table>
       </div>
     </ChartCard>
+
+    {selected && (
+      <Drawer
+        title={selected.name}
+        subtitle={`${selected.activeCount} suscripciones activas · ${fmtEur(selected.mrr)} MRR`}
+        onClose={() => setSelected(null)}
+      >
+        <div className="px-6 py-4 space-y-2">
+          {selected.members.map((m) => (
+            <div key={m.memberId} className="flex items-center justify-between gap-3 py-2 border-b border-navy/[0.04] last:border-0">
+              <p className="text-sm text-navy truncate">{m.email}</p>
+              <a
+                href={momenceCustomerUrl(m.memberId)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-white bg-[#6C5CE7] rounded-lg hover:bg-[#5a4bd4] transition-colors"
+              >
+                <MomenceIcon size={12} />
+                Momence
+              </a>
+            </div>
+          ))}
+        </div>
+      </Drawer>
+    )}
+    </>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { BarChart2, Activity } from "react-feather";
 import type { Transaction } from "@/lib/transactions";
@@ -52,6 +53,27 @@ function fmtEur(v: number) {
   return Math.round(v).toLocaleString("de-DE", { maximumFractionDigits: 0 }) + " €";
 }
 
+/** Convierte la clave de un período ("2026-03" / "2026-Q1" / "2026") en el rango de fechas
+ * que le corresponde, para el click-through a Transacciones filtrado por esas fechas. */
+function periodKeyToRange(key: string, period: Period): { from: string; to: string } {
+  if (period === "año") {
+    return { from: `${key}-01-01`, to: `${key}-12-31` };
+  }
+  if (period === "trimestre") {
+    const [y, q] = key.split("-Q");
+    const startMonth = (parseInt(q, 10) - 1) * 3 + 1;
+    const endMonth = startMonth + 2;
+    const lastDay = new Date(parseInt(y, 10), endMonth, 0).getDate();
+    return {
+      from: `${y}-${String(startMonth).padStart(2, "0")}-01`,
+      to: `${y}-${String(endMonth).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`,
+    };
+  }
+  const [y, m] = key.split("-");
+  const lastDay = new Date(parseInt(y, 10), parseInt(m, 10), 0).getDate();
+  return { from: `${y}-${m}-01`, to: `${y}-${m}-${String(lastDay).padStart(2, "0")}` };
+}
+
 function groupData(txns: Transaction[], categories: Category[], period: Period): VolumenBrutoRow[] {
   const map = new Map<string, { income: number; expense: number }>();
 
@@ -87,10 +109,16 @@ export default function VolumenBruto({
    * con el resto de cards; el toggle interno mes/trim/año reagrupa dentro de ese período. */
   dateRange?: string;
 }) {
+  const router = useRouter();
   const [period, setPeriod] = useState<Period>("mes");
   const [chartType, setChartType] = useState<"bar" | "line">("bar");
 
   const data = groupData(txns, categories, period);
+
+  function goToPeriod(key: string) {
+    const { from, to } = periodKeyToRange(key, period);
+    router.push(`/transacciones?range=custom&from=${from}&to=${to}`);
+  }
 
   return (
     <ChartCard
@@ -121,7 +149,7 @@ export default function VolumenBruto({
       lastUpdated={lastUpdated}
     >
       <Legend items={[{ label: "Ingresos", color: "#818CF8" }, { label: "Gastos", color: "#FCA5A5" }]} className="mb-3" />
-      <VolumenBrutoBody data={data} chartType={chartType} />
+      <VolumenBrutoBody data={data} chartType={chartType} onBarClick={goToPeriod} />
 
       <CollapsibleTable>
         <table className="w-full min-w-max text-xs">
@@ -137,7 +165,11 @@ export default function VolumenBruto({
             {data.map((row) => {
               const margin = row.income - row.expense;
               return (
-                <tr key={row.key} className="border-b border-navy/[0.04] last:border-0">
+                <tr
+                  key={row.key}
+                  onClick={() => goToPeriod(row.key)}
+                  className="border-b border-navy/[0.04] last:border-0 cursor-pointer hover:bg-navy/[0.02] transition-colors"
+                >
                   <td className="py-2 pr-3 text-navy/70 whitespace-nowrap">{row.label}</td>
                   <td className="py-2 pr-3 text-right text-navy tabular-nums">{fmtEur(row.income)}</td>
                   <td className="py-2 pr-3 text-right text-navy tabular-nums">{fmtEur(row.expense)}</td>

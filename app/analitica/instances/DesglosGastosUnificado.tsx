@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactElement } from "react";
+import { useState, useMemo, type ReactElement } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { BarChart2, Activity, Eye, EyeOff, ChevronRight, ChevronDown } from "react-feather";
@@ -79,6 +79,7 @@ export default function DesglosGastosUnificado({
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [tableExpanded, setTableExpanded] = useState(false);
   const [selected, setSelected] = useState<Selected | null>(null);
+  const [barDrawer, setBarDrawer] = useState<{ group: EconomicGroup; periodKey: string } | null>(null);
 
   const toggleHidden = (group: EconomicGroup) =>
     setHiddenGroups((prev) => {
@@ -123,6 +124,16 @@ export default function DesglosGastosUnificado({
   function categoryTxns(seg: TopExpenseSeg): Txn[] {
     return [...(transactionsByCategory[seg.key] ?? []), ...seg.children.flatMap((ch) => transactionsByCategory[ch.value] ?? [])];
   }
+
+  const barDrawerTxns = useMemo(() => {
+    if (!barDrawer) return [];
+    return categories
+      .filter((c) => c.group === barDrawer.group)
+      .flatMap((c) => categoryTxns(c))
+      .filter((t) => periodKey(t.date.slice(0, 7), period) === barDrawer.periodKey)
+      .sort((a, b) => b.date.localeCompare(a.date));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [barDrawer, categories, transactionsByCategory, period]);
 
   const selectedInfo =
     selected?.kind === "category"
@@ -195,7 +206,10 @@ export default function DesglosGastosUnificado({
     >
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         <div className="lg:col-span-2 min-w-0">
-          <EvolucionGastosBody groups={groups} period={period} hiddenGroups={hiddenGroups} chartType={chartType} />
+          <EvolucionGastosBody
+            groups={groups} period={period} hiddenGroups={hiddenGroups} chartType={chartType}
+            onBarClick={(pKey, group) => setBarDrawer({ group, periodKey: pKey })}
+          />
         </div>
 
         {/* ── Resumen: acordeón Grupo → Categoría → Subcategoría ──────────────── */}
@@ -440,6 +454,36 @@ export default function DesglosGastosUnificado({
             <p className="text-sm text-navy/45 px-6 py-8">Sin transacciones registradas.</p>
           ) : (
             selectedTxns.map((t, i) => (
+              <div key={i} className="flex items-center gap-3 px-6 py-3.5 border-b border-navy/5 last:border-0">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-navy truncate">{t.contact || t.concept}</p>
+                  <p className="text-xs text-navy/55 mt-0.5">{fmtDate(t.date)}</p>
+                </div>
+                <p className="text-sm font-semibold tabular-nums shrink-0 text-navy">{fmtAmount(Math.abs(t.amount))}</p>
+              </div>
+            ))
+          )}
+        </Drawer>
+      )}
+
+      {barDrawer && (
+        <Drawer
+          maxWidth="max-w-[420px]"
+          header={
+            <div className="flex items-center gap-3">
+              <span className="w-3 h-3 rounded-sm shrink-0" style={{ backgroundColor: GROUP_COLORS[barDrawer.group] }} />
+              <div className="min-w-0">
+                <h2 className="text-base font-semibold text-navy">{GROUP_LABELS[barDrawer.group]}</h2>
+                <p className="text-xs text-navy/55 mt-0.5">{periodLabel(barDrawer.periodKey, period)}</p>
+              </div>
+            </div>
+          }
+          onClose={() => setBarDrawer(null)}
+        >
+          {barDrawerTxns.length === 0 ? (
+            <p className="text-sm text-navy/45 px-6 py-8">Sin transacciones registradas.</p>
+          ) : (
+            barDrawerTxns.map((t, i) => (
               <div key={i} className="flex items-center gap-3 px-6 py-3.5 border-b border-navy/5 last:border-0">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-navy truncate">{t.contact || t.concept}</p>

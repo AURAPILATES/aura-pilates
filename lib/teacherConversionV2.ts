@@ -8,11 +8,21 @@ import { fetchCheckedInFirstClassRows } from "./firstClassBookingsV2";
 // Definición de "convirtió" elegida por Julia: volvió a pagar una suscripción o un pack
 // (la Benvinguda es la puerta de entrada, no cuenta como conversión). Ver [[project-profesoras-v2]].
 
+export type TeacherFirstTimer = {
+  memberId: number;
+  email: string | null;
+  name: string | null;
+  date: string;
+  converted: boolean;
+};
+
 export type TeacherConversionRow = {
   teacher: string;
   firstTimers: number; // personas cuya 1ª clase (checkedIn) fue con esta profesora
   converted: number;   // de esas, cuántas pagaron luego una sub o un pack
   rate: number;        // converted / firstTimers
+  /** Detalle de a quién dio la 1ª clase, para el drawer al clicar la fila. */
+  people: TeacherFirstTimer[];
 };
 
 export type TeacherConversionV2 = {
@@ -52,28 +62,32 @@ export async function getTeacherConversionV2(sales: Sale[]): Promise<TeacherConv
     });
   }
 
-  // Fechas de compras "de conversión" por email, y set de emails con cualquier venta (para matchedRate).
+  // Fechas de compras "de conversión" por email, set de emails con cualquier venta (para
+  // matchedRate) y nombre por email (las reservas de Momence no traen nombre, solo email).
   const convertingDatesByEmail = new Map<string, string[]>();
   const emailsWithAnySale = new Set<string>();
+  const nameByEmail = new Map<string, string>();
   for (const s of sales) {
     if (!s.email) continue;
     const email = s.email.toLowerCase();
     emailsWithAnySale.add(email);
+    if (s.name && !nameByEmail.has(email)) nameByEmail.set(email, s.name);
     if (!isConvertingSale(s)) continue;
     const arr = convertingDatesByEmail.get(email) ?? [];
     arr.push(s.paymentDate);
     convertingDatesByEmail.set(email, arr);
   }
 
-  const perTeacher = new Map<string, { firstTimers: number; converted: number }>();
+  const perTeacher = new Map<string, { firstTimers: number; converted: number; people: TeacherFirstTimer[] }>();
   let matched = 0;
-  for (const { email, teacher, date } of firstByMember.values()) {
-    const acc = perTeacher.get(teacher) ?? { firstTimers: 0, converted: 0 };
+  for (const [memberId, { email, teacher, date }] of firstByMember.entries()) {
+    const acc = perTeacher.get(teacher) ?? { firstTimers: 0, converted: 0, people: [] };
     acc.firstTimers += 1;
     if (email && emailsWithAnySale.has(email)) matched += 1;
     // Convirtió si pagó una sub/pack ESTRICTAMENTE después de su primera clase.
     const converted = !!email && (convertingDatesByEmail.get(email) ?? []).some((d) => d > date);
     if (converted) acc.converted += 1;
+    acc.people.push({ memberId, email, name: (email && nameByEmail.get(email)) ?? null, date, converted });
     perTeacher.set(teacher, acc);
   }
 
@@ -83,6 +97,7 @@ export async function getTeacherConversionV2(sales: Sale[]): Promise<TeacherConv
       firstTimers: a.firstTimers,
       converted: a.converted,
       rate: a.firstTimers > 0 ? a.converted / a.firstTimers : 0,
+      people: a.people.sort((x, y) => y.date.localeCompare(x.date)),
     }))
     .sort((x, y) => y.firstTimers - x.firstTimers || y.rate - x.rate);
 

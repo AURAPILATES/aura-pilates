@@ -126,6 +126,7 @@ export default function VentasPor({
   const [hiddenKeys, setHiddenKeys] = useState<Set<string>>(new Set());
   const [barDrawer, setBarDrawer] = useState<{ month: string; key: string } | null>(null);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const [sourceDrawer, setSourceDrawer] = useState<{ month: string; source: "stripe" | "urban" } | null>(null);
 
   // ── Vista "fuente" (Stripe vs. Urban) ──
   const uscNet     = uscGross;
@@ -200,6 +201,17 @@ export default function VentasPor({
       .filter((p) => p.date.slice(0, 7) === barDrawer.month && p.inferredProduct === barDrawer.key)
       .map((p) => ({ name: p.customerName, email: p.customerEmail, amount: p.amount }));
   }, [barDrawer, rawPayments]);
+
+  const sourceDrawerPayments = useMemo(() => {
+    if (!sourceDrawer || sourceDrawer.source !== "stripe" || !rawPayments) return [];
+    return rawPayments
+      .filter((p) => p.date.slice(0, 7) === sourceDrawer.month)
+      .sort((a, b) => b.date.localeCompare(a.date));
+  }, [sourceDrawer, rawPayments]);
+
+  const sourceDrawerUrbanRow = sourceDrawer?.source === "urban"
+    ? monthly.find((r) => r.month === sourceDrawer.month)
+    : null;
 
   const legendTotals = productKeys.map((k) => ({ key: k, total: productRows.reduce((s, r) => s + Number(r[k] ?? 0), 0) }));
   const legendGrandTotal = legendTotals.reduce((s, t) => s + t.total, 0);
@@ -284,7 +296,10 @@ export default function VentasPor({
           <>
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-5">
               <div className="lg:col-span-3 min-w-0">
-                <IngresosPorFuenteBody data={grouped} chartType={chartType} />
+                <IngresosPorFuenteBody
+                  data={grouped} chartType={chartType}
+                  onBarClick={period === "mes" ? (month, source) => setSourceDrawer({ month, source }) : undefined}
+                />
               </div>
               <div className="lg:col-span-1 min-w-0">
                 <p className="text-xs font-medium text-navy/55 mb-2.5">Resumen</p>
@@ -544,6 +559,54 @@ export default function VentasPor({
               </div>
             ))
           )}
+        </Drawer>
+      )}
+
+      {sourceDrawer?.source === "stripe" && (
+        <Drawer
+          title="Stripe"
+          subtitle={periodLabel(sourceDrawer.month, "mes")}
+          onClose={() => setSourceDrawer(null)}
+        >
+          <div className="p-3">
+            {sourceDrawerPayments.length === 0 ? (
+              <p className="text-xs text-navy/45 text-center py-8">Sin pagos registrados en Stripe este mes.</p>
+            ) : (
+              sourceDrawerPayments.map((p) => (
+                <div key={p.id} className="flex items-center gap-3 py-2.5 border-b border-navy/[0.06] last:border-0">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-navy truncate">{p.customerName ?? "Sin nombre"}</p>
+                    <p className="text-[11px] text-navy/45 truncate">{p.customerEmail ?? p.date} · {p.inferredProduct}</p>
+                  </div>
+                  <p className="text-xs font-semibold text-navy shrink-0">{fmtEur(p.amount)}</p>
+                </div>
+              ))
+            )}
+          </div>
+        </Drawer>
+      )}
+
+      {sourceDrawer?.source === "urban" && sourceDrawerUrbanRow && (
+        <Drawer
+          title="Urban Sports Club"
+          subtitle={periodLabel(sourceDrawer.month, "mes")}
+          onClose={() => setSourceDrawer(null)}
+        >
+          <div className="p-4 space-y-2 text-sm">
+            <div className="flex items-center justify-between py-2 border-b border-navy/[0.06]">
+              <span className="text-navy/55">Clases asistidas</span>
+              <span className="font-medium text-navy tabular-nums">{sourceDrawerUrbanRow.urbanClasses}</span>
+            </div>
+            <div className="flex items-center justify-between py-2 border-b border-navy/[0.06]">
+              <span className="text-navy/55">Importe</span>
+              <span className="font-semibold text-navy tabular-nums">{fmtEur(sourceDrawerUrbanRow.uscNet)}</span>
+            </div>
+            <p className="text-xs text-navy/45 pt-1 leading-relaxed">
+              {sourceDrawerUrbanRow.urbanIsEstimated
+                ? "Estimado: clases asistidas × tarifa pactada vigente (Configuración → Precios). Urban paga a mes vencido; al llegar su transferencia este importe pasará a ser el real."
+                : "Importe real: transferencia del banco de Urban Sports Club, asignada al mes de las clases que paga."}
+            </p>
+          </div>
         </Drawer>
       )}
     </>

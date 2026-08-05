@@ -39,11 +39,13 @@ export default function EvolucionGastosBody({
   period,
   hiddenGroups,
   chartType = "bar",
+  onBarClick,
 }: {
   groups: GroupTotal[];
   period: Period;
   hiddenGroups?: Set<EconomicGroup>;
   chartType?: "bar" | "line";
+  onBarClick?: (periodKey: string, group: EconomicGroup) => void;
 }) {
   const base = buildGroupSeries(groups);
   const { months, data } = regroupSeries(base.months, base.data, period);
@@ -72,7 +74,11 @@ export default function EvolucionGastosBody({
           />
           {chartType === "bar"
             ? visibleGroups.map((g) => (
-                <Bar key={g} dataKey={g} stackId="a" fill={GROUP_COLORS[g]} radius={[2, 2, 0, 0]} />
+                <Bar
+                  key={g} dataKey={g} stackId="a" fill={GROUP_COLORS[g]} radius={[2, 2, 0, 0]}
+                  cursor={onBarClick ? "pointer" : undefined}
+                  onClick={onBarClick ? (d: { payload?: Row }) => d.payload && onBarClick(d.payload.month, g) : undefined}
+                />
               ))
             : visibleGroups.map((g) => (
                 <Line

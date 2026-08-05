@@ -6,6 +6,13 @@ import { createServerClient } from "./supabase";
 // RESERVADA (quién reservó) de ocupación REAL (quién apareció, checkedIn), y la tasa de
 // no-show. Ver [[project-profesoras-v2]].
 
+export type TeacherClassRow = {
+  startsAt: string;
+  capacity: number;
+  booked: number;
+  checkedIn: number;
+};
+
 export type TeacherStat = {
   teacherId: number | null;
   teacher: string;
@@ -18,6 +25,8 @@ export type TeacherStat = {
   attendanceRate: number;     // checkedIn / booked (de quien reservó, cuántos vinieron)
   noShowRate: number;         // 1 - attendanceRate
   avgClassSize: number;       // booked / classes
+  /** Clases individuales de esta profesora en el período, para el detalle al clicar la fila. */
+  sessions: TeacherClassRow[];
 };
 
 export type TeacherStatsV2 = {
@@ -37,6 +46,7 @@ export type TeacherStatsV2 = {
 type Row = {
   teacher_id: number | null;
   teacher_name: string;
+  starts_at: string;
   capacity: number;
   booking_count: number;
   checked_in_count: number;
@@ -62,7 +72,7 @@ export const getTeacherStatsV2 = unstable_cache(
     for (let offset = 0; ; offset += PAGE) {
       const { data } = await db
         .from("class_sessions_v2")
-        .select("teacher_id, teacher_name, capacity, booking_count, checked_in_count")
+        .select("teacher_id, teacher_name, starts_at, capacity, booking_count, checked_in_count")
         .eq("is_cancelled", false)
         .gte("starts_at", from + "T00:00:00.000Z")
         .lte("starts_at", to + "T23:59:59.999Z")
@@ -75,13 +85,14 @@ export const getTeacherStatsV2 = unstable_cache(
 
     if (rows.length === 0) return empty(from, to);
 
-    const map = new Map<string, { teacherId: number | null; classes: number; capacity: number; booked: number; checkedIn: number }>();
+    const map = new Map<string, { teacherId: number | null; classes: number; capacity: number; booked: number; checkedIn: number; sessions: TeacherClassRow[] }>();
     for (const r of rows) {
-      const acc = map.get(r.teacher_name) ?? { teacherId: r.teacher_id, classes: 0, capacity: 0, booked: 0, checkedIn: 0 };
+      const acc = map.get(r.teacher_name) ?? { teacherId: r.teacher_id, classes: 0, capacity: 0, booked: 0, checkedIn: 0, sessions: [] };
       acc.classes += 1;
       acc.capacity += r.capacity;
       acc.booked += r.booking_count;
       acc.checkedIn += r.checked_in_count;
+      acc.sessions.push({ startsAt: r.starts_at, capacity: r.capacity, booked: r.booking_count, checkedIn: r.checked_in_count });
       map.set(r.teacher_name, acc);
     }
 
@@ -98,6 +109,7 @@ export const getTeacherStatsV2 = unstable_cache(
         attendanceRate: a.booked > 0 ? a.checkedIn / a.booked : 0,
         noShowRate: a.booked > 0 ? 1 - a.checkedIn / a.booked : 0,
         avgClassSize: a.classes > 0 ? a.booked / a.classes : 0,
+        sessions: a.sessions.sort((x, y) => y.startsAt.localeCompare(x.startsAt)),
       }))
       .sort((x, y) => y.classes - x.classes || y.occupancyReal - x.occupancyReal);
 

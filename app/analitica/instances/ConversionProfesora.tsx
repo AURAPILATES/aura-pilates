@@ -1,7 +1,15 @@
+"use client";
+
+import { useState } from "react";
 import ChartCard from "@/components/charts/ChartCard";
-import type { TeacherConversionV2 } from "@/lib/teacherConversionV2";
+import Drawer from "@/app/components/Drawer";
+import type { TeacherConversionRow, TeacherConversionV2 } from "@/lib/teacherConversionV2";
 
 const pct = (v: number) => `${Math.round(v * 100)}%`;
+
+function fmtDate(iso: string) {
+  return new Date(iso + "T12:00:00").toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "2-digit" });
+}
 
 function rateTone(v: number) {
   if (v >= 0.5) return "bg-success";
@@ -17,6 +25,8 @@ const DATA_SOURCE =
 // Conversión por profesora: de quien tuvo su 1ª clase con ella, cuántos volvieron a pagar
 // (sub o pack). Cruza asistencia real de Momence con las ventas de Stripe.
 export default function ConversionProfesora({ data }: { data: TeacherConversionV2 | null }) {
+  const [selected, setSelected] = useState<TeacherConversionRow | null>(null);
+
   if (!data || !data.hasData || data.rows.length === 0) {
     return (
       <ChartCard
@@ -34,9 +44,10 @@ export default function ConversionProfesora({ data }: { data: TeacherConversionV
   }
 
   return (
+    <>
     <ChartCard
       title="Conversión por profesora"
-      subtitle="De quien tuvo su 1ª clase con cada profesora, cuántos volvieron a pagar (sub o pack). Métrica de por vida."
+      subtitle="De quien tuvo su 1ª clase con cada profesora, cuántos volvieron a pagar (sub o pack). Métrica de por vida. Toca una fila para ver el detalle."
       dataSource={DATA_SOURCE}
       sources={["momence", "stripe"]}
       kpiItems={[
@@ -71,8 +82,12 @@ export default function ConversionProfesora({ data }: { data: TeacherConversionV
           </thead>
           <tbody>
             {data.rows.map((r) => (
-              <tr key={r.teacher} className="border-b border-navy/[0.04]">
-                <td className="py-2.5 pr-3 text-navy">{r.teacher}</td>
+              <tr
+                key={r.teacher}
+                onClick={() => setSelected(r)}
+                className="border-b border-navy/[0.04] cursor-pointer hover:bg-navy/[0.02] transition-colors"
+              >
+                <td className="py-2.5 pr-3 text-navy font-medium hover:underline">{r.teacher}</td>
                 <td className="py-2.5 pr-3 text-right text-navy tabular-nums">{r.firstTimers}</td>
                 <td className="py-2.5 pr-3 text-right text-navy/70 tabular-nums">{r.converted}</td>
                 <td className="py-2.5 pl-6">
@@ -98,5 +113,28 @@ export default function ConversionProfesora({ data }: { data: TeacherConversionV
         </table>
       </div>
     </ChartCard>
+
+    {selected && (
+      <Drawer
+        title={selected.teacher}
+        subtitle={`${selected.firstTimers} primeras clases · ${selected.converted} convirtieron`}
+        onClose={() => setSelected(null)}
+      >
+        <div className="px-6 py-4 space-y-2">
+          {selected.people.map((p) => (
+            <div key={p.memberId} className="flex items-center justify-between gap-3 py-2 border-b border-navy/[0.04] last:border-0">
+              <div className="min-w-0">
+                <p className="text-sm text-navy font-medium truncate">{p.name ?? p.email ?? "Sin nombre"}</p>
+                <p className="text-xs text-navy/45 truncate">{p.email ?? "sin email"} · 1ª clase {fmtDate(p.date)}</p>
+              </div>
+              <span className={`shrink-0 text-xs font-semibold px-2 py-1 rounded-full ${p.converted ? "text-success bg-success/10" : "text-navy/40 bg-navy/[0.04]"}`}>
+                {p.converted ? "Convirtió" : "No convirtió"}
+              </span>
+            </div>
+          ))}
+        </div>
+      </Drawer>
+    )}
+    </>
   );
 }

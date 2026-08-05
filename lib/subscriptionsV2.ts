@@ -2,12 +2,16 @@ import { unstable_cache } from "next/cache";
 import { createServerClient } from "./supabase";
 import type { SubscriptionTier } from "./mrr";
 
+export type TierMember = { memberId: number; email: string };
+
 export type TierMrrV2 = {
   name: string;
   price: number;       // precio mensual del plan (del catálogo de Momence)
   activeCount: number; // suscripciones activas (no congeladas) de ese plan
   mrr: number;         // activeCount * price
   arr: number;         // mrr * 12
+  /** Miembros con esta suscripción activa, para el drawer al clicar la fila. */
+  members: TierMember[];
 };
 
 export type SubscriptionsBaseV2 = {
@@ -61,6 +65,57 @@ export async function getActiveSubscriberEmailsV2(): Promise<Set<string>> {
 // Cuenta por suscripción (fila), igual que el panel de Momence: si una persona
 // tiene 2 subs del mismo plan, cuentan las 2 (Momence las factura por separado).
 // `tiers` aporta los precios (del catálogo de membresías).
+export type MrrHistoryPoint = {
+  date: string;
+  totalSubscriptions: number;
+  totalMrr: number;
+  totalArr: number;
+};
+
+// Evolución diaria de MRR/ARR desde que existe snapshot v2 (30-jul-2026 en adelante - el
+// snapshot es una foto del presente en cada corte, Momence no expone histórico de suscripciones
+// retroactivo, así que no hay forma de completar hacia atrás). Usa los precios ACTUALES del
+// catálogo para todas las fechas (no hay log histórico de cambios de precio); a corto plazo el
+// margen de error es mínimo. Ver [[project-momence-v2]].
+export async function getMrrHistoryV2(tiers: SubscriptionTier[]): Promise<MrrHistoryPoint[]> {
+  const priceByName = new Map(tiers.map((t) => [t.name, t.price]));
+  const db = createServerClient();
+
+  const PAGE = 1000;
+  const rows: { date: string; membership_name: string }[] = [];
+  for (let offset = 0; ; offset += PAGE) {
+    const { data } = await db
+      .from("subscriber_snapshots_v2")
+      .select("date, membership_name")
+      .eq("type", "subscription")
+      .eq("is_frozen", false)
+      .order("date", { ascending: true })
+      .range(offset, offset + PAGE - 1);
+    const batch = (data ?? []) as { date: string; membership_name: string }[];
+    rows.push(...batch);
+    if (batch.length < PAGE) break;
+  }
+  if (rows.length === 0) return [];
+
+  const byDate = new Map<string, number>(); // date -> count total
+  const byDateTier = new Map<string, Map<string, number>>();
+  for (const r of rows) {
+    byDate.set(r.date, (byDate.get(r.date) ?? 0) + 1);
+    const tierMap = byDateTier.get(r.date) ?? new Map<string, number>();
+    tierMap.set(r.membership_name, (tierMap.get(r.membership_name) ?? 0) + 1);
+    byDateTier.set(r.date, tierMap);
+  }
+
+  return Array.from(byDate.keys())
+    .sort()
+    .map((date) => {
+      const tierMap = byDateTier.get(date)!;
+      let totalMrr = 0;
+      for (const [name, count] of tierMap) totalMrr += count * (priceByName.get(name) ?? 0);
+      return { date, totalSubscriptions: byDate.get(date)!, totalMrr, totalArr: totalMrr * 12 };
+    });
+}
+
 export async function getSubscriptionsBaseV2(tiers: SubscriptionTier[]): Promise<SubscriptionsBaseV2> {
   const priceByName = new Map(tiers.map((t) => [t.name, t.price]));
   const empty: SubscriptionsBaseV2 = {
@@ -70,18 +125,21 @@ export async function getSubscriptionsBaseV2(tiers: SubscriptionTier[]): Promise
   const { date, rows } = await fetchActiveSubscriptionSnapshot();
   if (!date) return empty;
 
-  const countByName = new Map<string, number>();
+  const membersByName = new Map<string, TierMember[]>();
   const members = new Set<number>();
   for (const r of rows) {
-    countByName.set(r.membership_name, (countByName.get(r.membership_name) ?? 0) + 1);
+    const list = membersByName.get(r.membership_name) ?? [];
+    list.push({ memberId: r.member_id, email: r.email });
+    membersByName.set(r.membership_name, list);
     members.add(r.member_id);
   }
 
-  const tierRows: TierMrrV2[] = [...countByName.entries()]
-    .map(([name, activeCount]) => {
+  const tierRows: TierMrrV2[] = [...membersByName.entries()]
+    .map(([name, tierMembers]) => {
       const price = priceByName.get(name) ?? 0;
+      const activeCount = tierMembers.length;
       const mrr = activeCount * price;
-      return { name, price, activeCount, mrr, arr: mrr * 12 };
+      return { name, price, activeCount, mrr, arr: mrr * 12, members: tierMembers };
     })
     .sort((a, b) => b.mrr - a.mrr || b.activeCount - a.activeCount);
 

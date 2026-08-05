@@ -68,9 +68,11 @@ function FuenteTooltip({ active, payload }: TooltipContentProps) {
 export default function IngresosPorFuenteBody({
   data,
   chartType,
+  onBarClick,
 }: {
   data: IngresosPorFuenteRow[];
   chartType: "bar" | "line";
+  onBarClick?: (month: string, source: "stripe" | "urban") => void;
 }) {
   if (data.length === 0) return <p className="text-sm text-navy/45 text-center py-10">Sin datos</p>;
 
@@ -84,8 +86,16 @@ export default function IngresosPorFuenteBody({
           <Tooltip content={FuenteTooltip} cursor={chartType === "bar" ? { fill: "color-mix(in srgb, var(--color-navy) 4%, transparent)" } : { stroke: "color-mix(in srgb, var(--color-navy) 20%, transparent)", strokeDasharray: "4 3" }} />
           {chartType === "bar" ? (
             <>
-              <Bar dataKey="stripeGross" name="Stripe" stackId="a" fill={COLOR_STRIPE} radius={[0, 0, 0, 0]} />
-              <Bar dataKey="uscNet"      name="Urban"  stackId="a" fill={COLOR_USC}    radius={[2, 2, 0, 0]} />
+              <Bar
+                dataKey="stripeGross" name="Stripe" stackId="a" fill={COLOR_STRIPE} radius={[0, 0, 0, 0]}
+                cursor={onBarClick ? "pointer" : undefined}
+                onClick={onBarClick ? (d: { payload?: IngresosPorFuenteRow }) => d.payload && onBarClick(d.payload.month, "stripe") : undefined}
+              />
+              <Bar
+                dataKey="uscNet" name="Urban" stackId="a" fill={COLOR_USC} radius={[2, 2, 0, 0]}
+                cursor={onBarClick ? "pointer" : undefined}
+                onClick={onBarClick ? (d: { payload?: IngresosPorFuenteRow }) => d.payload && onBarClick(d.payload.month, "urban") : undefined}
+              />
             </>
           ) : (
             <>

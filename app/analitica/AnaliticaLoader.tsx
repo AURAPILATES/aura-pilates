@@ -34,13 +34,18 @@ import Breakeven from "./instances/Breakeven";
 import { computeBreakeven } from "@/lib/breakeven";
 import ConversionPack from "./instances/ConversionPack";
 import { subscriptionTiersFromMemberships } from "@/lib/mrr";
-import { getSubscriptionsBaseV2, getActiveSubscriberEmailsV2 } from "@/lib/subscriptionsV2";
+import { getSubscriptionsBaseV2, getActiveSubscriberEmailsV2, getMrrHistoryV2 } from "@/lib/subscriptionsV2";
+import EvolucionMRR from "./instances/EvolucionMRR";
 import { getAtRiskV2, type AtRiskCustomerInfo } from "@/lib/atRiskV2";
 import { getTeacherStatsV2 } from "@/lib/teacherStatsV2";
 import { getSessionOccupancyRowsV2 } from "@/lib/occupancyV2";
 import { getTeacherConversionV2 } from "@/lib/teacherConversionV2";
+import { getTeacherLtvV2 } from "@/lib/teacherLtvV2";
+import LtvNuevosAlumnos from "./instances/LtvNuevosAlumnos";
 import { getSubscriberFirstClassV2 } from "@/lib/subscriberFirstClassV2";
-import { urbanActivityByMonth } from "@/lib/clientActivityV2";
+import { urbanActivityByMonth, attendanceByChannelMonth } from "@/lib/clientActivityV2";
+import { buildChannelEconomics } from "@/lib/channelEconomics";
+import EconomiaPorCanal from "./instances/EconomiaPorCanal";
 import { loadUrbanRates } from "@/lib/urbanRates";
 import RendimientoProfesoras from "./instances/RendimientoProfesoras";
 import ConversionProfesora from "./instances/ConversionProfesora";
@@ -288,8 +293,10 @@ export default async function AnaliticaLoader({
   const [
     stripeCustomersAll,
     teacherConversionV2,
+    teacherLtvV2,
     subscriberFirstClassV2,
     subscriptionsBaseV2,
+    mrrHistoryV2,
     atRiskV2,
     activeSubEmailsV2,
     urbanRates,
@@ -299,10 +306,14 @@ export default async function AnaliticaLoader({
     // Conversión por profesora: 1ª clase asistida (Momence v2) × volvió a pagar (Stripe).
     // Lee la asistencia capturada en class_bookings_v2; si aún no hay backfill, devuelve vacío.
     getTeacherConversionV2(salesAll).catch(() => null),
+    // LTV de alumnos nuevos por profesora / mes de entrada - mismo cruce que la conversión,
+    // pero con el gasto histórico en vez de solo la tasa.
+    getTeacherLtvV2(salesAll).catch(() => null),
     // Primera clase de los suscriptores (por profesora y franja horaria, Momence × Stripe)
     getSubscriberFirstClassV2(salesAll).catch(() => null),
     // Base real de suscripción desde el snapshot v2 (subscriber_snapshots_v2).
     getSubscriptionsBaseV2(subscriptionTiers),
+    getMrrHistoryV2(subscriptionTiers).catch(() => []),
     getAtRiskV2(),
     // Verdad de "quién sigue suscrito en Momence", para depurar las inferencias por Stripe.
     getActiveSubscriberEmailsV2(),
@@ -369,6 +380,11 @@ export default async function AnaliticaLoader({
   };
   const uscRevenueEff = urbanEffInRange(mainFrom, mainTo);
   const uscRevCompEff = urbanEffInRange(compFrom, compTo);
+
+  // € por clase asistida, Stripe (interno) vs Urban - reutiliza monthlyByFuente (mismo € que
+  // ya se ve en "Ventas por Fuente") cruzado con asistencia real separada por canal.
+  const channelActivityByMonth = await attendanceByChannelMonth().catch(() => new Map());
+  const channelEconomics = buildChannelEconomics(monthlyByFuente, channelActivityByMonth);
 
   const subscriptionCohorts = computeSubscriptionCohorts(paymentsAll, subscriptionTiers, primaryIdMap);
   const retentionCohorts = computeRetentionCohorts(paymentsAll, subscriptionTiers, 4, primaryIdMap);
@@ -715,6 +731,7 @@ export default async function AnaliticaLoader({
                 events={businessEvents}
                 rawPayments={pMain}
               />
+              <EconomiaPorCanal data={channelEconomics} />
               <DesglosGastosUnificado
                 groups={expGroupTotals}
                 categories={expByTopCategory}
@@ -761,6 +778,7 @@ export default async function AnaliticaLoader({
                 avgPerClassComp={avgPerClassComp}
               />
               <SuscripcionesBase data={subscriptionsBaseV2} />
+              <EvolucionMRR data={mrrHistoryV2} />
               <NecesitaAtencion data={atRiskV2} customerInfo={atRiskCustomerInfo} />
               <EvolucionInscritos data={activeCustomersData} />
               <HorarioReporting
@@ -774,6 +792,7 @@ export default async function AnaliticaLoader({
               />
               <RendimientoProfesoras data={teacherStatsV2} dateRange={periodLabel} />
               <ConversionProfesora data={teacherConversionV2} />
+              <LtvNuevosAlumnos data={teacherLtvV2} />
               <PrimeraClaseSuscriptores data={subscriberFirstClassV2} />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <PrimeraCompra summary={firstPurchaseSummary} />

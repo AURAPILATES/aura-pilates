@@ -1,6 +1,10 @@
+"use client";
+
+import { useMemo, useState } from "react";
 import type { BusinessEvent } from "@/lib/businessEvents";
-import { occupancyHeatmapV2, pct, type SessionOccRow } from "@/lib/analytics";
+import { occupancyHeatmapV2, madridWeekdayAndHour, pct, type SessionOccRow } from "@/lib/analytics";
 import { ChartCard } from "@/components/charts";
+import Drawer from "@/app/components/Drawer";
 import HorarioOcupacionEvolucion from "./HorarioOcupacionEvolucion";
 
 export type ReportingData = {
@@ -20,11 +24,16 @@ function occTone(value: number) {
 
 const WEEKDAY_SHORT = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
 
+function fmtCellDate(iso: string) {
+  return new Date(iso).toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "2-digit", timeZone: "Europe/Madrid" });
+}
+
 export default function HorarioReporting({ data }: { data: ReportingData }) {
   // El badge de fecha usa el mismo `periodLabel` del filtro global que el resto de cards
   // acotadas al período (p.ej. "2026" / "Jul 2026"), para que todas indiquen lo mismo.
   const { rows, periodLabel, businessEvents } = data;
   const dateRange = periodLabel;
+  const [selectedCell, setSelectedCell] = useState<{ weekday: number; hour: number } | null>(null);
 
   const heatmap    = occupancyHeatmapV2(rows);
   const heatmapHours = [...new Set(heatmap.map((c) => c.hour))].sort((a, b) => a - b);
@@ -40,6 +49,16 @@ export default function HorarioReporting({ data }: { data: ReportingData }) {
     return count > 0 ? { avgOcc: cells.reduce((s, c) => s + c.avgOcc * c.count, 0) / count, count } : null;
   };
 
+  const selectedSessions = useMemo(() => {
+    if (!selectedCell) return [];
+    return rows
+      .filter((r) => {
+        const { weekday, hour } = madridWeekdayAndHour(r.starts_at);
+        return weekday === selectedCell.weekday && hour === selectedCell.hour;
+      })
+      .sort((a, b) => b.starts_at.localeCompare(a.starts_at));
+  }, [rows, selectedCell]);
+
   return (
     <div className="space-y-4">
 
@@ -51,7 +70,7 @@ export default function HorarioReporting({ data }: { data: ReportingData }) {
 
       <ChartCard
         title="Mapa de calor · Día × Hora"
-        subtitle="Ocupación real media por franja horaria y día de la semana"
+        subtitle="Ocupación real media por franja horaria y día de la semana. Toca una celda para ver las clases de esa franja."
         dataSource="Asistencia real (checkedIn) de clases regulares ya impartidas dentro del período, capturada de Momence API v2. Antes mostraba reservas (no restaba no-shows); ahora es quién apareció de verdad ÷ plazas."
         sources={["momence"]}
       >
@@ -104,9 +123,13 @@ export default function HorarioReporting({ data }: { data: ReportingData }) {
                       );
                       return (
                         <td key={h} className="px-1 py-1">
-                          <div className={`w-full rounded text-center text-[11px] font-semibold py-2 px-2 text-white ${occTone(cell.avgOcc).solid}`}>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedCell({ weekday: wd, hour: h })}
+                            className={`w-full rounded text-center text-[11px] font-semibold py-2 px-2 text-white cursor-pointer hover:opacity-85 transition-opacity ${occTone(cell.avgOcc).solid}`}
+                          >
                             {pct(cell.avgOcc)}
-                          </div>
+                          </button>
                         </td>
                       );
                     })}
@@ -119,6 +142,30 @@ export default function HorarioReporting({ data }: { data: ReportingData }) {
         )}
       </ChartCard>
 
+      {selectedCell && (
+        <Drawer
+          title={`${WEEKDAY_SHORT[selectedCell.weekday]} · ${String(selectedCell.hour).padStart(2, "0")}h`}
+          subtitle={`${selectedSessions.length} clases en esta franja`}
+          onClose={() => setSelectedCell(null)}
+        >
+          <div className="px-6 py-4 space-y-2">
+            {selectedSessions.map((s, i) => {
+              const occ = s.capacity > 0 ? s.checked_in_count / s.capacity : 0;
+              return (
+                <div key={i} className="flex items-center justify-between gap-3 py-2 border-b border-navy/[0.04] last:border-0">
+                  <div className="min-w-0">
+                    <p className="text-sm text-navy font-medium truncate">{fmtCellDate(s.starts_at)}</p>
+                    <p className="text-xs text-navy/45 truncate">{s.teacher_name}</p>
+                  </div>
+                  <span className={`shrink-0 text-xs font-semibold px-2 py-1 rounded-full ${occTone(occ).soft}`}>
+                    {s.checked_in_count}/{s.capacity} ({pct(occ)})
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </Drawer>
+      )}
     </div>
   );
 }

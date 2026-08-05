@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 /** Pila de drawers abiertos (puede haber varios apilados, ej. NewContactDrawer sobre
@@ -18,6 +18,12 @@ const DRAWER_CLOSE_MS = 180;
  * key={record.id} al navegar ↑/↓ entre registros) no necesita repetir esa espera de un ciclo
  * de render: sin esto, cada remonte pintaba un frame vacío -> parpadeo visible al navegar. */
 let hasMountedPortalBefore = false;
+
+/** Si el Drawer anterior se desmontó de golpe (sin pasar por closing=true, p.ej. al navegar
+ * ↑/↓ entre registros con key={record.id}) en vez de cerrarse de verdad, el que lo sustituye
+ * no debe repetir la animación de entrada - el panel nunca llegó a irse, solo cambió el
+ * contenido. */
+let skipNextEnterAnimation = false;
 
 export default function Drawer({
   title,
@@ -54,6 +60,15 @@ export default function Drawer({
   // que es quien de verdad quita el drawer del árbol (p.ej. setSelected(null)).
   const [closing, setClosing] = useState(false);
   const requestClose = useCallback(() => setClosing(true), []);
+  const closingRef = useRef(closing);
+  closingRef.current = closing;
+
+  // Se lee una sola vez al montar: si el hueco lo dejó un desmontaje abrupto (navegación),
+  // este drawer aparece ya "puesto", sin repetir la animación de entrada.
+  const [skipEnter] = useState(() => skipNextEnterAnimation);
+  useEffect(() => {
+    skipNextEnterAnimation = false;
+  }, []);
 
   useEffect(() => {
     if (!closing) return;
@@ -66,6 +81,7 @@ export default function Drawer({
     return () => {
       const idx = openDrawers.lastIndexOf(requestClose);
       if (idx !== -1) openDrawers.splice(idx, 1);
+      if (!closingRef.current) skipNextEnterAnimation = true;
     };
   }, [requestClose]);
 
@@ -97,10 +113,10 @@ export default function Drawer({
   const overlay = (
     <div className="fixed inset-0 z-50 flex justify-end">
       <div
-        className={`absolute inset-0 bg-navy/20 backdrop-blur-[2px] ${closing ? "drawer-veil-out" : "drawer-veil-in"}`}
+        className={`absolute inset-0 bg-navy/20 backdrop-blur-[2px] ${closing ? "drawer-veil-out" : skipEnter ? "" : "drawer-veil-in"}`}
         onClick={requestClose}
       />
-      <div className={`relative w-full ${maxWidth} bg-card h-full flex flex-col shadow-2xl ${closing ? "drawer-panel-out" : "drawer-panel-in"}`}>
+      <div className={`relative w-full ${maxWidth} bg-card h-full flex flex-col shadow-2xl ${closing ? "drawer-panel-out" : skipEnter ? "" : "drawer-panel-in"}`}>
         <div className="flex items-start justify-between gap-3 px-6 py-4 border-b border-navy/[0.07] shrink-0">
           <div className="min-w-0 flex-1">
             {header ?? (

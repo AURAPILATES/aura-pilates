@@ -167,6 +167,27 @@ const fetchAllBookingsForUrban = unstable_cache(
   { revalidate: 1800, tags: ["momence"] },
 );
 
+export type ChannelMonthActivity = { totalClasses: number; urbanClasses: number; internalClasses: number };
+
+// Asistencia real (checkedIn) por mes, separada por canal: Urban Sports Club (email de su
+// dominio) vs interno (Stripe/efectivo/resto). Reutiliza el mismo fetch cacheado de
+// class_bookings_v2 que urbanActivityByMonth, para no repetir la lectura completa de la tabla.
+// Alimenta "€ por clase asistida, Stripe vs Urban". Ver [[project-momence-sales-migration]].
+export async function attendanceByChannelMonth(): Promise<Map<string, ChannelMonthActivity>> {
+  const bookings = await fetchAllBookingsForUrban();
+  const byMonth = new Map<string, ChannelMonthActivity>();
+  for (const b of bookings) {
+    if (!b.checked_in) continue;
+    const m = b.session_starts_at.slice(0, 7);
+    const acc = byMonth.get(m) ?? { totalClasses: 0, urbanClasses: 0, internalClasses: 0 };
+    acc.totalClasses += 1;
+    if (isUrbanEmail(b.email)) acc.urbanClasses += 1;
+    else acc.internalClasses += 1;
+    byMonth.set(m, acc);
+  }
+  return byMonth;
+}
+
 export async function urbanActivityByMonth(
   rates: UrbanRate[] = [],
 ): Promise<Map<string, UrbanMonthActivity>> {

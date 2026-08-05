@@ -87,11 +87,20 @@ export function computeSubscriptionCohorts(
   });
 }
 
+export type RetentionCohortCustomer = {
+  id: string;
+  name: string | null;
+  email: string | null;
+};
+
 export type RetentionCohortRow = {
   month: string;   // "YYYY-MM" - mes de la primera suscripción de la cohorte
   label: string;   // "Feb 2026"
   n: number;       // tamaño de la cohorte
   values: Array<number | null>; // % retención en M+1, M+2, ... (null = mes aún no transcurrido)
+  customers: RetentionCohortCustomer[];
+  /** Para cada cliente (mismo índice que `customers`), si siguió pagando en M+1, M+2... (mismo índice que `values`). */
+  retainedByCustomer: boolean[][];
 };
 
 function addMonths(ym: string, k: number): string {
@@ -113,12 +122,14 @@ export function computeRetentionCohorts(
   if (subPayments.length === 0) return [];
 
   const monthsByCustomer = new Map<string, Set<string>>();
+  const infoByCustomer = new Map<string, { name: string | null; email: string | null }>();
   for (const p of subPayments) {
     const id = primaryIdMap?.get(p.customerId!) ?? p.customerId!;
     const m = p.date.slice(0, 7);
     const set = monthsByCustomer.get(id) ?? new Set<string>();
     set.add(m);
     monthsByCustomer.set(id, set);
+    if (!infoByCustomer.has(id)) infoByCustomer.set(id, { name: p.customerName, email: p.customerEmail });
   }
 
   const firstMonthByCustomer = new Map<string, string>();
@@ -140,16 +151,24 @@ export function computeRetentionCohorts(
     const ids = cohortCustomers.get(month)!;
     const n = ids.length;
     const values: Array<number | null> = [];
+    const retainedByCustomer: boolean[][] = ids.map(() => []);
     for (let k = 1; k <= maxOffset; k++) {
       const targetMonth = addMonths(month, k);
       if (targetMonth > lastDataMonth) {
         values.push(null);
+        ids.forEach((_, i) => retainedByCustomer[i].push(false));
         continue;
       }
-      const retained = ids.filter((id) => monthsByCustomer.get(id)!.has(targetMonth)).length;
-      values.push(n > 0 ? Math.round((retained / n) * 100) : 0);
+      let retainedCount = 0;
+      ids.forEach((id, i) => {
+        const ok = monthsByCustomer.get(id)!.has(targetMonth);
+        retainedByCustomer[i].push(ok);
+        if (ok) retainedCount++;
+      });
+      values.push(n > 0 ? Math.round((retainedCount / n) * 100) : 0);
     }
     const [y, mm] = month.split("-");
-    return { month, label: `${MONTH_LABELS[mm] ?? mm} ${y}`, n, values };
+    const customers = ids.map((id) => ({ id, ...(infoByCustomer.get(id) ?? { name: null, email: null }) }));
+    return { month, label: `${MONTH_LABELS[mm] ?? mm} ${y}`, n, values, customers, retainedByCustomer };
   });
 }

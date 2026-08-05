@@ -21,7 +21,7 @@ async function fetchSessionOccupancyRows(from: string, to: string): Promise<Sess
   for (let offset = 0; ; offset += PAGE) {
     const { data } = await db
       .from("class_sessions_v2")
-      .select("starts_at, capacity, booking_count, checked_in_count")
+      .select("starts_at, teacher_name, capacity, booking_count, checked_in_count")
       .eq("is_cancelled", false)
       .gte("starts_at", from + "T00:00:00.000Z")
       .lte("starts_at", to + "T23:59:59.999Z")
