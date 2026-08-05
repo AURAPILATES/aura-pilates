@@ -164,6 +164,12 @@ body {
   margin-left: 0;
   margin-right: 0;
 }
+/* Cabeceras/filas de las tablas del rediseño (ver tableStylesV2.ts): cada una es un grid
+   independiente. Sin min-width:0 en las celdas, su contenido (badges, texto sin wrap) fuerza
+   el track por encima del minmax(0, Nfr) de gridColsV2, deshaciendo el ancho fijo. */
+.grid-row-v2 > * {
+  min-width: 0;
+}
 
 /* Fundido suave al cambiar de subpestaña (ver SectionTabsV2): se aplica al contenedor
    del contenido, con key={tab} donde el contenido se remonta, o directamente donde se

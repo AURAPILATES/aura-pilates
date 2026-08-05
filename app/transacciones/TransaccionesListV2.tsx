@@ -19,7 +19,7 @@ import { CatIcon } from "./catIcons";
 import ImportButton from "./ImportButton";
 import HeaderPortal from "@/app/components/HeaderPortal";
 
-const COLS = "1.9fr 1.15fr 1.1fr .9fr .7fr .95fr";
+const COLS = "1.85fr 1fr 1.5fr .8fr .7fr .95fr";
 
 /** Barra flotante de acciones masivas, centrada abajo - aparece al seleccionar filas en la
  * tabla de escritorio (checkbox al hover, ver fila de escritorio más abajo). Solo escritorio:
