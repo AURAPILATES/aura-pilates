@@ -21,9 +21,9 @@ type Props = {
 type Tab = "clientes" | "compras" | "urban";
 
 const TABS: SectionTabV2<Tab>[] = [
-  { key: "clientes", label: "Clientes" },
+  { key: "clientes", label: "Estado" },
   { key: "compras",  label: "Historial de compras" },
-  { key: "urban",    label: "Urban" },
+  { key: "urban",    label: "Asistencia Urban" },
 ];
 
 export default function ClientesShell({ customers, payments, clients, urbanClients }: Props) {
