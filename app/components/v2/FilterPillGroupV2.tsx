@@ -26,15 +26,15 @@ export default function FilterPillGroupV2<T extends string>({ options, active, o
               key={key}
               type="button"
               onClick={() => onChange(key)}
-              className={`shrink-0 flex items-center gap-1.5 whitespace-nowrap transition-colors p-[6px] ${
-                segmented ? "text-[13px] rounded-[7px]" : "rounded-[8px] text-[13px] font-medium"
+              className={`shrink-0 flex items-center gap-1.5 whitespace-nowrap transition-colors p-[6px] font-medium ${
+                segmented ? "text-[13px] rounded-[7px] border" : "rounded-[8px] text-[13px]"
               } ${
                 isActive
                   ? segmented
-                    ? "bg-card text-navy font-medium border border-navy/[0.07]"
-                    : "bg-navy text-app-bg font-semibold"
+                    ? "bg-card text-navy border-navy/[0.07]"
+                    : "bg-navy text-app-bg"
                   : segmented
-                    ? "text-navy/50 hover:text-navy"
+                    ? "text-navy/50 hover:text-navy border-transparent"
                     : "text-muted hover:text-navy"
               }`}
             >
