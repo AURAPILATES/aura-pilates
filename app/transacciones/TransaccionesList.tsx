@@ -218,7 +218,7 @@ export function CategoryMultiFilter({
 
 /** Pill visual de categoría, sin interacción - para mostrar en sitios de solo lectura como
  * la tabla de contactos. CategoryPill la usa por dentro para el botón interactivo. */
-export function CategoryBadge({ category, categories, hideIcon = false, rounded = "rounded-full" }: { category: string | null; categories: Category[]; hideIcon?: boolean; rounded?: string }) {
+export function CategoryBadge({ category, categories, hideIcon = false, rounded = "rounded-[6px]" }: { category: string | null; categories: Category[]; hideIcon?: boolean; rounded?: string }) {
   const cat = category ? categories.find((c) => c.value === category) : undefined;
   const cfg = cat ? {
     emoji: cat.emoji,
@@ -240,7 +240,7 @@ export function CategoryBadge({ category, categories, hideIcon = false, rounded 
   );
 }
 
-export function CategoryPill({ category, categories, onChange, hideIcon = false, rounded = "rounded-full" }: { category: string | null; categories: Category[]; onChange: (cat: string | null) => void; hideIcon?: boolean; rounded?: string }) {
+export function CategoryPill({ category, categories, onChange, hideIcon = false, rounded = "rounded-[6px]" }: { category: string | null; categories: Category[]; onChange: (cat: string | null) => void; hideIcon?: boolean; rounded?: string }) {
   const [open, setOpen] = useState(false);
   const [dropPos, setDropPos] = useState<{ left: number; top?: number; bottom?: number; maxHeight: number } | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);

@@ -29,7 +29,7 @@ function SourceAvatar({ method }: { method: string }) {
 
 function CategoryBadge({ category }: { category: string | null }) {
   return (
-    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-navy/[0.05] text-navy/50 whitespace-nowrap">
+    <span className="inline-flex items-center px-2 py-0.5 rounded-[6px] text-[11px] font-medium bg-navy/[0.05] text-navy/50 whitespace-nowrap">
       {category ?? "Sin categoría"}
     </span>
   );

@@ -505,7 +505,7 @@ export default function TransaccionesListV2({
                             {t.contact || <span className="text-faint">—</span>}
                           </div>
                           <div onClick={(e) => e.stopPropagation()}>
-                            <CategoryPill category={t.category} categories={categories} onChange={(cat) => onCategoryChange(t.id, cat)} rounded="rounded-[6px]" />
+                            <CategoryPill category={t.category} categories={categories} onChange={(cat) => onCategoryChange(t.id, cat)} />
                           </div>
                           <div className="flex items-center gap-1.5 text-[12px] text-muted min-w-0">
                             <OriginIcon method={t.payment_method} />
