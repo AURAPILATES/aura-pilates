@@ -563,7 +563,7 @@ type Props = {
 const PAGE_SIZE = 100;
 
 export default function TransaccionesList({
-  transactions, categories, uncategorizedCount, recurringPeriods, recurringExpenses, contacts, allTransactions,
+  transactions, categories, recurringPeriods, recurringExpenses, contacts, allTransactions,
 }: Props) {
   const searchParams = useSearchParams();
   const currentRange = searchParams.get("range") ?? "all";
@@ -647,7 +647,13 @@ export default function TransaccionesList({
 
   const baseFiltered = transactions.filter((t) => {
     const q = normalizeText(search);
-    if (q && !normalizeText(t.contact).includes(q) && !normalizeText(t.concept).includes(q) && !normalizeText(t.bank_details).includes(q)) return false;
+    if (
+      q &&
+      !normalizeText(t.contact).includes(q) &&
+      !normalizeText(t.concept).includes(q) &&
+      !normalizeText(t.bank_details).includes(q) &&
+      !normalizeText(t.notes).includes(q)
+    ) return false;
     if (expandedCatFilters.length > 0 && !expandedCatFilters.includes(t.category ?? "__none__")) return false;
     if (originFilter !== "all" && t.payment_method !== originFilter) return false;
     if (onlyRecurring && !recurringPeriods[t.id]) return false;
@@ -655,15 +661,46 @@ export default function TransaccionesList({
     return true;
   });
 
+  // Badge "sin etiquetar": recalculado en cliente sobre los mismos filtros que baseFiltered
+  // (búsqueda, origen, recurrente, sin contacto) pero ignorando el propio filtro de categoría -
+  // si no, quedaba fijo en el número que tocaba al cargar la página y no se movía al teclear en
+  // el buscador o tocar otros filtros.
+  const uncategorizedCount = useMemo(() => {
+    const q = normalizeText(search);
+    return transactions.filter((t) => {
+      if (t.category) return false;
+      if (
+        q &&
+        !normalizeText(t.contact).includes(q) &&
+        !normalizeText(t.concept).includes(q) &&
+        !normalizeText(t.bank_details).includes(q) &&
+        !normalizeText(t.notes).includes(q)
+      ) return false;
+      if (originFilter !== "all" && t.payment_method !== originFilter) return false;
+      if (onlyRecurring && !recurringPeriods[t.id]) return false;
+      if (onlyNoContact && (t.contact ?? "").trim() !== "") return false;
+      return true;
+    }).length;
+  }, [transactions, search, originFilter, onlyRecurring, onlyNoContact, recurringPeriods]);
+
   const min = amountMin !== "" ? parseFloat(amountMin) : null;
   const max = amountMax !== "" ? parseFloat(amountMax) : null;
 
-  const filtered = baseFiltered.filter((t) => {
-    if (directionFilter === "in" && t.amount <= 0) return false;
-    if (directionFilter === "out" && t.amount >= 0) return false;
+  // Los totales de abajo (Entradas/Salidas/Neto) deben reflejar el filtro de importe igual que
+  // la lista - si no, al acotar por "Importe mín/máx" las tarjetas de arriba siguen sumando
+  // movimientos que ya no aparecen debajo. La dirección (in/out) se deja fuera a propósito: esas
+  // mismas tarjetas son también el filtro (clic en "Entradas"/"Salidas"), así que deben seguir
+  // mostrando ambos lados aunque uno esté activo como filtro.
+  const amountFiltered = baseFiltered.filter((t) => {
     const abs = Math.abs(t.amount);
     if (min != null && !Number.isNaN(min) && abs < min) return false;
     if (max != null && !Number.isNaN(max) && abs > max) return false;
+    return true;
+  });
+
+  const filtered = amountFiltered.filter((t) => {
+    if (directionFilter === "in" && t.amount <= 0) return false;
+    if (directionFilter === "out" && t.amount >= 0) return false;
     return true;
   });
 
@@ -705,11 +742,11 @@ export default function TransaccionesList({
 
   // Las devoluciones se siguen mostrando en la lista, pero no cuentan en los totales de arriba
   // (su contrapartida ya vive en otro movimiento aparte, ver isCashflowTransaction).
-  const totalIn  = baseFiltered.filter((t) => t.amount > 0 && !t.is_refund).reduce((s, t) => s + t.amount, 0);
-  const totalOut = baseFiltered.filter((t) => t.amount < 0 && !t.is_refund).reduce((s, t) => s + Math.abs(t.amount), 0);
+  const totalIn  = amountFiltered.filter((t) => t.amount > 0 && !t.is_refund).reduce((s, t) => s + t.amount, 0);
+  const totalOut = amountFiltered.filter((t) => t.amount < 0 && !t.is_refund).reduce((s, t) => s + Math.abs(t.amount), 0);
   const neto     = totalIn - totalOut;
-  const countIn  = baseFiltered.filter((t) => t.amount > 0 && !t.is_refund).length;
-  const countOut = baseFiltered.filter((t) => t.amount < 0 && !t.is_refund).length;
+  const countIn  = amountFiltered.filter((t) => t.amount > 0 && !t.is_refund).length;
+  const countOut = amountFiltered.filter((t) => t.amount < 0 && !t.is_refund).length;
 
   function handleCategoryChange(id: string, category: string | null) {
     startTransition(() => updateTransactionCategory(id, category));

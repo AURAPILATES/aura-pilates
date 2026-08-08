@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Category } from "@/lib/categories";
 import type { PaymentMethod } from "@/lib/transactions";
 import { matchesPattern } from "@/lib/contactRules";
-import { addCashTransaction, type Contact } from "./actions";
+import { addCashTransaction, findCashDuplicates, type Contact, type CashDuplicateCandidate } from "./actions";
 import Drawer from "@/app/components/Drawer";
 import Button, { SecondaryButton } from "@/app/components/Button";
 import Select from "@/app/components/Select";
@@ -22,6 +22,14 @@ const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
 
 function todayISO() {
   return new Date().toISOString().slice(0, 10);
+}
+
+function fmtDateShort(d: string): string {
+  return d.split("-").reverse().join("/");
+}
+
+function fmtAmtShort(n: number): string {
+  return Math.abs(n).toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
 }
 
 /** Busca, entre los conceptos bancarios guardados de cada contacto (y si no tiene ninguno, su
@@ -58,6 +66,10 @@ export default function AddCashModal({ categories, contacts, onClose }: { catego
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("efectivo");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Movimientos ya guardados que podrían ser este mismo pago (ver findCashDuplicates) - si hay
+  // alguno, se pide confirmar antes de guardar en vez de descartar solo como hace la importación
+  // bancaria (aquí no hay archivo con el que comparar, el usuario solo lo escribe una vez).
+  const [duplicates, setDuplicates] = useState<CashDuplicateCandidate[] | null>(null);
 
   const contactTouched = useRef(false);
   const categoryTouched = useRef(false);
@@ -74,14 +86,23 @@ export default function AddCashModal({ categories, contacts, onClose }: { catego
   const parsedAmount = parseFloat(amount.replace(",", "."));
   const canSave = !isNaN(parsedAmount) && parsedAmount > 0 && date.length === 10;
 
-  async function handleSave(close: () => void) {
+  async function handleSave(close: () => void, force = false) {
     if (!canSave) return;
     setSaving(true);
     setError(null);
     try {
+      const amount = isIncome ? Math.abs(parsedAmount) : -Math.abs(parsedAmount);
+      if (!force) {
+        const found = await findCashDuplicates({ date, amount, concept });
+        if (found.length > 0) {
+          setDuplicates(found);
+          setSaving(false);
+          return;
+        }
+      }
       await addCashTransaction({
         date,
-        amount: isIncome ? Math.abs(parsedAmount) : -Math.abs(parsedAmount),
+        amount,
         concept,
         category: category || null,
         contactId,
@@ -96,20 +117,43 @@ export default function AddCashModal({ categories, contacts, onClose }: { catego
     }
   }
 
+  // Cualquier cambio tras ver el aviso de duplicados lo invalida - hay que volver a comprobar
+  // antes de guardar en vez de dejar "Guardar de todas formas" apuntando a datos ya editados.
+  function clearDuplicatesOnEdit() {
+    if (duplicates) setDuplicates(null);
+  }
+
   return (
     <Drawer
       title="Añadir movimiento manual"
       onClose={onClose}
-      footer={(close) => (
-        <div className="flex gap-3">
-          <SecondaryButton onClick={close} disabled={saving} className="flex-1">
-            Cancelar
-          </SecondaryButton>
-          <Button onClick={() => handleSave(close)} disabled={!canSave || saving} className="flex-1">
-            {saving ? "Guardando…" : "Guardar"}
-          </Button>
-        </div>
-      )}
+      footer={(close) =>
+        duplicates && duplicates.length > 0 ? (
+          <div className="w-full">
+            <p className="text-xs text-warning bg-warning/[0.08] rounded-lg px-3 py-2 mb-3">
+              Ya hay {duplicates.length === 1 ? "un movimiento parecido" : `${duplicates.length} movimientos parecidos`} el {fmtDateShort(duplicates[0].date)}:{" "}
+              {duplicates.map((d) => `${d.label} (${d.amount > 0 ? "+" : "−"}${fmtAmtShort(d.amount)})`).join(", ")}. ¿Seguro que quieres añadir este también?
+            </p>
+            <div className="flex gap-3">
+              <SecondaryButton onClick={() => setDuplicates(null)} disabled={saving} className="flex-1">
+                Revisar
+              </SecondaryButton>
+              <Button onClick={() => handleSave(close, true)} disabled={saving} className="flex-1">
+                {saving ? "Guardando…" : "Guardar de todas formas"}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex gap-3">
+            <SecondaryButton onClick={close} disabled={saving} className="flex-1">
+              Cancelar
+            </SecondaryButton>
+            <Button onClick={() => handleSave(close)} disabled={!canSave || saving} className="flex-1">
+              {saving ? "Guardando…" : "Guardar"}
+            </Button>
+          </div>
+        )
+      }
     >
         <div className="px-6 py-5 space-y-4">
           <ToggleGroup
@@ -118,7 +162,7 @@ export default function AddCashModal({ categories, contacts, onClose }: { catego
               { value: "expense", label: "Gasto", activeClassName: "bg-danger text-white font-medium" },
             ]}
             value={isIncome ? "income" : "expense"}
-            onChange={(v) => setIsIncome(v === "income")}
+            onChange={(v) => { setIsIncome(v === "income"); clearDuplicatesOnEdit(); }}
             fullWidth
             className="[&_button]:py-[3px] [&_button]:text-[13px]"
           />
@@ -128,7 +172,7 @@ export default function AddCashModal({ categories, contacts, onClose }: { catego
             <input
               type="date"
               value={date}
-              onChange={(e) => setDate(e.target.value)}
+              onChange={(e) => { setDate(e.target.value); clearDuplicatesOnEdit(); }}
               className="w-full border border-navy/[0.12] rounded-lg px-3 py-2 text-sm text-navy focus:outline-none focus:border-primary/40"
             />
           </div>
@@ -139,7 +183,7 @@ export default function AddCashModal({ categories, contacts, onClose }: { catego
               unit="€"
               unitSide="left"
               value={amount}
-              onChange={(e) => setAmount(e.target.value)}
+              onChange={(e) => { setAmount(e.target.value); clearDuplicatesOnEdit(); }}
               placeholder="0,00"
             />
           </div>
@@ -149,7 +193,7 @@ export default function AddCashModal({ categories, contacts, onClose }: { catego
             <input
               type="text"
               value={concept}
-              onChange={(e) => setConcept(e.target.value)}
+              onChange={(e) => { setConcept(e.target.value); clearDuplicatesOnEdit(); }}
               placeholder="ej: pago salario"
               className="w-full border border-navy/[0.12] rounded-lg px-3 py-2 text-sm text-navy focus:outline-none focus:border-primary/40"
             />

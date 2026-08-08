@@ -612,6 +612,22 @@ export async function saveNewContacts(drafts: NewContactDraft[]): Promise<{ upda
   return { updated };
 }
 
+function normName(s: string | null | undefined): string {
+  return (s ?? "").trim().toLowerCase();
+}
+
+/** ¿Podrían referirse al mismo contacto o comercio? Coincide si alguno de los dos textos aparece
+ * como subsecuencia de palabras dentro del otro (ver matchesPattern) - a diferencia de un
+ * .includes() por caracteres, evita falsos positivos entre nombres que solo comparten un prefijo
+ * (ej. "Ana" no debe coincidir con "Anabel" solo porque una cadena está dentro de la otra letra a
+ * letra). Se usa tanto para detectar duplicados al importar como al añadir efectivo a mano. */
+function namesOverlap(a: string | null, b: string | null): boolean {
+  const na = normName(a);
+  const nb = normName(b);
+  if (!na || !nb) return false;
+  return matchesPattern(na, nb) || matchesPattern(nb, na);
+}
+
 export async function importTransactions(
   rows: ImportRow[],
   paymentMethod: PaymentMethod = "banco",
@@ -632,8 +648,11 @@ export async function importTransactions(
   // datos") coincide del todo o en parte con el del existente (concepto, "más datos" o
   // contacto) - no hace falta que el origen/banco sea el mismo, ni que el texto sea idéntico
   // carácter a carácter (el mismo movimiento puede llegar recortado distinto según el export).
-  // Solo se comparan movimientos vivos: un movimiento en la papelera (deleted_at != null) no
-  // debe bloquear su reimportación - si no, borrar y volver a importar deja el hueco vacío.
+  // La coincidencia es por palabras completas (ver namesOverlap), no por subcadena de
+  // caracteres - si no, dos personas distintas cuyo nombre comparte solo un prefijo (ej. "Ana"
+  // y "Anabel") se marcarían como el mismo movimiento con solo pagar el mismo importe el mismo
+  // día. Solo se comparan movimientos vivos: un movimiento en la papelera (deleted_at != null)
+  // no debe bloquear su reimportación - si no, borrar y volver a importar deja el hueco vacío.
   const dates = rows.map((r) => r.date).sort();
   const { data: existing } = await supabase
     .from("transactions")
@@ -650,15 +669,6 @@ export async function importTransactions(
     existingByDateAmount.set(key, list);
   }
 
-  function norm(s: string | null | undefined): string {
-    return (s ?? "").trim().toLowerCase();
-  }
-  function namesOverlap(a: string | null, b: string | null): boolean {
-    const na = norm(a);
-    const nb = norm(b);
-    if (!na || !nb) return false;
-    return na.includes(nb) || nb.includes(na);
-  }
   function isDuplicate(r: ImportRow): boolean {
     const candidates = existingByDateAmount.get(`${r.date}|${r.amount}`);
     if (!candidates) return false;
@@ -757,6 +767,33 @@ export async function undoImport(batchId: string): Promise<{ deleted: number }> 
   if (error) throw new Error(error.message);
   revalidateTag("transactions");
   return { deleted: data?.length ?? 0 };
+}
+
+export type CashDuplicateCandidate = { id: string; date: string; amount: number; label: string };
+
+/** Busca movimientos ya guardados que podrían ser el mismo pago en efectivo que se está a punto
+ * de añadir a mano: misma fecha e importe (con el signo ya aplicado) y, si se ha escrito un
+ * concepto, que además se solape con el nombre de alguno de los existentes (ver namesOverlap). A
+ * diferencia de la importación bancaria no hay un archivo completo que comparar entre sí, así que
+ * el aviso se dispara al intentar guardar, no en un paso previo. Sin concepto se avisa solo con
+ * fecha+importe - el coste de un falso aviso aquí es un clic de más, no perder el movimiento en
+ * silencio como pasaría si se descartara solo. */
+export async function findCashDuplicates(input: { date: string; amount: number; concept: string }): Promise<CashDuplicateCandidate[]> {
+  const supabase = createServerClient();
+  const { data, error } = await supabase
+    .from("transactions")
+    .select("id, date, amount, concept, bank_details, contact")
+    .eq("date", input.date)
+    .eq("amount", input.amount)
+    .is("deleted_at", null);
+  if (error) throw new Error(error.message);
+
+  const concept = input.concept.trim();
+  const rows = (data ?? []) as { id: string; date: string; amount: number; concept: string | null; bank_details: string | null; contact: string | null }[];
+  const matches = concept
+    ? rows.filter((t) => namesOverlap(concept, t.concept) || namesOverlap(concept, t.bank_details) || namesOverlap(concept, t.contact))
+    : rows;
+  return matches.map((t) => ({ id: t.id, date: t.date, amount: t.amount, label: t.contact || t.concept || "Sin concepto" }));
 }
 
 export async function addCashTransaction(input: {
@@ -1043,6 +1080,11 @@ export async function createRecurringExpenseFromTransaction(
       retencion_rate: retencionRate,
       contact_id: contactId,
       status: "confirmed",
+      // Fecha de referencia desde la que proyectar mientras no haya (o nunca haya, si es un
+      // ingreso: findRecurringSeries solo agrupa gastos) una serie de 2+ pagos que la sustituya
+      // - sin esto, forecastConfirmedExpenses no encuentra fecha y descarta la fila en silencio
+      // (ver anchor_date en RecurringExpense).
+      anchor_date: t.date,
       end_type: end?.type ?? "never",
       end_date: end?.type === "date" ? end.date ?? null : null,
       end_count: end?.type === "count" ? end.count ?? null : null,

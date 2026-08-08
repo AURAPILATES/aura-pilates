@@ -1,7 +1,10 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import Drawer from "@/app/components/Drawer";
+import TablePaginationV2 from "@/app/components/v2/TablePaginationV2";
 import { loadDeletedTransactions, restoreTransactions, type DeletedTransaction } from "./actions";
+
+const PAGE_SIZE = 100;
 
 function fmtDate(d: string) {
   const [y, m, day] = d.split("-");
@@ -66,6 +69,10 @@ export default function PapeleraDrawer({ onClose }: { onClose: () => void }) {
   const [items, setItems] = useState<DeletedTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [restoring, setRestoring] = useState<Set<string>>(new Set());
+  const [page, setPage] = useState(0);
+  const totalPages = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages - 1);
+  const pageItems = items.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
 
   useEffect(() => {
     loadDeletedTransactions().then(setItems).catch(() => {}).finally(() => setLoading(false));
@@ -116,7 +123,7 @@ export default function PapeleraDrawer({ onClose }: { onClose: () => void }) {
             </div>
 
             <div className="divide-y divide-navy/[0.04]">
-              {items.map((t) => {
+              {pageItems.map((t) => {
                 const isRestoring = restoring.has(t.id);
                 const primary = t.contact || t.concept || "-";
                 const secondary = t.contact && t.concept && t.concept !== t.contact ? t.concept : null;
@@ -148,6 +155,12 @@ export default function PapeleraDrawer({ onClose }: { onClose: () => void }) {
                 );
               })}
             </div>
+
+            {items.length > PAGE_SIZE && (
+              <div className="px-3">
+                <TablePaginationV2 page={safePage} totalItems={items.length} pageSize={PAGE_SIZE} onPageChange={setPage} />
+              </div>
+            )}
           </>
         )}
       </div>

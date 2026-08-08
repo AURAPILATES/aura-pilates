@@ -223,7 +223,7 @@ function MarkRecurringControl({
           </span>
           <span className="block text-xs text-navy/45 mt-0.5">
             {isIncome
-              ? "Se repite cada periodo (p. ej. una nómina o cuota) y se tiene en cuenta en Previsiones."
+              ? "Se repite cada periodo (p. ej. una nómina o cuota) y queda registrado en Recurrentes."
               : "Se repite cada periodo (p. ej. un alquiler o suscripción) y se tiene en cuenta en Previsiones."}
           </span>
         </span>
@@ -562,7 +562,12 @@ export default function TransactionDrawer({
           isIncome={isIncome}
           contactLabel={t.contact ?? ""}
           contacts={contacts}
-          initiallyRecurring={recurringExpense?.status === "confirmed" || !!recurringPeriod}
+          // Solo "confirmed" debe mostrar el checkbox marcado: si en Recurrentes se ignoró o se
+          // dio de baja esta serie (status "ignored"/"cancelled"), el heurístico puede seguir
+          // detectándola (recurringPeriod) pero eso no debe pintarse como si estuviera activa -
+          // si no, desmarcarla aquí borraría esa decisión (ver removeRecurringExpenseForTransaction)
+          // y la resucitaría como pendiente en Recurrentes sin que el usuario lo pidiera.
+          initiallyRecurring={recurringExpense?.status === "confirmed"}
           initialPeriod={recurringExpense?.period ?? recurringPeriod}
           initialEndType={recurringExpense?.end_type}
           initialEndDate={recurringExpense?.end_date}

@@ -65,6 +65,11 @@ export function forecastConfirmedExpenses(
 
   for (const e of expenses) {
     if (e.status !== "confirmed") continue;
+    // Solo gastos: PrevisionGastos sólo maneja importes negativos (usa Math.abs y los suma como
+    // "comprometido"), así que un ingreso recurrente confirmado aquí se contaría como un pago más
+    // en vez de como entrada. Los ingresos recurrentes se ven y gestionan en Transacciones ›
+    // Recurrentes, pero no alimentan esta previsión.
+    if (e.amount >= 0) continue;
     const s = seriesByKey.get(e.key);
     const occurrences = s?.transactions.length ?? 0;
     // Sin transacciones reales todavía, un recurrente manual proyecta desde su fecha de
