@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Drawer from "@/app/components/Drawer";
+import Avatar from "@/app/components/Avatar";
 import Checkbox from "@/app/components/Checkbox";
 import { fmt } from "@/lib/analytics";
 import { setClientFamilyAction } from "@/app/actions/setClientFamily";
@@ -86,9 +87,7 @@ export default function CustomerDrawer({ customer, payments, onClose, onPrev, on
       header={
         <div>
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-              <span className="text-base font-bold text-primary">{initials(customer.name, customer.email)}</span>
-            </div>
+            <Avatar seed={customer.id} initials={initials(customer.name, customer.email)} size={48} />
             <div className="min-w-0">
               <h2 className="text-base font-bold text-navy leading-tight truncate">
                 {customer.name ?? "Sin nombre"}

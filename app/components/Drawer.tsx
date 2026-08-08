@@ -19,10 +19,13 @@ const DRAWER_CLOSE_MS = 180;
  * de render: sin esto, cada remonte pintaba un frame vacío -> parpadeo visible al navegar. */
 let hasMountedPortalBefore = false;
 
-/** Si el Drawer anterior se desmontó de golpe (sin pasar por closing=true, p.ej. al navegar
- * ↑/↓ entre registros con key={record.id}) en vez de cerrarse de verdad, el que lo sustituye
- * no debe repetir la animación de entrada - el panel nunca llegó a irse, solo cambió el
- * contenido. */
+/** El panel/velo que sustituye a otro al navegar ↑/↓ entre registros (key={record.id}) no
+ * debe repetir la animación de entrada - el drawer nunca llegó a irse, solo cambió el
+ * contenido. Se marca de forma SÍNCRONA en el propio click/tecla de navegación (no en el
+ * efecto de desmontaje del Drawer saliente): ese efecto corre en la fase de commit, después
+ * de que el nuevo Drawer ya haya leído el flag en su render de montaje, así que llegaría
+ * tarde. Como fallback (remontajes no iniciados por estos botones) el efecto de desmontaje
+ * de abajo también lo marca, por si acaso, aunque no es la vía principal. */
 let skipNextEnterAnimation = false;
 
 export default function Drawer({
@@ -94,8 +97,8 @@ export default function Drawer({
       // dentro del propio drawer, p.ej. tarifas o formularios).
       const el = ev.target as HTMLElement | null;
       if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT" || el.isContentEditable)) return;
-      if (ev.key === "ArrowUp" && hasPrev && onPrev) { ev.preventDefault(); onPrev(); }
-      else if (ev.key === "ArrowDown" && hasNext && onNext) { ev.preventDefault(); onNext(); }
+      if (ev.key === "ArrowUp" && hasPrev && onPrev) { ev.preventDefault(); skipNextEnterAnimation = true; onPrev(); }
+      else if (ev.key === "ArrowDown" && hasNext && onNext) { ev.preventDefault(); skipNextEnterAnimation = true; onNext(); }
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
@@ -131,7 +134,7 @@ export default function Drawer({
               <div className="flex items-center rounded-lg border border-navy/[0.12] bg-card overflow-hidden">
                 <button
                   type="button"
-                  onClick={onPrev}
+                  onClick={() => { skipNextEnterAnimation = true; onPrev?.(); }}
                   disabled={!hasPrev}
                   title="Anterior (↑)"
                   className="w-7 h-7 flex items-center justify-center text-navy/40 hover:text-navy hover:bg-navy/[0.04] disabled:opacity-25 disabled:hover:bg-transparent disabled:cursor-default transition-colors"
@@ -143,7 +146,7 @@ export default function Drawer({
                 <div className="w-px h-4 bg-navy/[0.12]" />
                 <button
                   type="button"
-                  onClick={onNext}
+                  onClick={() => { skipNextEnterAnimation = true; onNext?.(); }}
                   disabled={!hasNext}
                   title="Siguiente (↓)"
                   className="w-7 h-7 flex items-center justify-center text-navy/40 hover:text-navy hover:bg-navy/[0.04] disabled:opacity-25 disabled:hover:bg-transparent disabled:cursor-default transition-colors"
