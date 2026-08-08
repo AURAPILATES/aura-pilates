@@ -32,6 +32,7 @@ export default function Drawer({
   title,
   subtitle,
   header,
+  headerFull,
   onClose,
   children,
   footer,
@@ -44,6 +45,12 @@ export default function Drawer({
   title?: string;
   subtitle?: string;
   header?: React.ReactNode;
+  /** Contenido extra bajo la fila de título, a todo el ancho del drawer (a diferencia de
+   * `header`, que comparte fila con las flechas/el botón de cerrar y por tanto queda más
+   * estrecho que el drawer - cualquier "a la derecha" dentro de `header` topa con ese margen
+   * reservado, nunca llega al borde real). Para badges/checkboxes que sí deben llegar al
+   * borde derecho del drawer. */
+  headerFull?: React.ReactNode;
   onClose: () => void;
   children: React.ReactNode;
   /** Puede recibir una función en vez de un nodo directo cuando el footer trae sus propios
@@ -120,52 +127,55 @@ export default function Drawer({
         onClick={requestClose}
       />
       <div className={`relative w-full ${maxWidth} bg-card h-full flex flex-col shadow-2xl ${closing ? "drawer-panel-out" : skipEnter ? "" : "drawer-panel-in"}`}>
-        <div className="flex items-start justify-between gap-3 px-6 py-4 border-b border-navy/[0.07] shrink-0">
-          <div className="min-w-0 flex-1">
-            {header ?? (
-              <>
-                {title && <h2 className="text-base font-bold text-navy truncate">{title}</h2>}
-                {subtitle && <p className="text-xs text-navy/45 mt-0.5">{subtitle}</p>}
-              </>
-            )}
+        <div className="px-6 py-4 border-b border-navy/[0.07] shrink-0">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              {header ?? (
+                <>
+                  {title && <h2 className="text-base font-bold text-navy truncate">{title}</h2>}
+                  {subtitle && <p className="text-xs text-navy/45 mt-0.5">{subtitle}</p>}
+                </>
+              )}
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              {(onPrev || onNext) && (
+                <div className="flex items-center rounded-lg border border-navy/[0.12] bg-card overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => { skipNextEnterAnimation = true; onPrev?.(); }}
+                    disabled={!hasPrev}
+                    title="Anterior (↑)"
+                    className="w-7 h-7 flex items-center justify-center text-navy/40 hover:text-navy hover:bg-navy/[0.04] disabled:opacity-25 disabled:hover:bg-transparent disabled:cursor-default transition-colors"
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="18 15 12 9 6 15" />
+                    </svg>
+                  </button>
+                  <div className="w-px h-4 bg-navy/[0.12]" />
+                  <button
+                    type="button"
+                    onClick={() => { skipNextEnterAnimation = true; onNext?.(); }}
+                    disabled={!hasNext}
+                    title="Siguiente (↓)"
+                    className="w-7 h-7 flex items-center justify-center text-navy/40 hover:text-navy hover:bg-navy/[0.04] disabled:opacity-25 disabled:hover:bg-transparent disabled:cursor-default transition-colors"
+                  >
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                  </button>
+                </div>
+              )}
+              <button
+                onClick={requestClose}
+                className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full hover:bg-navy/5 text-navy/40 hover:text-navy transition-colors"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
-            {(onPrev || onNext) && (
-              <div className="flex items-center rounded-lg border border-navy/[0.12] bg-card overflow-hidden">
-                <button
-                  type="button"
-                  onClick={() => { skipNextEnterAnimation = true; onPrev?.(); }}
-                  disabled={!hasPrev}
-                  title="Anterior (↑)"
-                  className="w-7 h-7 flex items-center justify-center text-navy/40 hover:text-navy hover:bg-navy/[0.04] disabled:opacity-25 disabled:hover:bg-transparent disabled:cursor-default transition-colors"
-                >
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="18 15 12 9 6 15" />
-                  </svg>
-                </button>
-                <div className="w-px h-4 bg-navy/[0.12]" />
-                <button
-                  type="button"
-                  onClick={() => { skipNextEnterAnimation = true; onNext?.(); }}
-                  disabled={!hasNext}
-                  title="Siguiente (↓)"
-                  className="w-7 h-7 flex items-center justify-center text-navy/40 hover:text-navy hover:bg-navy/[0.04] disabled:opacity-25 disabled:hover:bg-transparent disabled:cursor-default transition-colors"
-                >
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="6 9 12 15 18 9" />
-                  </svg>
-                </button>
-              </div>
-            )}
-            <button
-              onClick={requestClose}
-              className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full hover:bg-navy/5 text-navy/40 hover:text-navy transition-colors"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
-          </div>
+          {headerFull}
         </div>
         <div className="flex-1 overflow-y-auto">{children}</div>
         {footer && (

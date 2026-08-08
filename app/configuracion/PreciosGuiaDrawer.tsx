@@ -33,7 +33,29 @@ export default function PreciosGuiaDrawer() {
           <div className="px-6 py-5 space-y-6 text-[13px] text-navy/70 leading-relaxed">
 
             <div>
-              <h3 className="text-[13px] font-bold text-navy mb-2">Para qué sirve</h3>
+              <h3 className="text-[13px] font-bold text-navy mb-2">Tarifa Urban Sports Club</h3>
+              <p>
+                Momence no expone qué le paga Urban a Aura por clase, así que esa tarifa se define
+                aquí a mano. Debe ser el <B>importe bruto real</B> que Urban transfiere por cada clase
+                asistida (el que ves en el banco, IVA incluido) - no un precio de lista.
+              </p>
+              <p className="mt-2">
+                Urban paga a mes vencido (la transferencia de mediados de mes es de las clases del
+                mes anterior). Mientras no llega esa transferencia, la app estima en vivo el ingreso
+                del mes en curso como <B>clases asistidas (Momence) × tarifa vigente</B>; en cuanto
+                llega el importe real del banco, lo sustituye. Se ve en Analítica → Ventas (fila
+                «Urban», marcada <B>est.*</B> mientras es estimado) y entra en el cálculo trimestral
+                de IVA repercutido igual que el resto de ventas.
+              </p>
+              <p className="mt-2">
+                Puedes guardar varias tarifas con rango de fechas si el precio pactado con Urban
+                cambia con el tiempo: el rango se aplica a la <B>fecha de la clase</B>, no a la del
+                cobro. Dejar «Hasta» vacío la deja vigente indefinidamente.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="text-[13px] font-bold text-navy mb-2">Precios de Stripe: para qué sirven</h3>
               <p>
                 Cuando entra un cobro por Stripe, Stripe solo indica el <B>importe</B>, no qué
                 producto se compró. La app lo deduce comparando ese importe con esta lista de precios.

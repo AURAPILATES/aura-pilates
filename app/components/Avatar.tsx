@@ -35,11 +35,10 @@ export default function Avatar({ seed, initials, logoDomain, size = 32 }: {
     );
   }
 
-  const color = hashColor(seed);
   return (
     <div
-      className="shrink-0 rounded-full flex items-center justify-center font-semibold"
-      style={{ width: size, height: size, fontSize: Math.round(size * 0.36), background: `${color}1A`, color }}
+      className="shrink-0 rounded-full flex items-center justify-center font-semibold text-white"
+      style={{ width: size, height: size, fontSize: Math.round(size * 0.36), background: hashColor(seed) }}
     >
       {initials}
     </div>

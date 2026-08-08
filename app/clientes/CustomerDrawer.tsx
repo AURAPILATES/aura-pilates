@@ -85,21 +85,22 @@ export default function CustomerDrawer({ customer, payments, onClose, onPrev, on
       hasPrev={hasPrev}
       hasNext={hasNext}
       header={
-        <div>
-          <div className="flex items-center gap-4">
-            <Avatar seed={customer.id} initials={initials(customer.name, customer.email)} size={48} />
-            <div className="min-w-0">
-              <h2 className="text-base font-bold text-navy leading-tight truncate">
-                {customer.name ?? "Sin nombre"}
-              </h2>
-              {customer.email && (
-                <p className="text-xs text-navy/50 truncate">{customer.email}</p>
-              )}
-            </div>
+        <div className="flex items-center gap-4">
+          <Avatar seed={customer.id} initials={initials(customer.name, customer.email)} size={48} />
+          <div className="min-w-0">
+            <h2 className="text-base font-bold text-navy leading-tight truncate">
+              {customer.name ?? "Sin nombre"}
+            </h2>
+            {customer.email && (
+              <p className="text-xs text-navy/50 truncate">{customer.email}</p>
+            )}
           </div>
-          <div className="flex items-center justify-between gap-2 mt-3">
-            <div className="flex items-center gap-2 flex-wrap">
-              {(() => {
+        </div>
+      }
+      headerFull={
+        <div className="flex items-center justify-between gap-2 mt-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            {(() => {
                 const dSub  = customer.daysSinceLastSub  ?? Infinity;
                 const dPack = customer.daysSinceLastPack ?? Infinity;
                 const pt = dSub <= dPack && dSub < Infinity ? "sub"
@@ -159,7 +160,6 @@ export default function CustomerDrawer({ customer, payments, onClose, onPrev, on
               </span>
             </label>
           </div>
-        </div>
       }
       footer={(() => {
         const ids = customer.stripeIds;
