@@ -8,7 +8,7 @@ export const tableHeadClassV2 =
   "grid-row-v2 items-center gap-3 py-[9px] bg-[#fafaf8] dark:bg-white/[0.03] border-b border-border text-[10.5px] tracking-wide uppercase text-faint font-semibold";
 
 export const tableRowClassV2 =
-  "grid-row-v2 items-center gap-3 border-t border-subtle py-[7px] hover:bg-subtle transition-colors";
+  "grid-row-v2 items-center gap-3 border-t border-subtle py-[10px] hover:bg-subtle transition-colors";
 
 export const tableGroupClassV2 =
   "flex items-center justify-between gap-2 py-[7px] text-[11.5px] font-semibold tracking-wide text-muted";

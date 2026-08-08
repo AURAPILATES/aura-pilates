@@ -64,10 +64,10 @@ const STATUS_IN_FILTER: Record<"activa" | "urban" | "congelada" | "pack" | "sin_
 const hasPagoPendiente = (r: MemberClient) => (r.coverage === "none" && r.attended > 0) || r.status.key === "error_pago";
 
 const TONE_CLS: Record<StatusTone, string> = {
-  success: "bg-success/10 text-success",
-  warning: "bg-[#b45309]/10 text-[#b45309] dark:text-[#e8a572]",
-  danger: "bg-danger/10 text-danger",
-  muted: "bg-navy/[0.05] text-navy/50",
+  success: "bg-card border border-border text-navy/70",
+  warning: "bg-card border border-border text-navy/70",
+  danger: "bg-card border border-border text-navy/70",
+  muted: "bg-card border border-border text-navy/50",
 };
 const TONE_DOT: Record<StatusTone, string> = {
   success: "bg-success",
@@ -350,7 +350,7 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
                       <Avatar seed={r.id} initials={initials(r.name, r.email)} size={30} />
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5 min-w-0">
-                          <p className="text-[13px] font-medium text-navy truncate">{r.name}</p>
+                          <p className="text-[13px] font-semibold text-navy truncate">{r.name}</p>
                           {r.isFamily && <span className="shrink-0 text-[10px] font-semibold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/15 px-[5px] py-[1px] rounded-full">Familiar</span>}
                         </div>
                         {r.email && <p className="text-[12px] text-faint truncate">{r.email}</p>}
@@ -378,11 +378,11 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
                       </span>
                       {r.status.detail && <p className="text-[11px] text-faint mt-0.5 truncate">{r.status.detail}</p>}
                     </div>
-                    <div className="text-[13px] font-medium text-navy tabular-nums">{r.attended}</div>
+                    <div className="text-[13px] text-navy tabular-nums">{r.attended}</div>
                     <div className={`text-[13px] tabular-nums ${r.cancellations > r.attended && r.cancellations > 2 ? "text-danger font-medium" : "text-muted"}`}>{r.cancellations}</div>
                     <div className="text-[13px] text-muted tabular-nums">{r.firstClassDate ? fmtDate(r.firstClassDate) : "-"}</div>
                     <div className="text-[13px] text-muted">{r.lastClassDate ? timeAgo(r.lastClassDate) : "-"}</div>
-                    <div className="text-[13px] font-medium text-navy tabular-nums">{r.stripe ? fmt(r.stripe.totalSpent) : "-"}</div>
+                    <div className="text-[13px] font-semibold text-navy tabular-nums">{r.stripe ? fmt(r.stripe.totalSpent) : "-"}</div>
                   </div>
                 );
               })
