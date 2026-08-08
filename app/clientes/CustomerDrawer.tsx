@@ -97,66 +97,68 @@ export default function CustomerDrawer({ customer, payments, onClose, onPrev, on
               )}
             </div>
           </div>
-          <div className="flex items-center gap-2 mt-3 flex-wrap">
-            {(() => {
-              const dSub  = customer.daysSinceLastSub  ?? Infinity;
-              const dPack = customer.daysSinceLastPack ?? Infinity;
-              const pt = dSub <= dPack && dSub < Infinity ? "sub"
-                       : dPack < Infinity                  ? "pack"
-                       : "session";
-              const { label, cls } = planBadgeCfg(pt, customer.lastSubProduct, customer.lastPackProduct);
-              return <span className={`text-xs ${cls} px-2.5 py-1 rounded-full font-medium`}>{label}</span>;
-            })()}
-            {(() => {
-              const { status, days } = clientStatus(customer);
-              if (status === "baja") return (
-                <span className="text-xs bg-danger/10 text-danger px-2.5 py-1 rounded-full font-medium flex items-center gap-1 whitespace-nowrap">
-                  <span className="w-1.5 h-1.5 rounded-full bg-danger inline-block shrink-0" />
-                  {customer.isRecurring ? `Baja · ${days}d sin pagar` : `Pack vencido · ${days}d`}
+          <div className="flex items-center justify-between gap-2 mt-3">
+            <div className="flex items-center gap-2 flex-wrap">
+              {(() => {
+                const dSub  = customer.daysSinceLastSub  ?? Infinity;
+                const dPack = customer.daysSinceLastPack ?? Infinity;
+                const pt = dSub <= dPack && dSub < Infinity ? "sub"
+                         : dPack < Infinity                  ? "pack"
+                         : "session";
+                const { label, cls } = planBadgeCfg(pt, customer.lastSubProduct, customer.lastPackProduct);
+                return <span className={`text-xs ${cls} px-2.5 py-1 rounded-full font-medium`}>{label}</span>;
+              })()}
+              {(() => {
+                const { status, days } = clientStatus(customer);
+                if (status === "baja") return (
+                  <span className="text-xs bg-danger/10 text-danger px-2.5 py-1 rounded-full font-medium flex items-center gap-1 whitespace-nowrap">
+                    <span className="w-1.5 h-1.5 rounded-full bg-danger inline-block shrink-0" />
+                    {customer.isRecurring ? `Baja · ${days}d sin pagar` : `Pack vencido · ${days}d`}
+                  </span>
+                );
+                if (status === "sinpagar") return (
+                  <span className="text-xs bg-warning/10 text-warning px-2.5 py-1 rounded-full font-medium flex items-center gap-1 whitespace-nowrap">
+                    <span className="w-1.5 h-1.5 rounded-full bg-warning inline-block shrink-0" />
+                    Sin pagar · {days}d tarde
+                  </span>
+                );
+                if (status === "caducado") return (
+                  <span className="text-xs bg-warning/10 text-warning px-2.5 py-1 rounded-full font-medium flex items-center gap-1 whitespace-nowrap">
+                    <span className="w-1.5 h-1.5 rounded-full bg-warning inline-block shrink-0" />
+                    Pack vencido · {days}d
+                  </span>
+                );
+                if (status === "porvencer") return (
+                  <span className="text-xs bg-amber-50 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400 px-2.5 py-1 rounded-full font-medium flex items-center gap-1 whitespace-nowrap border border-amber-200/60 dark:border-amber-500/30">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block shrink-0" />
+                    Vence en {days}d
+                  </span>
+                );
+                return (
+                  <span className="text-xs bg-success/10 text-success px-2.5 py-1 rounded-full font-medium flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-success inline-block" />
+                    Al día
+                  </span>
+                );
+              })()}
+              {customer.discount && (
+                <span className="text-xs bg-warning/10 text-warning px-2.5 py-1 rounded-full font-medium">
+                  {customer.discount.percentOff != null
+                    ? `-${customer.discount.percentOff}%`
+                    : customer.discount.name}
                 </span>
-              );
-              if (status === "sinpagar") return (
-                <span className="text-xs bg-warning/10 text-warning px-2.5 py-1 rounded-full font-medium flex items-center gap-1 whitespace-nowrap">
-                  <span className="w-1.5 h-1.5 rounded-full bg-warning inline-block shrink-0" />
-                  Sin pagar · {days}d tarde
-                </span>
-              );
-              if (status === "caducado") return (
-                <span className="text-xs bg-warning/10 text-warning px-2.5 py-1 rounded-full font-medium flex items-center gap-1 whitespace-nowrap">
-                  <span className="w-1.5 h-1.5 rounded-full bg-warning inline-block shrink-0" />
-                  Pack vencido · {days}d
-                </span>
-              );
-              if (status === "porvencer") return (
-                <span className="text-xs bg-amber-50 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400 px-2.5 py-1 rounded-full font-medium flex items-center gap-1 whitespace-nowrap border border-amber-200/60 dark:border-amber-500/30">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block shrink-0" />
-                  Vence en {days}d
-                </span>
-              );
-              return (
-                <span className="text-xs bg-success/10 text-success px-2.5 py-1 rounded-full font-medium flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-success inline-block" />
-                  Al día
-                </span>
-              );
-            })()}
-            {customer.discount && (
-              <span className="text-xs bg-warning/10 text-warning px-2.5 py-1 rounded-full font-medium">
-                {customer.discount.percentOff != null
-                  ? `-${customer.discount.percentOff}%`
-                  : customer.discount.name}
+              )}
+            </div>
+            <label className={`flex items-center gap-2 shrink-0 cursor-pointer select-none ${savingFamily ? "opacity-50 pointer-events-none" : ""}`}>
+              <Checkbox checked={isFamily} onChange={toggleFamily} disabled={savingFamily} tone="rose" />
+              <span className={`text-xs font-medium flex items-center gap-1 whitespace-nowrap ${isFamily ? "text-rose-600 dark:text-rose-400" : "text-navy/60"}`}>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" />
+                </svg>
+                Familiar
               </span>
-            )}
+            </label>
           </div>
-          <label className={`flex items-center gap-2 mt-3 w-fit cursor-pointer select-none ${savingFamily ? "opacity-50 pointer-events-none" : ""}`}>
-            <Checkbox checked={isFamily} onChange={toggleFamily} disabled={savingFamily} tone="rose" />
-            <span className={`text-xs font-medium flex items-center gap-1 ${isFamily ? "text-rose-600 dark:text-rose-400" : "text-navy/60"}`}>
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" />
-              </svg>
-              Familiar
-            </span>
-          </label>
         </div>
       }
       footer={(() => {

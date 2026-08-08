@@ -98,30 +98,32 @@ export default function MemberDrawer({ client, payments, onClose, onPrev, onNext
               {client.phone && <p className="text-xs text-navy/40 truncate">{client.phone}</p>}
             </div>
           </div>
-          <div className="flex items-center gap-2 mt-3 flex-wrap">
-            <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${plan ? "bg-violet-50 dark:bg-violet-500/15 text-violet-600 dark:text-violet-400" : "bg-navy/[0.06] text-navy/55"}`}>
-              {plan ? plan.name : "Sin plan"}
-            </span>
-            <span className={`text-xs px-2.5 py-1 rounded-full font-medium flex items-center gap-1 whitespace-nowrap ${TONE_CLS[client.status.tone]}`}>
-              {client.status.label}{client.status.detail ? ` · ${client.status.detail}` : ""}
-            </span>
-            {client.activeSubCount >= 2 && (
-              <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-danger/10 text-danger whitespace-nowrap" title="Varias suscripciones activas — posible doble cobro">
-                ⚠ {client.activeSubCount} suscripciones activas
+          <div className="flex items-center justify-between gap-2 mt-3">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${plan ? "bg-violet-50 dark:bg-violet-500/15 text-violet-600 dark:text-violet-400" : "bg-navy/[0.06] text-navy/55"}`}>
+                {plan ? plan.name : "Sin plan"}
               </span>
-            )}
-            {stripe?.discount && (
-              <span className="text-xs bg-warning/10 text-warning px-2.5 py-1 rounded-full font-medium">
-                {stripe.discount.percentOff != null ? `-${stripe.discount.percentOff}%` : stripe.discount.name}
+              <span className={`text-xs px-2.5 py-1 rounded-full font-medium flex items-center gap-1 whitespace-nowrap ${TONE_CLS[client.status.tone]}`}>
+                {client.status.label}{client.status.detail ? ` · ${client.status.detail}` : ""}
               </span>
+              {client.activeSubCount >= 2 && (
+                <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-danger/10 text-danger whitespace-nowrap" title="Varias suscripciones activas — posible doble cobro">
+                  ⚠ {client.activeSubCount} suscripciones activas
+                </span>
+              )}
+              {stripe?.discount && (
+                <span className="text-xs bg-warning/10 text-warning px-2.5 py-1 rounded-full font-medium">
+                  {stripe.discount.percentOff != null ? `-${stripe.discount.percentOff}%` : stripe.discount.name}
+                </span>
+              )}
+            </div>
+            {client.memberId != null && (
+              <label className={`flex items-center gap-2 shrink-0 cursor-pointer select-none ${savingFamily ? "opacity-50 pointer-events-none" : ""}`}>
+                <Checkbox checked={isFamily} onChange={toggleFamily} disabled={savingFamily} tone="rose" />
+                <span className={`text-xs font-medium whitespace-nowrap ${isFamily ? "text-rose-600 dark:text-rose-400" : "text-navy/60"}`}>Familiar</span>
+              </label>
             )}
           </div>
-          {client.memberId != null && (
-            <label className={`flex items-center gap-2 mt-3 w-fit cursor-pointer select-none ${savingFamily ? "opacity-50 pointer-events-none" : ""}`}>
-              <Checkbox checked={isFamily} onChange={toggleFamily} disabled={savingFamily} tone="rose" />
-              <span className={`text-xs font-medium ${isFamily ? "text-rose-600 dark:text-rose-400" : "text-navy/60"}`}>Familiar</span>
-            </label>
-          )}
         </div>
       }
       footer={
