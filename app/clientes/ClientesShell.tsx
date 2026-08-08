@@ -3,28 +3,32 @@
 import { useEffect, useState } from "react";
 import type { CustomerRow } from "./ClientesTable";
 import ClientesMatrizCompras from "./ClientesMatrizCompras";
+import ClientesMatrizUrban from "./ClientesMatrizUrban";
 import ClientesEstado from "./ClientesEstado";
 import SectionTabsV2, { type SectionTabV2 } from "@/app/components/v2/SectionTabsV2";
 import HeaderPortal from "@/app/components/HeaderPortal";
 import type { StripePayment } from "@/lib/stripePayments";
 import type { MemberClient } from "@/lib/memberClientsV2";
+import type { UrbanClientRow } from "@/lib/clientActivityV2";
 
 type Props = {
   customers: CustomerRow[];
   payments: StripePayment[];
   clients: MemberClient[];
+  urbanClients: UrbanClientRow[];
 };
 
-type Tab = "clientes" | "compras";
+type Tab = "clientes" | "compras" | "urban";
 
 const TABS: SectionTabV2<Tab>[] = [
   { key: "clientes", label: "Clientes" },
   { key: "compras",  label: "Historial de compras" },
+  { key: "urban",    label: "Urban" },
 ];
 
-export default function ClientesShell({ customers, payments, clients }: Props) {
+export default function ClientesShell({ customers, payments, clients, urbanClients }: Props) {
   const [tab, setTab] = useState<Tab>("clientes");
-  const [mounted, setMounted] = useState<Record<Tab, boolean>>({ clientes: true, compras: false });
+  const [mounted, setMounted] = useState<Record<Tab, boolean>>({ clientes: true, compras: false, urban: false });
 
   useEffect(() => { setMounted((m) => ({ ...m, [tab]: true })); }, [tab]);
 
@@ -43,6 +47,11 @@ export default function ClientesShell({ customers, payments, clients }: Props) {
       {mounted.compras && (
         <div className={tab === "compras" ? "tab-fade-in" : "hidden"}>
           <ClientesMatrizCompras customers={customers} payments={payments} />
+        </div>
+      )}
+      {mounted.urban && (
+        <div className={tab === "urban" ? "tab-fade-in" : "hidden"}>
+          <ClientesMatrizUrban rows={urbanClients} clients={clients} payments={payments} />
         </div>
       )}
     </>

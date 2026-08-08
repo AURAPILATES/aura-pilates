@@ -4,6 +4,8 @@ import { enrichCustomers } from "@/lib/customerEnrichment";
 import { loadFamilyClientIds, loadFamilyMemberIds } from "@/lib/clientFamily";
 import { loadPaymentErrorAcks } from "@/lib/paymentErrorAcks";
 import { getMemberClientsV2 } from "@/lib/memberClientsV2";
+import { getUrbanClientsMatrix } from "@/lib/clientActivityV2";
+import { loadUrbanRates } from "@/lib/urbanRates";
 import ClientesShell from "./ClientesShell";
 
 type Props = {
@@ -12,11 +14,12 @@ type Props = {
 
 export default async function ClientesLoader({ curMonth }: Props) {
   const payments = await loadStripePaymentsCached();
-  const [customers, familyIds, familyMemberIds, paymentErrorAcks] = await Promise.all([
+  const [customers, familyIds, familyMemberIds, paymentErrorAcks, urbanRates] = await Promise.all([
     loadStripeCustomers(payments, curMonth),
     loadFamilyClientIds(),
     loadFamilyMemberIds(),
     loadPaymentErrorAcks(),
+    loadUrbanRates(),
   ]);
 
   // "Hablado con cliente" es una anotación (paymentErrorAcked), no oculta el error: el error de
@@ -24,7 +27,17 @@ export default async function ClientesLoader({ curMonth }: Props) {
   // AnaliticaLoader, para que Clientes y Analítica coincidan.
   const customersWithChurn = enrichCustomers(customers, payments, { familyIds, paymentErrorAcks });
 
-  const memberClients = await getMemberClientsV2(customersWithChurn, familyMemberIds).catch(() => []);
+  const [memberClients, urbanClients] = await Promise.all([
+    getMemberClientsV2(customersWithChurn, familyMemberIds).catch(() => []),
+    getUrbanClientsMatrix(urbanRates).catch(() => []),
+  ]);
 
-  return <ClientesShell customers={customersWithChurn} payments={payments} clients={memberClients} />;
+  return (
+    <ClientesShell
+      customers={customersWithChurn}
+      payments={payments}
+      clients={memberClients}
+      urbanClients={urbanClients}
+    />
+  );
 }

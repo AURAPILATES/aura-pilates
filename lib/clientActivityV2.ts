@@ -156,11 +156,13 @@ export type UrbanMonthActivity = { classes: number; estimated: number };
 
 // Cacheado (30 min, invalidable con el botón de sincronizar): esta lectura completa de
 // class_bookings_v2 se repetía en cada carga de Analítica sin caché.
+type UrbanBookingRow = { member_id: number; email: string | null; session_starts_at: string; checked_in: boolean };
+
 const fetchAllBookingsForUrban = unstable_cache(
-  async (): Promise<{ email: string | null; session_starts_at: string; checked_in: boolean }[]> => {
+  async (): Promise<UrbanBookingRow[]> => {
     const db = createServerClient();
-    return readAll<{ email: string | null; session_starts_at: string; checked_in: boolean }>((from, to) =>
-      db.from("class_bookings_v2").select("email, session_starts_at, checked_in").range(from, to),
+    return readAll<UrbanBookingRow>((from, to) =>
+      db.from("class_bookings_v2").select("member_id, email, session_starts_at, checked_in").range(from, to),
     );
   },
   ["urban-activity-bookings-v2"],
@@ -203,4 +205,73 @@ export async function urbanActivityByMonth(
     byMonth.set(m, acc);
   }
   return byMonth;
+}
+
+export type UrbanClientRow = {
+  memberId: number;
+  name: string;
+  email: string | null;
+  byMonth: Record<string, UrbanMonthActivity>;
+  totalClasses: number;
+  totalEstimated: number;
+  firstClassDate: string | null;
+  lastClassDate: string | null;
+};
+
+// Mismo dato que urbanActivityByMonth pero desglosado por cliente Urban, no solo agregado: para
+// ver quién repite cada mes y estimar si compensa ofrecerle una suscripción directa en vez de
+// que siga entrando (más barato) vía Urban Sports Club. Ver "Historial de compras" → Urban.
+export async function getUrbanClientsMatrix(rates: UrbanRate[] = []): Promise<UrbanClientRow[]> {
+  const bookings = await fetchAllBookingsForUrban();
+  const members = await getMembersV2().catch(() => []);
+  const nameById = new Map<number, string>();
+  for (const m of members) {
+    nameById.set(m.id, `${m.firstName} ${m.lastName}`.replace(/\s+/g, " ").trim());
+  }
+
+  type Acc = {
+    email: string | null;
+    byMonth: Map<string, UrbanMonthActivity>;
+    totalClasses: number;
+    totalEstimated: number;
+    firstClassDate: string | null;
+    lastClassDate: string | null;
+  };
+  const byMember = new Map<number, Acc>();
+  for (const b of bookings) {
+    if (!b.checked_in || !isUrbanEmail(b.email)) continue;
+    const acc = byMember.get(b.member_id) ?? {
+      email: b.email, byMonth: new Map(), totalClasses: 0, totalEstimated: 0, firstClassDate: null, lastClassDate: null,
+    };
+    if (b.email && !acc.email) acc.email = b.email;
+    const date = b.session_starts_at.slice(0, 10);
+    const m = date.slice(0, 7);
+    const rate = rateForDate(rates, b.session_starts_at);
+    const monthAcc = acc.byMonth.get(m) ?? { classes: 0, estimated: 0 };
+    monthAcc.classes += 1;
+    if (rate != null) monthAcc.estimated += rate;
+    acc.byMonth.set(m, monthAcc);
+    acc.totalClasses += 1;
+    if (rate != null) acc.totalEstimated += rate;
+    // bookings viene ordenado ascendente por session_starts_at.
+    if (!acc.firstClassDate) acc.firstClassDate = date;
+    acc.lastClassDate = date;
+    byMember.set(b.member_id, acc);
+  }
+
+  const rows: UrbanClientRow[] = [];
+  for (const [memberId, a] of byMember.entries()) {
+    rows.push({
+      memberId,
+      name: nameById.get(memberId) ?? a.email ?? `Cliente ${memberId}`,
+      email: a.email,
+      byMonth: Object.fromEntries(a.byMonth),
+      totalClasses: a.totalClasses,
+      totalEstimated: a.totalEstimated,
+      firstClassDate: a.firstClassDate,
+      lastClassDate: a.lastClassDate,
+    });
+  }
+  rows.sort((x, y) => y.totalClasses - x.totalClasses);
+  return rows;
 }
