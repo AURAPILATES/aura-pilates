@@ -244,12 +244,22 @@ export function computePendingRecurring(
     );
   }
 
-  type PendingGroup = { keys: string[]; bankPatterns: string[]; contact: ContactLike | undefined; series: RecurringSeries[] };
+  type PendingGroup = {
+    keys: string[];
+    bankPatterns: string[];
+    conceptPatterns: string[];
+    contact: ContactLike | undefined;
+    series: RecurringSeries[];
+  };
   const pendingGroups = new Map<string, PendingGroup>();
   for (const s of series) {
     if (expenseByKey.has(s.key)) continue;
     const last = s.transactions[s.transactions.length - 1];
     const bankPattern = contactKeyFor(last.concept, last.bank_details);
+    // Solo el concepto (sin "más datos"), que suele ser el nombre estable del comercio - a
+    // diferencia de bankPattern, no se ve afectado por ruido variable en "más datos" (código de
+    // autorización de tarjeta, referencia de operación...) que cleanBankText no siempre filtra.
+    const conceptPattern = contactKeyFor(last.concept, null);
     const contact = findMatchedContact(bankPattern, s.label);
     const amountCents = Math.round(Math.abs(s.amount) * 100);
     // Una serie "disambiguated" es una obligación real distinta que solo coincide en
@@ -257,11 +267,46 @@ export function computePendingRecurring(
     // fusiona con sus hermanas, a diferencia del caso normal (mismo gasto partido en dos keys
     // porque el contacto se asignó a mitad de historial).
     const groupKey = s.disambiguated ? `k:${s.key}` : `${contact ? `c:${contact.id}` : `p:${bankPattern}`}:${amountCents}`;
-    const group = pendingGroups.get(groupKey) ?? { keys: [], bankPatterns: [], contact, series: [] };
+    const group = pendingGroups.get(groupKey) ?? { keys: [], bankPatterns: [], conceptPatterns: [], contact, series: [] };
     group.keys.push(s.key);
     group.bankPatterns.push(bankPattern);
+    group.conceptPatterns.push(conceptPattern);
     group.series.push(s);
     pendingGroups.set(groupKey, group);
+  }
+
+  // Dos grupos del mismo importe pueden seguir sin fusionarse aquí arriba si ninguno tiene aún
+  // un contacto guardado con patrones: cada uno calculó su bankPattern solo a partir de su
+  // última transacción, y basta con que "más datos" varíe entre cargos del mismo gasto real
+  // (ej. Squarespace: mismo concepto, distinto ruido de tarjeta) para que no coincidan como
+  // string exacto. Se funden aquí con la misma coincidencia flexible por subsecuencia de
+  // palabras que ya usa findMatchedContact - mismo patrón, aplicado también entre grupos sin
+  // contacto todavía. Las series "disambiguated" (ver arriba) quedan fuera a propósito.
+  function isDisambiguatedOnly(g: PendingGroup): boolean {
+    return g.series.every((s) => s.disambiguated);
+  }
+  function sameOrOverlapping(a: string[], b: string[]): boolean {
+    return a.some((x) => b.some((y) => x === y || matchesPattern(x, y) || matchesPattern(y, x)));
+  }
+  const merged: PendingGroup[] = [];
+  for (const g of pendingGroups.values()) {
+    if (isDisambiguatedOnly(g)) { merged.push(g); continue; }
+    const amountCents = Math.round(Math.abs(g.series[0].amount) * 100);
+    const target = merged.find((existing) => {
+      if (isDisambiguatedOnly(existing)) return false;
+      if (Math.round(Math.abs(existing.series[0].amount) * 100) !== amountCents) return false;
+      if (existing.contact && g.contact && existing.contact.id !== g.contact.id) return false;
+      return sameOrOverlapping(existing.bankPatterns, g.bankPatterns) || sameOrOverlapping(existing.conceptPatterns, g.conceptPatterns);
+    });
+    if (target) {
+      target.keys.push(...g.keys);
+      target.bankPatterns.push(...g.bankPatterns);
+      target.conceptPatterns.push(...g.conceptPatterns);
+      target.series.push(...g.series);
+      target.contact = target.contact ?? g.contact;
+    } else {
+      merged.push(g);
+    }
   }
 
   const confirmedByContactAmount = new Set<string>();
@@ -284,7 +329,7 @@ export function computePendingRecurring(
     return confirmedByLabelAmount.has(`${label}:${amountCents}`);
   }
 
-  return [...pendingGroups.values()].filter((g) => !alreadyConfirmed(g)).map((g) => {
+  return merged.filter((g) => !alreadyConfirmed(g)).map((g) => {
     const byRecency = [...g.series].sort((a, b) =>
       b.transactions[b.transactions.length - 1].date.localeCompare(a.transactions[a.transactions.length - 1].date),
     );
