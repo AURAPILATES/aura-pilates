@@ -206,7 +206,14 @@ function RowForm({
   return (
     <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-2 px-3 py-2.5 items-center border-t border-navy/[0.05] bg-primary/[0.03]">
       <input type="date" value={draft.start_date} onChange={(e) => setDraft({ ...draft, start_date: e.target.value })} className={inputCls} />
-      <input type="date" value={draft.end_date} onChange={(e) => setDraft({ ...draft, end_date: e.target.value })} className={inputCls} placeholder="Vigente" />
+      <input
+        type="date"
+        value={draft.end_date}
+        onChange={(e) => setDraft({ ...draft, end_date: e.target.value })}
+        min={draft.start_date || undefined}
+        className={inputCls}
+        placeholder="Vigente"
+      />
       <input
         type="number"
         step="0.01"

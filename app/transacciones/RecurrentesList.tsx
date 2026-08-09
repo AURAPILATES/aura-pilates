@@ -9,6 +9,7 @@ import Button, { SecondaryButton, DangerButton, DangerButtonSolid } from "@/app/
 import Select from "@/app/components/Select";
 import type { Category } from "@/lib/categories";
 import { PERIOD_BUCKETS } from "@/lib/recurring";
+import { todayLocalISO } from "@/lib/dateRange";
 import { normalizeText } from "@/lib/normalizeText";
 import type { RecurringExpense, RecurringExpenseEndType } from "@/lib/recurringExpenses";
 import type { Contact } from "./actions";
@@ -418,7 +419,7 @@ function NewManualRecurringDrawer({ categories, contacts, pick, onOpenContactPic
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState<string | null>(null);
   const [period, setPeriod] = useState("mensual");
-  const [anchorDate, setAnchorDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [anchorDate, setAnchorDate] = useState(() => todayLocalISO());
   const [end, setEnd] = useState<EndFields>(defaultEnd());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);

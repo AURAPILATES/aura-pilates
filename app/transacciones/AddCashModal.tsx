@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Category } from "@/lib/categories";
 import type { PaymentMethod } from "@/lib/transactions";
 import { matchesPattern } from "@/lib/contactRules";
+import { todayLocalISO } from "@/lib/dateRange";
 import { addCashTransaction, findCashDuplicates, type Contact, type CashDuplicateCandidate } from "./actions";
 import Drawer from "@/app/components/Drawer";
 import Button, { SecondaryButton } from "@/app/components/Button";
@@ -21,7 +22,7 @@ const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
 ];
 
 function todayISO() {
-  return new Date().toISOString().slice(0, 10);
+  return todayLocalISO();
 }
 
 function fmtDateShort(d: string): string {
