@@ -86,11 +86,11 @@ export async function createCategory(data: CategoryInput) {
 
 export async function updateCategory(id: string, data: CategoryInput) {
   const supabase = createServerClient();
+  const { depthOf, heightOf, descendantsOf } = await loadHierarchy(supabase);
   if (data.parent_id) {
     // Máximo 3 niveles: la nueva rama (padre + esta categoría + sus descendientes) no puede
     // superar la profundidad permitida, y una categoría no puede colgar de sí misma ni de
     // una de sus subcategorías (ciclo).
-    const { depthOf, heightOf, descendantsOf } = await loadHierarchy(supabase);
     if (data.parent_id === id || descendantsOf(id).has(data.parent_id)) {
       throw new Error("Una categoría no puede depender de sí misma ni de una de sus subcategorías.");
     }
@@ -98,17 +98,57 @@ export async function updateCategory(id: string, data: CategoryInput) {
       throw new Error("Se superarían los tres niveles de categorías permitidos.");
     }
   }
+
+  const { data: before } = await supabase.from("categories").select("group_type, economic_group").eq("id", id).single();
+
   const { error } = await supabase.from("categories").update(data).eq("id", id);
   if (error) throw new Error(error.message);
+
+  // group_type/economic_group de las subcategorías son una copia independiente, no algo que se
+  // recalcule en vivo desde el padre - si esta categoría cambia de grupo (p. ej. al re-anidarla
+  // bajo un padre de otro grupo), sus propias descendientes se quedaban con la clasificación
+  // vieja y el árbol quedaba inconsistente sin que nada lo señalara.
+  if (before && (before.group_type !== data.group_type || before.economic_group !== data.economic_group)) {
+    const descendants = [...descendantsOf(id)];
+    if (descendants.length > 0) {
+      const { error: cascadeError } = await supabase
+        .from("categories")
+        .update({ group_type: data.group_type, economic_group: data.economic_group })
+        .in("id", descendants);
+      if (cascadeError) throw new Error(cascadeError.message);
+    }
+  }
+
   await applyCategoryKeywordsToTransactions(data.value, data.auto_keywords);
   revalidateAll();
 }
 
+/** Elimina una categoría. Antes de borrar la fila: bloquea si aún tiene subcategorías colgando
+ * (se moverían o se eliminarían primero, a mano) y desvincula la categoría de cualquier
+ * movimiento que la use - así se quedan en "Sin categoría" (reconocible y reasignable) en vez
+ * de arrastrar un `category` que ya no existe en la tabla (se mostraba como el value en crudo,
+ * sin badge, sin poder reasignarlos en bloque, y economicGroupOf nunca los volvía a clasificar). */
 export async function deleteCategory(id: string) {
   const supabase = createServerClient();
+  const { data: cat, error: catError } = await supabase.from("categories").select("value").eq("id", id).single();
+  if (catError || !cat) throw new Error(catError?.message ?? "Categoría no encontrada.");
+
+  const { count: childCount, error: childError } = await supabase
+    .from("categories")
+    .select("id", { count: "exact", head: true })
+    .eq("parent_id", id);
+  if (childError) throw new Error(childError.message);
+  if ((childCount ?? 0) > 0) {
+    throw new Error("Esta categoría tiene subcategorías - muévelas o elimínalas primero.");
+  }
+
+  const { error: clearError } = await supabase.from("transactions").update({ category: null }).eq("category", cat.value);
+  if (clearError) throw new Error(clearError.message);
+
   const { error } = await supabase.from("categories").delete().eq("id", id);
   if (error) throw new Error(error.message);
   revalidateAll();
+  revalidateTag("transactions");
 }
 
 export async function reorderCategories(updates: { id: string; sort_order: number }[]) {

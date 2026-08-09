@@ -215,9 +215,26 @@ export async function updateContact(
   if (patch.retencionRate !== undefined) update.retencion_rate = patch.retencionRate;
   if (patch.noTax !== undefined) update.no_tax = patch.noTax;
   if (patch.group !== undefined) update.contact_group = patch.group;
+
+  // Antes de renombrar, hace falta el nombre viejo para poder arrastrar los movimientos ya
+  // vinculados al nombre nuevo (transactions.contact guarda el label como texto suelto, no una
+  // FK - igual que al fusionar duplicados en mergeContacts).
+  let previousLabel: string | null = null;
+  if (patch.label !== undefined) {
+    const { data } = await supabase.from("contacts").select("label").eq("id", id).single();
+    previousLabel = data?.label ?? null;
+  }
+
   const { error } = await supabase.from("contacts").update(update).eq("id", id);
   if (error) throw new Error(error.message);
-  if (patch.category !== undefined || patch.ivaRate !== undefined || patch.retencionRate !== undefined) {
+
+  if (patch.label !== undefined && previousLabel && previousLabel !== patch.label) {
+    const { error: renameError } = await supabase.from("transactions").update({ contact: patch.label }).eq("contact", previousLabel);
+    if (renameError) throw new Error(renameError.message);
+    revalidateTag("transactions");
+  }
+
+  if (patch.category !== undefined || patch.ivaRate !== undefined || patch.retencionRate !== undefined || patch.noTax !== undefined) {
     await applyContactToExisting(id);
   }
 }
@@ -281,13 +298,16 @@ export async function mergeContacts(keepId: number, mergeId: number): Promise<{ 
 }
 
 /** Añade un patrón (concepto bancario) más que identifique a un contacto ya existente, p. ej.
- * cuando una empresa factura con un texto distinto al habitual. */
+ * cuando una empresa factura con un texto distinto al habitual. Reaplica de inmediato (ver
+ * applyContactToExisting): sin esto, un patrón nuevo no reconocía retroactivamente los
+ * movimientos antiguos que ahora encajan con él hasta pulsar "Aplicar a existentes" a mano. */
 export async function addPatternToContact(contactId: number, pattern: string): Promise<void> {
   const supabase = createServerClient();
   const { error } = await supabase
     .from("contact_concepts")
     .upsert({ contact_id: contactId, pattern: pattern.trim() }, { onConflict: "pattern" });
   if (error) throw new Error(error.message);
+  await applyContactToExisting(contactId);
 }
 
 export async function removeContactPattern(pattern: string): Promise<void> {
@@ -309,27 +329,31 @@ export async function ignorePatterns(patterns: string[]): Promise<void> {
 }
 
 /** Copia categoría/IVA/retención a los movimientos ya importados (de cualquier fecha) que
- * coincidan con alguno de los patrones dados y que TODAVÍA no tengan categoría propia. Se usa
- * tanto para "Aplicar a existentes" en Configuración > Contactos como, automáticamente, al
- * confirmar un contacto nuevo o añadir un patrón a uno existente durante la importación - así no
- * hace falta acordarse de aplicarlo a mano para los movimientos que ya estaban importados antes
- * de crear el contacto. El guard de "sin categoría" (mismo criterio que
- * applyCategoryKeywordsToTransactions) es a propósito: sin él, confirmar un contacto nuevo podía
- * pisar en silencio la categoría de un movimiento antiguo que se hubiera corregido a mano. */
+ * coincidan con alguno de los patrones dados y que, o bien ya están vinculados a este contacto
+ * (mismo `contact`), o bien todavía no tienen categoría propia. Se usa tanto para "Aplicar a
+ * existentes" en Configuración > Contactos (ahora automático en updateContact/addPatternToContact,
+ * ver ahí) como, automáticamente, al confirmar un contacto nuevo o añadir un patrón a uno
+ * existente durante la importación - así no hace falta acordarse de aplicarlo a mano para los
+ * movimientos que ya estaban importados antes de crear el contacto.
+ *
+ * El guard evita pisar en silencio la categoría de un movimiento que se hubiera corregido a
+ * mano a propósito - pero solo si ese movimiento NO está ya vinculado a este contacto: si lo
+ * está (p. ej. corriges el IVA de un proveedor con 200 movimientos ya asignados a él), sí debe
+ * resincronizarse siempre, que es justo lo que se espera al editar un contacto. */
 export async function applyPatternsToTransactions(
   supabase: ReturnType<typeof createServerClient>,
   patterns: Set<string>,
-  contact: { category: string | null; iva_rate: number; retencion_rate: number; no_tax?: boolean },
+  contact: { label: string; category: string | null; iva_rate: number; retencion_rate: number; no_tax?: boolean },
 ): Promise<number> {
   if (patterns.size === 0) return 0;
   const { data: txns } = await supabase
     .from("transactions")
-    .select("id, concept, bank_details")
-    .is("deleted_at", null)
-    .is("category", null);
+    .select("id, concept, bank_details, contact, category")
+    .is("deleted_at", null);
 
   const matchingIds = (txns ?? [])
-    .filter((t: { id: string; concept: string | null; bank_details: string | null }) => {
+    .filter((t: { id: string; concept: string | null; bank_details: string | null; contact: string | null; category: string | null }) => {
+      if (t.category !== null && t.contact !== contact.label) return false;
       const key = contactKeyFor(t.concept, t.bank_details);
       return [...patterns].some((p) => matchesPattern(key, p));
     })
@@ -392,7 +416,7 @@ export async function applyContactToExisting(contactId: number): Promise<{ updat
   const supabase = createServerClient();
   const { data: contact } = await supabase
     .from("contacts")
-    .select("category, iva_rate, retencion_rate, no_tax, contact_concepts(pattern)")
+    .select("label, category, iva_rate, retencion_rate, no_tax, contact_concepts(pattern)")
     .eq("id", contactId)
     .single();
   if (!contact) return { updated: 0 };
@@ -487,7 +511,7 @@ export async function cleanupContactPatterns(dryRun = false): Promise<{ updated:
   return { updated, merged };
 }
 
-export type ResolvedContact = { id: number; category: string | null; iva_rate: number; retencion_rate: number; no_tax?: boolean };
+export type ResolvedContact = { id: number; label: string; category: string | null; iva_rate: number; retencion_rate: number; no_tax?: boolean };
 
 /** Busca un contacto por nombre (sin distinguir mayúsculas); si no existe lo crea, y registra
  * `pattern` (concepto + más datos, ya limpios) como uno de sus conceptos de reconocimiento -
@@ -500,7 +524,7 @@ export async function resolveOrCreateContact(
 ): Promise<ResolvedContact> {
   const { data: existing } = await supabase
     .from("contacts")
-    .select("id, category, iva_rate, retencion_rate, no_tax")
+    .select("id, label, category, iva_rate, retencion_rate, no_tax")
     .ilike("label", label)
     .maybeSingle();
 
@@ -509,7 +533,7 @@ export async function resolveOrCreateContact(
     const { data: created, error: createError } = await supabase
       .from("contacts")
       .insert({ label })
-      .select("id, category, iva_rate, retencion_rate, no_tax")
+      .select("id, label, category, iva_rate, retencion_rate, no_tax")
       .single();
     if (createError) throw new Error(createError.message);
     contact = created;
@@ -601,7 +625,7 @@ export async function saveNewContacts(drafts: NewContactDraft[]): Promise<{ upda
 
       const { data: contact } = await supabase
         .from("contacts")
-        .select("category, iva_rate, retencion_rate, no_tax")
+        .select("label, category, iva_rate, retencion_rate, no_tax")
         .eq("id", d.attachToContactId)
         .single();
       if (contact) updated += await applyPatternsToTransactions(supabase, new Set(patterns), contact);
@@ -609,7 +633,7 @@ export async function saveNewContacts(drafts: NewContactDraft[]): Promise<{ upda
       const { data: contact, error } = await supabase
         .from("contacts")
         .insert({ label: d.label, category: d.category, iva_rate: d.ivaRate, retencion_rate: d.retencionRate, no_tax: d.noTax ?? false, contact_group: d.group ?? "proveedor" })
-        .select("id, category, iva_rate, retencion_rate, no_tax")
+        .select("id, label, category, iva_rate, retencion_rate, no_tax")
         .single();
       if (error) throw new Error(error.message);
       const { error: patError } = await supabase

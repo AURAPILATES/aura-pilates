@@ -8,7 +8,7 @@ import { drawerNav } from "@/lib/drawerNav";
 import { CONTACT_GROUP_ORDER, CONTACT_GROUP_LABELS, contactGroupOf, type ContactGroup } from "@/lib/contactGroups";
 import { findDuplicatePairs, duplicateKey } from "@/lib/duplicateContacts";
 import {
-  type Contact, type ContactStats, updateContact, deleteContact, applyContactToExisting,
+  type Contact, type ContactStats, updateContact, deleteContact,
   addPatternToContact, removeContactPattern, recomputeContactsFromBankDetails, cleanupContactPatterns,
   dismissContactDuplicate, mergeContacts,
 } from "@/app/transacciones/actions";
@@ -123,20 +123,7 @@ function ContactDetailDrawer({ contact, categories, stats, onChange, onRemove, o
   hasNext?: boolean;
 }) {
   const [label, setLabel] = useState(contact.label);
-  const [applying, setApplying] = useState(false);
-  const [applied, setApplied] = useState<number | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
-
-  async function handleApply() {
-    setApplying(true);
-    setApplied(null);
-    try {
-      const { updated } = await applyContactToExisting(contact.id);
-      setApplied(updated);
-    } finally {
-      setApplying(false);
-    }
-  }
 
   const count = stats?.count ?? 0;
   const total = stats?.total ?? 0;
@@ -157,11 +144,17 @@ function ContactDetailDrawer({ contact, categories, stats, onChange, onRemove, o
           <p className="text-sm font-semibold text-navy truncate">{contact.label}</p>
         </div>
       }
-      footer={
+      footer={(close) =>
         confirmDelete ? (
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-sm text-navy/60">¿Eliminar este contacto?</p>
-            <div className="flex items-center gap-2">
+          <div className="flex flex-col gap-2.5">
+            <p className="text-xs text-navy/60 leading-snug">
+              {count > 0 && (
+                <>Sus {count} movimiento{count === 1 ? "" : "s"} seguirán mostrando &quot;{contact.label}&quot;, pero a partir de ahora </>
+              )}
+              {count === 0 && "A partir de ahora "}
+              los movimientos nuevos con sus conceptos bancarios ya no se reconocerán solos (sin categoría ni IVA/retención automáticos).
+            </p>
+            <div className="flex items-center justify-end gap-2">
               <SecondaryButton onClick={() => setConfirmDelete(false)}>Cancelar</SecondaryButton>
               <DangerButtonSolid onClick={onRemove}>Eliminar</DangerButtonSolid>
             </div>
@@ -169,13 +162,8 @@ function ContactDetailDrawer({ contact, categories, stats, onChange, onRemove, o
         ) : (
           <div className="flex gap-3">
             <DeleteButton onClick={() => setConfirmDelete(true)} />
-            <Button
-              onClick={handleApply}
-              disabled={applying}
-              className="flex-1"
-              title="Aplica este contacto a movimientos ya importados que coincidan con sus conceptos"
-            >
-              {applying ? "Guardando…" : applied !== null ? `${applied} actualizados` : "Guardar"}
+            <Button onClick={close} className="flex-1">
+              Guardar
             </Button>
           </div>
         )
@@ -220,6 +208,11 @@ function ContactDetailDrawer({ contact, categories, stats, onChange, onRemove, o
             <Checkbox checked={contact.noTax} onChange={(e) => onChange({ noTax: e.target.checked })} tone="primary" />
             Sin IVA ni retenciones
           </label>
+          {!contact.noTax && !(contact.ivaRate > 0) && !(contact.retencionRate > 0) && (
+            <p className="text-[11px] text-warning bg-warning/[0.08] rounded-lg px-3 py-2">
+              IVA e IRPF al 0% sin marcar "Sin IVA ni retenciones" - ¿es que este contacto de verdad no lleva impuestos, o falta fijarlos?
+            </p>
+          )}
         </div>
 
         <div className="p-4 border-b border-navy/[0.06]">

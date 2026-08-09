@@ -18,12 +18,18 @@ function isGroup(v: unknown): v is ContactGroup {
   return v === "proveedor" || v === "instructor" || v === "socio";
 }
 
+/** ¿Aparece `word` como palabra completa en el nombre? Por palabras, no por subcadena de
+ * caracteres - así un proveedor que se llame, p. ej., "Óptica Víctor" no se clasifica como
+ * socio solo porque "victor" aparece dentro del texto. */
+function hasWord(label: string, word: string): boolean {
+  return normalizeText(label).split(/[^a-z0-9]+/).includes(word);
+}
+
 /** Grupo del contacto: el fijado a mano si existe; si no, se deduce del nombre (instructores
  * y socios conocidos van a su grupo, el resto a proveedores). */
 export function contactGroupOf(label: string, group?: string | null): ContactGroup {
   if (isGroup(group)) return group;
-  const n = normalizeText(label);
-  if (INSTRUCTOR_NAMES.some((name) => n.includes(name))) return "instructor";
-  if (SOCIO_NAMES.some((name) => n.includes(name))) return "socio";
+  if (INSTRUCTOR_NAMES.some((name) => hasWord(label, name))) return "instructor";
+  if (SOCIO_NAMES.some((name) => hasWord(label, name))) return "socio";
   return "proveedor";
 }

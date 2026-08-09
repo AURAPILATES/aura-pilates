@@ -379,11 +379,18 @@ export default function CategoriasManager({
       return;
     }
     const value = form.value.trim() || form.label.trim().toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-áéíóúñü]/g, "");
+    // Si la naturaleza económica no se ha fijado a mano, se guarda ya resuelta según el nombre
+    // actual en vez de dejarla en null - si no, un cambio de nombre más adelante la reclasifica
+    // sin que nadie lo note (economicGroupOf solo reconoce coincidencias exactas de nombre).
+    const economic_group = !form.parent_id && form.group_type === "operational" && !form.economic_group
+      ? economicGroupOf(form.label, null)
+      : form.economic_group;
     startTransition(async () => {
       try {
         if (editor?.mode === "edit") {
           await updateCategory(editor.cat.id, {
             ...form,
+            economic_group,
             value: editor.cat.value,
             auto_keywords: form.auto_keywords?.trim() || null,
           });
@@ -402,6 +409,7 @@ export default function CategoriasManager({
         } else {
           await createCategory({
             ...form,
+            economic_group,
             value,
             auto_keywords: form.auto_keywords?.trim() || null,
           });
@@ -774,17 +782,29 @@ export default function CategoriasManager({
             {/* Footer - nunca más de 2 botones: crear = Cancelar+Guardar, editar =
                 Guardar+Eliminar (la X ya cierra, no hace falta Cancelar); al pulsar Eliminar,
                 el footer pasa a Cancelar+Eliminar (confirmación), nunca los 3 a la vez. */}
-            {editor.mode === "edit" && confirmDelete ? (
-              <div className="px-5 py-4 border-t border-navy/[0.08] flex items-center gap-3">
-                <p className="text-xs text-navy/55 flex-1">¿Eliminar esta categoría?</p>
-                <SecondaryButton onClick={() => setConfirmDelete(false)} disabled={isPending}>
-                  Cancelar
-                </SecondaryButton>
-                <DangerButtonSolid onClick={handleDelete} disabled={isPending}>
-                  {isPending ? "Eliminando…" : "Eliminar"}
-                </DangerButtonSolid>
-              </div>
-            ) : (
+            {editor.mode === "edit" && confirmDelete ? (() => {
+              const directCount = categoryCounts[editor.cat.value] ?? 0;
+              const childCount = categories.filter((c) => c.parent_id === editor.cat.id).length;
+              return (
+                <div className="px-5 py-4 border-t border-navy/[0.08] flex flex-col gap-3">
+                  <p className="text-xs text-navy/55">
+                    {childCount > 0
+                      ? `Tiene ${childCount} subcategoría${childCount === 1 ? "" : "s"} - muévelas o elimínalas primero.`
+                      : directCount > 0
+                        ? `Tiene ${directCount} movimiento${directCount === 1 ? "" : "s"} asociado${directCount === 1 ? "" : "s"} - al eliminarla, se quedarán sin categoría.`
+                        : "¿Eliminar esta categoría?"}
+                  </p>
+                  <div className="flex items-center gap-3 justify-end">
+                    <SecondaryButton onClick={() => setConfirmDelete(false)} disabled={isPending}>
+                      Cancelar
+                    </SecondaryButton>
+                    <DangerButtonSolid onClick={handleDelete} disabled={isPending || childCount > 0}>
+                      {isPending ? "Eliminando…" : "Eliminar"}
+                    </DangerButtonSolid>
+                  </div>
+                </div>
+              );
+            })() : (
               <div className="px-5 py-4 border-t border-navy/[0.08] flex items-center gap-3">
                 {editor.mode === "edit" ? (
                   <DeleteButton onClick={() => setConfirmDelete(true)} disabled={isPending} />

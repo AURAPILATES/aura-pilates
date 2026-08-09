@@ -73,7 +73,7 @@ export async function confirmRecurringExpenses(rows: ConfirmRecurringRow[]): Pro
     if (row.contactId != null) {
       const { data, error } = await supabase
         .from("contacts")
-        .select("id, category, iva_rate, retencion_rate")
+        .select("id, label, category, iva_rate, retencion_rate")
         .eq("id", row.contactId)
         .single();
       if (error || !data) throw new Error(error?.message ?? "Contacto no encontrado");
@@ -146,7 +146,7 @@ export async function createManualRecurringExpense(input: ManualRecurringInput):
   if (input.contactId != null) {
     const { data, error } = await supabase
       .from("contacts")
-      .select("id, category, iva_rate, retencion_rate")
+      .select("id, label, category, iva_rate, retencion_rate")
       .eq("id", input.contactId)
       .single();
     if (error || !data) throw new Error(error?.message ?? "Contacto no encontrado");
@@ -214,7 +214,7 @@ export async function relinkRecurringExpenseContact(
   if ("contactId" in pick) {
     const { data, error } = await supabase
       .from("contacts")
-      .select("id, category, iva_rate, retencion_rate")
+      .select("id, label, category, iva_rate, retencion_rate")
       .eq("id", pick.contactId)
       .single();
     if (error || !data) throw new Error(error?.message ?? "Contacto no encontrado");
@@ -223,7 +223,7 @@ export async function relinkRecurringExpenseContact(
     const { data, error } = await supabase
       .from("contacts")
       .insert({ label: pick.newContactLabel })
-      .select("id, category, iva_rate, retencion_rate")
+      .select("id, label, category, iva_rate, retencion_rate")
       .single();
     if (error) throw new Error(error.message);
     contact = data;
