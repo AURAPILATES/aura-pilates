@@ -84,9 +84,17 @@ async function loadContactPatternMap(
 /** Busca el contacto cuyo patrón guardado aparece dentro del texto de un movimiento (ver
  * matchesPattern) - así un "Concepto bancario" editado a mano para quedarse más corto que el
  * texto real del banco (ej. "Stripe" en vez de "Stripe Technology Eu") sigue reconociendo el
- * contacto en futuros movimientos. */
+ * contacto en futuros movimientos. Si el texto encaja con patrones de más de un contacto (uno
+ * genérico contenido en el texto de otro más específico), gana el patrón más largo en vez del
+ * primero que devuelva la consulta - `loadContactPatternMap` no tiene ORDER BY, así que ese
+ * orden no está garantizado ni es estable entre importaciones. */
 function matchContact(text: string, patterns: PatternEntry[]): ContactInfo | undefined {
-  return patterns.find((p) => matchesPattern(text, p.pattern))?.contact;
+  let best: PatternEntry | undefined;
+  for (const p of patterns) {
+    if (!matchesPattern(text, p.pattern)) continue;
+    if (!best || p.pattern.length > best.pattern.length) best = p;
+  }
+  return best?.contact;
 }
 
 export async function getKnownContactPatterns(): Promise<string[]> {
@@ -301,10 +309,13 @@ export async function ignorePatterns(patterns: string[]): Promise<void> {
 }
 
 /** Copia categoría/IVA/retención a los movimientos ya importados (de cualquier fecha) que
- * coincidan con alguno de los patrones dados. Se usa tanto para "Aplicar a existentes" en
- * Configuración > Contactos como, automáticamente, al confirmar un contacto nuevo o añadir un
- * patrón a uno existente durante la importación - así no hace falta acordarse de aplicarlo
- * a mano para los movimientos que ya estaban importados antes de crear el contacto. */
+ * coincidan con alguno de los patrones dados y que TODAVÍA no tengan categoría propia. Se usa
+ * tanto para "Aplicar a existentes" en Configuración > Contactos como, automáticamente, al
+ * confirmar un contacto nuevo o añadir un patrón a uno existente durante la importación - así no
+ * hace falta acordarse de aplicarlo a mano para los movimientos que ya estaban importados antes
+ * de crear el contacto. El guard de "sin categoría" (mismo criterio que
+ * applyCategoryKeywordsToTransactions) es a propósito: sin él, confirmar un contacto nuevo podía
+ * pisar en silencio la categoría de un movimiento antiguo que se hubiera corregido a mano. */
 export async function applyPatternsToTransactions(
   supabase: ReturnType<typeof createServerClient>,
   patterns: Set<string>,
@@ -314,7 +325,8 @@ export async function applyPatternsToTransactions(
   const { data: txns } = await supabase
     .from("transactions")
     .select("id, concept, bank_details")
-    .is("deleted_at", null);
+    .is("deleted_at", null)
+    .is("category", null);
 
   const matchingIds = (txns ?? [])
     .filter((t: { id: string; concept: string | null; bank_details: string | null }) => {

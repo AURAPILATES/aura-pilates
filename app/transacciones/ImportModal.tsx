@@ -12,7 +12,7 @@ import { CONTACT_GROUP_ORDER, CONTACT_GROUP_LABELS, type ContactGroup } from "@/
 import { type Category } from "@/lib/categories";
 import type { PaymentMethod } from "@/lib/transactions";
 import Drawer from "@/app/components/Drawer";
-import Button, { SecondaryButton } from "@/app/components/Button";
+import Button, { SecondaryButton, DangerButtonSolid } from "@/app/components/Button";
 import Select from "@/app/components/Select";
 import ChipsInput from "@/app/components/ChipsInput";
 import Checkbox from "@/app/components/Checkbox";
@@ -72,12 +72,22 @@ function parseSpanishNum(s: string): number | null {
 function parseDate(s: string): string | null {
   const t = s.trim();
   const dmy = t.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
-  if (dmy) return `${dmy[3]}-${dmy[2].padStart(2, "0")}-${dmy[1].padStart(2, "0")}`;
+  if (dmy) {
+    // Se asume día/mes/año (formato de CaixaBank) - un día o mes fuera de rango (ej. una
+    // columna equivocada, o un extracto en otro formato con mes>12) se descarta en vez de
+    // colarse como una fecha ISO inválida que reviente más adelante en silencio.
+    const day = parseInt(dmy[1], 10);
+    const month = parseInt(dmy[2], 10);
+    if (day < 1 || day > 31 || month < 1 || month > 12) return null;
+    return `${dmy[3]}-${dmy[2].padStart(2, "0")}-${dmy[1].padStart(2, "0")}`;
+  }
   if (/^\d{4}-\d{2}-\d{2}$/.test(t)) return t;
   return null;
 }
 
-function parseCSV(text: string): ImportRow[] {
+type ParseResult = { rows: ImportRow[]; unparsedCount: number };
+
+function parseCSV(text: string): ParseResult {
   const lines = text.split(/\r?\n/).filter((l) => l.trim());
   if (lines.length < 2) throw new Error("El archivo no contiene datos.");
 
@@ -90,7 +100,11 @@ function parseCSV(text: string): ImportRow[] {
 
   const dateIdx      = findCol(headers, ["fecha operacion", "f.operacion", "fecha", "date"]);
   const valueDateIdx = findCol(headers, ["fecha valor", "f.valor"]);
-  const amountIdx    = findCol(headers, ["importe", "amount", "movimiento", "cargo abono", "importe eur"]);
+  // "movimiento" no debe ser candidato de amountIdx: en los extractos de CaixaBank es la cabecera
+  // del CONCEPTO (ver conceptIdx debajo), nunca del importe - tenerlo aquí también podía hacer
+  // que, si ninguna cabecera de importe reconocida coincidía, el importe se leyera por error de
+  // la columna de concepto.
+  const amountIdx    = findCol(headers, ["importe", "amount", "cargo abono", "importe eur"]);
   const balanceIdx   = findCol(headers, ["saldo", "balance", "saldo disponible", "saldo contable"]);
   const conceptIdx   = findCol(headers, ["movimiento", "concepto", "concept", "descripcion", "description"]);
   const bankDetailsIdx = findCol(headers, ["mas datos", "beneficiario ordenante", "ordenante", "beneficiario", "comercio"]);
@@ -99,12 +113,13 @@ function parseCSV(text: string): ImportRow[] {
   if (amountIdx === -1) throw new Error(`Columna de importe no encontrada. Cabeceras: ${headers.join(" | ")}`);
 
   const rows: ImportRow[] = [];
+  let unparsedCount = 0;
   for (let i = 1; i < lines.length; i++) {
     const cols = parseLine(lines[i], sep);
     const date = parseDate(cols[dateIdx] ?? "");
-    if (!date) continue;
+    if (!date) { unparsedCount++; continue; }
     const amount = parseSpanishNum(cols[amountIdx] ?? "");
-    if (amount === null) continue;
+    if (amount === null) { unparsedCount++; continue; }
     rows.push({
       date,
       valueDate: valueDateIdx >= 0 ? parseDate(cols[valueDateIdx] ?? "") : null,
@@ -115,7 +130,7 @@ function parseCSV(text: string): ImportRow[] {
     });
   }
   if (rows.length === 0) throw new Error("No se encontraron filas válidas. Revisa el formato del CSV.");
-  return rows;
+  return { rows, unparsedCount };
 }
 
 // ── Excel parser (.xls / .xlsx) ──────────────────────────────────────────────
@@ -131,7 +146,7 @@ function excelSerialToISO(serial: number): string {
   return new Date(utcDays * 86400 * 1000).toISOString().slice(0, 10);
 }
 
-function parseExcel(buffer: ArrayBuffer): ImportRow[] {
+function parseExcel(buffer: ArrayBuffer): ParseResult {
   const wb = XLSX.read(buffer, { type: "array" });
   const sheet = wb.Sheets[wb.SheetNames[0]];
   const rawRows: unknown[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true });
@@ -159,13 +174,14 @@ function parseExcel(buffer: ArrayBuffer): ImportRow[] {
   if (amountIdx === -1) throw new Error("Columna de importe no encontrada en el Excel.");
 
   const rows: ImportRow[] = [];
+  let unparsedCount = 0;
   for (let i = headerIdx + 1; i < rawRows.length; i++) {
     const cols = rawRows[i] ?? [];
-    if (cols.length === 0) continue;
+    if (cols.length === 0) continue; // fila realmente vacía (relleno de la hoja), no cuenta como fallo
 
     const rawDate = cols[dateIdx];
     const date = typeof rawDate === "number" ? excelSerialToISO(rawDate) : parseDate(String(rawDate ?? ""));
-    if (!date) continue;
+    if (!date) { unparsedCount++; continue; }
 
     const rawValueDate = valueDateIdx >= 0 ? cols[valueDateIdx] : null;
     const valueDate =
@@ -174,7 +190,7 @@ function parseExcel(buffer: ArrayBuffer): ImportRow[] {
 
     const rawAmount = cols[amountIdx];
     const amount = typeof rawAmount === "number" ? rawAmount : parseSpanishNum(String(rawAmount ?? ""));
-    if (amount === null) continue;
+    if (amount === null) { unparsedCount++; continue; }
 
     const rawBalance = balanceIdx >= 0 ? cols[balanceIdx] : null;
     const balance =
@@ -192,7 +208,7 @@ function parseExcel(buffer: ArrayBuffer): ImportRow[] {
     });
   }
   if (rows.length === 0) throw new Error("No se encontraron filas válidas. Revisa el formato del Excel.");
-  return rows;
+  return { rows, unparsedCount };
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -242,10 +258,10 @@ type ContactDraft = {
 
 type State =
   | { kind: "idle" }
-  | { kind: "preview"; rows: ImportRow[]; filename: string; drafts: ContactDraft[]; appliedCount?: number }
-  | { kind: "review-contacts"; drafts: ContactDraft[]; rows: ImportRow[]; filename: string }
+  | { kind: "preview"; rows: ImportRow[]; filename: string; drafts: ContactDraft[]; appliedCount?: number; unparsedCount: number }
+  | { kind: "review-contacts"; drafts: ContactDraft[]; rows: ImportRow[]; filename: string; unparsedCount: number }
   | { kind: "importing" }
-  | { kind: "done"; imported: number; skipped: number; skippedRows: ImportRow[]; batchId: string; appliedCount?: number }
+  | { kind: "done"; imported: number; skipped: number; skippedRows: ImportRow[]; batchId: string; appliedCount?: number; unparsedCount: number }
   | { kind: "error"; message: string };
 
 /** Sugerencia de categoría por palabra clave para prerellenar el formulario de revisión -
@@ -291,6 +307,53 @@ function findPossibleContact(cleaned: string, sample: string, contacts: Contact[
     ?? contacts.find((c) => c.patterns.some((p) => looksLikeSameContact(p, sample)));
 }
 
+/** Explica lo que va a pasar antes de deshacer una importación - undoImport (ver actions.ts)
+ * borra en firme, no pasa por la papelera, y borra TODOS los movimientos con ese batch_id tal
+ * como estén ahora mismo (incluidos los que se hayan forzado a importar desde "posibles
+ * duplicados" después). Tampoco deshace los contactos nuevos creados durante esa importación. */
+function UndoImportDrawer({
+  count, dateRange, busy, onClose, onConfirm,
+}: {
+  count: number | null;
+  dateRange: string | null;
+  busy: boolean;
+  onClose: () => void;
+  onConfirm: (close: () => void) => void;
+}) {
+  return (
+    <Drawer
+      title="Deshacer importación"
+      onClose={onClose}
+      footer={(close) => (
+        <div className="flex gap-3">
+          <SecondaryButton onClick={close} disabled={busy} className="flex-1">
+            Cancelar
+          </SecondaryButton>
+          <DangerButtonSolid onClick={() => onConfirm(close)} disabled={busy} className="flex-1">
+            {busy ? "Deshaciendo…" : "Sí, deshacer"}
+          </DangerButtonSolid>
+        </div>
+      )}
+    >
+      <div className="px-6 py-5 space-y-3 text-sm text-navy/70 leading-relaxed">
+        <p>
+          Se borrarán en firme {count != null ? <>los <strong className="text-navy font-semibold">{count}</strong> movimientos</> : "todos los movimientos"}
+          {dateRange ? ` de esta importación (${dateRange})` : " de esta importación"}, tal y como estén ahora mismo - incluidos los que hayas forzado a importar desde &quot;posibles duplicados&quot;.
+        </p>
+        <p>
+          <strong className="text-navy font-semibold">No pasa por la papelera:</strong> no podrás recuperarlos después.
+        </p>
+        <p>
+          Si desde que se importaron has categorizado alguno, le has vinculado un contacto o lo has marcado como recurrente, esos cambios se pierden también.
+        </p>
+        <p>
+          Los contactos nuevos que hayas confirmado durante esta importación no se deshacen - seguirán existiendo.
+        </p>
+      </div>
+    </Drawer>
+  );
+}
+
 export default function ImportModal({ onClose }: { onClose: () => void }) {
   const [state, setState] = useState<State>({ kind: "idle" });
   const [origin, setOrigin] = useState<PaymentMethod>("banco");
@@ -311,12 +374,13 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
       .catch(() => {});
   }, []);
 
-  async function handleUndo(batchId: string) {
+  async function handleUndo(batchId: string, close?: () => void) {
     setUndoingId(batchId);
     try {
       await undoImport(batchId);
       setHistorial((prev) => prev.filter((b) => b.batchId !== batchId));
       setState((prev) => (prev.kind === "done" && prev.batchId === batchId ? { kind: "idle" } : prev));
+      close?.();
     } finally {
       setUndoingId(null);
       setConfirmUndo(null);
@@ -334,7 +398,7 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const rows = isExcel
+        const { rows, unparsedCount } = isExcel
           ? parseExcel(e.target?.result as ArrayBuffer)
           : parseCSV(e.target?.result as string);
 
@@ -375,7 +439,7 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
             suggestedContactId: existing?.id ?? null,
           };
         });
-        setState({ kind: "preview", rows, filename: file.name, drafts });
+        setState({ kind: "preview", rows, filename: file.name, drafts, unparsedCount });
       } catch (err) {
         setState({ kind: "error", message: err instanceof Error ? err.message : "Error al leer el archivo." });
       }
@@ -387,11 +451,24 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
   function updateDraft(pattern: string, patch: Partial<ContactDraft>) {
     setState((prev) => {
       if (prev.kind !== "review-contacts") return prev;
-      return { ...prev, drafts: prev.drafts.map((d) => (d.pattern === pattern ? { ...d, ...patch } : d)) };
+      let drafts = prev.drafts.map((d) => (d.pattern === pattern ? { ...d, ...patch } : d));
+      // Si este borrador deja de ser "contacto nuevo" (pasa a "attach" o "ignore"), cualquier
+      // otro borrador que lo tuviera como destino de "añadir a otro contacto de este archivo" se
+      // queda apuntando a un target que ya no es tal - se revierte a "contacto nuevo" en vez de
+      // dejarlo encadenado, porque handleConfirmContacts solo resuelve un nivel de fusión y sus
+      // patrones se perderían en silencio al confirmar (nunca llegarían al destino final).
+      if (patch.action && patch.action !== "create") {
+        drafts = drafts.map((d) =>
+          d.pattern !== pattern && d.attachToDraftPattern === pattern
+            ? { ...d, action: "create", attachToDraftPattern: null }
+            : d,
+        );
+      }
+      return { ...prev, drafts };
     });
   }
 
-  async function handleConfirmContacts(drafts: ContactDraft[], rows: ImportRow[]) {
+  async function handleConfirmContacts(drafts: ContactDraft[], rows: ImportRow[], unparsedCount: number) {
     setSavingContacts(true);
     try {
       // Resuelve fusiones: un draft con attachToDraftPattern apunta a OTRO contacto detectado
@@ -428,31 +505,38 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
         }
         return next;
       });
-      await doImport(rows, updated);
+      await doImport(rows, updated, unparsedCount);
     } finally {
       setSavingContacts(false);
     }
   }
 
-  async function handleForceImport(rows: ImportRow[], batchId: string) {
+  // Reconcilia por posición dentro de `skippedRows`, no por contenido: dos "posibles
+  // duplicados" distintos pueden tener fecha+importe+concepto idénticos de casualidad (ej. dos
+  // alumnas pagando lo mismo el mismo día con un concepto bancario genérico) - forzar uno solo
+  // no debe hacer desaparecer también al otro sin haberlo importado.
+  async function handleForceImport(indices: number[], batchId: string) {
+    if (state.kind !== "done" || indices.length === 0) return;
+    const rows = indices.map((i) => state.skippedRows[i]).filter((r): r is ImportRow => !!r);
+    if (rows.length === 0) return;
     setForcingDuplicates(true);
     try {
       await forceImportTransactions(rows, origin, batchId);
-      const keys = new Set(rows.map((r) => `${r.date}|${r.amount}|${r.concept}`));
+      const toRemove = new Set(indices);
       setState((prev) => {
         if (prev.kind !== "done") return prev;
-        return { ...prev, skippedRows: prev.skippedRows.filter((r) => !keys.has(`${r.date}|${r.amount}|${r.concept}`)) };
+        return { ...prev, skippedRows: prev.skippedRows.filter((_, i) => !toRemove.has(i)) };
       });
     } finally {
       setForcingDuplicates(false);
     }
   }
 
-  async function doImport(rows: ImportRow[], appliedCount?: number) {
+  async function doImport(rows: ImportRow[], appliedCount: number | undefined, unparsedCount: number) {
     setState({ kind: "importing" });
     try {
       const res = await importTransactions(rows, origin);
-      setState({ kind: "done", imported: res.imported, skipped: res.skipped, skippedRows: res.skippedRows, batchId: res.batchId, appliedCount });
+      setState({ kind: "done", imported: res.imported, skipped: res.skipped, skippedRows: res.skippedRows, batchId: res.batchId, appliedCount, unparsedCount });
       if (res.batchId) {
         getRecentImports().then(setHistorial).catch(() => {});
       }
@@ -462,15 +546,13 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
   }
 
   return (
+    <>
     <Drawer title="Importar movimientos" onClose={onClose}>
         <div className="px-6 py-5 h-full flex flex-col">
 
           {/* ── Idle: dropzone ── */}
           {state.kind === "idle" && (
             <div>
-              <p className="text-sm text-navy/55 mb-4">
-                Sube un extracto de CaixaBank en CSV, XLS o XLSX (Posición Global → Movimientos → Exportar).
-              </p>
               <label
                 className="flex flex-col items-center gap-3 p-8 border-2 border-dashed border-navy/15 rounded-xl cursor-pointer hover:border-primary/30 hover:bg-primary/[0.02] transition-colors"
                 onDragOver={(e) => e.preventDefault()}
@@ -501,30 +583,12 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                             {b.count} movs · {b.paymentMethod}
                           </span>
                         </div>
-                        {confirmUndo === b.batchId ? (
-                          <div className="flex items-center gap-2 shrink-0">
-                            <button
-                              onClick={() => setConfirmUndo(null)}
-                              className="text-xs text-navy/40 hover:text-navy transition-colors"
-                            >
-                              Cancelar
-                            </button>
-                            <button
-                              onClick={() => handleUndo(b.batchId)}
-                              disabled={undoingId === b.batchId}
-                              className="text-xs font-semibold text-danger hover:text-danger/80 transition-colors disabled:opacity-50"
-                            >
-                              {undoingId === b.batchId ? "Deshaciendo…" : "Confirmar"}
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => setConfirmUndo(b.batchId)}
-                            className="text-xs text-navy/35 hover:text-danger transition-colors shrink-0"
-                          >
-                            Deshacer
-                          </button>
-                        )}
+                        <button
+                          onClick={() => setConfirmUndo(b.batchId)}
+                          className="text-xs text-navy/35 hover:text-danger transition-colors shrink-0"
+                        >
+                          Deshacer
+                        </button>
                       </div>
                     ))}
                   </div>
@@ -551,6 +615,19 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                   </p>
                 </div>
               </div>
+              {state.unparsedCount > 0 && (
+                <div className="flex items-start gap-3 p-3.5 bg-warning/[0.08] border border-warning/20 rounded-xl mb-4">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-warning shrink-0 mt-0.5">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                  </svg>
+                  <p className="text-xs text-navy/70 leading-snug">
+                    <strong className="font-semibold">
+                      {state.unparsedCount} {state.unparsedCount === 1 ? "fila no se ha podido leer" : "filas no se han podido leer"}
+                    </strong>{" "}
+                    (fecha o importe no reconocidos) y no {state.unparsedCount === 1 ? "se importará" : "se importarán"}. Revisa el archivo si esperabas más movimientos.
+                  </p>
+                </div>
+              )}
               <div className="mb-4">
                 <p className="text-[11px] font-semibold text-navy/40 uppercase tracking-wider mb-1.5">Origen o banco</p>
                 <Select value={origin} onChange={(e) => setOrigin(e.target.value as PaymentMethod)}>
@@ -610,13 +687,13 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                 </SecondaryButton>
                 {state.drafts.length > 0 ? (
                   <Button
-                    onClick={() => setState({ kind: "review-contacts", drafts: state.drafts, rows: state.rows, filename: state.filename })}
+                    onClick={() => setState({ kind: "review-contacts", drafts: state.drafts, rows: state.rows, filename: state.filename, unparsedCount: state.unparsedCount })}
                     className="flex-1"
                   >
                     Continuar
                   </Button>
                 ) : (
-                  <Button onClick={() => doImport(state.rows)} className="flex-1">
+                  <Button onClick={() => doImport(state.rows, undefined, state.unparsedCount)} className="flex-1">
                     Importar {state.rows.length} movimientos
                   </Button>
                 )}
@@ -824,14 +901,14 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
               </div>
               <div className="flex gap-2 shrink-0">
                 <SecondaryButton
-                  onClick={() => handleConfirmContacts(state.drafts.map((d) => ({ ...d, action: "ignore" as const })), state.rows)}
+                  onClick={() => handleConfirmContacts(state.drafts.map((d) => ({ ...d, action: "ignore" as const })), state.rows, state.unparsedCount)}
                   disabled={savingContacts}
                   className="flex-1"
                 >
                   Descartar todo
                 </SecondaryButton>
                 <Button
-                  onClick={() => handleConfirmContacts(state.drafts, state.rows)}
+                  onClick={() => handleConfirmContacts(state.drafts, state.rows, state.unparsedCount)}
                   disabled={savingContacts}
                   className="flex-1"
                 >
@@ -858,12 +935,20 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                 </svg>
               </div>
               <p className="text-base font-bold text-navy mb-1">{state.imported} movimientos importados</p>
+              <p className="text-xs text-navy/45">
+                Como {ORIGIN_OPTIONS.find((o) => o.value === origin)?.label ?? origin} - si no era el origen correcto, deshaz la importación abajo y vuelve a intentarlo.
+              </p>
               {state.skippedRows.length > 0 && (
                 <p className="text-sm text-navy/45">{state.skippedRows.length} posibles duplicados</p>
               )}
               {!!state.appliedCount && (
                 <p className="text-xs text-primary/70 mt-1">
                   {state.appliedCount} {state.appliedCount === 1 ? "movimiento anterior actualizado" : "movimientos anteriores actualizados"} con los contactos que acabas de confirmar.
+                </p>
+              )}
+              {state.unparsedCount > 0 && (
+                <p className="text-xs text-warning mt-1">
+                  {state.unparsedCount} {state.unparsedCount === 1 ? "fila del archivo no se pudo leer" : "filas del archivo no se pudieron leer"} (fecha o importe no reconocidos) y no {state.unparsedCount === 1 ? "se ha importado" : "se han importado"}.
                 </p>
               )}
               <Button onClick={onClose} className="mt-5">
@@ -875,7 +960,7 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                   <div className="flex items-center justify-between px-4 py-2.5 bg-navy/[0.02] border-b border-navy/[0.06]">
                     <span className="text-xs font-semibold text-navy/50">Posibles duplicados</span>
                     <button
-                      onClick={() => handleForceImport(state.skippedRows, state.batchId)}
+                      onClick={() => handleForceImport(state.skippedRows.map((_, i) => i), state.batchId)}
                       disabled={forcingDuplicates}
                       className="text-xs font-medium text-primary hover:text-primary/75 transition-colors disabled:opacity-40"
                     >
@@ -895,7 +980,7 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                           {r.amount >= 0 ? "+" : "−"}{fmtAmt(r.amount)} €
                         </span>
                         <button
-                          onClick={() => handleForceImport([r], state.batchId)}
+                          onClick={() => handleForceImport([i], state.batchId)}
                           disabled={forcingDuplicates}
                           className="text-xs text-navy/35 hover:text-primary transition-colors shrink-0 disabled:opacity-40"
                         >
@@ -909,27 +994,12 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
 
               {state.batchId && (
                 <div className="mt-4">
-                  {confirmUndo === state.batchId ? (
-                    <div className="flex items-center justify-center gap-3">
-                      <button onClick={() => setConfirmUndo(null)} className="text-xs text-navy/40 hover:text-navy transition-colors">
-                        Cancelar
-                      </button>
-                      <button
-                        onClick={() => handleUndo(state.batchId)}
-                        disabled={!!undoingId}
-                        className="text-xs font-semibold text-danger hover:text-danger/80 transition-colors disabled:opacity-50"
-                      >
-                        {undoingId ? "Deshaciendo…" : "Sí, deshacer importación"}
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setConfirmUndo(state.batchId)}
-                      className="text-xs text-navy/35 hover:text-danger transition-colors"
-                    >
-                      Deshacer esta importación
-                    </button>
-                  )}
+                  <button
+                    onClick={() => setConfirmUndo(state.batchId)}
+                    className="text-xs text-navy/35 hover:text-danger transition-colors"
+                  >
+                    Deshacer esta importación
+                  </button>
                 </div>
               )}
             </div>
@@ -951,5 +1021,21 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
           )}
         </div>
     </Drawer>
+
+    {confirmUndo && (() => {
+      const b = historial.find((h) => h.batchId === confirmUndo);
+      const count = b?.count ?? (state.kind === "done" && state.batchId === confirmUndo ? state.imported : null);
+      const dateRange = b ? `${fmtDateShort(b.minDate)} – ${fmtDateShort(b.maxDate)}` : null;
+      return (
+        <UndoImportDrawer
+          count={count}
+          dateRange={dateRange}
+          busy={undoingId === confirmUndo}
+          onClose={() => setConfirmUndo(null)}
+          onConfirm={(close) => handleUndo(confirmUndo, close)}
+        />
+      );
+    })()}
+    </>
   );
 }
