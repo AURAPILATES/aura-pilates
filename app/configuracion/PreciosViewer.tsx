@@ -8,6 +8,14 @@ function fmtEur(v: number) {
   return v.toLocaleString("es-ES", { maximumFractionDigits: 0 }) + " €";
 }
 
+// Compara precios redondeados al euro, igual que se muestran (fmtEur no tiene decimales): con
+// comparación exacta, una diferencia de céntimos entre Momence y el respaldo (habitual, ver
+// PRICE_TOLERANCE en productRevenue.ts) dispara "Precio cambió" aunque ambas columnas muestren
+// el mismo número redondeado - confuso sin ninguna diferencia visible que lo explique.
+function pricesDiffer(a: number, b: number): boolean {
+  return Math.round(a) !== Math.round(b);
+}
+
 export default function PreciosViewer({ rows }: { rows: PricingRow[] }) {
   return (
     <div>
@@ -29,7 +37,7 @@ export default function PreciosViewer({ rows }: { rows: PricingRow[] }) {
 
         {rows.map((row) => {
           const usingLive = row.livePrice !== null;
-          const mismatch = usingLive && row.livePrice !== row.fallbackPrice;
+          const mismatch = usingLive && pricesDiffer(row.livePrice!, row.fallbackPrice);
           return (
             <div key={row.name} className={`${tableRowClassV2} px-5`} style={gridColsV2(COLS)}>
               <p className="text-[13.5px] font-medium text-navy truncate">{row.name}</p>
@@ -52,7 +60,7 @@ export default function PreciosViewer({ rows }: { rows: PricingRow[] }) {
       <div className="sm:hidden divide-y divide-subtle">
         {rows.map((row) => {
           const usingLive = row.livePrice !== null;
-          const mismatch = usingLive && row.livePrice !== row.fallbackPrice;
+          const mismatch = usingLive && pricesDiffer(row.livePrice!, row.fallbackPrice);
           return (
             <div key={row.name} className="py-3 px-5">
               <div className="flex items-start justify-between gap-2 mb-2">

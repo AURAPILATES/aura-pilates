@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { Edit2, Trash2, Check, X } from "react-feather";
 import type { UrbanRate } from "@/lib/urbanRates";
 import { rateForDate } from "@/lib/urbanRates";
+import { todayLocalISO } from "@/lib/dateRange";
 import { createUrbanRate, updateUrbanRate, deleteUrbanRate } from "./actions";
 import { PrimaryButtonV2 } from "@/app/components/v2/ButtonsV2";
 import HeaderPortal from "@/app/components/HeaderPortal";
@@ -24,10 +25,13 @@ function fmtDate(d: string | null): string {
 type Draft = { start_date: string; end_date: string; price_per_class: string };
 
 function toInput(d: Draft) {
+  const price = d.price_per_class.trim();
   return {
     start_date: d.start_date,
     end_date: d.end_date.trim() === "" ? null : d.end_date,
-    price_per_class: Number(d.price_per_class.replace(",", ".")),
+    // Un precio vacío se convierte a NaN, no a 0: si se convirtiera a 0, validateUrbanRate lo
+    // aceptaría como válido y guardaría una tarifa de 0 €/clase sin avisar.
+    price_per_class: price === "" ? NaN : Number(price.replace(",", ".")),
   };
 }
 
@@ -40,10 +44,14 @@ export default function TarifaUrbanManager({ rates }: { rates: UrbanRate[] }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayLocalISO();
   const activeRate = rateForDate(rates, today);
 
   function startEdit(r: UrbanRate) {
+    // Si ya hay un borrador abierto (añadiendo u otra fila en edición), cambiar de fila lo
+    // descartaría sin más - confirmar antes de perderlo.
+    const hasOpenDraft = adding || (editingId !== null && editingId !== r.id);
+    if (hasOpenDraft && !confirm("Tienes cambios sin guardar en otra fila que se perderán. ¿Continuar?")) return;
     setError(null);
     setAdding(false);
     setEditingId(r.id);
@@ -107,10 +115,16 @@ export default function TarifaUrbanManager({ rates }: { rates: UrbanRate[] }) {
         </HeaderPortal>
       )}
 
-      {activeRate != null && (
+      {activeRate != null ? (
         <p className="text-[12.5px] text-muted mb-3">
           Tarifa vigente hoy: <span className="font-semibold text-navy">{activeRate.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</span> / clase
         </p>
+      ) : (
+        rates.length > 0 && (
+          <p className="text-[12.5px] text-warning mb-3">
+            Sin tarifa vigente hoy — no se está estimando el € de Urban del mes en curso hasta que añadas una.
+          </p>
+        )
       )}
 
       {error && <p className="text-[12.5px] text-danger mb-3">{error}</p>}
@@ -204,7 +218,12 @@ function RowForm({
         placeholder="11,00"
       />
       <span className="flex items-center gap-1 w-16 justify-end">
-        <button onClick={onSave} disabled={pending} className="p-1.5 rounded-[5px] text-success hover:bg-success/[0.1] disabled:opacity-40" title="Guardar">
+        <button
+          onClick={onSave}
+          disabled={pending || draft.start_date.trim() === "" || draft.price_per_class.trim() === ""}
+          className="p-1.5 rounded-[5px] text-success hover:bg-success/[0.1] disabled:opacity-40"
+          title="Guardar"
+        >
           <Check size={15} />
         </button>
         <button onClick={onCancel} disabled={pending} className="p-1.5 rounded-[5px] text-navy/50 hover:bg-navy/[0.06]" title="Cancelar">

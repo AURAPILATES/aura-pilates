@@ -143,7 +143,28 @@ function validateUrbanRate(data: UrbanRateInput) {
   if (data.end_date && data.end_date < data.start_date) {
     throw new Error("La fecha de fin no puede ser anterior a la de inicio.");
   }
-  if (!(data.price_per_class >= 0)) throw new Error("El precio debe ser un número igual o mayor que 0.");
+  // Cubre tanto un precio negativo/no numérico como el campo vacío (el formulario lo convierte
+  // a NaN, no a 0, precisamente para que esta comprobación lo pille en vez de guardar un 0 €
+  // silencioso que anularía la estimación de Urban de ese tramo de fechas).
+  if (!(data.price_per_class >= 0)) throw new Error("El precio es obligatorio y debe ser un número igual o mayor que 0.");
+}
+
+// Dos tarifas no pueden cubrir la misma fecha: si se solapasen, qué tarifa "gana" quedaría
+// ambiguo (ver rateForDate en lib/urbanRates.ts). Mejor impedirlo aquí que dejar que se
+// resuelva en silencio con una regla de precedencia que nadie ve en la UI.
+function rangesOverlap(aStart: string, aEnd: string | null, bStart: string, bEnd: string | null): boolean {
+  const aEndsAfterBStarts = aEnd == null || bStart <= aEnd;
+  const bEndsAfterAStarts = bEnd == null || aStart <= bEnd;
+  return aEndsAfterBStarts && bEndsAfterAStarts;
+}
+
+async function assertNoOverlap(supabase: ReturnType<typeof createServerClient>, data: UrbanRateInput, excludeId?: string) {
+  const { data: rows, error } = await supabase.from("urban_rates").select("id, start_date, end_date");
+  if (error) throw new Error(error.message);
+  const clash = (rows ?? []).some(
+    (r) => r.id !== excludeId && rangesOverlap(data.start_date, data.end_date, r.start_date, r.end_date),
+  );
+  if (clash) throw new Error("Este rango de fechas se solapa con una tarifa ya existente. Ajusta las fechas para que no se pisen.");
 }
 
 function revalidateUrbanRates() {
@@ -155,6 +176,7 @@ function revalidateUrbanRates() {
 export async function createUrbanRate(data: UrbanRateInput) {
   validateUrbanRate(data);
   const supabase = createServerClient();
+  await assertNoOverlap(supabase, data);
   const { error } = await supabase.from("urban_rates").insert(data);
   if (error) throw new Error(error.message);
   revalidateUrbanRates();
@@ -163,6 +185,7 @@ export async function createUrbanRate(data: UrbanRateInput) {
 export async function updateUrbanRate(id: string, data: UrbanRateInput) {
   validateUrbanRate(data);
   const supabase = createServerClient();
+  await assertNoOverlap(supabase, data, id);
   const { error } = await supabase
     .from("urban_rates")
     .update({ ...data, updated_at: new Date().toISOString() })

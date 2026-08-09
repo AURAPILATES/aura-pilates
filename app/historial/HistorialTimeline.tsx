@@ -9,6 +9,7 @@ import HeaderPortal from "@/app/components/HeaderPortal";
 import FilterPillGroupV2 from "@/app/components/v2/FilterPillGroupV2";
 import Select from "@/app/components/Select";
 import type { BusinessEvent, EventCategoria } from "@/lib/businessEvents";
+import { todayLocalISO } from "@/lib/dateRange";
 import { createBusinessEvent, updateBusinessEvent, deleteBusinessEvent } from "./actions";
 
 // ── Config ────────────────────────────────────────────────────────────────────
@@ -44,7 +45,7 @@ function formatFecha(iso: string) {
 type FormValues = { fecha: string; categoria: EventCategoria; titulo: string; descripcion: string };
 
 function emptyForm(): FormValues {
-  return { fecha: new Date().toISOString().slice(0, 10), categoria: "precios", titulo: "", descripcion: "" };
+  return { fecha: todayLocalISO(), categoria: "precios", titulo: "", descripcion: "" };
 }
 
 // ── Event form ────────────────────────────────────────────────────────────────
@@ -196,6 +197,7 @@ export default function HistorialTimeline({ events: initial }: { events: Busines
         await deleteBusinessEvent(id);
         setDeletedIds((prev) => new Set([...prev, id]));
         setConfirmDeleteId(null);
+        router.refresh();
       } catch {
         setConfirmDeleteId(null);
       }

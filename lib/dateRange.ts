@@ -35,6 +35,13 @@ function fmt(d: Date) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
+/** Fecha de hoy en el huso horario local, como "YYYY-MM-DD". A diferencia de
+ * `new Date().toISOString().slice(0, 10)`, no se adelanta un día durante la madrugada en
+ * verano (Madrid UTC+2): toISOString() siempre da la fecha en UTC. */
+export function todayLocalISO(): string {
+  return fmt(new Date());
+}
+
 export function getDateRange(range: string | null | undefined): DateRange {
   const now = new Date();
   const y = now.getFullYear();
