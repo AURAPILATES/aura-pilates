@@ -661,28 +661,6 @@ export default function TransaccionesList({
     return true;
   });
 
-  // Badge "sin etiquetar": recalculado en cliente sobre los mismos filtros que baseFiltered
-  // (búsqueda, origen, recurrente, sin contacto) pero ignorando el propio filtro de categoría -
-  // si no, quedaba fijo en el número que tocaba al cargar la página y no se movía al teclear en
-  // el buscador o tocar otros filtros.
-  const uncategorizedCount = useMemo(() => {
-    const q = normalizeText(search);
-    return transactions.filter((t) => {
-      if (t.category) return false;
-      if (
-        q &&
-        !normalizeText(t.contact).includes(q) &&
-        !normalizeText(t.concept).includes(q) &&
-        !normalizeText(t.bank_details).includes(q) &&
-        !normalizeText(t.notes).includes(q)
-      ) return false;
-      if (originFilter !== "all" && t.payment_method !== originFilter) return false;
-      if (onlyRecurring && !recurringPeriods[t.id]) return false;
-      if (onlyNoContact && (t.contact ?? "").trim() !== "") return false;
-      return true;
-    }).length;
-  }, [transactions, search, originFilter, onlyRecurring, onlyNoContact, recurringPeriods]);
-
   const min = amountMin !== "" ? parseFloat(amountMin) : null;
   const max = amountMax !== "" ? parseFloat(amountMax) : null;
 
@@ -703,6 +681,11 @@ export default function TransaccionesList({
     if (directionFilter === "out" && t.amount >= 0) return false;
     return true;
   });
+
+  // Badge "sin etiquetar": cuenta sobre el mismo conjunto que ya ve el usuario (búsqueda,
+  // categoría, origen, importe, dirección de las tarjetas KPI, recurrente, sin contacto) - así
+  // se mueve con cualquier filtro que se toque, no solo con el buscador.
+  const uncategorizedCount = filtered.filter((t) => !t.category).length;
 
   const sortedFiltered = useMemo(() => {
     if (!sortKey) return filtered;
