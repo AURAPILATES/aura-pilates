@@ -337,14 +337,11 @@ function UndoImportDrawer({
     >
       <div className="px-6 py-5 space-y-3 text-sm text-navy/70 leading-relaxed">
         <p>
-          Se borrarán en firme {count != null ? <>los <strong className="text-navy font-semibold">{count}</strong> movimientos</> : "todos los movimientos"}
-          {dateRange ? ` de esta importación (${dateRange})` : " de esta importación"}, tal y como estén ahora mismo - incluidos los que hayas forzado a importar desde &quot;posibles duplicados&quot;.
+          Se borrarán {count != null ? <>los <strong className="text-navy font-semibold">{count}</strong> movimientos</> : "todos los movimientos"} de esa importación
+          {dateRange ? ` (${dateRange})` : ""} y no podrás recuperarlos después.
         </p>
         <p>
-          <strong className="text-navy font-semibold">No pasa por la papelera:</strong> no podrás recuperarlos después.
-        </p>
-        <p>
-          Si desde que se importaron has categorizado alguno, le has vinculado un contacto o lo has marcado como recurrente, esos cambios se pierden también.
+          Si marcaste algún ingreso o gasto como recurrente, lo perderás también y deberás crearlo de nuevo.
         </p>
         <p>
           Los contactos nuevos que hayas confirmado durante esta importación no se deshacen - seguirán existiendo.
