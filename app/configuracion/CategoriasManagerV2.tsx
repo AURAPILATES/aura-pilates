@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { Category } from "@/lib/categories";
 import { CategoryIcon } from "./CategoriasManager";
 import SearchInputV2 from "@/app/components/v2/SearchInputV2";
@@ -19,6 +20,7 @@ type Props = {
   onDragLeave: (id: string) => void;
   onDrop: (list: Category[], targetId: string) => void;
   onDragEnd: () => void;
+  onMoveStep: (list: Category[], id: string, direction: -1 | 1) => void;
   onNewCategory: () => void;
   onNewSubcategory: (parentId: string) => void;
   onEditCategory: (cat: Category) => void;
@@ -27,7 +29,7 @@ type Props = {
 
 export default function CategoriasManagerV2({
   totalCategories, groups, totalCount, search, onSearchChange, draggedId, dragOverId,
-  onDragStart, onDragOver, onDragLeave, onDrop, onDragEnd,
+  onDragStart, onDragOver, onDragLeave, onDrop, onDragEnd, onMoveStep,
   onNewCategory, onNewSubcategory, onEditCategory, onViewTransactions,
 }: Props) {
   // Profundidad de cada categoría (0 = raíz) para indentar los niveles anidados. Se calcula
@@ -45,6 +47,34 @@ export default function CategoriasManagerV2({
     }
     return d;
   }
+
+  // Colapsar ramas: con jerarquías de hasta 3 niveles y creciendo, mostrar siempre todo
+  // expandido solo puede alargar la lista con el tiempo, sin forma de aparcar una rama que no
+  // interesa en ese momento. Estado de solo sesión (no persiste entre recargas) a propósito -
+  // es una ayuda de lectura puntual, no una preferencia que valga la pena guardar en BD.
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const childCountById = new Map<string, number>();
+  for (const c of byId.values()) {
+    if (c.parent_id) childCountById.set(c.parent_id, (childCountById.get(c.parent_id) ?? 0) + 1);
+  }
+  function isHiddenByCollapsedAncestor(cat: Category): boolean {
+    let cur = cat.parent_id ? byId.get(cat.parent_id) : undefined;
+    const seen = new Set<string>();
+    while (cur && !seen.has(cur.id)) {
+      if (collapsed.has(cur.id)) return true;
+      seen.add(cur.id);
+      cur = cur.parent_id ? byId.get(cur.parent_id) : undefined;
+    }
+    return false;
+  }
+  function toggleCollapse(id: string) {
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
   return (
     <div>
       <div className="flex items-center gap-[10px]">
@@ -70,9 +100,12 @@ export default function CategoriasManagerV2({
             {group.subsectionLabel && (
               <p className="pt-2.5 pb-1 text-[11.5px] text-faint font-medium">{group.subsectionLabel}</p>
             )}
-            {group.ordered.map((cat) => {
+            {group.ordered.map((cat, idx) => {
+              if (isHiddenByCollapsedAncestor(cat)) return null;
               const depth = depthOf(cat);
               const isSub = depth > 0;
+              const childCount = childCountById.get(cat.id) ?? 0;
+              const isCollapsed = collapsed.has(cat.id);
               const isDragging = draggedId === cat.id;
               const isDragOver = dragOverId === cat.id && draggedId !== null && draggedId !== cat.id;
               return (
@@ -89,11 +122,50 @@ export default function CategoriasManagerV2({
                   } ${isDragging ? "opacity-40" : ""}`}
                   style={{ paddingLeft: depth * 28 }}
                 >
-                  <svg width="10" height="16" viewBox="0 0 10 16" fill="var(--color-faint)" className="shrink-0 cursor-grab active:cursor-grabbing">
+                  {/* Escritorio: asa de arrastrar (drag-and-drop nativo, sin soporte táctil). En
+                      móvil se sustituye por flechas subir/bajar, que sí funcionan con el dedo. */}
+                  <svg width="10" height="16" viewBox="0 0 10 16" fill="var(--color-faint)" className="hidden sm:block shrink-0 cursor-grab active:cursor-grabbing">
                     <circle cx="2.5" cy="3" r="1.3" /><circle cx="7.5" cy="3" r="1.3" />
                     <circle cx="2.5" cy="8" r="1.3" /><circle cx="7.5" cy="8" r="1.3" />
                     <circle cx="2.5" cy="13" r="1.3" /><circle cx="7.5" cy="13" r="1.3" />
                   </svg>
+                  <div className="flex sm:hidden flex-col shrink-0 -my-1">
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); onMoveStep(group.ordered, cat.id, -1); }}
+                      disabled={idx === 0}
+                      title="Subir"
+                      className="w-5 h-4 flex items-center justify-center text-faint disabled:opacity-20"
+                    >
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="18 15 12 9 6 15" /></svg>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); onMoveStep(group.ordered, cat.id, 1); }}
+                      disabled={idx === group.ordered.length - 1}
+                      title="Bajar"
+                      className="w-5 h-4 flex items-center justify-center text-faint disabled:opacity-20"
+                    >
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                    </button>
+                  </div>
+                  {childCount > 0 ? (
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); toggleCollapse(cat.id); }}
+                      title={isCollapsed ? `Mostrar ${childCount} subcategorías` : "Plegar subcategorías"}
+                      className="shrink-0 w-5 h-5 flex items-center justify-center text-faint hover:text-muted transition-colors"
+                    >
+                      <svg
+                        width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                        className={`transition-transform ${isCollapsed ? "-rotate-90" : ""}`}
+                      >
+                        <polyline points="6 9 12 15 18 9" />
+                      </svg>
+                    </button>
+                  ) : (
+                    <span className="shrink-0 w-5 h-5" />
+                  )}
                   <button
                     onClick={() => onEditCategory(cat)}
                     className="flex-1 flex items-center gap-3 min-w-0 text-left"
@@ -105,13 +177,16 @@ export default function CategoriasManagerV2({
                     </div>
                   </button>
                   {depth === 0 && (
+                    // A secas (círculo tenue con un "+") se confundía con una insignia
+                    // decorativa pegada al recuento de "N trx" de al lado - el borde marcado y
+                    // el trazo más grueso lo hacen leer como botón, no como estado.
                     <button
                       onClick={(e) => { e.stopPropagation(); onNewSubcategory(cat.id); }}
                       title={`Añadir subcategoría a "${cat.label}"`}
-                      className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center transition-transform hover:scale-110"
-                      style={{ backgroundColor: `${cat.text_color}1f`, color: cat.text_color }}
+                      className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center border transition-all hover:scale-110"
+                      style={{ backgroundColor: `${cat.text_color}14`, borderColor: `${cat.text_color}45`, color: cat.text_color }}
                     >
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
                     </button>
                   )}
                   <span className="text-[12.5px] text-faint whitespace-nowrap shrink-0">{totalCount(cat)} trx</span>
@@ -128,7 +203,11 @@ export default function CategoriasManagerV2({
           </div>
         ))}
       </div>
-      <div className="pt-3.5 text-[12.5px] text-faint">{totalCategories} categorías · arrastra para reordenar</div>
+      <div className="pt-3.5 text-[12.5px] text-faint">
+        {totalCategories} categorías ·{" "}
+        <span className="hidden sm:inline">arrastra para reordenar</span>
+        <span className="sm:hidden">usa las flechas para reordenar</span>
+      </div>
     </div>
   );
 }

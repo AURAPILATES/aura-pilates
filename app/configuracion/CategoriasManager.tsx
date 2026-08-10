@@ -265,11 +265,11 @@ export default function CategoriasManager({
   // Con categoría padre, el grupo y la naturaleza económica se heredan de ella (no se editan).
   const hasParent = !!form.parent_id;
 
-  function handleDrop(list: Category[], targetId: string) {
-    const dragId = draggedId;
-    setDraggedId(null);
-    setDragOverId(null);
-    if (!dragId || dragId === targetId) return;
+  // Núcleo compartido de "mover dentro de una sublista" - lo usa tanto soltar un arrastre
+  // (handleDrop, ratón) como las flechas subir/bajar (moveStep, táctil - ver más abajo por qué
+  // hacen falta: el arrastre nativo no dispara eventos con el dedo).
+  function applyReorder(list: Category[], dragId: string, targetId: string) {
+    if (dragId === targetId) return;
     const dragIdx = list.findIndex((c) => c.id === dragId);
     const targetIdx = list.findIndex((c) => c.id === targetId);
     if (dragIdx === -1 || targetIdx === -1) return;
@@ -293,6 +293,25 @@ export default function CategoriasManager({
         setError(e instanceof Error ? e.message : "Error al reordenar.");
       }
     });
+  }
+
+  function handleDrop(list: Category[], targetId: string) {
+    const dragId = draggedId;
+    setDraggedId(null);
+    setDragOverId(null);
+    if (!dragId) return;
+    applyReorder(list, dragId, targetId);
+  }
+
+  /** Sube/baja una categoría una posición dentro de su misma sublista - alternativa al
+   * arrastre para móvil: `draggable` es drag-and-drop nativo del navegador y no dispara nada
+   * con eventos táctiles, así que en pantalla táctil el asa de arrastrar no hacía nada. */
+  function moveStep(list: Category[], id: string, direction: -1 | 1) {
+    const idx = list.findIndex((c) => c.id === id);
+    if (idx === -1) return;
+    const targetIdx = idx + direction;
+    if (targetIdx < 0 || targetIdx >= list.length) return;
+    applyReorder(list, id, list[targetIdx].id);
   }
 
   function handleColorSelect(hex: string) {
@@ -517,6 +536,7 @@ export default function CategoriasManager({
         onDragLeave={(id) => setDragOverId((cur) => (cur === id ? null : cur))}
         onDrop={handleDrop}
         onDragEnd={() => { setDraggedId(null); setDragOverId(null); }}
+        onMoveStep={moveStep}
         onNewCategory={openNew}
         onNewSubcategory={openNewWithParent}
         onEditCategory={openEdit}

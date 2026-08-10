@@ -24,6 +24,8 @@ import ContactDuplicateDrawer from "./ContactDuplicateDrawer";
 
 const PAGE_SIZE = 100;
 
+export type SortKey = "label" | "iva" | "retencion" | "count" | "lastDate";
+
 /** Dominios de marcas reconocibles para mostrar su logo real (favicon de Google) en vez de
  * iniciales - solo para proveedores habituales de Aura Pilates. El resto cae a iniciales. */
 const KNOWN_DOMAINS: Record<string, string> = {
@@ -305,6 +307,8 @@ export default function ContactosManager({ contacts: initialContacts, categories
   const [search, setSearch] = useState("");
   const [groupFilter, setGroupFilter] = useState<"all" | ContactGroup>("all");
   const [page, setPage] = useState(0);
+  const [sortKey, setSortKey] = useState<SortKey | null>(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [selectedId, setSelectedId] = useState<number | null>(() => {
     const raw = searchParams.get("contacto");
     return raw ? parseInt(raw, 10) : null;
@@ -431,9 +435,34 @@ export default function ContactosManager({ contacts: initialContacts, categories
     });
   }, [contacts, search, groupFilter]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  // Sin esto la tabla solo se podía mirar en orden alfabético - no había forma de ver, p. ej.,
+  // qué proveedor mueve más volumen o cuál lleva más tiempo sin actividad, aunque esas mismas
+  // columnas (Movim., Últ. mov.) ya muestran esos datos.
+  function toggleSort(key: SortKey) {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir(key === "label" ? "asc" : "desc");
+    }
+  }
+  const sorted = useMemo(() => {
+    if (!sortKey) return filtered;
+    const dir = sortDir === "asc" ? 1 : -1;
+    return [...filtered].sort((a, b) => {
+      if (sortKey === "label") return a.label.localeCompare(b.label) * dir;
+      if (sortKey === "iva") return (a.ivaRate - b.ivaRate) * dir;
+      if (sortKey === "retencion") return (a.retencionRate - b.retencionRate) * dir;
+      if (sortKey === "count") return ((contactStats[a.id]?.count ?? 0) - (contactStats[b.id]?.count ?? 0)) * dir;
+      const ad = contactStats[a.id]?.latest?.[0]?.date ?? "";
+      const bd = contactStats[b.id]?.latest?.[0]?.date ?? "";
+      return ad.localeCompare(bd) * dir;
+    });
+  }, [filtered, sortKey, sortDir, contactStats]);
+
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages - 1);
-  const pageRows = filtered.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
+  const pageRows = sorted.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
 
   const selected = selectedId !== null ? contacts.find((c) => c.id === selectedId) ?? null : null;
 
@@ -463,6 +492,9 @@ export default function ContactosManager({ contacts: initialContacts, categories
         groupCounts={groupCounts}
         rows={pageRows}
         totalCount={filtered.length}
+        sortKey={sortKey}
+        sortDir={sortDir}
+        onToggleSort={toggleSort}
         page={safePage}
         pageSize={PAGE_SIZE}
         onPageChange={setPage}

@@ -11,9 +11,20 @@ import HeaderPortal from "@/app/components/HeaderPortal";
 import { CONTACT_GROUP_ORDER, CONTACT_GROUP_LABELS, type ContactGroup } from "@/lib/contactGroups";
 import TaxBadgeV2 from "@/app/components/v2/TaxBadgeV2";
 import { tableHeadClassV2, tableRowClassV2, tableCardClassV2, gridColsV2 } from "@/app/components/v2/tableStylesV2";
-import { knownDomain, initials, fmtDate as fmtContactDate } from "./ContactosManager";
+import { knownDomain, initials, fmtDate as fmtContactDate, type SortKey } from "./ContactosManager";
 
 const COLS = "2fr 1.3fr .6fr .6fr 1.3fr";
+
+function SortArrow({ active, dir }: { active: boolean; dir: "asc" | "desc" }) {
+  return (
+    <svg
+      width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3"
+      className={`inline-block ml-1 transition-all ${active ? "opacity-100 text-muted" : "opacity-0 text-border"} ${active && dir === "desc" ? "" : "rotate-180"}`}
+    >
+      <path d="M6 10l6 6 6-6" />
+    </svg>
+  );
+}
 
 type Props = {
   search: string;
@@ -23,6 +34,9 @@ type Props = {
   groupCounts: Record<ContactGroup, number>;
   rows: Contact[];
   totalCount: number;
+  sortKey: SortKey | null;
+  sortDir: "asc" | "desc";
+  onToggleSort: (key: SortKey) => void;
   page: number;
   pageSize: number;
   onPageChange: (p: number) => void;
@@ -161,7 +175,7 @@ function BulkActionBarV2({
 }
 
 export default function ContactosManagerV2({
-  search, onSearchChange, groupFilter, onGroupFilterChange, groupCounts, rows, totalCount, page, pageSize, onPageChange,
+  search, onSearchChange, groupFilter, onGroupFilterChange, groupCounts, rows, totalCount, sortKey, sortDir, onToggleSort, page, pageSize, onPageChange,
   categories, contactStats, onRowClick, duplicateMatchOf, onOpenDuplicate, onViewTransactions, onNewContact, onCleanup, cleaning, cleaned, onRecompute, recomputing, recomputed,
   pendingRecomputeCount, pendingCleanupCount,
   selectedIds, onToggleSelect, onClearSelection, onBulkDelete, onBulkSetIva, onBulkSetRetencion, onBulkSetCategory,
@@ -250,13 +264,38 @@ export default function ContactosManagerV2({
       <div className={`mt-[24px] -mx-4 sm:-mx-6 ${tableCardClassV2} overflow-hidden`}>
         <div className="hidden sm:block">
           <div className={`${tableHeadClassV2} px-5`} style={gridColsV2(COLS)}>
-            <span>Nombre</span>
+            <span
+              className={`flex items-center cursor-pointer select-none ${sortKey === "label" ? "text-navy" : ""}`}
+              onClick={() => onToggleSort("label")}
+            >
+              Nombre<SortArrow active={sortKey === "label"} dir={sortDir} />
+            </span>
             <span>Categoría</span>
-            <span>IVA</span>
-            <span>IRPF</span>
+            <span
+              className={`flex items-center cursor-pointer select-none ${sortKey === "iva" ? "text-navy" : ""}`}
+              onClick={() => onToggleSort("iva")}
+            >
+              IVA<SortArrow active={sortKey === "iva"} dir={sortDir} />
+            </span>
+            <span
+              className={`flex items-center cursor-pointer select-none ${sortKey === "retencion" ? "text-navy" : ""}`}
+              onClick={() => onToggleSort("retencion")}
+            >
+              IRPF<SortArrow active={sortKey === "retencion"} dir={sortDir} />
+            </span>
             <span className="flex items-center justify-end gap-3 text-right">
-              <span>Movim.</span>
-              <span>Últ. mov.</span>
+              <span
+                className={`flex items-center cursor-pointer select-none ${sortKey === "count" ? "text-navy" : ""}`}
+                onClick={() => onToggleSort("count")}
+              >
+                Movim.<SortArrow active={sortKey === "count"} dir={sortDir} />
+              </span>
+              <span
+                className={`flex items-center cursor-pointer select-none ${sortKey === "lastDate" ? "text-navy" : ""}`}
+                onClick={() => onToggleSort("lastDate")}
+              >
+                Últ. mov.<SortArrow active={sortKey === "lastDate"} dir={sortDir} />
+              </span>
             </span>
           </div>
         </div>

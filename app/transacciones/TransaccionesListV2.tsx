@@ -162,6 +162,21 @@ function fmtAmtCompact(n: number): string {
   return fmtAmt(abs);
 }
 
+/** Icono de embudo (mismo trazo que "Más filtros") en las tarjetas KPI de Entradas/Salidas -
+ * sin él, esas tarjetas parecían solo informativas y nada indicaba que también son un filtro
+ * clicable (ni al pasar el ratón, ni en reposo). Tenue en reposo, con el color de la tarjeta
+ * cuando el filtro está activo, para que se lea como "toca aquí para filtrar / ya filtrado". */
+function FilterHintIcon({ active, activeColorClass }: { active: boolean; activeColorClass: string }) {
+  return (
+    <svg
+      width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"
+      className={`ml-auto shrink-0 transition-colors ${active ? activeColorClass : "text-faint/40"}`}
+    >
+      <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+    </svg>
+  );
+}
+
 function SortArrowV2({ active, dir }: { active: boolean; dir: "asc" | "desc" }) {
   return (
     <svg
@@ -240,13 +255,17 @@ export default function TransaccionesListV2({
         <button
           type="button"
           onClick={() => onDirectionFilterChange(directionFilter === "in" ? "all" : "in")}
+          title={directionFilter === "in" ? "Quitar filtro" : "Filtrar solo entradas"}
           className={`text-left border rounded-[14px] px-3 sm:px-4 py-[11px] sm:py-[13px] min-w-0 transition-colors ${
-            directionFilter === "in" ? "border-[#16a34a]/30 dark:border-[#7cdfa0]/30 bg-[#16a34a]/[0.05] dark:bg-[#7cdfa0]/[0.05]" : "border-border bg-card"
+            directionFilter === "in"
+              ? "border-[#16a34a]/30 dark:border-[#7cdfa0]/30 bg-[#16a34a]/[0.05] dark:bg-[#7cdfa0]/[0.05]"
+              : "border-border bg-card hover:bg-navy/[0.02] dark:hover:bg-white/[0.02]"
           }`}
         >
           <p className="flex items-center gap-1.5 text-[10px] sm:text-[10.5px] tracking-wide uppercase text-faint font-semibold truncate">
             <span className="shrink-0 w-[7px] h-[7px] rounded-full bg-[#0d8037] dark:bg-[#78e39f]" />
-            Entradas
+            <span className="truncate">Entradas</span>
+            <FilterHintIcon active={directionFilter === "in"} activeColorClass="text-[#0d8037] dark:text-[#78e39f]" />
           </p>
           <p className="text-[15px] sm:text-[22px] font-bold text-[#0d8037] dark:text-[#78e39f] mt-[5px] tracking-tight truncate">
             <span className="sm:hidden">{fmtAmtCompact(totalIn)}</span>
@@ -259,13 +278,17 @@ export default function TransaccionesListV2({
         <button
           type="button"
           onClick={() => onDirectionFilterChange(directionFilter === "out" ? "all" : "out")}
+          title={directionFilter === "out" ? "Quitar filtro" : "Filtrar solo salidas"}
           className={`text-left border rounded-[14px] px-3 sm:px-4 py-[11px] sm:py-[13px] min-w-0 transition-colors ${
-            directionFilter === "out" ? "border-[#b53e0d]/30 dark:border-[#e69675]/30 bg-[#b53e0d]/[0.05] dark:bg-[#e69675]/[0.05]" : "border-border bg-card"
+            directionFilter === "out"
+              ? "border-[#b53e0d]/30 dark:border-[#e69675]/30 bg-[#b53e0d]/[0.05] dark:bg-[#e69675]/[0.05]"
+              : "border-border bg-card hover:bg-navy/[0.02] dark:hover:bg-white/[0.02]"
           }`}
         >
           <p className="flex items-center gap-1.5 text-[10px] sm:text-[10.5px] tracking-wide uppercase text-faint font-semibold truncate">
             <span className="shrink-0 w-[7px] h-[7px] rounded-full bg-[#b53e0d] dark:bg-[#e69675]" />
-            Salidas
+            <span className="truncate">Salidas</span>
+            <FilterHintIcon active={directionFilter === "out"} activeColorClass="text-[#b53e0d] dark:text-[#e69675]" />
           </p>
           <p className="text-[15px] sm:text-[22px] font-bold text-[#b53e0d] dark:text-[#e69675] mt-[5px] tracking-tight truncate">
             <span className="sm:hidden">{fmtAmtCompact(totalOut)}</span>
