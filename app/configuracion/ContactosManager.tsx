@@ -1,7 +1,7 @@
 "use client";
 import { useMemo, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import type { Category } from "@/lib/categories";
+import { categoryDisplayLabel, type Category } from "@/lib/categories";
 import { contactKeyFor } from "@/lib/contactRules";
 import { normalizeText } from "@/lib/normalizeText";
 import { drawerNav } from "@/lib/drawerNav";
@@ -24,7 +24,7 @@ import ContactDuplicateDrawer from "./ContactDuplicateDrawer";
 
 const PAGE_SIZE = 100;
 
-export type SortKey = "label" | "iva" | "retencion" | "count" | "lastDate";
+export type SortKey = "label" | "category" | "iva" | "retencion" | "count" | "lastDate";
 
 /** Dominios de marcas reconocibles para mostrar su logo real (favicon de Google) en vez de
  * iniciales - solo para proveedores habituales de Aura Pilates. El resto cae a iniciales. */
@@ -443,14 +443,20 @@ export default function ContactosManager({ contacts: initialContacts, categories
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     } else {
       setSortKey(key);
-      setSortDir(key === "label" ? "asc" : "desc");
+      setSortDir(key === "label" || key === "category" ? "asc" : "desc");
     }
   }
   const sorted = useMemo(() => {
     if (!sortKey) return filtered;
     const dir = sortDir === "asc" ? 1 : -1;
+    const categoryLabelOf = (value: string | null) => {
+      if (!value) return "";
+      const cat = categories.find((c) => c.value === value);
+      return cat ? categoryDisplayLabel(cat, categories) : value;
+    };
     return [...filtered].sort((a, b) => {
       if (sortKey === "label") return a.label.localeCompare(b.label) * dir;
+      if (sortKey === "category") return categoryLabelOf(a.category).localeCompare(categoryLabelOf(b.category)) * dir;
       if (sortKey === "iva") return (a.ivaRate - b.ivaRate) * dir;
       if (sortKey === "retencion") return (a.retencionRate - b.retencionRate) * dir;
       if (sortKey === "count") return ((contactStats[a.id]?.count ?? 0) - (contactStats[b.id]?.count ?? 0)) * dir;
@@ -458,7 +464,7 @@ export default function ContactosManager({ contacts: initialContacts, categories
       const bd = contactStats[b.id]?.latest?.[0]?.date ?? "";
       return ad.localeCompare(bd) * dir;
     });
-  }, [filtered, sortKey, sortDir, contactStats]);
+  }, [filtered, sortKey, sortDir, contactStats, categories]);
 
   const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages - 1);

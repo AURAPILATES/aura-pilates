@@ -13,7 +13,7 @@ import TaxBadgeV2 from "@/app/components/v2/TaxBadgeV2";
 import { tableHeadClassV2, tableRowClassV2, tableCardClassV2, gridColsV2 } from "@/app/components/v2/tableStylesV2";
 import { knownDomain, initials, fmtDate as fmtContactDate, type SortKey } from "./ContactosManager";
 
-const COLS = "2fr 1.3fr .6fr .6fr 1.3fr";
+const COLS = "2fr 1.2fr .55fr .55fr .75fr .85fr";
 
 function SortArrow({ active, dir }: { active: boolean; dir: "asc" | "desc" }) {
   return (
@@ -270,7 +270,12 @@ export default function ContactosManagerV2({
             >
               Nombre<SortArrow active={sortKey === "label"} dir={sortDir} />
             </span>
-            <span>Categoría</span>
+            <span
+              className={`flex items-center cursor-pointer select-none ${sortKey === "category" ? "text-navy" : ""}`}
+              onClick={() => onToggleSort("category")}
+            >
+              Categoría<SortArrow active={sortKey === "category"} dir={sortDir} />
+            </span>
             <span
               className={`flex items-center cursor-pointer select-none ${sortKey === "iva" ? "text-navy" : ""}`}
               onClick={() => onToggleSort("iva")}
@@ -283,19 +288,17 @@ export default function ContactosManagerV2({
             >
               IRPF<SortArrow active={sortKey === "retencion"} dir={sortDir} />
             </span>
-            <span className="flex items-center justify-end gap-3 text-right">
-              <span
-                className={`flex items-center cursor-pointer select-none ${sortKey === "count" ? "text-navy" : ""}`}
-                onClick={() => onToggleSort("count")}
-              >
-                Movim.<SortArrow active={sortKey === "count"} dir={sortDir} />
-              </span>
-              <span
-                className={`flex items-center cursor-pointer select-none ${sortKey === "lastDate" ? "text-navy" : ""}`}
-                onClick={() => onToggleSort("lastDate")}
-              >
-                Últ. mov.<SortArrow active={sortKey === "lastDate"} dir={sortDir} />
-              </span>
+            <span
+              className={`flex items-center justify-end cursor-pointer select-none text-right ${sortKey === "count" ? "text-navy" : ""}`}
+              onClick={() => onToggleSort("count")}
+            >
+              Movim.<SortArrow active={sortKey === "count"} dir={sortDir} />
+            </span>
+            <span
+              className={`flex items-center justify-end cursor-pointer select-none text-right ${sortKey === "lastDate" ? "text-navy" : ""}`}
+              onClick={() => onToggleSort("lastDate")}
+            >
+              Últ. mov.<SortArrow active={sortKey === "lastDate"} dir={sortDir} />
             </span>
           </div>
         </div>
@@ -350,19 +353,17 @@ export default function ContactosManagerV2({
                     <div><CategoryBadge category={c.category} categories={categories} /></div>
                     <div><TaxBadgeV2 value={c.ivaRate} isError={bothMissing} zeroIsExplicit={c.noTax} /></div>
                     <div><TaxBadgeV2 value={c.retencionRate} isError={bothMissing} zeroIsExplicit={c.noTax} /></div>
-                    <div className="flex items-center justify-end gap-3">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[12.5px] text-faint whitespace-nowrap shrink-0">{stats?.count ?? 0} trx</span>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); onViewTransactions(c); }}
-                          title={`Ver movimientos de "${c.label}"`}
-                          className="shrink-0 text-border hover:text-muted transition-colors"
-                        >
-                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="11" cy="11" r="6.5" /><path d="M20 20l-3.8-3.8" /></svg>
-                        </button>
-                      </div>
-                      <p className="text-[12.5px] text-muted whitespace-nowrap">{lastDate ? fmtContactDate(lastDate) : "-"}</p>
+                    <div className="flex items-center justify-end gap-2">
+                      <span className="text-[12.5px] text-faint whitespace-nowrap shrink-0">{stats?.count ?? 0} trx</span>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onViewTransactions(c); }}
+                        title={`Ver movimientos de "${c.label}"`}
+                        className="shrink-0 text-border hover:text-muted transition-colors"
+                      >
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="11" cy="11" r="6.5" /><path d="M20 20l-3.8-3.8" /></svg>
+                      </button>
                     </div>
+                    <p className="text-[12.5px] text-muted whitespace-nowrap text-right">{lastDate ? fmtContactDate(lastDate) : "-"}</p>
                   </div>
                 </div>
 
