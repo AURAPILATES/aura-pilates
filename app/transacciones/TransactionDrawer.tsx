@@ -152,6 +152,7 @@ function MarkRecurringControl({
   contactLabel,
   contacts,
   initiallyRecurring,
+  detectedUnconfirmed,
   initialPeriod,
   initialEndType,
   initialEndDate,
@@ -162,6 +163,7 @@ function MarkRecurringControl({
   contactLabel: string;
   contacts: Contact[];
   initiallyRecurring: boolean;
+  detectedUnconfirmed: boolean;
   initialPeriod?: string;
   initialEndType?: RecurringExpenseEndType;
   initialEndDate?: string | null;
@@ -228,6 +230,11 @@ function MarkRecurringControl({
           </span>
         </span>
       </label>
+      {!checked && detectedUnconfirmed && (
+        <p className="text-xs text-navy/45 bg-navy/[0.04] rounded-lg px-3 py-2 ml-1">
+          Detectado automáticamente por el patrón de pagos ({initialPeriod ?? "mensual"}). Márcalo arriba para confirmarlo y que cuente en Previsiones, o revísalo en la pestaña Recurrentes.
+        </p>
+      )}
       {checked && (
         <div className="flex flex-col gap-3 pl-1">
           <div className="grid grid-cols-2 gap-4">
@@ -335,7 +342,7 @@ function RefundControl({
   }
 
   return (
-    <div className="flex flex-col gap-2.5 pt-3 border-t border-navy/[0.06]">
+    <div className="flex flex-col gap-2.5">
       <label className={`flex items-start gap-2.5 px-3 py-2.5 rounded-lg border cursor-pointer transition-colors ${
         checked ? "border-primary/30 bg-primary/[0.05]" : "border-navy/[0.1] hover:bg-navy/[0.02]"
       }`}>
@@ -568,6 +575,7 @@ export default function TransactionDrawer({
           // si no, desmarcarla aquí borraría esa decisión (ver removeRecurringExpenseForTransaction)
           // y la resucitaría como pendiente en Recurrentes sin que el usuario lo pidiera.
           initiallyRecurring={recurringExpense?.status === "confirmed"}
+          detectedUnconfirmed={!!recurringPeriod && !recurringExpense}
           initialPeriod={recurringExpense?.period ?? recurringPeriod}
           initialEndType={recurringExpense?.end_type}
           initialEndDate={recurringExpense?.end_date}

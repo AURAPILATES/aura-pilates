@@ -15,9 +15,10 @@ import {
   MoreOptionsMenu, MoreActionsMenu, OriginIcon, originLabel, CategoryPill, CategoryBadge, CategoryMultiFilter,
   fmtAmt, fmtDate, CAT_FALLBACK, MONTHS_ES, type SortKey,
 } from "./TransaccionesList";
-import { CatIcon } from "./catIcons";
+import { TxnIcon } from "./catIcons";
 import ImportButton from "./ImportButton";
 import HeaderPortal from "@/app/components/HeaderPortal";
+import { knownDomain } from "@/app/configuracion/ContactosManager";
 
 const COLS = "1.85fr 1fr 1.5fr .8fr .7fr .95fr";
 
@@ -476,6 +477,7 @@ export default function TransaccionesListV2({
                   const cat = t.category ? categories.find((c) => c.value === t.category) : undefined;
                   const accent = cat ? cat.text_color : CAT_FALLBACK.color;
                   const iconKey = cat ? cat.emoji : CAT_FALLBACK.emoji;
+                  const logoDomain = t.contact ? knownDomain(t.contact) : null;
                   const isSelected = selectedIds.has(t.id);
                   return (
                     <div key={t.id}>
@@ -488,12 +490,15 @@ export default function TransaccionesListV2({
                         >
                           <div className="flex items-center gap-[10px] min-w-0">
                             <span className="relative shrink-0 w-[30px] h-[30px]">
-                              <span
-                                className={`w-[30px] h-[30px] rounded-[8px] items-center justify-center ${isSelected ? "hidden" : "flex group-hover:hidden"}`}
-                                style={{ backgroundColor: accent }}
-                              >
-                                <CatIcon iconKey={iconKey} name={cat?.label ?? concept} color="#fff" size={14} />
-                              </span>
+                              <TxnIcon
+                                logoDomain={logoDomain}
+                                iconKey={iconKey}
+                                name={cat?.label ?? concept}
+                                accent={accent}
+                                size={30}
+                                iconSize={14}
+                                className={isSelected ? "hidden" : "flex group-hover:hidden"}
+                              />
                               <label
                                 onClick={(e) => e.stopPropagation()}
                                 className={`${isSelected ? "flex" : "hidden group-hover:flex"} items-center justify-center w-[30px] h-[30px] rounded-[8px] border border-border bg-card cursor-pointer`}
@@ -559,9 +564,16 @@ export default function TransaccionesListV2({
                             />
                           </span>
                         ) : (
-                          <span className="w-[32px] h-[32px] shrink-0 rounded-[10px] flex items-center justify-center" style={{ backgroundColor: accent }}>
-                            <CatIcon iconKey={iconKey} name={cat?.label ?? concept} color="#fff" size={15} />
-                          </span>
+                          <TxnIcon
+                            logoDomain={logoDomain}
+                            iconKey={iconKey}
+                            name={cat?.label ?? concept}
+                            accent={accent}
+                            size={32}
+                            iconSize={15}
+                            rounded="rounded-[10px]"
+                            className="flex"
+                          />
                         )}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5 min-w-0">
