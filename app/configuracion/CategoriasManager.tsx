@@ -23,8 +23,18 @@ const GROUP_LABELS: Record<GroupType, string> = {
 const GROUP_ORDER: GroupType[] = ["income", "operational", "transfer", "internal"];
 const KNOWN_GROUPS = new Set<string>(["income", "transfer", "operational", "internal"]);
 
-// Subdivisión por naturaleza económica, solo dentro de "Operacional" - derivada del nombre
-// de la categoría (ver lib/economicGroups.ts), no es un campo editable en BD.
+// Tooltip de una frase por Grupo, para quien no recuerde la diferencia entre p.ej.
+// "Financiación" y "Traspasos internos" sin tener que abrir el manual.
+const GROUP_HELP: Record<GroupType, string> = {
+  income: "Dinero que entra: ventas, cuotas y clases.",
+  operational: "Gasto del día a día del negocio: alquiler, suministros, salarios…",
+  transfer: "Préstamos, aportaciones de socios o su devolución - no es venta ni gasto operativo.",
+  internal: "Movimientos entre tus propias cuentas; no cuentan como ingreso ni gasto real.",
+};
+
+// Subdivisión por naturaleza económica, solo dentro de "Operacional" - por defecto derivada
+// del nombre de la categoría (ver lib/economicGroups.ts), pero se puede fijar a mano y en ese
+// caso sí se persiste tal cual en BD (ver handleSave).
 const ECONOMIC_LABELS: Record<EconomicGroup, string> = {
   personal: "Personal",
   operational: "Gasto operativo (OpEx)",
@@ -32,6 +42,11 @@ const ECONOMIC_LABELS: Record<EconomicGroup, string> = {
   financiacion: "Financiación",
 };
 const ECONOMIC_ORDER: EconomicGroup[] = ["personal", "operational", "capex"];
+const ECONOMIC_HELP: Partial<Record<EconomicGroup, string>> = {
+  personal: "Salarios y seguridad social del equipo.",
+  operational: "Gasto corriente del día a día: suministros, software, alquiler…",
+  capex: "Compra de activos que duran en el tiempo: maquinaria, reforma, mobiliario…",
+};
 
 /** Cada padre presente en `list` va seguido de sus subcategorías presentes en `list`. */
 function byParentOrdered(list: Category[]): Category[] {
@@ -264,6 +279,7 @@ export default function CategoriasManager({
   );
   // Con categoría padre, el grupo y la naturaleza económica se heredan de ella (no se editan).
   const hasParent = !!form.parent_id;
+  const parentCat = form.parent_id ? categories.find((c) => c.id === form.parent_id) : null;
 
   // Núcleo compartido de "mover dentro de una sublista" - lo usa tanto soltar un arrastre
   // (handleDrop, ratón) como las flechas subir/bajar (moveStep, táctil - ver más abajo por qué
@@ -724,59 +740,97 @@ export default function CategoriasManager({
                 )}
               </div>
 
-              {/* Grupo */}
-              <div>
-                <label className="block text-xs font-semibold text-navy/45 uppercase tracking-wider mb-2">Grupo</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {GROUP_ORDER.map((g) => (
-                    <button
-                      key={g}
-                      disabled={hasParent}
-                      onClick={() => setForm((f) => ({ ...f, group_type: g }))}
-                      className={`text-xs px-3 py-2 rounded-xl border transition-colors ${
-                        form.group_type === g
-                          ? "border-navy bg-navy/[0.06] text-navy font-semibold"
-                          : `border-navy/[0.10] text-navy/50 ${hasParent ? "" : "hover:border-navy/20"}`
-                      } ${hasParent ? "opacity-50 cursor-not-allowed" : ""}`}
-                    >
-                      {GROUP_LABELS[g]}
-                    </button>
-                  ))}
-                </div>
-                {hasParent && (
-                  <p className="text-[11px] text-navy/35 mt-1.5">Grupo y naturaleza se heredan de la categoría padre.</p>
+              {/* Clasificación: Grupo + Naturaleza agrupados bajo el mismo epígrafe, porque
+                  Naturaleza es una subdivisión que solo existe dentro del grupo Operacional
+                  (no son dos campos independientes, aunque se guarden en columnas separadas). */}
+              <div className="p-3.5 bg-navy/[0.03] border border-navy/[0.08] rounded-xl space-y-4">
+                <label className="block text-xs font-semibold text-navy/45 uppercase tracking-wider">Clasificación</label>
+
+                {hasParent ? (
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-xs px-3 py-1.5 rounded-full bg-navy/[0.07] text-navy/70 font-medium">
+                        {GROUP_LABELS[form.group_type]}
+                      </span>
+                      {form.group_type === "operational" && (
+                        <span className="text-xs px-3 py-1.5 rounded-full bg-navy/[0.07] text-navy/70 font-medium">
+                          {ECONOMIC_LABELS[economicGroupOf(form.label, form.economic_group)]}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-navy/35 mt-2">
+                      Heredado de {parentCat ? `"${parentCat.label}"` : "la categoría padre"}. Quita la categoría padre arriba para fijarlo a mano.
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <div>
+                      <p className="text-[11px] font-medium text-navy/55 mb-2">Grupo</p>
+                      <div className="grid grid-cols-3 gap-2">
+                        {GROUP_ORDER.map((g) => (
+                          <button
+                            key={g}
+                            onClick={() => setForm((f) => ({ ...f, group_type: g }))}
+                            title={GROUP_HELP[g]}
+                            className={`text-xs px-3 py-2 rounded-xl border transition-colors ${
+                              form.group_type === g
+                                ? "border-navy bg-navy/[0.06] text-navy font-semibold"
+                                : "border-navy/[0.10] text-navy/50 hover:border-navy/20"
+                            }`}
+                          >
+                            {GROUP_LABELS[g]}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {form.group_type === "operational" && (
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-[11px] font-medium text-navy/55">Naturaleza económica</p>
+                          {form.economic_group && (
+                            <button
+                              onClick={() => setForm((f) => ({ ...f, economic_group: null }))}
+                              className="text-[11px] text-primary/70 hover:text-primary underline underline-offset-2"
+                            >
+                              Volver a automático
+                            </button>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-3 gap-2">
+                          {ECONOMIC_ORDER.map((eg) => {
+                            const isActive = economicGroupOf(form.label, form.economic_group) === eg;
+                            return (
+                              <button
+                                key={eg}
+                                onClick={() => setForm((f) => ({ ...f, economic_group: eg }))}
+                                title={ECONOMIC_HELP[eg]}
+                                className={`text-xs px-3 py-2 rounded-xl border transition-colors ${
+                                  isActive
+                                    ? "border-navy bg-navy/[0.06] text-navy font-semibold"
+                                    : "border-navy/[0.10] text-navy/50 hover:border-navy/20"
+                                }`}
+                              >
+                                {ECONOMIC_LABELS[eg]}
+                                {isActive && (
+                                  <span className="block text-[9px] font-normal opacity-55 mt-0.5">
+                                    {form.economic_group ? "fijado a mano" : "automático"}
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <p className="text-[11px] text-navy/35 mt-1.5">
+                          {form.economic_group
+                            ? "Fijado a mano: no cambiará aunque renombres la categoría."
+                            : "Se deduce del nombre. Si lo fijas a mano, quedará congelado aunque cambies el nombre más adelante."}
+                        </p>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
-
-              {/* Naturaleza económica (solo aplica dentro de Operacional) */}
-              {form.group_type === "operational" && (
-                <div>
-                  <label className="block text-xs font-semibold text-navy/45 uppercase tracking-wider mb-2">
-                    Naturaleza económica
-                  </label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {ECONOMIC_ORDER.map((eg) => (
-                      <button
-                        key={eg}
-                        disabled={hasParent}
-                        onClick={() => setForm((f) => ({ ...f, economic_group: eg }))}
-                        className={`text-xs px-3 py-2 rounded-xl border transition-colors ${
-                          economicGroupOf(form.label, form.economic_group) === eg
-                            ? "border-navy bg-navy/[0.06] text-navy font-semibold"
-                            : `border-navy/[0.10] text-navy/50 ${hasParent ? "" : "hover:border-navy/20"}`
-                        } ${hasParent ? "opacity-50 cursor-not-allowed" : ""}`}
-                      >
-                        {ECONOMIC_LABELS[eg]}
-                      </button>
-                    ))}
-                  </div>
-                  {!hasParent && (
-                    <p className="text-[11px] text-navy/35 mt-1.5">
-                      Por defecto se deduce del nombre. Fíjalo a mano si necesitas que se quede en un grupo concreto al renombrar.
-                    </p>
-                  )}
-                </div>
-              )}
 
               {/* Conceptos bancarios */}
               <div className="p-3.5 bg-primary/[0.06] border border-primary/15 rounded-xl">

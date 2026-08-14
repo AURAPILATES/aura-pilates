@@ -177,16 +177,18 @@ export default function CategoriasManagerV2({
                     </div>
                   </button>
                   {depth === 0 && (
-                    // A secas (círculo tenue con un "+") se confundía con una insignia
-                    // decorativa pegada al recuento de "N trx" de al lado - el borde marcado y
-                    // el trazo más grueso lo hacen leer como botón, no como estado.
+                    // Un círculo relleno del color de la categoría seguía leyendo como
+                    // insignia (en esta app los círculos de color SIEMPRE son identidad -
+                    // icono de categoría, avatar - nunca un botón). Los botones reales de la
+                    // app (IconButtonV2 y similares) son rectángulos redondeados con fondo
+                    // neutro y borde - ese cambio de forma, no solo de borde, es lo que lo
+                    // separa del resto de círculos de la fila.
                     <button
                       onClick={(e) => { e.stopPropagation(); onNewSubcategory(cat.id); }}
                       title={`Añadir subcategoría a "${cat.label}"`}
-                      className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center border transition-all hover:scale-110"
-                      style={{ backgroundColor: `${cat.text_color}14`, borderColor: `${cat.text_color}45`, color: cat.text_color }}
+                      className="shrink-0 w-6 h-6 rounded-[7px] flex items-center justify-center border border-border bg-card text-muted hover:text-navy hover:border-navy/25 hover:bg-navy/[0.03] transition-colors"
                     >
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
                     </button>
                   )}
                   <span className="text-[12.5px] text-faint whitespace-nowrap shrink-0">{totalCount(cat)} trx</span>
