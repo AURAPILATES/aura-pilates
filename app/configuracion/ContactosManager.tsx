@@ -212,7 +212,7 @@ function ContactDetailDrawer({ contact, categories, stats, onChange, onRemove, o
           </label>
           {!contact.noTax && !(contact.ivaRate > 0) && !(contact.retencionRate > 0) && (
             <p className="text-[11px] text-warning bg-warning/[0.08] rounded-lg px-3 py-2">
-              IVA e IRPF al 0% sin marcar "Sin IVA ni retenciones" - ¿es que este contacto de verdad no lleva impuestos, o falta fijarlos?
+              IVA e IRPF al 0% sin marcar “Sin IVA ni retenciones” - ¿es que este contacto de verdad no lleva impuestos, o falta fijarlos?
             </p>
           )}
         </div>
