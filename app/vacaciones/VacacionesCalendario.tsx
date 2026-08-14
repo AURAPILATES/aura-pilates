@@ -58,9 +58,28 @@ function getAbsenceDates(p: Persona, key: AbsenceKey): string[] {
   return p[key] ?? [];
 }
 
-// Total efectivo de vacaciones = días por convenio (proporcional) + días extra concedidos
+/** Ausencias de un año concreto (el actual por defecto). loadPersonas() trae TODAS las
+ * ausencias de TODOS los años sin filtrar - el presupuesto de vacaciones es un cupo anual, así
+ * que "usado"/"restantes" debe contar solo lo de este año, no el histórico completo (que sí se
+ * sigue mostrando entero en "Ausencias anteriores", eso es información, no consumo del cupo). */
+function inYear(dates: string[], year: number = YEAR): string[] {
+  const prefix = `${year}-`;
+  return dates.filter((d) => d.startsWith(prefix));
+}
+
+// dias_totales se calcula una sola vez, al dar de alta (prorrateado según lo que queda del año
+// de contratación) - nunca se vuelve a recalcular, así que a partir del año siguiente ya no
+// representa un año completo. Desde el año siguiente al de alta se usa el cupo completo del
+// convenio (23 días laborables × jornada, misma fórmula que calcVacaciones) en su lugar.
+function baseAnualVacaciones(p: Persona): number {
+  const hireYear = parseInt(p.inicioContrato.slice(0, 4), 10) || YEAR;
+  return YEAR > hireYear ? Math.round(23 * (p.jornadaDias / 5)) : p.diasTotales;
+}
+
+// Total efectivo de vacaciones para el año en curso = cupo base del año (ver arriba) + días
+// extra concedidos.
 function totalVacaciones(p: Persona): number {
-  return p.diasTotales + p.diasExtra;
+  return baseAnualVacaciones(p) + p.diasExtra;
 }
 
 function groupRanges(dates: string[]): { start: string; end: string; count: number }[] {
@@ -120,8 +139,8 @@ function generateSuggestions(personas: Persona[], festivos: string[]): Suggestio
   const todayDate = new Date(TODAY + "T12:00:00");
 
   personas.forEach((p) => {
-    const remaining = totalVacaciones(p) - p.vacaciones.length;
-    if (p.vacaciones.length === 0) {
+    const remaining = totalVacaciones(p) - inYear(p.vacaciones).length;
+    if (inYear(p.vacaciones).length === 0) {
       suggestions.push({ type: "warning", text: `${p.nombre} tiene ${totalVacaciones(p)} días de vacaciones sin planificar aún.` });
     } else if (remaining > 0) {
       suggestions.push({ type: "info", text: `${p.nombre} tiene ${remaining} ${remaining === 1 ? "día pendiente" : "días pendientes"} de planificar.` });
@@ -375,6 +394,16 @@ function getDatesInRange(from: string, to: string): string[] {
   return dates;
 }
 
+/** ¿Es un día laborable (ni sábado/domingo ni festivo)? El presupuesto de vacaciones se cuenta
+ * en días laborables (art. 38 ET, "23 días laborables/año"), así que un rango de vacaciones no
+ * debe arrastrar los findes/festivos que caen dentro como si fueran días consumidos - una
+ * quincena de vacaciones tiene ~10 días laborables, no 14. */
+function isWorkingDay(dateStr: string, festivosSet: Set<string>): boolean {
+  const jsDay = new Date(dateStr + "T12:00:00").getDay();
+  if (jsDay === 0 || jsDay === 6) return false;
+  return !festivosSet.has(dateStr);
+}
+
 function fmtPreviewDate(dateStr: string) {
   const d = new Date(dateStr + "T12:00:00");
   return `${d.getDate()} de ${MONTH_NAMES[d.getMonth()].toLowerCase()}`;
@@ -424,7 +453,7 @@ function AñadirAusenciaModal({
     ? `${fmtPreviewDate(dateFrom)} → ${fmtPreviewDate(dateTo)}`
     : "-";
 
-  const vacUsadas = persona.vacaciones.length;
+  const vacUsadas = inYear(persona.vacaciones).length;
   const isVacaciones = absenceType === "vacaciones";
 
   return (
@@ -582,8 +611,10 @@ function AñadirAusenciaModal({
 
 function AusenciasModal({ persona, idx, onClose }: { persona: Persona; idx: number; onClose: () => void }) {
   const colors = PERSON_COLORS[idx];
-  const vacUsadas = persona.vacaciones.length;
+  const vacUsadas = inYear(persona.vacaciones).length;
   const total = totalVacaciones(persona);
+  const baseAnual = baseAnualVacaciones(persona);
+  const hireYear = parseInt(persona.inicioContrato.slice(0, 4), 10) || YEAR;
 
   return (
     <Drawer title="Resumen de ausencias" subtitle={`${persona.nombre} · ${YEAR}`} onClose={onClose} maxWidth="max-w-sm">
@@ -598,8 +629,8 @@ function AusenciasModal({ persona, idx, onClose }: { persona: Persona; idx: numb
             </div>
             <div className="ml-4 mt-1.5 space-y-1">
               <div className="flex justify-between text-xs text-navy/55">
-                <span>Según convenio (proporcional)</span>
-                <span>{persona.diasTotales} días</span>
+                <span>{YEAR > hireYear ? "Según convenio" : "Según convenio (proporcional)"}</span>
+                <span>{baseAnual} días</span>
               </div>
               <div className="flex justify-between text-xs text-navy/55">
                 <span>Días extra concedidos</span>
@@ -621,7 +652,7 @@ function AusenciasModal({ persona, idx, onClose }: { persona: Persona; idx: numb
           <div className="border-t border-navy/5" />
 
           {ABSENCE_TYPES.slice(1).map((t) => {
-            const days = getAbsenceDates(persona, t.key).length;
+            const days = inYear(getAbsenceDates(persona, t.key)).length;
             return (
               <div key={t.key} className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -749,7 +780,7 @@ function PersonCard({
   const [editMode, setEditMode] = useState(false);
   const [archiving, setArchiving] = useState(false);
   const colors = PERSON_COLORS[idx % PERSON_COLORS.length];
-  const used = persona.vacaciones.length;
+  const used = inYear(persona.vacaciones).length;
   const total = totalVacaciones(persona);
   const remaining = total - used;
 
