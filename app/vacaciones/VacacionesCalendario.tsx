@@ -411,10 +411,12 @@ function fmtPreviewDate(dateStr: string) {
 
 function AñadirAusenciaModal({
   persona,
+  festivos,
   onClose,
   onAdd,
 }: {
   persona: Persona;
+  festivos: string[];
   onClose: () => void;
   onAdd: (typeKey: AbsenceKey, dates: string[]) => Promise<void>;
 }) {
@@ -425,10 +427,17 @@ function AñadirAusenciaModal({
   const [saving, setSaving] = useState(false);
 
   const existingDates = getAbsenceDates(persona, absenceType);
+  const isVacaciones = absenceType === "vacaciones";
 
-  const newDates = duration === "day"
-    ? [dateFrom].filter((d) => !existingDates.includes(d))
-    : getDatesInRange(dateFrom, dateTo).filter((d) => !existingDates.includes(d));
+  // En un rango de vacaciones se excluyen findes y festivos (ver isWorkingDay) - un solo día
+  // elegido a mano sí se respeta tal cual, por si de verdad hace falta marcar justo ese día.
+  const rangeDates = duration === "day" ? [dateFrom] : getDatesInRange(dateFrom, dateTo);
+  const festivosSet = new Set(festivos);
+  const candidateDates = isVacaciones && duration === "range"
+    ? rangeDates.filter((d) => isWorkingDay(d, festivosSet))
+    : rangeDates;
+  const excludedCount = rangeDates.length - candidateDates.length;
+  const newDates = candidateDates.filter((d) => !existingDates.includes(d));
 
   const alreadyExists = duration === "day" && existingDates.includes(dateFrom);
   const selectedType = ABSENCE_TYPES.find((t) => t.key === absenceType)!;
@@ -454,7 +463,6 @@ function AñadirAusenciaModal({
     : "-";
 
   const vacUsadas = inYear(persona.vacaciones).length;
-  const isVacaciones = absenceType === "vacaciones";
 
   return (
     <Drawer
@@ -577,6 +585,11 @@ function AñadirAusenciaModal({
               <p className="text-xs text-navy/50 mt-1">
                 {newDates.length} {newDates.length === 1 ? "día" : "días"}{duration === "day" ? " · Día completo" : ""}
               </p>
+              {excludedCount > 0 && (
+                <p className="text-[11px] text-navy/40 mt-1">
+                  {excludedCount} {excludedCount === 1 ? "día excluido" : "días excluidos"} (fin de semana o festivo)
+                </p>
+              )}
             </div>
 
             {newDates.length > 0 && (
@@ -763,6 +776,7 @@ function DiasExtraEditor({ current, onSave }: { current: number; onSave: (v: num
 function PersonCard({
   persona,
   idx,
+  festivos,
   onAdd,
   onDeleteRange,
   onArchive,
@@ -770,6 +784,7 @@ function PersonCard({
 }: {
   persona: Persona;
   idx: number;
+  festivos: string[];
   onAdd: (typeKey: AbsenceKey, dates: string[]) => Promise<void>;
   onDeleteRange: (typeKey: AbsenceKey, start: string, end: string) => Promise<void>;
   onArchive: () => Promise<void>;
@@ -811,6 +826,7 @@ function PersonCard({
       {showAddModal && (
         <AñadirAusenciaModal
           persona={persona}
+          festivos={festivos}
           onClose={() => setShowAddModal(false)}
           onAdd={onAdd}
         />
@@ -1525,6 +1541,7 @@ export default function VacacionesCalendario({
               onDeleteRange={(typeKey, start, end) => handleDeleteRange(p.id, typeKey, start, end)}
               onArchive={() => handleArchive(p.id)}
               onUpdateDiasExtra={(diasExtra) => handleUpdateDiasExtra(p.id, diasExtra)}
+              festivos={festivos}
             />
           );
         })}
