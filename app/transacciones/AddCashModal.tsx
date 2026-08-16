@@ -165,7 +165,7 @@ export default function AddCashModal({ categories, contacts, onClose }: { catego
             value={isIncome ? "income" : "expense"}
             onChange={(v) => { setIsIncome(v === "income"); clearDuplicatesOnEdit(); }}
             fullWidth
-            className="[&_button]:py-[3px] [&_button]:text-[13px]"
+            className="[&_button]:py-2 [&_button]:text-[13px]"
           />
 
           <div>

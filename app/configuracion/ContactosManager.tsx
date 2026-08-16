@@ -188,21 +188,23 @@ function ContactDetailDrawer({ contact, categories, stats, onChange, onRemove, o
         </div>
 
         <div className="p-4 border-b border-navy/[0.06] space-y-3">
-          <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider">Nombre</p>
-          <input
-            type="text"
-            value={label}
-            onChange={(e) => setLabel(e.target.value)}
-            onBlur={() => { if (label.trim() && label !== contact.label) onChange({ label: label.trim() }); }}
-            className="w-full px-3 py-2 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40"
-          />
+          <div>
+            <p className="text-xs text-navy/55 mb-1">Nombre</p>
+            <input
+              type="text"
+              value={label}
+              onChange={(e) => setLabel(e.target.value)}
+              onBlur={() => { if (label.trim() && label !== contact.label) onChange({ label: label.trim() }); }}
+              className="w-full px-3 py-2 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40"
+            />
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <p className="text-[10px] font-semibold text-navy/35 uppercase tracking-wider mb-1">IVA</p>
+              <p className="text-xs text-navy/55 mb-1">IVA</p>
               <RateInput value={contact.ivaRate} onSave={(v) => onChange({ ivaRate: v })} />
             </div>
             <div>
-              <p className="text-[10px] font-semibold text-navy/35 uppercase tracking-wider mb-1">IRPF</p>
+              <p className="text-xs text-navy/55 mb-1">IRPF</p>
               <RateInput value={contact.retencionRate} onSave={(v) => onChange({ retencionRate: v })} />
             </div>
           </div>
@@ -218,7 +220,7 @@ function ContactDetailDrawer({ contact, categories, stats, onChange, onRemove, o
         </div>
 
         <div className="p-4 border-b border-navy/[0.06]">
-          <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-2">Grupo</p>
+          <p className="text-xs text-navy/55 mb-2">Grupo</p>
           <div className="grid grid-cols-3 gap-2">
             {CONTACT_GROUP_ORDER.map((g) => {
               const active = contactGroupOf(contact.label, contact.group) === g;
@@ -238,19 +240,16 @@ function ContactDetailDrawer({ contact, categories, stats, onChange, onRemove, o
               );
             })}
           </div>
-          {contact.group == null && (
-            <p className="text-[11px] text-navy/35 mt-1.5">Deducido del nombre. Fíjalo a mano si necesitas otro grupo.</p>
-          )}
         </div>
 
         <div className="p-4 border-b border-navy/[0.06]">
-          <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-2">Categoría</p>
+          <p className="text-xs text-navy/55 mb-2">Categoría</p>
           <CategoryPill category={contact.category} categories={categories} onChange={(cat) => onChange({ category: cat })} />
         </div>
 
         <div className="p-4 border-b border-navy/[0.06]">
           <div className="p-3.5 bg-primary/[0.06] border border-primary/15 rounded-xl">
-            <p className="flex items-center gap-1.5 text-[11px] font-semibold text-primary/80 uppercase tracking-wider mb-2">
+            <p className="flex items-center gap-1.5 text-xs text-primary/80 mb-2">
               <AutomationIcon />
               Conceptos bancarios
             </p>
@@ -264,7 +263,7 @@ function ContactDetailDrawer({ contact, categories, stats, onChange, onRemove, o
         </div>
 
         <div className="p-4">
-          <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-2">Últimas transacciones</p>
+          <p className="text-xs text-navy/55 mb-2">Últimas transacciones</p>
           {!stats || stats.latest.length === 0 ? (
             <p className="text-xs text-navy/40">Todavía no hay movimientos asociados.</p>
           ) : (
