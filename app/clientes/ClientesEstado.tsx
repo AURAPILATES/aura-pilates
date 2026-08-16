@@ -46,15 +46,14 @@ const COLS = "2.1fr 1.05fr .85fr 1.3fr .55fr .95fr .9fr .9fr .8fr";
 const PAGE_SIZE = 100;
 
 // Filtros "especiales" restantes (KPIs + Más filtros): de un solo valor a la vez, porque son
-// alertas puntuales, no ejes de navegación habituales. El resto de ejes (procedencia, plan,
-// familiar, última actividad) viven en su propio estado independiente más abajo, para poder
-// combinarlos entre sí (p.ej. "Urban" + "Bàsic" + "familiar" a la vez).
+// alertas puntuales o etiquetas, no ejes de navegación habituales. El resto de ejes (procedencia,
+// plan, última clase) viven en su propio estado independiente más abajo, para poder combinarlos
+// entre sí (p.ej. "Urban" + "Bàsic" a la vez).
 type Filter =
-  | "all" | "duplicadas" | "pago_pendiente" | "renueva_pronto"
+  | "all" | "duplicadas" | "pago_pendiente" | "renueva_pronto" | "familiares"
   | "congelada" | "infrautiliza" | "al_limite" | "pocas_clases";
 type Procedencia = "all" | "momence" | "urban";
 type PlanFilter = "all" | "basic" | "plus" | "pro" | "pack" | "sin_plan";
-type FamilyFilter = "all" | "familiar";
 type SortKey = "name" | "attended" | "cancellations" | "totalSpent" | "firstClass" | "lastClass" | "renew";
 
 // Mismo criterio que planBadge() (abajo) para que el filtro y la insignia de la tabla coincidan
@@ -69,14 +68,12 @@ function planTier(plan: MemberClient["plan"]): PlanFilter | "urban" {
   return "basic";
 }
 
-// Días desde la última clase asistida o el último pago, lo que sea más reciente - mismo cálculo
-// que decide "Sin plan" vs "Inactivo/a" en computeStatus (lib/memberClientsV2.ts), pero expuesto
-// aquí como número continuo para el slider en vez de un corte fijo a 45 días.
-function daysSinceActivity(r: MemberClient): number | null {
-  const last = [r.lastClassDate, r.stripe?.lastPaymentDate ?? null].filter(Boolean).sort().pop();
-  return last ? Math.floor((Date.now() - new Date(last).getTime()) / 86_400_000) : null;
+// Días desde la última clase asistida (mismo dato que la columna "Última clase" de la tabla),
+// para poder filtrar por un rango en vez de solo mirarlo fila a fila.
+function daysSinceLastClass(r: MemberClient): number | null {
+  if (!r.lastClassDate) return null;
+  return Math.floor((Date.now() - new Date(r.lastClassDate).getTime()) / 86_400_000);
 }
-const MAX_INACTIVE_DAYS = 180;
 
 // "Sin pago" (asistió sin rastro de cobro) y "Error de pago" (Stripe) son dos síntomas del
 // mismo problema de fondo - se muestran fusionados en un único KPI/filtro para no duplicar.
@@ -129,7 +126,7 @@ function SortArrow({ active, dir }: { active: boolean; dir: "asc" | "desc" }) {
 function MoreFiltersMenu({ filter, onChange, counts }: {
   filter: Filter;
   onChange: (f: Filter) => void;
-  counts: { al_limite: number; infrautiliza: number; congelada: number; duplicadas: number };
+  counts: { al_limite: number; infrautiliza: number; congelada: number; duplicadas: number; familiares: number };
 }) {
   const [open, setOpen] = useState(false);
   const [dropPos, setDropPos] = useState<{ top: number; left: number } | null>(null);
@@ -161,6 +158,7 @@ function MoreFiltersMenu({ filter, onChange, counts }: {
     { key: "al_limite", label: "Posible upsell", count: counts.al_limite },
     { key: "infrautiliza", label: "Infrautiliza plan", count: counts.infrautiliza },
     { key: "congelada", label: "Congeladas", count: counts.congelada },
+    { key: "familiares", label: "Familiares", count: counts.familiares },
     { key: "duplicadas", label: "2+ suscripciones", count: counts.duplicadas },
   ];
   const hasActive = items.some((i) => i.key === filter);
@@ -212,8 +210,8 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
   const [filter, setFilter] = useState<Filter>("all");
   const [procedencia, setProcedencia] = useState<Procedencia>("all");
   const [planFilter, setPlanFilter] = useState<PlanFilter>("all");
-  const [familyFilter, setFamilyFilter] = useState<FamilyFilter>("all");
-  const [minInactiveDays, setMinInactiveDays] = useState(0); // 0 = sin filtrar por actividad
+  const [minLastClassDays, setMinLastClassDays] = useState("");
+  const [maxLastClassDays, setMaxLastClassDays] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("lastClass");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [page, setPage] = useState(0);
@@ -245,8 +243,11 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
     return c;
   }, [clients]);
 
+  const minLastClassDaysNum = minLastClassDays.trim() === "" ? null : parseInt(minLastClassDays, 10);
+  const maxLastClassDaysNum = maxLastClassDays.trim() === "" ? null : parseInt(maxLastClassDays, 10);
+
   const hasActiveFilters =
-    filter !== "all" || procedencia !== "all" || planFilter !== "all" || familyFilter !== "all" || minInactiveDays > 0;
+    filter !== "all" || procedencia !== "all" || planFilter !== "all" || minLastClassDaysNum != null || maxLastClassDaysNum != null;
 
   const filtered = useMemo(() => {
     const q = normalizeText(search.trim());
@@ -255,14 +256,21 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
         if (procedencia === "urban") { if (r.status.key !== "urban") return false; }
         else if (procedencia === "momence") { if (r.status.key === "urban") return false; }
         if (planFilter !== "all") { if (planTier(r.plan) !== planFilter) return false; }
-        if (familyFilter === "familiar") { if (!r.isFamily) return false; }
-        if (minInactiveDays > 0) {
-          const d = daysSinceActivity(r);
-          if (d !== null && d < minInactiveDays) return false;
+        if (minLastClassDaysNum != null || maxLastClassDaysNum != null) {
+          const d = daysSinceLastClass(r);
+          if (d === null) {
+            // Nunca ha venido a clase: cuenta como "hace muchísimo" (cumple cualquier mínimo),
+            // pero no se puede afirmar que caiga dentro de un máximo concreto.
+            if (maxLastClassDaysNum != null) return false;
+          } else {
+            if (minLastClassDaysNum != null && d < minLastClassDaysNum) return false;
+            if (maxLastClassDaysNum != null && d > maxLastClassDaysNum) return false;
+          }
         }
         if (filter === "duplicadas") { if (r.activeSubCount < 2) return false; }
         else if (filter === "pago_pendiente") { if (!hasPagoPendiente(r)) return false; }
         else if (filter === "renueva_pronto") { if (!renewsSoon(r)) return false; }
+        else if (filter === "familiares") { if (!r.isFamily) return false; }
         else if (filter === "infrautiliza") { if (r.planUsage?.level !== "bajo") return false; }
         else if (filter === "al_limite") { if (r.planUsage?.level !== "alto") return false; }
         else if (filter === "pocas_clases") { if (r.status.key !== "pack_bajo") return false; }
@@ -281,7 +289,7 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
         else diff = a.name.localeCompare(b.name, "es");
         return sortDir === "desc" ? -diff : diff;
       });
-  }, [clients, search, filter, procedencia, planFilter, familyFilter, minInactiveDays, sortKey, sortDir]);
+  }, [clients, search, filter, procedencia, planFilter, minLastClassDaysNum, maxLastClassDaysNum, sortKey, sortDir]);
 
   const pageRows = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
@@ -294,10 +302,10 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
   function toggleBox(f: Filter) { setFilter((cur) => (cur === f ? "all" : f)); setPage(0); }
   function changeProcedencia(v: Procedencia) { setProcedencia(v); setPage(0); }
   function changePlanFilter(v: PlanFilter) { setPlanFilter(v); setPage(0); }
-  function changeFamilyFilter(v: FamilyFilter) { setFamilyFilter(v); setPage(0); }
-  function changeMinInactiveDays(v: number) { setMinInactiveDays(v); setPage(0); }
+  function changeMinLastClassDays(v: string) { setMinLastClassDays(v); setPage(0); }
+  function changeMaxLastClassDays(v: string) { setMaxLastClassDays(v); setPage(0); }
   function clearFilters() {
-    setFilter("all"); setProcedencia("all"); setPlanFilter("all"); setFamilyFilter("all"); setMinInactiveDays(0);
+    setFilter("all"); setProcedencia("all"); setPlanFilter("all"); setMinLastClassDays(""); setMaxLastClassDays("");
     setPage(0);
   }
 
@@ -392,36 +400,29 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
               ]}
             />
           </div>
-          <div>
-            <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1.5">Familiar</p>
-            <FilterPillGroupV2
-              variant="segmented"
-              active={familyFilter}
-              onChange={changeFamilyFilter}
-              options={[
-                { key: "all", label: "Todos" },
-                { key: "familiar", label: "Familiar", count: counts.familiares || undefined },
-              ]}
-            />
-          </div>
         </div>
-        <div className="max-w-[340px]">
-          <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1.5">Última actividad</p>
-          <div className="flex items-center gap-2.5 bg-navy/5 rounded-[10px] px-3 py-[9px]">
+        <div className="max-w-[260px]">
+          <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1.5">Última clase</p>
+          <div className="flex items-center gap-1.5 bg-navy/5 rounded-[10px] px-3 py-[9px]">
             <input
-              type="range"
+              type="number"
+              inputMode="numeric"
               min={0}
-              max={MAX_INACTIVE_DAYS}
-              step={5}
-              value={minInactiveDays}
-              onChange={(e) => changeMinInactiveDays(Number(e.target.value))}
-              className="w-full accent-navy cursor-pointer"
+              placeholder="Mín. días"
+              value={minLastClassDays}
+              onChange={(e) => changeMinLastClassDays(e.target.value)}
+              className="w-full min-w-0 px-2 py-1.5 text-[12.5px] bg-card border border-border rounded-[8px] focus:outline-none focus:border-primary/40"
             />
-            <span className="text-[12.5px] font-medium text-navy whitespace-nowrap tabular-nums shrink-0">
-              {minInactiveDays === 0
-                ? "Todos"
-                : `≥ ${minInactiveDays}${minInactiveDays >= MAX_INACTIVE_DAYS ? "+" : ""} d`}
-            </span>
+            <span className="text-navy/30 text-xs shrink-0">–</span>
+            <input
+              type="number"
+              inputMode="numeric"
+              min={0}
+              placeholder="Máx. días"
+              value={maxLastClassDays}
+              onChange={(e) => changeMaxLastClassDays(e.target.value)}
+              className="w-full min-w-0 px-2 py-1.5 text-[12.5px] bg-card border border-border rounded-[8px] focus:outline-none focus:border-primary/40"
+            />
           </div>
         </div>
       </div>

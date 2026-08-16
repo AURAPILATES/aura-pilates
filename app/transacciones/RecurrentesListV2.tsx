@@ -307,37 +307,24 @@ export default function RecurrentesListV2({
         </Drawer>
       )}
 
-      <div className={`mt-2 sm:mt-[24px] -mx-2 sm:-mx-6 ${tableCardClassV2} overflow-hidden`}>
-      <div className="hidden sm:block">
-        <div className={`${tableHeadClassV2} px-5`} style={gridColsV2(COLS)}>
-          <span className="flex items-center gap-[10px]">
-            <span className="w-[30px] h-[30px] shrink-0 flex items-center justify-center">
-              <input
-                type="checkbox"
-                checked={allConfirmedSelected}
-                ref={(el) => { if (el) el.indeterminate = !allConfirmedSelected && someConfirmedSelected; }}
-                onChange={() => onToggleSelectAll(confirmedPageIds)}
-                className="w-[13px] h-[13px] rounded-[4px] border-border accent-navy focus:ring-navy/20 cursor-pointer"
-              />
-            </span>
-            Concepto
-          </span>
-          <span>Categoría</span>
-          <span>Periodicidad</span>
-          <span>IVA / Ret</span>
-          <span className="text-right">Importe</span>
-          <span className="text-right">Estado</span>
-        </div>
-      </div>
-
       {pending.length > 0 && (
-        <>
+        <div className={`mt-2 sm:mt-[24px] -mx-2 sm:-mx-6 ${tableCardClassV2} overflow-hidden`}>
           <div className={`${tableGroupClassV2} px-5`}>
             <span className="flex items-center gap-2">
               <span className="w-[7px] h-[7px] rounded-full bg-[#b45309] dark:bg-[#e8a572]" />
               POR CONFIRMAR
             </span>
             <span className="text-faint font-normal normal-case">{pending.length}</span>
+          </div>
+          <div className="hidden sm:block">
+            <div className={`${tableHeadClassV2} px-5`} style={gridColsV2(COLS)}>
+              <span>Concepto</span>
+              <span>Categoría</span>
+              <span>Periodicidad</span>
+              <span>IVA / Ret</span>
+              <span className="text-right">Importe</span>
+              <span className="text-right">Estado</span>
+            </div>
           </div>
           {pending.map((row) => {
             const pick = pickFor(row);
@@ -429,8 +416,35 @@ export default function RecurrentesListV2({
               </div>
             );
           })}
-        </>
+        </div>
       )}
+
+      <div className={`${pending.length > 0 ? "mt-6 sm:mt-8" : "mt-2 sm:mt-[24px]"} -mx-2 sm:-mx-6 ${tableCardClassV2} overflow-hidden`}>
+        <div className={`${tableGroupClassV2} px-5`}>
+          <span>CONFIRMADOS</span>
+          <span className="text-faint font-normal normal-case">{confirmed.length}</span>
+        </div>
+        <div className="hidden sm:block">
+          <div className={`${tableHeadClassV2} px-5`} style={gridColsV2(COLS)}>
+            <span className="flex items-center gap-[10px]">
+              <span className="w-[30px] h-[30px] shrink-0 flex items-center justify-center">
+                <input
+                  type="checkbox"
+                  checked={allConfirmedSelected}
+                  ref={(el) => { if (el) el.indeterminate = !allConfirmedSelected && someConfirmedSelected; }}
+                  onChange={() => onToggleSelectAll(confirmedPageIds)}
+                  className="w-[13px] h-[13px] rounded-[4px] border-border accent-navy focus:ring-navy/20 cursor-pointer"
+                />
+              </span>
+              Concepto
+            </span>
+            <span>Categoría</span>
+            <span>Periodicidad</span>
+            <span>IVA / Ret</span>
+            <span className="text-right">Importe</span>
+            <span className="text-right">Estado</span>
+          </div>
+        </div>
 
       {confirmed.length === 0 ? (
         <p className="text-sm text-faint py-6 px-5">
