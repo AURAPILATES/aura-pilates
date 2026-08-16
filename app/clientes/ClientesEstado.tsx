@@ -54,6 +54,10 @@ type Filter =
   | "congelada" | "infrautiliza" | "al_limite" | "pocas_clases";
 type Procedencia = "all" | "momence" | "urban";
 type PlanFilter = "all" | "basic" | "plus" | "pro" | "pack" | "sin_plan";
+// "Clientes" (el KPI) sigue siendo el censo completo de Momence tal cual - esto es solo una
+// forma de aislar a quien nunca ha pisado el estudio (reservó y canceló, o nunca reservó) sin
+// redefinir qué cuenta como cliente.
+type Asistencia = "all" | "con_clases" | "sin_clases";
 type SortKey = "name" | "attended" | "cancellations" | "totalSpent" | "firstClass" | "lastClass" | "renew";
 
 // Mismo criterio que planBadge() (abajo) para que el filtro y la insignia de la tabla coincidan
@@ -73,6 +77,42 @@ function planTier(plan: MemberClient["plan"]): PlanFilter | "urban" {
 function daysSinceLastClass(r: MemberClient): number | null {
   if (!r.lastClassDate) return null;
   return Math.floor((Date.now() - new Date(r.lastClassDate).getTime()) / 86_400_000);
+}
+// Tope del slider de "Última clase" - en el extremo derecho equivale a "sin máximo" (no hay
+// forma de arrastrar hasta "infinito", así que el último escalón hace ese papel).
+const LAST_CLASS_MAX = 180;
+
+/** Slider de rango doble (mín. y máx.) hecho con dos <input type="range"> superpuestos - truco
+ * habitual sin librería: cada uno es transparente y solo su tirador (::-webkit-slider-thumb)
+ * capta el puntero, así el carril deja pasar el clic al tirador que esté debajo y ambos se
+ * pueden arrastrar por separado aunque compartan el mismo espacio. */
+function DualRangeSlider({ min, max, step = 5, valueMin, valueMax, onChangeMin, onChangeMax }: {
+  min: number; max: number; step?: number;
+  valueMin: number; valueMax: number;
+  onChangeMin: (v: number) => void; onChangeMax: (v: number) => void;
+}) {
+  const pctMin = ((valueMin - min) / (max - min)) * 100;
+  const pctMax = ((valueMax - min) / (max - min)) * 100;
+  const thumbCls =
+    "[&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:w-[16px] [&::-webkit-slider-thumb]:h-[16px] [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-navy [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-card [&::-webkit-slider-thumb]:shadow [&::-webkit-slider-thumb]:cursor-pointer " +
+    "[&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:w-[16px] [&::-moz-range-thumb]:h-[16px] [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-navy [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-card [&::-moz-range-thumb]:shadow [&::-moz-range-thumb]:cursor-pointer " +
+    "[&::-webkit-slider-runnable-track]:bg-transparent [&::-moz-range-track]:bg-transparent";
+  return (
+    <div className="relative w-full h-[16px] flex items-center">
+      <div className="absolute inset-x-0 h-[3px] rounded-full bg-navy/15" />
+      <div className="absolute h-[3px] rounded-full bg-navy" style={{ left: `${pctMin}%`, right: `${100 - pctMax}%` }} />
+      <input
+        type="range" min={min} max={max} step={step} value={valueMin}
+        onChange={(e) => onChangeMin(Math.min(Number(e.target.value), valueMax))}
+        className={`absolute inset-x-0 w-full appearance-none bg-transparent pointer-events-none z-20 ${thumbCls}`}
+      />
+      <input
+        type="range" min={min} max={max} step={step} value={valueMax}
+        onChange={(e) => onChangeMax(Math.max(Number(e.target.value), valueMin))}
+        className={`absolute inset-x-0 w-full appearance-none bg-transparent pointer-events-none z-10 ${thumbCls}`}
+      />
+    </div>
+  );
 }
 
 // "Sin pago" (asistió sin rastro de cobro) y "Error de pago" (Stripe) son dos síntomas del
@@ -210,8 +250,9 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
   const [filter, setFilter] = useState<Filter>("all");
   const [procedencia, setProcedencia] = useState<Procedencia>("all");
   const [planFilter, setPlanFilter] = useState<PlanFilter>("all");
-  const [minLastClassDays, setMinLastClassDays] = useState("");
-  const [maxLastClassDays, setMaxLastClassDays] = useState("");
+  const [asistencia, setAsistencia] = useState<Asistencia>("all");
+  const [minLastClassDays, setMinLastClassDays] = useState(0);
+  const [maxLastClassDays, setMaxLastClassDays] = useState(LAST_CLASS_MAX);
   const [sortKey, setSortKey] = useState<SortKey>("lastClass");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [page, setPage] = useState(0);
@@ -221,13 +262,14 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
     const c = {
       congelada: 0, pago_pendiente: 0, duplicadas: 0, familiares: 0, urban: 0, momence: 0,
       renueva_pronto: 0, infrautiliza: 0, al_limite: 0, pocas_clases: 0,
-      basic: 0, plus: 0, pro: 0, pack: 0, sinPlan: 0,
+      basic: 0, plus: 0, pro: 0, pack: 0, sinPlan: 0, sinClases: 0,
     };
     for (const r of clients) {
       if (r.activeSubCount >= 2) c.duplicadas++;
       if (r.isFamily) c.familiares++;
       if (hasPagoPendiente(r)) c.pago_pendiente++;
       if (renewsSoon(r)) c.renueva_pronto++;
+      if (r.attended === 0) c.sinClases++;
       if (r.planUsage?.level === "bajo") c.infrautiliza++;
       else if (r.planUsage?.level === "alto") c.al_limite++;
       if (r.status.key === "pack_bajo") c.pocas_clases++;
@@ -243,11 +285,12 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
     return c;
   }, [clients]);
 
-  const minLastClassDaysNum = minLastClassDays.trim() === "" ? null : parseInt(minLastClassDays, 10);
-  const maxLastClassDaysNum = maxLastClassDays.trim() === "" ? null : parseInt(maxLastClassDays, 10);
+  const minLastClassDaysNum = minLastClassDays > 0 ? minLastClassDays : null;
+  const maxLastClassDaysNum = maxLastClassDays < LAST_CLASS_MAX ? maxLastClassDays : null;
 
   const hasActiveFilters =
-    filter !== "all" || procedencia !== "all" || planFilter !== "all" || minLastClassDaysNum != null || maxLastClassDaysNum != null;
+    filter !== "all" || procedencia !== "all" || planFilter !== "all" || asistencia !== "all" ||
+    minLastClassDaysNum != null || maxLastClassDaysNum != null;
 
   const filtered = useMemo(() => {
     const q = normalizeText(search.trim());
@@ -256,6 +299,8 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
         if (procedencia === "urban") { if (r.status.key !== "urban") return false; }
         else if (procedencia === "momence") { if (r.status.key === "urban") return false; }
         if (planFilter !== "all") { if (planTier(r.plan) !== planFilter) return false; }
+        if (asistencia === "con_clases") { if (r.attended === 0) return false; }
+        else if (asistencia === "sin_clases") { if (r.attended > 0) return false; }
         if (minLastClassDaysNum != null || maxLastClassDaysNum != null) {
           const d = daysSinceLastClass(r);
           if (d === null) {
@@ -289,7 +334,7 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
         else diff = a.name.localeCompare(b.name, "es");
         return sortDir === "desc" ? -diff : diff;
       });
-  }, [clients, search, filter, procedencia, planFilter, minLastClassDaysNum, maxLastClassDaysNum, sortKey, sortDir]);
+  }, [clients, search, filter, procedencia, planFilter, asistencia, minLastClassDaysNum, maxLastClassDaysNum, sortKey, sortDir]);
 
   const pageRows = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
@@ -302,10 +347,12 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
   function toggleBox(f: Filter) { setFilter((cur) => (cur === f ? "all" : f)); setPage(0); }
   function changeProcedencia(v: Procedencia) { setProcedencia(v); setPage(0); }
   function changePlanFilter(v: PlanFilter) { setPlanFilter(v); setPage(0); }
-  function changeMinLastClassDays(v: string) { setMinLastClassDays(v); setPage(0); }
-  function changeMaxLastClassDays(v: string) { setMaxLastClassDays(v); setPage(0); }
+  function changeAsistencia(v: Asistencia) { setAsistencia(v); setPage(0); }
+  function changeMinLastClassDays(v: number) { setMinLastClassDays(v); setPage(0); }
+  function changeMaxLastClassDays(v: number) { setMaxLastClassDays(v); setPage(0); }
   function clearFilters() {
-    setFilter("all"); setProcedencia("all"); setPlanFilter("all"); setMinLastClassDays(""); setMaxLastClassDays("");
+    setFilter("all"); setProcedencia("all"); setPlanFilter("all"); setAsistencia("all");
+    setMinLastClassDays(0); setMaxLastClassDays(LAST_CLASS_MAX);
     setPage(0);
   }
 
@@ -400,29 +447,38 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
               ]}
             />
           </div>
+          <div>
+            <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1.5">Asistencia</p>
+            <FilterPillGroupV2
+              variant="segmented"
+              active={asistencia}
+              onChange={changeAsistencia}
+              options={[
+                { key: "all", label: "Todos" },
+                { key: "con_clases", label: "Ha venido" },
+                { key: "sin_clases", label: "Nunca vino", count: counts.sinClases || undefined, countTone: "warning" },
+              ]}
+            />
+          </div>
         </div>
-        <div className="max-w-[260px]">
+        <div className="max-w-[300px]">
           <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1.5">Última clase</p>
-          <div className="flex items-center gap-1.5 bg-navy/5 rounded-[10px] px-3 py-[9px]">
-            <input
-              type="number"
-              inputMode="numeric"
+          <div className="flex items-center gap-3 bg-navy/5 rounded-[10px] px-3 py-[10px]">
+            <span className="text-[12.5px] font-medium text-navy tabular-nums shrink-0 w-6 text-right">
+              {minLastClassDays}
+            </span>
+            <DualRangeSlider
               min={0}
-              placeholder="Mín. días"
-              value={minLastClassDays}
-              onChange={(e) => changeMinLastClassDays(e.target.value)}
-              className="w-full min-w-0 px-2 py-1.5 text-[12.5px] bg-card border border-border rounded-[8px] focus:outline-none focus:border-primary/40"
+              max={LAST_CLASS_MAX}
+              step={5}
+              valueMin={minLastClassDays}
+              valueMax={maxLastClassDays}
+              onChangeMin={changeMinLastClassDays}
+              onChangeMax={changeMaxLastClassDays}
             />
-            <span className="text-navy/30 text-xs shrink-0">–</span>
-            <input
-              type="number"
-              inputMode="numeric"
-              min={0}
-              placeholder="Máx. días"
-              value={maxLastClassDays}
-              onChange={(e) => changeMaxLastClassDays(e.target.value)}
-              className="w-full min-w-0 px-2 py-1.5 text-[12.5px] bg-card border border-border rounded-[8px] focus:outline-none focus:border-primary/40"
-            />
+            <span className="text-[12.5px] font-medium text-navy tabular-nums shrink-0 w-8">
+              {maxLastClassDays >= LAST_CLASS_MAX ? `${LAST_CLASS_MAX}+` : maxLastClassDays}
+            </span>
           </div>
         </div>
       </div>
@@ -486,7 +542,7 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
                     <div className="text-[13px] text-navy tabular-nums">{r.attended}</div>
                     <div className={`text-[13px] tabular-nums ${r.cancellations > r.attended && r.cancellations > 2 ? "text-danger font-medium" : "text-muted"}`}>{r.cancellations}</div>
                     <div className="text-[13px] text-muted tabular-nums">{r.firstClassDate ? fmtDate(r.firstClassDate) : "-"}</div>
-                    <div className="text-[13px] text-muted">{r.lastClassDate ? timeAgo(r.lastClassDate) : "-"}</div>
+                    <div className="text-[13px] text-muted">{r.lastClassDate ? timeAgo(r.lastClassDate).replace("Hace ", "") : "-"}</div>
                     <div className="text-[13px] font-semibold text-navy tabular-nums">{r.stripe ? fmt(r.stripe.totalSpent) : "-"}</div>
                   </div>
                 );
@@ -524,7 +580,7 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
                   </div>
                   <div className="text-right shrink-0">
                     <p className="text-[12px] font-medium text-navy tabular-nums">{r.attended} clases</p>
-                    <p className="text-[11px] text-faint">{r.lastClassDate ? timeAgo(r.lastClassDate) : "sin clases"}</p>
+                    <p className="text-[11px] text-faint">{r.lastClassDate ? timeAgo(r.lastClassDate).replace("Hace ", "") : "sin clases"}</p>
                   </div>
                 </div>
               );
