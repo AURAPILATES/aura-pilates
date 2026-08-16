@@ -15,6 +15,7 @@ import type { RecurringExpense, RecurringExpenseEndType } from "@/lib/recurringE
 import type { Contact } from "./actions";
 import { CategoryBadge, CategoryPill } from "./TransaccionesList";
 import type { ContactPickResult } from "./ContactPicker";
+import { knownDomain } from "@/app/configuracion/ContactosManager";
 import RecurrentesListV2 from "./RecurrentesListV2";
 import {
   recordRecurringExpense,
@@ -278,7 +279,7 @@ function ContactPickerDrawer({ contacts, title, onPick, onClose }: {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Buscar contacto…"
-          className="w-full px-3 py-2 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40"
+          className="w-full pl-3 pr-8 py-2 text-sm font-medium text-navy border border-navy/[0.12] rounded-lg outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15 transition"
         />
       </div>
       <div className="px-2 pb-4">
@@ -286,9 +287,9 @@ function ContactPickerDrawer({ contacts, title, onPick, onClose }: {
           <button
             key={c.id}
             onClick={() => { onPick({ contactId: c.id, label: c.label }); onClose(); }}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-navy/[0.03] transition-colors text-left"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-navy/[0.04] transition-colors text-left"
           >
-            <ContactAvatar label={c.label} resolved size={32} />
+            <ContactAvatar label={c.label} resolved logoDomain={knownDomain(c.label)} size={32} />
             <div className="min-w-0 flex-1">
               <p className="text-sm text-navy truncate">{c.label}</p>
               <p className="text-[11px] text-navy/40">IVA {c.ivaRate}% · Ret {c.retencionRate}%</p>
@@ -345,7 +346,7 @@ function ConfirmPendingDrawer({ row, period, pick, end, name, ivaRate, retencion
       onClose={onClose}
       header={
         <div className="flex items-start gap-3">
-          <ContactAvatar label={name || row.label} resolved={!!pick} size={40} />
+          <ContactAvatar label={name || row.label} resolved={!!pick} logoDomain={pick ? knownDomain(label) : null} size={40} />
           <div className="min-w-0">
             <p className="text-sm font-semibold text-navy truncate">{name || row.label}</p>
             <p className="text-xs text-navy/45 mt-0.5">{row.occurrences} pagos detectados · último {fmtDate(row.lastDate)}</p>
@@ -354,7 +355,7 @@ function ConfirmPendingDrawer({ row, period, pick, end, name, ivaRate, retencion
       }
       footer={(close) => (
         <div className="flex gap-3">
-          <SecondaryButton onClick={() => handleIgnore(close)} disabled={saving} className="flex-1">
+          <SecondaryButton onClick={() => handleIgnore(close)} disabled={saving}>
             Ignorar
           </SecondaryButton>
           <Button onClick={() => handleConfirm(close)} disabled={saving || !pick} className="flex-1">
@@ -649,7 +650,7 @@ function RecurringExpenseDrawer({ row, categories, contacts, onClose, onOpenCont
       onClose={onClose}
       header={
         <div className="flex items-start gap-3">
-          <ContactAvatar label={e.label} resolved={!!contact} size={40} />
+          <ContactAvatar label={e.label} resolved={!!contact} logoDomain={contact ? knownDomain(contact.label) : null} size={40} />
           <div className="min-w-0">
             <p className="text-sm font-semibold text-navy truncate">{e.label}</p>
             {catLabel && <div className="mt-1"><CategoryBadge category={e.category} categories={categories} /></div>}

@@ -34,7 +34,7 @@ export default function TablePaginationV2({ page, totalItems, pageSize, onPageCh
   );
 
   return (
-    <div className="flex items-center justify-between gap-2 px-1.5 py-3.5">
+    <div className="flex items-center justify-between gap-2 px-5 py-3.5">
       <p className="text-[12.5px] text-faint whitespace-nowrap shrink-0">
         {totalItems === 0 ? "Sin resultados" : `${start}–${end} de ${totalItems}`}
       </p>

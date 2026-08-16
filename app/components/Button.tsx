@@ -7,7 +7,7 @@ export default function Button({ className = "", type = "button", ...props }: Bu
   return (
     <button
       type={type}
-      className={`px-4 py-2.5 text-sm font-semibold text-app-bg bg-navy rounded-lg hover:bg-navy/85 transition-colors disabled:opacity-40 ${className}`}
+      className={`px-4 py-2.5 text-sm font-semibold text-app-bg bg-navy rounded-lg hover:bg-navy/85 transition-colors disabled:opacity-40 whitespace-nowrap ${className}`}
       {...props}
     />
   );
@@ -20,7 +20,7 @@ export function SecondaryButton({ className = "", type = "button", ...props }: B
   return (
     <button
       type={type}
-      className={`px-4 py-2.5 text-sm font-semibold text-navy/60 border border-navy/15 rounded-lg hover:bg-navy/[0.03] transition-colors disabled:opacity-40 ${className}`}
+      className={`px-4 py-2.5 text-sm font-semibold text-navy/60 border border-navy/15 rounded-lg hover:bg-navy/[0.03] transition-colors disabled:opacity-40 whitespace-nowrap ${className}`}
       {...props}
     />
   );
@@ -32,7 +32,7 @@ export function DangerButton({ className = "", type = "button", ...props }: Butt
   return (
     <button
       type={type}
-      className={`px-4 py-2.5 text-sm font-semibold text-danger border border-danger/20 rounded-lg hover:bg-danger/5 transition-colors disabled:opacity-40 ${className}`}
+      className={`px-4 py-2.5 text-sm font-semibold text-danger border border-danger/20 rounded-lg hover:bg-danger/5 transition-colors disabled:opacity-40 whitespace-nowrap ${className}`}
       {...props}
     />
   );
@@ -44,7 +44,7 @@ export function DangerButtonSolid({ className = "", type = "button", ...props }:
   return (
     <button
       type={type}
-      className={`px-4 py-2.5 text-sm font-semibold text-white bg-danger rounded-lg hover:bg-danger/85 transition-colors disabled:opacity-40 ${className}`}
+      className={`px-4 py-2.5 text-sm font-semibold text-white bg-danger rounded-lg hover:bg-danger/85 transition-colors disabled:opacity-40 whitespace-nowrap ${className}`}
       {...props}
     />
   );

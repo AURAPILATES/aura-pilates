@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect } from "react";
 import ImportModal from "./ImportModal";
 import Button from "@/app/components/Button";
+import { PrimaryButtonV2 } from "@/app/components/v2/ButtonsV2";
 
 export default function ImportButton({
   className = "",
@@ -34,15 +35,15 @@ export default function ImportButton({
     <>
       <div ref={ref} className={`relative ${className}`}>
         {v2 ? (
-          <button
+          <PrimaryButtonV2
             onClick={() => setOpen((v) => !v)}
-            className="shrink-0 flex items-center justify-center gap-[7px] w-[38px] sm:w-full h-[38px] px-0 sm:px-3.5 text-[12.5px] font-semibold text-app-bg bg-navy rounded-[10px] hover:bg-navy/85 transition-colors whitespace-nowrap"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
-              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-            </svg>
-            <span className="hidden sm:inline">Añadir movimiento</span>
-          </button>
+            label="Añadir movimiento"
+            icon={
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+            }
+          />
         ) : compact ? (
           <button
             onClick={() => setOpen((v) => !v)}

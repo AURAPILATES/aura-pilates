@@ -136,7 +136,7 @@ export default function AddCashModal({ categories, contacts, onClose }: { catego
               {duplicates.map((d) => `${d.label} (${d.amount > 0 ? "+" : "−"}${fmtAmtShort(d.amount)})`).join(", ")}. ¿Seguro que quieres añadir este también?
             </p>
             <div className="flex gap-3">
-              <SecondaryButton onClick={() => setDuplicates(null)} disabled={saving} className="flex-1">
+              <SecondaryButton onClick={() => setDuplicates(null)} disabled={saving}>
                 Revisar
               </SecondaryButton>
               <Button onClick={() => handleSave(close, true)} disabled={saving} className="flex-1">
