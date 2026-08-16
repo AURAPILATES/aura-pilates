@@ -38,11 +38,18 @@ export default async function TransaccionesPage(props: {
   const confirmedPeriodByKey = new Map(
     expenses.filter((e) => e.status === "confirmed").map((e) => [e.key, e.period]),
   );
+  // IDs de movimientos cuya serie ya está confirmada como gasto/ingreso recurrente (checkbox
+  // marcado en el drawer) - a diferencia de recurringPeriods, que también incluye series
+  // detectadas solo por heurística y todavía sin confirmar. Sirve para que el icono de la
+  // tabla distinga visualmente "confirmado" de "parece recurrente, pero sin confirmar".
+  const recurringConfirmedIds = new Set<string>();
   for (const t of transactions) {
-    if (recurringPeriods[t.id]) continue;
     const key = seriesKeyFor(t, allTimeTransactions);
     const period = key ? confirmedPeriodByKey.get(key) : undefined;
-    if (period) recurringPeriods[t.id] = period;
+    if (period) {
+      recurringPeriods[t.id] ??= period;
+      recurringConfirmedIds.add(t.id);
+    }
   }
 
   // ── Recurrentes ──
@@ -101,6 +108,7 @@ export default async function TransaccionesPage(props: {
             categories={categories}
             uncategorizedCount={uncategorizedCount}
             recurringPeriods={recurringPeriods}
+            recurringConfirmedIds={recurringConfirmedIds}
             recurringExpenses={expenses}
             contacts={contacts}
             pendingRecurring={pendingRecurring}

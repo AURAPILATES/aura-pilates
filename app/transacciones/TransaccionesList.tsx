@@ -555,6 +555,7 @@ type Props = {
   categories: Category[];
   uncategorizedCount: number;
   recurringPeriods: Record<string, string>;
+  recurringConfirmedIds: Set<string>;
   recurringExpenses: RecurringExpense[];
   contacts: Contact[];
   allTransactions?: Transaction[];
@@ -563,7 +564,7 @@ type Props = {
 const PAGE_SIZE = 100;
 
 export default function TransaccionesList({
-  transactions, categories, recurringPeriods, recurringExpenses, contacts, allTransactions,
+  transactions, categories, recurringPeriods, recurringConfirmedIds, recurringExpenses, contacts, allTransactions,
 }: Props) {
   const searchParams = useSearchParams();
   const currentRange = searchParams.get("range") ?? "all";
@@ -851,6 +852,7 @@ export default function TransaccionesList({
         pageSize={PAGE_SIZE}
         onPageChange={setPage}
         recurringPeriods={recurringPeriods}
+        recurringConfirmedIds={recurringConfirmedIds}
         onCategoryChange={handleCategoryChange}
         selectedIds={selectedIds}
         onToggleSelect={toggleSelect}

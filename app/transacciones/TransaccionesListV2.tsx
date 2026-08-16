@@ -144,6 +144,7 @@ type Props = {
   pageSize: number;
   onPageChange: (p: number) => void;
   recurringPeriods: Record<string, string>;
+  recurringConfirmedIds: Set<string>;
   onCategoryChange: (id: string, category: string | null) => void;
   selectedIds: Set<string>;
   onToggleSelect: (id: string) => void;
@@ -178,6 +179,24 @@ function FilterHintIcon({ active, activeColorClass }: { active: boolean; activeC
   );
 }
 
+/** Icono de "recurrente" junto al concepto. Sólido cuando el movimiento ya está confirmado
+ * como recurrente (checkbox marcado en el drawer, cuenta en Previsiones); discontinuo y más
+ * tenue cuando solo lo sugiere la heurística de patrones (2+ pagos con mismo importe y
+ * periodo) pero todavía no se ha confirmado - así no parecen lo mismo en la tabla. */
+function RecurringIcon({ confirmed }: { confirmed: boolean }) {
+  return (
+    <svg
+      width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+      strokeDasharray={confirmed ? undefined : "2.5 2.2"}
+      className={`shrink-0 ${confirmed ? "text-navy/35" : "text-navy/25"}`}
+    >
+      <title>{confirmed ? "Recurrente confirmado" : "Parece recurrente, sin confirmar"}</title>
+      <path d="M1 4v6h6M23 20v-6h-6" /><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15" />
+    </svg>
+  );
+}
+
 function SortArrowV2({ active, dir }: { active: boolean; dir: "asc" | "desc" }) {
   return (
     <svg
@@ -197,7 +216,7 @@ export default function TransaccionesListV2({
   amountMin, onAmountMinChange, amountMax, onAmountMaxChange,
   totalIn, totalOut, countIn, countOut, neto,
   sortKey, sortDir, onToggleSort, byMonth, onRowClick,
-  onExportCsv, onAddCash, onPapelera, page, totalItems, pageSize, onPageChange, recurringPeriods,
+  onExportCsv, onAddCash, onPapelera, page, totalItems, pageSize, onPageChange, recurringPeriods, recurringConfirmedIds,
   onCategoryChange,
   selectedIds, onToggleSelect, onToggleSelectAll, onClearSelection, onBulkCategory, onBulkDelete,
 }: Props) {
@@ -515,9 +534,7 @@ export default function TransaccionesListV2({
                               <div className="flex items-center gap-1.5 min-w-0">
                                 <p className="text-[13.5px] font-medium text-navy truncate">{concept}</p>
                                 {recurringPeriod && (
-                                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-navy/35">
-                                    <path d="M1 4v6h6M23 20v-6h-6" /><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15" />
-                                  </svg>
+                                  <RecurringIcon confirmed={recurringConfirmedIds.has(t.id)} />
                                 )}
                                 {t.is_refund && (
                                   <span className="shrink-0 inline-flex items-center gap-1 text-[10px] font-semibold text-primary bg-primary/10 border border-primary/20 px-1.5 py-0.5 rounded-full whitespace-nowrap">
@@ -579,9 +596,7 @@ export default function TransaccionesListV2({
                           <div className="flex items-center gap-1.5 min-w-0">
                             <p className="text-[14px] font-medium text-navy truncate">{concept}</p>
                             {recurringPeriod && (
-                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-navy/35">
-                                <path d="M1 4v6h6M23 20v-6h-6" /><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15" />
-                              </svg>
+                              <RecurringIcon confirmed={recurringConfirmedIds.has(t.id)} />
                             )}
                           </div>
                           {mobileContact && <p className="text-[12px] text-muted truncate mt-0.5">{mobileContact}</p>}
