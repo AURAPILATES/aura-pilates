@@ -165,38 +165,6 @@ function SignedAmount({ amount, className = "" }: { amount: number; className?: 
   );
 }
 
-/** Texto y urgencia a partir de `daysUntil` (ver ConfirmedExpenseRow) - antes ese dato solo se
- * usaba para ordenar la lista, invisible en pantalla: nada explicaba por qué un recurrente
- * aparecía antes que otro (un "día 14" puede vencer antes que un "día 1" si ya pasó este mes).
- *
- * Un retraso de pocos días es normal (desfase de cuándo se importa el extracto), así que solo
- * cuenta como "vencido" (rojo, urgente) dentro de un período de margen. Pasado un período
- * entero sin ver un cargo nuevo que lo confirme, ya no es "llega tarde" sino "puede que esto
- * ya no esté activo" - mismo dato, pero comunica algo distinto, así que se atenúa en vez de
- * alarmar con un rojo que sugeriría que hay que pagarlo ya. */
-function dueInfo(daysUntil: number | null, periodDays: number): { text: string; tone: "overdue" | "soon" | "normal" | "stale" | "unknown" } {
-  if (daysUntil == null) return { text: "", tone: "unknown" };
-  if (daysUntil < -periodDays) return { text: "sin actividad reciente", tone: "stale" };
-  if (daysUntil < 0) return { text: `vencido hace ${Math.abs(daysUntil)} d`, tone: "overdue" };
-  if (daysUntil === 0) return { text: "vence hoy", tone: "soon" };
-  if (daysUntil <= 3) return { text: `en ${daysUntil} d`, tone: "soon" };
-  return { text: `en ${daysUntil} d`, tone: "normal" };
-}
-const DUE_TEXT_CLASS: Record<string, string> = {
-  overdue: "text-[#b91c1c] dark:text-[#f5a3a3]",
-  soon: "text-[#b45309] dark:text-[#e8a572]",
-  normal: "text-muted",
-  stale: "text-faint",
-  unknown: "text-faint",
-};
-const DUE_DOT_CLASS: Record<string, string> = {
-  overdue: "bg-[#dc2626] dark:bg-[#f5a3a3]",
-  soon: "bg-[#d97706] dark:bg-[#e8a572]",
-  normal: "bg-[#16a34a] dark:bg-[#7cdfa0]",
-  stale: "bg-border",
-  unknown: "bg-[#16a34a] dark:bg-[#7cdfa0]",
-};
-
 function iconFor(categories: Category[], categoryValue: string | null) {
   const cat = categoryValue ? categories.find((c) => c.value === categoryValue) : undefined;
   return {
@@ -478,7 +446,6 @@ export default function RecurrentesListV2({
           const bothMissing = !contact?.noTax && !(ivaRate > 0) && !(retRate > 0);
           const icon = iconFor(categories, e.category);
           const dayDetail = periodDayDetail(e.period, row.lastDate);
-          const due = dueInfo(row.daysUntil, e.period_days);
           const isSelected = selectedIds.has(e.id);
           return (
             <div key={e.id}>
@@ -521,12 +488,7 @@ export default function RecurrentesListV2({
                     <TaxBadgeV2 value={retRate} isError={bothMissing} zeroIsExplicit={contact?.noTax} />
                   </div>
                   <p className="text-right text-[13.5px] font-semibold"><SignedAmount amount={e.amount} /></p>
-                  <div className="flex justify-end">
-                    <span className={`inline-flex items-center gap-1.5 text-[12.5px] font-medium whitespace-nowrap ${DUE_TEXT_CLASS[due.tone]}`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${DUE_DOT_CLASS[due.tone]}`} />
-                      {due.tone === "unknown" ? "Activo" : due.text}
-                    </span>
-                  </div>
+                  <div />
                 </div>
               </div>
 
@@ -558,9 +520,6 @@ export default function RecurrentesListV2({
                 <div className="text-right shrink-0">
                   <p className="text-[14px] font-semibold"><SignedAmount amount={e.amount} /></p>
                   <p className="text-[11.5px] text-muted capitalize mt-0.5">{e.period}{dayDetail ? ` · ${dayDetail}` : ""}</p>
-                  {due.tone !== "unknown" && (
-                    <p className={`text-[11px] font-medium mt-0.5 ${DUE_TEXT_CLASS[due.tone]}`}>{due.text}</p>
-                  )}
                 </div>
               </div>
             </div>

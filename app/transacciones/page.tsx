@@ -83,7 +83,10 @@ export default async function TransaccionesPage(props: {
     })
     .sort((a, b) => (a.daysUntil ?? Infinity) - (b.daysUntil ?? Infinity));
 
-  const archivedRecurring = expenses.filter((e) => e.status !== "confirmed" && isExpenseRow(e));
+  // 'deleted' se queda fuera a propósito: existe solo para que el heurístico no vuelva a
+  // proponer la serie como pendiente (ver deleteRecurringExpense en recurringActions.ts), no
+  // para mostrarse en ningún sitio.
+  const archivedRecurring = expenses.filter((e) => e.status !== "confirmed" && e.status !== "deleted" && isExpenseRow(e));
 
   return (
     <div>

@@ -4,7 +4,7 @@ import { findRecurringSeries, projectNextDate, type RecurringForecast } from "@/
 import type { Transaction } from "@/lib/transactions";
 import type { Category } from "@/lib/categories";
 
-export type RecurringExpenseStatus = "confirmed" | "ignored" | "cancelled";
+export type RecurringExpenseStatus = "confirmed" | "ignored" | "cancelled" | "deleted";
 export type RecurringExpenseEndType = "never" | "date" | "count";
 
 export type RecurringExpense = {

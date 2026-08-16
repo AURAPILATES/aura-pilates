@@ -252,9 +252,16 @@ export async function setRecurringExpenseStatus(id: number, status: "confirmed" 
   revalidateAll();
 }
 
+// No borra la fila de verdad: el patrón de pagos histórico sigue en las transacciones, así
+// que borrarla del todo haría que el heurístico volviera a proponerla como "por confirmar".
+// Se marca 'deleted' en su lugar - sigue existiendo para bloquear esa re-detección, pero
+// queda fuera de la pestaña Recurrentes (ver page.tsx, archivedRecurring).
 export async function deleteRecurringExpense(id: number) {
   const supabase = createServerClient();
-  const { error } = await supabase.from("recurring_expenses").delete().eq("id", id);
+  const { error } = await supabase
+    .from("recurring_expenses")
+    .update({ status: "deleted", updated_at: new Date().toISOString() })
+    .eq("id", id);
   if (error) throw new Error(error.message);
   revalidateAll();
 }
@@ -262,7 +269,10 @@ export async function deleteRecurringExpense(id: number) {
 export async function deleteRecurringExpenses(ids: number[]): Promise<void> {
   if (!ids.length) return;
   const supabase = createServerClient();
-  const { error } = await supabase.from("recurring_expenses").delete().in("id", ids);
+  const { error } = await supabase
+    .from("recurring_expenses")
+    .update({ status: "deleted", updated_at: new Date().toISOString() })
+    .in("id", ids);
   if (error) throw new Error(error.message);
   revalidateAll();
 }

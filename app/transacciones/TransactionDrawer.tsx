@@ -157,6 +157,7 @@ function MarkRecurringControl({
   initialEndType,
   initialEndDate,
   initialEndCount,
+  onClose,
 }: {
   transactionId: string;
   isIncome: boolean;
@@ -168,6 +169,7 @@ function MarkRecurringControl({
   initialEndType?: RecurringExpenseEndType;
   initialEndDate?: string | null;
   initialEndCount?: number | null;
+  onClose: () => void;
 }) {
   const [checked, setChecked] = useState(initiallyRecurring);
   const [period, setPeriod] = useState(initialPeriod ?? "mensual");
@@ -179,6 +181,11 @@ function MarkRecurringControl({
 
   const matchedContact = contacts.find((c) => c.label.toLowerCase() === contactLabel.trim().toLowerCase());
   const contactId = matchedContact?.id ?? null;
+
+  function goToRecurrentes() {
+    onClose();
+    router.replace("/transacciones?tab=recurrentes", { scroll: false });
+  }
 
   function buildEnd(type: RecurringExpenseEndType, date: string, count: string) {
     return {
@@ -233,7 +240,10 @@ function MarkRecurringControl({
         </label>
         {!checked && detectedUnconfirmed && (
           <p className="text-xs text-navy/45 px-3 pb-3 pt-2 border-t border-navy/[0.06] mt-1">
-            Detectado automáticamente por el patrón de pagos ({initialPeriod ?? "mensual"}). Márcalo arriba para confirmarlo y que cuente en Previsiones, o revísalo en la pestaña Recurrentes.
+            Detectado automáticamente por el patrón de pagos ({initialPeriod ?? "mensual"}). Márcalo arriba para confirmarlo y que cuente en Previsiones, o{" "}
+            <button type="button" onClick={goToRecurrentes} className="text-primary font-medium hover:underline">
+              revísalo en la pestaña Recurrentes
+            </button>.
           </p>
         )}
         {checked && (
@@ -582,6 +592,7 @@ export default function TransactionDrawer({
           initialEndType={recurringExpense?.end_type}
           initialEndDate={recurringExpense?.end_date}
           initialEndCount={recurringExpense?.end_count}
+          onClose={onClose}
         />
 
         <RefundControl

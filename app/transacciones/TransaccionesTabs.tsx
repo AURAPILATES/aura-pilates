@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { Transaction } from "@/lib/transactions";
 import type { Category } from "@/lib/categories";
@@ -49,6 +49,14 @@ export default function TransaccionesTabs({
   const searchParams = useSearchParams();
   const initialTab = searchParams.get("tab") === "recurrentes" ? "recurrentes" : "movimientos";
   const [tab, setTab] = useState<Tab>(initialTab);
+
+  // El estado de la pestaña activa solo se leía de la URL al montar: navegar aquí desde fuera
+  // (p. ej. el enlace "revísalo en la pestaña Recurrentes" del drawer de un movimiento) cambiaba
+  // la URL pero no la pestaña visible, porque el componente ya estaba montado. Mantenerlo
+  // sincronizado con la URL en todo momento arregla eso sin duplicar la lógica de selectTab.
+  useEffect(() => {
+    setTab(searchParams.get("tab") === "recurrentes" ? "recurrentes" : "movimientos");
+  }, [searchParams]);
 
   function selectTab(next: Tab) {
     setTab(next);
