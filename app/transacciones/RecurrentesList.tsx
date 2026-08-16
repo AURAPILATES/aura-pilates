@@ -80,8 +80,29 @@ function initials(label: string): string {
 }
 
 /** Avatar circular consistente con el resto de la app (ver iniciales en ContactDetailDrawer de
- * Configuración > Contactos): coloreado cuando hay un contacto vinculado, neutro si no. */
-export function ContactAvatar({ label, resolved, size = 36 }: { label: string; resolved: boolean; size?: number }) {
+ * Configuración > Contactos): coloreado cuando hay un contacto vinculado, neutro si no. Si el
+ * contacto tiene un dominio conocido (knownDomain), muestra su logo real - igual que TxnIcon en
+ * la tabla de Recurrentes - en vez de las iniciales. */
+export function ContactAvatar({ label, resolved, logoDomain, size = 36 }: { label: string; resolved: boolean; logoDomain?: string | null; size?: number }) {
+  const [imgError, setImgError] = useState(false);
+
+  if (resolved && logoDomain && !imgError) {
+    return (
+      <div
+        className="shrink-0 rounded-full bg-card border border-navy/[0.08] flex items-center justify-center overflow-hidden"
+        style={{ width: size, height: size }}
+      >
+        <img
+          src={`https://www.google.com/s2/favicons?sz=64&domain=${logoDomain}`}
+          width={Math.round(size * 0.55)}
+          height={Math.round(size * 0.55)}
+          alt=""
+          onError={() => setImgError(true)}
+        />
+      </div>
+    );
+  }
+
   return (
     <div
       className={`shrink-0 rounded-full flex items-center justify-center font-semibold ${resolved ? "bg-primary/10 text-primary" : "bg-navy/[0.05] text-navy/30"}`}
@@ -373,7 +394,6 @@ function ConfirmPendingDrawer({ row, period, pick, end, name, ivaRate, retencion
       </div>
 
       <div className="p-4 border-b border-navy/[0.06]">
-        <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-1.5">IVA y retención</p>
         <div className="grid grid-cols-2 gap-2">
           <div>
             <label className="text-xs text-navy/40">IVA %</label>
@@ -698,7 +718,6 @@ function RecurringExpenseDrawer({ row, categories, contacts, onClose, onOpenCont
       </div>
 
       <div className="p-4 border-b border-navy/[0.06]">
-        <p className="text-[11px] font-semibold text-navy/35 uppercase tracking-wider mb-1.5">IVA y retención</p>
         <div className="grid grid-cols-2 gap-2">
           <div>
             <label className="text-xs text-navy/40">IVA %</label>
