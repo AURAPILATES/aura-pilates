@@ -47,9 +47,11 @@ export function CatIcon({ iconKey, name, color, size = 12 }: { iconKey: string; 
  * conocido (ver knownDomain en configuracion/ContactosManager.tsx) muestra su logo real en vez
  * del icono genérico de categoría - la categoría ya se ve en su propia columna/badge, así que
  * no se pierde información y la fila se reconoce más rápido (p.ej. el logo de Stripe). Cae al
- * icono de categoría de siempre si no hay dominio conocido o si la imagen falla al cargar. */
+ * icono de categoría de siempre si no hay dominio conocido o si la imagen falla al cargar.
+ * Redondo como el Avatar de Clientes/Contactos, para que toda "identidad" de la app comparta
+ * la misma forma. */
 export function TxnIcon({
-  logoDomain, iconKey, name, accent, size, iconSize, rounded = "rounded-[8px]", className = "",
+  logoDomain, iconKey, name, accent, size, iconSize, className = "",
 }: {
   logoDomain?: string | null;
   iconKey: string;
@@ -57,11 +59,10 @@ export function TxnIcon({
   accent: string;
   size: number;
   iconSize: number;
-  rounded?: string;
   className?: string;
 }) {
   const [imgError, setImgError] = useState(false);
-  const base = `shrink-0 ${rounded} items-center justify-center ${className}`;
+  const base = `shrink-0 rounded-full items-center justify-center ${className}`;
 
   if (logoDomain && !imgError) {
     return (

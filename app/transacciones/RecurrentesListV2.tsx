@@ -8,7 +8,8 @@ import type { Contact } from "./actions";
 import type { PendingSeriesRow, ConfirmedExpenseRow, ContactPick } from "./RecurrentesList";
 import { fmtEUR, pickToLabel } from "./RecurrentesList";
 import { CategoryBadge, CAT_FALLBACK } from "./TransaccionesList";
-import { CatIcon } from "./catIcons";
+import { TxnIcon } from "./catIcons";
+import { knownDomain } from "@/app/configuracion/ContactosManager";
 import { setRecurringExpenseStatus, deleteRecurringExpense } from "./recurringActions";
 import Drawer from "@/app/components/Drawer";
 import TablePaginationV2 from "@/app/components/v2/TablePaginationV2";
@@ -164,6 +165,7 @@ function SignedAmount({ amount, className = "" }: { amount: number; className?: 
     </span>
   );
 }
+
 
 function iconFor(categories: Category[], categoryValue: string | null) {
   const cat = categoryValue ? categories.find((c) => c.value === categoryValue) : undefined;
@@ -343,6 +345,7 @@ export default function RecurrentesListV2({
             const ivaRate = ivaRateFor(row);
             const retRate = retencionRateFor(row);
             const icon = iconFor(categories, row.category);
+            const logoDomain = knownDomain(pickToLabel(pick, contacts));
             const dayDetail = periodDayDetail(row.period, row.lastDate);
             return (
               <div key={row.keys[0]}>
@@ -354,9 +357,7 @@ export default function RecurrentesListV2({
                     style={gridColsV2(COLS)}
                   >
                     <div className="flex items-center gap-[10px] min-w-0">
-                      <span className="w-[30px] h-[30px] shrink-0 rounded-[8px] flex items-center justify-center" style={{ backgroundColor: icon.accent }}>
-                        <CatIcon iconKey={icon.iconKey} name={icon.label ?? row.label} color="#fff" size={14} />
-                      </span>
+                      <TxnIcon logoDomain={logoDomain} iconKey={icon.iconKey} name={icon.label ?? row.label} accent={icon.accent} size={30} iconSize={14} className="flex" />
                       <p className="text-[13.5px] font-medium text-navy truncate">{row.label}</p>
                     </div>
                     <div>{row.category && <CategoryBadge category={row.category} categories={categories} />}</div>
@@ -399,9 +400,7 @@ export default function RecurrentesListV2({
                   onClick={() => onOpenPending(row)}
                   className="sm:hidden flex items-center gap-[10px] py-[10px] px-5 border-t border-subtle cursor-pointer active:bg-subtle"
                 >
-                  <span className="w-[32px] h-[32px] shrink-0 rounded-[10px] flex items-center justify-center" style={{ backgroundColor: icon.accent }}>
-                    <CatIcon iconKey={icon.iconKey} name={icon.label ?? row.label} color="#fff" size={15} />
-                  </span>
+                  <TxnIcon logoDomain={logoDomain} iconKey={icon.iconKey} name={icon.label ?? row.label} accent={icon.accent} size={32} iconSize={15} className="flex" />
                   <div className="flex-1 min-w-0">
                     <p className="text-[14px] font-medium text-navy truncate">{row.label}</p>
                     <div className="flex items-center gap-1.5 mt-1 flex-wrap">
@@ -445,6 +444,7 @@ export default function RecurrentesListV2({
           const retRate = contact?.retencionRate ?? 0;
           const bothMissing = !contact?.noTax && !(ivaRate > 0) && !(retRate > 0);
           const icon = iconFor(categories, e.category);
+          const logoDomain = contact ? knownDomain(contact.label) : null;
           const dayDetail = periodDayDetail(e.period, row.lastDate);
           const isSelected = selectedIds.has(e.id);
           return (
@@ -458,15 +458,18 @@ export default function RecurrentesListV2({
                 >
                   <div className="flex items-center gap-[10px] min-w-0">
                     <span className="relative shrink-0 w-[30px] h-[30px]">
-                      <span
-                        className={`w-[30px] h-[30px] rounded-[8px] items-center justify-center ${isSelected ? "hidden" : "flex group-hover:hidden"}`}
-                        style={{ backgroundColor: icon.accent }}
-                      >
-                        <CatIcon iconKey={icon.iconKey} name={icon.label ?? e.label} color="#fff" size={14} />
-                      </span>
+                      <TxnIcon
+                        logoDomain={logoDomain}
+                        iconKey={icon.iconKey}
+                        name={icon.label ?? e.label}
+                        accent={icon.accent}
+                        size={30}
+                        iconSize={14}
+                        className={isSelected ? "hidden" : "flex group-hover:hidden"}
+                      />
                       <label
                         onClick={(ev) => ev.stopPropagation()}
-                        className={`${isSelected ? "flex" : "hidden group-hover:flex"} items-center justify-center w-[30px] h-[30px] rounded-[8px] border border-border bg-card cursor-pointer`}
+                        className={`${isSelected ? "flex" : "hidden group-hover:flex"} items-center justify-center w-[30px] h-[30px] cursor-pointer`}
                       >
                         <input
                           type="checkbox"
@@ -507,9 +510,7 @@ export default function RecurrentesListV2({
                     />
                   </span>
                 ) : (
-                  <span className="w-[32px] h-[32px] shrink-0 rounded-[10px] flex items-center justify-center" style={{ backgroundColor: icon.accent }}>
-                    <CatIcon iconKey={icon.iconKey} name={icon.label ?? e.label} color="#fff" size={15} />
-                  </span>
+                  <TxnIcon logoDomain={logoDomain} iconKey={icon.iconKey} name={icon.label ?? e.label} accent={icon.accent} size={32} iconSize={15} className="flex" />
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="text-[14px] font-medium text-navy truncate">{e.label}</p>

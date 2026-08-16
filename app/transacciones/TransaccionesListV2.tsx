@@ -520,7 +520,7 @@ export default function TransaccionesListV2({
                               />
                               <label
                                 onClick={(e) => e.stopPropagation()}
-                                className={`${isSelected ? "flex" : "hidden group-hover:flex"} items-center justify-center w-[30px] h-[30px] rounded-[8px] border border-border bg-card cursor-pointer`}
+                                className={`${isSelected ? "flex" : "hidden group-hover:flex"} items-center justify-center w-[30px] h-[30px] cursor-pointer`}
                               >
                                 <input
                                   type="checkbox"
@@ -588,7 +588,6 @@ export default function TransaccionesListV2({
                             accent={accent}
                             size={32}
                             iconSize={15}
-                            rounded="rounded-[10px]"
                             className="flex"
                           />
                         )}

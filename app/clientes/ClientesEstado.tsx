@@ -2,11 +2,12 @@
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { Users, Clock, AlertTriangle, Copy } from "react-feather";
+import { Users, Clock, AlertTriangle, Package } from "react-feather";
 import Avatar from "@/app/components/Avatar";
 import SearchInputV2 from "@/app/components/v2/SearchInputV2";
 import TablePaginationV2 from "@/app/components/v2/TablePaginationV2";
 import FilterPillGroupV2 from "@/app/components/v2/FilterPillGroupV2";
+import ClearFiltersButtonV2 from "@/app/components/v2/ClearFiltersButtonV2";
 import { IconButtonV2 } from "@/app/components/v2/ButtonsV2";
 import { InfoDot } from "@/components/charts";
 import { tableHeadClassV2, tableRowClassV2, tableCardClassV2, gridColsV2 } from "@/app/components/v2/tableStylesV2";
@@ -15,7 +16,7 @@ import { drawerNav } from "@/lib/drawerNav";
 import { fmt } from "@/lib/analytics";
 import { initials, fmtDate, timeAgo } from "./ClientesTable";
 import MemberDrawer from "./MemberDrawer";
-import type { MemberClient, StatusTone, StatusKey } from "@/lib/memberClientsV2";
+import type { MemberClient, StatusTone } from "@/lib/memberClientsV2";
 import type { StripePayment } from "@/lib/stripePayments";
 
 function StatBox({ icon, label, value, valueClassName, dotClassName, tooltip, onClick, active }: {
@@ -44,20 +45,38 @@ function StatBox({ icon, label, value, valueClassName, dotClassName, tooltip, on
 const COLS = "2.1fr 1.05fr .85fr 1.3fr .55fr .95fr .9fr .9fr .8fr";
 const PAGE_SIZE = 100;
 
+// Filtros "especiales" restantes (KPIs + Más filtros): de un solo valor a la vez, porque son
+// alertas puntuales, no ejes de navegación habituales. El resto de ejes (procedencia, plan,
+// familiar, última actividad) viven en su propio estado independiente más abajo, para poder
+// combinarlos entre sí (p.ej. "Urban" + "Bàsic" + "familiar" a la vez).
 type Filter =
-  | "all" | "duplicadas" | "pago_pendiente" | "familiares" | "renueva_pronto"
-  | "activa" | "urban" | "congelada" | "pack" | "sin_plan" | "inactivo"
-  | "infrautiliza" | "al_limite";
+  | "all" | "duplicadas" | "pago_pendiente" | "renueva_pronto"
+  | "congelada" | "infrautiliza" | "al_limite" | "pocas_clases";
+type Procedencia = "all" | "momence" | "urban";
+type PlanFilter = "all" | "basic" | "plus" | "pro" | "pack" | "sin_plan";
+type FamilyFilter = "all" | "familiar";
 type SortKey = "name" | "attended" | "cancellations" | "totalSpent" | "firstClass" | "lastClass" | "renew";
 
-const STATUS_IN_FILTER: Record<"activa" | "urban" | "congelada" | "pack" | "sin_plan" | "inactivo", (k: StatusKey) => boolean> = {
-  activa: (k) => k === "activa",
-  urban: (k) => k === "urban",
-  congelada: (k) => k === "congelada",
-  pack: (k) => k === "pack" || k === "pack_bajo" || k === "pack_agotado",
-  sin_plan: (k) => k === "sin_plan",
-  inactivo: (k) => k === "inactivo",
-};
+// Mismo criterio que planBadge() (abajo) para que el filtro y la insignia de la tabla coincidan
+// siempre. Urban no tiene hueco aquí a propósito: es procedencia, no plan (ver Procedencia).
+function planTier(plan: MemberClient["plan"]): PlanFilter | "urban" {
+  if (!plan) return "sin_plan";
+  if (plan.kind === "urban") return "urban";
+  if (plan.kind === "pack") return "pack";
+  const n = plan.name.toLowerCase();
+  if (n.includes("plus")) return "plus";
+  if (n.includes("pro")) return "pro";
+  return "basic";
+}
+
+// Días desde la última clase asistida o el último pago, lo que sea más reciente - mismo cálculo
+// que decide "Sin plan" vs "Inactivo/a" en computeStatus (lib/memberClientsV2.ts), pero expuesto
+// aquí como número continuo para el slider en vez de un corte fijo a 45 días.
+function daysSinceActivity(r: MemberClient): number | null {
+  const last = [r.lastClassDate, r.stripe?.lastPaymentDate ?? null].filter(Boolean).sort().pop();
+  return last ? Math.floor((Date.now() - new Date(last).getTime()) / 86_400_000) : null;
+}
+const MAX_INACTIVE_DAYS = 180;
 
 // "Sin pago" (asistió sin rastro de cobro) y "Error de pago" (Stripe) son dos síntomas del
 // mismo problema de fondo - se muestran fusionados en un único KPI/filtro para no duplicar.
@@ -110,7 +129,7 @@ function SortArrow({ active, dir }: { active: boolean; dir: "asc" | "desc" }) {
 function MoreFiltersMenu({ filter, onChange, counts }: {
   filter: Filter;
   onChange: (f: Filter) => void;
-  counts: { al_limite: number; infrautiliza: number; familiares: number };
+  counts: { al_limite: number; infrautiliza: number; congelada: number; duplicadas: number };
 }) {
   const [open, setOpen] = useState(false);
   const [dropPos, setDropPos] = useState<{ top: number; left: number } | null>(null);
@@ -127,10 +146,13 @@ function MoreFiltersMenu({ filter, onChange, counts }: {
     return () => document.removeEventListener("mousedown", handle);
   }, [open]);
 
+  const DROP_W = 220;
   function handleToggle() {
     if (!open && btnRef.current) {
       const rect = btnRef.current.getBoundingClientRect();
-      setDropPos({ top: rect.bottom + 4, left: rect.left });
+      // Ancla el desplegable al borde derecho del botón (no al izquierdo) para que no se salga
+      // de la pantalla cuando el botón está cerca del borde derecho de la barra de filtros.
+      setDropPos({ top: rect.bottom + 4, left: rect.right - DROP_W });
     }
     setOpen((v) => !v);
   }
@@ -138,7 +160,8 @@ function MoreFiltersMenu({ filter, onChange, counts }: {
   const items: { key: Filter; label: string; count: number }[] = [
     { key: "al_limite", label: "Posible upsell", count: counts.al_limite },
     { key: "infrautiliza", label: "Infrautiliza plan", count: counts.infrautiliza },
-    { key: "familiares", label: "Familiares", count: counts.familiares },
+    { key: "congelada", label: "Congeladas", count: counts.congelada },
+    { key: "duplicadas", label: "2+ suscripciones", count: counts.duplicadas },
   ];
   const hasActive = items.some((i) => i.key === filter);
 
@@ -162,7 +185,7 @@ function MoreFiltersMenu({ filter, onChange, counts }: {
         <div
           ref={dropRef}
           className="fixed z-[9999] bg-card border border-navy/10 rounded-xl shadow-xl py-1"
-          style={{ top: dropPos.top, left: dropPos.left, width: "220px" }}
+          style={{ top: dropPos.top, left: dropPos.left, width: `${DROP_W}px` }}
         >
           {items.map(({ key, label, count }) => (
             <button
@@ -187,13 +210,21 @@ function MoreFiltersMenu({ filter, onChange, counts }: {
 export default function ClientesEstado({ clients, payments }: { clients: MemberClient[]; payments: StripePayment[] }) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
+  const [procedencia, setProcedencia] = useState<Procedencia>("all");
+  const [planFilter, setPlanFilter] = useState<PlanFilter>("all");
+  const [familyFilter, setFamilyFilter] = useState<FamilyFilter>("all");
+  const [minInactiveDays, setMinInactiveDays] = useState(0); // 0 = sin filtrar por actividad
   const [sortKey, setSortKey] = useState<SortKey>("lastClass");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [page, setPage] = useState(0);
   const [selected, setSelected] = useState<MemberClient | null>(null);
 
   const counts = useMemo(() => {
-    const c = { congelada: 0, sin_plan: 0, inactivo: 0, pago_pendiente: 0, duplicadas: 0, familiares: 0, urban: 0, renueva_pronto: 0, infrautiliza: 0, al_limite: 0 };
+    const c = {
+      congelada: 0, pago_pendiente: 0, duplicadas: 0, familiares: 0, urban: 0, momence: 0,
+      renueva_pronto: 0, infrautiliza: 0, al_limite: 0, pocas_clases: 0,
+      basic: 0, plus: 0, pro: 0, pack: 0, sinPlan: 0,
+    };
     for (const r of clients) {
       if (r.activeSubCount >= 2) c.duplicadas++;
       if (r.isFamily) c.familiares++;
@@ -201,25 +232,41 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
       if (renewsSoon(r)) c.renueva_pronto++;
       if (r.planUsage?.level === "bajo") c.infrautiliza++;
       else if (r.planUsage?.level === "alto") c.al_limite++;
-      if (r.status.key === "urban") c.urban++;
-      else if (r.status.key === "congelada") c.congelada++;
-      else if (r.status.key === "sin_plan") c.sin_plan++;
-      else if (r.status.key === "inactivo") c.inactivo++;
+      if (r.status.key === "pack_bajo") c.pocas_clases++;
+      if (r.status.key === "congelada") c.congelada++;
+      if (r.status.key === "urban") c.urban++; else c.momence++;
+      const tier = planTier(r.plan);
+      if (tier === "basic") c.basic++;
+      else if (tier === "plus") c.plus++;
+      else if (tier === "pro") c.pro++;
+      else if (tier === "pack") c.pack++;
+      else if (tier === "sin_plan") c.sinPlan++;
     }
     return c;
   }, [clients]);
+
+  const hasActiveFilters =
+    filter !== "all" || procedencia !== "all" || planFilter !== "all" || familyFilter !== "all" || minInactiveDays > 0;
 
   const filtered = useMemo(() => {
     const q = normalizeText(search.trim());
     return clients
       .filter((r) => {
+        if (procedencia === "urban") { if (r.status.key !== "urban") return false; }
+        else if (procedencia === "momence") { if (r.status.key === "urban") return false; }
+        if (planFilter !== "all") { if (planTier(r.plan) !== planFilter) return false; }
+        if (familyFilter === "familiar") { if (!r.isFamily) return false; }
+        if (minInactiveDays > 0) {
+          const d = daysSinceActivity(r);
+          if (d !== null && d < minInactiveDays) return false;
+        }
         if (filter === "duplicadas") { if (r.activeSubCount < 2) return false; }
         else if (filter === "pago_pendiente") { if (!hasPagoPendiente(r)) return false; }
-        else if (filter === "familiares") { if (!r.isFamily) return false; }
         else if (filter === "renueva_pronto") { if (!renewsSoon(r)) return false; }
         else if (filter === "infrautiliza") { if (r.planUsage?.level !== "bajo") return false; }
         else if (filter === "al_limite") { if (r.planUsage?.level !== "alto") return false; }
-        else if (filter !== "all") { if (!STATUS_IN_FILTER[filter](r.status.key)) return false; }
+        else if (filter === "pocas_clases") { if (r.status.key !== "pack_bajo") return false; }
+        else if (filter === "congelada") { if (r.status.key !== "congelada") return false; }
         if (!q) return true;
         return normalizeText(`${r.name} ${r.email ?? ""} ${r.plan?.name ?? ""}`).includes(q);
       })
@@ -234,7 +281,7 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
         else diff = a.name.localeCompare(b.name, "es");
         return sortDir === "desc" ? -diff : diff;
       });
-  }, [clients, search, filter, sortKey, sortDir]);
+  }, [clients, search, filter, procedencia, planFilter, familyFilter, minInactiveDays, sortKey, sortDir]);
 
   const pageRows = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
@@ -245,6 +292,14 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
   function changeFilter(f: Filter) { setFilter(f); setPage(0); }
   function changeSearch(v: string) { setSearch(v); setPage(0); }
   function toggleBox(f: Filter) { setFilter((cur) => (cur === f ? "all" : f)); setPage(0); }
+  function changeProcedencia(v: Procedencia) { setProcedencia(v); setPage(0); }
+  function changePlanFilter(v: PlanFilter) { setPlanFilter(v); setPage(0); }
+  function changeFamilyFilter(v: FamilyFilter) { setFamilyFilter(v); setPage(0); }
+  function changeMinInactiveDays(v: number) { setMinInactiveDays(v); setPage(0); }
+  function clearFilters() {
+    setFilter("all"); setProcedencia("all"); setPlanFilter("all"); setFamilyFilter("all"); setMinInactiveDays(0);
+    setPage(0);
+  }
 
   function downloadCsv() {
     const head = ["Nombre", "Email", "Teléfono", "Plan", "Renueva", "Estado", "Detalle", "Clases", "Cancelaciones", "No-shows", "Primera clase", "Última clase", "Total pagado (€)", "Uso del plan"];
@@ -270,7 +325,7 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
         <StatBox
           icon={<Users size={14} />} label="Clientes" value={clients.length}
           tooltip="Total de clientes del censo de Momence (incluye efectivo y Urban)."
-          onClick={() => toggleBox("all")} active={filter === "all"}
+          onClick={clearFilters} active={!hasActiveFilters}
         />
         <StatBox
           icon={<Clock size={14} />} label="Renuevan pronto" value={counts.renueva_pronto}
@@ -287,17 +342,18 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
           onClick={() => toggleBox("pago_pendiente")} active={filter === "pago_pendiente"}
         />
         <StatBox
-          icon={<Copy size={14} />} label="2+ suscripciones" value={counts.duplicadas}
-          valueClassName={counts.duplicadas > 0 ? "text-danger" : "text-navy/50"}
-          dotClassName={counts.duplicadas > 0 ? "bg-danger" : undefined}
-          tooltip="Clientes con varias suscripciones activas a la vez — posible doble cobro. Revísalos en Momence."
-          onClick={() => toggleBox("duplicadas")} active={filter === "duplicadas"}
+          icon={<Package size={14} />} label="Pocas clases" value={counts.pocas_clases}
+          valueClassName={counts.pocas_clases > 0 ? "text-[#b45309] dark:text-[#e8a572]" : "text-navy/50"}
+          dotClassName={counts.pocas_clases > 0 ? "bg-[#b45309] dark:bg-[#e8a572]" : undefined}
+          tooltip="Le quedan 2 clases o menos en su pack — momento de ofrecerle renovarlo antes de que se quede sin crédito."
+          onClick={() => toggleBox("pocas_clases")} active={filter === "pocas_clases"}
         />
       </div>
 
       <div className="flex items-center gap-[9px] flex-wrap">
         <SearchInputV2 value={search} onChange={changeSearch} placeholder="Buscar por nombre, email o plan…" className="min-w-[160px] flex-1" />
         <MoreFiltersMenu filter={filter} onChange={changeFilter} counts={counts} />
+        {hasActiveFilters && <ClearFiltersButtonV2 onClick={clearFilters} />}
         <IconButtonV2 onClick={downloadCsv} title="Exportar a CSV">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
             <path d="M12 4v10M8 11l4 4 4-4M5 19h14" />
@@ -305,21 +361,69 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
         </IconButtonV2>
       </div>
 
-      <div className="mt-3">
-        <FilterPillGroupV2
-          variant="segmented"
-          active={filter}
-          onChange={changeFilter}
-          options={[
-            { key: "all", label: "Todos" },
-            { key: "activa", label: "Al día" },
-            { key: "urban", label: "Urban", count: counts.urban || undefined },
-            { key: "pack", label: "Packs" },
-            { key: "congelada", label: "Congeladas", count: counts.congelada || undefined, countTone: "warning" },
-            { key: "sin_plan", label: "Sin plan", count: counts.sin_plan || undefined, countTone: "warning" },
-            { key: "inactivo", label: "Inactivos", count: counts.inactivo || undefined, countTone: "warning" },
-          ]}
-        />
+      <div className="mt-3 flex flex-col gap-3">
+        <div className="flex flex-wrap items-end gap-x-6 gap-y-3">
+          <div>
+            <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1.5">Procedencia</p>
+            <FilterPillGroupV2
+              variant="segmented"
+              active={procedencia}
+              onChange={changeProcedencia}
+              options={[
+                { key: "all", label: "Todos" },
+                { key: "momence", label: "Momence" },
+                { key: "urban", label: "Urban", count: counts.urban || undefined },
+              ]}
+            />
+          </div>
+          <div>
+            <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1.5">Plan actual</p>
+            <FilterPillGroupV2
+              variant="segmented"
+              active={planFilter}
+              onChange={changePlanFilter}
+              options={[
+                { key: "all", label: "Todos" },
+                { key: "basic", label: "Bàsic", count: counts.basic || undefined },
+                { key: "plus", label: "Plus", count: counts.plus || undefined },
+                { key: "pro", label: "Pro", count: counts.pro || undefined },
+                { key: "pack", label: "Pack", count: counts.pack || undefined },
+                { key: "sin_plan", label: "Sin plan", count: counts.sinPlan || undefined, countTone: "warning" },
+              ]}
+            />
+          </div>
+          <div>
+            <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1.5">Familiar</p>
+            <FilterPillGroupV2
+              variant="segmented"
+              active={familyFilter}
+              onChange={changeFamilyFilter}
+              options={[
+                { key: "all", label: "Todos" },
+                { key: "familiar", label: "Familiar", count: counts.familiares || undefined },
+              ]}
+            />
+          </div>
+        </div>
+        <div className="max-w-[340px]">
+          <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1.5">Última actividad</p>
+          <div className="flex items-center gap-2.5 bg-navy/5 rounded-[10px] px-3 py-[9px]">
+            <input
+              type="range"
+              min={0}
+              max={MAX_INACTIVE_DAYS}
+              step={5}
+              value={minInactiveDays}
+              onChange={(e) => changeMinInactiveDays(Number(e.target.value))}
+              className="w-full accent-navy cursor-pointer"
+            />
+            <span className="text-[12.5px] font-medium text-navy whitespace-nowrap tabular-nums shrink-0">
+              {minInactiveDays === 0
+                ? "Todos"
+                : `≥ ${minInactiveDays}${minInactiveDays >= MAX_INACTIVE_DAYS ? "+" : ""} d`}
+            </span>
+          </div>
+        </div>
       </div>
 
       <div className={`mt-[20px] -mx-4 sm:-mx-6 ${tableCardClassV2} overflow-hidden`}>
