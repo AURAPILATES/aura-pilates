@@ -5,6 +5,7 @@ import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { RotateCcw } from "react-feather";
 import type { Transaction } from "@/lib/transactions";
 import { sortCategoriesHierarchical, categoryDisplayLabel, type Category } from "@/lib/categories";
+import type { Contact } from "./actions";
 import DateFilter from "@/app/components/DateFilter";
 import SearchInputV2 from "@/app/components/v2/SearchInputV2";
 import TablePaginationV2 from "@/app/components/v2/TablePaginationV2";
@@ -12,7 +13,7 @@ import FiltersToggleButtonV2 from "@/app/components/v2/FiltersToggleButtonV2";
 import ClearFiltersButtonV2 from "@/app/components/v2/ClearFiltersButtonV2";
 import { tableHeadClassV2, tableRowClassV2, tableFootClassV2, tableCardClassV2, gridColsV2 } from "@/app/components/v2/tableStylesV2";
 import {
-  MoreOptionsMenu, MoreActionsMenu, OriginIcon, originLabel, CategoryPill, CategoryBadge, CategoryMultiFilter,
+  MoreOptionsMenu, MoreActionsMenu, OriginIcon, originLabel, CategoryPill, CategoryBadge, CategoryMultiFilter, ContactMultiFilter,
   fmtAmt, fmtDate, CAT_FALLBACK, MONTHS_ES, type SortKey,
 } from "./TransaccionesList";
 import { TxnIcon } from "./catIcons";
@@ -109,6 +110,7 @@ function BulkActionBarV2({
 
 type Props = {
   categories: Category[];
+  contacts: Contact[];
   uncategorizedCount: number;
   search: string;
   onSearchChange: (v: string) => void;
@@ -118,8 +120,8 @@ type Props = {
   onOriginFilterChange: (v: string) => void;
   onlyRecurring: boolean;
   onToggleOnlyRecurring: () => void;
-  onlyNoContact: boolean;
-  onToggleOnlyNoContact: () => void;
+  contactFilters: string[];
+  onContactFiltersChange: (v: string[]) => void;
   directionFilter: "all" | "in" | "out";
   onDirectionFilterChange: (v: "all" | "in" | "out") => void;
   amountMin: string;
@@ -209,9 +211,9 @@ function SortArrowV2({ active, dir }: { active: boolean; dir: "asc" | "desc" }) 
 }
 
 export default function TransaccionesListV2({
-  categories, uncategorizedCount, search, onSearchChange, catFilters, onCatFiltersChange,
+  categories, contacts, uncategorizedCount, search, onSearchChange, catFilters, onCatFiltersChange,
   originFilter, onOriginFilterChange, onlyRecurring, onToggleOnlyRecurring,
-  onlyNoContact, onToggleOnlyNoContact,
+  contactFilters, onContactFiltersChange,
   directionFilter, onDirectionFilterChange,
   amountMin, onAmountMinChange, amountMax, onAmountMaxChange,
   totalIn, totalOut, countIn, countOut, neto,
@@ -235,9 +237,9 @@ export default function TransaccionesListV2({
   // El rango de fechas vive en la URL (range/from/to), no en el estado de React.
   const dateActive = (searchParams.get("range") ?? "all") !== "all" || !!searchParams.get("from") || !!searchParams.get("to");
 
-  const filtersActive = catFilters.length > 0 || onlyRecurring || onlyNoContact || originFilter !== "all" || amountMin !== "" || amountMax !== "" || dateActive;
+  const filtersActive = catFilters.length > 0 || onlyRecurring || contactFilters.length > 0 || originFilter !== "all" || amountMin !== "" || amountMax !== "" || dateActive;
   const activeFilterCount =
-    (catFilters.length > 0 ? 1 : 0) + (onlyRecurring ? 1 : 0) + (onlyNoContact ? 1 : 0) + (originFilter !== "all" ? 1 : 0) +
+    (catFilters.length > 0 ? 1 : 0) + (onlyRecurring ? 1 : 0) + (contactFilters.length > 0 ? 1 : 0) + (originFilter !== "all" ? 1 : 0) +
     (amountMin !== "" || amountMax !== "" ? 1 : 0) + (directionFilter !== "all" ? 1 : 0) + (search.trim() ? 1 : 0) + (dateActive ? 1 : 0);
   const totalCount = countIn + countOut;
   const pctIn = totalCount > 0 ? (countIn / totalCount * 100).toFixed(1).replace(".", ",") : "0";
@@ -246,7 +248,7 @@ export default function TransaccionesListV2({
   function clearFilters() {
     onCatFiltersChange([]);
     if (onlyRecurring) onToggleOnlyRecurring();
-    if (onlyNoContact) onToggleOnlyNoContact();
+    onContactFiltersChange([]);
     onOriginFilterChange("all");
     onAmountMinChange("");
     onAmountMaxChange("");
@@ -368,11 +370,10 @@ export default function TransaccionesListV2({
             <DateFilter variant="v2" />
           </div>
           <CategoryMultiFilter selected={catFilters} categories={categories} onChange={onCatFiltersChange} />
+          <ContactMultiFilter selected={contactFilters} contacts={contacts} onChange={onContactFiltersChange} />
           <MoreOptionsMenu
             onlyRecurring={onlyRecurring}
             setOnlyRecurring={onToggleOnlyRecurring}
-            onlyNoContact={onlyNoContact}
-            setOnlyNoContact={onToggleOnlyNoContact}
             originFilter={originFilter}
             setOriginFilter={onOriginFilterChange}
             amountMin={amountMin}

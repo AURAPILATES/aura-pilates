@@ -17,6 +17,8 @@ import PapeleraDrawer from "./PapeleraDrawer";
 import TransactionDrawer from "./TransactionDrawer";
 import { CatIcon } from "./catIcons";
 import TransaccionesListV2 from "./TransaccionesListV2";
+import Avatar from "@/app/components/Avatar";
+import { knownDomain, initials as contactInitials } from "@/app/configuracion/ContactosManager";
 
 export const MONTHS_ES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
 
@@ -216,6 +218,119 @@ export function CategoryMultiFilter({
   );
 }
 
+/** Filtro principal de Contacto, junto a Categoría: mismo patrón multi-selección que
+ * CategoryMultiFilter, con "Sin contacto" como opción especial (antes vivía escondida dentro
+ * de "Más filtros" como un simple sí/no) seguida del listado completo de contactos guardados,
+ * con su logo/iniciales para reconocerlos rápido. */
+export function ContactMultiFilter({
+  selected, contacts, onChange, className = "",
+}: {
+  selected: string[]; contacts: Contact[]; onChange: (v: string[]) => void; className?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [dropPos, setDropPos] = useState<{ top: number; left: number } | null>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const dropRef = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function handle(e: MouseEvent) {
+      if (!wrapRef.current?.contains(e.target as Node) && !dropRef.current?.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, [open]);
+
+  function handleToggle() {
+    if (!open && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setDropPos({ top: rect.bottom + 4, left: rect.left });
+    }
+    setOpen((v) => !v);
+  }
+
+  function toggle(val: string) {
+    onChange(selected.includes(val) ? selected.filter((v) => v !== val) : [...selected, val]);
+  }
+
+  const sortedContacts = useMemo(() => [...contacts].sort((a, b) => a.label.localeCompare(b.label)), [contacts]);
+
+  let label: React.ReactNode;
+  if (selected.length === 0) {
+    label = <span className="text-navy">Contacto</span>;
+  } else if (selected.length === 1) {
+    label = selected[0] === "__none__" ? <span>Sin contacto</span> : <span>{selected[0]}</span>;
+  } else {
+    label = <span>{selected.length} contactos</span>;
+  }
+
+  const MiniCheck = ({ on }: { on: boolean }) => (
+    <div className={`w-3 h-3 rounded-[2px] border flex items-center justify-center shrink-0 transition-colors ${on ? "bg-navy border-navy" : "border-navy/30"}`}>
+      {on && (
+        <svg width="8" height="6" viewBox="0 0 9 7" fill="none" className="text-app-bg">
+          <polyline points="1,3.5 3.5,6 8,1" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      )}
+    </div>
+  );
+
+  return (
+    <div ref={wrapRef} className={`relative ${className}`}>
+      <button
+        ref={btnRef}
+        onClick={handleToggle}
+        className={`flex items-center gap-2 text-sm border rounded-xl px-3 py-2 bg-card outline-none transition-colors cursor-pointer whitespace-nowrap w-full ${
+          selected.length > 0 ? "border-primary/40 text-navy font-medium" : "border-navy/[0.12] text-navy hover:border-navy/30"
+        }`}
+        style={{ minWidth: "130px" }}
+      >
+        <span className="flex-1 text-left text-sm truncate">{label}</span>
+        {selected.length > 0 ? (
+          <span
+            onClick={(e) => { e.stopPropagation(); onChange([]); }}
+            className="text-navy/40 hover:text-navy/70 transition-colors shrink-0 leading-none"
+          >✕</span>
+        ) : (
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-navy/35 shrink-0">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        )}
+      </button>
+      {open && dropPos && createPortal(
+        <div
+          ref={dropRef}
+          className="fixed z-[9999] bg-card border border-navy/10 rounded-xl shadow-xl overflow-y-auto py-1"
+          style={{ top: dropPos.top, left: dropPos.left, minWidth: "15rem", maxHeight: "18rem" }}
+        >
+          <button
+            onClick={() => toggle("__none__")}
+            className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-navy/[0.04] transition-colors"
+          >
+            <MiniCheck on={selected.includes("__none__")} />
+            <span className="w-[18px] h-[18px] rounded-full bg-navy/[0.06] shrink-0" />
+            <span className="text-navy/50">Sin contacto</span>
+          </button>
+          {sortedContacts.map((c) => (
+            <button
+              key={c.id}
+              onClick={() => toggle(c.label)}
+              className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-navy/[0.04] transition-colors"
+            >
+              <MiniCheck on={selected.includes(c.label)} />
+              <Avatar seed={c.label} initials={contactInitials(c.label)} logoDomain={knownDomain(c.label)} size={18} />
+              <span className="text-navy/70 truncate">{c.label}</span>
+            </button>
+          ))}
+        </div>,
+        document.body
+      )}
+    </div>
+  );
+}
+
 /** Pill visual de categoría, sin interacción - para mostrar en sitios de solo lectura como
  * la tabla de contactos. CategoryPill la usa por dentro para el botón interactivo. */
 export function CategoryBadge({ category, categories, hideIcon = false, rounded = "rounded-[6px]" }: { category: string | null; categories: Category[]; hideIcon?: boolean; rounded?: string }) {
@@ -347,13 +462,11 @@ export function originLabel(method: string): string {
 }
 
 export function MoreOptionsMenu({
-  onlyRecurring, setOnlyRecurring, onlyNoContact, setOnlyNoContact, originFilter, setOriginFilter,
+  onlyRecurring, setOnlyRecurring, originFilter, setOriginFilter,
   amountMin, setAmountMin, amountMax, setAmountMax,
 }: {
   onlyRecurring: boolean;
   setOnlyRecurring: (v: boolean | ((prev: boolean) => boolean)) => void;
-  onlyNoContact: boolean;
-  setOnlyNoContact: (v: boolean | ((prev: boolean) => boolean)) => void;
   originFilter: string;
   setOriginFilter: (v: string) => void;
   amountMin: string;
@@ -387,7 +500,7 @@ export function MoreOptionsMenu({
   }
 
   const activeCount =
-    (onlyRecurring ? 1 : 0) + (onlyNoContact ? 1 : 0) + (originFilter !== "all" ? 1 : 0) +
+    (onlyRecurring ? 1 : 0) + (originFilter !== "all" ? 1 : 0) +
     (amountMin !== "" || amountMax !== "" ? 1 : 0);
   const hasActive = activeCount > 0;
 
@@ -463,17 +576,6 @@ export function MoreOptionsMenu({
               <path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15"/>
             </svg>
             Solo recurrentes
-          </button>
-          <button
-            onClick={() => setOnlyNoContact((v) => !v)}
-            className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left transition-colors ${
-              onlyNoContact ? "text-navy font-medium bg-navy/[0.04]" : "text-navy/60 hover:bg-navy/[0.04]"
-            }`}
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="17" y1="8" x2="23" y2="14"/><line x1="23" y1="8" x2="17" y2="14"/>
-            </svg>
-            Sin contacto
           </button>
         </div>,
         document.body
@@ -582,7 +684,7 @@ export default function TransaccionesList({
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [showAddCash, setShowAddCash] = useState(false);
   const [onlyRecurring, setOnlyRecurring] = useState(false);
-  const [onlyNoContact, setOnlyNoContact] = useState(false);
+  const [contactFilters, setContactFilters] = useState<string[]>([]);
   const [directionFilter, setDirectionFilter] = useState<"all" | "in" | "out">("all");
   const [amountMin, setAmountMin] = useState("");
   const [amountMax, setAmountMax] = useState("");
@@ -658,7 +760,7 @@ export default function TransaccionesList({
     if (expandedCatFilters.length > 0 && !expandedCatFilters.includes(t.category ?? "__none__")) return false;
     if (originFilter !== "all" && t.payment_method !== originFilter) return false;
     if (onlyRecurring && !recurringPeriods[t.id]) return false;
-    if (onlyNoContact && (t.contact ?? "").trim() !== "") return false;
+    if (contactFilters.length > 0 && !contactFilters.includes((t.contact ?? "").trim() || "__none__")) return false;
     return true;
   });
 
@@ -702,7 +804,7 @@ export default function TransaccionesList({
 
   // ── Paginación (desktop) - corta sortedFiltered/filtered antes de agrupar por mes,
   // así cada página tiene siempre PAGE_SIZE movimientos aunque abarque varios meses.
-  useEffect(() => { setPage(0); }, [search, catFilters, originFilter, onlyRecurring, onlyNoContact, directionFilter, amountMin, amountMax, currentRange, sortKey, sortDir]);
+  useEffect(() => { setPage(0); }, [search, catFilters, originFilter, onlyRecurring, contactFilters, directionFilter, amountMin, amountMax, currentRange, sortKey, sortDir]);
   const totalPages = Math.max(1, Math.ceil(sortedFiltered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages - 1);
   const pagedFlat = isMobile ? sortedFiltered : sortedFiltered.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
@@ -817,6 +919,7 @@ export default function TransaccionesList({
     <div>
       <TransaccionesListV2
         categories={categories}
+        contacts={contacts}
         uncategorizedCount={uncategorizedCount}
         search={search}
         onSearchChange={setSearch}
@@ -826,8 +929,8 @@ export default function TransaccionesList({
         onOriginFilterChange={setOriginFilter}
         onlyRecurring={onlyRecurring}
         onToggleOnlyRecurring={() => setOnlyRecurring((v) => !v)}
-        onlyNoContact={onlyNoContact}
-        onToggleOnlyNoContact={() => setOnlyNoContact((v) => !v)}
+        contactFilters={contactFilters}
+        onContactFiltersChange={setContactFilters}
         directionFilter={directionFilter}
         onDirectionFilterChange={setDirectionFilter}
         amountMin={amountMin}
