@@ -816,7 +816,13 @@ function PersonCard({
   async function handleArchive() {
     setConfirmArchive(false);
     setArchiving(true);
-    await onArchive();
+    // onArchive() atrapa sus propios errores (ver handleArchive del padre) y nunca los relanza,
+    // así que sin el finally, si falla, el botón se quedaba en "Archivando…" para siempre.
+    try {
+      await onArchive();
+    } finally {
+      setArchiving(false);
+    }
   }
 
   const TrashIcon = () => (
