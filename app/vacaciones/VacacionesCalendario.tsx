@@ -249,7 +249,8 @@ function SugerenciasBlock({ personas, festivos }: { personas: Persona[]; festivo
 }
 
 // ── Cálculo de vacaciones según ET art. 38 ───────────────────────────────────
-// 22 días laborables/año para jornada completa (5d/sem), prorrateados por:
+// 23 días laborables/año para jornada completa (5d/sem, por convenio - el mínimo legal son 22),
+// prorrateados por:
 //   - fracción de jornada (jornadaDias/5)
 //   - días restantes del año desde la fecha de inicio
 
@@ -425,6 +426,7 @@ function AñadirAusenciaModal({
   const [dateFrom, setDateFrom] = useState(TODAY);
   const [dateTo, setDateTo] = useState(TODAY);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const existingDates = getAbsenceDates(persona, absenceType);
   const isVacaciones = absenceType === "vacaciones";
@@ -445,12 +447,13 @@ function AñadirAusenciaModal({
   async function handleSolicitar(close: () => void) {
     if (newDates.length === 0) return;
     setSaving(true);
+    setError(null);
     try {
       await onAdd(absenceType, newDates);
       close();
     } catch (err) {
       console.error("Error al guardar ausencia:", err);
-      alert("Error al guardar. Comprueba la consola.");
+      setError("Error al guardar. Inténtalo de nuevo.");
     } finally {
       setSaving(false);
     }
@@ -571,6 +574,9 @@ function AñadirAusenciaModal({
 
             {alreadyExists && (
               <p className="text-xs text-warning ml-11">Este día ya está registrado.</p>
+            )}
+            {error && (
+              <p className="text-xs text-danger ml-11">{error}</p>
             )}
           </div>
 
@@ -794,6 +800,7 @@ function PersonCard({
   const [showAddModal, setShowAddModal] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [archiving, setArchiving] = useState(false);
+  const [confirmArchive, setConfirmArchive] = useState(false);
   const colors = PERSON_COLORS[idx % PERSON_COLORS.length];
   const used = inYear(persona.vacaciones).length;
   const total = totalVacaciones(persona);
@@ -807,7 +814,7 @@ function PersonCard({
   const past = allRanges.filter((r) => r.end < TODAY);
 
   async function handleArchive() {
-    if (!confirm(`¿Archivar a ${persona.nombre}? No aparecerá en la lista de instructores activos.`)) return;
+    setConfirmArchive(false);
     setArchiving(true);
     await onArchive();
   }
@@ -973,13 +980,31 @@ function PersonCard({
             <DiasExtraEditor current={persona.diasExtra} onSave={onUpdateDiasExtra} />
           )}
           {editMode && (
-            <button
-              onClick={handleArchive}
-              disabled={archiving}
-              className="mt-2 w-full text-xs text-navy/45 hover:text-danger border border-navy/10 hover:border-danger/30 rounded-lg py-2 transition-colors disabled:opacity-40"
-            >
-              {archiving ? "Archivando…" : "Archivar instructor"}
-            </button>
+            confirmArchive ? (
+              <div className="mt-2 flex items-center gap-2">
+                <p className="flex-1 text-xs text-navy/55">No aparecerá en instructores activos.</p>
+                <button
+                  onClick={() => setConfirmArchive(false)}
+                  className="text-xs text-navy/40 hover:text-navy transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleArchive}
+                  disabled={archiving}
+                  className="text-xs font-semibold text-danger hover:text-danger/80 transition-colors disabled:opacity-50"
+                >
+                  {archiving ? "Archivando…" : "Sí, archivar"}
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setConfirmArchive(true)}
+                className="mt-2 w-full text-xs text-navy/45 hover:text-danger border border-navy/10 hover:border-danger/30 rounded-lg py-2 transition-colors"
+              >
+                Archivar instructor
+              </button>
+            )
           )}
         </div>
 
@@ -1324,9 +1349,14 @@ export default function VacacionesCalendario({
   const [loadingArchivados, setLoadingArchivados] = useState(false);
   const [unarchivingId, setUnarchivingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  // Aviso de error a la vista, en vez de un alert() nativo del navegador (sin estilo, rompe
+  // con el resto de la app) - un solo hueco para las tres acciones de PersonCard, que no viven
+  // dentro de ningún modal donde mostrarlo en línea.
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   async function handleDelete(id: string, nombre: string) {
-    if (!confirm(`¿Eliminar definitivamente a ${nombre}? Esta acción no se puede deshacer.`)) return;
+    setConfirmDeleteId(null);
     setDeletingId(id);
     try {
       await deletePersonaAction(id);
@@ -1395,7 +1425,7 @@ export default function VacacionesCalendario({
       router.refresh();
     } catch (err) {
       setPersonas(snapshot);
-      alert("Error al eliminar. Comprueba la consola.");
+      setErrorMsg("Error al eliminar la ausencia. Inténtalo de nuevo.");
       console.error(err);
     }
   }, [router, personas]);
@@ -1408,7 +1438,7 @@ export default function VacacionesCalendario({
       router.refresh();
     } catch (err) {
       setPersonas(snapshot);
-      alert("Error al guardar días extra. Comprueba la consola.");
+      setErrorMsg("Error al guardar los días extra. Inténtalo de nuevo.");
       console.error(err);
     }
   }, [router, personas]);
@@ -1421,7 +1451,7 @@ export default function VacacionesCalendario({
       router.refresh();
     } catch (err) {
       setPersonas(snapshot);
-      alert("Error al archivar. Comprueba la consola.");
+      setErrorMsg("Error al archivar. Inténtalo de nuevo.");
       console.error(err);
     }
   }, [router, personas]);
@@ -1502,27 +1532,61 @@ export default function VacacionesCalendario({
                       Contrato: {p.inicio_contrato?.split("-").reverse().join("/")} · {p.dias_totales} días/año
                     </p>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <button
-                      onClick={() => handleUnarchive(p.id)}
-                      disabled={unarchivingId === p.id}
-                      className="text-xs font-semibold text-primary border border-primary/30 hover:bg-primary/5 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40"
-                    >
-                      {unarchivingId === p.id ? "Reactivando…" : "Reactivar"}
-                    </button>
-                    <button
-                      onClick={() => handleDelete(p.id, p.nombre)}
-                      disabled={deletingId === p.id}
-                      className="text-xs font-semibold text-danger/70 border border-danger/20 hover:bg-danger/5 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40"
-                    >
-                      {deletingId === p.id ? "…" : "Eliminar"}
-                    </button>
-                  </div>
+                  {confirmDeleteId === p.id ? (
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-xs text-navy/55 whitespace-nowrap">¿Definitivo?</span>
+                      <button
+                        onClick={() => setConfirmDeleteId(null)}
+                        className="text-xs text-navy/40 hover:text-navy transition-colors"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        onClick={() => handleDelete(p.id, p.nombre)}
+                        disabled={deletingId === p.id}
+                        className="text-xs font-semibold text-danger hover:text-danger/80 transition-colors disabled:opacity-50"
+                      >
+                        {deletingId === p.id ? "Eliminando…" : "Sí, eliminar"}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        onClick={() => handleUnarchive(p.id)}
+                        disabled={unarchivingId === p.id}
+                        className="text-xs font-semibold text-primary border border-primary/30 hover:bg-primary/5 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-40"
+                      >
+                        {unarchivingId === p.id ? "Reactivando…" : "Reactivar"}
+                      </button>
+                      <button
+                        onClick={() => setConfirmDeleteId(p.id)}
+                        className="text-xs font-semibold text-danger/70 border border-danger/20 hover:bg-danger/5 px-3 py-1.5 rounded-lg transition-colors"
+                      >
+                        Eliminar
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
           )}
         </Drawer>
+      )}
+
+      {/* Aviso de error de guardado - sustituye a los alert() nativos que rompían con el
+          estilo del resto de la app y no respetaban modo oscuro */}
+      {errorMsg && (
+        <div className="flex items-center justify-between gap-3 bg-danger/[0.06] border border-danger/20 rounded-[14px] px-4 py-3">
+          <p className="text-sm text-danger">{errorMsg}</p>
+          <button
+            onClick={() => setErrorMsg(null)}
+            className="shrink-0 text-danger/50 hover:text-danger transition-colors"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
       )}
 
       {/* Alertas de solapamiento */}
