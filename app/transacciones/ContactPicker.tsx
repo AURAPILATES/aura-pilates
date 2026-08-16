@@ -153,9 +153,10 @@ export default function ContactPicker({
             <button
               key={c.id}
               onClick={() => pick(c)}
-              className={`w-full text-left px-3 py-1.5 text-xs hover:bg-navy/[0.04] transition-colors ${c.label === value ? "font-semibold text-navy" : "text-navy/70"}`}
+              className={`w-full flex items-center gap-2 text-left px-3 py-1.5 text-xs hover:bg-navy/[0.04] transition-colors ${c.label === value ? "font-semibold text-navy" : "text-navy/70"}`}
             >
-              {c.label}
+              <Avatar seed={c.label} initials={initials(c.label)} logoDomain={knownDomain(c.label)} size={20} />
+              <span className="truncate">{c.label}</span>
             </button>
           ))}
           {showCreate && (
