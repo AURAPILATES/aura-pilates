@@ -46,7 +46,7 @@ export default function ClientesShell({ customers, payments, clients, urbanClien
       )}
       {mounted.compras && (
         <div className={tab === "compras" ? "tab-fade-in" : "hidden"}>
-          <ClientesMatrizCompras customers={customers} payments={payments} />
+          <ClientesMatrizCompras customers={customers} payments={payments} urbanClients={urbanClients} />
         </div>
       )}
       {mounted.urban && (

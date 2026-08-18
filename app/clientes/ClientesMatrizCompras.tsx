@@ -4,11 +4,17 @@ import { useEffect, useMemo, useState } from "react";
 import { normalizeText } from "@/lib/normalizeText";
 import { drawerNav } from "@/lib/drawerNav";
 import type { StripePayment } from "@/lib/stripePayments";
+import type { UrbanClientRow } from "@/lib/clientActivityV2";
 import type { CustomerRow } from "./ClientesTable";
 import CustomerDrawer from "./CustomerDrawer";
 import ClientesMatrizComprasV2 from "./ClientesMatrizComprasV2";
+import ClientesMatrizProductoV2 from "./ClientesMatrizProductoV2";
+import FilterPillGroupV2 from "@/app/components/v2/FilterPillGroupV2";
 
 export const PRODUCT_FILTERS = ["Bàsic", "Plus", "Pro", "Pack 4 clases", "Pack 8 clases", "Pack Benvinguda", "Clase suelta"];
+// Filas del resumen "por producto": los productos conocidos + "Otro" (pagos que no casan con
+// ningún precio, p.ej. con cupón) + "Urban" (asistencia, no pago individual - ver productRows).
+const PRODUCT_ROWS = [...PRODUCT_FILTERS, "Otro", "Urban"];
 
 const MONTHS_ES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 
@@ -43,6 +49,7 @@ export function productColor(product: string): string {
 type Props = {
   customers: CustomerRow[];
   payments: StripePayment[];
+  urbanClients: UrbanClientRow[];
 };
 
 export type MatrixRow = {
@@ -55,12 +62,24 @@ export type MatrixRow = {
   purchaseCount: number;
 };
 
+// Fila del resumen "por producto" (a diferencia de MatrixRow, que es por cliente): cuántos
+// alumnos distintos y cuánto ingresó cada producto cada mes - Urban incluido, aunque su
+// "importe" venga de la tarifa estimada (lib/clientActivityV2.ts) y no de un cobro Stripe real.
+export type ProductRow = {
+  product: string;
+  byMonth: Record<string, { count: number; amount: number }>;
+  totalCount: number;
+  totalAmount: number;
+};
+
 export const PURCHASE_COUNT_FILTERS = ["1", "2", "3", "4", "5+"];
 
 export type SortKey = "name" | "total" | "first";
+type View = "cliente" | "producto";
 const PAGE_SIZE = 100;
 
-export default function ClientesMatrizCompras({ customers, payments }: Props) {
+export default function ClientesMatrizCompras({ customers, payments, urbanClients }: Props) {
+  const [view, setView] = useState<View>("cliente");
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("total");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
@@ -108,6 +127,78 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
   }, [customers, payments]);
 
   const lastMonth = months[months.length - 1];
+
+  // Resumen "por producto": agrupa directamente los pagos de Stripe (Bàsic/Plus/Pro/Packs) más
+  // la matriz de Urban ya calculada aparte (Urban no cobra por Stripe, así que su "importe" sale
+  // de la tarifa estimada de lib/clientActivityV2.ts, no de un pago real por alumno).
+  // "Otro" recoge cualquier pago que no case con ningún precio conocido (p.ej. con cupón) - sin
+  // esto esos pagos desaparecían sin dejar rastro y la suma de la tabla no cuadraba con el
+  // ingreso real de Stripe del periodo.
+  const productRows = useMemo(() => {
+    const byProductMonth = new Map<string, Map<string, { customers: Set<string>; amount: number }>>();
+    // Alumnos DISTINTOS del producto en todo el periodo, no la suma de los recuentos mensuales -
+    // sumar meses cuenta varias veces a quien repite (lo habitual en una suscripción mensual).
+    const byProductTotal = new Map<string, Set<string>>();
+    function bucket(product: string, month: string) {
+      if (!byProductMonth.has(product)) byProductMonth.set(product, new Map());
+      const byMonth = byProductMonth.get(product)!;
+      if (!byMonth.has(month)) byMonth.set(month, { customers: new Set(), amount: 0 });
+      return byMonth.get(month)!;
+    }
+    function addCustomer(product: string, month: string, customerId: string) {
+      bucket(product, month).customers.add(customerId);
+      if (!byProductTotal.has(product)) byProductTotal.set(product, new Set());
+      byProductTotal.get(product)!.add(customerId);
+    }
+    for (const p of payments) {
+      const product = PRODUCT_FILTERS.includes(p.inferredProduct) ? p.inferredProduct : "Otro";
+      const month = p.date.slice(0, 7);
+      bucket(product, month).amount += p.amount;
+      if (p.customerId) addCustomer(product, month, p.customerId);
+    }
+    for (const r of urbanClients) {
+      for (const [month, act] of Object.entries(r.byMonth)) {
+        if (!act.classes) continue;
+        bucket("Urban", month).amount += act.estimated;
+        addCustomer("Urban", month, String(r.memberId));
+      }
+    }
+    return PRODUCT_ROWS.map((product) => {
+      const byMonthSrc = byProductMonth.get(product);
+      const byMonth: Record<string, { count: number; amount: number }> = {};
+      let totalAmount = 0;
+      for (const m of months) {
+        const cell = byMonthSrc?.get(m);
+        const count = cell?.customers.size ?? 0;
+        const amount = cell?.amount ?? 0;
+        byMonth[m] = { count, amount };
+        totalAmount += amount;
+      }
+      const totalCount = byProductTotal.get(product)?.size ?? 0;
+      return { product, byMonth, totalCount, totalAmount };
+    });
+  }, [payments, urbanClients, months]);
+
+  function downloadProductCsv() {
+    const header = ["Producto", ...months.map((m) => `${monthLabel(m)} (alumnos)`), ...months.map((m) => `${monthLabel(m)} (€)`), "Total alumnos", "Total €"];
+    const rows = productRows.map((r) => [
+      r.product,
+      ...months.map((m) => String(r.byMonth[m].count)),
+      ...months.map((m) => r.byMonth[m].amount.toFixed(2)),
+      String(r.totalCount),
+      r.totalAmount.toFixed(2),
+    ]);
+    const csv = [header, ...rows]
+      .map((row) => row.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `compras-por-producto-${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 
   const visibleMatrix = useMemo(() => {
     const q = normalizeText(search).trim();
@@ -189,7 +280,7 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
     URL.revokeObjectURL(url);
   }
 
-  if (matrix.length === 0) return null;
+  if (matrix.length === 0 && urbanClients.length === 0) return null;
 
   function toggleSort(key: SortKey) {
     if (sortKey === key) {
@@ -201,35 +292,51 @@ export default function ClientesMatrizCompras({ customers, payments }: Props) {
   }
 
   return (
-    <div className="flex flex-col items-center">
-      <ClientesMatrizComprasV2
-        search={search}
-        onSearchChange={setSearch}
-        productFilter={productFilter}
-        onProductFilterChange={setProductFilter}
-        firstPurchaseFilter={firstPurchaseFilter}
-        onFirstPurchaseFilterChange={setFirstPurchaseFilter}
-        purchaseCountFilter={purchaseCountFilter}
-        onPurchaseCountFilterChange={setPurchaseCountFilter}
-        onlyInactive={onlyInactive}
-        onToggleOnlyInactive={() => setOnlyInactive((v) => !v)}
-        onlyUpsell={onlyUpsell}
-        onToggleOnlyUpsell={() => setOnlyUpsell((v) => !v)}
-        lastMonth={lastMonth}
-        months={months}
-        rows={pageRows}
-        sortKey={sortKey}
-        sortDir={sortDir}
-        onToggleSort={toggleSort}
-        monthTotals={monthTotals}
-        grandTotal={grandTotal}
-        totalCount={visibleMatrix.length}
-        page={safePage}
-        pageSize={PAGE_SIZE}
-        onPageChange={setPage}
-        onRowClick={setSelected}
-        onExportCsv={downloadCsv}
-      />
+    <div className="flex flex-col items-center w-full">
+      <div className="self-start mb-3">
+        <FilterPillGroupV2
+          variant="segmented"
+          active={view}
+          onChange={setView}
+          options={[
+            { key: "cliente", label: "Por cliente" },
+            { key: "producto", label: "Por producto" },
+          ]}
+        />
+      </div>
+
+      {view === "producto" ? (
+        <ClientesMatrizProductoV2 months={months} rows={productRows} onExportCsv={downloadProductCsv} />
+      ) : (
+        <ClientesMatrizComprasV2
+          search={search}
+          onSearchChange={setSearch}
+          productFilter={productFilter}
+          onProductFilterChange={setProductFilter}
+          firstPurchaseFilter={firstPurchaseFilter}
+          onFirstPurchaseFilterChange={setFirstPurchaseFilter}
+          purchaseCountFilter={purchaseCountFilter}
+          onPurchaseCountFilterChange={setPurchaseCountFilter}
+          onlyInactive={onlyInactive}
+          onToggleOnlyInactive={() => setOnlyInactive((v) => !v)}
+          onlyUpsell={onlyUpsell}
+          onToggleOnlyUpsell={() => setOnlyUpsell((v) => !v)}
+          lastMonth={lastMonth}
+          months={months}
+          rows={pageRows}
+          sortKey={sortKey}
+          sortDir={sortDir}
+          onToggleSort={toggleSort}
+          monthTotals={monthTotals}
+          grandTotal={grandTotal}
+          totalCount={visibleMatrix.length}
+          page={safePage}
+          pageSize={PAGE_SIZE}
+          onPageChange={setPage}
+          onRowClick={setSelected}
+          onExportCsv={downloadCsv}
+        />
+      )}
       {selected && (() => {
         const { prev, next } = drawerNav(visibleMatrix.map((r) => r.customer), selected.id, (c) => c.id);
         return (
