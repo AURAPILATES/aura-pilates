@@ -1,4 +1,4 @@
-import type { StripePayment } from "./stripePayments";
+import type { StripePayment, ProductPriceCandidate } from "./stripePayments";
 import type { MomenceV2MembershipCatalog } from "./momenceV2";
 
 const MONTH_LABELS: Record<string, string> = {
@@ -19,6 +19,15 @@ export function catalogFromMomenceV2(items: MomenceV2MembershipCatalog[]): Catal
   return items
     .filter((m) => !m.disabled)
     .map((m) => ({ name: m.name, price: m.price, type: m.type }));
+}
+
+// Catálogo para identificar cobros de Stripe por importe (Ventas por Producto, Retención por
+// cohorte): a diferencia de catalogFromMomenceV2, incluye el precio de RESPALDO además del
+// vigente (ver resolveProductMap en stripePayments.ts) y nombres canónicos en español - así un
+// cambio de precio histórico no deja cobros antiguos sin identificar, y las claves coinciden con
+// StripePayment.inferredProduct (mismo origen), que es justo lo que usan los drawers para filtrar.
+export function catalogFromStripeProductMap(candidates: ProductPriceCandidate[]): CatalogItem[] {
+  return candidates.map((c) => ({ name: c.name, price: c.amount, type: c.type }));
 }
 
 export type ProductRevenueRow = {

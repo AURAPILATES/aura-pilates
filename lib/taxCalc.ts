@@ -40,3 +40,40 @@ export function ivaRepercutidoFromGross(amount: number, ivaRate: number = 21): n
 export function netIvaAPagar(ivaRepercutido: number, ivaSoportado: number): number {
   return ivaRepercutido - ivaSoportado;
 }
+
+const MONTH_ABBR_ES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+
+export type FiscalObligationSource = { label: string; date: string; deadline: string; quarter: string };
+
+/**
+ * Vencimientos trimestrales de IVA (Modelo 303) e IRPF (Modelo 130): el día 20 del mes
+ * siguiente al trimestre, incluido T4 (aquí se mantiene también a 20 de enero, mismo
+ * criterio que ya usaba la app antes de esta función - a confirmar con la gestoría si el
+ * vencimiento real de Hacienda para el resumen anual de IVA es el 30 de enero).
+ *
+ * Genera una ventana rodante en vez de fechas fijas: antes era un array hardcodeado solo
+ * para los trimestres de 2026, que se quedaba sin "próxima obligación" a partir de 2027.
+ */
+export function generateFiscalObligations(
+  referenceDate: Date,
+  quartersBack = 2,
+  quartersAhead = 4,
+): FiscalObligationSource[] {
+  const obligations: FiscalObligationSource[] = [];
+  const curYear = referenceDate.getFullYear();
+  const curQuarter = Math.ceil((referenceDate.getMonth() + 1) / 3);
+  const curIndex = curYear * 4 + (curQuarter - 1);
+
+  for (let i = curIndex - quartersBack; i <= curIndex + quartersAhead; i++) {
+    const year = Math.floor(i / 4);
+    const q = (i % 4) + 1; // 1..4
+    const deadlineMonth = q === 4 ? 1 : q * 3 + 1;
+    const deadlineYear = q === 4 ? year + 1 : year;
+    const deadline = `${deadlineYear}-${String(deadlineMonth).padStart(2, "0")}-20`;
+    const date = `20 ${MONTH_ABBR_ES[deadlineMonth - 1]}`;
+    const quarter = `${year}-Q${q}`;
+    obligations.push({ label: q === 4 ? "IVA T4 / Anual" : `IVA T${q}`, date, deadline, quarter });
+    obligations.push({ label: `IRPF T${q}`, date, deadline, quarter });
+  }
+  return obligations;
+}

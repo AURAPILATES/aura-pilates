@@ -74,13 +74,19 @@ export const getPricingReport = unstable_cache(
   { revalidate: 1800, tags: ["momence"] },
 );
 
+export type ProductPriceCandidate = { amount: number; name: string; type: "subscription" | "pack" };
+
 // Cada producto puede tener DOS precios candidatos válidos: el vigente hoy en Momence y el de
 // respaldo del código (última revisión manual). Antes solo se aceptaba el vigente, así que un
 // cambio de precio de un día para otro reclasificaba mal (o mandaba a "Con cupón") todos los
 // cobros históricos hechos al precio anterior. Aceptar ambos evita esa corrupción retroactiva;
 // no soluciona el caso de un descuento puntual que coincida con el precio de otro producto, eso
 // solo lo resuelve /host/sales de Momence (ver docs/fuentes-de-datos.md).
-async function resolveProductMap(): Promise<typeof PRODUCT_MAP> {
+//
+// Única fuente de "¿a qué producto corresponde este importe?" de toda la app - reutilizada
+// también por revenueByProductByMonth (productRevenue.ts) e isSubscriptionAmount
+// (subscriptionCohort.ts), que antes tenían cada una su propia copia sin el precio de respaldo.
+export async function resolveProductMap(): Promise<ProductPriceCandidate[]> {
   const report = await getPricingReport();
   const map: typeof PRODUCT_MAP = [];
   for (const r of report) {

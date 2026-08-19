@@ -11,17 +11,17 @@ const MONTH_LABELS: Record<string, string> = {
 export type BreakevenPoint = {
   month: string;        // "YYYY-MM"
   label: string;        // "Ene 2026"
-  revenue: number;       // ingresos del mes (Stripe + Urban Sports Club)
+  revenue: number;       // ingresos del mes (Stripe neto de comisión + Urban Sports Club)
   expenses: number;      // gastos del mes (operacionales + inversión inicial)
   cumRevenue: number;
   cumExpenses: number;
   cumNet: number;        // cumRevenue - cumExpenses
 };
 
-// Ingresos totales desde el inicio: Stripe (todo, no solo suscripciones) + Urban Sports Club
-// (USC paga por transferencia mensual, reconocido por su contacto en el banco - ver
-// urbanRevenueByMonth -, no en Stripe). Gastos: operacionales + inversión inicial (mismas
-// categorías que el resto de Finanzas).
+// Ingresos totales desde el inicio: Stripe neto de comisión (todo, no solo suscripciones) +
+// Urban Sports Club (USC paga por transferencia mensual, reconocido por su contacto en el
+// banco - ver urbanRevenueByMonth -, no en Stripe). Gastos: operacionales + inversión inicial
+// (mismas categorías que el resto de Finanzas).
 export function computeBreakeven(
   payments: StripePayment[],
   uscByMonth: Map<string, number>,
@@ -31,7 +31,10 @@ export function computeBreakeven(
   const revByMonth = new Map<string, number>();
   for (const p of payments) {
     const m = p.date.slice(0, 7);
-    revByMonth.set(m, (revByMonth.get(m) ?? 0) + p.amount);
+    // Neto (lo que llega al banco), no bruto: la comisión de Stripe nunca aparece como
+    // movimiento bancario (Stripe ingresa ya neto), así que sumar el bruto aquí infla el
+    // acumulado por todo el histórico de comisiones - "Ventas por Fuente" ya la resta al lado.
+    revByMonth.set(m, (revByMonth.get(m) ?? 0) + p.net);
   }
   for (const [m, amount] of uscByMonth) {
     revByMonth.set(m, (revByMonth.get(m) ?? 0) + amount);

@@ -63,6 +63,21 @@ export function occupancyRate(events: MomenceEvent[]) {
   return totalCapacity > 0 ? totalSold / totalCapacity : 0;
 }
 
+// Igual que occupancyRate/totalStudents pero a partir de asistencia real (checkedIn, API v2)
+// en vez de reservas (ticketsSold, API v1) - para los KPI de cabecera de Analítica › Clientes,
+// que antes usaban reservas mientras "Evolución de la ocupación" un scroll más abajo ya usa
+// asistencia real desde que se migró a V2 (mismos no-shows contados de más en el KPI viejo).
+// `SessionOccRow` se define más abajo, junto a occupancyByPeriodV2/occupancyHeatmapV2.
+export function occupancyRateV2(rows: SessionOccRow[]) {
+  const totalCapacity = rows.reduce((sum, r) => sum + r.capacity, 0);
+  const totalAttended = rows.reduce((sum, r) => sum + r.checked_in_count, 0);
+  return totalCapacity > 0 ? totalAttended / totalCapacity : 0;
+}
+
+export function avgAttendedPerClassV2(rows: SessionOccRow[]) {
+  return rows.length > 0 ? rows.reduce((sum, r) => sum + r.checked_in_count, 0) / rows.length : 0;
+}
+
 export function revenueByDay(events: MomenceEvent[]) {
   const map = new Map<string, number>();
   for (const e of events) {

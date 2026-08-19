@@ -3,10 +3,13 @@
 import { useState } from "react";
 import ChartCard from "@/components/charts/ChartCard";
 import Drawer from "@/app/components/Drawer";
+import TablePaginationV2 from "@/app/components/v2/TablePaginationV2";
 import { StripeIcon, MomenceIcon } from "@/components/icons/SourceIcons";
 import { momenceCustomerUrl } from "@/lib/momenceLinks";
 import { fmt } from "@/lib/analytics";
 import type { AtRiskV2, AtRiskReason, AtRiskItem, AtRiskCustomerInfo } from "@/lib/atRiskV2";
+
+const PAGE_SIZE = 10;
 
 const BADGE: Record<AtRiskReason, string> = {
   "Congelada": "bg-navy/[0.06] text-navy/70",
@@ -69,6 +72,7 @@ export default function NecesitaAtencion({
   customerInfo: Record<string, AtRiskCustomerInfo>;
 }) {
   const [selected, setSelected] = useState<AtRiskItem | null>(null);
+  const [page, setPage] = useState(0);
 
   if (!data.date) {
     return <ChartCard title="Necesita atención" subtitle="Aún no hay snapshot de suscripciones v2" />;
@@ -86,6 +90,9 @@ export default function NecesitaAtencion({
   }
 
   const info = selected ? customerInfo[selected.email.toLowerCase()] : undefined;
+  const totalPages = Math.max(1, Math.ceil(data.items.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages - 1);
+  const pageItems = data.items.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE);
 
   return (
     <>
@@ -131,7 +138,7 @@ export default function NecesitaAtencion({
               </tr>
             </thead>
             <tbody>
-              {data.items.map((it, i) => {
+              {pageItems.map((it, i) => {
                 const ci = customerInfo[it.email.toLowerCase()];
                 return (
                   <tr
@@ -162,6 +169,10 @@ export default function NecesitaAtencion({
             </tbody>
           </table>
         </div>
+
+        {totalPages > 1 && (
+          <TablePaginationV2 page={safePage} totalItems={data.items.length} pageSize={PAGE_SIZE} onPageChange={setPage} />
+        )}
       </ChartCard>
 
       {selected && (

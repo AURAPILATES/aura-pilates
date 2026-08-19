@@ -6,6 +6,7 @@ import { BarChart2, Activity } from "react-feather";
 import { ChartCard, ChartTypeToggle, ToggleGroup, InteractiveLegend, CollapsibleTable } from "@/components/charts";
 import { pctDelta } from "@/components/charts/DeltaBadge";
 import { pct } from "@/lib/analytics";
+import { ivaRepercutidoFromGross } from "@/lib/taxCalc";
 import Drawer from "@/app/components/Drawer";
 import type { IngresosPorFuenteRow } from "./IngresosPorFuenteBody";
 import type { EvolucionRow } from "./EvolucionIngresosBody";
@@ -131,11 +132,13 @@ export default function VentasPor({
   // ── Vista "fuente" (Stripe vs. Urban) ──
   const uscNet     = uscGross;
   const totalBruto = stripeGross + uscNet;
-  const ventasNetas = totalBruto - stripeFees - totalBruto * 0.21;
+  // El bruto ya incluye el 21% de IVA - hay que EXTRAERLO (gross - gross/1.21 ≈ 17,36% del
+  // bruto), no restar un 21% plano del bruto, que descontaría más IVA del que de verdad lleva.
+  const ventasNetas = totalBruto - stripeFees - ivaRepercutidoFromGross(totalBruto);
   const grouped = groupByPeriod(monthly, period);
 
   const totalBrutoComp = stripeGrossComp + uscGrossComp;
-  const ventasNetasComp = totalBrutoComp - stripeFeesComp - totalBrutoComp * 0.21;
+  const ventasNetasComp = totalBrutoComp - stripeFeesComp - ivaRepercutidoFromGross(totalBrutoComp);
   const ventasDelta   = pctDelta(totalBruto, totalBrutoComp);
   const comisionDelta = pctDelta(stripeFees, stripeFeesComp, true);
   const netasDelta    = pctDelta(ventasNetas, ventasNetasComp);

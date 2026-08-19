@@ -54,14 +54,7 @@ export default function Financiacion({
 
   return (
     <ChartCard
-      title={
-        <span className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-          <span className="whitespace-nowrap">Amortización préstamo</span>
-          <span className="text-[11px] font-semibold text-warning bg-warning/10 px-2 py-0.5 rounded-full whitespace-nowrap self-start">
-            Falta cuadro de amortización
-          </span>
-        </span>
-      }
+      title="Amortización préstamo"
       headerAction={
         !editing && (
           <button
@@ -145,6 +138,7 @@ export default function Financiacion({
                   </div>
                 );
               })}
+              <p className="text-[11px] text-navy/35">Falta cuadro de amortización: el % es sobre el límite total, no ajustado por cuotas ya pagadas mes a mes.</p>
             </div>
           )}
         </>

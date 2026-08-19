@@ -68,6 +68,10 @@ export function computeSpent(
     if (!kw && bankKws.length === 0) { result[b.id] = 0; continue; }
     result[b.id] = txns
       .filter((t) => {
+        // Solo salidas: sin este filtro, el propio desembolso del préstamo (importe positivo)
+        // cuenta como "gastado" si comparte contacto/palabra clave con las cuotas (probable,
+        // mismo banco) - mismo criterio que financingExpensesByCategory en lib/transactions.ts.
+        if (t.amount >= 0) return false;
         if (kw && t.contact?.toLowerCase().includes(kw)) return true;
         if (bankKws.length === 0) return false;
         const concept = t.concept?.toLowerCase() ?? "";

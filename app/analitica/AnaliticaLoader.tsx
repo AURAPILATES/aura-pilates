@@ -1,8 +1,8 @@
-import { fmt, filterActive, occupancyRate, totalStudents } from "@/lib/analytics";
+import { fmt, filterActive, occupancyRateV2, avgAttendedPerClassV2 } from "@/lib/analytics";
 import { pctDelta } from "@/components/charts/DeltaBadge";
 import { saveHistoricalEvents, loadHistoricalEvents } from "@/lib/history";
 import { getLatestSyncRuns } from "@/lib/syncRuns";
-import { taxBreakdown, fiscalQuarterOf, ivaRepercutidoFromGross, netIvaAPagar } from "@/lib/taxCalc";
+import { taxBreakdown, fiscalQuarterOf, ivaRepercutidoFromGross, netIvaAPagar, generateFiscalObligations } from "@/lib/taxCalc";
 import { benvingudaConversion, subscriberFirstPurchase } from "@/lib/sales";
 import PrimeraCompra from "./instances/PrimeraCompra";
 import {
@@ -14,6 +14,7 @@ import {
   totalNet as stripeTotalNet,
   toSales,
   activeCustomersByMonth,
+  resolveProductMap,
 } from "@/lib/stripePayments";
 import { loadStripeCustomers } from "@/lib/stripeCustomers";
 import { buildPrimaryIdMap, enrichCustomers, hasActiveSub } from "@/lib/customerEnrichment";
@@ -42,18 +43,15 @@ import { getTeacherStatsV2 } from "@/lib/teacherStatsV2";
 import { getSessionOccupancyRowsV2 } from "@/lib/occupancyV2";
 import { getTeacherConversionV2 } from "@/lib/teacherConversionV2";
 import { getTeacherLtvV2 } from "@/lib/teacherLtvV2";
-import LtvNuevosAlumnos from "./instances/LtvNuevosAlumnos";
 import { getSubscriberFirstClassV2 } from "@/lib/subscriberFirstClassV2";
 import { urbanActivityByMonth, attendanceByChannelMonth } from "@/lib/clientActivityV2";
 import { buildChannelEconomics } from "@/lib/channelEconomics";
 import EconomiaPorCanal from "./instances/EconomiaPorCanal";
 import { loadUrbanRates } from "@/lib/urbanRates";
-import RendimientoProfesoras from "./instances/RendimientoProfesoras";
-import ConversionProfesora from "./instances/ConversionProfesora";
-import PrimeraClaseSuscriptores from "./instances/PrimeraClaseSuscriptores";
+import ProfesoraInsights from "./instances/ProfesoraInsights";
 import { getEvents } from "@/lib/momence";
 import { getMembershipsV2 } from "@/lib/momenceV2";
-import { catalogFromMomenceV2, revenueByProductByMonth } from "@/lib/productRevenue";
+import { catalogFromStripeProductMap, revenueByProductByMonth } from "@/lib/productRevenue";
 import { computeSubscriptionCohorts, computeRetentionCohorts } from "@/lib/subscriptionCohort";
 import RetencionCohorte from "./instances/RetencionCohorte";
 import SuscripcionesBase from "./instances/SuscripcionesBase";
@@ -62,6 +60,7 @@ import { loadBusinessEvents } from "@/lib/businessEvents";
 import { loadPaymentErrorAcks } from "@/lib/paymentErrorAcks";
 import { pad2 } from "@/lib/periodCalculation";
 import AnaliticaKPIs from "./AnaliticaKPIs";
+import ClientesJumpNav from "./ClientesJumpNav";
 import ClientesPaymentsBreakdown from "@/app/clientes/ClientesPaymentsBreakdown";
 import PrevisionGastos from "./PrevisionGastos";
 import GastoPorOrigen, { type OriginSpend } from "./instances/GastoPorOrigen";
@@ -170,15 +169,19 @@ export default async function AnaliticaLoader({
   const curMonth  = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}`;
 
   const [
-    paymentsAll, membershipsV2,
+    paymentsAll, membershipsV2, productPriceCandidates,
     txnsAll, dbCategories, budgets, businessEvents, recurringExpenses, breakdown, breakdownComp,
     bancoLastImport, paymentErrorAcks, syncRuns, liveEventsResult, historicalMomenceEvents,
-    teacherStatsV2, sessionOccupancyRowsV2,
+    teacherStatsV2, sessionOccupancyRowsV2, sessionOccupancyRowsV2Comp,
   ] = await Promise.all([
     loadStripePaymentsCached(),
     // Catálogo de membresías/packs desde la API pública v2 (OAuth2, cacheada 30 min) - a
     // diferencia de getEvents() más abajo, no depende del token de sesión de la API interna.
     getMembershipsV2().catch(() => []),
+    // Catálogo de precio (vigente + respaldo) para identificar cobros de Stripe por importe -
+    // única fuente reutilizada por Ventas por Producto y Retención por cohorte (antes cada una
+    // tenía su propia copia sin el precio de respaldo, ver lib/stripePayments.ts).
+    resolveProductMap().catch(() => []),
     loadTransactionsCached(null, null),
     loadCategoriesCached(),
     loadBudgetsCached(),
@@ -199,6 +202,9 @@ export default async function AnaliticaLoader({
     // Live desde la API v2; si Momence v2 falla, no debe tumbar toda la página.
     getTeacherStatsV2(mainFrom, mainTo).catch(() => null),
     getSessionOccupancyRowsV2(mainFrom, mainTo).catch(() => []),
+    // Mismo dato pero del período de comparación, para los KPI de ocupación/media por clase
+    // de cabecera (ver occupancyRateV2/avgAttendedPerClassV2 en lib/analytics.ts).
+    getSessionOccupancyRowsV2(compFrom, compTo).catch(() => []),
   ]);
 
   const liveMomenceEvents = liveEventsResult.ok ? liveEventsResult.events : [];
@@ -224,10 +230,13 @@ export default async function AnaliticaLoader({
     const d = new Date(e.dateTime);
     return d >= new Date(compFrom + "T00:00:00") && d <= new Date(compTo + "T23:59:59");
   });
-  const occupancyAvg = occupancyRate(mainEvents);
-  const avgPerClass  = mainEvents.length > 0 ? totalStudents(mainEvents) / mainEvents.length : 0;
-  const occupancyAvgComp = occupancyRate(compEvents);
-  const avgPerClassComp  = compEvents.length > 0 ? totalStudents(compEvents) / compEvents.length : 0;
+  // Asistencia real (checkedIn, API v2), no reservas (ticketsSold, API v1, mainEvents/compEvents
+  // más arriba) - mismo criterio que "Evolución de la ocupación" un scroll más abajo, para que
+  // los dos "ocupación" de la misma pestaña midan lo mismo (antes este KPI incluía no-shows).
+  const occupancyAvg = occupancyRateV2(sessionOccupancyRowsV2);
+  const avgPerClass  = avgAttendedPerClassV2(sessionOccupancyRowsV2);
+  const occupancyAvgComp = occupancyRateV2(sessionOccupancyRowsV2Comp);
+  const avgPerClassComp  = avgAttendedPerClassV2(sessionOccupancyRowsV2Comp);
 
   // La carga en vivo de Momence puede ir bien aunque el snapshot nocturno haya fallado
   // (p.ej. token caducado a las 3am) - eso afectaría a métricas de bajas/altas que
@@ -263,7 +272,8 @@ export default async function AnaliticaLoader({
   const revComp    = stripeTotalRevenue(pComp);
   const stripeFeesComp = stripeTotalFees(pComp);
 
-  const productCatalog = catalogFromMomenceV2(membershipsV2);
+  const productCatalog = catalogFromStripeProductMap(productPriceCandidates);
+  const subscriptionPriceCandidates = productPriceCandidates.filter((c) => c.type === "subscription");
 
   // Las transacciones guardan el `value` de la categoría (no el `label`, que puede cambiar
   // p.ej. al convertir "Electricidad" en la subcategoría "Luz"), así que el lookup va por value.
@@ -273,11 +283,14 @@ export default async function AnaliticaLoader({
 
   // ── Gasto por origen de pago (banco / efectivo / socios) ───────────────────
   // Salidas reales del período (importe negativo), excluyendo traspasos internos, agrupadas
-  // por la cuenta/persona de la que sale el dinero. Mismo criterio "cashflow" que el desglose.
+  // por la cuenta/persona de la que sale el dinero. Incluye financiación (cuotas de préstamo:
+  // sí salen de una cuenta real) a diferencia de isCashflowTransaction - solo excluye traspasos
+  // internos - para que el "Total" cuadre con el de Desglose de gastos, que también la suma.
   const originExpenseMap = new Map<PaymentMethod, OriginSpend>();
   for (const t of txnsMain) {
     if (t.amount >= 0) continue;
-    if (!isCashflowTransaction(t, dbCategories)) continue;
+    const originCat = t.category ? findCategory(dbCategories, t.category) : undefined;
+    if (originCat?.group_type === "internal") continue;
     const acc = originExpenseMap.get(t.payment_method) ?? { origin: t.payment_method, total: 0, count: 0, txns: [] };
     acc.total += Math.abs(t.amount);
     acc.count += 1;
@@ -399,8 +412,8 @@ export default async function AnaliticaLoader({
   const channelActivityByMonth = await attendanceByChannelMonth().catch(() => new Map());
   const channelEconomics = buildChannelEconomics(monthlyByFuente, channelActivityByMonth);
 
-  const subscriptionCohorts = computeSubscriptionCohorts(paymentsAll, subscriptionTiers, primaryIdMap);
-  const retentionCohorts = computeRetentionCohorts(paymentsAll, subscriptionTiers, 4, primaryIdMap);
+  const subscriptionCohorts = computeSubscriptionCohorts(paymentsAll, subscriptionPriceCandidates, primaryIdMap);
+  const retentionCohorts = computeRetentionCohorts(paymentsAll, subscriptionPriceCandidates, 4, primaryIdMap);
 
   const transactionsByCategory: Record<string, { date: string; amount: number; concept: string; contact: string }[]> = {};
   for (const t of txnsMain) {
@@ -508,13 +521,7 @@ export default async function AnaliticaLoader({
   const today = new Date();
   const daysUntil = (d: string) =>
     Math.ceil((new Date(d).getTime() - today.getTime()) / 86_400_000);
-  const obligations = [
-    { label: "IVA T2",         date: "20 jul", deadline: "2026-07-20", quarter: "2026-Q2" },
-    { label: "IRPF T2",        date: "20 jul", deadline: "2026-07-20", quarter: "2026-Q2" },
-    { label: "IVA T3",         date: "20 oct", deadline: "2026-10-20", quarter: "2026-Q3" },
-    { label: "IRPF T3",        date: "20 oct", deadline: "2026-10-20", quarter: "2026-Q3" },
-    { label: "IVA T4 / Anual", date: "20 ene", deadline: "2027-01-20", quarter: "2026-Q4" },
-  ];
+  const obligations = generateFiscalObligations(today);
 
   // ── IVA soportado / retenciones practicadas por trimestre, a partir de las reglas de
   // contacto (Configuración → Contactos) aplicadas en cada movimiento al importarlo ──
@@ -777,7 +784,10 @@ export default async function AnaliticaLoader({
                 quarterClosed={nextIvaQuarterClosed}
                 obligations={obligations
                   .map(({ label, deadline }) => ({ label, deadline, days: daysUntil(deadline) }))
-                  .filter((o) => o.days >= 0)}
+                  // Antes se recortaba en days >= 0: una obligación recién vencida sin marcar
+                  // como gestionada desaparecía de golpe en vez de avisar. Se conserva un margen
+                  // de 20 días vencida (IvaRetenciones ya la pinta como "Venció hace X d").
+                  .filter((o) => o.days >= -20)}
                 rows={quarterlyFiscalRows}
                 lastUpdated={bancoLastUpdated}
               />
@@ -787,35 +797,49 @@ export default async function AnaliticaLoader({
         clientes={
           <section>
             <div className="space-y-4">
-              <AnaliticaKPIs
-                customers={customers}
-                convertCandidates={convertCandidates}
-                activeSubEmailsV2={activeSubEmailsV2}
-                spendPerClient={spendPerClient}
-                occupancyAvg={occupancyAvg}
-                avgPerClass={avgPerClass}
-                spendPerClientComp={spendPerClientComp}
-                occupancyAvgComp={occupancyAvgComp}
-                avgPerClassComp={avgPerClassComp}
-              />
-              <SuscripcionesBase data={subscriptionsBaseV2} />
-              <EvolucionMRR data={mrrHistoryV2} />
-              <NecesitaAtencion data={atRiskV2} customerInfo={atRiskCustomerInfo} />
-              <EvolucionInscritos data={activeCustomersData} />
-              <HorarioReporting
-                data={{
-                  rows: sessionOccupancyRowsV2,
-                  periodLabel,
-                  periodFrom: mainFrom,
-                  periodTo: mainTo,
-                  businessEvents,
-                }}
-              />
-              <RendimientoProfesoras data={teacherStatsV2} dateRange={periodLabel} />
-              <ConversionProfesora data={teacherConversionV2} />
-              <LtvNuevosAlumnos data={teacherLtvV2} />
-              <PrimeraClaseSuscriptores data={subscriberFirstClassV2} />
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <ClientesJumpNav />
+              <div id="clientes-resumen">
+                <AnaliticaKPIs
+                  customers={customers}
+                  convertCandidates={convertCandidates}
+                  activeSubEmailsV2={activeSubEmailsV2}
+                  spendPerClient={spendPerClient}
+                  occupancyAvg={occupancyAvg}
+                  avgPerClass={avgPerClass}
+                  spendPerClientComp={spendPerClientComp}
+                  occupancyAvgComp={occupancyAvgComp}
+                  avgPerClassComp={avgPerClassComp}
+                />
+              </div>
+              <div id="clientes-suscripcion" className="space-y-4">
+                <SuscripcionesBase data={subscriptionsBaseV2} />
+                <EvolucionMRR data={mrrHistoryV2} />
+              </div>
+              <div id="clientes-atencion">
+                <NecesitaAtencion data={atRiskV2} customerInfo={atRiskCustomerInfo} />
+              </div>
+              <div id="clientes-actividad" className="space-y-4">
+                <EvolucionInscritos data={activeCustomersData} />
+                <HorarioReporting
+                  data={{
+                    rows: sessionOccupancyRowsV2,
+                    periodLabel,
+                    periodFrom: mainFrom,
+                    periodTo: mainTo,
+                    businessEvents,
+                  }}
+                />
+              </div>
+              <div id="clientes-profesoras">
+                <ProfesoraInsights
+                  dateRange={periodLabel}
+                  teacherStats={teacherStatsV2}
+                  teacherConversion={teacherConversionV2}
+                  teacherLtv={teacherLtvV2}
+                  subscriberFirstClass={subscriberFirstClassV2}
+                />
+              </div>
+              <div id="clientes-adquisicion" className="space-y-4">
                 <PrimeraCompra summary={firstPurchaseSummary} />
                 <ClientesPaymentsBreakdown
                   succeeded={totalRev}
@@ -835,9 +859,11 @@ export default async function AnaliticaLoader({
                     failed: breakdownComp.failed,
                   }}
                 />
+                <ConversionPack summary={conversionSummary} />
               </div>
-              <ConversionPack summary={conversionSummary} />
-              <RetencionCohorte cohorts={retentionCohorts} />
+              <div id="clientes-cohortes">
+                <RetencionCohorte cohorts={retentionCohorts} />
+              </div>
             </div>
           </section>
         }

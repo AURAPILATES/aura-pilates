@@ -1,5 +1,4 @@
-import type { StripePayment } from "./stripePayments";
-import type { SubscriptionTier } from "./mrr";
+import type { StripePayment, ProductPriceCandidate } from "./stripePayments";
 
 const MONTH_LABELS: Record<string, string> = {
   "01": "Ene", "02": "Feb", "03": "Mar", "04": "Abr",
@@ -19,8 +18,11 @@ export type MonthlySubStats = {
   reactivated: number;
 };
 
-function isSubscriptionAmount(amount: number, tiers: SubscriptionTier[]): boolean {
-  return tiers.some((t) => Math.abs(amount - t.price) <= PRICE_TOLERANCE);
+// `tiers` incluye precio vigente Y de respaldo por plan (ver resolveProductMap en
+// stripePayments.ts) - así un cambio de precio histórico no deja cobros antiguos sin
+// identificar (antes solo se aceptaba el precio de hoy, y esos pagos se leían como "bajas").
+function isSubscriptionAmount(amount: number, tiers: ProductPriceCandidate[]): boolean {
+  return tiers.some((t) => Math.abs(amount - t.amount) <= PRICE_TOLERANCE);
 }
 
 // Reconstruye altas/bajas/reactivaciones mes a mes a partir del historial completo
@@ -32,7 +34,7 @@ function isSubscriptionAmount(amount: number, tiers: SubscriptionTier[]): boolea
 // por persona real en vez de por perfil de Stripe; si se omite, agrupa por stripeId en bruto.
 export function computeSubscriptionCohorts(
   payments: StripePayment[],
-  tiers: SubscriptionTier[],
+  tiers: ProductPriceCandidate[],
   primaryIdMap?: Map<string, string>,
 ): MonthlySubStats[] {
   const subPayments = payments.filter((p) => p.customerId && isSubscriptionAmount(p.amount, tiers));
@@ -114,7 +116,7 @@ function addMonths(ym: string, k: number): string {
 // `primaryIdMap`: ver computeSubscriptionCohorts.
 export function computeRetentionCohorts(
   payments: StripePayment[],
-  tiers: SubscriptionTier[],
+  tiers: ProductPriceCandidate[],
   maxOffset = 4,
   primaryIdMap?: Map<string, string>,
 ): RetentionCohortRow[] {
