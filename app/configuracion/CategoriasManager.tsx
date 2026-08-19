@@ -735,7 +735,7 @@ export default function CategoriasManager({
               </div>
 
               {/* Categoría padre */}
-              <Field label={<>Categoría padre <span className="font-normal text-navy/35">(opcional, para crear una subcategoría)</span></>}>
+              <Field label={<>Categoría padre <span className="font-normal text-navy/35">(opcional)</span></>}>
                 {parentOptions.length === 0 ? (
                   <p className="text-navy/45 leading-snug">
                     {editingHeight >= MAX_DEPTH
@@ -743,7 +743,7 @@ export default function CategoriasManager({
                       : "No hay ninguna categoría bajo la que anidar esta."}
                   </p>
                 ) : (
-                  <Select variant="bare" value={form.parent_id ?? ""} onChange={(e) => handleParentSelect(e.target.value)}>
+                  <Select variant="bare" className="flex-1 min-w-0" value={form.parent_id ?? ""} onChange={(e) => handleParentSelect(e.target.value)}>
                     <option value="">- Sin categoría padre -</option>
                     {parentOptions.map((c) => (
                       <option key={c.id} value={c.id}>{categoryDisplayLabel(c, categories)}</option>
@@ -752,14 +752,12 @@ export default function CategoriasManager({
                 )}
               </Field>
 
-              {/* Clasificación: Grupo + Naturaleza agrupados bajo el mismo epígrafe, porque
-                  Naturaleza es una subdivisión que solo existe dentro del grupo Operacional
-                  (no son dos campos independientes, aunque se guarden en columnas separadas). */}
-              <div className="p-3.5 bg-navy/[0.03] border border-navy/[0.08] rounded-xl space-y-4">
-                <label className="block text-xs font-medium text-navy/55">Clasificación</label>
-
-                {hasParent ? (
-                  <div>
+              {/* Clasificación: Grupo + Naturaleza agrupados porque Naturaleza es una subdivisión
+                  que solo existe dentro del grupo Operacional (no son dos campos independientes,
+                  aunque se guarden en columnas separadas). */}
+              {hasParent ? (
+                <Field label="Clasificación" align="start">
+                  <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="text-xs px-3 py-1.5 rounded-full bg-navy/[0.07] text-navy/70 font-medium">
                         {GROUP_LABELS[form.group_type]}
@@ -774,75 +772,43 @@ export default function CategoriasManager({
                       Heredado de {parentCat ? `"${parentCat.label}"` : "la categoría padre"}. Quita la categoría padre arriba para fijarlo a mano.
                     </p>
                   </div>
-                ) : (
-                  <>
-                    <div>
-                      <p className="text-[11px] font-medium text-navy/55 mb-2">Grupo</p>
-                      <div className="grid grid-cols-3 gap-2">
+                </Field>
+              ) : (
+                <>
+                  <div>
+                    <Field label="Grupo">
+                      <Select
+                        variant="bare"
+                        className="flex-1 min-w-0"
+                        value={form.group_type}
+                        onChange={(e) => setForm((f) => ({ ...f, group_type: e.target.value as GroupType }))}
+                      >
                         {GROUP_ORDER.map((g) => (
-                          <button
-                            key={g}
-                            onClick={() => setForm((f) => ({ ...f, group_type: g }))}
-                            title={GROUP_HELP[g]}
-                            className={`text-xs px-3 py-2 rounded-xl border transition-colors ${
-                              form.group_type === g
-                                ? "border-navy bg-navy/[0.06] text-navy font-semibold"
-                                : "border-navy/[0.10] text-navy/50 hover:border-navy/20"
-                            }`}
-                          >
-                            {GROUP_LABELS[g]}
-                          </button>
+                          <option key={g} value={g} title={GROUP_HELP[g]}>{GROUP_LABELS[g]}</option>
                         ))}
-                      </div>
-                    </div>
+                      </Select>
+                    </Field>
+                    <p className="text-[11px] text-navy/35 mt-1.5">{GROUP_HELP[form.group_type]}</p>
+                  </div>
 
-                    {form.group_type === "operational" && (
-                      <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <p className="text-[11px] font-medium text-navy/55">Naturaleza económica</p>
-                          {form.economic_group && (
-                            <button
-                              onClick={() => setForm((f) => ({ ...f, economic_group: null }))}
-                              className="text-[11px] text-primary/70 hover:text-primary underline underline-offset-2"
-                            >
-                              Volver a automático
-                            </button>
-                          )}
-                        </div>
-                        <div className="grid grid-cols-3 gap-2">
-                          {ECONOMIC_ORDER.map((eg) => {
-                            const isActive = economicGroupOf(form.label, form.economic_group) === eg;
-                            return (
-                              <button
-                                key={eg}
-                                onClick={() => setForm((f) => ({ ...f, economic_group: eg }))}
-                                title={ECONOMIC_HELP[eg]}
-                                className={`text-xs px-3 py-2 rounded-xl border transition-colors ${
-                                  isActive
-                                    ? "border-navy bg-navy/[0.06] text-navy font-semibold"
-                                    : "border-navy/[0.10] text-navy/50 hover:border-navy/20"
-                                }`}
-                              >
-                                {ECONOMIC_LABELS[eg]}
-                                {isActive && (
-                                  <span className="block text-[9px] font-normal opacity-55 mt-0.5">
-                                    {form.economic_group ? "fijado a mano" : "automático"}
-                                  </span>
-                                )}
-                              </button>
-                            );
-                          })}
-                        </div>
-                        <p className="text-[11px] text-navy/35 mt-1.5">
-                          {form.economic_group
-                            ? "Fijado a mano: no cambiará aunque renombres la categoría."
-                            : "Se deduce del nombre. Si lo fijas a mano, quedará congelado aunque cambies el nombre más adelante."}
-                        </p>
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
+                  {form.group_type === "operational" && (
+                    <div>
+                      <Field label="Naturaleza económica">
+                        <Select
+                          variant="bare"
+                          className="flex-1 min-w-0"
+                          value={economicGroupOf(form.label, form.economic_group)}
+                          onChange={(e) => setForm((f) => ({ ...f, economic_group: e.target.value as EconomicGroup }))}
+                        >
+                          {ECONOMIC_ORDER.map((eg) => (
+                            <option key={eg} value={eg} title={ECONOMIC_HELP[eg]}>{ECONOMIC_LABELS[eg]}</option>
+                          ))}
+                        </Select>
+                      </Field>
+                    </div>
+                  )}
+                </>
+              )}
 
               {/* Conceptos bancarios */}
               <div className="p-3.5 bg-primary/[0.06] border border-primary/15 rounded-xl">
