@@ -30,7 +30,7 @@ export default async function Analitica(props: {
         <div id="header-tabs" />
       </div>
 
-      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 pt-1.5 pb-16">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 pt-10 pb-16">
         <Suspense fallback={<AnaliticaSkeleton tab={activeTab} />}>
           <AnaliticaTabProvider>
             <AnaliticaTabNav />

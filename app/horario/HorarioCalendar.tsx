@@ -119,7 +119,7 @@ export default memo(function HorarioCalendar({
           return (
             <div
               key={i}
-              className={`py-3 px-3 border-r border-navy/[0.07] last:border-r-0 ${isToday ? "bg-primary/[0.06]" : ""}`}
+              className="py-3 px-3 border-r border-navy/[0.07] last:border-r-0"
             >
               <p className={`text-sm font-semibold ${isToday ? "text-primary" : "text-navy"}`}>
                 {label} {day.getDate()}
