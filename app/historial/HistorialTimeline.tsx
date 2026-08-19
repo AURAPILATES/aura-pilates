@@ -8,6 +8,7 @@ import { PrimaryButtonV2 } from "@/app/components/v2/ButtonsV2";
 import HeaderPortal from "@/app/components/HeaderPortal";
 import FilterPillGroupV2 from "@/app/components/v2/FilterPillGroupV2";
 import Select from "@/app/components/Select";
+import Field from "@/app/components/Field";
 import type { BusinessEvent, EventCategoria } from "@/lib/businessEvents";
 import { todayLocalISO } from "@/lib/dateRange";
 import { createBusinessEvent, updateBusinessEvent, deleteBusinessEvent } from "./actions";
@@ -85,48 +86,42 @@ function EventForm({
     >
       <div className="px-6 py-5 space-y-4">
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-medium text-navy/55 mb-1.5">Fecha</label>
+          <Field label="Fecha">
             <input
               type="date"
               value={form.fecha}
               onChange={(e) => set("fecha", e.target.value)}
-              className="w-full border border-navy/15 rounded-lg px-3 py-2 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-navy/30"
+              className="w-full text-sm text-navy bg-transparent outline-none"
             />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-navy/55 mb-1.5">Categoría</label>
-            <Select value={form.categoria} onChange={(e) => set("categoria", e.target.value as EventCategoria)}>
+          </Field>
+          <Field label="Categoría">
+            <Select variant="bare" value={form.categoria} onChange={(e) => set("categoria", e.target.value as EventCategoria)}>
               {CATEGORIAS.map((c) => (
                 <option key={c.value} value={c.value}>{c.label}</option>
               ))}
             </Select>
-          </div>
+          </Field>
         </div>
 
-        <div>
-          <label className="block text-xs font-medium text-navy/55 mb-1.5">Título</label>
+        <Field label="Título">
           <input
             type="text"
             value={form.titulo}
             onChange={(e) => set("titulo", e.target.value)}
             placeholder="Ej. Subida de precio mensual a 85€"
-            className="w-full border border-navy/15 rounded-lg px-3 py-2 text-sm text-navy placeholder:text-navy/30 focus:outline-none focus:ring-2 focus:ring-navy/30"
+            className="w-full text-sm text-navy bg-transparent outline-none placeholder:text-navy/30"
           />
-        </div>
+        </Field>
 
-        <div>
-          <label className="block text-xs font-medium text-navy/55 mb-1.5">
-            Descripción <span className="font-normal text-navy/35">(opcional)</span>
-          </label>
+        <Field label={<>Descripción <span className="font-normal text-navy/35">(opcional)</span></>} align="start">
           <textarea
             value={form.descripcion}
             onChange={(e) => set("descripcion", e.target.value)}
             placeholder="Detalles adicionales..."
             rows={3}
-            className="w-full border border-navy/15 rounded-lg px-3 py-2 text-sm text-navy placeholder:text-navy/30 focus:outline-none focus:ring-2 focus:ring-navy/30 resize-none"
+            className="w-full text-sm text-navy bg-transparent outline-none resize-none placeholder:text-navy/30"
           />
-        </div>
+        </Field>
 
         {error && (
           <p className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/15 border border-red-100 dark:border-red-500/30 rounded-lg px-3 py-2">

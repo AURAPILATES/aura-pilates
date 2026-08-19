@@ -18,6 +18,7 @@ export default function ContactPicker({
   placeholder = "Buscar contacto o crear…",
   disabled,
   commitOnBlur = false,
+  bare = false,
 }: {
   value: string;
   contacts: Contact[];
@@ -28,6 +29,8 @@ export default function ContactPicker({
    * vinculación inmediata (match exacto o contacto nuevo) - comportamiento del selector dentro
    * del detalle de movimiento, donde no hay un botón "Confirmar" separado. */
   commitOnBlur?: boolean;
+  /** Sin borde propio, para ir dentro de un <Field> (el fieldset ya pone el borde). */
+  bare?: boolean;
 }) {
   const [draft, setDraft] = useState(value);
   const [open, setOpen] = useState(false);
@@ -96,9 +99,9 @@ export default function ContactPicker({
   }
 
   return (
-    <div ref={wrapRef} className="relative">
+    <div ref={wrapRef} className={`relative ${bare ? "flex-1 min-w-0" : ""}`}>
       {draft.trim().length > 0 && (
-        <div className="absolute left-2 top-1/2 -translate-y-1/2 pointer-events-none">
+        <div className={`absolute top-1/2 -translate-y-1/2 pointer-events-none ${bare ? "left-0" : "left-2"}`}>
           <Avatar seed={draft} initials={initials(draft)} logoDomain={knownDomain(draft)} size={20} />
         </div>
       )}
@@ -120,7 +123,11 @@ export default function ContactPicker({
           if (e.key === "Escape") { setDraft(value); setOpen(false); (e.target as HTMLInputElement).blur(); }
         }}
         placeholder={placeholder}
-        className={`w-full text-sm font-medium text-navy border border-navy/[0.12] rounded-lg pr-8 py-2 outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15 transition disabled:opacity-50 ${draft.trim().length > 0 ? "pl-9" : "pl-3"}`}
+        className={
+          bare
+            ? `w-full text-sm font-medium text-navy bg-transparent border-0 outline-none pr-6 disabled:opacity-50 ${draft.trim().length > 0 ? "pl-7" : "pl-0"}`
+            : `w-full text-sm font-medium text-navy border border-navy/[0.12] rounded-lg pr-8 py-2 outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15 transition disabled:opacity-50 ${draft.trim().length > 0 ? "pl-9" : "pl-3"}`
+        }
       />
       {draft.trim().length > 0 ? (
         <button
@@ -129,7 +136,7 @@ export default function ContactPicker({
           disabled={disabled}
           tabIndex={-1}
           aria-label="Quitar contacto"
-          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-navy/35 hover:text-danger transition-colors disabled:opacity-50"
+          className={`absolute top-1/2 -translate-y-1/2 text-navy/35 hover:text-danger transition-colors disabled:opacity-50 ${bare ? "right-0" : "right-2.5"}`}
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
             <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
@@ -138,7 +145,7 @@ export default function ContactPicker({
       ) : (
         <svg
           width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-navy/30 pointer-events-none"
+          className={`absolute top-1/2 -translate-y-1/2 text-navy/30 pointer-events-none ${bare ? "right-0" : "right-2.5"}`}
         >
           <polyline points="6 9 12 15 18 9" />
         </svg>

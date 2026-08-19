@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Drawer from "@/app/components/Drawer";
 import Button, { SecondaryButton } from "@/app/components/Button";
+import Field from "@/app/components/Field";
 import { PrimaryButtonV2, IconButtonV2 } from "@/app/components/v2/ButtonsV2";
 import HeaderPortal from "@/app/components/HeaderPortal";
 import FilterPillGroupV2 from "@/app/components/v2/FilterPillGroupV2";
@@ -323,46 +324,39 @@ function NuevoInstructorModal({
       )}
     >
       <div className="px-6 py-5 space-y-4">
-        <div>
-          <label className="block text-xs font-medium text-navy/55 mb-1.5">Nombre</label>
+        <Field label="Nombre">
           <input
             type="text"
             value={nombre}
             onChange={(e) => setNombre(e.target.value)}
             placeholder="Nombre del instructor"
             autoFocus
-            className="w-full text-sm border border-navy/[0.12] rounded-lg px-4 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary/30 text-navy"
+            className="w-full text-sm text-navy bg-transparent outline-none placeholder:text-navy/30"
           />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-navy/55 mb-1.5">Inicio de contrato</label>
+        </Field>
+        <Field label="Inicio de contrato">
           <input
             type="date"
             value={inicioContrato}
             onChange={(e) => handleInicio(e.target.value)}
-            className="w-full text-sm border border-navy/[0.12] rounded-lg px-4 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary/30 text-navy"
+            className="w-full text-sm text-navy bg-transparent outline-none"
           />
-        </div>
+        </Field>
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-medium text-navy/55 mb-1.5">Días jornada/sem.</label>
+          <Field label="Días jornada/sem.">
             <input
               type="number" min={1} max={7} value={jornadaDias}
               onChange={(e) => handleJornada(Number(e.target.value))}
-              className="w-full text-sm border border-navy/[0.12] rounded-lg px-4 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary/30 text-navy"
+              className="w-full text-sm text-navy bg-transparent outline-none"
             />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-navy/55 mb-1.5">
-              Días vacaciones
-              {!userEdited && <span className="ml-1 text-[10px] text-primary/70 font-normal">· calculado</span>}
-            </label>
+          </Field>
+          <Field label={<>Días vacaciones {!userEdited && <span className="ml-1 text-[10px] text-primary/70 font-normal">· calculado</span>}</>}>
             <input
               type="number" min={0} max={365} value={diasTotales}
               onChange={(e) => handleDias(Number(e.target.value))}
-              className="w-full text-sm border border-navy/[0.12] rounded-lg px-4 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary/30 text-navy"
+              className="w-full text-sm text-navy bg-transparent outline-none"
             />
-          </div>
+          </Field>
         </div>
         {hint && (
           <p className="text-[11px] text-navy/40 leading-relaxed">
@@ -543,31 +537,36 @@ function AñadirAusenciaModal({
                 </svg>
               </div>
               <div className="flex-1 space-y-2">
-                <div>
-                  {duration === "range" && (
-                    <p className="text-xs font-medium text-navy/55 mb-1.5">Desde</p>
-                  )}
+                {duration === "range" ? (
+                  <Field label="Desde">
+                    <input
+                      type="date"
+                      value={dateFrom}
+                      onChange={(e) => {
+                        setDateFrom(e.target.value);
+                        if (e.target.value > dateTo) setDateTo(e.target.value);
+                      }}
+                      className="w-full text-sm text-navy bg-transparent outline-none"
+                    />
+                  </Field>
+                ) : (
                   <input
                     type="date"
                     value={dateFrom}
-                    onChange={(e) => {
-                      setDateFrom(e.target.value);
-                      if (duration === "range" && e.target.value > dateTo) setDateTo(e.target.value);
-                    }}
+                    onChange={(e) => setDateFrom(e.target.value)}
                     className="w-full text-sm border border-navy/[0.12] rounded-lg px-4 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary/30 text-navy"
                   />
-                </div>
+                )}
                 {duration === "range" && (
-                  <div>
-                    <p className="text-xs font-medium text-navy/55 mb-1.5">Hasta</p>
+                  <Field label="Hasta">
                     <input
                       type="date"
                       value={dateTo}
                       min={dateFrom}
                       onChange={(e) => setDateTo(e.target.value)}
-                      className="w-full text-sm border border-navy/[0.12] rounded-lg px-4 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary/30 text-navy"
+                      className="w-full text-sm text-navy bg-transparent outline-none"
                     />
-                  </div>
+                  </Field>
                 )}
               </div>
             </div>

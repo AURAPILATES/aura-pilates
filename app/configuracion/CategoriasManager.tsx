@@ -11,6 +11,7 @@ import { createCategory, updateCategory, deleteCategory, reorderCategories, upda
 import ChipsInput from "@/app/components/ChipsInput";
 import Button, { SecondaryButton, DeleteButton, DangerButtonSolid } from "@/app/components/Button";
 import Select from "@/app/components/Select";
+import Field from "@/app/components/Field";
 import { AutomationIcon } from "@/app/transacciones/NewContactDrawer";
 import CategoriasManagerV2 from "./CategoriasManagerV2";
 
@@ -633,33 +634,31 @@ export default function CategoriasManager({
             <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
 
               {/* Nombre */}
-              <div>
-                <label className="block text-xs font-medium text-navy/55 mb-1.5">Nombre</label>
+              <Field label="Nombre">
                 <input
                   type="text"
                   value={form.label}
                   onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))}
                   placeholder="Ej: Alquiler local"
-                  className="w-full text-sm border border-navy/[0.12] rounded-xl px-4 py-3 outline-none focus:border-navy/40 focus:ring-1 focus:ring-navy/20 text-navy placeholder:text-navy/30"
+                  className="w-full text-sm text-navy bg-transparent outline-none placeholder:text-navy/30"
                 />
-              </div>
+              </Field>
 
               {/* Color e Icono, en dos selectores compactos lado a lado */}
               <div ref={pickerWrapRef} className="grid grid-cols-2 gap-3">
                 {/* Color */}
-                <div className="relative">
-                  <label className="block text-xs font-medium text-navy/55 mb-1.5">Color</label>
+                <Field label="Color" className="relative">
                   {form.parent_id ? (
-                    <div className="flex items-center gap-2 border border-navy/[0.12] rounded-xl px-3 py-2.5" title="Hereda el tono de su categoría padre, con un matiz distinto para diferenciarla de sus hermanas.">
+                    <div className="flex items-center gap-2 flex-1 min-w-0" title="Hereda el tono de su categoría padre, con un matiz distinto para diferenciarla de sus hermanas.">
                       <span className="w-6 h-6 rounded-full shrink-0" style={{ backgroundColor: selectedColor }} />
                       <span className="text-[11px] text-navy/45 leading-tight">Hereda del padre</span>
                     </div>
                   ) : (
-                    <>
+                    <div className="relative flex-1 min-w-0">
                       <button
                         type="button"
                         onClick={() => setOpenPicker((p) => (p === "color" ? null : "color"))}
-                        className="w-full flex items-center justify-between gap-2 border border-navy/[0.12] rounded-xl px-3 py-2.5 hover:border-navy/40 transition-colors"
+                        className="w-full flex items-center justify-between gap-2 hover:opacity-80 transition-opacity"
                       >
                         <span className="w-6 h-6 rounded-full shrink-0" style={{ backgroundColor: selectedColor }} />
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={`text-navy/35 transition-transform ${openPicker === "color" ? "rotate-180" : ""}`}>
@@ -686,74 +685,72 @@ export default function CategoriasManager({
                           </div>
                         </div>
                       )}
-                    </>
-                  )}
-                </div>
-
-                {/* Icono */}
-                <div className="relative">
-                  <label className="block text-xs font-medium text-navy/55 mb-1.5">Icono</label>
-                  <button
-                    type="button"
-                    onClick={() => setOpenPicker((p) => (p === "icon" ? null : "icon"))}
-                    className="w-full flex items-center justify-between gap-2 border border-navy/[0.12] rounded-xl px-3 py-[7px] hover:border-navy/40 transition-colors"
-                  >
-                    <CategoryIcon iconKey={form.emoji} color={selectedColor} size={28} />
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={`text-navy/35 transition-transform ${openPicker === "icon" ? "rotate-180" : ""}`}>
-                      <polyline points="6 9 12 15 18 9" />
-                    </svg>
-                  </button>
-                  {openPicker === "icon" && (
-                    <div className="absolute z-20 top-full mt-1.5 right-0 w-[236px] max-w-[80vw] max-h-[240px] overflow-y-auto bg-card border border-navy/10 rounded-xl shadow-lg p-3">
-                      <div className="grid grid-cols-6 gap-2">
-                        {ICONS.map(({ key }) => {
-                          const isSelected = form.emoji === key;
-                          return (
-                            <button
-                              key={key}
-                              type="button"
-                              onClick={() => { handleIconSelect(key); setOpenPicker(null); }}
-                              className={`relative flex items-center justify-center rounded-full w-8 h-8 transition-all ${
-                                isSelected ? "scale-110" : "hover:scale-105"
-                              }`}
-                              style={{ backgroundColor: selectedColor }}
-                              title={key}
-                            >
-                              {isSelected && (
-                                <span className="absolute inset-0 rounded-full" style={{ boxShadow: `0 0 0 2px var(--color-card), 0 0 0 3.5px ${selectedColor}` }} />
-                              )}
-                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                {ICON_MAP.get(key)}
-                              </svg>
-                            </button>
-                          );
-                        })}
-                      </div>
                     </div>
                   )}
-                </div>
+                </Field>
+
+                {/* Icono */}
+                <Field label="Icono" className="relative">
+                  <div className="relative flex-1 min-w-0">
+                    <button
+                      type="button"
+                      onClick={() => setOpenPicker((p) => (p === "icon" ? null : "icon"))}
+                      className="w-full flex items-center justify-between gap-2 hover:opacity-80 transition-opacity"
+                    >
+                      <CategoryIcon iconKey={form.emoji} color={selectedColor} size={24} />
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={`text-navy/35 transition-transform ${openPicker === "icon" ? "rotate-180" : ""}`}>
+                        <polyline points="6 9 12 15 18 9" />
+                      </svg>
+                    </button>
+                    {openPicker === "icon" && (
+                      <div className="absolute z-20 top-full mt-1.5 right-0 w-[236px] max-w-[80vw] max-h-[240px] overflow-y-auto bg-card border border-navy/10 rounded-xl shadow-lg p-3">
+                        <div className="grid grid-cols-6 gap-2">
+                          {ICONS.map(({ key }) => {
+                            const isSelected = form.emoji === key;
+                            return (
+                              <button
+                                key={key}
+                                type="button"
+                                onClick={() => { handleIconSelect(key); setOpenPicker(null); }}
+                                className={`relative flex items-center justify-center rounded-full w-8 h-8 transition-all ${
+                                  isSelected ? "scale-110" : "hover:scale-105"
+                                }`}
+                                style={{ backgroundColor: selectedColor }}
+                                title={key}
+                              >
+                                {isSelected && (
+                                  <span className="absolute inset-0 rounded-full" style={{ boxShadow: `0 0 0 2px var(--color-card), 0 0 0 3.5px ${selectedColor}` }} />
+                                )}
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  {ICON_MAP.get(key)}
+                                </svg>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </Field>
               </div>
 
               {/* Categoría padre */}
-              <div>
-                <label className="block text-xs font-medium text-navy/55 mb-1.5">
-                  Categoría padre <span className="font-normal text-navy/35">(opcional, para crear una subcategoría)</span>
-                </label>
+              <Field label={<>Categoría padre <span className="font-normal text-navy/35">(opcional, para crear una subcategoría)</span></>}>
                 {parentOptions.length === 0 ? (
-                  <p className="text-[11px] text-navy/45 leading-snug bg-navy/[0.04] rounded-xl px-4 py-3">
+                  <p className="text-sm text-navy/45 leading-snug">
                     {editingHeight >= MAX_DEPTH
                       ? "Esta categoría ya tiene su propia jerarquía de subcategorías, así que no puede anidarse bajo otra (el máximo son tres niveles)."
                       : "No hay ninguna categoría bajo la que anidar esta."}
                   </p>
                 ) : (
-                  <Select value={form.parent_id ?? ""} onChange={(e) => handleParentSelect(e.target.value)}>
+                  <Select variant="bare" value={form.parent_id ?? ""} onChange={(e) => handleParentSelect(e.target.value)}>
                     <option value="">- Sin categoría padre -</option>
                     {parentOptions.map((c) => (
                       <option key={c.id} value={c.id}>{categoryDisplayLabel(c, categories)}</option>
                     ))}
                   </Select>
                 )}
-              </div>
+              </Field>
 
               {/* Clasificación: Grupo + Naturaleza agrupados bajo el mismo epígrafe, porque
                   Naturaleza es una subdivisión que solo existe dentro del grupo Operacional

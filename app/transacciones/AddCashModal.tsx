@@ -9,6 +9,7 @@ import Drawer from "@/app/components/Drawer";
 import Button, { SecondaryButton } from "@/app/components/Button";
 import Select from "@/app/components/Select";
 import UnitInput from "@/app/components/UnitInput";
+import Field from "@/app/components/Field";
 import { ToggleGroup } from "@/components/charts";
 import ContactPicker from "./ContactPicker";
 import { CategoryPill } from "./TransaccionesList";
@@ -168,42 +169,37 @@ export default function AddCashModal({ categories, contacts, onClose }: { catego
             className="[&_button]:py-2 [&_button]:text-[13px]"
           />
 
-          <div>
-            <label className="block text-xs font-medium text-navy/55 mb-1.5">Fecha</label>
+          <Field label="Fecha">
             <input
               type="date"
               value={date}
               onChange={(e) => { setDate(e.target.value); clearDuplicatesOnEdit(); }}
-              className="w-full border border-navy/[0.12] rounded-lg px-3 py-2 text-sm text-navy focus:outline-none focus:border-primary/40"
+              className="w-full text-sm text-navy bg-transparent outline-none"
             />
-          </div>
+          </Field>
 
-          <div>
-            <label className="block text-xs font-medium text-navy/55 mb-1.5">Importe</label>
+          <Field label="Importe">
             <UnitInput
               unit="€"
               unitSide="left"
               value={amount}
               onChange={(e) => { setAmount(e.target.value); clearDuplicatesOnEdit(); }}
               placeholder="0,00"
+              bare
             />
-          </div>
+          </Field>
 
-          <div>
-            <label className="block text-xs font-medium text-navy/55 mb-1.5">Concepto</label>
+          <Field label="Concepto">
             <input
               type="text"
               value={concept}
               onChange={(e) => { setConcept(e.target.value); clearDuplicatesOnEdit(); }}
               placeholder="ej: pago salario"
-              className="w-full border border-navy/[0.12] rounded-lg px-3 py-2 text-sm text-navy focus:outline-none focus:border-primary/40"
+              className="w-full text-sm text-navy bg-transparent outline-none placeholder:text-navy/30"
             />
-          </div>
+          </Field>
 
-          <div>
-            <label className="block text-xs font-medium text-navy/55 mb-1.5">
-              Contacto <span className="text-navy/35">(opcional)</span>
-            </label>
+          <Field label={<>Contacto <span className="font-normal text-navy/35">(opcional)</span></>}>
             <ContactPicker
               value={contactLabel}
               contacts={contacts}
@@ -220,37 +216,35 @@ export default function AddCashModal({ categories, contacts, onClose }: { catego
                   setContactId(null);
                 }
               }}
+              bare
             />
-          </div>
+          </Field>
 
-          <div>
-            <label className="block text-xs font-medium text-navy/55 mb-1.5">Descripción</label>
+          <Field label="Descripción" align="start">
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Notas adicionales…"
               rows={2}
-              className="w-full border border-navy/[0.12] rounded-lg px-3 py-2 text-sm text-navy focus:outline-none focus:border-primary/40 resize-none"
+              className="w-full text-sm text-navy bg-transparent outline-none resize-none placeholder:text-navy/30"
             />
-          </div>
+          </Field>
 
-          <div>
-            <label className="block text-xs font-medium text-navy/55 mb-1.5">Categoría</label>
+          <Field label="Categoría">
             <CategoryPill
               category={category || null}
               categories={categories}
               onChange={(cat) => { categoryTouched.current = true; setCategory(cat || ""); }}
             />
-          </div>
+          </Field>
 
-          <div>
-            <label className="block text-xs font-medium text-navy/55 mb-1.5">Origen del pago</label>
-            <Select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}>
+          <Field label="Origen del pago">
+            <Select variant="bare" value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}>
               {PAYMENT_METHODS.map((m) => (
                 <option key={m.value} value={m.value}>{m.label}</option>
               ))}
             </Select>
-          </div>
+          </Field>
 
           {error && <p className="text-sm text-danger">{error}</p>}
         </div>

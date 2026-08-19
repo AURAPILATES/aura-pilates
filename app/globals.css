@@ -37,6 +37,14 @@
   --radius-md: 0.3125rem;
 }
 
+/* Reserva siempre el hueco de la barra de scroll vertical, aunque no haga falta.
+   Sin esto, al filtrar contenido (p.ej. Horario) la página puede pasar de "con
+   scroll" a "sin scroll" y el ancho disponible cambia, desplazando horizontalmente
+   todo el contenido centrado (max-w/mx-auto). */
+html {
+  scrollbar-gutter: stable;
+}
+
 /* Base tipográfica y de scroll/selección del rediseño. */
 body {
   text-rendering: optimizeLegibility;

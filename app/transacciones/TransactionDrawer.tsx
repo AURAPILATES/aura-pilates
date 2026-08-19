@@ -6,6 +6,7 @@ import Drawer from "@/app/components/Drawer";
 import Button, { DeleteButton } from "@/app/components/Button";
 import Select from "@/app/components/Select";
 import Checkbox from "@/app/components/Checkbox";
+import Field from "@/app/components/Field";
 import type { Transaction, PaymentMethod } from "@/lib/transactions";
 import type { Category } from "@/lib/categories";
 import { PERIOD_BUCKETS } from "@/lib/recurring";
@@ -43,11 +44,10 @@ function originLabel(method: string): string {
   return method.charAt(0).toUpperCase() + method.slice(1);
 }
 
-function Field({ label, value, onSave }: { label: string; value: string; onSave: (v: string) => void }) {
+function EditableField({ label, value, onSave }: { label: string; value: string; onSave: (v: string) => void }) {
   const [draft, setDraft] = useState(value);
   return (
-    <div>
-      <p className="text-xs font-medium text-navy/55 mb-1.5">{label}</p>
+    <Field label={label}>
       <input
         type="text"
         value={draft}
@@ -57,9 +57,9 @@ function Field({ label, value, onSave }: { label: string; value: string; onSave:
           if (e.key === "Enter") { (e.target as HTMLInputElement).blur(); }
           if (e.key === "Escape") { setDraft(value); (e.target as HTMLInputElement).blur(); }
         }}
-        className="w-full text-sm font-medium text-navy border border-navy/[0.12] rounded-lg px-3 py-2 outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15 transition"
+        className="w-full text-sm font-medium text-navy bg-transparent outline-none"
       />
-    </div>
+    </Field>
   );
 }
 
@@ -69,7 +69,7 @@ function Field({ label, value, onSave }: { label: string; value: string; onSave:
  * bancarios) prellenado con los datos de este movimiento, igual que al crear uno desde
  * Configuración > Contactos. */
 function TransactionContactPicker({
-  transactionId, value, contacts, categories, concept, bankDetails, category, ivaRate, retencionRate, onSaved,
+  transactionId, value, contacts, categories, concept, bankDetails, category, ivaRate, retencionRate, onSaved, bare = false,
 }: {
   transactionId: string;
   value: string;
@@ -81,6 +81,7 @@ function TransactionContactPicker({
   ivaRate: number | null;
   retencionRate: number | null;
   onSaved: () => void;
+  bare?: boolean;
 }) {
   const [saving, setSaving] = useState(false);
   const [draftNewLabel, setDraftNewLabel] = useState<string | null>(null);
@@ -118,6 +119,7 @@ function TransactionContactPicker({
           else if (result.newLabel.trim()) setDraftNewLabel(result.newLabel);
           else link("");
         }}
+        bare={bare}
       />
       {draftNewLabel !== null && (
         <NewContactDrawer
@@ -249,9 +251,9 @@ function MarkRecurringControl({
         {checked && (
           <div className="flex flex-col gap-3 px-3 pb-3 pt-1 border-t border-primary/[0.12] mt-1">
             <div className="grid grid-cols-2 gap-3 pt-2">
-              <div>
-                <p className="text-xs font-medium text-navy/55 mb-1.5">Periodicidad</p>
+              <Field label="Periodicidad">
                 <Select
+                  variant="bare"
                   value={period}
                   disabled={periodSaving}
                   onChange={(e) => { setPeriod(e.target.value); save({ period: e.target.value }); }}
@@ -260,10 +262,10 @@ function MarkRecurringControl({
                     <option key={b.label} value={b.label}>{b.label}</option>
                   ))}
                 </Select>
-              </div>
-              <div>
-                <p className="text-xs font-medium text-navy/55 mb-1.5">Finaliza</p>
+              </Field>
+              <Field label="Finaliza">
                 <Select
+                  variant="bare"
                   value={endType}
                   disabled={periodSaving}
                   onChange={(e) => { const v = e.target.value as RecurringExpenseEndType; setEndType(v); save({ endType: v }); }}
@@ -272,7 +274,7 @@ function MarkRecurringControl({
                     <option key={o.value} value={o.value}>{o.label}</option>
                   ))}
                 </Select>
-              </div>
+              </Field>
             </div>
             {endType === "date" && (
               <input
@@ -508,14 +510,14 @@ export default function TransactionDrawer({
             value={isIncome ? "income" : "expense"}
             onChange={(v) => changeDirection(v === "income")}
             fullWidth
+            className="[&_button]:py-2 [&_button]:text-[13px]"
           />
         )}
 
-        <Field label="Concepto" value={t.concept ?? ""} onSave={(v) => onUpdateConcept(t.id, v)} />
-        <Field label="Más datos" value={t.bank_details ?? ""} onSave={(v) => onUpdateBankDetails(t.id, v)} />
+        <EditableField label="Concepto" value={t.concept ?? ""} onSave={(v) => onUpdateConcept(t.id, v)} />
+        <EditableField label="Más datos" value={t.bank_details ?? ""} onSave={(v) => onUpdateBankDetails(t.id, v)} />
 
-        <div>
-          <p className="text-xs font-medium text-navy/55 mb-1.5">Contacto</p>
+        <Field label="Contacto">
           <TransactionContactPicker
             transactionId={t.id}
             value={t.contact ?? ""}
@@ -527,53 +529,49 @@ export default function TransactionDrawer({
             ivaRate={t.iva_rate}
             retencionRate={t.retencion_rate}
             onSaved={() => router.refresh()}
+            bare
           />
-        </div>
+        </Field>
 
-        <div>
-          <p className="text-xs font-medium text-navy/55 mb-1.5">Categoría</p>
+        <Field label="Categoría">
           <CategoryPill category={t.category} categories={categories} onChange={(cat) => onUpdateCategory(t.id, cat)} />
-        </div>
+        </Field>
 
         <div className="grid grid-cols-2 gap-3 pt-2 border-t border-navy/[0.06]">
           <div>
-            <p className="text-xs font-medium text-navy/55 mb-1.5">Fecha</p>
-            {editableOrigin ? (
-              <input
-                type="date"
-                value={t.date}
-                onChange={(e) => onUpdateDate(t.id, e.target.value)}
-                className="text-sm text-navy border border-navy/[0.12] rounded-lg px-2 py-1 outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15 transition"
-              />
-            ) : (
-              <p className="text-sm text-navy">{fmtDate(t.date)}</p>
-            )}
+            <Field label="Fecha">
+              {editableOrigin ? (
+                <input
+                  type="date"
+                  value={t.date}
+                  onChange={(e) => onUpdateDate(t.id, e.target.value)}
+                  className="w-full text-sm text-navy bg-transparent outline-none"
+                />
+              ) : (
+                <span className="text-sm text-navy">{fmtDate(t.date)}</span>
+              )}
+            </Field>
             {t.value_date && t.value_date !== t.date && (
-              <p className="text-xs text-navy/40 mt-0.5">Fecha valor: {fmtDate(t.value_date)}</p>
+              <p className="text-xs text-navy/40 mt-1">Fecha valor: {fmtDate(t.value_date)}</p>
             )}
           </div>
-          <div>
-            <p className="text-xs font-medium text-navy/55 mb-1.5">Origen</p>
+          <Field label="Origen">
+            <SourceAvatar method={t.payment_method} size={18} />
             {editableOrigin ? (
-              <div className="flex items-center gap-2">
-                <SourceAvatar method={t.payment_method} size={18} />
-                <Select
-                  value={t.payment_method}
-                  onChange={(e) => onUpdatePaymentMethod(t.id, e.target.value as PaymentMethod)}
-                  className="flex-1"
-                >
-                  {PAYMENT_METHOD_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </Select>
-              </div>
+              <Select
+                variant="bare"
+                value={t.payment_method}
+                onChange={(e) => onUpdatePaymentMethod(t.id, e.target.value as PaymentMethod)}
+                className="flex-1"
+              >
+                {PAYMENT_METHOD_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </Select>
             ) : (
-              <div className="flex items-center gap-2">
-                <SourceAvatar method={t.payment_method} size={18} />
-                <span className="text-sm text-navy">{originLabel(t.payment_method)}</span>
-              </div>
+              <span className="text-sm text-navy">{originLabel(t.payment_method)}</span>
             )}
-          </div>
+          </Field>
         </div>
 
         <MarkRecurringControl

@@ -8,6 +8,7 @@ import ChipsInput from "@/app/components/ChipsInput";
 import Checkbox from "@/app/components/Checkbox";
 import UnitInput from "@/app/components/UnitInput";
 import Button, { SecondaryButton } from "@/app/components/Button";
+import Field from "@/app/components/Field";
 import { CategoryPill } from "./TransaccionesList";
 import { CONTACT_GROUP_ORDER, CONTACT_GROUP_LABELS, type ContactGroup } from "@/lib/contactGroups";
 
@@ -91,14 +92,13 @@ export default function NewContactDrawer({
       )}
     >
       <div className="px-6 py-5 space-y-4">
-        <div>
-          <label className="block text-xs font-medium text-navy/55 mb-1.5">Nombre</label>
+        <Field label="Nombre">
           <input
             type="text" placeholder="Cómo quieres que se muestre"
             value={label} onChange={(e) => setLabel(e.target.value)}
-            className="w-full px-3 py-2 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40"
+            className="w-full text-sm text-navy bg-transparent outline-none placeholder:text-navy/30"
           />
-        </div>
+        </Field>
         <div className="p-3.5 bg-primary/[0.06] border border-primary/15 rounded-xl">
           <label className="flex items-center gap-1.5 text-xs font-semibold text-primary/80 mb-1.5">
             <AutomationIcon />
@@ -112,12 +112,9 @@ export default function NewContactDrawer({
           />
           <p className="text-xs text-navy/40 mt-1.5">Texto tal y como aparece en el extracto del banco (concepto o contacto). Puedes añadir varios.</p>
         </div>
-        <div>
-          <label className="block text-xs font-medium text-navy/55 mb-1.5">
-            Categoría <span className="text-navy/35">(opcional)</span>
-          </label>
+        <Field label={<>Categoría <span className="font-normal text-navy/35">(opcional)</span></>}>
           <CategoryPill category={category} categories={categories} onChange={setCategory} />
-        </div>
+        </Field>
         <div>
           <label className="block text-xs font-medium text-navy/55 mb-1.5">Grupo</label>
           <div className="grid grid-cols-3 gap-2">
@@ -138,14 +135,12 @@ export default function NewContactDrawer({
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <p className="text-xs font-medium text-navy/55 mb-1.5">IVA</p>
-            <UnitInput unit="%" value={ivaRate} onChange={(e) => setIvaRate(e.target.value)} />
-          </div>
-          <div>
-            <p className="text-xs font-medium text-navy/55 mb-1.5">Retención</p>
-            <UnitInput unit="%" value={retencionRate} onChange={(e) => setRetencionRate(e.target.value)} />
-          </div>
+          <Field label="IVA">
+            <UnitInput unit="%" value={ivaRate} onChange={(e) => setIvaRate(e.target.value)} bare />
+          </Field>
+          <Field label="Retención">
+            <UnitInput unit="%" value={retencionRate} onChange={(e) => setRetencionRate(e.target.value)} bare />
+          </Field>
         </div>
         <label className="flex items-center gap-2 text-xs text-navy/55 cursor-pointer">
           <Checkbox checked={noTax} onChange={(e) => setNoTax(e.target.checked)} tone="primary" />

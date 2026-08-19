@@ -17,6 +17,7 @@ import Button, { SecondaryButton, DeleteButton, DangerButtonSolid } from "@/app/
 import ChipsInput from "@/app/components/ChipsInput";
 import Checkbox from "@/app/components/Checkbox";
 import UnitInput from "@/app/components/UnitInput";
+import Field from "@/app/components/Field";
 import { CategoryPill } from "@/app/transacciones/TransaccionesList";
 import NewContactDrawer, { AutomationIcon } from "@/app/transacciones/NewContactDrawer";
 import ContactosManagerV2 from "./ContactosManagerV2";
@@ -67,7 +68,7 @@ export function initials(label: string) {
   return label.split(" ").filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
 }
 
-function RateInput({ value, onSave }: { value: number; onSave: (v: number) => void }) {
+function RateInput({ value, onSave, bare }: { value: number; onSave: (v: number) => void; bare?: boolean }) {
   const [draft, setDraft] = useState(String(value));
   return (
     <UnitInput
@@ -79,6 +80,7 @@ function RateInput({ value, onSave }: { value: number; onSave: (v: number) => vo
         setDraft(String(v));
         if (v !== value) onSave(v);
       }}
+      bare={bare}
     />
   );
 }
@@ -188,25 +190,22 @@ function ContactDetailDrawer({ contact, categories, stats, onChange, onRemove, o
         </div>
 
         <div className="p-4 border-b border-navy/[0.06] space-y-3">
-          <div>
-            <p className="text-xs font-medium text-navy/55 mb-1.5">Nombre</p>
+          <Field label="Nombre">
             <input
               type="text"
               value={label}
               onChange={(e) => setLabel(e.target.value)}
               onBlur={() => { if (label.trim() && label !== contact.label) onChange({ label: label.trim() }); }}
-              className="w-full px-3 py-2 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40"
+              className="w-full text-sm text-navy bg-transparent outline-none"
             />
-          </div>
+          </Field>
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <p className="text-xs font-medium text-navy/55 mb-1.5">IVA</p>
-              <RateInput value={contact.ivaRate} onSave={(v) => onChange({ ivaRate: v })} />
-            </div>
-            <div>
-              <p className="text-xs font-medium text-navy/55 mb-1.5">IRPF</p>
-              <RateInput value={contact.retencionRate} onSave={(v) => onChange({ retencionRate: v })} />
-            </div>
+            <Field label="IVA">
+              <RateInput value={contact.ivaRate} onSave={(v) => onChange({ ivaRate: v })} bare />
+            </Field>
+            <Field label="IRPF">
+              <RateInput value={contact.retencionRate} onSave={(v) => onChange({ retencionRate: v })} bare />
+            </Field>
           </div>
           <label className="flex items-center gap-2 text-xs text-navy/55 cursor-pointer">
             <Checkbox checked={contact.noTax} onChange={(e) => onChange({ noTax: e.target.checked })} tone="primary" />
@@ -243,8 +242,9 @@ function ContactDetailDrawer({ contact, categories, stats, onChange, onRemove, o
         </div>
 
         <div className="p-4 border-b border-navy/[0.06]">
-          <p className="text-xs font-medium text-navy/55 mb-1.5">Categoría</p>
-          <CategoryPill category={contact.category} categories={categories} onChange={(cat) => onChange({ category: cat })} />
+          <Field label="Categoría">
+            <CategoryPill category={contact.category} categories={categories} onChange={(cat) => onChange({ category: cat })} />
+          </Field>
         </div>
 
         <div className="p-4 border-b border-navy/[0.06]">

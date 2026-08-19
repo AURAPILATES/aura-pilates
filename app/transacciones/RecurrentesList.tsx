@@ -7,6 +7,7 @@ import { ChevronRight } from "react-feather";
 import Drawer from "@/app/components/Drawer";
 import Button, { SecondaryButton, DangerButton, DangerButtonSolid } from "@/app/components/Button";
 import Select from "@/app/components/Select";
+import Field from "@/app/components/Field";
 import type { Category } from "@/lib/categories";
 import { PERIOD_BUCKETS } from "@/lib/recurring";
 import { todayLocalISO } from "@/lib/dateRange";
@@ -162,16 +163,18 @@ function endFromExpense(e: RecurringExpense): EndFields {
 function EndOfRecurrenceFields({ value, onChange, disabled }: { value: EndFields; onChange: (next: EndFields) => void; disabled?: boolean }) {
   return (
     <div>
-      <p className="text-xs font-medium text-navy/55 mb-1.5">Finaliza</p>
-      <Select
-        value={value.type}
-        disabled={disabled}
-        onChange={(e) => onChange({ ...value, type: e.target.value as RecurringExpenseEndType })}
-      >
-        {END_TYPE_OPTIONS.map((o) => (
-          <option key={o.value} value={o.value}>{o.label}</option>
-        ))}
-      </Select>
+      <Field label="Finaliza">
+        <Select
+          variant="bare"
+          value={value.type}
+          disabled={disabled}
+          onChange={(e) => onChange({ ...value, type: e.target.value as RecurringExpenseEndType })}
+        >
+          {END_TYPE_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>{o.label}</option>
+          ))}
+        </Select>
+      </Field>
       {value.type === "date" && (
         <input
           type="date"
@@ -371,27 +374,29 @@ function ConfirmPendingDrawer({ row, period, pick, end, name, ivaRate, retencion
       </div>
 
       <div className="p-4 border-b border-navy/[0.06]">
-        <p className="text-xs font-medium text-navy/55 mb-1.5">Concepto / Nombre</p>
-        <input
-          type="text"
-          value={name}
-          onChange={(e) => onNameChange(e.target.value)}
-          className="w-full px-3 py-2 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40"
-        />
+        <Field label="Concepto / Nombre">
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => onNameChange(e.target.value)}
+            className="w-full text-sm text-navy bg-transparent outline-none"
+          />
+        </Field>
         <p className="text-xs text-navy/40 mt-2">Puede ser distinto del contacto vinculado.</p>
       </div>
 
       <div className="p-4 border-b border-navy/[0.06]">
-        <p className="text-xs font-medium text-navy/55 mb-1.5">Contacto</p>
-        <button
-          onClick={onOpenContactPicker}
-          className="w-full flex items-center justify-between gap-2 px-3 py-2.5 border border-navy/15 rounded-lg hover:border-primary/40 transition-colors text-left"
-        >
-          <span className={`text-sm truncate ${pick ? "text-navy font-medium" : "text-navy/40"}`}>
-            {label || "Elegir o crear contacto…"}
-          </span>
-          <ChevronRight size={14} className="text-navy/30 shrink-0" />
-        </button>
+        <Field label="Contacto">
+          <button
+            onClick={onOpenContactPicker}
+            className="w-full flex items-center justify-between gap-2 text-left"
+          >
+            <span className={`text-sm truncate ${pick ? "text-navy font-medium" : "text-navy/40"}`}>
+              {label || "Elegir o crear contacto…"}
+            </span>
+            <ChevronRight size={14} className="text-navy/30 shrink-0" />
+          </button>
+        </Field>
       </div>
 
       <div className="p-4 border-b border-navy/[0.06]">
@@ -409,12 +414,13 @@ function ConfirmPendingDrawer({ row, period, pick, end, name, ivaRate, retencion
       </div>
 
       <div className="p-4 border-b border-navy/[0.06]">
-        <p className="text-xs font-medium text-navy/55 mb-1.5">Periodicidad</p>
-        <Select value={period} onChange={(e) => onPeriodChange(e.target.value)}>
-          {PERIOD_BUCKETS.map((b) => (
-            <option key={b.label} value={b.label}>{b.label}</option>
-          ))}
-        </Select>
+        <Field label="Periodicidad">
+          <Select variant="bare" value={period} onChange={(e) => onPeriodChange(e.target.value)}>
+            {PERIOD_BUCKETS.map((b) => (
+              <option key={b.label} value={b.label}>{b.label}</option>
+            ))}
+          </Select>
+        </Field>
       </div>
 
       <div className="p-4">
@@ -493,68 +499,72 @@ function NewManualRecurringDrawer({ categories, contacts, pick, onOpenContactPic
       )}
     >
       <div className="p-4 border-b border-navy/[0.06]">
-        <p className="text-xs font-medium text-navy/55 mb-1.5">Nombre</p>
-        <input
-          type="text"
-          autoFocus
-          value={label}
-          onChange={(e) => setLabel(e.target.value)}
-          placeholder="ej. Alquiler local nuevo"
-          className="w-full px-3 py-2 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40"
-        />
+        <Field label="Nombre">
+          <input
+            type="text"
+            autoFocus
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            placeholder="ej. Alquiler local nuevo"
+            className="w-full text-sm text-navy bg-transparent outline-none placeholder:text-navy/30"
+          />
+        </Field>
       </div>
 
       <div className="p-4 border-b border-navy/[0.06]">
-        <p className="text-xs font-medium text-navy/55 mb-1.5">Importe</p>
-        <div className="flex items-center gap-1.5">
+        <Field label="Importe">
           <input
             type="text"
             inputMode="decimal"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             placeholder="0,00"
-            className="w-32 px-3 py-2 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40"
+            className="w-24 text-sm text-navy bg-transparent outline-none placeholder:text-navy/30"
           />
           <span className="text-sm text-navy/40">€</span>
-        </div>
+        </Field>
       </div>
 
       <div className="p-4 border-b border-navy/[0.06]">
-        <p className="text-xs font-medium text-navy/55 mb-1.5">Categoría</p>
-        <CategoryPill category={category} categories={categories} onChange={setCategory} />
+        <Field label="Categoría">
+          <CategoryPill category={category} categories={categories} onChange={setCategory} />
+        </Field>
       </div>
 
       <div className="p-4 border-b border-navy/[0.06]">
-        <p className="text-xs font-medium text-navy/55 mb-1.5">Contacto (opcional)</p>
-        <button
-          onClick={onOpenContactPicker}
-          className="w-full flex items-center justify-between gap-2 px-3 py-2.5 border border-navy/15 rounded-lg hover:border-primary/40 transition-colors text-left"
-        >
-          <span className={`text-sm truncate ${pick ? "text-navy font-medium" : "text-navy/40"}`}>
-            {pickLabel || "Elegir o crear contacto…"}
-          </span>
-          <ChevronRight size={14} className="text-navy/30 shrink-0" />
-        </button>
+        <Field label="Contacto (opcional)">
+          <button
+            onClick={onOpenContactPicker}
+            className="w-full flex items-center justify-between gap-2 text-left"
+          >
+            <span className={`text-sm truncate ${pick ? "text-navy font-medium" : "text-navy/40"}`}>
+              {pickLabel || "Elegir o crear contacto…"}
+            </span>
+            <ChevronRight size={14} className="text-navy/30 shrink-0" />
+          </button>
+        </Field>
         <p className="text-xs text-navy/40 mt-2">{pickToInfo(pick, contacts)}</p>
       </div>
 
       <div className="p-4 border-b border-navy/[0.06]">
-        <p className="text-xs font-medium text-navy/55 mb-1.5">Periodicidad</p>
-        <Select value={period} onChange={(e) => setPeriod(e.target.value)}>
-          {PERIOD_BUCKETS.map((b) => (
-            <option key={b.label} value={b.label}>{b.label}</option>
-          ))}
-        </Select>
+        <Field label="Periodicidad">
+          <Select variant="bare" value={period} onChange={(e) => setPeriod(e.target.value)}>
+            {PERIOD_BUCKETS.map((b) => (
+              <option key={b.label} value={b.label}>{b.label}</option>
+            ))}
+          </Select>
+        </Field>
       </div>
 
       <div className="p-4 border-b border-navy/[0.06]">
-        <p className="text-xs font-medium text-navy/55 mb-1.5">Fecha de referencia</p>
-        <input
-          type="date"
-          value={anchorDate}
-          onChange={(e) => setAnchorDate(e.target.value)}
-          className="w-full px-3 py-2 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40"
-        />
+        <Field label="Fecha de referencia">
+          <input
+            type="date"
+            value={anchorDate}
+            onChange={(e) => setAnchorDate(e.target.value)}
+            className="w-full text-sm text-navy bg-transparent outline-none"
+          />
+        </Field>
         <p className="text-xs text-navy/40 mt-2">Último pago conocido, o el próximo previsto si aún no ha empezado - desde aquí se proyecta el siguiente.</p>
       </div>
 
@@ -672,8 +682,7 @@ function RecurringExpenseDrawer({ row, categories, contacts, onClose, onOpenCont
       }
     >
       <div className="p-4 border-b border-navy/[0.06]">
-        <p className="text-xs font-medium text-navy/55 mb-1.5">Importe</p>
-        <div className="flex items-center gap-1.5">
+        <Field label="Importe">
           <input
             type="text"
             inputMode="decimal"
@@ -681,10 +690,10 @@ function RecurringExpenseDrawer({ row, categories, contacts, onClose, onOpenCont
             disabled={saving}
             onChange={(ev) => setAmountDraft(ev.target.value)}
             onBlur={changeAmount}
-            className="w-32 px-3 py-2 text-sm font-semibold text-navy border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40 disabled:opacity-50"
+            className="w-24 text-sm font-semibold text-navy bg-transparent outline-none disabled:opacity-50"
           />
           <span className="text-sm text-navy/40">€</span>
-        </div>
+        </Field>
         {row.lastDate ? (
           <p className="text-xs text-navy/40 mt-2">
             {e.manual && row.occurrences === 0 ? "Fecha de referencia" : "Último pago"}: {fmtDate(row.lastDate)}
@@ -695,27 +704,29 @@ function RecurringExpenseDrawer({ row, categories, contacts, onClose, onOpenCont
       </div>
 
       <div className="p-4 border-b border-navy/[0.06]">
-        <p className="text-xs font-medium text-navy/55 mb-1.5">Concepto / Nombre</p>
-        <input
-          type="text"
-          value={name}
-          disabled={saving}
-          onChange={(ev) => setName(ev.target.value)}
-          onBlur={changeLabel}
-          className="w-full px-3 py-2 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40 disabled:opacity-50"
-        />
+        <Field label="Concepto / Nombre">
+          <input
+            type="text"
+            value={name}
+            disabled={saving}
+            onChange={(ev) => setName(ev.target.value)}
+            onBlur={changeLabel}
+            className="w-full text-sm text-navy bg-transparent outline-none disabled:opacity-50"
+          />
+        </Field>
         <p className="text-xs text-navy/40 mt-2">Nombre de esta recurrencia - puede ser distinto del contacto vinculado.</p>
       </div>
 
       <div className="p-4 border-b border-navy/[0.06]">
-        <p className="text-xs font-medium text-navy/55 mb-1.5">Contacto vinculado</p>
-        <button
-          onClick={onOpenContactPicker}
-          className="w-full flex items-center justify-between gap-2 px-3 py-2.5 border border-navy/15 rounded-lg hover:border-primary/40 transition-colors text-left"
-        >
-          <span className="text-sm text-navy font-medium truncate">{contactLabel}</span>
-          <span className="text-xs text-primary shrink-0">Cambiar</span>
-        </button>
+        <Field label="Contacto vinculado">
+          <button
+            onClick={onOpenContactPicker}
+            className="w-full flex items-center justify-between gap-2 text-left"
+          >
+            <span className="text-sm text-navy font-medium truncate">{contactLabel}</span>
+            <span className="text-xs text-primary shrink-0">Cambiar</span>
+          </button>
+        </Field>
       </div>
 
       <div className="p-4 border-b border-navy/[0.06]">
@@ -749,12 +760,13 @@ function RecurringExpenseDrawer({ row, categories, contacts, onClose, onOpenCont
       </div>
 
       <div className="p-4 border-b border-navy/[0.06]">
-        <p className="text-xs font-medium text-navy/55 mb-1.5">Periodicidad</p>
-        <Select value={e.period} disabled={saving} onChange={(ev) => changePeriod(ev.target.value)}>
-          {PERIOD_BUCKETS.map((b) => (
-            <option key={b.label} value={b.label}>{b.label}</option>
-          ))}
-        </Select>
+        <Field label="Periodicidad">
+          <Select variant="bare" value={e.period} disabled={saving} onChange={(ev) => changePeriod(ev.target.value)}>
+            {PERIOD_BUCKETS.map((b) => (
+              <option key={b.label} value={b.label}>{b.label}</option>
+            ))}
+          </Select>
+        </Field>
       </div>
 
       <div className="p-4">

@@ -17,6 +17,7 @@ import Select from "@/app/components/Select";
 import ChipsInput from "@/app/components/ChipsInput";
 import Checkbox from "@/app/components/Checkbox";
 import UnitInput from "@/app/components/UnitInput";
+import Field from "@/app/components/Field";
 import { ToggleGroup } from "@/components/charts";
 import { CategoryPill } from "./TransaccionesList";
 import { AutomationIcon } from "./NewContactDrawer";
@@ -625,14 +626,13 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                   </p>
                 </div>
               )}
-              <div className="mb-4">
-                <p className="text-xs font-medium text-navy/55 mb-1.5">Origen o banco</p>
-                <Select value={origin} onChange={(e) => setOrigin(e.target.value as PaymentMethod)}>
+              <Field label="Origen o banco" className="mb-4">
+                <Select variant="bare" value={origin} onChange={(e) => setOrigin(e.target.value as PaymentMethod)}>
                   {ORIGIN_OPTIONS.map((o) => (
                     <option key={o.value} value={o.value}>{o.label}</option>
                   ))}
                 </Select>
-              </div>
+              </Field>
               <div className="border border-navy/[0.07] rounded-xl overflow-hidden mb-4">
                 <table className="w-full text-xs">
                   <thead>
@@ -783,29 +783,30 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
 
                         {d.action === "attach" ? (
                           <>
-                            <p className="text-xs font-medium text-navy/55 mb-1.5">Contacto</p>
-                            <Select
-                              value={d.attachToDraftPattern ? `draft:${d.attachToDraftPattern}` : d.attachToContactId != null ? `contact:${d.attachToContactId}` : ""}
-                              onChange={(e) => {
-                                const v = e.target.value;
-                                if (v.startsWith("draft:")) updateDraft(d.pattern, { attachToDraftPattern: v.slice(6), attachToContactId: null });
-                                else if (v.startsWith("contact:")) updateDraft(d.pattern, { attachToContactId: parseInt(v.slice(8), 10), attachToDraftPattern: null });
-                              }}
-                              className="mb-3.5"
-                            >
-                              {sortedContacts.map((c) => (
-                                <option key={`c-${c.id}`} value={`contact:${c.id}`}>
-                                  {c.label}{c.id === d.suggestedContactId ? " (posible coincidencia)" : ""}
-                                </option>
-                              ))}
-                              {siblingCreateDrafts.length > 0 && (
-                                <optgroup label="Otros contactos de este archivo">
-                                  {siblingCreateDrafts.map((sd) => (
-                                    <option key={`d-${sd.pattern}`} value={`draft:${sd.pattern}`}>{sd.label || sd.sample}</option>
-                                  ))}
-                                </optgroup>
-                              )}
-                            </Select>
+                            <Field label="Contacto" className="mb-3.5">
+                              <Select
+                                variant="bare"
+                                value={d.attachToDraftPattern ? `draft:${d.attachToDraftPattern}` : d.attachToContactId != null ? `contact:${d.attachToContactId}` : ""}
+                                onChange={(e) => {
+                                  const v = e.target.value;
+                                  if (v.startsWith("draft:")) updateDraft(d.pattern, { attachToDraftPattern: v.slice(6), attachToContactId: null });
+                                  else if (v.startsWith("contact:")) updateDraft(d.pattern, { attachToContactId: parseInt(v.slice(8), 10), attachToDraftPattern: null });
+                                }}
+                              >
+                                {sortedContacts.map((c) => (
+                                  <option key={`c-${c.id}`} value={`contact:${c.id}`}>
+                                    {c.label}{c.id === d.suggestedContactId ? " (posible coincidencia)" : ""}
+                                  </option>
+                                ))}
+                                {siblingCreateDrafts.length > 0 && (
+                                  <optgroup label="Otros contactos de este archivo">
+                                    {siblingCreateDrafts.map((sd) => (
+                                      <option key={`d-${sd.pattern}`} value={`draft:${sd.pattern}`}>{sd.label || sd.sample}</option>
+                                    ))}
+                                  </optgroup>
+                                )}
+                              </Select>
+                            </Field>
                             <label className="flex items-center gap-1.5 text-xs font-semibold text-primary/80 mb-1.5">
                               <AutomationIcon />
                               Conceptos para reconocerlo
@@ -819,14 +820,15 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                           </>
                         ) : (
                           <>
-                            <p className="text-xs font-medium text-navy/55 mb-1.5">Nombre del contacto</p>
-                            <input
-                              type="text"
-                              value={d.label}
-                              onChange={(e) => updateDraft(d.pattern, { label: e.target.value })}
-                              placeholder="Nombre del contacto"
-                              className="w-full mb-3.5 px-2.5 py-1.5 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40"
-                            />
+                            <Field label="Nombre del contacto" className="mb-3.5">
+                              <input
+                                type="text"
+                                value={d.label}
+                                onChange={(e) => updateDraft(d.pattern, { label: e.target.value })}
+                                placeholder="Nombre del contacto"
+                                className="w-full text-sm text-navy bg-transparent outline-none placeholder:text-navy/30"
+                              />
+                            </Field>
                             <label className="flex items-center gap-1.5 text-xs font-semibold text-primary/80 mb-1.5">
                               <AutomationIcon />
                               Conceptos para reconocerlo
@@ -840,14 +842,13 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
 
                             <div className="h-px bg-navy/[0.06] my-3.5" />
 
-                            <p className="text-xs font-medium text-navy/55 mb-1.5">Etiqueta</p>
-                            <div className="mb-3.5">
+                            <Field label="Etiqueta" className="mb-3.5">
                               <CategoryPill
                                 category={d.category}
                                 categories={categories}
                                 onChange={(cat) => updateDraft(d.pattern, { category: cat })}
                               />
-                            </div>
+                            </Field>
                             <p className="text-xs font-medium text-navy/55 mb-1.5">Grupo</p>
                             <div className="grid grid-cols-3 gap-2 mb-3.5">
                               {CONTACT_GROUP_ORDER.map((g) => (
@@ -867,22 +868,22 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                             </div>
                             <p className="text-xs font-medium text-navy/55 mb-1.5">Impuestos</p>
                             <div className="grid grid-cols-2 gap-3 mb-2.5">
-                              <div>
-                                <p className="text-xs font-medium text-navy/55 mb-1.5">IVA</p>
+                              <Field label="IVA">
                                 <UnitInput
                                   unit="%"
                                   value={d.ivaRate}
                                   onChange={(e) => updateDraft(d.pattern, { ivaRate: parseFloat(e.target.value) || 0 })}
+                                  bare
                                 />
-                              </div>
-                              <div>
-                                <p className="text-xs font-medium text-navy/55 mb-1.5">IRPF</p>
+                              </Field>
+                              <Field label="IRPF">
                                 <UnitInput
                                   unit="%"
                                   value={d.retencionRate}
                                   onChange={(e) => updateDraft(d.pattern, { retencionRate: parseFloat(e.target.value) || 0 })}
+                                  bare
                                 />
-                              </div>
+                              </Field>
                             </div>
                             <label className="flex items-center gap-2 text-xs text-navy/55 cursor-pointer">
                               <Checkbox checked={d.noTax} onChange={(e) => updateDraft(d.pattern, { noTax: e.target.checked })} tone="primary" />

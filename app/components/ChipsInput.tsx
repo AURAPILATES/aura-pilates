@@ -4,11 +4,14 @@ import { useState } from "react";
 /** Lista de chips removibles + input para añadir uno más con Enter o al perder el foco -
  * mismo patrón visual en Configuración > Contactos (conceptos bancarios de un contacto) y
  * Configuración > Categorías (conceptos bancarios que auto-categorizan). */
-export default function ChipsInput({ values, onChange, placeholder = "+ añadir…", clean }: {
+export default function ChipsInput({ values, onChange, placeholder = "+ añadir…", clean, bare = false }: {
   values: string[];
   onChange: (values: string[]) => void;
   placeholder?: string;
   clean?: (raw: string) => string;
+  /** Sin borde propio en el input de añadir, para ir dentro de un <Field> (el fieldset ya
+   * pone el borde del conjunto). */
+  bare?: boolean;
 }) {
   const [draft, setDraft] = useState("");
 
@@ -35,7 +38,11 @@ export default function ChipsInput({ values, onChange, placeholder = "+ añadir�
         onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(); } }}
         onBlur={add}
         placeholder={placeholder}
-        className="h-[26px] w-32 px-2.5 text-[12px] bg-card border border-dashed border-navy/25 rounded-[7px] focus:outline-none focus:border-solid focus:border-primary/50 placeholder:text-faint"
+        className={
+          bare
+            ? "h-[26px] min-w-[80px] flex-1 text-[13px] bg-transparent outline-none placeholder:text-navy/30"
+            : "h-[26px] w-32 px-2.5 text-[12px] bg-card border border-dashed border-navy/25 rounded-[7px] focus:outline-none focus:border-solid focus:border-primary/50 placeholder:text-faint"
+        }
       />
     </div>
   );

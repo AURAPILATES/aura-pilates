@@ -6,6 +6,7 @@ import type { Budget } from "@/lib/budgets";
 import { saveBudgetsAction } from "@/app/actions/saveBudgets";
 import { ChartCard } from "@/components/charts";
 import ChipsInput from "@/app/components/ChipsInput";
+import Field from "@/app/components/Field";
 
 function fmtEur(n: number) {
   return n.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
@@ -196,12 +197,14 @@ export default function Financiacion({
                 </button>
               </div>
               <div>
-                <p className="text-xs font-medium text-navy/55 mb-1.5">Palabras clave bancarias (opcional)</p>
-                <ChipsInput
-                  values={b.bankKeywords ?? []}
-                  onChange={(next) => updateBudget(b.id, "bankKeywords", next)}
-                  placeholder="ej: 3019-56-00, PRES.3… (Enter para añadir)"
-                />
+                <Field label="Palabras clave bancarias (opcional)">
+                  <ChipsInput
+                    values={b.bankKeywords ?? []}
+                    onChange={(next) => updateBudget(b.id, "bankKeywords", next)}
+                    placeholder="ej: 3019-56-00, PRES.3… (Enter para añadir)"
+                    bare
+                  />
+                </Field>
               </div>
             </div>
           ))}
