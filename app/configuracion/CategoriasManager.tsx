@@ -630,11 +630,11 @@ export default function CategoriasManager({
             </div>
 
             {/* Form */}
-            <div className="flex-1 overflow-y-auto px-5 py-6 space-y-7">
+            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
 
               {/* Nombre */}
               <div>
-                <label className="block text-xs font-semibold text-navy/45 uppercase tracking-wider mb-2">Nombre</label>
+                <label className="block text-xs font-medium text-navy/55 mb-1.5">Nombre</label>
                 <input
                   type="text"
                   value={form.label}
@@ -648,7 +648,7 @@ export default function CategoriasManager({
               <div ref={pickerWrapRef} className="grid grid-cols-2 gap-3">
                 {/* Color */}
                 <div className="relative">
-                  <label className="block text-xs font-semibold text-navy/45 uppercase tracking-wider mb-2">Color</label>
+                  <label className="block text-xs font-medium text-navy/55 mb-1.5">Color</label>
                   {form.parent_id ? (
                     <div className="flex items-center gap-2 border border-navy/[0.12] rounded-xl px-3 py-2.5" title="Hereda el tono de su categoría padre, con un matiz distinto para diferenciarla de sus hermanas.">
                       <span className="w-6 h-6 rounded-full shrink-0" style={{ backgroundColor: selectedColor }} />
@@ -692,7 +692,7 @@ export default function CategoriasManager({
 
                 {/* Icono */}
                 <div className="relative">
-                  <label className="block text-xs font-semibold text-navy/45 uppercase tracking-wider mb-2">Icono</label>
+                  <label className="block text-xs font-medium text-navy/55 mb-1.5">Icono</label>
                   <button
                     type="button"
                     onClick={() => setOpenPicker((p) => (p === "icon" ? null : "icon"))}
@@ -736,8 +736,8 @@ export default function CategoriasManager({
 
               {/* Categoría padre */}
               <div>
-                <label className="block text-xs font-semibold text-navy/45 uppercase tracking-wider mb-2">
-                  Categoría padre <span className="font-normal normal-case text-navy/35">(opcional, para crear una subcategoría)</span>
+                <label className="block text-xs font-medium text-navy/55 mb-1.5">
+                  Categoría padre <span className="font-normal text-navy/35">(opcional, para crear una subcategoría)</span>
                 </label>
                 {parentOptions.length === 0 ? (
                   <p className="text-[11px] text-navy/45 leading-snug bg-navy/[0.04] rounded-xl px-4 py-3">
@@ -759,7 +759,7 @@ export default function CategoriasManager({
                   Naturaleza es una subdivisión que solo existe dentro del grupo Operacional
                   (no son dos campos independientes, aunque se guarden en columnas separadas). */}
               <div className="p-3.5 bg-navy/[0.03] border border-navy/[0.08] rounded-xl space-y-4">
-                <label className="block text-xs font-semibold text-navy/45 uppercase tracking-wider">Clasificación</label>
+                <label className="block text-xs font-medium text-navy/55">Clasificación</label>
 
                 {hasParent ? (
                   <div>
@@ -849,7 +849,7 @@ export default function CategoriasManager({
 
               {/* Conceptos bancarios */}
               <div className="p-3.5 bg-primary/[0.06] border border-primary/15 rounded-xl">
-                <label className="flex items-center gap-1.5 text-xs font-semibold text-primary/80 uppercase tracking-wider mb-2">
+                <label className="flex items-center gap-1.5 text-xs font-semibold text-primary/80 mb-1.5">
                   <AutomationIcon />
                   Conceptos bancarios
                 </label>

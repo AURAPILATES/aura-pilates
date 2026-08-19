@@ -324,7 +324,7 @@ function NuevoInstructorModal({
     >
       <div className="px-6 py-5 space-y-4">
         <div>
-          <label className="block text-xs text-navy/55 mb-1.5">Nombre</label>
+          <label className="block text-xs font-medium text-navy/55 mb-1.5">Nombre</label>
           <input
             type="text"
             value={nombre}
@@ -335,7 +335,7 @@ function NuevoInstructorModal({
           />
         </div>
         <div>
-          <label className="block text-xs text-navy/55 mb-1.5">Inicio de contrato</label>
+          <label className="block text-xs font-medium text-navy/55 mb-1.5">Inicio de contrato</label>
           <input
             type="date"
             value={inicioContrato}
@@ -343,9 +343,9 @@ function NuevoInstructorModal({
             className="w-full text-sm border border-navy/[0.12] rounded-lg px-4 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary/30 text-navy"
           />
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs text-navy/55 mb-1.5">Días jornada/sem.</label>
+            <label className="block text-xs font-medium text-navy/55 mb-1.5">Días jornada/sem.</label>
             <input
               type="number" min={1} max={7} value={jornadaDias}
               onChange={(e) => handleJornada(Number(e.target.value))}
@@ -353,7 +353,7 @@ function NuevoInstructorModal({
             />
           </div>
           <div>
-            <label className="block text-xs text-navy/55 mb-1.5">
+            <label className="block text-xs font-medium text-navy/55 mb-1.5">
               Días vacaciones
               {!userEdited && <span className="ml-1 text-[10px] text-primary/70 font-normal">· calculado</span>}
             </label>
@@ -545,7 +545,7 @@ function AñadirAusenciaModal({
               <div className="flex-1 space-y-2">
                 <div>
                   {duration === "range" && (
-                    <p className="text-[11px] text-navy/45 uppercase tracking-wide mb-1">Desde</p>
+                    <p className="text-xs font-medium text-navy/55 mb-1.5">Desde</p>
                   )}
                   <input
                     type="date"
@@ -559,7 +559,7 @@ function AñadirAusenciaModal({
                 </div>
                 {duration === "range" && (
                   <div>
-                    <p className="text-[11px] text-navy/45 uppercase tracking-wide mb-1">Hasta</p>
+                    <p className="text-xs font-medium text-navy/55 mb-1.5">Hasta</p>
                     <input
                       type="date"
                       value={dateTo}

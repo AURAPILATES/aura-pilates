@@ -626,7 +626,7 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                 </div>
               )}
               <div className="mb-4">
-                <p className="text-[11px] font-semibold text-navy/40 uppercase tracking-wider mb-1.5">Origen o banco</p>
+                <p className="text-xs font-medium text-navy/55 mb-1.5">Origen o banco</p>
                 <Select value={origin} onChange={(e) => setOrigin(e.target.value as PaymentMethod)}>
                   {ORIGIN_OPTIONS.map((o) => (
                     <option key={o.value} value={o.value}>{o.label}</option>
@@ -783,7 +783,7 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
 
                         {d.action === "attach" ? (
                           <>
-                            <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1.5">Contacto</p>
+                            <p className="text-xs font-medium text-navy/55 mb-1.5">Contacto</p>
                             <Select
                               value={d.attachToDraftPattern ? `draft:${d.attachToDraftPattern}` : d.attachToContactId != null ? `contact:${d.attachToContactId}` : ""}
                               onChange={(e) => {
@@ -806,7 +806,7 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                                 </optgroup>
                               )}
                             </Select>
-                            <label className="flex items-center gap-1.5 text-[10px] font-semibold text-navy/40 uppercase tracking-wider mb-1.5">
+                            <label className="flex items-center gap-1.5 text-xs font-semibold text-primary/80 mb-1.5">
                               <AutomationIcon />
                               Conceptos para reconocerlo
                             </label>
@@ -819,7 +819,7 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                           </>
                         ) : (
                           <>
-                            <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1.5">Nombre del contacto</p>
+                            <p className="text-xs font-medium text-navy/55 mb-1.5">Nombre del contacto</p>
                             <input
                               type="text"
                               value={d.label}
@@ -827,7 +827,7 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                               placeholder="Nombre del contacto"
                               className="w-full mb-3.5 px-2.5 py-1.5 text-sm border border-navy/15 rounded-lg focus:outline-none focus:border-primary/40"
                             />
-                            <label className="flex items-center gap-1.5 text-[10px] font-semibold text-navy/40 uppercase tracking-wider mb-1.5">
+                            <label className="flex items-center gap-1.5 text-xs font-semibold text-primary/80 mb-1.5">
                               <AutomationIcon />
                               Conceptos para reconocerlo
                             </label>
@@ -840,7 +840,7 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
 
                             <div className="h-px bg-navy/[0.06] my-3.5" />
 
-                            <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1.5">Etiqueta</p>
+                            <p className="text-xs font-medium text-navy/55 mb-1.5">Etiqueta</p>
                             <div className="mb-3.5">
                               <CategoryPill
                                 category={d.category}
@@ -848,7 +848,7 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                                 onChange={(cat) => updateDraft(d.pattern, { category: cat })}
                               />
                             </div>
-                            <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1.5">Grupo</p>
+                            <p className="text-xs font-medium text-navy/55 mb-1.5">Grupo</p>
                             <div className="grid grid-cols-3 gap-2 mb-3.5">
                               {CONTACT_GROUP_ORDER.map((g) => (
                                 <button
@@ -865,10 +865,10 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                                 </button>
                               ))}
                             </div>
-                            <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1.5">Impuestos</p>
-                            <div className="grid grid-cols-2 gap-2 mb-2.5">
+                            <p className="text-xs font-medium text-navy/55 mb-1.5">Impuestos</p>
+                            <div className="grid grid-cols-2 gap-3 mb-2.5">
                               <div>
-                                <p className="text-[10px] font-semibold text-navy/35 uppercase tracking-wider mb-1">IVA</p>
+                                <p className="text-xs font-medium text-navy/55 mb-1.5">IVA</p>
                                 <UnitInput
                                   unit="%"
                                   value={d.ivaRate}
@@ -876,7 +876,7 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                                 />
                               </div>
                               <div>
-                                <p className="text-[10px] font-semibold text-navy/35 uppercase tracking-wider mb-1">IRPF</p>
+                                <p className="text-xs font-medium text-navy/55 mb-1.5">IRPF</p>
                                 <UnitInput
                                   unit="%"
                                   value={d.retencionRate}

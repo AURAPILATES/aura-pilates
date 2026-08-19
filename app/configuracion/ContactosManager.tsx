@@ -189,7 +189,7 @@ function ContactDetailDrawer({ contact, categories, stats, onChange, onRemove, o
 
         <div className="p-4 border-b border-navy/[0.06] space-y-3">
           <div>
-            <p className="text-xs text-navy/55 mb-1">Nombre</p>
+            <p className="text-xs font-medium text-navy/55 mb-1.5">Nombre</p>
             <input
               type="text"
               value={label}
@@ -200,11 +200,11 @@ function ContactDetailDrawer({ contact, categories, stats, onChange, onRemove, o
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <p className="text-xs text-navy/55 mb-1">IVA</p>
+              <p className="text-xs font-medium text-navy/55 mb-1.5">IVA</p>
               <RateInput value={contact.ivaRate} onSave={(v) => onChange({ ivaRate: v })} />
             </div>
             <div>
-              <p className="text-xs text-navy/55 mb-1">IRPF</p>
+              <p className="text-xs font-medium text-navy/55 mb-1.5">IRPF</p>
               <RateInput value={contact.retencionRate} onSave={(v) => onChange({ retencionRate: v })} />
             </div>
           </div>
@@ -220,7 +220,7 @@ function ContactDetailDrawer({ contact, categories, stats, onChange, onRemove, o
         </div>
 
         <div className="p-4 border-b border-navy/[0.06]">
-          <p className="text-xs text-navy/55 mb-2">Grupo</p>
+          <p className="text-xs font-medium text-navy/55 mb-1.5">Grupo</p>
           <div className="grid grid-cols-3 gap-2">
             {CONTACT_GROUP_ORDER.map((g) => {
               const active = contactGroupOf(contact.label, contact.group) === g;
@@ -243,13 +243,13 @@ function ContactDetailDrawer({ contact, categories, stats, onChange, onRemove, o
         </div>
 
         <div className="p-4 border-b border-navy/[0.06]">
-          <p className="text-xs text-navy/55 mb-2">Categoría</p>
+          <p className="text-xs font-medium text-navy/55 mb-1.5">Categoría</p>
           <CategoryPill category={contact.category} categories={categories} onChange={(cat) => onChange({ category: cat })} />
         </div>
 
         <div className="p-4 border-b border-navy/[0.06]">
           <div className="p-3.5 bg-primary/[0.06] border border-primary/15 rounded-xl">
-            <p className="flex items-center gap-1.5 text-xs text-primary/80 mb-2">
+            <p className="flex items-center gap-1.5 text-xs font-semibold text-primary/80 mb-1.5">
               <AutomationIcon />
               Conceptos bancarios
             </p>

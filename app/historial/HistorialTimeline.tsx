@@ -85,8 +85,8 @@ function EventForm({
     >
       <div className="px-6 py-5 space-y-4">
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-navy/50 uppercase tracking-wide">Fecha</label>
+          <div>
+            <label className="block text-xs font-medium text-navy/55 mb-1.5">Fecha</label>
             <input
               type="date"
               value={form.fecha}
@@ -94,8 +94,8 @@ function EventForm({
               className="w-full border border-navy/15 rounded-lg px-3 py-2 text-sm text-navy focus:outline-none focus:ring-2 focus:ring-navy/30"
             />
           </div>
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-navy/50 uppercase tracking-wide">Categoría</label>
+          <div>
+            <label className="block text-xs font-medium text-navy/55 mb-1.5">Categoría</label>
             <Select value={form.categoria} onChange={(e) => set("categoria", e.target.value as EventCategoria)}>
               {CATEGORIAS.map((c) => (
                 <option key={c.value} value={c.value}>{c.label}</option>
@@ -104,8 +104,8 @@ function EventForm({
           </div>
         </div>
 
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-navy/50 uppercase tracking-wide">Título</label>
+        <div>
+          <label className="block text-xs font-medium text-navy/55 mb-1.5">Título</label>
           <input
             type="text"
             value={form.titulo}
@@ -115,9 +115,9 @@ function EventForm({
           />
         </div>
 
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-navy/50 uppercase tracking-wide">
-            Descripción <span className="font-normal normal-case">(opcional)</span>
+        <div>
+          <label className="block text-xs font-medium text-navy/55 mb-1.5">
+            Descripción <span className="font-normal text-navy/35">(opcional)</span>
           </label>
           <textarea
             value={form.descripcion}

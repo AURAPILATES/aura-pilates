@@ -47,7 +47,7 @@ function Field({ label, value, onSave }: { label: string; value: string; onSave:
   const [draft, setDraft] = useState(value);
   return (
     <div>
-      <p className="text-xs text-navy/40 mb-1">{label}</p>
+      <p className="text-xs font-medium text-navy/55 mb-1.5">{label}</p>
       <input
         type="text"
         value={draft}
@@ -248,9 +248,9 @@ function MarkRecurringControl({
         )}
         {checked && (
           <div className="flex flex-col gap-3 px-3 pb-3 pt-1 border-t border-primary/[0.12] mt-1">
-            <div className="grid grid-cols-2 gap-4 pt-2">
+            <div className="grid grid-cols-2 gap-3 pt-2">
               <div>
-                <p className="text-xs text-navy/40 mb-1">Periodicidad</p>
+                <p className="text-xs font-medium text-navy/55 mb-1.5">Periodicidad</p>
                 <Select
                   value={period}
                   disabled={periodSaving}
@@ -262,7 +262,7 @@ function MarkRecurringControl({
                 </Select>
               </div>
               <div>
-                <p className="text-xs text-navy/40 mb-1">Finaliza</p>
+                <p className="text-xs font-medium text-navy/55 mb-1.5">Finaliza</p>
                 <Select
                   value={endType}
                   disabled={periodSaving}
@@ -515,7 +515,7 @@ export default function TransactionDrawer({
         <Field label="Más datos" value={t.bank_details ?? ""} onSave={(v) => onUpdateBankDetails(t.id, v)} />
 
         <div>
-          <p className="text-xs text-navy/40 mb-1">Contacto</p>
+          <p className="text-xs font-medium text-navy/55 mb-1.5">Contacto</p>
           <TransactionContactPicker
             transactionId={t.id}
             value={t.contact ?? ""}
@@ -531,13 +531,13 @@ export default function TransactionDrawer({
         </div>
 
         <div>
-          <p className="text-xs text-navy/40 mb-1.5">Categoría</p>
+          <p className="text-xs font-medium text-navy/55 mb-1.5">Categoría</p>
           <CategoryPill category={t.category} categories={categories} onChange={(cat) => onUpdateCategory(t.id, cat)} />
         </div>
 
-        <div className="grid grid-cols-2 gap-4 pt-2 border-t border-navy/[0.06]">
+        <div className="grid grid-cols-2 gap-3 pt-2 border-t border-navy/[0.06]">
           <div>
-            <p className="text-xs text-navy/40 mb-1">Fecha</p>
+            <p className="text-xs font-medium text-navy/55 mb-1.5">Fecha</p>
             {editableOrigin ? (
               <input
                 type="date"
@@ -553,7 +553,7 @@ export default function TransactionDrawer({
             )}
           </div>
           <div>
-            <p className="text-xs text-navy/40 mb-1">Origen</p>
+            <p className="text-xs font-medium text-navy/55 mb-1.5">Origen</p>
             {editableOrigin ? (
               <div className="flex items-center gap-2">
                 <SourceAvatar method={t.payment_method} size={18} />

@@ -35,7 +35,7 @@ export default function ChipsInput({ values, onChange, placeholder = "+ aÃ±adirâ
         onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(); } }}
         onBlur={add}
         placeholder={placeholder}
-        className="h-[26px] w-32 px-2.5 text-[12px] bg-transparent border border-dashed border-border rounded-[7px] focus:outline-none focus:border-solid focus:border-primary/40 placeholder:text-faint"
+        className="h-[26px] w-32 px-2.5 text-[12px] bg-card border border-dashed border-navy/25 rounded-[7px] focus:outline-none focus:border-solid focus:border-primary/50 placeholder:text-faint"
       />
     </div>
   );

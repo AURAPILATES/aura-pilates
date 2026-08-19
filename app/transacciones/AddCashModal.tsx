@@ -169,7 +169,7 @@ export default function AddCashModal({ categories, contacts, onClose }: { catego
           />
 
           <div>
-            <label className="block text-xs text-navy/55 mb-1.5">Fecha</label>
+            <label className="block text-xs font-medium text-navy/55 mb-1.5">Fecha</label>
             <input
               type="date"
               value={date}
@@ -179,7 +179,7 @@ export default function AddCashModal({ categories, contacts, onClose }: { catego
           </div>
 
           <div>
-            <label className="block text-xs text-navy/55 mb-1.5">Importe</label>
+            <label className="block text-xs font-medium text-navy/55 mb-1.5">Importe</label>
             <UnitInput
               unit="€"
               unitSide="left"
@@ -190,7 +190,7 @@ export default function AddCashModal({ categories, contacts, onClose }: { catego
           </div>
 
           <div>
-            <label className="block text-xs text-navy/55 mb-1.5">Concepto</label>
+            <label className="block text-xs font-medium text-navy/55 mb-1.5">Concepto</label>
             <input
               type="text"
               value={concept}
@@ -201,7 +201,7 @@ export default function AddCashModal({ categories, contacts, onClose }: { catego
           </div>
 
           <div>
-            <label className="block text-xs text-navy/55 mb-1.5">
+            <label className="block text-xs font-medium text-navy/55 mb-1.5">
               Contacto <span className="text-navy/35">(opcional)</span>
             </label>
             <ContactPicker
@@ -224,7 +224,7 @@ export default function AddCashModal({ categories, contacts, onClose }: { catego
           </div>
 
           <div>
-            <label className="block text-xs text-navy/55 mb-1.5">Descripción</label>
+            <label className="block text-xs font-medium text-navy/55 mb-1.5">Descripción</label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
@@ -235,7 +235,7 @@ export default function AddCashModal({ categories, contacts, onClose }: { catego
           </div>
 
           <div>
-            <label className="block text-xs text-navy/55 mb-1.5">Categoría</label>
+            <label className="block text-xs font-medium text-navy/55 mb-1.5">Categoría</label>
             <CategoryPill
               category={category || null}
               categories={categories}
@@ -244,7 +244,7 @@ export default function AddCashModal({ categories, contacts, onClose }: { catego
           </div>
 
           <div>
-            <label className="block text-xs text-navy/55 mb-1.5">Origen del pago</label>
+            <label className="block text-xs font-medium text-navy/55 mb-1.5">Origen del pago</label>
             <Select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}>
               {PAYMENT_METHODS.map((m) => (
                 <option key={m.value} value={m.value}>{m.label}</option>

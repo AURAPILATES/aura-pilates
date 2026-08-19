@@ -92,7 +92,7 @@ export default function NewContactDrawer({
     >
       <div className="px-6 py-5 space-y-4">
         <div>
-          <label className="block text-xs font-medium text-navy/55 mb-1">Nombre</label>
+          <label className="block text-xs font-medium text-navy/55 mb-1.5">Nombre</label>
           <input
             type="text" placeholder="Cómo quieres que se muestre"
             value={label} onChange={(e) => setLabel(e.target.value)}
@@ -113,7 +113,7 @@ export default function NewContactDrawer({
           <p className="text-xs text-navy/40 mt-1.5">Texto tal y como aparece en el extracto del banco (concepto o contacto). Puedes añadir varios.</p>
         </div>
         <div>
-          <label className="block text-xs font-medium text-navy/55 mb-1">
+          <label className="block text-xs font-medium text-navy/55 mb-1.5">
             Categoría <span className="text-navy/35">(opcional)</span>
           </label>
           <CategoryPill category={category} categories={categories} onChange={setCategory} />
@@ -139,11 +139,11 @@ export default function NewContactDrawer({
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <p className="text-xs text-navy/55 mb-1">IVA</p>
+            <p className="text-xs font-medium text-navy/55 mb-1.5">IVA</p>
             <UnitInput unit="%" value={ivaRate} onChange={(e) => setIvaRate(e.target.value)} />
           </div>
           <div>
-            <p className="text-xs text-navy/55 mb-1">Retención</p>
+            <p className="text-xs font-medium text-navy/55 mb-1.5">Retención</p>
             <UnitInput unit="%" value={retencionRate} onChange={(e) => setRetencionRate(e.target.value)} />
           </div>
         </div>
