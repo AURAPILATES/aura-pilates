@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { CustomerRow } from "./ClientesTable";
 import ClientesMatrizCompras from "./ClientesMatrizCompras";
+import ClientesResumenAlumnos from "./ClientesResumenAlumnos";
 import ClientesMatrizUrban from "./ClientesMatrizUrban";
 import ClientesEstado from "./ClientesEstado";
 import SectionTabsV2, { type SectionTabV2 } from "@/app/components/v2/SectionTabsV2";
@@ -18,17 +19,18 @@ type Props = {
   urbanClients: UrbanClientRow[];
 };
 
-type Tab = "clientes" | "compras" | "urban";
+type Tab = "clientes" | "compras" | "resumen" | "urban";
 
 const TABS: SectionTabV2<Tab>[] = [
   { key: "clientes", label: "Estado" },
   { key: "compras",  label: "Historial de compras" },
+  { key: "resumen",  label: "Resumen alumnos" },
   { key: "urban",    label: "Asistencia Urban" },
 ];
 
 export default function ClientesShell({ customers, payments, clients, urbanClients }: Props) {
   const [tab, setTab] = useState<Tab>("clientes");
-  const [mounted, setMounted] = useState<Record<Tab, boolean>>({ clientes: true, compras: false, urban: false });
+  const [mounted, setMounted] = useState<Record<Tab, boolean>>({ clientes: true, compras: false, resumen: false, urban: false });
 
   useEffect(() => { setMounted((m) => ({ ...m, [tab]: true })); }, [tab]);
 
@@ -47,6 +49,11 @@ export default function ClientesShell({ customers, payments, clients, urbanClien
       {mounted.compras && (
         <div className={tab === "compras" ? "tab-fade-in" : "hidden"}>
           <ClientesMatrizCompras customers={customers} payments={payments} urbanClients={urbanClients} />
+        </div>
+      )}
+      {mounted.resumen && (
+        <div className={tab === "resumen" ? "tab-fade-in" : "hidden"}>
+          <ClientesResumenAlumnos payments={payments} urbanClients={urbanClients} />
         </div>
       )}
       {mounted.urban && (
