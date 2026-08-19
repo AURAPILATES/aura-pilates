@@ -125,7 +125,7 @@ export default function ContactPicker({
         placeholder={placeholder}
         className={
           bare
-            ? `w-full text-sm font-medium text-navy bg-transparent border-0 outline-none pr-6 disabled:opacity-50 ${draft.trim().length > 0 ? "pl-7" : "pl-0"}`
+            ? `w-full font-medium text-navy bg-transparent border-0 outline-none pr-6 disabled:opacity-50 ${draft.trim().length > 0 ? "pl-7" : "pl-0"}`
             : `w-full text-sm font-medium text-navy border border-navy/[0.12] rounded-lg pr-8 py-2 outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/15 transition disabled:opacity-50 ${draft.trim().length > 0 ? "pl-9" : "pl-3"}`
         }
       />

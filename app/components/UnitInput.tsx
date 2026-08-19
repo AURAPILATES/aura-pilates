@@ -20,7 +20,7 @@ export default function UnitInput({ unit, unitSide = "right", className = "", ba
       }
     >
       {unitSide === "left" && (
-        <span className={bare ? "text-[13.5px] text-muted shrink-0 mr-1.5" : "h-full px-2.5 flex items-center bg-subtle border-r border-border text-[12.5px] text-muted shrink-0"}>
+        <span className={bare ? "text-muted shrink-0 mr-1.5" : "h-full px-2.5 flex items-center bg-subtle border-r border-border text-[12.5px] text-muted shrink-0"}>
           {unit}
         </span>
       )}
@@ -29,13 +29,13 @@ export default function UnitInput({ unit, unitSide = "right", className = "", ba
         inputMode="decimal"
         className={
           bare
-            ? `flex-1 min-w-0 text-sm text-navy bg-transparent outline-none ${unitSide === "right" ? "text-right" : ""}`
+            ? `flex-1 min-w-0 bg-transparent outline-none ${unitSide === "right" ? "text-right" : ""}`
             : `flex-1 min-w-0 h-full px-3 text-[13.5px] text-navy bg-transparent outline-none ${unitSide === "right" ? "text-right" : ""}`
         }
         {...props}
       />
       {unitSide === "right" && (
-        <span className={bare ? "text-[13.5px] text-muted shrink-0 ml-1.5" : "h-full px-2.5 flex items-center bg-subtle border-l border-border text-[12.5px] text-muted shrink-0"}>
+        <span className={bare ? "text-muted shrink-0 ml-1.5" : "h-full px-2.5 flex items-center bg-subtle border-l border-border text-[12.5px] text-muted shrink-0"}>
           {unit}
         </span>
       )}

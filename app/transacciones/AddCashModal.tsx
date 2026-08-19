@@ -157,7 +157,7 @@ export default function AddCashModal({ categories, contacts, onClose }: { catego
         )
       }
     >
-        <div className="px-6 py-5 space-y-4">
+        <div className="px-6 py-5 space-y-[14px]">
           <ToggleGroup
             options={[
               { value: "income", label: "Ingreso", activeClassName: "bg-success text-white font-medium" },
@@ -174,7 +174,7 @@ export default function AddCashModal({ categories, contacts, onClose }: { catego
               type="date"
               value={date}
               onChange={(e) => { setDate(e.target.value); clearDuplicatesOnEdit(); }}
-              className="w-full text-sm text-navy bg-transparent outline-none"
+              className="w-full bg-transparent outline-none"
             />
           </Field>
 
@@ -195,7 +195,7 @@ export default function AddCashModal({ categories, contacts, onClose }: { catego
               value={concept}
               onChange={(e) => { setConcept(e.target.value); clearDuplicatesOnEdit(); }}
               placeholder="ej: pago salario"
-              className="w-full text-sm text-navy bg-transparent outline-none placeholder:text-navy/30"
+              className="w-full bg-transparent outline-none placeholder:text-navy/30"
             />
           </Field>
 
@@ -226,7 +226,7 @@ export default function AddCashModal({ categories, contacts, onClose }: { catego
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Notas adicionales…"
               rows={2}
-              className="w-full text-sm text-navy bg-transparent outline-none resize-none placeholder:text-navy/30"
+              className="w-full bg-transparent outline-none resize-none placeholder:text-navy/30"
             />
           </Field>
 

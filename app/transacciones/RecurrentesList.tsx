@@ -379,7 +379,7 @@ function ConfirmPendingDrawer({ row, period, pick, end, name, ivaRate, retencion
             type="text"
             value={name}
             onChange={(e) => onNameChange(e.target.value)}
-            className="w-full text-sm text-navy bg-transparent outline-none"
+            className="w-full bg-transparent outline-none"
           />
         </Field>
         <p className="text-xs text-navy/40 mt-2">Puede ser distinto del contacto vinculado.</p>
@@ -391,7 +391,7 @@ function ConfirmPendingDrawer({ row, period, pick, end, name, ivaRate, retencion
             onClick={onOpenContactPicker}
             className="w-full flex items-center justify-between gap-2 text-left"
           >
-            <span className={`text-sm truncate ${pick ? "text-navy font-medium" : "text-navy/40"}`}>
+            <span className={`truncate ${pick ? "text-navy font-medium" : "text-navy/40"}`}>
               {label || "Elegir o crear contacto…"}
             </span>
             <ChevronRight size={14} className="text-navy/30 shrink-0" />
@@ -506,7 +506,7 @@ function NewManualRecurringDrawer({ categories, contacts, pick, onOpenContactPic
             value={label}
             onChange={(e) => setLabel(e.target.value)}
             placeholder="ej. Alquiler local nuevo"
-            className="w-full text-sm text-navy bg-transparent outline-none placeholder:text-navy/30"
+            className="w-full bg-transparent outline-none placeholder:text-navy/30"
           />
         </Field>
       </div>
@@ -519,9 +519,9 @@ function NewManualRecurringDrawer({ categories, contacts, pick, onOpenContactPic
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             placeholder="0,00"
-            className="w-24 text-sm text-navy bg-transparent outline-none placeholder:text-navy/30"
+            className="w-24 bg-transparent outline-none placeholder:text-navy/30"
           />
-          <span className="text-sm text-navy/40">€</span>
+          <span className="text-navy/40">€</span>
         </Field>
       </div>
 
@@ -537,7 +537,7 @@ function NewManualRecurringDrawer({ categories, contacts, pick, onOpenContactPic
             onClick={onOpenContactPicker}
             className="w-full flex items-center justify-between gap-2 text-left"
           >
-            <span className={`text-sm truncate ${pick ? "text-navy font-medium" : "text-navy/40"}`}>
+            <span className={`truncate ${pick ? "text-navy font-medium" : "text-navy/40"}`}>
               {pickLabel || "Elegir o crear contacto…"}
             </span>
             <ChevronRight size={14} className="text-navy/30 shrink-0" />
@@ -562,7 +562,7 @@ function NewManualRecurringDrawer({ categories, contacts, pick, onOpenContactPic
             type="date"
             value={anchorDate}
             onChange={(e) => setAnchorDate(e.target.value)}
-            className="w-full text-sm text-navy bg-transparent outline-none"
+            className="w-full bg-transparent outline-none"
           />
         </Field>
         <p className="text-xs text-navy/40 mt-2">Último pago conocido, o el próximo previsto si aún no ha empezado - desde aquí se proyecta el siguiente.</p>
@@ -690,9 +690,9 @@ function RecurringExpenseDrawer({ row, categories, contacts, onClose, onOpenCont
             disabled={saving}
             onChange={(ev) => setAmountDraft(ev.target.value)}
             onBlur={changeAmount}
-            className="w-24 text-sm font-semibold text-navy bg-transparent outline-none disabled:opacity-50"
+            className="w-24 font-semibold text-navy bg-transparent outline-none disabled:opacity-50"
           />
-          <span className="text-sm text-navy/40">€</span>
+          <span className="text-navy/40">€</span>
         </Field>
         {row.lastDate ? (
           <p className="text-xs text-navy/40 mt-2">
@@ -711,7 +711,7 @@ function RecurringExpenseDrawer({ row, categories, contacts, onClose, onOpenCont
             disabled={saving}
             onChange={(ev) => setName(ev.target.value)}
             onBlur={changeLabel}
-            className="w-full text-sm text-navy bg-transparent outline-none disabled:opacity-50"
+            className="w-full bg-transparent outline-none disabled:opacity-50"
           />
         </Field>
         <p className="text-xs text-navy/40 mt-2">Nombre de esta recurrencia - puede ser distinto del contacto vinculado.</p>
@@ -723,7 +723,7 @@ function RecurringExpenseDrawer({ row, categories, contacts, onClose, onOpenCont
             onClick={onOpenContactPicker}
             className="w-full flex items-center justify-between gap-2 text-left"
           >
-            <span className="text-sm text-navy font-medium truncate">{contactLabel}</span>
+            <span className="text-navy font-medium truncate">{contactLabel}</span>
             <span className="text-xs text-primary shrink-0">Cambiar</span>
           </button>
         </Field>

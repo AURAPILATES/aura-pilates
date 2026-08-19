@@ -84,14 +84,14 @@ function EventForm({
         </div>
       }
     >
-      <div className="px-6 py-5 space-y-4">
+      <div className="px-6 py-5 space-y-[14px]">
         <div className="grid grid-cols-2 gap-3">
           <Field label="Fecha">
             <input
               type="date"
               value={form.fecha}
               onChange={(e) => set("fecha", e.target.value)}
-              className="w-full text-sm text-navy bg-transparent outline-none"
+              className="w-full bg-transparent outline-none"
             />
           </Field>
           <Field label="Categoría">
@@ -109,7 +109,7 @@ function EventForm({
             value={form.titulo}
             onChange={(e) => set("titulo", e.target.value)}
             placeholder="Ej. Subida de precio mensual a 85€"
-            className="w-full text-sm text-navy bg-transparent outline-none placeholder:text-navy/30"
+            className="w-full bg-transparent outline-none placeholder:text-navy/30"
           />
         </Field>
 
@@ -119,7 +119,7 @@ function EventForm({
             onChange={(e) => set("descripcion", e.target.value)}
             placeholder="Detalles adicionales..."
             rows={3}
-            className="w-full text-sm text-navy bg-transparent outline-none resize-none placeholder:text-navy/30"
+            className="w-full bg-transparent outline-none resize-none placeholder:text-navy/30"
           />
         </Field>
 

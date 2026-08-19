@@ -40,7 +40,7 @@ export default function ChipsInput({ values, onChange, placeholder = "+ aÃ±adirâ
         placeholder={placeholder}
         className={
           bare
-            ? "h-[26px] min-w-[80px] flex-1 text-[13px] bg-transparent outline-none placeholder:text-navy/30"
+            ? "h-[26px] min-w-[80px] flex-1 bg-transparent outline-none placeholder:text-navy/30"
             : "h-[26px] w-32 px-2.5 text-[12px] bg-card border border-dashed border-navy/25 rounded-[7px] focus:outline-none focus:border-solid focus:border-primary/50 placeholder:text-faint"
         }
       />

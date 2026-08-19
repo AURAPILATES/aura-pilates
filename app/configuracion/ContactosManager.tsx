@@ -189,14 +189,14 @@ function ContactDetailDrawer({ contact, categories, stats, onChange, onRemove, o
           </div>
         </div>
 
-        <div className="p-4 border-b border-navy/[0.06] space-y-3">
+        <div className="p-4 border-b border-navy/[0.06] space-y-[10px]">
           <Field label="Nombre">
             <input
               type="text"
               value={label}
               onChange={(e) => setLabel(e.target.value)}
               onBlur={() => { if (label.trim() && label !== contact.label) onChange({ label: label.trim() }); }}
-              className="w-full text-sm text-navy bg-transparent outline-none"
+              className="w-full bg-transparent outline-none"
             />
           </Field>
           <div className="grid grid-cols-2 gap-3">

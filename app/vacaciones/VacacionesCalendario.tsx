@@ -323,7 +323,7 @@ function NuevoInstructorModal({
         </div>
       )}
     >
-      <div className="px-6 py-5 space-y-4">
+      <div className="px-6 py-5 space-y-[14px]">
         <Field label="Nombre">
           <input
             type="text"
@@ -331,7 +331,7 @@ function NuevoInstructorModal({
             onChange={(e) => setNombre(e.target.value)}
             placeholder="Nombre del instructor"
             autoFocus
-            className="w-full text-sm text-navy bg-transparent outline-none placeholder:text-navy/30"
+            className="w-full bg-transparent outline-none placeholder:text-navy/30"
           />
         </Field>
         <Field label="Inicio de contrato">
@@ -339,7 +339,7 @@ function NuevoInstructorModal({
             type="date"
             value={inicioContrato}
             onChange={(e) => handleInicio(e.target.value)}
-            className="w-full text-sm text-navy bg-transparent outline-none"
+            className="w-full bg-transparent outline-none"
           />
         </Field>
         <div className="grid grid-cols-2 gap-3">
@@ -347,14 +347,14 @@ function NuevoInstructorModal({
             <input
               type="number" min={1} max={7} value={jornadaDias}
               onChange={(e) => handleJornada(Number(e.target.value))}
-              className="w-full text-sm text-navy bg-transparent outline-none"
+              className="w-full bg-transparent outline-none"
             />
           </Field>
           <Field label={<>Días vacaciones {!userEdited && <span className="ml-1 text-[10px] text-primary/70 font-normal">· calculado</span>}</>}>
             <input
               type="number" min={0} max={365} value={diasTotales}
               onChange={(e) => handleDias(Number(e.target.value))}
-              className="w-full text-sm text-navy bg-transparent outline-none"
+              className="w-full bg-transparent outline-none"
             />
           </Field>
         </div>
@@ -479,7 +479,7 @@ function AñadirAusenciaModal({
       )}
     >
         <div className="flex flex-col sm:flex-row">
-          <div className="flex-1 px-6 py-5 space-y-5">
+          <div className="flex-1 px-6 py-5 space-y-[18px]">
             {/* Type selector */}
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 flex items-center justify-center shrink-0">
@@ -546,7 +546,7 @@ function AñadirAusenciaModal({
                         setDateFrom(e.target.value);
                         if (e.target.value > dateTo) setDateTo(e.target.value);
                       }}
-                      className="w-full text-sm text-navy bg-transparent outline-none"
+                      className="w-full bg-transparent outline-none"
                     />
                   </Field>
                 ) : (
@@ -564,7 +564,7 @@ function AñadirAusenciaModal({
                       value={dateTo}
                       min={dateFrom}
                       onChange={(e) => setDateTo(e.target.value)}
-                      className="w-full text-sm text-navy bg-transparent outline-none"
+                      className="w-full bg-transparent outline-none"
                     />
                   </Field>
                 )}

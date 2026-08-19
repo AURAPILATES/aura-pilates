@@ -57,7 +57,7 @@ function EditableField({ label, value, onSave }: { label: string; value: string;
           if (e.key === "Enter") { (e.target as HTMLInputElement).blur(); }
           if (e.key === "Escape") { setDraft(value); (e.target as HTMLInputElement).blur(); }
         }}
-        className="w-full text-sm font-medium text-navy bg-transparent outline-none"
+        className="w-full font-medium bg-transparent outline-none"
       />
     </Field>
   );
@@ -481,7 +481,7 @@ export default function TransactionDrawer({
         </div>
       )}
     >
-      <div className="px-6 py-5 flex flex-col gap-5">
+      <div className="px-6 py-5 flex flex-col gap-[18px]">
         <div className="flex items-start justify-between">
           <div>
             <span className={`text-2xl font-bold tabular-nums ${isIncome ? "text-success" : "text-navy"}`}>
@@ -545,10 +545,10 @@ export default function TransactionDrawer({
                   type="date"
                   value={t.date}
                   onChange={(e) => onUpdateDate(t.id, e.target.value)}
-                  className="w-full text-sm text-navy bg-transparent outline-none"
+                  className="w-full bg-transparent outline-none"
                 />
               ) : (
-                <span className="text-sm text-navy">{fmtDate(t.date)}</span>
+                <span className="text-navy">{fmtDate(t.date)}</span>
               )}
             </Field>
             {t.value_date && t.value_date !== t.date && (
@@ -569,7 +569,7 @@ export default function TransactionDrawer({
                 ))}
               </Select>
             ) : (
-              <span className="text-sm text-navy">{originLabel(t.payment_method)}</span>
+              <span className="text-navy">{originLabel(t.payment_method)}</span>
             )}
           </Field>
         </div>

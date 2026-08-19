@@ -826,7 +826,7 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                                 value={d.label}
                                 onChange={(e) => updateDraft(d.pattern, { label: e.target.value })}
                                 placeholder="Nombre del contacto"
-                                className="w-full text-sm text-navy bg-transparent outline-none placeholder:text-navy/30"
+                                className="w-full bg-transparent outline-none placeholder:text-navy/30"
                               />
                             </Field>
                             <label className="flex items-center gap-1.5 text-xs font-semibold text-primary/80 mb-1.5">

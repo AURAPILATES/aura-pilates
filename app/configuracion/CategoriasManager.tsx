@@ -631,7 +631,7 @@ export default function CategoriasManager({
             </div>
 
             {/* Form */}
-            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-[14px]">
 
               {/* Nombre */}
               <Field label="Nombre">
@@ -640,7 +640,7 @@ export default function CategoriasManager({
                   value={form.label}
                   onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))}
                   placeholder="Ej: Alquiler local"
-                  className="w-full text-sm text-navy bg-transparent outline-none placeholder:text-navy/30"
+                  className="w-full bg-transparent outline-none placeholder:text-navy/30"
                 />
               </Field>
 
@@ -737,7 +737,7 @@ export default function CategoriasManager({
               {/* Categoría padre */}
               <Field label={<>Categoría padre <span className="font-normal text-navy/35">(opcional, para crear una subcategoría)</span></>}>
                 {parentOptions.length === 0 ? (
-                  <p className="text-sm text-navy/45 leading-snug">
+                  <p className="text-navy/45 leading-snug">
                     {editingHeight >= MAX_DEPTH
                       ? "Esta categoría ya tiene su propia jerarquía de subcategorías, así que no puede anidarse bajo otra (el máximo son tres niveles)."
                       : "No hay ninguna categoría bajo la que anidar esta."}

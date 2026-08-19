@@ -91,12 +91,12 @@ export default function NewContactDrawer({
         </div>
       )}
     >
-      <div className="px-6 py-5 space-y-4">
+      <div className="px-6 py-5 space-y-[14px]">
         <Field label="Nombre">
           <input
             type="text" placeholder="Cómo quieres que se muestre"
             value={label} onChange={(e) => setLabel(e.target.value)}
-            className="w-full text-sm text-navy bg-transparent outline-none placeholder:text-navy/30"
+            className="w-full bg-transparent outline-none placeholder:text-navy/30"
           />
         </Field>
         <div className="p-3.5 bg-primary/[0.06] border border-primary/15 rounded-xl">
