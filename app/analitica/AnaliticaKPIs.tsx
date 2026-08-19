@@ -85,7 +85,7 @@ function PaymentErrorRow({
           Stripe
         </a>
       </div>
-      <div className="p-4 bg-danger/[0.06] border border-danger/20 rounded-xl">
+      <div className="p-4 bg-danger/[0.06] border border-danger/20 rounded-[8px]">
         <p className="text-xs font-bold text-danger uppercase tracking-wider mb-2">Error de pago</p>
         <div className="space-y-1 text-xs text-navy/70">
           {c.paymentErrorDate && (
@@ -114,6 +114,9 @@ function PaymentErrorRow({
   );
 }
 
+// <div role="button"> en vez de <button>: adentro va InfoDot, que ya monta su propio <button>
+// - un <button> real no puede contener otro <button> (HTML inválido), y React lo detectaba como
+// error de hidratación porque el navegador reordena el DOM al parsear el HTML mal anidado.
 function StatBox({
   icon, label, value, valueClassName, tooltip, onClick, delta,
 }: {
@@ -125,12 +128,13 @@ function StatBox({
   onClick?: () => void;
   delta?: { value: string; direction: DeltaDirection };
 }) {
-  const Comp = onClick ? "button" : "div";
   return (
-    <Comp
-      type={onClick ? "button" : undefined}
+    <div
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
       onClick={onClick}
-      className={`w-full text-left bg-card border border-border rounded-[14px] px-4 sm:px-5 py-4 ${
+      onKeyDown={onClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } } : undefined}
+      className={`w-full text-left bg-card border border-border rounded-[8px] px-4 sm:px-5 py-4 ${
         onClick ? "hover:bg-navy/[0.015] transition-colors cursor-pointer" : ""
       }`}
     >
@@ -145,7 +149,7 @@ function StatBox({
         </span>
         {delta && <DeltaBadge value={delta.value} direction={delta.direction} />}
       </div>
-    </Comp>
+    </div>
   );
 }
 

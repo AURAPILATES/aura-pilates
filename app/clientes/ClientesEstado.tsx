@@ -19,14 +19,18 @@ import MemberDrawer from "./MemberDrawer";
 import type { MemberClient, StatusTone } from "@/lib/memberClientsV2";
 import type { StripePayment } from "@/lib/stripePayments";
 
+// <div role="button"> en vez de <button>: adentro va InfoDot, que ya monta su propio <button>
+// - un <button> real no puede contener otro <button> (HTML inválido), y React lo detectaba como
+// error de hidratación porque el navegador reordena el DOM al parsear el HTML mal anidado.
 function StatBox({ icon, label, value, valueClassName, dotClassName, tooltip, onClick, active }: {
   icon: ReactNode; label: string; value: ReactNode; valueClassName?: string; dotClassName?: string; tooltip: string; onClick?: () => void; active?: boolean;
 }) {
-  const Comp = onClick ? "button" : "div";
   return (
-    <Comp
-      type={onClick ? "button" : undefined}
+    <div
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
       onClick={onClick}
+      onKeyDown={onClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } } : undefined}
       className={`w-full text-left bg-card border rounded-[14px] px-3.5 py-3 transition-colors ${
         active ? "border-navy/40" : "border-border"
       } ${onClick ? "hover:bg-navy/[0.015] cursor-pointer" : ""}`}
@@ -38,7 +42,7 @@ function StatBox({ icon, label, value, valueClassName, dotClassName, tooltip, on
         <InfoDot text={tooltip} />
       </div>
       <span className={`text-2xl font-medium leading-tight tabular-nums ${valueClassName ?? "text-navy"}`}>{value}</span>
-    </Comp>
+    </div>
   );
 }
 
