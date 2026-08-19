@@ -22,7 +22,7 @@ function MrrTooltip({ active, payload }: TooltipContentProps) {
   if (!active || !payload?.length) return null;
   const row = payload[0].payload as MrrHistoryPoint;
   return (
-    <div className="bg-card border border-border rounded-[10px] shadow-lg px-3 py-2 text-xs">
+    <div className="bg-card border border-border rounded-[8px] shadow-lg px-3 py-2 text-xs">
       <p className="font-semibold text-navy mb-1">{fmtDate(row.date)}</p>
       <p className="text-navy/55">MRR <span className="font-semibold text-navy ml-1">{fmtEur(row.totalMrr)}</span></p>
       <p className="text-navy/55">{row.totalSubscriptions} suscripciones activas</p>

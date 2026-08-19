@@ -177,7 +177,7 @@ export default function GastoPorOrigen({
           footer={
             <Link
               href={`/transacciones?origen=${encodeURIComponent(selected.origin)}`}
-              className="flex items-center justify-center gap-2 w-full py-2.5 rounded-[10px] border border-border bg-card text-sm font-medium text-navy hover:bg-subtle transition-colors"
+              className="flex items-center justify-center gap-2 w-full py-2.5 rounded-[8px] border border-border bg-card text-sm font-medium text-navy hover:bg-subtle transition-colors"
             >
               Ver transacciones
             </Link>

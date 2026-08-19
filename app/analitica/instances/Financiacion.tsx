@@ -162,7 +162,7 @@ export default function Financiacion({
           )}
 
           {budgets.map((b) => (
-            <div key={b.id} className="border border-navy/[0.08] rounded-xl p-3 space-y-2.5">
+            <div key={b.id} className="border border-navy/[0.08] rounded-[8px] p-3 space-y-2.5">
               <div className="flex flex-col sm:grid sm:grid-cols-[1fr_130px_160px_32px] gap-2 items-start sm:items-center">
                 <input
                   type="text"

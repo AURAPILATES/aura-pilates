@@ -7,7 +7,7 @@ function ChartTooltip({ active, payload }: TooltipContentProps) {
   if (!active || !payload?.length) return null;
   const row = payload[0].payload as ActiveCustomersRow;
   return (
-    <div className="bg-card border border-border rounded-[10px] shadow-lg px-3 py-2 text-xs max-w-[220px]">
+    <div className="bg-card border border-border rounded-[8px] shadow-lg px-3 py-2 text-xs max-w-[220px]">
       <p className="font-semibold text-navy mb-1">{row.label}</p>
       <p className="text-navy/70">Suscripciones: {row.subscriptions}</p>
       <p className="text-navy/70">Packs: {row.packs}</p>

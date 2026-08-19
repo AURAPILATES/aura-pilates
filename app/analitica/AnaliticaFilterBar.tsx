@@ -184,14 +184,14 @@ function CalendarRangePicker({
           type="date"
           value={rangeStart ? toISO(rangeStart) : ""}
           onChange={(e) => setRangeStart(e.target.value ? fromISO(e.target.value) : null)}
-          className="flex-1 text-sm border border-navy/[0.15] rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary/30 text-navy"
+          className="flex-1 text-sm border border-navy/[0.15] rounded-lg px-3 py-2 shadow-[0px_2px_2px_var(--tw-shadow-color,#0000000d)] focus:outline-none focus:ring-1 focus:ring-primary/30 text-navy"
         />
         <span className="text-navy/30 text-center sm:text-left">–</span>
         <input
           type="date"
           value={rangeEnd ? toISO(rangeEnd) : ""}
           onChange={(e) => setRangeEnd(e.target.value ? fromISO(e.target.value) : null)}
-          className="flex-1 text-sm border border-navy/[0.15] rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary/30 text-navy"
+          className="flex-1 text-sm border border-navy/[0.15] rounded-lg px-3 py-2 shadow-[0px_2px_2px_var(--tw-shadow-color,#0000000d)] focus:outline-none focus:ring-1 focus:ring-primary/30 text-navy"
         />
       </div>
 
@@ -347,7 +347,7 @@ function AnaliticaFilterBarInner({ compact = false }: { compact?: boolean }) {
   return (
     <div className={compact ? "flex items-center gap-2" : "flex flex-col sm:flex-row sm:items-center sm:flex-wrap gap-3 sm:gap-2 mb-4 pb-4 border-b border-border"}>
       <div ref={ref} className="relative">
-        <div className="flex items-center bg-card border border-border rounded-[10px] text-navy overflow-hidden w-full sm:w-auto">
+        <div className="flex items-center bg-card border border-border rounded-[8px] text-navy overflow-hidden w-full sm:w-auto">
           <button
             type="button"
             onClick={() => step(-1)}
@@ -381,7 +381,7 @@ function AnaliticaFilterBarInner({ compact = false }: { compact?: boolean }) {
         </div>
 
         {open && (
-            <div className="absolute left-0 top-full mt-1.5 z-50 bg-card border border-border rounded-[10px] shadow-lg overflow-hidden max-w-[calc(100vw-2rem)] max-h-[70vh] overflow-y-auto">
+            <div className="absolute left-0 top-full mt-1.5 z-50 bg-card border border-border rounded-[8px] shadow-lg overflow-hidden max-w-[calc(100vw-2rem)] max-h-[70vh] overflow-y-auto">
               <div className="flex flex-col sm:flex-row">
                 <ul className="py-1 w-full sm:min-w-[220px]">
                   {availableYears.map((y) => (

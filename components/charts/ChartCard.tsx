@@ -46,6 +46,8 @@ export interface ChartCardProps {
   /** texto ya formateado, p.ej. "ahora" / "hace 3 min" / "hoy 8:30" / "11 jun 2026" */
   lastUpdated?: string | null;
   className?: string;
+  /** clase de radio de esquina del contenedor - por defecto 8px */
+  radiusClassName?: string;
 }
 
 export default function ChartCard({
@@ -64,11 +66,12 @@ export default function ChartCard({
   sources,
   lastUpdated,
   className = "",
+  radiusClassName = "rounded-[8px]",
 }: ChartCardProps) {
   const [aiOpen, setAiOpen] = useState(aiInsightDefaultOpen);
 
   return (
-    <div className={`relative bg-card border border-border rounded-[14px] overflow-hidden flex flex-col ${className}`}>
+    <div className={`relative bg-card border border-border ${radiusClassName} overflow-hidden flex flex-col ${className}`}>
       {/* HEADER */}
       <div className="px-4 sm:px-5 pt-4">
         <div className="flex items-center justify-between gap-2 flex-wrap mb-1">

@@ -333,7 +333,7 @@ export default function HorarioOcupacionEvolucion({
             const flipL = pctX(cx) > 70;
             return (
               <div
-                className="absolute z-10 bg-card border border-border rounded-[10px] shadow-lg px-3 py-2 text-xs leading-snug pointer-events-none whitespace-nowrap"
+                className="absolute z-10 bg-card border border-border rounded-[8px] shadow-lg px-3 py-2 text-xs leading-snug pointer-events-none whitespace-nowrap"
                 style={{
                   left: `${pctX(cx)}%`,
                   top: `${pctY(anchorY)}%`,
@@ -359,7 +359,7 @@ export default function HorarioOcupacionEvolucion({
               return (
                 <div
                   key={`evtip-${ev.id}`}
-                  className="absolute z-20 bg-card border border-border rounded-[10px] shadow-lg px-3 py-2 text-xs leading-snug pointer-events-none max-w-[200px]"
+                  className="absolute z-20 bg-card border border-border rounded-[8px] shadow-lg px-3 py-2 text-xs leading-snug pointer-events-none max-w-[200px]"
                   style={{
                     left: `${pctX(cx)}%`,
                     top: `${pctY(MT)}%`,

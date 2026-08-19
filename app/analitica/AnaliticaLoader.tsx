@@ -66,7 +66,6 @@ import GastoPorOrigen, { type OriginSpend } from "./instances/GastoPorOrigen";
 import HorarioReporting from "./instances/HorarioReporting";
 import VolumenBruto from "./instances/VolumenBruto";
 import AnaliticaTabs from "./AnaliticaTabs";
-import SectionHeader from "./SectionHeader";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -687,14 +686,14 @@ export default async function AnaliticaLoader({
   return (
     <>
       {!hasSales && (
-        <div className="bg-warning/10 border border-warning/30 rounded-[10px] p-4 text-sm text-warning mb-6">
+        <div className="bg-warning/10 border border-warning/30 rounded-[8px] p-4 text-sm text-warning mb-6">
           Sin datos de ventas. Copia el CSV de Momence a{" "}
           <code className="font-mono bg-warning/10 px-1 rounded text-xs">data/sales.csv</code>.
         </div>
       )}
 
       {failedSyncRun && (
-        <div className="bg-danger/10 border border-danger/30 rounded-[10px] p-4 text-sm text-danger mb-6">
+        <div className="bg-danger/10 border border-danger/30 rounded-[8px] p-4 text-sm text-danger mb-6">
           📌 El último snapshot nocturno de Momence falló ({formatRelativeTime(failedSyncRun.ranAt)}): {failedSyncRun.error}.
           Las métricas de altas/bajas de suscripción pueden estar desactualizadas hasta el próximo sync.
         </div>
@@ -703,7 +702,6 @@ export default async function AnaliticaLoader({
       <AnaliticaTabs
         ingresosGastos={
           <section>
-            <SectionHeader id="ingresos-gastos" title="Ingresos y gastos" />
             <div className="space-y-4">
               <VolumenBruto
                 txns={txnsMain}
@@ -764,7 +762,6 @@ export default async function AnaliticaLoader({
         }
         clientes={
           <section>
-            <SectionHeader id="clientes" title="Clientes" />
             <div className="space-y-4">
               <AnaliticaKPIs
                 customers={customers}

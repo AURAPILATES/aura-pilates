@@ -103,6 +103,7 @@ export default function ClientesPaymentsBreakdown({
         dateRange={periodLabel}
         dataSource="Stripe · pagos en tiempo real"
         sources={["stripe"]}
+        radiusClassName="rounded-[14px]"
       >
         <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
           {/* Donut */}

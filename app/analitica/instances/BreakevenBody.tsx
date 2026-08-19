@@ -23,7 +23,7 @@ function makeTooltip(view: View) {
     if (!active || !payload?.length) return null;
     const p = payload[0].payload as BreakevenPoint;
     return (
-      <div className="bg-card border border-border rounded-[10px] shadow-lg px-3 py-2 text-xs">
+      <div className="bg-card border border-border rounded-[8px] shadow-lg px-3 py-2 text-xs">
         <p className="font-semibold text-navy mb-1.5">{p.label}</p>
         {view === "bruto" ? (
           <>

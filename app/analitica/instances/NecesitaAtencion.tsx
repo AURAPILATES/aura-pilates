@@ -177,7 +177,7 @@ export default function NecesitaAtencion({
               {info?.stripeId && <StripeButton stripeId={info.stripeId} />}
             </div>
 
-            <div className="p-4 bg-navy/[0.03] rounded-xl space-y-2 text-sm">
+            <div className="p-4 bg-navy/[0.03] rounded-[8px] space-y-2 text-sm">
               <div className="flex justify-between gap-4">
                 <span className="text-navy/50">Plan</span>
                 <span className="text-navy font-medium text-right">{selected.membershipName}</span>
@@ -194,13 +194,13 @@ export default function NecesitaAtencion({
               </div>
             </div>
 
-            <div className="p-4 bg-warning/[0.06] border border-warning/15 rounded-xl">
+            <div className="p-4 bg-warning/[0.06] border border-warning/15 rounded-[8px]">
               <p className="text-xs font-semibold text-warning mb-1">¿Por qué necesita atención?</p>
               <p className="text-xs text-navy/70 leading-relaxed">{EXPLANATION[selected.reason]}</p>
             </div>
 
             {info ? (
-              <div className="p-4 bg-navy/[0.03] rounded-xl space-y-2 text-sm">
+              <div className="p-4 bg-navy/[0.03] rounded-[8px] space-y-2 text-sm">
                 <div className="flex justify-between gap-4">
                   <span className="text-navy/50">Último pago</span>
                   <span className="text-navy/80 text-right">{info.lastPaymentDate ?? "—"}</span>

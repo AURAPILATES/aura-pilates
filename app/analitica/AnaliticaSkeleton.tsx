@@ -19,7 +19,7 @@ function KpiRowSkeleton({ count = 4 }: { count?: number }) {
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="bg-card border border-border rounded-[14px] p-4">
+        <div key={i} className="bg-card border border-border rounded-[8px] p-4">
           <div className="h-2 w-16 bg-navy/10 rounded mb-3" />
           <div className="h-6 w-20 bg-navy/10 rounded mb-2" />
           <div className="h-2 w-14 bg-navy/[0.07] rounded" />
@@ -41,7 +41,7 @@ function ChartCardSkeleton({
   twoCol?: boolean;
 }) {
   return (
-    <div className="bg-card border border-border rounded-[14px] p-4 sm:p-5">
+    <div className="bg-card border border-border rounded-[8px] p-4 sm:p-5">
       <div className="flex items-center justify-between gap-2 mb-1.5">
         <div className="h-3 w-36 bg-navy/10 rounded" />
         <div className="h-4 w-16 bg-navy/[0.06] rounded-full shrink-0" />
@@ -59,13 +59,13 @@ function ChartCardSkeleton({
       )}
       {twoCol ? (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-          <div className={`lg:col-span-2 ${bodyHeight} bg-navy/[0.05] rounded-[10px]`} />
+          <div className={`lg:col-span-2 ${bodyHeight} bg-navy/[0.05] rounded-[8px]`} />
           <div className="lg:col-span-1 space-y-2">
             {[0, 1, 2, 3, 4].map((i) => <div key={i} className="h-6 bg-navy/[0.05] rounded-lg" />)}
           </div>
         </div>
       ) : (
-        <div className={`${bodyHeight} bg-navy/[0.05] rounded-[10px]`} />
+        <div className={`${bodyHeight} bg-navy/[0.05] rounded-[8px]`} />
       )}
     </div>
   );
@@ -73,7 +73,7 @@ function ChartCardSkeleton({
 
 function TableCardSkeleton({ rows = 4 }: { rows?: number }) {
   return (
-    <div className="bg-card border border-border rounded-[14px] p-4 sm:p-5">
+    <div className="bg-card border border-border rounded-[8px] p-4 sm:p-5">
       <div className="h-3 w-40 bg-navy/10 rounded mb-1.5" />
       <div className="h-2 w-56 bg-navy/[0.06] rounded mb-4" />
       <div className="space-y-2.5">

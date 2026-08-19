@@ -443,7 +443,7 @@ export default function DesglosGastosUnificado({
           footer={
             <Link
               href={`/transacciones?categoria=${encodeURIComponent(selected.kind === "category" ? selected.seg.key : selected.leaf.value)}`}
-              className="flex items-center justify-center gap-2 w-full py-2.5 rounded-[10px] border border-border bg-card text-sm font-medium text-navy hover:bg-subtle transition-colors"
+              className="flex items-center justify-center gap-2 w-full py-2.5 rounded-[8px] border border-border bg-card text-sm font-medium text-navy hover:bg-subtle transition-colors"
             >
               Ver transacciones
             </Link>
