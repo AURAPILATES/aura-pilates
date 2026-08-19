@@ -323,7 +323,7 @@ function NuevoInstructorModal({
         </div>
       )}
     >
-      <div className="px-6 py-5 space-y-[14px]">
+      <div className="px-6 py-5 space-y-[12px]">
         <Field label="Nombre">
           <input
             type="text"
@@ -479,7 +479,7 @@ function AñadirAusenciaModal({
       )}
     >
         <div className="flex flex-col sm:flex-row">
-          <div className="flex-1 px-6 py-5 space-y-[18px]">
+          <div className="flex-1 px-6 py-5 space-y-[16px]">
             {/* Type selector */}
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 flex items-center justify-center shrink-0">

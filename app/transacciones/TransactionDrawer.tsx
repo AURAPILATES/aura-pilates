@@ -224,7 +224,7 @@ function MarkRecurringControl({
   return (
     <div className="flex flex-col gap-2.5 pt-3 border-t border-navy/[0.06]">
       <div className={`rounded-lg border transition-colors ${
-        checked ? "border-primary/30 bg-primary/[0.05]" : "border-navy/[0.1] hover:bg-navy/[0.02]"
+        checked ? "border-navy/20 bg-navy/[0.03]" : "border-navy/[0.1] hover:bg-navy/[0.02]"
       }`}>
         <label className="flex items-start gap-2.5 px-3 py-2.5 cursor-pointer">
           <Checkbox checked={checked} onChange={(e) => toggle(e.target.checked)} tone="primary" className="mt-0.5" />
@@ -357,39 +357,45 @@ function RefundControl({
 
   return (
     <div className="flex flex-col gap-2.5">
-      <label className={`flex items-start gap-2.5 px-3 py-2.5 rounded-lg border cursor-pointer transition-colors ${
-        checked ? "border-primary/30 bg-primary/[0.05]" : "border-navy/[0.1] hover:bg-navy/[0.02]"
+      <div className={`rounded-lg border transition-colors ${
+        checked ? "border-navy/20 bg-navy/[0.03]" : "border-navy/[0.1] hover:bg-navy/[0.02]"
       }`}>
-        <Checkbox
-          checked={checked}
-          disabled={searching}
-          onChange={(e) => handleCheck(e.target.checked)}
-          tone="primary"
-          className="mt-0.5 disabled:opacity-50"
-        />
-        <span className="flex-1 min-w-0">
-          <span className="flex items-center gap-1.5 text-sm font-medium text-navy">
-            <RotateCcw size={13} className="shrink-0 text-primary" />
-            Es una devolución
+        <label className="flex items-start gap-2.5 px-3 py-2.5 cursor-pointer">
+          <Checkbox
+            checked={checked}
+            disabled={searching}
+            onChange={(e) => handleCheck(e.target.checked)}
+            tone="primary"
+            className="mt-0.5 disabled:opacity-50"
+          />
+          <span className="flex-1 min-w-0">
+            <span className="flex items-center gap-1.5 text-sm font-medium text-navy">
+              <RotateCcw size={13} className="shrink-0 text-primary" />
+              Es una devolución
+            </span>
+            <span className="block text-xs text-navy/45 mt-0.5">
+              {searching
+                ? "Buscando el movimiento contrario…"
+                : "No cuenta como ingreso ni gasto (p. ej. una comisión y su condonación en otro movimiento)"}
+            </span>
           </span>
-          <span className="block text-xs text-navy/45 mt-0.5">
-            {searching
-              ? "Buscando el movimiento contrario…"
-              : "No cuenta como ingreso ni gasto (p. ej. una comisión y su condonación en otro movimiento)"}
-          </span>
-        </span>
-      </label>
+        </label>
 
-      {linked && (
-        <p className="text-xs text-navy/55 bg-navy/[0.03] rounded-lg px-3 py-2 ml-1">
-          Vinculada con <strong className="text-navy">{linked.label}</strong> · {fmtDate(linked.date)} · {linked.amount > 0 ? "+" : "−"}{fmtAmt(linked.amount)}
-        </p>
-      )}
-      {noMatch && !linked && (
-        <p className="text-xs text-warning bg-warning/[0.08] rounded-lg px-3 py-2 ml-1">
-          No se ha encontrado un movimiento con importe opuesto cerca de esta fecha. Márcalo también a mano cuando lo veas.
-        </p>
-      )}
+        {linked && (
+          <div className="px-3 pb-3 pt-1 border-t border-navy/[0.06] mt-1">
+            <p className="text-xs text-navy/55 bg-navy/[0.03] rounded-lg px-3 py-2">
+              Vinculada con <strong className="text-navy">{linked.label}</strong> · {fmtDate(linked.date)} · {linked.amount > 0 ? "+" : "−"}{fmtAmt(linked.amount)}
+            </p>
+          </div>
+        )}
+        {noMatch && !linked && (
+          <div className="px-3 pb-3 pt-1 border-t border-navy/[0.06] mt-1">
+            <p className="text-xs text-warning bg-warning/[0.08] rounded-lg px-3 py-2">
+              No se ha encontrado un movimiento con importe opuesto cerca de esta fecha. Márcalo también a mano cuando lo veas.
+            </p>
+          </div>
+        )}
+      </div>
       {candidates && (
         <div className="rounded-lg border border-navy/[0.1] overflow-hidden ml-1">
           <p className="text-[11px] text-navy/45 px-3 pt-2 pb-1">Varios movimientos coinciden - elige con cuál vincular:</p>
@@ -481,7 +487,7 @@ export default function TransactionDrawer({
         </div>
       )}
     >
-      <div className="px-6 py-5 flex flex-col gap-[18px]">
+      <div className="px-6 py-5 flex flex-col gap-[16px]">
         <div className="flex items-start justify-between">
           <div>
             <span className={`text-2xl font-bold tabular-nums ${isIncome ? "text-success" : "text-navy"}`}>
@@ -537,7 +543,7 @@ export default function TransactionDrawer({
           <CategoryPill category={t.category} categories={categories} onChange={(cat) => onUpdateCategory(t.id, cat)} />
         </Field>
 
-        <div className="grid grid-cols-2 gap-3 pt-2 border-t border-navy/[0.06]">
+        <div className="grid grid-cols-2 gap-3">
           <div>
             <Field label="Fecha">
               {editableOrigin ? (

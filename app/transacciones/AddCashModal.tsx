@@ -157,7 +157,7 @@ export default function AddCashModal({ categories, contacts, onClose }: { catego
         )
       }
     >
-        <div className="px-6 py-5 space-y-[14px]">
+        <div className="px-6 py-5 space-y-[12px]">
           <ToggleGroup
             options={[
               { value: "income", label: "Ingreso", activeClassName: "bg-success text-white font-medium" },

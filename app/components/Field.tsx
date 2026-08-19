@@ -12,7 +12,7 @@ export default function Field({ label, children, align = "center", className = "
 }) {
   return (
     <fieldset
-      className={`group flex ${align === "start" ? "items-start" : "items-center"} gap-2 border border-navy/[0.12] rounded-[8px] pt-2 px-3 pb-2.5 text-[13px] text-navy transition-colors focus-within:border-primary/40 ${className}`}
+      className={`group flex ${align === "start" ? "items-start" : "items-center"} gap-2 border border-navy/[0.12] rounded-[8px] pt-1.5 px-3 pb-2 text-[13px] text-navy transition-colors focus-within:border-primary/40 ${className}`}
     >
       <legend className="px-1.5 ml-1 text-[12.5px] font-medium text-navy/55 group-focus-within:text-primary">
         {label}

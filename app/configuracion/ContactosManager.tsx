@@ -189,7 +189,7 @@ function ContactDetailDrawer({ contact, categories, stats, onChange, onRemove, o
           </div>
         </div>
 
-        <div className="p-4 border-b border-navy/[0.06] space-y-[10px]">
+        <div className="p-4 border-b border-navy/[0.06] space-y-[8px]">
           <Field label="Nombre">
             <input
               type="text"

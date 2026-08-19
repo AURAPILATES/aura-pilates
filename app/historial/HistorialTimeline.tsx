@@ -84,7 +84,7 @@ function EventForm({
         </div>
       }
     >
-      <div className="px-6 py-5 space-y-[14px]">
+      <div className="px-6 py-5 space-y-[12px]">
         <div className="grid grid-cols-2 gap-3">
           <Field label="Fecha">
             <input
