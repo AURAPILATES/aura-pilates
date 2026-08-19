@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import SearchInputV2 from "@/app/components/v2/SearchInputV2";
 import TablePaginationV2 from "@/app/components/v2/TablePaginationV2";
 import Select from "@/app/components/Select";
@@ -38,6 +38,9 @@ type Props = {
   onPageChange: (p: number) => void;
   onRowClick: (c: MatrixRow["customer"]) => void;
   onExportCsv: () => void;
+  /** Control extra al final de la barra de búsqueda/filtros (p.ej. el switch de procedencia
+   * Momence/Urban en Clientes › Historial). */
+  extraControls?: ReactNode;
 };
 
 function sortArrow(active: boolean, dir: "asc" | "desc") {
@@ -50,6 +53,7 @@ export default function ClientesMatrizComprasV2({
   purchaseCountFilter, onPurchaseCountFilterChange,
   onlyInactive, onToggleOnlyInactive, onlyUpsell, onToggleOnlyUpsell, lastMonth, months, rows,
   sortKey, sortDir, onToggleSort, monthTotals, grandTotal, totalCount, page, pageSize, onPageChange, onRowClick, onExportCsv,
+  extraControls,
 }: Props) {
   const [filtersOpen, setFiltersOpen] = useState(false);
   // En móvil hay demasiadas columnas de mes para que quepan sin scroll horizontal ilegible:
@@ -88,13 +92,17 @@ export default function ClientesMatrizComprasV2({
     <div>
       <div className="flex items-center gap-[9px] flex-wrap">
         <SearchInputV2 value={search} onChange={onSearchChange} placeholder="Buscar cliente…" className="min-w-[160px] flex-1" />
-        <FiltersToggleButtonV2 open={filtersOpen} active={filtersActive} onClick={() => setFiltersOpen((v) => !v)} />
-        <IconButtonV2 onClick={onExportCsv} title="Exportar vista actual a CSV" className="sm:order-2">
+        <FiltersToggleButtonV2 open={filtersOpen} active={filtersActive} onClick={() => setFiltersOpen((v) => !v)} alwaysVisible />
+        <IconButtonV2 onClick={onExportCsv} title="Exportar vista actual a CSV">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
             <path d="M12 4v10M8 11l4 4 4-4M5 19h14" />
           </svg>
         </IconButtonV2>
-        <div className={`${filtersOpen ? "flex" : "hidden"} sm:flex sm:order-1 items-center gap-[9px] flex-wrap w-full sm:w-auto`}>
+        {extraControls}
+      </div>
+
+      {filtersOpen && (
+        <div className="flex items-center gap-[9px] flex-wrap mt-4">
           <Select variant="v2" value={productFilter} onChange={(e) => onProductFilterChange(e.target.value)} className="w-auto">
             <option value="">Todos los productos</option>
             {PRODUCT_FILTERS.map((p) => (
@@ -132,15 +140,7 @@ export default function ClientesMatrizComprasV2({
           >
             Candidatos a upsell
           </button>
-          {activeFilterCount >= 1 && (
-            <ClearFiltersButtonV2 onClick={clearFilters} className="hidden sm:flex" />
-          )}
-        </div>
-      </div>
-
-      {activeFilterCount >= 1 && (
-        <div className="sm:hidden mt-2">
-          <ClearFiltersButtonV2 onClick={clearFilters} />
+          {activeFilterCount >= 1 && <ClearFiltersButtonV2 onClick={clearFilters} />}
         </div>
       )}
 

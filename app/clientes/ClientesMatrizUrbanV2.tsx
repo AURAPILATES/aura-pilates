@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import SearchInputV2 from "@/app/components/v2/SearchInputV2";
 import TablePaginationV2 from "@/app/components/v2/TablePaginationV2";
 import { IconButtonV2 } from "@/app/components/v2/ButtonsV2";
@@ -31,6 +31,9 @@ type Props = {
   onPageChange: (p: number) => void;
   onRowClick: (row: UrbanClientRow) => void;
   onExportCsv: () => void;
+  /** Control extra al final de la barra de búsqueda/filtros (p.ej. el switch de procedencia
+   * Momence/Urban en Clientes › Historial). */
+  extraControls?: ReactNode;
 };
 
 function sortArrow(active: boolean, dir: "asc" | "desc") {
@@ -42,6 +45,7 @@ export default function ClientesMatrizUrbanV2({
   search, onSearchChange, onlyInactive, onToggleOnlyInactive, lastMonth, months, rows,
   sortKey, sortDir, onToggleSort, monthTotals, grandTotalClasses, grandTotalEstimated,
   totalCount, page, pageSize, onPageChange, onRowClick, onExportCsv,
+  extraControls,
 }: Props) {
   // En móvil hay demasiadas columnas de mes para que quepan sin scroll horizontal ilegible:
   // por defecto se muestra solo el último mes + Total, con un botón para "Ampliar" (mismo
@@ -85,6 +89,7 @@ export default function ClientesMatrizUrbanV2({
             <path d="M12 4v10M8 11l4 4 4-4M5 19h14" />
           </svg>
         </IconButtonV2>
+        {extraControls}
       </div>
 
       {activeFilterCount >= 1 && (

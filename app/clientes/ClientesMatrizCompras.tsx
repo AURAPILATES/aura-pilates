@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { normalizeText } from "@/lib/normalizeText";
 import { drawerNav } from "@/lib/drawerNav";
 import type { StripePayment } from "@/lib/stripePayments";
@@ -45,6 +45,7 @@ type Props = {
   customers: CustomerRow[];
   payments: StripePayment[];
   urbanClients: UrbanClientRow[];
+  extraControls?: ReactNode;
 };
 
 export type MatrixRow = {
@@ -62,7 +63,7 @@ export const PURCHASE_COUNT_FILTERS = ["1", "2", "3", "4", "5+"];
 export type SortKey = "name" | "total" | "first";
 const PAGE_SIZE = 100;
 
-export default function ClientesMatrizCompras({ customers, payments, urbanClients }: Props) {
+export default function ClientesMatrizCompras({ customers, payments, urbanClients, extraControls }: Props) {
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("total");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
@@ -231,6 +232,7 @@ export default function ClientesMatrizCompras({ customers, payments, urbanClient
         onPageChange={setPage}
         onRowClick={setSelected}
         onExportCsv={downloadCsv}
+        extraControls={extraControls}
       />
       {selected && (() => {
         const { prev, next } = drawerNav(visibleMatrix.map((r) => r.customer), selected.id, (c) => c.id);

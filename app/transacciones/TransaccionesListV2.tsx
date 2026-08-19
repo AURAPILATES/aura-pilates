@@ -13,9 +13,10 @@ import FiltersToggleButtonV2 from "@/app/components/v2/FiltersToggleButtonV2";
 import ClearFiltersButtonV2 from "@/app/components/v2/ClearFiltersButtonV2";
 import { tableHeadClassV2, tableRowClassV2, tableFootClassV2, tableCardClassV2, gridColsV2 } from "@/app/components/v2/tableStylesV2";
 import {
-  MoreOptionsMenu, MoreActionsMenu, OriginIcon, originLabel, CategoryPill, CategoryBadge, CategoryMultiFilter, ContactMultiFilter,
+  MoreActionsMenu, OriginIcon, originLabel, CategoryPill, CategoryBadge, CategoryMultiFilter, ContactMultiFilter,
   fmtAmt, fmtDate, CAT_FALLBACK, MONTHS_ES, type SortKey,
 } from "./TransaccionesList";
+import Select from "@/app/components/Select";
 import { TxnIcon } from "./catIcons";
 import ImportButton from "./ImportButton";
 import HeaderPortal from "@/app/components/HeaderPortal";
@@ -343,6 +344,17 @@ export default function TransaccionesListV2({
       {/* Toolbar */}
       <div className="flex items-center gap-2 flex-wrap">
         <SearchInputV2 value={search} onChange={onSearchChange} placeholder="Buscar concepto o contacto…" className="flex-1 min-w-[140px]" />
+        {uncategorizedCount > 0 && (
+          <button
+            onClick={() => onCatFiltersChange(catFilters.includes("__none__") ? catFilters.filter((v) => v !== "__none__") : [...catFilters, "__none__"])}
+            className="shrink-0 h-9 inline-flex items-center gap-[7px] bg-[#fef3e2] dark:bg-[#392a13] text-[#b45309] dark:text-[#e8a572] border border-dashed border-[#f6dcb8] dark:border-[#6f522a] rounded-[10px] px-3 text-[12.5px] font-medium whitespace-nowrap"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 3l9 16H3z" /><path d="M12 10v4M12 17v.5" />
+            </svg>
+            {uncategorizedCount} sin etiquetar
+          </button>
+        )}
         {byMonth.length > 0 && (
           <button
             type="button"
@@ -358,50 +370,61 @@ export default function TransaccionesListV2({
             </svg>
           </button>
         )}
-        <FiltersToggleButtonV2 open={filtersOpen} active={filtersActive} onClick={() => setFiltersOpen((v) => !v)} />
+        <FiltersToggleButtonV2 open={filtersOpen} active={filtersActive} onClick={() => setFiltersOpen((v) => !v)} alwaysVisible />
         <HeaderPortal>
           <div className="hidden sm:block">
             <DateFilter variant="v2" />
           </div>
           <ImportButton v2 onManual={onAddCash} />
         </HeaderPortal>
-        <div className={`${filtersOpen ? "flex" : "hidden"} sm:flex sm:order-1 items-center gap-[10px] flex-wrap w-full sm:w-auto`}>
+      </div>
+
+      {filtersOpen && (
+        <div className="flex items-center gap-[10px] flex-wrap mt-4">
           <div className="sm:hidden">
             <DateFilter variant="v2" />
           </div>
           <CategoryMultiFilter selected={catFilters} categories={categories} onChange={onCatFiltersChange} />
           <ContactMultiFilter selected={contactFilters} contacts={contacts} onChange={onContactFiltersChange} />
-          <MoreOptionsMenu
-            onlyRecurring={onlyRecurring}
-            setOnlyRecurring={onToggleOnlyRecurring}
-            originFilter={originFilter}
-            setOriginFilter={onOriginFilterChange}
-            amountMin={amountMin}
-            setAmountMin={onAmountMinChange}
-            amountMax={amountMax}
-            setAmountMax={onAmountMaxChange}
-          />
+          <Select variant="v2" value={originFilter} onChange={(e) => onOriginFilterChange(e.target.value)} className="w-auto">
+            <option value="all">Todos los orígenes</option>
+            <option value="banco">CaixaBank</option>
+            <option value="efectivo">Efectivo Aura</option>
+            <option value="victor">Víctor</option>
+            <option value="celia">Celia</option>
+            <option value="olga">Olga</option>
+            <option value="carles">Carles</option>
+          </Select>
+          <div className="flex items-center gap-1.5 shrink-0 h-9 px-2.5 border border-border rounded-[10px] bg-card">
+            <input
+              type="number"
+              inputMode="decimal"
+              placeholder="Mín."
+              value={amountMin}
+              onChange={(e) => onAmountMinChange(e.target.value)}
+              className="w-[52px] min-w-0 text-[13.5px] text-navy outline-none bg-transparent"
+            />
+            <span className="text-faint text-xs shrink-0">–</span>
+            <input
+              type="number"
+              inputMode="decimal"
+              placeholder="Máx."
+              value={amountMax}
+              onChange={(e) => onAmountMaxChange(e.target.value)}
+              className="w-[52px] min-w-0 text-[13.5px] text-navy outline-none bg-transparent"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => onToggleOnlyRecurring()}
+            className={`text-[13px] px-[13px] py-2 rounded-[10px] border whitespace-nowrap transition-colors ${
+              onlyRecurring ? "border-navy bg-navy text-app-bg font-medium" : "border-border bg-card text-strong hover:bg-navy/[0.02]"
+            }`}
+          >
+            Solo recurrentes
+          </button>
           <MoreActionsMenu onExport={onExportCsv} onPapelera={onPapelera} />
-          {uncategorizedCount > 0 && (
-            <button
-              onClick={() => onCatFiltersChange(catFilters.includes("__none__") ? catFilters.filter((v) => v !== "__none__") : [...catFilters, "__none__"])}
-              className="shrink-0 h-9 inline-flex items-center gap-[7px] bg-[#fef3e2] dark:bg-[#392a13] text-[#b45309] dark:text-[#e8a572] border border-dashed border-[#f6dcb8] dark:border-[#6f522a] rounded-[10px] px-3 text-[12.5px] font-medium whitespace-nowrap"
-            >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 3l9 16H3z" /><path d="M12 10v4M12 17v.5" />
-              </svg>
-              {uncategorizedCount} sin etiquetar
-            </button>
-          )}
-          {activeFilterCount >= 1 && (
-            <ClearFiltersButtonV2 onClick={clearFilters} className="hidden sm:flex" />
-          )}
-        </div>
-      </div>
-
-      {activeFilterCount >= 1 && (
-        <div className="sm:hidden mt-2">
-          <ClearFiltersButtonV2 onClick={clearFilters} />
+          {activeFilterCount >= 1 && <ClearFiltersButtonV2 onClick={clearFilters} />}
         </div>
       )}
 

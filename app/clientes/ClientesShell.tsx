@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from "react";
 import type { CustomerRow } from "./ClientesTable";
-import ClientesMatrizCompras from "./ClientesMatrizCompras";
+import ClientesHistorial from "./ClientesHistorial";
 import ClientesResumenAlumnos from "./ClientesResumenAlumnos";
-import ClientesMatrizUrban from "./ClientesMatrizUrban";
 import ClientesEstado from "./ClientesEstado";
 import ClientesGuiaDrawer from "./ClientesGuiaDrawer";
 import ClientesResumenAlumnosGuiaDrawer from "./ClientesResumenAlumnosGuiaDrawer";
@@ -21,18 +20,17 @@ type Props = {
   urbanClients: UrbanClientRow[];
 };
 
-type Tab = "clientes" | "compras" | "resumen" | "urban";
+type Tab = "clientes" | "historial" | "resumen";
 
 const TABS: SectionTabV2<Tab>[] = [
-  { key: "clientes", label: "Estado" },
-  { key: "compras",  label: "Historial de compras" },
-  { key: "resumen",  label: "Resumen alumnos" },
-  { key: "urban",    label: "Asistencia Urban" },
+  { key: "clientes",  label: "Estado" },
+  { key: "resumen",   label: "Resumen alumnos" },
+  { key: "historial", label: "Historial de compras" },
 ];
 
 export default function ClientesShell({ customers, payments, clients, urbanClients }: Props) {
   const [tab, setTab] = useState<Tab>("clientes");
-  const [mounted, setMounted] = useState<Record<Tab, boolean>>({ clientes: true, compras: false, resumen: false, urban: false });
+  const [mounted, setMounted] = useState<Record<Tab, boolean>>({ clientes: true, historial: false, resumen: false });
 
   useEffect(() => { setMounted((m) => ({ ...m, [tab]: true })); }, [tab]);
 
@@ -52,19 +50,14 @@ export default function ClientesShell({ customers, payments, clients, urbanClien
           <ClientesEstado clients={clients} payments={payments} />
         </div>
       )}
-      {mounted.compras && (
-        <div className={tab === "compras" ? "tab-fade-in" : "hidden"}>
-          <ClientesMatrizCompras customers={customers} payments={payments} urbanClients={urbanClients} />
+      {mounted.historial && (
+        <div className={tab === "historial" ? "tab-fade-in" : "hidden"}>
+          <ClientesHistorial customers={customers} payments={payments} clients={clients} urbanClients={urbanClients} />
         </div>
       )}
       {mounted.resumen && (
         <div className={tab === "resumen" ? "tab-fade-in" : "hidden"}>
           <ClientesResumenAlumnos payments={payments} urbanClients={urbanClients} />
-        </div>
-      )}
-      {mounted.urban && (
-        <div className={tab === "urban" ? "tab-fade-in" : "hidden"}>
-          <ClientesMatrizUrban rows={urbanClients} clients={clients} payments={payments} />
         </div>
       )}
     </>

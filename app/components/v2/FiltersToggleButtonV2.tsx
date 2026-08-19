@@ -1,23 +1,27 @@
 "use client";
 
-/** Botón "Filtros" (solo móvil) que abre/cierra el panel de filtros secundarios de una
- * toolbar V2. `active` lo resalta cuando hay algún filtro de ese panel aplicado, aunque
- * esté cerrado. */
+/** Botón "Filtros" que abre/cierra el panel de filtros secundarios de una toolbar V2.
+ * `active` lo resalta cuando hay algún filtro de ese panel aplicado, aunque esté cerrado.
+ * Por defecto solo se ve en móvil (en escritorio los filtros van siempre visibles); con
+ * `alwaysVisible` también se muestra en escritorio, para toolbars con muchos filtros donde
+ * conviene colapsarlos ahí también (ver Clientes › Historial de compras). */
 export default function FiltersToggleButtonV2({
   open,
   active,
   onClick,
+  alwaysVisible = false,
 }: {
   open: boolean;
   active?: boolean;
   onClick: () => void;
+  alwaysVisible?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
       title="Filtros"
-      className={`sm:hidden shrink-0 flex items-center justify-center w-9 h-9 rounded-[10px] border transition-colors relative ${
+      className={`${alwaysVisible ? "" : "sm:hidden"} shrink-0 flex items-center justify-center w-9 h-9 rounded-[10px] border transition-colors relative ${
         open ? "border-navy bg-navy text-app-bg" : "border-border bg-card text-muted"
       }`}
     >

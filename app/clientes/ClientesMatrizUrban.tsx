@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { normalizeText } from "@/lib/normalizeText";
 import { drawerNav } from "@/lib/drawerNav";
 import type { UrbanClientRow } from "@/lib/clientActivityV2";
@@ -17,9 +17,10 @@ type Props = {
   rows: UrbanClientRow[];
   clients: MemberClient[];
   payments: StripePayment[];
+  extraControls?: ReactNode;
 };
 
-export default function ClientesMatrizUrban({ rows, clients, payments }: Props) {
+export default function ClientesMatrizUrban({ rows, clients, payments, extraControls }: Props) {
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<UrbanSortKey>("total");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
@@ -137,6 +138,7 @@ export default function ClientesMatrizUrban({ rows, clients, payments }: Props) 
         onPageChange={setPage}
         onRowClick={setSelected}
         onExportCsv={downloadCsv}
+        extraControls={extraControls}
       />
       {selectedClient && (() => {
         // Navegación ↑/↓ solo entre las filas que sí tienen ficha en Momence (memberId
