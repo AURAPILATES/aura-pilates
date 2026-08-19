@@ -1,5 +1,4 @@
 import type { StripePayment } from "./stripePayments";
-import type { MomenceMembership, MomenceProduct } from "./momence";
 import type { MomenceV2MembershipCatalog } from "./momenceV2";
 
 const MONTH_LABELS: Record<string, string> = {
@@ -12,16 +11,10 @@ export type CatalogItem = { name: string; price: number; type: string };
 
 const PRICE_TOLERANCE = 2; // € - margen para no perder cargos con descuentos puntuales de céntimos
 
-export function catalogFromMomence(memberships: MomenceMembership[], products: MomenceProduct[]): CatalogItem[] {
-  return [
-    ...memberships.filter((m) => !m.isDeleted).map((m) => ({ name: m.name, price: m.price, type: m.type })),
-    ...products.filter((p) => !p.isDeleted).map((p) => ({ name: p.name, price: p.price, type: "product" })),
-  ];
-}
-
-/** Igual que catalogFromMomence pero con la API v2 (OAuth2): /host/memberships ya devuelve
- * en un único listado tanto las suscripciones como los packs (packages), con precio real -
- * no hace falta combinar dos endpoints v1 distintos como antes. */
+// Catálogo (suscripciones + packs) desde la API pública v2 (OAuth2): /host/memberships
+// devuelve en un único listado ambos tipos, con precio real - no hace falta combinar
+// membresías y "productos" de dos endpoints v1 distintos como antes (v1 tenía además un
+// token de sesión frágil, ver [[project-momence-v2]]).
 export function catalogFromMomenceV2(items: MomenceV2MembershipCatalog[]): CatalogItem[] {
   return items
     .filter((m) => !m.disabled)

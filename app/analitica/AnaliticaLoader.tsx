@@ -21,6 +21,7 @@ import { estimatedMRR } from "@/lib/stripeRecurrence";
 
 import { loadTransactionsCached, expensesByCategoryAll, financingExpensesByCategory, getLatestImportDate, findCategory, isUrbanIncome, urbanRevenueByMonth, urbanRevenueByActivityMonth, isCashflowTransaction, type EconomicGroup, type Transaction, type PaymentMethod } from "@/lib/transactions";
 import { formatRelativeTime } from "@/lib/formatRelativeTime";
+import { sanitizeErrorMessage } from "@/lib/sanitizeErrorMessage";
 import { loadCategoriesCached, NON_CASHFLOW_GROUP_TYPES, type Category } from "@/lib/categories";
 import { loadRecurringExpensesCached, forecastConfirmedExpenses } from "@/lib/recurringExpenses";
 import DesglosGastosUnificado from "./instances/DesglosGastosUnificado";
@@ -33,7 +34,7 @@ import { loadBudgetsCached, computeSpent } from "@/lib/budgets";
 import Breakeven from "./instances/Breakeven";
 import { computeBreakeven } from "@/lib/breakeven";
 import ConversionPack from "./instances/ConversionPack";
-import { subscriptionTiersFromMemberships } from "@/lib/mrr";
+import { subscriptionTiersFromMembershipsV2 } from "@/lib/mrr";
 import { getSubscriptionsBaseV2, getActiveSubscriberEmailsV2, getMrrHistoryV2 } from "@/lib/subscriptionsV2";
 import EvolucionMRR from "./instances/EvolucionMRR";
 import { getAtRiskV2, type AtRiskCustomerInfo } from "@/lib/atRiskV2";
@@ -50,8 +51,9 @@ import { loadUrbanRates } from "@/lib/urbanRates";
 import RendimientoProfesoras from "./instances/RendimientoProfesoras";
 import ConversionProfesora from "./instances/ConversionProfesora";
 import PrimeraClaseSuscriptores from "./instances/PrimeraClaseSuscriptores";
-import { getMemberships, getProducts, getCustomers, getEvents } from "@/lib/momence";
-import { catalogFromMomence, revenueByProductByMonth } from "@/lib/productRevenue";
+import { getEvents } from "@/lib/momence";
+import { getMembershipsV2 } from "@/lib/momenceV2";
+import { catalogFromMomenceV2, revenueByProductByMonth } from "@/lib/productRevenue";
 import { computeSubscriptionCohorts, computeRetentionCohorts } from "@/lib/subscriptionCohort";
 import RetencionCohorte from "./instances/RetencionCohorte";
 import SuscripcionesBase from "./instances/SuscripcionesBase";
@@ -168,15 +170,15 @@ export default async function AnaliticaLoader({
   const curMonth  = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}`;
 
   const [
-    paymentsAll, membershipsAll, productsAll, customersAll,
+    paymentsAll, membershipsV2,
     txnsAll, dbCategories, budgets, businessEvents, recurringExpenses, breakdown, breakdownComp,
-    bancoLastImport, paymentErrorAcks, syncRuns, liveMomenceEvents, historicalMomenceEvents,
+    bancoLastImport, paymentErrorAcks, syncRuns, liveEventsResult, historicalMomenceEvents,
     teacherStatsV2, sessionOccupancyRowsV2,
   ] = await Promise.all([
     loadStripePaymentsCached(),
-    getMemberships(),
-    getProducts(),
-    getCustomers(),
+    // Catálogo de membresías/packs desde la API pública v2 (OAuth2, cacheada 30 min) - a
+    // diferencia de getEvents() más abajo, no depende del token de sesión de la API interna.
+    getMembershipsV2().catch(() => []),
     loadTransactionsCached(null, null),
     loadCategoriesCached(),
     loadBudgetsCached(),
@@ -187,17 +189,29 @@ export default async function AnaliticaLoader({
     getLatestImportDate(),
     loadPaymentErrorAcks(),
     getLatestSyncRuns().catch(() => null),
-    getEvents(),
+    // Mismo patrón que Horario (HorarioLoader): si falla, se usa el último histórico guardado
+    // (historicalMomenceEvents) con un aviso, en vez de romper la página.
+    getEvents().then((events) => ({ ok: true as const, events })).catch((e) => ({
+      ok: false as const,
+      error: e instanceof Error ? e.message : String(e),
+    })),
     loadHistoricalEvents(),
     // Live desde la API v2; si Momence v2 falla, no debe tumbar toda la página.
     getTeacherStatsV2(mainFrom, mainTo).catch(() => null),
     getSessionOccupancyRowsV2(mainFrom, mainTo).catch(() => []),
   ]);
+
+  const liveMomenceEvents = liveEventsResult.ok ? liveEventsResult.events : [];
+  const liveEventsError = liveEventsResult.ok ? null : liveEventsResult.error;
+
   // No bloquea el render: es un persist de "en vivo" para la próxima carga, no algo que esta
-  // página necesite esperar (los eventos ya combinados abajo salen de liveMomenceEvents).
-  void saveHistoricalEvents(liveMomenceEvents).catch((e) => {
-    console.error("saveHistoricalEvents falló:", e);
-  });
+  // página necesite esperar (los eventos ya combinados abajo salen de liveMomenceEvents). Solo
+  // se guarda si la carga en vivo funcionó - guardar [] sobreescribiría el histórico real del día.
+  if (liveEventsResult.ok) {
+    void saveHistoricalEvents(liveEventsResult.events).catch((e) => {
+      console.error("saveHistoricalEvents falló:", e);
+    });
+  }
 
   const allMomenceEventsById = new Map(historicalMomenceEvents.map((e) => [e.id, e]));
   liveMomenceEvents.forEach((e) => allMomenceEventsById.set(e.id, e));
@@ -249,7 +263,7 @@ export default async function AnaliticaLoader({
   const revComp    = stripeTotalRevenue(pComp);
   const stripeFeesComp = stripeTotalFees(pComp);
 
-  const productCatalog = catalogFromMomence(membershipsAll, productsAll);
+  const productCatalog = catalogFromMomenceV2(membershipsV2);
 
   // Las transacciones guardan el `value` de la categoría (no el `label`, que puede cambiar
   // p.ej. al convertir "Electricidad" en la subcategoría "Luz"), así que el lookup va por value.
@@ -285,7 +299,7 @@ export default async function AnaliticaLoader({
   const firstPurchaseSummary = subscriberFirstPurchase(salesAll);
 
   // ── MRR/ARR por suscripción (suscriptores activos reales en Momence) ──────
-  const subscriptionTiers = subscriptionTiersFromMemberships(membershipsAll);
+  const subscriptionTiers = subscriptionTiersFromMembershipsV2(membershipsV2);
 
   // Lo siguiente es independiente entre sí (Stripe × Momence v2 por separado, cada uno con su
   // propia caché), así que se lanza todo en paralelo en vez de esperar uno a uno.
@@ -696,6 +710,16 @@ export default async function AnaliticaLoader({
         <div className="bg-danger/10 border border-danger/30 rounded-[8px] p-4 text-sm text-danger mb-6">
           📌 El último snapshot nocturno de Momence falló ({formatRelativeTime(failedSyncRun.ranAt)}): {failedSyncRun.error}.
           Las métricas de altas/bajas de suscripción pueden estar desactualizadas hasta el próximo sync.
+        </div>
+      )}
+
+      {liveEventsError && (
+        <div className="bg-warning/10 border border-warning/30 rounded-[8px] p-4 text-sm text-warning mb-6">
+          No se ha podido conectar con Momence en vivo (probablemente el token de sesión de la API interna
+          ha caducado) - las clases se muestran desde el último snapshot guardado. El resto de Analítica
+          (membresías, MRR, suscripciones) no se ve afectado: sale de la API pública v2, con credenciales
+          aparte.{" "}
+          <span className="opacity-70">({sanitizeErrorMessage(liveEventsError)})</span>
         </div>
       )}
 
