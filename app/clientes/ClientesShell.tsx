@@ -6,6 +6,8 @@ import ClientesMatrizCompras from "./ClientesMatrizCompras";
 import ClientesResumenAlumnos from "./ClientesResumenAlumnos";
 import ClientesMatrizUrban from "./ClientesMatrizUrban";
 import ClientesEstado from "./ClientesEstado";
+import ClientesGuiaDrawer from "./ClientesGuiaDrawer";
+import ClientesResumenAlumnosGuiaDrawer from "./ClientesResumenAlumnosGuiaDrawer";
 import SectionTabsV2, { type SectionTabV2 } from "@/app/components/v2/SectionTabsV2";
 import HeaderPortal from "@/app/components/HeaderPortal";
 import type { StripePayment } from "@/lib/stripePayments";
@@ -38,6 +40,10 @@ export default function ClientesShell({ customers, payments, clients, urbanClien
     <>
       <HeaderPortal target="header-tabs">
         <SectionTabsV2 active={tab} onChange={setTab} tabs={TABS} />
+      </HeaderPortal>
+      <HeaderPortal target="header-actions">
+        {tab === "clientes" && <ClientesGuiaDrawer />}
+        {tab === "resumen" && <ClientesResumenAlumnosGuiaDrawer />}
       </HeaderPortal>
       <div className="pt-5" />
 

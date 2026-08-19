@@ -7,13 +7,14 @@ import { tableHeadClassV2, tableRowClassV2, tableCardClassV2, gridColsV2 } from 
 import { fmt } from "@/lib/analytics";
 import type { Period } from "@/app/analitica/instances/evolucionIngresosUtils";
 import type { PeriodCell, SummaryRow } from "./ClientesResumenAlumnos";
-import ClientesResumenAlumnosGuiaDrawer from "./ClientesResumenAlumnosGuiaDrawer";
 
-/** Forma común a la fila Total y a cada fila de producto - permite reusar el mismo `value`/
- * `format` en ambas sin duplicar la fila Total aparte. */
+/** Forma común a la fila superior (agregado) y a cada fila de producto - permite reusar el
+ * mismo `value`/`format` en ambas sin tratar el agregado aparte. */
 type Row = { byPeriod: Record<string, PeriodCell>; totalCount: number; totalAmount: number };
 
 type TotalRow = Row;
+
+type Metric = "alumnos" | "importe";
 
 type Props = {
   period: Period;
@@ -25,19 +26,25 @@ type Props = {
   onExportCsv: () => void;
 };
 
+const METRIC_OPTIONS: Array<{ key: Metric; label: string }> = [
+  { key: "alumnos", label: "Alumnos" },
+  { key: "importe", label: "Importe" },
+];
+
 const PERIOD_OPTIONS: Array<{ key: Period; label: string }> = [
   { key: "mes", label: "Mes" },
   { key: "trimestre", label: "Trimestre" },
   { key: "año", label: "Año" },
 ];
 
-/** Una de las dos tablas apiladas (Alumnos o Importe): fila Total resaltada arriba (el total
- * por período que pedía Julia - antes solo se veía el desglose por producto, sin agregado) y
- * debajo el desglose por producto, misma estructura de columnas en ambas tablas. */
+/** Tabla de Resumen alumnos: fila superior resaltada con el agregado (alumnos distintos sin
+ * doble conteo, o importe sumado - el toggle Alumnos/Importe decide cuál) y debajo el desglose
+ * por producto. Etiquetada "Alumnos"/"Importe" en vez de "Total": el toggle ya deja claro qué
+ * mide, así que repetir "Total" ahí era redundante. */
 function SummaryTable({
-  title, visiblePeriods, cols, rows, totalRow, periodLabel, value, format, totalValue,
+  rowLabel, visiblePeriods, cols, rows, totalRow, periodLabel, value, format, totalValue,
 }: {
-  title: string;
+  rowLabel: string;
   visiblePeriods: string[];
   cols: string;
   rows: SummaryRow[];
@@ -48,10 +55,7 @@ function SummaryTable({
   totalValue: (row: Row) => number;
 }) {
   return (
-    <div className={`${tableCardClassV2} overflow-hidden`}>
-      <div className="px-5 py-[9px] bg-[#fafaf8] dark:bg-white/[0.03] border-b border-border text-[10.5px] tracking-wide uppercase text-faint font-semibold">
-        {title}
-      </div>
+    <div className={`mt-3 -mx-4 sm:-mx-6 ${tableCardClassV2} overflow-hidden`}>
       <div className="overflow-x-auto">
         <div className={`${tableHeadClassV2} px-5`} style={gridColsV2(cols)}>
           <span>Producto</span>
@@ -62,7 +66,7 @@ function SummaryTable({
         </div>
 
         <div className={`${tableRowClassV2} px-5 bg-navy/[0.025]`} style={gridColsV2(cols)}>
-          <p className="font-bold text-navy text-[13.5px]">Total</p>
+          <p className="font-bold text-navy text-[13.5px]">{rowLabel}</p>
           {visiblePeriods.map((k) => {
             const n = value(totalRow, k);
             return (
@@ -90,10 +94,11 @@ function SummaryTable({
 }
 
 /** Pestaña "Resumen alumnos" de Clientes: cuántas alumnas distintas y cuánto ingresó cada
- * producto por mes/trimestre/año, con un total agregado arriba de cada tabla - sustituye a la
- * antigua vista "Por producto" de Historial de compras (mismo criterio de datos, ver
- * ClientesResumenAlumnosGuiaDrawer). */
+ * producto por mes/trimestre/año - sustituye a la antigua vista "Por producto" de Historial de
+ * compras (mismo criterio de datos, ver ClientesResumenAlumnosGuiaDrawer). Toggle Alumnos/
+ * Importe en vez de dos tablas apiladas: son la misma tabla, solo cambia qué valor se pinta. */
 export default function ClientesResumenAlumnosV2({ period, onPeriodChange, periods, periodLabel, rows, totalRow, onExportCsv }: Props) {
+  const [metric, setMetric] = useState<Metric>("alumnos");
   const [isMobile, setIsMobile] = useState(false);
   const [expanded, setExpanded] = useState(false);
   useEffect(() => {
@@ -107,17 +112,29 @@ export default function ClientesResumenAlumnosV2({ period, onPeriodChange, perio
   const visiblePeriods = collapsed ? periods.slice(-1) : periods;
   const cols = `minmax(120px,1.6fr) repeat(${visiblePeriods.length}, minmax(64px, 1fr)) minmax(80px,.9fr)`;
 
+  const value = metric === "alumnos"
+    ? (row: Row, k: string) => row.byPeriod[k]?.count ?? 0
+    : (row: Row, k: string) => row.byPeriod[k]?.amount ?? 0;
+  const format = metric === "alumnos" ? (n: number) => String(n) : fmt;
+  const totalValue = metric === "alumnos" ? (row: Row) => row.totalCount : (row: Row) => row.totalAmount;
+  const rowLabel = metric === "alumnos" ? "Alumnos" : "Importe";
+
   return (
     <div className="w-full">
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-1.5">
           <FilterPillGroupV2
             variant="segmented"
+            active={metric}
+            onChange={setMetric}
+            options={METRIC_OPTIONS}
+          />
+          <FilterPillGroupV2
+            variant="segmented"
             active={period}
             onChange={onPeriodChange}
             options={PERIOD_OPTIONS}
           />
-          <ClientesResumenAlumnosGuiaDrawer />
         </div>
         <div className="flex items-center gap-2">
           {isMobile && (
@@ -137,32 +154,17 @@ export default function ClientesResumenAlumnosV2({ period, onPeriodChange, perio
         </div>
       </div>
 
-      <div className="mt-3">
-        <SummaryTable
-          title="Alumnos (nº)"
-          visiblePeriods={visiblePeriods}
-          cols={cols}
-          rows={rows}
-          totalRow={totalRow}
-          periodLabel={periodLabel}
-          value={(row, k) => row.byPeriod[k]?.count ?? 0}
-          format={(n) => String(n)}
-          totalValue={(row) => row.totalCount}
-        />
-      </div>
-      <div className="mt-5">
-        <SummaryTable
-          title="Importe"
-          visiblePeriods={visiblePeriods}
-          cols={cols}
-          rows={rows}
-          totalRow={totalRow}
-          periodLabel={periodLabel}
-          value={(row, k) => row.byPeriod[k]?.amount ?? 0}
-          format={fmt}
-          totalValue={(row) => row.totalAmount}
-        />
-      </div>
+      <SummaryTable
+        rowLabel={rowLabel}
+        visiblePeriods={visiblePeriods}
+        cols={cols}
+        rows={rows}
+        totalRow={totalRow}
+        periodLabel={periodLabel}
+        value={value}
+        format={format}
+        totalValue={totalValue}
+      />
     </div>
   );
 }
