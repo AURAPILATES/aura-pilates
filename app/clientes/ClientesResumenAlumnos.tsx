@@ -3,18 +3,22 @@
 import { useMemo, useState } from "react";
 import type { StripePayment } from "@/lib/stripePayments";
 import type { UrbanClientRow } from "@/lib/clientActivityV2";
+import type { CustomerRow } from "./ClientesTable";
 import { PRODUCT_FILTERS } from "./ClientesMatrizCompras";
 import { periodKey, periodLabel, type Period } from "@/app/analitica/instances/evolucionIngresosUtils";
+import { familyEmailSet, otroOrFamiliar } from "@/lib/clientFamily";
 import ClientesResumenAlumnosV2 from "./ClientesResumenAlumnosV2";
 
-// Igual set de filas que tenía "Por producto": los 7 productos con cobro por Stripe + "Otro"
-// (pagos que no casan con ningún precio, p.ej. con cupón - sin esto la fila Total no cuadraría
-// con el ingreso real de Stripe) + "Urban" (asistencia, no pago individual).
-const PRODUCT_ROWS = [...PRODUCT_FILTERS, "Otro", "Urban"];
+// Igual set de filas que tenía "Por producto": los 7 productos con cobro por Stripe + "Familiar"
+// (pagos de alumnos marcados como Familiar que no casan con ningún precio, p.ej. un descuento) +
+// "Otro" (el resto de pagos sin producto conocido - sin esto la fila Total no cuadraría con el
+// ingreso real de Stripe) + "Urban" (asistencia, no pago individual).
+const PRODUCT_ROWS = [...PRODUCT_FILTERS, "Familiar", "Otro", "Urban"];
 
 type Props = {
   payments: StripePayment[];
   urbanClients: UrbanClientRow[];
+  customers: CustomerRow[];
 };
 
 export type PeriodCell = { count: number; amount: number };
@@ -50,8 +54,9 @@ function aggregate(
   return { count: customers.size, amount };
 }
 
-export default function ClientesResumenAlumnos({ payments, urbanClients }: Props) {
+export default function ClientesResumenAlumnos({ payments, urbanClients, customers }: Props) {
   const [period, setPeriod] = useState<Period>("mes");
+  const familyEmails = useMemo(() => familyEmailSet(customers), [customers]);
 
   const months = useMemo(() => {
     const now = new Date();
@@ -74,7 +79,9 @@ export default function ClientesResumenAlumnos({ payments, urbanClients }: Props
       return byMonth.get(month)!;
     }
     for (const p of payments) {
-      const product = PRODUCT_FILTERS.includes(p.inferredProduct) ? p.inferredProduct : "Otro";
+      const product = PRODUCT_FILTERS.includes(p.inferredProduct)
+        ? p.inferredProduct
+        : otroOrFamiliar(p.customerEmail, familyEmails);
       const cell = bucket(product, p.date.slice(0, 7));
       cell.amount += p.amount;
       if (p.customerId) cell.customers.add(p.customerId);
@@ -88,7 +95,7 @@ export default function ClientesResumenAlumnos({ payments, urbanClients }: Props
       }
     }
     return map;
-  }, [payments, urbanClients]);
+  }, [payments, urbanClients, familyEmails]);
 
   const { periods, rows, totalRow } = useMemo(() => {
     const monthsByPeriod = new Map<string, string[]>();

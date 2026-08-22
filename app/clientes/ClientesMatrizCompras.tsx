@@ -26,6 +26,7 @@ export function productAbbr(product: string): string {
   if (product === "Pack 8 clases")    return "Pack 8";
   if (product === "Pack Benvinguda")  return "Benvinguda";
   if (product === "Clase suelta")     return "Suelta";
+  if (product === "Familiar")         return "Familiar";
   return "Otro";
 }
 
@@ -38,6 +39,8 @@ export function productColor(product: string): string {
     return "bg-orange-50 dark:bg-orange-500/15 text-orange-600 dark:text-orange-400";
   if (product === "Clase suelta")
     return "bg-yellow-50 dark:bg-yellow-500/15 text-yellow-600 dark:text-yellow-400";
+  if (product === "Familiar")
+    return "bg-pink-50 dark:bg-pink-500/15 text-pink-600 dark:text-pink-400";
   return "bg-navy/[0.05] text-navy/50";
 }
 
@@ -93,12 +96,15 @@ export default function ClientesMatrizCompras({ customers, payments, urbanClient
       const products = new Set<string>();
       for (const p of payments) {
         if (!p.customerId || !c.stripeIds.includes(p.customerId)) continue;
+        // Pago sin producto conocido (importe no casa con ningún precio): si el cliente ya está
+        // marcado como Familiar, se etiqueta como tal en vez de "Otro" - suele ser un descuento.
+        const product = PRODUCT_FILTERS.includes(p.inferredProduct) || !c.isFamily ? p.inferredProduct : "Familiar";
         const m = p.date.slice(0, 7);
         if (!byMonth[m]) byMonth[m] = [];
-        byMonth[m].push({ product: p.inferredProduct, amount: p.amount });
+        byMonth[m].push({ product, amount: p.amount });
         totalPaid += p.amount;
         purchaseCount += 1;
-        products.add(p.inferredProduct);
+        products.add(product);
         if (!firstPurchase || p.date < firstPurchase) firstPurchase = p.date;
       }
       const monthsPurchased = Object.keys(byMonth).length;

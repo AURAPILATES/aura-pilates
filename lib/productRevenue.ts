@@ -1,5 +1,6 @@
 import type { StripePayment, ProductPriceCandidate } from "./stripePayments";
 import type { MomenceV2MembershipCatalog } from "./momenceV2";
+import { otroOrFamiliar } from "./clientFamily";
 
 const MONTH_LABELS: Record<string, string> = {
   "01": "Ene", "02": "Feb", "03": "Mar", "04": "Abr",
@@ -39,12 +40,16 @@ export type ProductRevenueRow = {
 
 // Desglose de ingresos por producto identificando el producto por el importe del
 // cobro en Stripe contra el catálogo en vivo de Momence (sin CSV).
-export function revenueByProductFromStripe(payments: StripePayment[], catalog: CatalogItem[]): ProductRevenueRow[] {
+export function revenueByProductFromStripe(
+  payments: StripePayment[],
+  catalog: CatalogItem[],
+  familyEmails: Set<string> = new Set(),
+): ProductRevenueRow[] {
   const map = new Map<string, ProductRevenueRow>();
   for (const p of payments) {
     const match = catalog.find((c) => Math.abs(p.amount - c.price) <= PRICE_TOLERANCE);
-    const item = match ? match.name : "Otros";
-    const category = match ? (match.type === "subscription" ? "Suscripción" : "Paquete") : "Otros";
+    const item = match ? match.name : otroOrFamiliar(p.customerEmail, familyEmails);
+    const category = match ? (match.type === "subscription" ? "Suscripción" : "Paquete") : item;
     const prev = map.get(item) ?? { item, category, revenue: 0, count: 0 };
     prev.revenue += p.amount;
     prev.count += 1;
@@ -61,12 +66,16 @@ export type MonthlyProductRevenue = {
 };
 
 // Igual que revenueByProductFromStripe pero mes a mes, para un gráfico de evolución.
-export function revenueByProductByMonth(payments: StripePayment[], catalog: CatalogItem[]): MonthlyProductRevenue[] {
+export function revenueByProductByMonth(
+  payments: StripePayment[],
+  catalog: CatalogItem[],
+  familyEmails: Set<string> = new Set(),
+): MonthlyProductRevenue[] {
   const byMonth = new Map<string, Map<string, number>>();
   for (const p of payments) {
     const month = p.date.slice(0, 7);
     const match = catalog.find((c) => Math.abs(p.amount - c.price) <= PRICE_TOLERANCE);
-    const item = match ? match.name : "Otros";
+    const item = match ? match.name : otroOrFamiliar(p.customerEmail, familyEmails);
     const monthMap = byMonth.get(month) ?? new Map<string, number>();
     monthMap.set(item, (monthMap.get(item) ?? 0) + p.amount);
     byMonth.set(month, monthMap);

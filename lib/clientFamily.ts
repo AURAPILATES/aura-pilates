@@ -44,3 +44,23 @@ export async function setFamilyMember(memberId: number, isFamily: boolean): Prom
     .upsert({ member_id: memberId, is_family: isFamily, updated_at: new Date().toISOString() });
   if (error) throw new Error(`setFamilyMember: ${error.message}`);
 }
+
+// ── Cruce "Otro" × Familiar ─────────────────────────────────────────────────
+//
+// Un pago cae en "Otro" cuando su importe no casa con ningún precio conocido (p.ej. un
+// descuento puntual a un alumno Familiar). Para no perder esos alumnos en el cubo "Otro" de
+// Clientes/Analítica, se relabela como "Familiar" si el email del pago coincide con el de un
+// cliente ya marcado como tal - el email es la clave porque un alumno Familiar puede tener un
+// customer_id de Stripe distinto al que tiene marcado el flag (p.ej. pago sin tarjeta guardada).
+
+/** Emails (en minúsculas) de los clientes marcados como Familiar. */
+export function familyEmailSet(customers: Array<{ email: string | null; isFamily?: boolean }>): Set<string> {
+  const set = new Set<string>();
+  for (const c of customers) if (c.isFamily && c.email) set.add(c.email.toLowerCase());
+  return set;
+}
+
+/** Etiqueta a usar para un pago que no casó con ningún producto conocido. */
+export function otroOrFamiliar(customerEmail: string | null, familyEmails: Set<string>): "Familiar" | "Otro" {
+  return customerEmail && familyEmails.has(customerEmail.toLowerCase()) ? "Familiar" : "Otro";
+}

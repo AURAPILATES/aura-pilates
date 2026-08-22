@@ -57,7 +57,7 @@ export default function ClientesShell({ customers, payments, clients, urbanClien
       )}
       {mounted.resumen && (
         <div className={tab === "resumen" ? "tab-fade-in" : "hidden"}>
-          <ClientesResumenAlumnos payments={payments} urbanClients={urbanClients} />
+          <ClientesResumenAlumnos payments={payments} urbanClients={urbanClients} customers={customers} />
         </div>
       )}
     </>
