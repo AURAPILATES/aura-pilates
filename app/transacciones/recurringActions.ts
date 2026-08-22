@@ -56,6 +56,8 @@ export type ConfirmRecurringRow = {
   endType: "never" | "date" | "count";
   endDate: string | null;
   endCount: number | null;
+  /** El importe cambia cada vez (p.ej. gestoría) en vez de ser siempre el mismo. */
+  variable: boolean;
 };
 
 /** Confirma uno o varios gastos detectados vinculándolos a un Contacto: el IVA/Retención parten
@@ -106,6 +108,7 @@ export async function confirmRecurringExpenses(rows: ConfirmRecurringRow[]): Pro
           end_type: row.endType,
           end_date: row.endType === "date" ? row.endDate : null,
           end_count: row.endType === "count" ? row.endCount : null,
+          variable: row.variable,
           updated_at: new Date().toISOString(),
         },
         { onConflict: "key" },
@@ -132,6 +135,7 @@ export type ManualRecurringInput = {
   endType: "never" | "date" | "count";
   endDate: string | null;
   endCount: number | null;
+  variable: boolean;
 };
 
 /** Da de alta un gasto recurrente "por libre": sin transacción real detrás (a diferencia de
@@ -171,6 +175,7 @@ export async function createManualRecurringExpense(input: ManualRecurringInput):
     end_type: input.endType,
     end_date: input.endType === "date" ? input.endDate : null,
     end_count: input.endType === "count" ? input.endCount : null,
+    variable: input.variable,
   });
   if (error) throw new Error(error.message);
   revalidateAll();
@@ -190,6 +195,7 @@ export async function updateRecurringExpense(
     end_type?: "never" | "date" | "count";
     end_date?: string | null;
     end_count?: number | null;
+    variable?: boolean;
   },
 ) {
   const supabase = createServerClient();

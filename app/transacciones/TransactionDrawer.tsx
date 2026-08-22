@@ -1,16 +1,17 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { RotateCcw, Repeat } from "react-feather";
 import Drawer from "@/app/components/Drawer";
-import Button, { DeleteButton } from "@/app/components/Button";
+import Button, { SecondaryButton, DeleteButton } from "@/app/components/Button";
 import Select from "@/app/components/Select";
 import Checkbox from "@/app/components/Checkbox";
 import Field from "@/app/components/Field";
 import type { Transaction, PaymentMethod } from "@/lib/transactions";
 import type { Category } from "@/lib/categories";
 import { PERIOD_BUCKETS } from "@/lib/recurring";
-import { contactKeyFor } from "@/lib/contactRules";
+import { contactKeyFor, matchesPattern } from "@/lib/contactRules";
 import type { RecurringExpense, RecurringExpenseEndType } from "@/lib/recurringExpenses";
 import { CategoryPill, SourceAvatar } from "./TransaccionesList";
 import { ToggleGroup } from "@/components/charts";
@@ -63,6 +64,47 @@ function EditableField({ label, value, onSave }: { label: string; value: string;
   );
 }
 
+/** Se muestra al vincular un contacto ya guardado a un movimiento cuyo texto banco (concepto +
+ * más datos) no coincide con ningún patrón conocido de ese contacto - preguntamos antes de
+ * registrarlo como patrón reutilizable, en vez de guardarlo solo sin avisar (ver
+ * assignContactToTransaction en actions.ts). Portal a <body> por el mismo motivo que
+ * ConfirmEndDatePrompt en RecurrentesList.tsx: el drawer puede recortar overlays `fixed`. */
+function ConfirmSavePatternPrompt({ label, onSaveAlways, onSaveOnce, onClose }: {
+  label: string;
+  onSaveAlways: () => void;
+  onSaveOnce: () => void;
+  onClose: () => void;
+}) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    const handler = (ev: KeyboardEvent) => { if (ev.key === "Escape") onClose(); };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [onClose]);
+
+  if (!mounted) return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-navy/20 backdrop-blur-[2px]" onClick={onClose} />
+      <div className="relative w-full max-w-sm bg-card rounded-2xl shadow-2xl overflow-hidden">
+        <div className="px-5 pt-5 pb-4 border-b border-navy/[0.07]">
+          <h2 className="text-base font-bold text-navy">¿Reconocer futuros movimientos de {label}?</h2>
+          <p className="text-xs text-navy/45 mt-1.5">
+            Este movimiento no coincide con ningún patrón guardado de {label}. Puedes guardar su texto para que próximos movimientos parecidos se vinculen solos, o vincular solo este.
+          </p>
+        </div>
+        <div className="flex flex-col gap-2 px-5 py-4">
+          <Button onClick={onSaveAlways}>Guardar patrón</Button>
+          <SecondaryButton onClick={onSaveOnce}>Vincular solo este movimiento</SecondaryButton>
+        </div>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
 /** Combobox: escribe texto libre o elige uno de los contactos guardados en
  * Configuración > Contactos. Si eliges uno guardado, vincula directamente. Si escribes un
  * nombre nuevo, abre el formulario completo de contacto (categoría, IVA, retención, conceptos
@@ -86,24 +128,35 @@ function TransactionContactPicker({
   const [saving, setSaving] = useState(false);
   const [draftNewLabel, setDraftNewLabel] = useState<string | null>(null);
   const [pickerResetKey, setPickerResetKey] = useState(0);
+  const [confirmPattern, setConfirmPattern] = useState<string | null>(null);
+  const derivedPattern = contactKeyFor(concept, bankDetails);
 
-  async function link(label: string) {
-    if (label === value) return;
+  async function doLink(label: string, savePattern: boolean) {
     setSaving(true);
     try {
-      await assignContactToTransaction(transactionId, label);
+      await assignContactToTransaction(transactionId, label, savePattern);
       onSaved();
     } finally {
       setSaving(false);
     }
   }
 
+  function link(label: string) {
+    if (label === value) return;
+    if (!label) { doLink("", false); return; }
+    // Si el texto de este movimiento ya coincide con un patrón guardado del contacto, vincular
+    // no cambia nada nuevo que reconocer - no hace falta preguntar. Solo se pregunta cuando
+    // guardarlo sería un patrón nuevo (ver assignContactToTransaction).
+    const known = contacts.find((c) => c.label.toLowerCase() === label.toLowerCase());
+    const alreadyRecognized = derivedPattern === "sin-concepto" || (known?.patterns.some((p) => matchesPattern(derivedPattern, p)) ?? false);
+    if (alreadyRecognized) { doLink(label, false); return; }
+    setConfirmPattern(label);
+  }
+
   function cancelNewLabel() {
     setDraftNewLabel(null);
     setPickerResetKey((k) => k + 1);
   }
-
-  const derivedPattern = contactKeyFor(concept, bankDetails);
 
   return (
     <>
@@ -130,7 +183,15 @@ function TransactionContactPicker({
           initialIvaRate={ivaRate ?? 0}
           initialRetencionRate={retencionRate ?? 0}
           onCancel={cancelNewLabel}
-          onCreated={(contact) => { setDraftNewLabel(null); link(contact.label); }}
+          onCreated={(contact) => { setDraftNewLabel(null); doLink(contact.label, false); }}
+        />
+      )}
+      {confirmPattern !== null && (
+        <ConfirmSavePatternPrompt
+          label={confirmPattern}
+          onSaveAlways={() => { const l = confirmPattern; setConfirmPattern(null); doLink(l, true); }}
+          onSaveOnce={() => { const l = confirmPattern; setConfirmPattern(null); doLink(l, false); }}
+          onClose={() => setConfirmPattern(null)}
         />
       )}
     </>

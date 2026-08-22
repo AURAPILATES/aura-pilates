@@ -29,12 +29,12 @@ function ChartTooltip({ active, payload }: TooltipContentProps) {
       <p className="font-semibold text-navy mb-1.5">{row.label}</p>
       <div className="flex items-center gap-1.5 mb-0.5">
         <span className="w-2 h-2 rounded-sm" style={{ backgroundColor: INCOME_COLOR }} />
-        <span className="text-navy/55">Ingresos</span>
+        <span className="text-navy/55">Entradas</span>
         <span className="font-semibold text-navy ml-auto">{fmtEur(row.income)}</span>
       </div>
       <div className="flex items-center gap-1.5">
         <span className="w-2 h-2 rounded-sm" style={{ backgroundColor: EXPENSE_COLOR }} />
-        <span className="text-navy/55">Gastos</span>
+        <span className="text-navy/55">Salidas</span>
         <span className="font-semibold text-navy ml-auto">{fmtEur(row.expense)}</span>
       </div>
     </div>

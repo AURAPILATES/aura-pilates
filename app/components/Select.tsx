@@ -10,7 +10,7 @@ type Props = SelectHTMLAttributes<HTMLSelectElement> & { variant?: "classic" | "
 export default function Select({ className = "", children, variant = "classic", ...props }: Props) {
   const selectCls =
     variant === "v2"
-      ? "w-full appearance-none text-[13.5px] border border-border rounded-[10px] pl-3 pr-8 py-2 bg-card text-navy outline-none focus:ring-2 focus:ring-navy/10 hover:border-navy/20 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+      ? "w-full appearance-none text-[13.5px] border border-border rounded-[10px] pl-3 pr-8 py-2 bg-card shadow-card text-navy outline-none focus:ring-2 focus:ring-navy/10 hover:border-navy/20 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
       : variant === "bare"
       ? "w-full appearance-none border-0 pr-6 bg-transparent text-navy outline-none cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
       : "w-full appearance-none text-sm border border-navy/[0.12] rounded-lg pl-3 pr-8 py-2 bg-card text-navy outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 hover:border-navy/25 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 transition-colors";

@@ -13,10 +13,11 @@ import FiltersToggleButtonV2 from "@/app/components/v2/FiltersToggleButtonV2";
 import ClearFiltersButtonV2 from "@/app/components/v2/ClearFiltersButtonV2";
 import { tableHeadClassV2, tableRowClassV2, tableFootClassV2, tableCardClassV2, gridColsV2 } from "@/app/components/v2/tableStylesV2";
 import {
-  MoreActionsMenu, OriginIcon, originLabel, CategoryPill, CategoryBadge, CategoryMultiFilter, ContactMultiFilter,
+  OriginIcon, originLabel, CategoryPill, CategoryBadge, CategoryMultiFilter, ContactMultiFilter,
   fmtAmt, fmtDate, CAT_FALLBACK, MONTHS_ES, type SortKey,
 } from "./TransaccionesList";
 import Select from "@/app/components/Select";
+import { IconButtonV2 } from "@/app/components/v2/ButtonsV2";
 import { TxnIcon } from "./catIcons";
 import ImportButton from "./ImportButton";
 import HeaderPortal from "@/app/components/HeaderPortal";
@@ -395,7 +396,7 @@ export default function TransaccionesListV2({
             <option value="olga">Olga</option>
             <option value="carles">Carles</option>
           </Select>
-          <div className="flex items-center gap-1.5 shrink-0 h-9 px-2.5 border border-border rounded-[10px] bg-card">
+          <div className="flex items-center gap-1.5 shrink-0 h-9 px-2.5 border border-border rounded-[10px] bg-card shadow-card">
             <input
               type="number"
               inputMode="decimal"
@@ -417,13 +418,22 @@ export default function TransaccionesListV2({
           <button
             type="button"
             onClick={() => onToggleOnlyRecurring()}
-            className={`text-[13px] px-[13px] py-2 rounded-[10px] border whitespace-nowrap transition-colors ${
+            className={`text-[13px] px-[13px] py-2 rounded-[10px] border shadow-card whitespace-nowrap transition-colors ${
               onlyRecurring ? "border-navy bg-navy text-app-bg font-medium" : "border-border bg-card text-strong hover:bg-navy/[0.02]"
             }`}
           >
             Solo recurrentes
           </button>
-          <MoreActionsMenu onExport={onExportCsv} onPapelera={onPapelera} />
+          <IconButtonV2 onClick={onExportCsv} title="Exportar CSV">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+          </IconButtonV2>
+          <IconButtonV2 onClick={onPapelera} title="Papelera">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/>
+            </svg>
+          </IconButtonV2>
           {activeFilterCount >= 1 && <ClearFiltersButtonV2 onClick={clearFilters} />}
         </div>
       )}

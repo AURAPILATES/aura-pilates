@@ -93,18 +93,23 @@ function isExpenseCategory(category: string, categories: Category[]): boolean {
   return !cat || !NON_EXPENSE_GROUP_TYPES.has(cat.group_type);
 }
 
-/** ¿Cuenta este movimiento como ingreso/gasto real "según el banco"? No cuentan los traspasos
- * internos/financiación (ver NON_CASHFLOW_GROUP_TYPES) ni los movimientos marcados a mano como
- * "Devolución" - su contrapartida ya vive en otro movimiento aparte (p.ej. una comisión de
- * tarjeta y su condonación), así que contar ambos sumaría o restaría de más. Se usa en todos
- * los cálculos de ingresos/gastos de Analítica y en los totales de Transacciones. */
+/** ¿Cuenta este movimiento como ingreso/gasto real "según el banco"? Por defecto no cuentan los
+ * traspasos internos/financiación (ver NON_CASHFLOW_GROUP_TYPES) ni los movimientos marcados a
+ * mano como "Devolución" - su contrapartida ya vive en otro movimiento aparte (p.ej. una comisión
+ * de tarjeta y su condonación), así que contar ambos sumaría o restaría de más. Se usa en los
+ * cálculos de salud financiera de Analítica (breakeven, burn rate). Las vistas de movimiento
+ * bruto (Flujo de caja, Desglose de gastos, Transacciones) pasan includeInternal: true para ver
+ * también los traspasos entre cuentas propias, tal cual están en el banco. */
 export function isCashflowTransaction(
   t: Pick<Transaction, "category" | "is_refund">,
   categories: Category[],
+  opts?: { includeInternal?: boolean },
 ): boolean {
   if (t.is_refund) return false;
   const cat = t.category ? findCategory(categories, t.category) : undefined;
-  return !cat || !NON_CASHFLOW_GROUP_TYPES.has(cat.group_type);
+  if (!cat) return true;
+  if (opts?.includeInternal && cat.group_type === "internal") return true;
+  return !NON_CASHFLOW_GROUP_TYPES.has(cat.group_type);
 }
 
 /** Gastos de financiación: categorías de tipo "transfer" (p.ej. cuotas de préstamo), que
@@ -186,18 +191,27 @@ export function expensesByMonth(txns: Transaction[], categories: Category[]): Ma
   return map;
 }
 
-/** Gastos por categoría (operativos + CapEx), cada uno con su grupo económico. Cualquier
- * transacción con categoría cuenta, salvo que esa categoría sea de tipo ingreso/traspaso/interno. */
+/** Clave "hueco" para movimientos sin categorizar en el desglose de gastos: así el total
+ * cuadra siempre con "según el banco" (isCashflowTransaction) en vez de perder movimientos
+ * sin categoría por el camino. Mismo sentinel que ya usa el filtro de Transacciones
+ * (ver TransaccionesList.tsx), para que "Ver transacciones" enlace correctamente. */
+export const UNCATEGORIZED_EXPENSE = "__none__";
+export const UNCATEGORIZED_EXPENSE_LABEL = "Sin categorizar";
+
+/** Gastos por categoría (operativos + CapEx + sin categorizar + traspasos internos), cada uno
+ * con su grupo económico. Mismo criterio que "según el banco" (isCashflowTransaction con
+ * includeInternal: true) para que este desglose sume exactamente el total de salidas del banco. */
 export function expensesByCategoryAll(txns: Transaction[], categories: Category[]) {
   const map = new Map<string, { count: number; total: number; group: EconomicGroup }>();
   for (const t of txns) {
-    if (t.amount >= 0 || t.category === null || t.is_refund) continue;
-    if (!isExpenseCategory(t.category, categories)) continue;
-    const cat = findCategory(categories, t.category);
-    const d = map.get(t.category) ?? { count: 0, total: 0, group: economicGroupOf(cat?.label ?? t.category, cat?.economic_group) };
+    if (t.amount >= 0) continue;
+    if (!isCashflowTransaction(t, categories, { includeInternal: true })) continue;
+    const cat = t.category ? findCategory(categories, t.category) : undefined;
+    const key = t.category ?? UNCATEGORIZED_EXPENSE;
+    const d = map.get(key) ?? { count: 0, total: 0, group: economicGroupOf(cat?.label ?? key, cat?.economic_group) };
     d.count++;
     d.total += Math.abs(t.amount);
-    map.set(t.category, d);
+    map.set(key, d);
   }
   return [...map.entries()]
     .map(([category, d]) => ({ category, ...d }))

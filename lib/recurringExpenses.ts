@@ -29,6 +29,8 @@ export type RecurringExpense = {
   /** Fecha de referencia (último pago conocido o próximo previsto) desde la que proyectar,
    * solo relevante mientras no haya transacciones reales que lo respalden. */
   anchor_date: string | null;
+  /** El importe cambia cada vez (p.ej. gestoría) en vez de ser siempre el mismo. */
+  variable: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -89,6 +91,7 @@ export function forecastConfirmedExpenses(
       nextDate,
       daysUntil,
       occurrences,
+      variable: e.variable,
     });
   }
 

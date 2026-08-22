@@ -53,17 +53,13 @@ export function totalRevenue(events: MomenceEvent[]) {
   return events.reduce((sum, e) => sum + e.ticketsSold * e.fixedPrice, 0);
 }
 
-export function totalStudents(events: MomenceEvent[]) {
-  return events.reduce((sum, e) => sum + e.ticketsSold, 0);
-}
-
 export function occupancyRate(events: MomenceEvent[]) {
   const totalCapacity = events.reduce((sum, e) => sum + e.capacity, 0);
   const totalSold = events.reduce((sum, e) => sum + e.ticketsSold, 0);
   return totalCapacity > 0 ? totalSold / totalCapacity : 0;
 }
 
-// Igual que occupancyRate/totalStudents pero a partir de asistencia real (checkedIn, API v2)
+// Igual que occupancyRate pero a partir de asistencia real (checkedIn, API v2)
 // en vez de reservas (ticketsSold, API v1) - para los KPI de cabecera de Analítica › Clientes,
 // que antes usaban reservas mientras "Evolución de la ocupación" un scroll más abajo ya usa
 // asistencia real desde que se migró a V2 (mismos no-shows contados de más en el KPI viejo).

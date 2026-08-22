@@ -1,6 +1,6 @@
 import { fmt, filterActive, occupancyRateV2, avgAttendedPerClassV2 } from "@/lib/analytics";
 import { pctDelta } from "@/components/charts/DeltaBadge";
-import { saveHistoricalEvents, loadHistoricalEvents } from "@/lib/history";
+import { saveHistoricalEvents } from "@/lib/history";
 import { getLatestSyncRuns } from "@/lib/syncRuns";
 import { taxBreakdown, fiscalQuarterOf, ivaRepercutidoFromGross, netIvaAPagar, generateFiscalObligations } from "@/lib/taxCalc";
 import { benvingudaConversion, subscriberFirstPurchase } from "@/lib/sales";
@@ -20,7 +20,7 @@ import { loadStripeCustomers } from "@/lib/stripeCustomers";
 import { buildPrimaryIdMap, enrichCustomers, hasActiveSub } from "@/lib/customerEnrichment";
 import { estimatedMRR } from "@/lib/stripeRecurrence";
 
-import { loadTransactionsCached, expensesByCategoryAll, financingExpensesByCategory, getLatestImportDate, findCategory, isUrbanIncome, urbanRevenueByMonth, urbanRevenueByActivityMonth, isCashflowTransaction, type EconomicGroup, type Transaction, type PaymentMethod } from "@/lib/transactions";
+import { loadTransactionsCached, expensesByCategoryAll, financingExpensesByCategory, getLatestImportDate, findCategory, isUrbanIncome, urbanRevenueByMonth, urbanRevenueByActivityMonth, isCashflowTransaction, UNCATEGORIZED_EXPENSE, UNCATEGORIZED_EXPENSE_LABEL, type EconomicGroup, type Transaction, type PaymentMethod } from "@/lib/transactions";
 import { formatRelativeTime } from "@/lib/formatRelativeTime";
 import { sanitizeErrorMessage } from "@/lib/sanitizeErrorMessage";
 import { loadCategoriesCached, NON_CASHFLOW_GROUP_TYPES, type Category } from "@/lib/categories";
@@ -35,7 +35,7 @@ import { loadBudgetsCached, computeSpent } from "@/lib/budgets";
 import Breakeven from "./instances/Breakeven";
 import { computeBreakeven } from "@/lib/breakeven";
 import ConversionPack from "./instances/ConversionPack";
-import { subscriptionTiersFromMembershipsV2 } from "@/lib/mrr";
+import { subscriptionTiersFromPriceCandidates } from "@/lib/mrr";
 import { getSubscriptionsBaseV2, getActiveSubscriberEmailsV2, getMrrHistoryV2 } from "@/lib/subscriptionsV2";
 import EvolucionMRR from "./instances/EvolucionMRR";
 import { getAtRiskV2, type AtRiskCustomerInfo } from "@/lib/atRiskV2";
@@ -46,12 +46,10 @@ import { getTeacherLtvV2 } from "@/lib/teacherLtvV2";
 import { getSubscriberFirstClassV2 } from "@/lib/subscriberFirstClassV2";
 import { urbanActivityByMonth, attendanceByChannelMonth } from "@/lib/clientActivityV2";
 import { buildChannelEconomics } from "@/lib/channelEconomics";
-import EconomiaPorCanal from "./instances/EconomiaPorCanal";
 import { loadUrbanRates } from "@/lib/urbanRates";
 import ProfesoraInsights from "./instances/ProfesoraInsights";
 import { getEvents } from "@/lib/momence";
-import { getMembershipsV2 } from "@/lib/momenceV2";
-import { catalogFromStripeProductMap, revenueByProductByMonth } from "@/lib/productRevenue";
+import { catalogFromStripeProductMap, revenueByProductByMonth, addUscToMonthlyRevenue } from "@/lib/productRevenue";
 import { computeSubscriptionCohorts, computeRetentionCohorts } from "@/lib/subscriptionCohort";
 import RetencionCohorte from "./instances/RetencionCohorte";
 import SuscripcionesBase from "./instances/SuscripcionesBase";
@@ -112,7 +110,7 @@ function groupExpensesByTopCategory(
     if (!topMap.has(topKey)) {
       topMap.set(topKey, {
         key: topKey,
-        label: top?.label ?? dbCat?.label ?? e.category,
+        label: top?.label ?? dbCat?.label ?? (e.category === UNCATEGORIZED_EXPENSE ? UNCATEGORIZED_EXPENSE_LABEL : e.category),
         color: top?.text_color ?? dbCat?.text_color ?? fallbackColors[i % fallbackColors.length],
         iconKey: top?.emoji ?? dbCat?.emoji,
         group: e.group,
@@ -169,18 +167,16 @@ export default async function AnaliticaLoader({
   const curMonth  = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}`;
 
   const [
-    paymentsAll, membershipsV2, productPriceCandidates,
+    paymentsAll, productPriceCandidates,
     txnsAll, dbCategories, budgets, businessEvents, recurringExpenses, breakdown, breakdownComp,
-    bancoLastImport, paymentErrorAcks, syncRuns, liveEventsResult, historicalMomenceEvents,
+    bancoLastImport, paymentErrorAcks, syncRuns, liveEventsResult,
     teacherStatsV2, sessionOccupancyRowsV2, sessionOccupancyRowsV2Comp,
   ] = await Promise.all([
     loadStripePaymentsCached(),
-    // Catálogo de membresías/packs desde la API pública v2 (OAuth2, cacheada 30 min) - a
-    // diferencia de getEvents() más abajo, no depende del token de sesión de la API interna.
-    getMembershipsV2().catch(() => []),
     // Catálogo de precio (vigente + respaldo) para identificar cobros de Stripe por importe -
-    // única fuente reutilizada por Ventas por Producto y Retención por cohorte (antes cada una
-    // tenía su propia copia sin el precio de respaldo, ver lib/stripePayments.ts).
+    // única fuente reutilizada por Ventas por Producto, Retención por cohorte Y niveles de
+    // suscripción (antes cada una pedía su propio catálogo por separado a Momence, hasta 3
+    // veces en la misma carga de página - ver subscriptionTiersFromPriceCandidates en lib/mrr.ts).
     resolveProductMap().catch(() => []),
     loadTransactionsCached(null, null),
     loadCategoriesCached(),
@@ -192,13 +188,15 @@ export default async function AnaliticaLoader({
     getLatestImportDate(),
     loadPaymentErrorAcks(),
     getLatestSyncRuns().catch(() => null),
-    // Mismo patrón que Horario (HorarioLoader): si falla, se usa el último histórico guardado
-    // (historicalMomenceEvents) con un aviso, en vez de romper la página.
+    // Ya no se muestra ningún dato de este fetch en Analítica (Fase 9 movió los KPI de
+    // ocupación a class_sessions_v2) - se mantiene solo por su efecto secundario: alimentar
+    // momence_history (ver saveHistoricalEvents más abajo), como redundancia del cron nocturno
+    // de captura. Si falla, no debe tumbar la página - por eso el patrón ok/error en vez de un
+    // simple throw, igual que en Horario (HorarioLoader).
     getEvents().then((events) => ({ ok: true as const, events })).catch((e) => ({
       ok: false as const,
       error: e instanceof Error ? e.message : String(e),
     })),
-    loadHistoricalEvents(),
     // Live desde la API v2; si Momence v2 falla, no debe tumbar toda la página.
     getTeacherStatsV2(mainFrom, mainTo).catch(() => null),
     getSessionOccupancyRowsV2(mainFrom, mainTo).catch(() => []),
@@ -207,32 +205,20 @@ export default async function AnaliticaLoader({
     getSessionOccupancyRowsV2(compFrom, compTo).catch(() => []),
   ]);
 
-  const liveMomenceEvents = liveEventsResult.ok ? liveEventsResult.events : [];
   const liveEventsError = liveEventsResult.ok ? null : liveEventsResult.error;
 
-  // No bloquea el render: es un persist de "en vivo" para la próxima carga, no algo que esta
-  // página necesite esperar (los eventos ya combinados abajo salen de liveMomenceEvents). Solo
-  // se guarda si la carga en vivo funcionó - guardar [] sobreescribiría el histórico real del día.
+  // No bloquea el render: es un persist para alimentar momence_history (ver comentario en el
+  // Promise.all de arriba), no algo que esta página necesite esperar ni mostrar. Solo se guarda
+  // si la carga en vivo funcionó - guardar [] sobreescribiría el histórico real del día.
   if (liveEventsResult.ok) {
     void saveHistoricalEvents(liveEventsResult.events).catch((e) => {
       console.error("saveHistoricalEvents falló:", e);
     });
   }
 
-  const allMomenceEventsById = new Map(historicalMomenceEvents.map((e) => [e.id, e]));
-  liveMomenceEvents.forEach((e) => allMomenceEventsById.set(e.id, e));
-  const allMomenceEvents = Array.from(allMomenceEventsById.values());
-  const mainEvents = filterActive(allMomenceEvents).filter((e) => {
-    const d = new Date(e.dateTime);
-    return d >= new Date(mainFrom + "T00:00:00") && d <= new Date(mainTo + "T23:59:59");
-  });
-  const compEvents = filterActive(allMomenceEvents).filter((e) => {
-    const d = new Date(e.dateTime);
-    return d >= new Date(compFrom + "T00:00:00") && d <= new Date(compTo + "T23:59:59");
-  });
-  // Asistencia real (checkedIn, API v2), no reservas (ticketsSold, API v1, mainEvents/compEvents
-  // más arriba) - mismo criterio que "Evolución de la ocupación" un scroll más abajo, para que
-  // los dos "ocupación" de la misma pestaña midan lo mismo (antes este KPI incluía no-shows).
+  // Asistencia real (checkedIn, API v2), no reservas (ticketsSold, API v1) - mismo criterio que
+  // "Evolución de la ocupación" un scroll más abajo, para que los dos "ocupación" de la misma
+  // pestaña midan lo mismo (antes este KPI incluía no-shows).
   const occupancyAvg = occupancyRateV2(sessionOccupancyRowsV2);
   const avgPerClass  = avgAttendedPerClassV2(sessionOccupancyRowsV2);
   const occupancyAvgComp = occupancyRateV2(sessionOccupancyRowsV2Comp);
@@ -289,6 +275,7 @@ export default async function AnaliticaLoader({
   const originExpenseMap = new Map<PaymentMethod, OriginSpend>();
   for (const t of txnsMain) {
     if (t.amount >= 0) continue;
+    if (t.is_refund) continue;
     const originCat = t.category ? findCategory(dbCategories, t.category) : undefined;
     if (originCat?.group_type === "internal") continue;
     const acc = originExpenseMap.get(t.payment_method) ?? { origin: t.payment_method, total: 0, count: 0, txns: [] };
@@ -312,7 +299,7 @@ export default async function AnaliticaLoader({
   const firstPurchaseSummary = subscriberFirstPurchase(salesAll);
 
   // ── MRR/ARR por suscripción (suscriptores activos reales en Momence) ──────
-  const subscriptionTiers = subscriptionTiersFromMembershipsV2(membershipsV2);
+  const subscriptionTiers = subscriptionTiersFromPriceCandidates(productPriceCandidates);
 
   // Lo siguiente es independiente entre sí (Stripe × Momence v2 por separado, cada uno con su
   // propia caché), así que se lanza todo en paralelo en vez de esperar uno a uno.
@@ -393,6 +380,12 @@ export default async function AnaliticaLoader({
     };
   });
 
+  // "Ventas por Producto" también debe mostrar Urban, no solo Stripe: se añade como un item más
+  // reusando el mismo uscNet mensual que ya calcula la vista "Fuente" (banco real, o estimado en
+  // el mes aún sin facturar), para que ambas pestañas cuadren en la misma cifra.
+  const uscNetByMonth = new Map(monthlyByFuente.map((r) => [r.month, r.uscNet]));
+  const monthlyProductoConUrban = addUscToMonthlyRevenue(monthlyStripeRevenue, uscNetByMonth);
+
   // KPI de Urban "efectivo" = suma del uscNet mensual (banco por mes de actividad, o estimado si
   // ese mes aún no se facturó) de los meses que caen en el período. Misma cifra que ven las barras
   // del gráfico, así KPI y gráfico no pueden divergir. Un mes cuenta por su "YYYY-MM".
@@ -417,14 +410,11 @@ export default async function AnaliticaLoader({
 
   const transactionsByCategory: Record<string, { date: string; amount: number; concept: string; contact: string }[]> = {};
   for (const t of txnsMain) {
-    if (!t.category || t.is_refund) continue;
-    // Las categorías de tipo "transfer" (Financiación) también incluyen la entrada del propio
-    // préstamo (importe positivo) - eso no es un gasto y no debe colarse en el gráfico/drawer
-    // de Desglose de gastos, así que aquí solo cuentan los pagos (importe negativo).
-    const cat = findCategory(dbCategories, t.category);
-    if (cat?.group_type === "transfer" && t.amount >= 0) continue;
-    if (!transactionsByCategory[t.category]) transactionsByCategory[t.category] = [];
-    transactionsByCategory[t.category].push({ date: t.date, amount: t.amount, concept: t.concept ?? "", contact: t.contact ?? "" });
+    if (t.amount >= 0) continue;
+    if (!isCashflowTransaction(t, dbCategories, { includeInternal: true })) continue;
+    const key = t.category ?? UNCATEGORIZED_EXPENSE;
+    if (!transactionsByCategory[key]) transactionsByCategory[key] = [];
+    transactionsByCategory[key].push({ date: t.date, amount: t.amount, concept: t.concept ?? "", contact: t.contact ?? "" });
   }
 
   // ── Financiación dentro del desglose de gastos: expensesByCategoryAll excluye a propósito
@@ -563,9 +553,9 @@ export default async function AnaliticaLoader({
   // ya incluyen el 21% de IVA en el importe bruto ── + desglose por mes para explorar la celda.
   const ivaRepercutidoByQuarter = new Map<string, number>();
   const repercutidoByMonthByQuarter = new Map<string, Map<string, number>>();
-  const addRepercutido = (dateStr: string, gross: number) => {
+  const addRepercutido = (dateStr: string, gross: number, ivaRate = 21) => {
     const q = fiscalQuarterOf(dateStr);
-    const iva = ivaRepercutidoFromGross(gross);
+    const iva = ivaRepercutidoFromGross(gross, ivaRate);
     ivaRepercutidoByQuarter.set(q, (ivaRepercutidoByQuarter.get(q) ?? 0) + iva);
     const byMonth = repercutidoByMonthByQuarter.get(q) ?? new Map<string, number>();
     const m = dateStr.slice(0, 7);
@@ -577,8 +567,14 @@ export default async function AnaliticaLoader({
     if (!isUrbanIncome(t) || t.is_refund) continue;
     // "Efectivo Aura" no se declara, así que no debe contar como IVA repercutido aproximado.
     if (t.payment_method === "efectivo") continue;
-    addRepercutido(t.date, t.amount);
+    // El tipo de IVA lo trae la propia transacción (asignado por la regla del contacto "Urban
+    // Sports" en Configuración → Contactos), no un 21% fijo - si algún día cambia el tipo
+    // aplicado a Urban, esto se actualiza solo sin tocar código.
+    addRepercutido(t.date, t.amount, t.iva_rate ?? 21);
   }
+  // Mismo tipo de IVA de Urban (de su contacto, no un 21% fijo) para "Ventas netas" en
+  // Ventas por Fuente - se toma de cualquier transacción real de Urban que ya lo traiga.
+  const urbanIvaRate = txnsAll.find((t) => isUrbanIncome(t) && t.iva_rate != null)?.iva_rate ?? 21;
 
   // ── Resumen fiscal por trimestre: IVA neto a pagar (repercutido − soportado) + retenciones ──
   const allFiscalQuarters = new Set([...fiscalByQuarter.keys(), ...ivaRepercutidoByQuarter.keys()]);
@@ -723,9 +719,8 @@ export default async function AnaliticaLoader({
       {liveEventsError && (
         <div className="bg-warning/10 border border-warning/30 rounded-[8px] p-4 text-sm text-warning mb-6">
           No se ha podido conectar con Momence en vivo (probablemente el token de sesión de la API interna
-          ha caducado) - las clases se muestran desde el último snapshot guardado. El resto de Analítica
-          (membresías, MRR, suscripciones) no se ve afectado: sale de la API pública v2, con credenciales
-          aparte.{" "}
+          ha caducado) - no afecta a nada de lo que ves aquí (todo sale de la API pública v2, con
+          credenciales aparte), pero sí a la captura del histórico de clases de hoy para Horario.{" "}
           <span className="opacity-70">({sanitizeErrorMessage(liveEventsError)})</span>
         </div>
       )}
@@ -752,15 +747,16 @@ export default async function AnaliticaLoader({
                 stripeGrossComp={revComp}
                 stripeFeesComp={stripeFeesComp}
                 uscGrossComp={uscRevCompEff}
+                urbanIvaRate={urbanIvaRate}
                 monthly={monthlyByFuente}
                 dateRange={periodLabel}
                 lastUpdated={`Stripe en vivo · Urban según Transacciones (${bancoLastUpdated})`}
-                monthlyProducto={monthlyStripeRevenue}
+                monthlyProducto={monthlyProductoConUrban}
                 cohorts={subscriptionCohorts}
                 events={businessEvents}
                 rawPayments={pMain}
+                channelEconomics={channelEconomics}
               />
-              <EconomiaPorCanal data={channelEconomics} />
               <DesglosGastosUnificado
                 groups={expGroupTotals}
                 categories={expByTopCategory}
@@ -809,6 +805,7 @@ export default async function AnaliticaLoader({
                   spendPerClientComp={spendPerClientComp}
                   occupancyAvgComp={occupancyAvgComp}
                   avgPerClassComp={avgPerClassComp}
+                  hasOccupancyData={sessionOccupancyRowsV2.length > 0}
                 />
               </div>
               <div id="clientes-suscripcion" className="space-y-4">

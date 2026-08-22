@@ -132,6 +132,8 @@ export default function HorarioShell({
   // ── SVG helpers ──────────────────────────────────────────────────────────────
   const chevLeft  = <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg>;
   const chevRight = <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>;
+  const chevLeftMobile  = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg>;
+  const chevRightMobile = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>;
 
   return (
     <div>
@@ -200,13 +202,13 @@ export default function HorarioShell({
                     disabled={weekMonday <= MIN_WEEK}
                     className="w-8 h-8 flex items-center justify-center rounded-lg border border-navy/[0.12] bg-card text-navy/50 disabled:opacity-20"
                   >
-                    {chevLeft}
+                    {chevLeftMobile}
                   </button>
                   <button
                     onClick={() => router.push(`?week=${nextWeek}`)}
                     className="w-8 h-8 flex items-center justify-center rounded-lg border border-navy/[0.12] bg-card text-navy/50"
                   >
-                    {chevRight}
+                    {chevRightMobile}
                   </button>
                 </div>
               </div>

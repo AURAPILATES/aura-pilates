@@ -53,11 +53,15 @@ export type FiscalObligationSource = { label: string; date: string; deadline: st
  *
  * Genera una ventana rodante en vez de fechas fijas: antes era un array hardcodeado solo
  * para los trimestres de 2026, que se quedaba sin "próxima obligación" a partir de 2027.
+ *
+ * IMPORTANTE: quartersBack + quartersAhead debe quedarse por debajo de 4 (un año). Con 4
+ * trimestres por año, una ventana de 4 o más repite la etiqueta de un trimestre (p.ej. "IVA T3")
+ * dos veces - la de este año y la del año siguiente, indistinguibles porque el label no lleva año.
  */
 export function generateFiscalObligations(
   referenceDate: Date,
-  quartersBack = 2,
-  quartersAhead = 4,
+  quartersBack = 1,
+  quartersAhead = 2,
 ): FiscalObligationSource[] {
   const obligations: FiscalObligationSource[] = [];
   const curYear = referenceDate.getFullYear();

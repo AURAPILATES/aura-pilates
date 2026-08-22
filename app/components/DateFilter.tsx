@@ -79,7 +79,7 @@ export default function DateFilter({ variant = "classic" }: { variant?: "classic
         }}
         className={
           variant === "v2"
-            ? "flex items-center gap-2 px-3 py-2 text-[13.5px] font-medium border border-border rounded-[10px] bg-card text-strong hover:bg-navy/[0.02] transition-colors whitespace-nowrap"
+            ? "flex items-center gap-2 px-3 py-2 text-[13.5px] font-medium border border-border rounded-[10px] bg-card shadow-card text-strong hover:bg-navy/[0.02] transition-colors whitespace-nowrap"
             : "flex items-center gap-2 px-3 py-2 text-sm font-medium border border-navy/[0.12] rounded-xl bg-card text-navy hover:bg-navy/[0.03] transition-colors"
         }
       >

@@ -135,7 +135,7 @@ export default function IvaRetenciones({
         </span>
       ),
       valueClassName: ivaNeto < 0 ? "text-success" : "text-navy",
-      tooltip: "Repercutido: 21% extraído del bruto de ventas (Stripe + Urban Sports Club). Soportado: según el % de IVA asignado por contacto en cada gasto importado (Configuración → Contactos). Excluye movimientos de Efectivo Aura (no se declara). Resultado = repercutido − soportado.",
+      tooltip: "Repercutido: extraído del bruto de ventas - Stripe al 21%, Urban Sports Club al tipo de IVA de su contacto (Configuración → Contactos). Soportado: según el % de IVA asignado por contacto en cada gasto importado. Excluye movimientos de Efectivo Aura (no se declara). Resultado = repercutido − soportado.",
       helper: (
         <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-navy/45">
           <span>Repercutido (Ventas) {fmt(ivaRepercutido)}</span>
@@ -156,7 +156,7 @@ export default function IvaRetenciones({
       subtitle={`Próximo vencimiento: ${dueLabel}`}
       dateRange={quarterLabel}
       kpiItems={kpiItems}
-      dataSource="IVA repercutido: 21% extraído del bruto de ventas (Stripe + USC). IVA soportado y retenciones: según el % de IVA/IRPF asignado por contacto en cada gasto importado. Excluye movimientos de Efectivo Aura, que no se declara."
+      dataSource="IVA repercutido: extraído del bruto de ventas - Stripe al 21%, Urban Sports Club al tipo de su contacto. IVA soportado y retenciones: según el % de IVA/IRPF asignado por contacto en cada gasto importado. Excluye movimientos de Efectivo Aura, que no se declara."
       sources={["stripe", "excel"]}
       lastUpdated={lastUpdated}
     >
@@ -263,7 +263,7 @@ export default function IvaRetenciones({
             {obligations.map((o) => {
               const level = urgencyOf(o.days);
               return (
-                <div key={o.label} className="flex items-center gap-2 rounded-[8px] border border-border px-2.5 py-2">
+                <div key={`${o.deadline}-${o.label}`} className="flex items-center gap-2 rounded-[8px] border border-border px-2.5 py-2">
                   <ObligationDayBadge deadline={o.deadline} level={level} />
                   <div className="min-w-0 flex-1">
                     <p className="text-[12.5px] font-medium text-navy/80 truncate">{o.label}</p>
@@ -292,7 +292,7 @@ function DetailDrawer({ selected, onClose }: { selected: { row: QuarterlyFiscalR
     repercutido: {
       title: "IVA repercutido",
       value: row.ivaRepercutido,
-      note: "21% extraído del bruto de ventas (Stripe + Urban Sports Club), por mes. Excluye Efectivo Aura.",
+      note: "Extraído del bruto de ventas por mes - Stripe al 21%, Urban Sports Club al tipo de su contacto. Excluye Efectivo Aura.",
       items: row.repercutidoByMonth.map((m) => ({ label: monthLabel(m.month), amount: m.amount })),
     },
     soportado: {

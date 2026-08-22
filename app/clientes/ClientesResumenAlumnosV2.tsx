@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import FilterPillGroupV2 from "@/app/components/v2/FilterPillGroupV2";
 import { IconButtonV2 } from "@/app/components/v2/ButtonsV2";
+import { InteractiveLegend } from "@/components/charts";
 import { tableHeadClassV2, tableRowClassV2, tableCardClassV2, gridColsV2 } from "@/app/components/v2/tableStylesV2";
-import { fmt } from "@/lib/analytics";
-import type { Period } from "@/app/analitica/instances/evolucionIngresosUtils";
+import { fmt, pct } from "@/lib/analytics";
+import { PRODUCT_COLORS, type Period } from "@/app/analitica/instances/evolucionIngresosUtils";
 import type { PeriodCell, SummaryRow } from "./ClientesResumenAlumnos";
 
 /** Forma común a la fila superior (agregado) y a cada fila de producto - permite reusar el
@@ -119,6 +120,19 @@ export default function ClientesResumenAlumnosV2({ period, onPeriodChange, perio
   const totalValue = metric === "alumnos" ? (row: Row) => row.totalCount : (row: Row) => row.totalAmount;
   const rowLabel = metric === "alumnos" ? "Alumnos" : "Importe";
 
+  // Resumen (barra + leyenda), igual patrón que Analítica > Ventas por producto: color fijo
+  // ámbar para Urban (no es un producto de Stripe, es asistencia) y la paleta de productos
+  // para el resto, en el mismo orden que en Analítica para que el color de cada producto
+  // coincida entre pantallas.
+  const nonUrbanByRevenue = [...rows]
+    .filter((r) => r.product !== "Urban" && totalValue(r) > 0)
+    .sort((a, b) => totalValue(b) - totalValue(a))
+    .map((r) => r.product);
+  const colorOf = (product: string) =>
+    product === "Urban" ? "var(--color-warning)" : PRODUCT_COLORS[nonUrbanByRevenue.indexOf(product) % PRODUCT_COLORS.length];
+  const summaryRows = [...rows].filter((r) => totalValue(r) > 0).sort((a, b) => totalValue(b) - totalValue(a));
+  const summaryGrandTotal = summaryRows.reduce((s, r) => s + totalValue(r), 0);
+
   return (
     <div className="w-full">
       <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -153,6 +167,25 @@ export default function ClientesResumenAlumnosV2({ period, onPeriodChange, perio
           </IconButtonV2>
         </div>
       </div>
+
+      <p className="text-xs font-medium text-navy/55 mt-5 mb-2.5">Resumen</p>
+      <div className="flex h-3 rounded-full overflow-hidden bg-navy/5 mb-4">
+        {summaryRows.map((r) => (
+          <div
+            key={r.product}
+            style={{ flex: `${summaryGrandTotal > 0 ? totalValue(r) / summaryGrandTotal : 0} 0 0%`, backgroundColor: colorOf(r.product) }}
+          />
+        ))}
+      </div>
+      <InteractiveLegend
+        items={summaryRows.map((r) => ({
+          key: r.product,
+          label: r.product,
+          color: colorOf(r.product),
+          value: format(totalValue(r)),
+          helper: summaryGrandTotal > 0 ? pct(totalValue(r) / summaryGrandTotal) : "-",
+        }))}
+      />
 
       <SummaryTable
         rowLabel={rowLabel}

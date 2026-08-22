@@ -8,7 +8,11 @@ import Drawer from "@/app/components/Drawer";
 import Button, { SecondaryButton, DangerButton, DangerButtonSolid } from "@/app/components/Button";
 import Select from "@/app/components/Select";
 import Field from "@/app/components/Field";
+import Checkbox from "@/app/components/Checkbox";
+import UnitInput from "@/app/components/UnitInput";
+import ChipsInput from "@/app/components/ChipsInput";
 import type { Category } from "@/lib/categories";
+import { drawerNav } from "@/lib/drawerNav";
 import { PERIOD_BUCKETS } from "@/lib/recurring";
 import { todayLocalISO } from "@/lib/dateRange";
 import { normalizeText } from "@/lib/normalizeText";
@@ -166,6 +170,7 @@ function EndOfRecurrenceFields({ value, onChange, disabled }: { value: EndFields
       <Field label="Finaliza">
         <Select
           variant="bare"
+          className="w-full"
           value={value.type}
           disabled={disabled}
           onChange={(e) => onChange({ ...value, type: e.target.value as RecurringExpenseEndType })}
@@ -315,7 +320,7 @@ function ContactPickerDrawer({ contacts, title, onPick, onClose }: {
   );
 }
 
-function ConfirmPendingDrawer({ row, period, pick, end, name, ivaRate, retencionRate, contacts, onClose, onPeriodChange, onEndChange, onNameChange, onOpenContactPicker, onConfirm, onIgnore }: {
+function ConfirmPendingDrawer({ row, period, pick, end, name, ivaRate, retencionRate, variable, patterns, contacts, onClose, onPeriodChange, onEndChange, onNameChange, onVariableChange, onPatternsChange, onOpenContactPicker, onConfirm, onIgnore, onPrev, onNext, hasPrev, hasNext }: {
   row: PendingSeriesRow;
   period: string;
   pick: ContactPick;
@@ -323,14 +328,22 @@ function ConfirmPendingDrawer({ row, period, pick, end, name, ivaRate, retencion
   name: string;
   ivaRate: number;
   retencionRate: number;
+  variable: boolean;
+  patterns: string[];
   contacts: Contact[];
   onClose: () => void;
   onPeriodChange: (period: string) => void;
   onEndChange: (end: EndFields) => void;
   onNameChange: (name: string) => void;
+  onVariableChange: (variable: boolean) => void;
+  onPatternsChange: (patterns: string[]) => void;
   onOpenContactPicker: () => void;
   onConfirm: () => Promise<void>;
   onIgnore: () => Promise<void>;
+  onPrev?: () => void;
+  onNext?: () => void;
+  hasPrev?: boolean;
+  hasNext?: boolean;
 }) {
   const [saving, setSaving] = useState(false);
   const label = pickToLabel(pick, contacts);
@@ -347,6 +360,10 @@ function ConfirmPendingDrawer({ row, period, pick, end, name, ivaRate, retencion
   return (
     <Drawer
       onClose={onClose}
+      onPrev={onPrev}
+      onNext={onNext}
+      hasPrev={hasPrev}
+      hasNext={hasNext}
       header={
         <div className="flex items-start gap-3">
           <ContactAvatar label={name || row.label} resolved={!!pick} logoDomain={pick ? knownDomain(label) : null} size={40} />
@@ -367,14 +384,22 @@ function ConfirmPendingDrawer({ row, period, pick, end, name, ivaRate, retencion
         </div>
       )}
     >
-      <div className="p-4 border-b border-navy/[0.06]">
-        <p className="text-xs font-medium text-navy/55 mb-1.5">Importe</p>
-        <p className="text-lg font-semibold text-navy">{fmtEUR(Math.abs(row.amount))}</p>
-        <p className="text-xs text-navy/40 mt-0.5">detectado {row.period} · {row.occurrences} pagos</p>
-      </div>
+      <div className="px-6 py-5 flex flex-col gap-[16px]">
+        <div>
+          <p className="text-xs font-medium text-navy/55 mb-1.5">Importe</p>
+          <p className="text-lg font-semibold text-navy">{fmtEUR(Math.abs(row.amount))}</p>
+          <p className="text-xs text-navy/40 mt-0.5">detectado {row.period} · {row.occurrences} pagos</p>
+        </div>
 
-      <div className="p-4 border-b border-navy/[0.06]">
-        <Field label="Concepto / Nombre">
+        <label className="flex items-start gap-2.5 cursor-pointer">
+          <Checkbox checked={variable} onChange={(e) => onVariableChange(e.target.checked)} tone="primary" className="mt-0.5" />
+          <span className="flex-1 min-w-0">
+            <span className="text-sm font-medium text-navy">Importe variable</span>
+            <span className="block text-xs text-navy/45 mt-0.5">El pago se repite períodicamente pero el importe varía.</span>
+          </span>
+        </label>
+
+        <Field label="Nombre de la recurrencia">
           <input
             type="text"
             value={name}
@@ -382,10 +407,7 @@ function ConfirmPendingDrawer({ row, period, pick, end, name, ivaRate, retencion
             className="w-full bg-transparent outline-none"
           />
         </Field>
-        <p className="text-xs text-navy/40 mt-2">Puede ser distinto del contacto vinculado.</p>
-      </div>
 
-      <div className="p-4 border-b border-navy/[0.06]">
         <Field label="Contacto">
           <button
             onClick={onOpenContactPicker}
@@ -397,33 +419,34 @@ function ConfirmPendingDrawer({ row, period, pick, end, name, ivaRate, retencion
             <ChevronRight size={14} className="text-navy/30 shrink-0" />
           </button>
         </Field>
-      </div>
 
-      <div className="p-4 border-b border-navy/[0.06]">
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <label className="text-xs text-navy/40">IVA %</label>
-            <p className="w-full mt-1 px-3 py-2 text-sm text-navy bg-navy/[0.03] rounded-lg tabular-nums">{ivaRate}%</p>
-          </div>
-          <div>
-            <label className="text-xs text-navy/40">Retención %</label>
-            <p className="w-full mt-1 px-3 py-2 text-sm text-navy bg-navy/[0.03] rounded-lg tabular-nums">{retencionRate}%</p>
-          </div>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="IVA %">
+            <span className="text-navy tabular-nums">{ivaRate}%</span>
+          </Field>
+          <Field label="Retención %">
+            <span className="text-navy tabular-nums">{retencionRate}%</span>
+          </Field>
         </div>
-        <p className="text-xs text-navy/40 mt-2">{pickToInfo(pick, contacts)} Se edita en Configuración › Contactos.</p>
-      </div>
+        <p className="text-xs text-navy/40 -mt-2">{pickToInfo(pick, contacts)} Se edita en Configuración › Contactos.</p>
 
-      <div className="p-4 border-b border-navy/[0.06]">
+        <div>
+          <Field label="Conceptos bancarios" align="start">
+            <ChipsInput values={patterns} onChange={onPatternsChange} placeholder="+ añadir…" bare />
+          </Field>
+          <p className="text-xs text-navy/40 mt-2">
+            Se guardan como patrón para reconocer solos futuros movimientos parecidos. Quita los que no quieras que se recuerden.
+          </p>
+        </div>
+
         <Field label="Periodicidad">
-          <Select variant="bare" value={period} onChange={(e) => onPeriodChange(e.target.value)}>
+          <Select variant="bare" className="w-full" value={period} onChange={(e) => onPeriodChange(e.target.value)}>
             {PERIOD_BUCKETS.map((b) => (
               <option key={b.label} value={b.label}>{b.label}</option>
             ))}
           </Select>
         </Field>
-      </div>
 
-      <div className="p-4">
         <EndOfRecurrenceFields value={end} onChange={onEndChange} />
       </div>
     </Drawer>
@@ -448,6 +471,7 @@ function NewManualRecurringDrawer({ categories, contacts, pick, onOpenContactPic
   const [period, setPeriod] = useState("mensual");
   const [anchorDate, setAnchorDate] = useState(() => todayLocalISO());
   const [end, setEnd] = useState<EndFields>(defaultEnd());
+  const [variable, setVariable] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const pickLabel = pickToLabel(pick, contacts);
@@ -473,6 +497,7 @@ function NewManualRecurringDrawer({ categories, contacts, pick, onOpenContactPic
         endType: end.type,
         endDate: end.type === "date" ? end.date || null : null,
         endCount: end.type === "count" ? parseInt(end.count, 10) || null : null,
+        variable,
       });
       close();
     } catch (err) {
@@ -498,7 +523,7 @@ function NewManualRecurringDrawer({ categories, contacts, pick, onOpenContactPic
         </div>
       )}
     >
-      <div className="p-4 border-b border-navy/[0.06]">
+      <div className="px-6 py-5 flex flex-col gap-[16px]">
         <Field label="Nombre">
           <input
             type="text"
@@ -509,80 +534,83 @@ function NewManualRecurringDrawer({ categories, contacts, pick, onOpenContactPic
             className="w-full bg-transparent outline-none placeholder:text-navy/30"
           />
         </Field>
-      </div>
 
-      <div className="p-4 border-b border-navy/[0.06]">
-        <Field label="Importe">
-          <input
-            type="text"
-            inputMode="decimal"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            placeholder="0,00"
-            className="w-24 bg-transparent outline-none placeholder:text-navy/30"
-          />
-          <span className="text-navy/40">€</span>
-        </Field>
-      </div>
+        <div>
+          <Field label="Importe">
+            <UnitInput
+              unit="€"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="0,00"
+              bare
+            />
+          </Field>
+          <label className="flex items-start gap-2.5 cursor-pointer mt-3">
+            <Checkbox checked={variable} onChange={(e) => setVariable(e.target.checked)} tone="primary" className="mt-0.5" />
+            <span className="flex-1 min-w-0">
+              <span className="text-sm font-medium text-navy">Importe variable</span>
+              <span className="block text-xs text-navy/45 mt-0.5">El pago se repite períodicamente pero el importe varía.</span>
+            </span>
+          </label>
+        </div>
 
-      <div className="p-4 border-b border-navy/[0.06]">
         <Field label="Categoría">
           <CategoryPill category={category} categories={categories} onChange={setCategory} />
         </Field>
-      </div>
 
-      <div className="p-4 border-b border-navy/[0.06]">
-        <Field label="Contacto (opcional)">
-          <button
-            onClick={onOpenContactPicker}
-            className="w-full flex items-center justify-between gap-2 text-left"
-          >
-            <span className={`truncate ${pick ? "text-navy font-medium" : "text-navy/40"}`}>
-              {pickLabel || "Elegir o crear contacto…"}
-            </span>
-            <ChevronRight size={14} className="text-navy/30 shrink-0" />
-          </button>
-        </Field>
-        <p className="text-xs text-navy/40 mt-2">{pickToInfo(pick, contacts)}</p>
-      </div>
+        <div>
+          <Field label="Contacto (opcional)">
+            <button
+              onClick={onOpenContactPicker}
+              className="w-full flex items-center justify-between gap-2 text-left"
+            >
+              <span className={`truncate ${pick ? "text-navy font-medium" : "text-navy/40"}`}>
+                {pickLabel || "Elegir o crear contacto…"}
+              </span>
+              <ChevronRight size={14} className="text-navy/30 shrink-0" />
+            </button>
+          </Field>
+          <p className="text-xs text-navy/40 mt-2">{pickToInfo(pick, contacts)}</p>
+        </div>
 
-      <div className="p-4 border-b border-navy/[0.06]">
         <Field label="Periodicidad">
-          <Select variant="bare" value={period} onChange={(e) => setPeriod(e.target.value)}>
+          <Select variant="bare" className="w-full" value={period} onChange={(e) => setPeriod(e.target.value)}>
             {PERIOD_BUCKETS.map((b) => (
               <option key={b.label} value={b.label}>{b.label}</option>
             ))}
           </Select>
         </Field>
-      </div>
 
-      <div className="p-4 border-b border-navy/[0.06]">
-        <Field label="Fecha de referencia">
-          <input
-            type="date"
-            value={anchorDate}
-            onChange={(e) => setAnchorDate(e.target.value)}
-            className="w-full bg-transparent outline-none"
-          />
-        </Field>
-        <p className="text-xs text-navy/40 mt-2">Último pago conocido, o el próximo previsto si aún no ha empezado - desde aquí se proyecta el siguiente.</p>
-      </div>
+        <div>
+          <Field label="Fecha de referencia">
+            <input
+              type="date"
+              value={anchorDate}
+              onChange={(e) => setAnchorDate(e.target.value)}
+              className="w-full bg-transparent outline-none"
+            />
+          </Field>
+          <p className="text-xs text-navy/40 mt-2">Último pago conocido, o el próximo previsto si aún no ha empezado - desde aquí se proyecta el siguiente.</p>
+        </div>
 
-      <div className="p-4">
         <EndOfRecurrenceFields value={end} onChange={setEnd} />
-      </div>
 
-      {error && <p className="px-4 pb-4 text-xs text-danger">{error}</p>}
+        {error && <p className="text-xs text-danger">{error}</p>}
+      </div>
     </Drawer>
   );
 }
 
-function RecurringExpenseDrawer({ row, categories, contacts, onClose, onOpenContactPicker }: {
+function RecurringExpenseDrawer({ row, categories, contacts, onClose, onOpenContactPicker, onPrev, onNext, hasPrev, hasNext }: {
   row: ConfirmedExpenseRow;
   categories: Category[];
   contacts: Contact[];
   onClose: () => void;
   onOpenContactPicker: () => void;
+  onPrev?: () => void;
+  onNext?: () => void;
+  hasPrev?: boolean;
+  hasNext?: boolean;
 }) {
   const e = row.expense;
   const router = useRouter();
@@ -655,9 +683,23 @@ function RecurringExpenseDrawer({ row, categories, contacts, onClose, onOpenCont
     close();
   }
 
+  async function toggleVariable(checked: boolean) {
+    setSaving(true);
+    try {
+      await updateRecurringExpense(e.id, { variable: checked });
+      router.refresh();
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <Drawer
       onClose={onClose}
+      onPrev={onPrev}
+      onNext={onNext}
+      hasPrev={hasPrev}
+      hasNext={hasNext}
       header={
         <div className="flex items-start gap-3">
           <ContactAvatar label={e.label} resolved={!!contact} logoDomain={contact ? knownDomain(contact.label) : null} size={40} />
@@ -681,30 +723,36 @@ function RecurringExpenseDrawer({ row, categories, contacts, onClose, onOpenCont
         )
       }
     >
-      <div className="p-4 border-b border-navy/[0.06]">
-        <Field label="Importe">
-          <input
-            type="text"
-            inputMode="decimal"
-            value={amountDraft}
-            disabled={saving}
-            onChange={(ev) => setAmountDraft(ev.target.value)}
-            onBlur={changeAmount}
-            className="w-24 font-semibold text-navy bg-transparent outline-none disabled:opacity-50"
-          />
-          <span className="text-navy/40">€</span>
-        </Field>
-        {row.lastDate ? (
-          <p className="text-xs text-navy/40 mt-2">
-            {e.manual && row.occurrences === 0 ? "Fecha de referencia" : "Último pago"}: {fmtDate(row.lastDate)}
-          </p>
-        ) : (
-          e.manual && <p className="text-xs text-navy/40 mt-2">Sin transacciones todavía - pendiente de que llegue el primer pago real.</p>
-        )}
-      </div>
+      <div className="px-6 py-5 flex flex-col gap-[16px]">
+        <div>
+          <Field label="Importe">
+            <UnitInput
+              unit="€"
+              value={amountDraft}
+              disabled={saving}
+              onChange={(ev) => setAmountDraft(ev.target.value)}
+              onBlur={changeAmount}
+              className="font-semibold"
+              bare
+            />
+          </Field>
+          {row.lastDate ? (
+            <p className="text-xs text-navy/40 mt-2">
+              {e.manual && row.occurrences === 0 ? "Fecha de referencia" : "Último pago"}: {fmtDate(row.lastDate)}
+            </p>
+          ) : (
+            e.manual && <p className="text-xs text-navy/40 mt-2">Sin transacciones todavía - pendiente de que llegue el primer pago real.</p>
+          )}
+          <label className="flex items-start gap-2.5 cursor-pointer mt-3">
+            <Checkbox checked={e.variable} disabled={saving} onChange={(ev) => toggleVariable(ev.target.checked)} tone="primary" className="mt-0.5 disabled:opacity-50" />
+            <span className="flex-1 min-w-0">
+              <span className="text-sm font-medium text-navy">Importe variable</span>
+              <span className="block text-xs text-navy/45 mt-0.5">El pago se repite períodicamente pero el importe varía.</span>
+            </span>
+          </label>
+        </div>
 
-      <div className="p-4 border-b border-navy/[0.06]">
-        <Field label="Concepto / Nombre">
+        <Field label="Nombre de la recurrencia">
           <input
             type="text"
             value={name}
@@ -714,10 +762,7 @@ function RecurringExpenseDrawer({ row, categories, contacts, onClose, onOpenCont
             className="w-full bg-transparent outline-none disabled:opacity-50"
           />
         </Field>
-        <p className="text-xs text-navy/40 mt-2">Nombre de esta recurrencia - puede ser distinto del contacto vinculado.</p>
-      </div>
 
-      <div className="p-4 border-b border-navy/[0.06]">
         <Field label="Contacto vinculado">
           <button
             onClick={onOpenContactPicker}
@@ -727,49 +772,43 @@ function RecurringExpenseDrawer({ row, categories, contacts, onClose, onOpenCont
             <span className="text-xs text-primary shrink-0">Cambiar</span>
           </button>
         </Field>
-      </div>
 
-      <div className="p-4 border-b border-navy/[0.06]">
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <label className="text-xs text-navy/40">IVA %</label>
-            <p className="w-full mt-1 px-3 py-2 text-sm text-navy bg-navy/[0.03] rounded-lg tabular-nums">{ivaRate}%</p>
+        <div>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="IVA %">
+              <span className="text-navy tabular-nums">{ivaRate}%</span>
+            </Field>
+            <Field label="Retención %">
+              <span className="text-navy tabular-nums">{retencionRate}%</span>
+            </Field>
           </div>
-          <div>
-            <label className="text-xs text-navy/40">Retención %</label>
-            <p className="w-full mt-1 px-3 py-2 text-sm text-navy bg-navy/[0.03] rounded-lg tabular-nums">{retencionRate}%</p>
-          </div>
+          <p className="text-xs text-navy/40 mt-2">
+            {contact ? (
+              <>
+                Heredado de {contact.label}. Se edita en{" "}
+                <button
+                  type="button"
+                  onClick={() => router.push(`/configuracion?tab=contactos&contacto=${contact.id}`)}
+                  className="text-primary hover:underline"
+                >
+                  Configuración › Contactos
+                </button>
+                .
+              </>
+            ) : (
+              "Sin contacto vinculado. Se edita en Configuración › Contactos."
+            )}
+          </p>
         </div>
-        <p className="text-xs text-navy/40 mt-2">
-          {contact ? (
-            <>
-              Heredado de {contact.label}. Se edita en{" "}
-              <button
-                type="button"
-                onClick={() => router.push(`/configuracion?tab=contactos&contacto=${contact.id}`)}
-                className="text-primary hover:underline"
-              >
-                Configuración › Contactos
-              </button>
-              .
-            </>
-          ) : (
-            "Sin contacto vinculado. Se edita en Configuración › Contactos."
-          )}
-        </p>
-      </div>
 
-      <div className="p-4 border-b border-navy/[0.06]">
         <Field label="Periodicidad">
-          <Select variant="bare" value={e.period} disabled={saving} onChange={(ev) => changePeriod(ev.target.value)}>
+          <Select variant="bare" className="w-full" value={e.period} disabled={saving} onChange={(ev) => changePeriod(ev.target.value)}>
             {PERIOD_BUCKETS.map((b) => (
               <option key={b.label} value={b.label}>{b.label}</option>
             ))}
           </Select>
         </Field>
-      </div>
 
-      <div className="p-4">
         <EndOfRecurrenceFields value={end} onChange={changeEnd} disabled={saving} />
       </div>
     </Drawer>
@@ -782,6 +821,8 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
   const [picks, setPicks] = useState<Record<string, ContactPick>>({});
   const [ends, setEnds] = useState<Record<string, EndFields>>({});
   const [names, setNames] = useState<Record<string, string>>({});
+  const [variables, setVariables] = useState<Record<string, boolean>>({});
+  const [patternsState, setPatternsState] = useState<Record<string, string[]>>({});
   const [openPendingKey, setOpenPendingKey] = useState<string | null>(null);
   const [openConfirmedId, setOpenConfirmedId] = useState<number | null>(null);
   // Pendiente para el que se pregunta la fecha de finalización antes de confirmarlo desde la tabla.
@@ -838,6 +879,14 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
     return names[row.keys[0]] ?? row.label;
   }
 
+  function variableFor(row: PendingSeriesRow): boolean {
+    return variables[row.keys[0]] ?? false;
+  }
+
+  function patternsFor(row: PendingSeriesRow): string[] {
+    return patternsState[row.keys[0]] ?? row.bankPatterns;
+  }
+
   function pickFor(row: PendingSeriesRow): ContactPick {
     if (row.keys[0] in picks) return picks[row.keys[0]];
     return row.matchedContactId != null ? { contactId: row.matchedContactId } : null;
@@ -874,7 +923,7 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
       period,
       period_days: periodDays,
       amount: row.amount,
-      bankPatterns: row.bankPatterns,
+      bankPatterns: patternsFor(row),
       contactId: "contactId" in pick ? pick.contactId : null,
       newContactLabel: "newLabel" in pick ? pick.newLabel : null,
       ivaRate: ivaRateFor(row),
@@ -882,6 +931,7 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
       endType: end.type,
       endDate: end.type === "date" ? end.date || null : null,
       endCount: end.type === "count" ? parseInt(end.count, 10) || null : null,
+      variable: variableFor(row),
     };
   }
 
@@ -989,35 +1039,55 @@ export default function GastosRecurrentesList({ pending, confirmed, archived, ca
         onBulkCategory={applyBulkCategory}
         onBulkDelete={applyBulkDelete}
       />
-      {openPendingRow && (
-        <ConfirmPendingDrawer
-          row={openPendingRow}
-          period={periodFor(openPendingRow)}
-          pick={pickFor(openPendingRow)}
-          end={endFor(openPendingRow)}
-          name={nameFor(openPendingRow)}
-          ivaRate={ivaRateFor(openPendingRow)}
-          retencionRate={retencionRateFor(openPendingRow)}
-          contacts={contacts}
-          onClose={() => setOpenPendingKey(null)}
-          onPeriodChange={(p) => setPeriods((prev) => ({ ...prev, [openPendingRow.keys[0]]: p }))}
-          onEndChange={(end) => setEnds((prev) => ({ ...prev, [openPendingRow.keys[0]]: end }))}
-          onNameChange={(n) => setNames((prev) => ({ ...prev, [openPendingRow.keys[0]]: n }))}
-          onOpenContactPicker={() => setPickerOpen(true)}
-          onConfirm={() => confirmRow(openPendingRow)}
-          onIgnore={() => ignoreRow(openPendingRow)}
-        />
-      )}
+      {openPendingRow && (() => {
+        const { prev, next } = drawerNav(filteredPending, openPendingRow.keys[0], (r) => r.keys[0]);
+        return (
+          <ConfirmPendingDrawer
+            key={openPendingRow.keys[0]}
+            row={openPendingRow}
+            period={periodFor(openPendingRow)}
+            pick={pickFor(openPendingRow)}
+            end={endFor(openPendingRow)}
+            name={nameFor(openPendingRow)}
+            ivaRate={ivaRateFor(openPendingRow)}
+            retencionRate={retencionRateFor(openPendingRow)}
+            variable={variableFor(openPendingRow)}
+            patterns={patternsFor(openPendingRow)}
+            contacts={contacts}
+            onClose={() => setOpenPendingKey(null)}
+            onPeriodChange={(p) => setPeriods((prev) => ({ ...prev, [openPendingRow.keys[0]]: p }))}
+            onEndChange={(end) => setEnds((prev) => ({ ...prev, [openPendingRow.keys[0]]: end }))}
+            onNameChange={(n) => setNames((prev) => ({ ...prev, [openPendingRow.keys[0]]: n }))}
+            onPatternsChange={(p) => setPatternsState((prev) => ({ ...prev, [openPendingRow.keys[0]]: p }))}
+            onVariableChange={(v) => setVariables((prev) => ({ ...prev, [openPendingRow.keys[0]]: v }))}
+            onOpenContactPicker={() => setPickerOpen(true)}
+            onConfirm={() => confirmRow(openPendingRow)}
+            onIgnore={() => ignoreRow(openPendingRow)}
+            onPrev={prev ? () => setOpenPendingKey(prev.keys[0]) : undefined}
+            onNext={next ? () => setOpenPendingKey(next.keys[0]) : undefined}
+            hasPrev={!!prev}
+            hasNext={!!next}
+          />
+        );
+      })()}
 
-      {openConfirmedRow && (
-        <RecurringExpenseDrawer
-          row={openConfirmedRow}
-          categories={categories}
-          contacts={contacts}
-          onClose={() => setOpenConfirmedId(null)}
-          onOpenContactPicker={() => setPickerOpen(true)}
-        />
-      )}
+      {openConfirmedRow && (() => {
+        const { prev, next } = drawerNav(filteredConfirmed, openConfirmedRow.expense.id, (r) => r.expense.id);
+        return (
+          <RecurringExpenseDrawer
+            key={openConfirmedRow.expense.id}
+            row={openConfirmedRow}
+            categories={categories}
+            contacts={contacts}
+            onClose={() => setOpenConfirmedId(null)}
+            onOpenContactPicker={() => setPickerOpen(true)}
+            onPrev={prev ? () => setOpenConfirmedId(prev.expense.id) : undefined}
+            onNext={next ? () => setOpenConfirmedId(next.expense.id) : undefined}
+            hasPrev={!!prev}
+            hasNext={!!next}
+          />
+        );
+      })()}
 
       {endPromptRow && (
         <ConfirmEndDatePrompt

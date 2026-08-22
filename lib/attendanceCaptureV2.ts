@@ -84,6 +84,7 @@ export async function captureAttendanceWindow(
           email: b.member.email ?? null,
           checked_in: b.checkedIn,
           cancelled: b.cancelledAt !== null,
+          cancelled_at: b.cancelledAt,
           captured_at: capturedAt,
         });
       }

@@ -1,3 +1,5 @@
+import { normalizeText } from "./normalizeText";
+
 /** Una cadena es "de referencia" (número de operación, parte de un IBAN, etc.) si la mayoría
  * de sus caracteres no son letras - no identifica a un contacto real, así que agruparía mal
  * (cada movimiento traería un número distinto en "Más datos": PAGO TRASPASOS, TGSS.COTIZACION...). */
@@ -34,8 +36,11 @@ function isNoiseWord(word: string): boolean {
   return NOISE_WORDS.has(word.replace(/[.,]/g, "").toLowerCase());
 }
 
+// Sin acentos: así "José"/"jose", "María"/"maria" o "Compañía"/"compania" coinciden igual al
+// generar/reconocer patrones de contacto, en vez de tratarse como textos distintos por un
+// acento que el banco a veces omite y otras no.
 function normalize(s: string): string {
-  return s.toLowerCase().trim().replace(/\s+/g, " ");
+  return normalizeText(s).trim().replace(/\s+/g, " ");
 }
 
 /** Quita de un texto de banco los tokens que "parecen un código" (ver looksLikeCode) o que son

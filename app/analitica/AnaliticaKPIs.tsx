@@ -158,6 +158,7 @@ type DrawerEntry = { title: string; subtitle: string; customers: EnrichedCustome
 export default function AnaliticaKPIs({
   customers, convertCandidates, spendPerClient, occupancyAvg, avgPerClass,
   spendPerClientComp, occupancyAvgComp, avgPerClassComp, activeSubEmailsV2,
+  hasOccupancyData,
 }: {
   customers: EnrichedCustomer[];
   convertCandidates: EnrichedCustomer[];
@@ -170,6 +171,9 @@ export default function AnaliticaKPIs({
   spendPerClientComp: number;
   occupancyAvgComp: number;
   avgPerClassComp: number;
+  /** false si no hay ninguna fila de class_sessions_v2 en el período (fallo de Momence v2 o rango
+   * anterior al backfill) - sin esto, "sin datos" y "0% de ocupación real" son indistinguibles. */
+  hasOccupancyData: boolean;
 }) {
   const router = useRouter();
   const [drawer, setDrawer] = useState<DrawerKey>(null);
@@ -262,15 +266,22 @@ export default function AnaliticaKPIs({
         <StatBox
           icon={<Activity size={14} />}
           label="Ocupación media"
-          value={`${Math.round(occupancyAvg * 100)}%`}
-          valueClassName={occupancyAvg >= 0.7 ? "text-success" : occupancyAvg >= 0.4 ? "text-warning" : "text-danger"}
-          tooltip="Plazas vendidas ÷ plazas totales en el período. Fuente: Momence."
-          delta={pctDelta(occupancyAvg, occupancyAvgComp)}
+          value={hasOccupancyData ? `${Math.round(occupancyAvg * 100)}%` : "—"}
+          valueClassName={
+            !hasOccupancyData ? "text-navy/35"
+            : occupancyAvg >= 0.7 ? "text-success" : occupancyAvg >= 0.4 ? "text-warning" : "text-danger"
+          }
+          tooltip={
+            hasOccupancyData
+              ? "Asistencia real (checkedIn) ÷ plazas totales en el período. Fuente: Momence (API v2)."
+              : "Sin asistencia capturada para este período (fallo puntual de Momence, o rango anterior al backfill de class_sessions_v2)."
+          }
+          delta={hasOccupancyData ? pctDelta(occupancyAvg, occupancyAvgComp) : undefined}
         />
         <StatBox
           icon={<Users size={14} />}
           label="Media de alumnos/clase"
-          value={avgPerClass.toFixed(1)}
+          value={hasOccupancyData ? avgPerClass.toFixed(1) : "—"}
           tooltip="Alumnos por clase de media en el período. Fuente: Momence."
           delta={pctDelta(avgPerClass, avgPerClassComp)}
         />

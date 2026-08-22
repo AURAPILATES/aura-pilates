@@ -3,6 +3,7 @@ import { useState, useTransition, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useSearchParams } from "next/navigation";
 import type { Transaction, PaymentMethod } from "@/lib/transactions";
+import { isCashflowTransaction } from "@/lib/transactions";
 import type { Category } from "@/lib/categories";
 import { sortCategoriesHierarchical, categoryDisplayLabel } from "@/lib/categories";
 import { normalizeText } from "@/lib/normalizeText";
@@ -11,7 +12,6 @@ import { seriesKeyFor } from "@/lib/recurring";
 import type { RecurringExpense } from "@/lib/recurringExpenses";
 import { updateTransactionCategory, updateTransactionConcept, updateTransactionBankDetails, updateTransactionDate, updateTransactionPaymentMethod, updateTransactionAmount, softDeleteTransactions, type Contact, type RefundCandidate } from "./actions";
 import Select from "@/app/components/Select";
-import { IconButtonV2 } from "@/app/components/v2/ButtonsV2";
 import AddCashModal from "./AddCashModal";
 import PapeleraDrawer from "./PapeleraDrawer";
 import TransactionDrawer from "./TransactionDrawer";
@@ -169,12 +169,12 @@ export function CategoryMultiFilter({
       <button
         ref={btnRef}
         onClick={handleToggle}
-        className={`flex items-center gap-2 text-sm border rounded-xl px-3 py-2 bg-card outline-none transition-colors cursor-pointer whitespace-nowrap w-full ${
-          selected.length > 0 ? "border-primary/40 text-navy font-medium" : "border-navy/[0.12] text-navy hover:border-navy/30"
+        className={`flex items-center gap-2 text-[13.5px] border rounded-[10px] px-3 py-2 bg-card shadow-card outline-none transition-colors cursor-pointer whitespace-nowrap w-full ${
+          selected.length > 0 ? "border-primary/40 text-navy font-medium" : "border-border text-navy hover:border-navy/20"
         }`}
         style={{ minWidth: "130px" }}
       >
-        <span className="flex-1 text-left text-sm">{label}</span>
+        <span className="flex-1 text-left text-[13.5px]">{label}</span>
         {selected.length > 0 ? (
           <span
             onClick={(e) => { e.stopPropagation(); onChange([]); }}
@@ -282,12 +282,12 @@ export function ContactMultiFilter({
       <button
         ref={btnRef}
         onClick={handleToggle}
-        className={`flex items-center gap-2 text-sm border rounded-xl px-3 py-2 bg-card outline-none transition-colors cursor-pointer whitespace-nowrap w-full ${
-          selected.length > 0 ? "border-primary/40 text-navy font-medium" : "border-navy/[0.12] text-navy hover:border-navy/30"
+        className={`flex items-center gap-2 text-[13.5px] border rounded-[10px] px-3 py-2 bg-card shadow-card outline-none transition-colors cursor-pointer whitespace-nowrap w-full ${
+          selected.length > 0 ? "border-primary/40 text-navy font-medium" : "border-border text-navy hover:border-navy/20"
         }`}
         style={{ minWidth: "130px" }}
       >
-        <span className="flex-1 text-left text-sm truncate">{label}</span>
+        <span className="flex-1 text-left text-[13.5px] truncate">{label}</span>
         {selected.length > 0 ? (
           <span
             onClick={(e) => { e.stopPropagation(); onChange([]); }}
@@ -459,72 +459,6 @@ export function originLabel(method: string): string {
   if (method === "banco") return "CaixaBank";
   if (method === "efectivo") return "Efectivo Aura";
   return method.charAt(0).toUpperCase() + method.slice(1);
-}
-
-/** Botón de icono "⋮" (mismo estilo que el resto de la barra de filtros) con las acciones
- * menos frecuentes de la tabla - separado de "Más filtros" porque no son filtros. */
-export function MoreActionsMenu({ onExport, onPapelera }: { onExport: () => void; onPapelera: () => void }) {
-  const [open, setOpen] = useState(false);
-  const [dropPos, setDropPos] = useState<{ top: number; left: number } | null>(null);
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const dropRef = useRef<HTMLDivElement>(null);
-  const btnRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    function handle(e: MouseEvent) {
-      if (!wrapRef.current?.contains(e.target as Node) && !dropRef.current?.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handle);
-    return () => document.removeEventListener("mousedown", handle);
-  }, [open]);
-
-  function handleToggle() {
-    if (!open && btnRef.current) {
-      const rect = btnRef.current.getBoundingClientRect();
-      setDropPos({ top: rect.bottom + 4, left: rect.right - 190 });
-    }
-    setOpen((v) => !v);
-  }
-
-  return (
-    <div ref={wrapRef} className="relative">
-      <IconButtonV2 ref={btnRef} onClick={handleToggle} title="Más acciones">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-          <circle cx="12" cy="5" r="1.75" /><circle cx="12" cy="12" r="1.75" /><circle cx="12" cy="19" r="1.75" />
-        </svg>
-      </IconButtonV2>
-      {open && dropPos && createPortal(
-        <div
-          ref={dropRef}
-          className="fixed z-[9999] bg-card border border-navy/10 rounded-xl shadow-xl py-1"
-          style={{ top: dropPos.top, left: dropPos.left, width: "190px" }}
-        >
-          <button
-            onClick={() => { onExport(); setOpen(false); }}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-navy/60 hover:bg-navy/[0.04] transition-colors"
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
-            Exportar CSV
-          </button>
-          <button
-            onClick={() => { onPapelera(); setOpen(false); }}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left text-navy/60 hover:bg-navy/[0.04] transition-colors"
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/>
-            </svg>
-            Papelera
-          </button>
-        </div>,
-        document.body
-      )}
-    </div>
-  );
 }
 
 export type SortKey = "date" | "amount" | "concept";
@@ -704,12 +638,15 @@ export default function TransaccionesList({
   }, [pagedFlat, sortKey, sortDir]);
 
   // Las devoluciones se siguen mostrando en la lista, pero no cuentan en los totales de arriba
-  // (su contrapartida ya vive en otro movimiento aparte, ver isCashflowTransaction).
-  const totalIn  = amountFiltered.filter((t) => t.amount > 0 && !t.is_refund).reduce((s, t) => s + t.amount, 0);
-  const totalOut = amountFiltered.filter((t) => t.amount < 0 && !t.is_refund).reduce((s, t) => s + Math.abs(t.amount), 0);
+  // (su contrapartida ya vive en otro movimiento aparte). Los traspasos internos entre cuentas
+  // propias (banco↔efectivo) SÍ cuentan aquí (includeInternal) - se quiere ver el movimiento
+  // bruto real del banco. Mismo criterio que usa Analítica (isCashflowTransaction).
+  const cashflowOpts = { includeInternal: true };
+  const totalIn  = amountFiltered.filter((t) => t.amount > 0 && isCashflowTransaction(t, categories, cashflowOpts)).reduce((s, t) => s + t.amount, 0);
+  const totalOut = amountFiltered.filter((t) => t.amount < 0 && isCashflowTransaction(t, categories, cashflowOpts)).reduce((s, t) => s + Math.abs(t.amount), 0);
   const neto     = totalIn - totalOut;
-  const countIn  = amountFiltered.filter((t) => t.amount > 0 && !t.is_refund).length;
-  const countOut = amountFiltered.filter((t) => t.amount < 0 && !t.is_refund).length;
+  const countIn  = amountFiltered.filter((t) => t.amount > 0 && isCashflowTransaction(t, categories, cashflowOpts)).length;
+  const countOut = amountFiltered.filter((t) => t.amount < 0 && isCashflowTransaction(t, categories, cashflowOpts)).length;
 
   function handleCategoryChange(id: string, category: string | null) {
     startTransition(() => updateTransactionCategory(id, category));

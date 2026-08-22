@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 export type Tab = "ingresosGastos" | "clientes";
 
 export const TABS: { key: Tab; label: string }[] = [
-  { key: "ingresosGastos", label: "Ingresos y gastos" },
+  { key: "ingresosGastos", label: "Entradas y salidas" },
   { key: "clientes", label: "Clientes" },
 ];
 

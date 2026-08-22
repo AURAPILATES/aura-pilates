@@ -208,7 +208,11 @@ function ContactDetailDrawer({ contact, categories, stats, onChange, onRemove, o
             </Field>
           </div>
           <label className="flex items-center gap-2 text-xs text-navy/55 cursor-pointer">
-            <Checkbox checked={contact.noTax} onChange={(e) => onChange({ noTax: e.target.checked })} tone="primary" />
+            <Checkbox
+              checked={contact.noTax}
+              onChange={(e) => onChange(e.target.checked ? { noTax: true, ivaRate: 0, retencionRate: 0 } : { noTax: false })}
+              tone="primary"
+            />
             Sin IVA ni retenciones
           </label>
           {!contact.noTax && !(contact.ivaRate > 0) && !(contact.retencionRate > 0) && (

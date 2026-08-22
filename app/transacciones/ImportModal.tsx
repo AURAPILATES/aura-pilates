@@ -9,6 +9,7 @@ import {
 } from "./actions";
 import { contactKeyFor, cleanContactLabel, cleanBankText, matchesPattern, pickIdentifyingText } from "@/lib/contactRules";
 import { CONTACT_GROUP_ORDER, CONTACT_GROUP_LABELS, type ContactGroup } from "@/lib/contactGroups";
+import { normalizeText } from "@/lib/normalizeText";
 import { type Category } from "@/lib/categories";
 import type { PaymentMethod } from "@/lib/transactions";
 import Drawer from "@/app/components/Drawer";
@@ -269,10 +270,10 @@ type State =
  * mismo criterio que el auto-categorizador del servidor (app/transacciones/actions.ts),
  * pero solo entre categorías ya existentes: nunca propone crear una nueva. */
 function suggestCategory(row: ImportRow, categories: Category[]): string | null {
-  const hay = `${row.concept ?? ""} ${row.bankDetails ?? ""}`.toLowerCase();
+  const hay = normalizeText(`${row.concept ?? ""} ${row.bankDetails ?? ""}`);
   for (const cat of categories) {
     if (!cat.auto_keywords) continue;
-    const kws = cat.auto_keywords.split(",").map((k) => k.trim().toLowerCase()).filter(Boolean);
+    const kws = cat.auto_keywords.split(",").map((k) => normalizeText(k.trim())).filter(Boolean);
     if (kws.some((kw) => hay.includes(kw))) return cat.value;
   }
   return null;
@@ -295,8 +296,8 @@ function initialsOf(label: string): string {
  * otro), no exige igualdad exacta - así "Aura Pilates Stud" (ya guardado, recortado por el
  * banco) reconoce "Aura Pilates Studio" (sugerido ahora). */
 function looksLikeSameContact(a: string, b: string): boolean {
-  const na = a.trim().toLowerCase();
-  const nb = b.trim().toLowerCase();
+  const na = normalizeText(a.trim());
+  const nb = normalizeText(b.trim());
   if (!na || !nb) return false;
   return na.includes(nb) || nb.includes(na);
 }

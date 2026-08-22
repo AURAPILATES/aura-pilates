@@ -30,11 +30,17 @@ export function namesLookAlike(a: string, b: string): boolean {
   return shared.length / Math.min(sa.size, sb.size) >= 0.6;
 }
 
-/** Cada "parte" de un patrón de contacto (los patrones pueden ir en formato "concepto|más
- * datos"), normalizada y sin fragmentos demasiado cortos para comparar con fiabilidad. */
+/** Parte identificativa de un patrón de contacto. Los patrones compuestos van en formato
+ * "concepto|más datos" (ver contactKeyFor en contactRules.ts): el concepto suele ser texto fijo
+ * que el banco/pagador repite igual para movimientos de contactos distintos (p.ej. "Aura
+ * Pilates" como concepto en toda nómina que ella misma emite), mientras que "más datos" es
+ * quien de verdad identifica a la persona/empresa. Comparar el concepto entre contactos daba
+ * falsos positivos de duplicado (dos empleadas distintas "coincidiendo" solo porque su nómina
+ * comparte el mismo concepto) - por eso en un patrón compuesto solo se usa "más datos". */
 function patternParts(pattern: string): string[] {
-  return pattern
-    .split("|")
+  const segments = pattern.split("|");
+  const identifying = segments.length >= 2 ? [segments[segments.length - 1]] : segments;
+  return identifying
     .map((p) => normalizeText(p).replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim())
     .filter((p) => p.length >= 4);
 }

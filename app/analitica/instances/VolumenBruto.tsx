@@ -78,7 +78,7 @@ function groupData(txns: Transaction[], categories: Category[], period: Period):
   const map = new Map<string, { income: number; expense: number }>();
 
   for (const t of txns) {
-    if (!isCashflowTransaction(t, categories)) continue;
+    if (!isCashflowTransaction(t, categories, { includeInternal: true })) continue;
 
     const key = getPeriodKey(t.date, period);
     const p = map.get(key) ?? { income: 0, expense: 0 };
@@ -144,11 +144,11 @@ export default function VolumenBruto({
         </div>
       }
       chartDescription="Evolución de entradas y salidas de caja por período seleccionado"
-      dataSource="Bruto: todo movimiento bancario de entrada o salida, excluyendo traspasos internos. No concilia con Momence/Stripe - por eso es flujo de caja, no resultado contable."
+      dataSource="Bruto: todo movimiento bancario de entrada o salida, incluidos los traspasos entre cuentas propias. No concilia con Momence/Stripe - por eso es flujo de caja, no resultado contable."
       sources={["excel"]}
       lastUpdated={lastUpdated}
     >
-      <Legend items={[{ label: "Ingresos", color: "#818CF8" }, { label: "Gastos", color: "#FCA5A5" }]} className="mb-3" />
+      <Legend items={[{ label: "Entradas", color: "#818CF8" }, { label: "Salidas", color: "#FCA5A5" }]} className="mb-3" />
       <VolumenBrutoBody data={data} chartType={chartType} onBarClick={goToPeriod} />
 
       <CollapsibleTable>
@@ -156,8 +156,8 @@ export default function VolumenBruto({
           <thead>
             <tr className="border-b border-navy/[0.07]">
               <th className="text-left py-2 pr-3 text-navy/45 font-semibold uppercase tracking-wide">Período</th>
-              <th className="text-right py-2 pr-3 text-navy/45 font-semibold uppercase tracking-wide">Ingresos</th>
-              <th className="text-right py-2 pr-3 text-navy/45 font-semibold uppercase tracking-wide">Gastos</th>
+              <th className="text-right py-2 pr-3 text-navy/45 font-semibold uppercase tracking-wide">Entradas</th>
+              <th className="text-right py-2 pr-3 text-navy/45 font-semibold uppercase tracking-wide">Salidas</th>
               <th className="text-right py-2 text-navy/45 font-semibold uppercase tracking-wide">Margen</th>
             </tr>
           </thead>

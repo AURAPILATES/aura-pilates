@@ -85,6 +85,8 @@ export type MemberClient = {
   attended: number;
   noShows: number;      // reservó y no vino (sin cancelar)
   cancellations: number; // reservas que canceló
+  lateCancellations: number;  // canceladas con <12h de antelación: se pierden
+  earlyCancellations: number; // canceladas con >=12h de antelación: se devuelven
   firstClassDate: string | null;
   firstTeacher: string | null;
   lastClassDate: string | null;
@@ -105,7 +107,7 @@ type SnapRow = {
   event_credits_total: number | null;
 };
 
-type BookingRow = { member_id: number; teacher_name: string; session_starts_at: string; checked_in: boolean; cancelled: boolean };
+type BookingRow = { member_id: number; teacher_name: string; session_starts_at: string; checked_in: boolean; cancelled: boolean; cancelled_at: string | null };
 
 async function readAll<T>(build: (from: number, to: number) => PromiseLike<{ data: T[] | null }>): Promise<T[]> {
   const PAGE = 1000;
@@ -149,7 +151,7 @@ const fetchAllBookingRowsV2 = unstable_cache(
     return readAll<BookingRow>((from, to) =>
       db
         .from("class_bookings_v2")
-        .select("member_id, teacher_name, session_starts_at, checked_in, cancelled")
+        .select("member_id, teacher_name, session_starts_at, checked_in, cancelled, cancelled_at")
         .order("session_starts_at", { ascending: true })
         .range(from, to),
     );
@@ -263,15 +265,28 @@ export async function getMemberClientsV2(
 
   // Asistencia por miembro.
   const bookings = await fetchAllBookingRowsV2();
-  type Act = { attended: number; noShows: number; cancellations: number; firstDate: string | null; firstTeacher: string | null; lastDate: string | null };
+  type Act = {
+    attended: number; noShows: number; cancellations: number;
+    lateCancellations: number; earlyCancellations: number;
+    firstDate: string | null; firstTeacher: string | null; lastDate: string | null;
+  };
   const actByMember = new Map<number, Act>();
   // Timestamps (ms) de clases asistidas por miembro, para calcular "¿amortiza su plan?"
   // (clases en el último período vs el límite del plan) sin volver a leer bookings.
   const attendedDatesByMember = new Map<number, number[]>();
   for (const b of bookings) {
-    const a = actByMember.get(b.member_id) ?? { attended: 0, noShows: 0, cancellations: 0, firstDate: null, firstTeacher: null, lastDate: null };
+    const a = actByMember.get(b.member_id) ?? {
+      attended: 0, noShows: 0, cancellations: 0, lateCancellations: 0, earlyCancellations: 0,
+      firstDate: null, firstTeacher: null, lastDate: null,
+    };
     if (b.cancelled) {
       a.cancellations += 1;
+      // Política de Momence: cancelar con <12h de antelación pierde el hueco (no se devuelve).
+      if (b.cancelled_at) {
+        const hoursBefore = (Date.parse(b.session_starts_at) - Date.parse(b.cancelled_at)) / 3_600_000;
+        if (hoursBefore < 12) a.lateCancellations += 1;
+        else a.earlyCancellations += 1;
+      }
     } else if (b.checked_in) {
       a.attended += 1;
       const date = b.session_starts_at.slice(0, 10);
@@ -366,6 +381,8 @@ export async function getMemberClientsV2(
       attended: act?.attended ?? 0,
       noShows: act?.noShows ?? 0,
       cancellations: act?.cancellations ?? 0,
+      lateCancellations: act?.lateCancellations ?? 0,
+      earlyCancellations: act?.earlyCancellations ?? 0,
       firstClassDate: act?.firstDate ?? null,
       firstTeacher: act?.firstTeacher ?? null,
       lastClassDate: act?.lastDate ?? null,
@@ -395,6 +412,8 @@ export async function getMemberClientsV2(
       attended: 0,
       noShows: 0,
       cancellations: 0,
+      lateCancellations: 0,
+      earlyCancellations: 0,
       firstClassDate: null,
       firstTeacher: null,
       lastClassDate: null,

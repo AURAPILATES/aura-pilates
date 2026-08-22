@@ -45,7 +45,7 @@ export default function FilterPillGroupV2<T extends string>({ options, active, o
                   className={`shrink-0 min-w-[18px] h-[18px] flex items-center justify-center rounded-full text-[11px] font-semibold px-1 ${
                     countTone === "danger"
                       ? "bg-danger/10 text-danger"
-                      : "bg-primary/10 text-primary"
+                      : "bg-navy/[0.06] text-navy/45"
                   }`}
                 >
                   {count}

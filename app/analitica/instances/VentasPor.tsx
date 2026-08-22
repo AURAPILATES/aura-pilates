@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { BarChart2, Activity } from "react-feather";
-import { ChartCard, ChartTypeToggle, ToggleGroup, InteractiveLegend, CollapsibleTable } from "@/components/charts";
+import { ChartCard, ChartTypeToggle, ToggleGroup, InteractiveLegend, StaticLegend, CollapsibleTable } from "@/components/charts";
 import { pctDelta } from "@/components/charts/DeltaBadge";
 import { pct } from "@/lib/analytics";
 import { ivaRepercutidoFromGross } from "@/lib/taxCalc";
@@ -14,6 +14,7 @@ import type { MonthlyProductRevenue } from "@/lib/productRevenue";
 import type { MonthlySubStats } from "@/lib/subscriptionCohort";
 import type { BusinessEvent } from "@/lib/businessEvents";
 import type { StripePayment } from "@/lib/stripePayments";
+import type { ChannelEconomicsRow } from "@/lib/channelEconomics";
 import {
   PRODUCT_COLORS,
   buildSeriesFromMonthly,
@@ -33,9 +34,17 @@ const EvolucionIngresosBody = dynamic(() => import("./EvolucionIngresosBody"), {
   ssr: false,
   loading: () => <div className="h-[280px] rounded-lg bg-navy/[0.04] animate-pulse" />,
 });
+const EconomiaPorCanalBody = dynamic(() => import("./EconomiaPorCanalBody"), {
+  ssr: false,
+  loading: () => <div className="h-[220px] rounded-lg bg-navy/[0.04] animate-pulse" />,
+});
 
-type View = "fuente" | "producto";
+type View = "fuente" | "producto" | "canal";
 type ChartType = "bar" | "line";
+
+function fmtEurDecimal(v: number) {
+  return v.toLocaleString("es-ES", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + " €";
+}
 
 const PERIODS: { key: Period; label: string }[] = [
   { key: "mes", label: "Mes" },
@@ -97,6 +106,7 @@ export default function VentasPor({
   stripeGrossComp,
   stripeFeesComp,
   uscGrossComp,
+  urbanIvaRate = 21,
   monthly,
   dateRange,
   lastUpdated,
@@ -104,6 +114,7 @@ export default function VentasPor({
   cohorts,
   events,
   rawPayments,
+  channelEconomics,
 }: {
   stripeGross: number;
   stripeFees: number;
@@ -113,6 +124,9 @@ export default function VentasPor({
   stripeGrossComp: number;
   stripeFeesComp: number;
   uscGrossComp: number;
+  /** Tipo de IVA real de Urban Sports Club (de su contacto en Configuración → Contactos), no
+   * necesariamente el mismo 21% que Stripe - para "Ventas netas" no lo asume, lo recibe. */
+  urbanIvaRate?: number;
   monthly: IngresosPorFuenteRow[];
   dateRange?: string;
   lastUpdated?: string | null;
@@ -120,6 +134,7 @@ export default function VentasPor({
   cohorts: MonthlySubStats[];
   events?: BusinessEvent[];
   rawPayments?: StripePayment[];
+  channelEconomics: ChannelEconomicsRow[];
 }) {
   const [view, setView] = useState<View>("fuente");
   const [chartType, setChartType] = useState<ChartType>("bar");
@@ -132,13 +147,16 @@ export default function VentasPor({
   // ── Vista "fuente" (Stripe vs. Urban) ──
   const uscNet     = uscGross;
   const totalBruto = stripeGross + uscNet;
-  // El bruto ya incluye el 21% de IVA - hay que EXTRAERLO (gross - gross/1.21 ≈ 17,36% del
-  // bruto), no restar un 21% plano del bruto, que descontaría más IVA del que de verdad lleva.
-  const ventasNetas = totalBruto - stripeFees - ivaRepercutidoFromGross(totalBruto);
+  // Cada bruto ya incluye SU IVA - hay que EXTRAERLO (gross - gross/(1+tipo) ), no restar un %
+  // plano del total, que descontaría más o menos IVA del que de verdad lleva. Stripe siempre al
+  // 21% (venta a consumidor); Urban al tipo real de su contacto (puede no ser 21%).
+  const ventasNetas = totalBruto - stripeFees
+    - ivaRepercutidoFromGross(stripeGross, 21) - ivaRepercutidoFromGross(uscNet, urbanIvaRate);
   const grouped = groupByPeriod(monthly, period);
 
   const totalBrutoComp = stripeGrossComp + uscGrossComp;
-  const ventasNetasComp = totalBrutoComp - stripeFeesComp - ivaRepercutidoFromGross(totalBrutoComp);
+  const ventasNetasComp = totalBrutoComp - stripeFeesComp
+    - ivaRepercutidoFromGross(stripeGrossComp, 21) - ivaRepercutidoFromGross(uscGrossComp, urbanIvaRate);
   const ventasDelta   = pctDelta(totalBruto, totalBrutoComp);
   const comisionDelta = pctDelta(stripeFees, stripeFeesComp, true);
   const netasDelta    = pctDelta(ventasNetas, ventasNetasComp);
@@ -220,13 +238,26 @@ export default function VentasPor({
   const legendGrandTotal = legendTotals.reduce((s, t) => s + t.total, 0);
 
   const selectedDrawerPayments = useMemo(() => {
-    if (!selectedKey || !rawPayments || baseSeries.months.length === 0) return [];
+    if (!selectedKey || selectedKey === "Urban" || !rawPayments || baseSeries.months.length === 0) return [];
     const fromMonth = baseSeries.months[0];
     const toMonth = baseSeries.months[baseSeries.months.length - 1];
     return rawPayments
       .filter((p) => p.inferredProduct === selectedKey && p.date.slice(0, 7) >= fromMonth && p.date.slice(0, 7) <= toMonth)
       .sort((a, b) => b.date.localeCompare(a.date));
   }, [selectedKey, rawPayments, baseSeries.months]);
+
+  // Urban no pasa por Stripe, así que su drawer no lista pagos individuales - agrega clases e
+  // importe del mismo período (mismo criterio que la fila mensual de la vista Fuente).
+  const selectedUrbanSummary = useMemo(() => {
+    if (selectedKey !== "Urban" || baseSeries.months.length === 0) return null;
+    const fromMonth = baseSeries.months[0];
+    const toMonth = baseSeries.months[baseSeries.months.length - 1];
+    const rows = monthly.filter((r) => r.month >= fromMonth && r.month <= toMonth);
+    return {
+      classes: rows.reduce((s, r) => s + r.urbanClasses, 0),
+      amount: rows.reduce((s, r) => s + r.uscNet, 0),
+    };
+  }, [selectedKey, monthly, baseSeries.months]);
 
   const trendSummary = makeTrendSummary(baseSeries.months, baseSeries.data, keysByRevenue);
 
@@ -242,10 +273,24 @@ export default function VentasPor({
         options={[
           { value: "fuente", label: "Fuente" },
           { value: "producto", label: "Producto" },
+          { value: "canal", label: "Canal" },
         ]}
       />
     </span>
   );
+
+  // "Canal": € por clase realmente asistida, Stripe (interno) vs Urban Sports Club - responde
+  // si el canal Urban compensa al ritmo actual frente a lo que deja un cliente interno de media.
+  // Antes vivía en su propio ChartCard ("Economía por canal"); se fusiona aquí porque es la misma
+  // pregunta que Fuente/Producto (de dónde sale el ingreso) mirada por clase en vez de por €.
+  // El KPI es UNA media combinada (Stripe + Urban), no una por canal: separarla por canal se leía
+  // como si "€/clase Urban" fuera la tarifa pactada con Urban, cuando en realidad mezcla meses con
+  // importe real del banco (que no cuadra exacto con clases × tarifa) - la media combinada evita
+  // esa lectura errónea. El desglose por canal se sigue viendo en el gráfico de abajo.
+  // Ver [[project-momence-sales-migration]].
+  const totalRevenueCanal = channelEconomics.reduce((s, r) => s + r.stripeRevenue + r.urbanRevenue, 0);
+  const totalClassesCanal = channelEconomics.reduce((s, r) => s + r.stripeClasses + r.urbanClasses, 0);
+  const avgPerClassCanal = totalClassesCanal > 0 ? totalRevenueCanal / totalClassesCanal : null;
 
   return (
     <>
@@ -256,34 +301,49 @@ export default function VentasPor({
             ? dateRange
             : (months.length > 0 ? `${periodLabel(months[0], period)} – ${periodLabel(months[months.length - 1], period)}` : undefined)
         }
-        kpiItems={[
-          { label: "Ventas totales", value: <ResponsiveEur value={totalBruto} />, helper: "Stripe bruto + Urban", tooltip: "Stripe bruto + Urban del período. El € de Urban se asigna al mes de las clases (Urban paga a mes vencido por transferencia); el mes aún sin facturar entra estimado: clases asistidas en Momence × tarifa pactada.", delta: ventasDelta },
-          { label: "Comisión Stripe", value: <ResponsiveEur value={stripeFees} prefix="−" />, valueClassName: "text-danger", helper: `Neto: ${fmtEur(stripeNet)}`, delta: comisionDelta },
-          { label: "Ventas netas", value: <ResponsiveEur value={ventasNetas} />, tooltip: "Ventas totales - comisión Stripe - 21%", delta: netasDelta },
-        ]}
+        kpiItems={
+          view === "canal"
+            ? [
+                {
+                  label: "€/clase media",
+                  value: avgPerClassCanal !== null ? fmtEurDecimal(avgPerClassCanal) : "-",
+                  helper: `${totalClassesCanal} clases`,
+                  tooltip: "Ingresos de Stripe (bruto) + Urban (real o estimado) del período ÷ total de clases realmente asistidas (Stripe no-Urban + Urban), check-ins de Momence API v2 en vivo. Es el ingreso medio real por clase mezclando ambos canales, no la tarifa pactada con Urban.",
+                },
+              ]
+            : [
+                { label: "Ventas totales", value: <ResponsiveEur value={totalBruto} />, helper: "Stripe bruto + Urban", tooltip: "Stripe bruto + Urban del período. El € de Urban se asigna al mes de las clases (Urban paga a mes vencido por transferencia); el mes aún sin facturar entra estimado: clases asistidas en Momence × tarifa pactada.", delta: ventasDelta },
+                { label: "Comisión Stripe", value: <ResponsiveEur value={stripeFees} prefix="−" />, valueClassName: "text-danger", helper: `Neto: ${fmtEur(stripeNet)}`, delta: comisionDelta },
+                { label: "Ventas netas", value: <ResponsiveEur value={ventasNetas} />, tooltip: "Ventas totales - comisión Stripe - IVA (extraído del bruto, no un 21% plano)", delta: netasDelta },
+              ]
+        }
         toolbar={
-          <div className="flex items-center justify-between gap-3 w-full flex-wrap">
-            <ChartTypeToggle
-              value={chartType}
-              onChange={(v) => setChartType(v as ChartType)}
-              options={[
-                { value: "bar",  label: "Ver como barras", icon: <BarChart2 size={14} /> },
-                { value: "line", label: "Ver como línea",  icon: <Activity  size={14} /> },
-              ]}
-            />
-            <ToggleGroup
-              value={period}
-              onChange={(v) => setPeriod(v as Period)}
-              options={PERIODS.map((p) => ({ value: p.key, label: p.label }))}
-            />
-          </div>
+          view === "canal" ? undefined : (
+            <div className="flex items-center justify-between gap-3 w-full flex-wrap">
+              <ChartTypeToggle
+                value={chartType}
+                onChange={(v) => setChartType(v as ChartType)}
+                options={[
+                  { value: "bar",  label: "Ver como barras", icon: <BarChart2 size={14} /> },
+                  { value: "line", label: "Ver como línea",  icon: <Activity  size={14} /> },
+                ]}
+              />
+              <ToggleGroup
+                value={period}
+                onChange={(v) => setPeriod(v as Period)}
+                options={PERIODS.map((p) => ({ value: p.key, label: p.label }))}
+              />
+            </div>
+          )
         }
         dataSource={
           view === "fuente"
             ? "Stripe API (precio de venta, antes de comisión), en vivo. Urban Sports Club (€): el importe real son las transferencias del banco (contacto «Urban Sports»), asignadas al mes de las clases que pagan (Urban paga a mes vencido: la transferencia de mediados de julio es de las clases de junio). El mes aún sin facturar se muestra estimado = check-ins reales de Momence (API v2, en vivo) × tarifa pactada (Configuración → Tarifa Urban); al llegar su transferencia pasa al importe real."
-            : "Solo Stripe - no incluye Urban Sports Club. Momence no pasa qué producto se compró a Stripe: el producto se infiere comparando el importe de cada cobro con los precios conocidos (vigentes en el momento del cobro, no solo el precio de hoy). Es una estimación - un pago con cupón/descuento que coincida por casualidad con el precio de otro producto puede identificarse mal. Altas/bajas/reactivaciones por patrón de pagos de suscripción en Stripe."
+            : view === "producto"
+              ? "Stripe + Urban Sports Club. Momence no pasa qué producto se compró a Stripe: el producto se infiere comparando el importe de cada cobro con los precios conocidos (vigentes en el momento del cobro, no solo el precio de hoy). Es una estimación - un pago con cupón/descuento que coincida por casualidad con el precio de otro producto puede identificarse mal. «Urban» usa el mismo importe que la vista Fuente (banco real, o estimado en el mes aún sin facturar). Altas/bajas/reactivaciones por patrón de pagos de suscripción en Stripe."
+              : "€ Stripe = ingreso bruto de Stripe (suscripciones y packs) ÷ clases asistidas (checkedIn, Momence API v2) por miembros no-Urban ese mes. € Urban = importe asignado al mes (real o estimado, ver Ventas por Fuente) ÷ clases asistidas por miembros de Urban. No compara el mismo tipo de compromiso (suscripción/pack de permanencia vs Urban por uso puntual), pero sí el ingreso real por clase de cada canal."
         }
-        sources={view === "fuente" ? ["stripe", "excel"] : ["stripe"]}
+        sources={view === "canal" ? ["stripe", "momence"] : ["stripe", "excel"]}
         lastUpdated={lastUpdated}
         aiInsight={
           view === "producto" && trendSummary.length > 0 && (
@@ -386,7 +446,7 @@ export default function VentasPor({
               )}
             </CollapsibleTable>
           </>
-        ) : (
+        ) : view === "producto" ? (
           <>
             <EvolucionIngresosBody
               rows={productRows}
@@ -397,7 +457,7 @@ export default function VentasPor({
               view="producto"
               colorOf={colorOf}
               eventsByMonth={eventsByMonth}
-              onBarClick={period === "mes" ? (month, key) => setBarDrawer({ month, key }) : undefined}
+              onBarClick={period === "mes" ? (month, key) => (key === "Urban" ? setSourceDrawer({ month, source: "urban" }) : setBarDrawer({ month, key })) : undefined}
               height={280}
             />
 
@@ -508,6 +568,17 @@ export default function VentasPor({
               </table>
             </CollapsibleTable>
           </>
+        ) : (
+          <>
+            <StaticLegend
+              className="mb-3"
+              items={[
+                { label: "Stripe (interno)", color: "var(--chart-violet-1)", swatch: "dot" },
+                { label: "Urban Sports Club", color: "var(--color-warning)", swatch: "dot" },
+              ]}
+            />
+            <EconomiaPorCanalBody data={channelEconomics} />
+          </>
         )}
       </ChartCard>
 
@@ -549,7 +620,21 @@ export default function VentasPor({
           }
           onClose={() => setSelectedKey(null)}
         >
-          {selectedDrawerPayments.length === 0 ? (
+          {selectedUrbanSummary ? (
+            <div className="p-4 space-y-2 text-sm">
+              <div className="flex items-center justify-between py-2 border-b border-navy/[0.06]">
+                <span className="text-navy/55">Clases asistidas</span>
+                <span className="font-medium text-navy tabular-nums">{selectedUrbanSummary.classes}</span>
+              </div>
+              <div className="flex items-center justify-between py-2 border-b border-navy/[0.06]">
+                <span className="text-navy/55">Importe</span>
+                <span className="font-semibold text-navy tabular-nums">{fmtEur(selectedUrbanSummary.amount)}</span>
+              </div>
+              <p className="text-xs text-navy/45 pt-1 leading-relaxed">
+                No pasa por Stripe, así que no hay pagos individuales que listar - mismo importe (banco real, o estimado en el mes aún sin facturar) que la vista Fuente.
+              </p>
+            </div>
+          ) : selectedDrawerPayments.length === 0 ? (
             <p className="text-sm text-navy/45 px-6 py-8">Sin pagos registrados en Stripe para este período.</p>
           ) : (
             selectedDrawerPayments.map((p) => (

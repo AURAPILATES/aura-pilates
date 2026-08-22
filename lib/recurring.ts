@@ -196,6 +196,7 @@ export type RecurringForecast = {
   nextDate: string;
   daysUntil: number; // negativo = vencido
   occurrences: number;
+  variable: boolean;
 };
 
 export type PendingRecurringGroup = {

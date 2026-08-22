@@ -3,9 +3,12 @@ import { unstable_cache } from "next/cache";
 
 export type GroupType = "operational" | "income" | "transfer" | "internal";
 
-/** Traspasos entre cuentas propias (p.ej. banco ↔ efectivo): no son ingreso ni gasto real,
- * así que se excluyen de cualquier cálculo "según el banco" (flujo de caja, previsión de
- * ingresos...) para no duplicar el mismo dinero en ambos lados ni contarlo como negocio. */
+/** Traspasos entre cuentas propias (p.ej. banco ↔ efectivo): no son ingreso ni gasto real, así
+ * que se excluyen por defecto de cálculos de salud financiera (breakeven, burn rate...) donde
+ * contarlos distorsionaría el resultado. Las vistas de movimiento bruto (Flujo de caja, Desglose
+ * de gastos, Transacciones) SÍ quieren verlos - ahí se pasa includeInternal a isCashflowTransaction
+ * en vez de tocar este default. "transfer" (financiación) siempre se excluye aquí: la entrada del
+ * propio préstamo no es un gasto, ver financingExpensesByCategory. */
 export const NON_CASHFLOW_GROUP_TYPES = new Set(["transfer", "internal"]);
 
 export type Category = {

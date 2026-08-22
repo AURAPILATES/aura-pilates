@@ -5,6 +5,7 @@ import type { PaymentMethod, Transaction } from "@/lib/transactions";
 import { loadCategories, type Category } from "@/lib/categories";
 import { contactKeyFor, recleanPattern, matchesPattern } from "@/lib/contactRules";
 import { PERIOD_BUCKETS, displayLabel, seriesKeyFor } from "@/lib/recurring";
+import { normalizeText } from "@/lib/normalizeText";
 
 export type ImportRow = {
   date: string;
@@ -28,10 +29,12 @@ function effectiveTaxRates(contact: { iva_rate: number; retencion_rate: number; 
 
 function buildAutoCategory(categories: { value: string; auto_keywords: string | null }[]) {
   return function (row: ImportRow): string | null {
-    const hay = `${row.concept ?? ""} ${row.bankDetails ?? ""}`.toLowerCase();
+    // Sin acentos en ambos lados: un concepto bancario "café" debe reconocer la palabra clave
+    // "cafe" (y viceversa), en vez de exigir que se haya escrito con el acento exacto.
+    const hay = normalizeText(`${row.concept ?? ""} ${row.bankDetails ?? ""}`);
     for (const cat of categories) {
       if (!cat.auto_keywords) continue;
-      const kws = cat.auto_keywords.split(",").map((k: string) => k.trim().toLowerCase()).filter(Boolean);
+      const kws = cat.auto_keywords.split(",").map((k: string) => normalizeText(k.trim())).filter(Boolean);
       if (kws.some((kw: string) => hay.includes(kw))) return cat.value;
     }
     return null;
@@ -381,7 +384,7 @@ export async function applyCategoryKeywordsToTransactions(
 ): Promise<{ updated: number }> {
   const keywords = (autoKeywords ?? "")
     .split(",")
-    .map((k) => k.trim().toLowerCase())
+    .map((k) => normalizeText(k.trim()))
     .filter(Boolean);
   if (!keywords.length) return { updated: 0 };
 
@@ -394,7 +397,7 @@ export async function applyCategoryKeywordsToTransactions(
 
   const matchingIds = (txns ?? [])
     .filter((t: { id: string; concept: string | null; bank_details: string | null }) => {
-      const hay = `${t.concept ?? ""} ${t.bank_details ?? ""}`.toLowerCase();
+      const hay = normalizeText(`${t.concept ?? ""} ${t.bank_details ?? ""}`);
       return keywords.some((kw) => hay.includes(kw));
     })
     .map((t: { id: string }) => t.id);
@@ -554,7 +557,14 @@ export async function resolveOrCreateContact(
  * registra el patrón (concepto + más datos, ya limpios) de este movimiento para que la
  * próxima vez que aparezca se reconozca solo - la misma idea que confirmar un contacto nuevo
  * al importar, pero hecha a mano desde el detalle de un movimiento ya importado. */
-export async function assignContactToTransaction(transactionId: string, contactLabel: string): Promise<void> {
+/** Vincula un contacto a un movimiento. `savePattern` controla si además se registra el texto
+ * banco (concepto + más datos) de este movimiento como patrón reutilizable para reconocer
+ * automáticamente futuros movimientos parecidos - por defecto no, porque guardarlo sin que la
+ * usuaria lo vea/confirme llevó a que un concepto genérico compartido por varios contactos (ej.
+ * "Aura Pilates" en toda nómina que ella misma emite) se colara como patrón de coincidencia y
+ * disparara falsos "posible duplicado". El llamador (TransactionContactPicker) pregunta primero
+ * si quiere guardarlo o vincular solo este movimiento. */
+export async function assignContactToTransaction(transactionId: string, contactLabel: string, savePattern = false): Promise<void> {
   const supabase = createServerClient();
   const label = contactLabel.trim();
 
@@ -573,7 +583,7 @@ export async function assignContactToTransaction(transactionId: string, contactL
   if (loadError || !t) throw new Error(loadError?.message ?? "Movimiento no encontrado");
 
   const pattern = contactKeyFor(t.concept, t.bank_details);
-  const contact = await resolveOrCreateContact(supabase, label, pattern);
+  const contact = await resolveOrCreateContact(supabase, label, savePattern ? pattern : []);
   const tax = effectiveTaxRates(contact);
 
   const { error: updError } = await supabase
@@ -582,7 +592,7 @@ export async function assignContactToTransaction(transactionId: string, contactL
     .eq("id", transactionId);
   if (updError) throw new Error(updError.message);
 
-  await applyPatternsToTransactions(supabase, new Set([pattern]), contact);
+  if (savePattern) await applyPatternsToTransactions(supabase, new Set([pattern]), contact);
   revalidateTag("transactions");
 }
 

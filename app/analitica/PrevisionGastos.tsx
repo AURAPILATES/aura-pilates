@@ -9,7 +9,7 @@ import type { Category } from "@/lib/categories";
 
 type SortKey = "fecha" | "importe";
 
-type ListItem = RecurringForecast & { variable?: boolean; overdue?: boolean; categoryLabel: string; categoryColor: string };
+type ListItem = RecurringForecast & { variable?: boolean; categoryLabel: string; categoryColor: string };
 
 function nextMid15(): string {
   const now = new Date();
@@ -27,16 +27,9 @@ function fmtDate(d: string): string {
 function ItemRow({ item }: { item: ListItem }) {
   return (
     <div className="flex items-center gap-2 py-1.5 px-1.5 -mx-1.5 rounded-md hover:bg-navy/[0.025] transition-colors">
-      <span
-        className="w-1.5 h-1.5 rounded-full shrink-0"
-        style={{ backgroundColor: item.overdue ? "var(--color-danger)" : item.categoryColor }}
-      />
+      <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: item.categoryColor }} />
       <p className="text-[13px] font-medium text-navy truncate flex-1 min-w-0">{item.label}</p>
-      {item.overdue ? (
-        <span className="shrink-0 text-[10px] font-semibold text-danger bg-danger/10 px-1.5 py-0.5 rounded">
-          vencido hace {Math.abs(item.daysUntil)} {Math.abs(item.daysUntil) === 1 ? "día" : "días"}
-        </span>
-      ) : item.variable && (
+      {item.variable && (
         <span className="shrink-0 text-[10px] font-semibold text-warning bg-warning/10 px-1.5 py-0.5 rounded">
           variable
         </span>
@@ -44,7 +37,7 @@ function ItemRow({ item }: { item: ListItem }) {
       <span className="hidden sm:block shrink-0 text-[11px] text-navy/45 bg-navy/[0.045] px-1.5 py-0.5 rounded truncate max-w-[110px]">
         {item.categoryLabel}
       </span>
-      <span className={`text-xs tabular-nums shrink-0 w-10 text-right ${item.overdue ? "text-danger" : "text-navy/40"}`}>
+      <span className="text-xs tabular-nums shrink-0 w-10 text-right text-navy/40">
         {item.variable ? `~${fmtDate(item.nextDate)}` : fmtDate(item.nextDate)}
       </span>
       <span className="text-[13px] font-semibold text-navy tabular-nums shrink-0 w-16 text-right">
@@ -77,18 +70,14 @@ export default function PrevisionGastos({
     return categories.find((c) => c.value === value)?.text_color ?? FALLBACK_COLOR;
   }
 
-  // La tarjeta dice "Próximos 30 días" - solo debe sumar/listar lo que de verdad cae en esa
-  // ventana. Lo vencido (daysUntil < 0) se muestra aparte, marcado, en vez de mezclarse en el
-  // total o desaparecer sin avisar; lo que vence más allá de 30 días no pertenece a esta tarjeta.
-  const upcomingForecasts = forecasts.filter((f) => f.daysUntil >= 0 && f.daysUntil <= 30);
-  const overdueForecasts  = forecasts.filter((f) => f.daysUntil < 0);
+  // La tarjeta dice "Próximos 30 días" - solo excluye lo que vence más allá de esa ventana (un
+  // seguro anual, p.ej.). No hay estado "vencido": un recurrente con daysUntil negativo (el
+  // banco puede tardar en subirse) se trata igual que cualquier otro, sin marcarlo ni avisar -
+  // se ordena junto al resto por fecha, en silencio.
+  const upcomingForecasts = forecasts.filter((f) => f.daysUntil <= 30);
 
   const committed    = upcomingForecasts.reduce((s, f) => s + Math.abs(f.amount), 0);
   const totalPrevisto = committed + avgSuministros;
-
-  const overdueItems: ListItem[] = overdueForecasts.map((f) => ({
-    ...f, overdue: true, categoryLabel: categoryLabel(f.category), categoryColor: categoryColor(f.category),
-  }));
 
   const items: ListItem[] = [
     ...upcomingForecasts.map((f) => ({ ...f, categoryLabel: categoryLabel(f.category), categoryColor: categoryColor(f.category) })),
@@ -122,22 +111,13 @@ export default function PrevisionGastos({
       dataSource="Gastos recurrentes confirmados en Transacciones › Recurrentes. Suministros: media de los últimos 3 meses completos (Electricidad + Agua)."
       sources={["recurrentes"]}
     >
-      {items.length === 0 && overdueItems.length === 0 ? (
+      {items.length === 0 ? (
         <p className="text-sm text-navy/45 text-center py-6">
           Sin gastos recurrentes confirmados.{" "}
           <Link href="/transacciones?tab=recurrentes" className="text-primary hover:underline">Gestionarlos →</Link>
         </p>
       ) : (
         <>
-          {overdueItems.length > 0 && (
-            <div className="mb-4 rounded-md border border-danger/25 bg-danger/[0.05] p-2">
-              <p className="text-[11px] font-semibold text-danger px-1 pb-1">
-                {overdueItems.length} {overdueItems.length === 1 ? "pago vencido" : "pagos vencidos"} sin registrar
-              </p>
-              {overdueItems.map((item) => <ItemRow key={item.key} item={item} />)}
-            </div>
-          )}
-
           <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 mb-4">
             <div className="shrink-0">
               <p className="text-[11px] font-medium text-navy/45 mb-1 whitespace-nowrap">Total previsto</p>

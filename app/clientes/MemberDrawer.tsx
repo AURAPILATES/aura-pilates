@@ -192,7 +192,14 @@ export default function MemberDrawer({ client, payments, onClose, onPrev, onNext
         <p className="text-[11px] font-semibold text-navy/40 uppercase tracking-wider mb-2">Actividad de clases</p>
         {client.attended > 0 ? (
           <div className="space-y-1 text-sm text-navy/70">
-            <p>Clases asistidas: <span className="font-medium text-navy">{client.attended}</span>{client.noShows > 0 && <span className="text-navy/45"> · {client.noShows} no-shows</span>}{client.cancellations > 0 && <span className="text-navy/45"> · {client.cancellations} cancelaciones</span>}</p>
+            <p>Clases asistidas: <span className="font-medium text-navy">{client.attended}</span>{client.noShows > 0 && <span className="text-navy/45"> · {client.noShows} no-shows</span>}{client.cancellations > 0 && (
+              <span className="text-navy/45">
+                {" "}· {client.cancellations} cancelaciones
+                {(client.lateCancellations > 0 || client.earlyCancellations > 0) && (
+                  <> ({client.lateCancellations} perdidas &lt;12h · {client.earlyCancellations} devueltas)</>
+                )}
+              </span>
+            )}</p>
             {client.coverage === "none" && (
               <p className="text-[#b45309] dark:text-[#e8a572]">Sin pago detectado (asistió sin rastro de pago)</p>
             )}

@@ -96,7 +96,8 @@ async function main() {
           booking_id: b.id, session_id: s.id, session_starts_at: s.startsAt,
           teacher_id: tId, teacher_name: tName, member_id: b.member.id,
           email: b.member.email ?? null, checked_in: b.checkedIn,
-          cancelled: b.cancelledAt !== null, captured_at: capturedAt,
+          cancelled: b.cancelledAt !== null, cancelled_at: b.cancelledAt,
+          captured_at: capturedAt,
         });
       }
     }

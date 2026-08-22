@@ -62,6 +62,7 @@ type PlanFilter = "all" | "basic" | "plus" | "pro" | "pack" | "sin_plan";
 // forma de aislar a quien nunca ha pisado el estudio (reservó y canceló, o nunca reservó) sin
 // redefinir qué cuenta como cliente.
 type Asistencia = "all" | "con_clases" | "sin_clases";
+type CancelTardia = "all" | "con_tardias" | "sin_tardias";
 type SortKey = "name" | "attended" | "cancellations" | "totalSpent" | "firstClass" | "lastClass" | "renew";
 
 // Mismo criterio que planBadge() (abajo) para que el filtro y la insignia de la tabla coincidan
@@ -255,6 +256,7 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
   const [procedencia, setProcedencia] = useState<Procedencia>("all");
   const [planFilter, setPlanFilter] = useState<PlanFilter>("all");
   const [asistencia, setAsistencia] = useState<Asistencia>("all");
+  const [cancelTardia, setCancelTardia] = useState<CancelTardia>("all");
   const [minLastClassDays, setMinLastClassDays] = useState(0);
   const [maxLastClassDays, setMaxLastClassDays] = useState(LAST_CLASS_MAX);
   const [sortKey, setSortKey] = useState<SortKey>("lastClass");
@@ -266,7 +268,7 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
     const c = {
       congelada: 0, pago_pendiente: 0, duplicadas: 0, familiares: 0, urban: 0, momence: 0,
       renueva_pronto: 0, infrautiliza: 0, al_limite: 0, pocas_clases: 0,
-      basic: 0, plus: 0, pro: 0, pack: 0, sinPlan: 0, sinClases: 0,
+      basic: 0, plus: 0, pro: 0, pack: 0, sinPlan: 0, sinClases: 0, conTardias: 0,
     };
     for (const r of clients) {
       if (r.activeSubCount >= 2) c.duplicadas++;
@@ -274,6 +276,7 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
       if (hasPagoPendiente(r)) c.pago_pendiente++;
       if (renewsSoon(r)) c.renueva_pronto++;
       if (r.attended === 0) c.sinClases++;
+      if (r.lateCancellations > 0) c.conTardias++;
       if (r.planUsage?.level === "bajo") c.infrautiliza++;
       else if (r.planUsage?.level === "alto") c.al_limite++;
       if (r.status.key === "pack_bajo") c.pocas_clases++;
@@ -294,7 +297,7 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
 
   const hasActiveFilters =
     filter !== "all" || procedencia !== "all" || planFilter !== "all" || asistencia !== "all" ||
-    minLastClassDaysNum != null || maxLastClassDaysNum != null;
+    cancelTardia !== "all" || minLastClassDaysNum != null || maxLastClassDaysNum != null;
 
   const filtered = useMemo(() => {
     const q = normalizeText(search.trim());
@@ -305,6 +308,8 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
         if (planFilter !== "all") { if (planTier(r.plan) !== planFilter) return false; }
         if (asistencia === "con_clases") { if (r.attended === 0) return false; }
         else if (asistencia === "sin_clases") { if (r.attended > 0) return false; }
+        if (cancelTardia === "con_tardias") { if (r.lateCancellations === 0) return false; }
+        else if (cancelTardia === "sin_tardias") { if (r.lateCancellations > 0) return false; }
         if (minLastClassDaysNum != null || maxLastClassDaysNum != null) {
           const d = daysSinceLastClass(r);
           if (d === null) {
@@ -338,7 +343,7 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
         else diff = a.name.localeCompare(b.name, "es");
         return sortDir === "desc" ? -diff : diff;
       });
-  }, [clients, search, filter, procedencia, planFilter, asistencia, minLastClassDaysNum, maxLastClassDaysNum, sortKey, sortDir]);
+  }, [clients, search, filter, procedencia, planFilter, asistencia, cancelTardia, minLastClassDaysNum, maxLastClassDaysNum, sortKey, sortDir]);
 
   const pageRows = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
@@ -352,10 +357,11 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
   function changeProcedencia(v: Procedencia) { setProcedencia(v); setPage(0); }
   function changePlanFilter(v: PlanFilter) { setPlanFilter(v); setPage(0); }
   function changeAsistencia(v: Asistencia) { setAsistencia(v); setPage(0); }
+  function changeCancelTardia(v: CancelTardia) { setCancelTardia(v); setPage(0); }
   function changeMinLastClassDays(v: number) { setMinLastClassDays(v); setPage(0); }
   function changeMaxLastClassDays(v: number) { setMaxLastClassDays(v); setPage(0); }
   function clearFilters() {
-    setFilter("all"); setProcedencia("all"); setPlanFilter("all"); setAsistencia("all");
+    setFilter("all"); setProcedencia("all"); setPlanFilter("all"); setAsistencia("all"); setCancelTardia("all");
     setMinLastClassDays(0); setMaxLastClassDays(LAST_CLASS_MAX);
     setPage(0);
   }
@@ -461,6 +467,19 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
                 { key: "all", label: "Todos" },
                 { key: "con_clases", label: "Ha venido" },
                 { key: "sin_clases", label: "Nunca vino", count: counts.sinClases || undefined, countTone: "warning" },
+              ]}
+            />
+          </div>
+          <div>
+            <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1.5">Cancelaciones tardías</p>
+            <FilterPillGroupV2
+              variant="segmented"
+              active={cancelTardia}
+              onChange={changeCancelTardia}
+              options={[
+                { key: "all", label: "Todos" },
+                { key: "con_tardias", label: "Con tardías", count: counts.conTardias || undefined, countTone: "warning" },
+                { key: "sin_tardias", label: "Sin tardías" },
               ]}
             />
           </div>
