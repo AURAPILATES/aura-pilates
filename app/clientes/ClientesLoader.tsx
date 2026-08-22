@@ -13,14 +13,17 @@ type Props = {
 };
 
 export default async function ClientesLoader({ curMonth }: Props) {
-  const payments = await loadStripePaymentsCached();
-  const [customers, familyIds, familyMemberIds, paymentErrorAcks, urbanRates] = await Promise.all([
-    loadStripeCustomers(payments, curMonth),
+  // loadStripeCustomers depende de payments; los otros 4 no dependen de nada de aquí - se piden
+  // todos a la vez (en vez de esperar a payments primero) y loadStripeCustomers se lanza en cuanto
+  // payments resuelve.
+  const [payments, familyIds, familyMemberIds, paymentErrorAcks, urbanRates] = await Promise.all([
+    loadStripePaymentsCached(),
     loadFamilyClientIds(),
     loadFamilyMemberIds(),
     loadPaymentErrorAcks(),
     loadUrbanRates(),
   ]);
+  const customers = await loadStripeCustomers(payments, curMonth);
 
   // "Hablado con cliente" es una anotación (paymentErrorAcked), no oculta el error: el error de
   // pago real sigue contando y mostrándose hasta que Stripe cobre con éxito. Mismo criterio que

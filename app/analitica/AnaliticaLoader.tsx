@@ -171,12 +171,9 @@ export default async function AnaliticaLoader({
     txnsAll, dbCategories, budgets, businessEvents, recurringExpenses, breakdown, breakdownComp,
     bancoLastImport, paymentErrorAcks, syncRuns, liveEventsResult,
     teacherStatsV2, sessionOccupancyRowsV2, sessionOccupancyRowsV2Comp,
+    urbanRates, atRiskV2, activeSubEmailsV2, channelActivityByMonth,
   ] = await Promise.all([
     loadStripePaymentsCached(),
-    // Catálogo de precio (vigente + respaldo) para identificar cobros de Stripe por importe -
-    // única fuente reutilizada por Ventas por Producto, Retención por cohorte Y niveles de
-    // suscripción (antes cada una pedía su propio catálogo por separado a Momence, hasta 3
-    // veces en la misma carga de página - ver subscriptionTiersFromPriceCandidates en lib/mrr.ts).
     resolveProductMap().catch(() => []),
     loadTransactionsCached(null, null),
     loadCategoriesCached(),
@@ -188,21 +185,20 @@ export default async function AnaliticaLoader({
     getLatestImportDate(),
     loadPaymentErrorAcks(),
     getLatestSyncRuns().catch(() => null),
-    // Ya no se muestra ningún dato de este fetch en Analítica (Fase 9 movió los KPI de
-    // ocupación a class_sessions_v2) - se mantiene solo por su efecto secundario: alimentar
-    // momence_history (ver saveHistoricalEvents más abajo), como redundancia del cron nocturno
-    // de captura. Si falla, no debe tumbar la página - por eso el patrón ok/error en vez de un
-    // simple throw, igual que en Horario (HorarioLoader).
     getEvents().then((events) => ({ ok: true as const, events })).catch((e) => ({
       ok: false as const,
       error: e instanceof Error ? e.message : String(e),
     })),
-    // Live desde la API v2; si Momence v2 falla, no debe tumbar toda la página.
     getTeacherStatsV2(mainFrom, mainTo).catch(() => null),
     getSessionOccupancyRowsV2(mainFrom, mainTo).catch(() => []),
-    // Mismo dato pero del período de comparación, para los KPI de ocupación/media por clase
-    // de cabecera (ver occupancyRateV2/avgAttendedPerClassV2 en lib/analytics.ts).
     getSessionOccupancyRowsV2(compFrom, compTo).catch(() => []),
+    // Estos 4 no dependen de nada del resto del bloque (ni de curMonth/salesAll, que se calculan
+    // después) - antes iban sueltos en medio o al final de la carga en serie; se adelantan aquí
+    // para que corran en paralelo con todo lo demás en vez de sumar su tiempo aparte.
+    loadUrbanRates().catch(() => []),
+    getAtRiskV2(),
+    getActiveSubscriberEmailsV2(),
+    attendanceByChannelMonth().catch(() => new Map()),
   ]);
 
   const liveEventsError = liveEventsResult.ok ? null : liveEventsResult.error;
@@ -302,7 +298,9 @@ export default async function AnaliticaLoader({
   const subscriptionTiers = subscriptionTiersFromPriceCandidates(productPriceCandidates);
 
   // Lo siguiente es independiente entre sí (Stripe × Momence v2 por separado, cada uno con su
-  // propia caché), así que se lanza todo en paralelo en vez de esperar uno a uno.
+  // propia caché), así que se lanza todo en paralelo en vez de esperar uno a uno. urbanRates ya
+  // se pidió en el primer Promise.all (no depende de nada de aquí), así que urbanActivityByMonth
+  // puede ir directamente en este lote en vez de esperar a que termine para lanzarse ella sola.
   const [
     stripeCustomersAll,
     teacherConversionV2,
@@ -310,27 +308,15 @@ export default async function AnaliticaLoader({
     subscriberFirstClassV2,
     subscriptionsBaseV2,
     mrrHistoryV2,
-    atRiskV2,
-    activeSubEmailsV2,
-    urbanRates,
+    urbanActivity,
   ] = await Promise.all([
-    // Mapa stripeId → cliente fusionado por email, para agrupar cohortes/clientes por persona real
     loadStripeCustomers(paymentsAll, curMonth),
-    // Conversión por profesora: 1ª clase asistida (Momence v2) × volvió a pagar (Stripe).
-    // Lee la asistencia capturada en class_bookings_v2; si aún no hay backfill, devuelve vacío.
     getTeacherConversionV2(salesAll).catch(() => null),
-    // LTV de alumnos nuevos por profesora / mes de entrada - mismo cruce que la conversión,
-    // pero con el gasto histórico en vez de solo la tasa.
     getTeacherLtvV2(salesAll).catch(() => null),
-    // Primera clase de los suscriptores (por profesora y franja horaria, Momence × Stripe)
     getSubscriberFirstClassV2(salesAll).catch(() => null),
-    // Base real de suscripción desde el snapshot v2 (subscriber_snapshots_v2).
     getSubscriptionsBaseV2(subscriptionTiers),
     getMrrHistoryV2(subscriptionTiers).catch(() => []),
-    getAtRiskV2(),
-    // Verdad de "quién sigue suscrito en Momence", para depurar las inferencias por Stripe.
-    getActiveSubscriberEmailsV2(),
-    loadUrbanRates().catch(() => []),
+    urbanActivityByMonth(urbanRates).catch(() => new Map<string, { classes: number; estimated: number }>()),
   ]);
   const primaryIdMap = buildPrimaryIdMap(stripeCustomersAll);
   // ── Evolución de ingresos + altas/bajas/reactivaciones (histórico completo, solo Stripe) ──
@@ -353,7 +339,6 @@ export default async function AnaliticaLoader({
   // no ha ingresado la transferencia. El € REAL sigue siendo el del banco, asignado al MES DE LAS
   // CLASES (Urban paga a mes vencido: la transferencia del 14-jul es de las clases de junio), para
   // que dinero y actividad caigan en la misma barra y solo el mes abierto quede como estimado.
-  const urbanActivity = await urbanActivityByMonth(urbanRates).catch(() => new Map<string, { classes: number; estimated: number }>());
   const uscByActivityMonth = urbanRevenueByActivityMonth(txnsAll);
   const allMonthsFuente = new Set([...monthlyStripeNetMap.keys(), ...uscByActivityMonth.keys(), ...urbanActivity.keys()]);
   const MONTH_ES_F: Record<string, string> = { "01":"Ene","02":"Feb","03":"Mar","04":"Abr","05":"May","06":"Jun","07":"Jul","08":"Ago","09":"Sep","10":"Oct","11":"Nov","12":"Dic" };
@@ -402,7 +387,6 @@ export default async function AnaliticaLoader({
 
   // € por clase asistida, Stripe (interno) vs Urban - reutiliza monthlyByFuente (mismo € que
   // ya se ve en "Ventas por Fuente") cruzado con asistencia real separada por canal.
-  const channelActivityByMonth = await attendanceByChannelMonth().catch(() => new Map());
   const channelEconomics = buildChannelEconomics(monthlyByFuente, channelActivityByMonth);
 
   const subscriptionCohorts = computeSubscriptionCohorts(paymentsAll, subscriptionPriceCandidates, primaryIdMap);
