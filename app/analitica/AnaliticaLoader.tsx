@@ -38,7 +38,7 @@ import ConversionPack from "./instances/ConversionPack";
 import { subscriptionTiersFromPriceCandidates } from "@/lib/mrr";
 import { getSubscriptionsBaseV2, getActiveSubscriberEmailsV2, getMrrHistoryV2 } from "@/lib/subscriptionsV2";
 import EvolucionMRR from "./instances/EvolucionMRR";
-import { getAtRiskV2, type AtRiskCustomerInfo } from "@/lib/atRiskV2";
+import { getAtRiskV2, emptyCounts, type AtRiskCustomerInfo } from "@/lib/atRiskV2";
 import { getTeacherStatsV2 } from "@/lib/teacherStatsV2";
 import { getSessionOccupancyRowsV2 } from "@/lib/occupancyV2";
 import { getTeacherConversionV2 } from "@/lib/teacherConversionV2";
@@ -185,6 +185,11 @@ export default async function AnaliticaLoader({
     getLatestImportDate(),
     loadPaymentErrorAcks(),
     getLatestSyncRuns().catch(() => null),
+    // Si falla, no debe tumbar la página: alimenta saveHistoricalEvents (ver más abajo), que es
+    // la única captura del histórico de HOY (Momence solo da hoy+futuro, no hay forma de recuperar
+    // el día después) - por eso ok/error en vez de dejar que rechace. Los demás items de este
+    // Promise.all que sí tienen su propio .catch() (loadUrbanRates, getAtRiskV2...) están así por
+    // la misma razón: cualquiera sin capturar que rechace tumbaría TODO el bloque, incluido esto.
     getEvents().then((events) => ({ ok: true as const, events })).catch((e) => ({
       ok: false as const,
       error: e instanceof Error ? e.message : String(e),
@@ -196,8 +201,12 @@ export default async function AnaliticaLoader({
     // después) - antes iban sueltos en medio o al final de la carga en serie; se adelantan aquí
     // para que corran en paralelo con todo lo demás en vez de sumar su tiempo aparte.
     loadUrbanRates().catch(() => []),
-    getAtRiskV2(),
-    getActiveSubscriberEmailsV2(),
+    // Antes vivían solas en el segundo Promise.all: un fallo suyo no arriesgaba nada más que ese
+    // bloque. Al adelantarlas aquí, junto a getEvents() (del que depende saveHistoricalEvents, ver
+    // más abajo), necesitan su propio .catch() - si no, un fallo de cualquiera de las dos tumbaría
+    // TODA la página, no solo perdería su propio dato.
+    getAtRiskV2().catch(() => ({ date: null, items: [], counts: emptyCounts() })),
+    getActiveSubscriberEmailsV2().catch(() => new Set<string>()),
     attendanceByChannelMonth().catch(() => new Map()),
   ]);
 

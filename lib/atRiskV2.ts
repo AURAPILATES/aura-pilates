@@ -58,7 +58,7 @@ type Row = {
   is_frozen: boolean;
 };
 
-const emptyCounts = (): Record<AtRiskReason, number> => ({
+export const emptyCounts = (): Record<AtRiskReason, number> => ({
   "Congelada": 0, "Sin créditos": 0, "Pocos créditos": 0, "Caduca pronto": 0,
   "Sin venir": 0, "Asistencia en caída": 0,
 });
