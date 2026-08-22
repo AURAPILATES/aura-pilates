@@ -6,11 +6,16 @@ type Props = Omit<InputHTMLAttributes<HTMLInputElement>, "type" | "className"> &
   className?: string;
   /** Sin borde/fondo propios, para ir dentro de un <Field> (el fieldset ya pone el borde). */
   bare?: boolean;
+  /** Alineación del número, independiente de dónde va la unidad. Por defecto sigue a
+   * `unitSide` (número pegado a la unidad), pero un importe grande dentro de un <Field> con
+   * label suele leerse mejor pegado a la izquierda aunque la unidad quede a la derecha. */
+  numberAlign?: "left" | "right";
 };
 
 /** Campo numérico con la unidad integrada en una caja con separador (IVA, IRPF, importe…),
  * como en el mockup. Puramente controlado: el valor y el commit los gestiona quien lo usa. */
-export default function UnitInput({ unit, unitSide = "right", className = "", bare = false, ...props }: Props) {
+export default function UnitInput({ unit, unitSide = "right", className = "", bare = false, numberAlign, ...props }: Props) {
+  const align = numberAlign ?? unitSide;
   return (
     <div
       className={
@@ -29,8 +34,8 @@ export default function UnitInput({ unit, unitSide = "right", className = "", ba
         inputMode="decimal"
         className={
           bare
-            ? `flex-1 min-w-0 bg-transparent outline-none ${unitSide === "right" ? "text-right" : ""}`
-            : `flex-1 min-w-0 h-full px-3 text-[13.5px] text-navy bg-transparent outline-none ${unitSide === "right" ? "text-right" : ""}`
+            ? `flex-1 min-w-0 bg-transparent outline-none ${align === "right" ? "text-right" : ""}`
+            : `flex-1 min-w-0 h-full px-3 text-[13.5px] text-navy bg-transparent outline-none ${align === "right" ? "text-right" : ""}`
         }
         {...props}
       />

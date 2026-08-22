@@ -20,6 +20,9 @@ import HeaderPortal from "@/app/components/HeaderPortal";
 import { tableHeadClassV2, tableRowClassV2, tableGroupClassV2, tableCardClassV2, gridColsV2 } from "@/app/components/v2/tableStylesV2";
 
 const COLS = "2.1fr 1.2fr 1.1fr .9fr .9fr 1fr";
+// Misma tabla que COLS pero sin la columna "Estado" (los confirmados no tienen badge de
+// vinculación como los pendientes) - el hueco se reparte entre el resto de columnas.
+const COLS_CONFIRMED = "2.3fr 1.3fr 1.2fr 1fr 1.1fr";
 
 /** Barra flotante de acciones masivas, centrada abajo - aparece al seleccionar filas
  * confirmadas (checkbox al hover sobre el icono de categoría, ver fila de escritorio más
@@ -425,7 +428,7 @@ export default function RecurrentesListV2({
           <span className="text-faint font-normal normal-case">{confirmed.length}</span>
         </div>
         <div className="hidden sm:block">
-          <div className={`${tableHeadClassV2} px-5`} style={gridColsV2(COLS)}>
+          <div className={`${tableHeadClassV2} px-5`} style={gridColsV2(COLS_CONFIRMED)}>
             <span className="flex items-center gap-[10px]">
               <span className="w-[30px] h-[30px] shrink-0 flex items-center justify-center">
                 <input
@@ -442,7 +445,6 @@ export default function RecurrentesListV2({
             <span>Periodicidad</span>
             <span>IVA / Ret</span>
             <span className="text-right">Importe</span>
-            <span className="text-right">Estado</span>
           </div>
         </div>
 
@@ -468,7 +470,7 @@ export default function RecurrentesListV2({
                 <div
                   onClick={() => onOpenConfirmed(row)}
                   className={`${tableRowClassV2} px-5 cursor-pointer group ${isSelected ? "bg-subtle" : ""}`}
-                  style={gridColsV2(COLS)}
+                  style={gridColsV2(COLS_CONFIRMED)}
                 >
                   <div className="flex items-center gap-[10px] min-w-0">
                     <span className="relative shrink-0 w-[30px] h-[30px]">
@@ -505,7 +507,6 @@ export default function RecurrentesListV2({
                     <TaxBadgeV2 value={retRate} isError={bothMissing} zeroIsExplicit={contact?.noTax} />
                   </div>
                   <p className="text-right text-[13.5px] font-semibold"><SignedAmount amount={e.amount} /></p>
-                  <div />
                 </div>
               </div>
 

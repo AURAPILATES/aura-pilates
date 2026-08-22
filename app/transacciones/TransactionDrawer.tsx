@@ -2,12 +2,13 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { RotateCcw, Repeat } from "react-feather";
+import { RotateCcw, Repeat, Edit2 } from "react-feather";
 import Drawer from "@/app/components/Drawer";
 import Button, { SecondaryButton, DeleteButton } from "@/app/components/Button";
 import Select from "@/app/components/Select";
 import Checkbox from "@/app/components/Checkbox";
 import Field from "@/app/components/Field";
+import UnitInput from "@/app/components/UnitInput";
 import type { Transaction, PaymentMethod } from "@/lib/transactions";
 import type { Category } from "@/lib/categories";
 import { PERIOD_BUCKETS } from "@/lib/recurring";
@@ -500,6 +501,7 @@ export default function TransactionDrawer({
   onUpdateDate,
   onUpdatePaymentMethod,
   onUpdateDirection,
+  onUpdateAmount,
   onDelete,
 }: {
   transaction: Transaction;
@@ -519,6 +521,7 @@ export default function TransactionDrawer({
   onUpdateDate: (id: string, value: string) => void;
   onUpdatePaymentMethod: (id: string, value: PaymentMethod) => void;
   onUpdateDirection: (id: string, isIncome: boolean) => void;
+  onUpdateAmount: (id: string, amount: number) => void;
   onDelete: (id: string) => void;
 }) {
   const t = transaction;
@@ -527,10 +530,19 @@ export default function TransactionDrawer({
   // Ingreso/Gasto editable en movimientos manuales (efectivo/socios); en los del banco el
   // signo viene del importe importado y no se toca. Estado local para respuesta inmediata.
   const [isIncome, setIsIncome] = useState(t.amount > 0);
+  const [amountDraft, setAmountDraft] = useState(String(Math.abs(t.amount)));
+  const [editingAmount, setEditingAmount] = useState(false);
   function changeDirection(next: boolean) {
     if (next === isIncome) return;
     setIsIncome(next);
     onUpdateDirection(t.id, next);
+  }
+  function changeAmount() {
+    const parsed = parseFloat(amountDraft.replace(",", ".")) || 0;
+    const signed = isIncome ? Math.abs(parsed) : -Math.abs(parsed);
+    setAmountDraft(String(Math.abs(signed)));
+    if (signed === t.amount) return;
+    onUpdateAmount(t.id, signed);
   }
 
   return (
@@ -551,9 +563,38 @@ export default function TransactionDrawer({
       <div className="px-6 py-5 flex flex-col gap-[16px]">
         <div className="flex items-start justify-between">
           <div>
-            <span className={`text-2xl font-bold tabular-nums ${isIncome ? "text-success" : "text-navy"}`}>
-              {isIncome ? "+" : "−"}{fmtAmt(t.amount)}
-            </span>
+            {editableOrigin && editingAmount ? (
+              <div className={`flex items-center gap-1 ${isIncome ? "text-success" : "text-navy"}`}>
+                <span className="text-2xl font-bold tabular-nums">{isIncome ? "+" : "−"}</span>
+                <UnitInput
+                  autoFocus
+                  unit="€"
+                  value={amountDraft}
+                  onChange={(e) => setAmountDraft(e.target.value)}
+                  onBlur={() => { changeAmount(); setEditingAmount(false); }}
+                  onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+                  numberAlign="left"
+                  className="text-2xl font-bold tabular-nums"
+                  bare
+                />
+              </div>
+            ) : (
+              <span className="inline-flex items-center gap-1.5">
+                <span className={`text-2xl font-bold tabular-nums ${isIncome ? "text-success" : "text-navy"}`}>
+                  {isIncome ? "+" : "−"}{fmtAmt(t.amount)}
+                </span>
+                {editableOrigin && (
+                  <button
+                    type="button"
+                    onClick={() => setEditingAmount(true)}
+                    className="text-navy/30 hover:text-navy transition-colors"
+                    title="Editar importe"
+                  >
+                    <Edit2 size={14} />
+                  </button>
+                )}
+              </span>
+            )}
             {t.balance != null && (
               <p className="text-sm text-navy/40 mt-0.5">Saldo tras operación: {fmtAmt(t.balance)}</p>
             )}

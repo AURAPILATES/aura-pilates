@@ -584,6 +584,7 @@ export default function ImportModal({ onClose }: { onClose: () => void }) {
                         </div>
                         <button
                           onClick={() => setConfirmUndo(b.batchId)}
+                          title={`Borra en firme los ${b.count} movimientos de esta importación (${fmtDateShort(b.minDate)} – ${fmtDateShort(b.maxDate)}). No se pueden recuperar después.`}
                           className="text-xs text-navy/35 hover:text-danger transition-colors shrink-0"
                         >
                           Deshacer

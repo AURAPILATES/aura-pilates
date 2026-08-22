@@ -670,6 +670,9 @@ export default function TransaccionesList({
     if (amount === txn.amount) return;
     startTransition(() => updateTransactionAmount(id, amount));
   }
+  function handleAmountChange(id: string, amount: number) {
+    startTransition(() => updateTransactionAmount(id, amount));
+  }
   function handleDeleteOne(id: string) {
     startTransition(async () => { await softDeleteTransactions([id]); });
   }
@@ -807,6 +810,7 @@ export default function TransaccionesList({
             onUpdateDate={handleDateChange}
             onUpdatePaymentMethod={handlePaymentMethodChange}
             onUpdateDirection={handleDirectionChange}
+            onUpdateAmount={handleAmountChange}
             onDelete={handleDeleteOne}
           />
         );

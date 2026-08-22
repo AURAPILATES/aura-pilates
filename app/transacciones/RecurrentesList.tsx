@@ -393,12 +393,12 @@ function ConfirmPendingDrawer({ row, period, pick, end, name, ivaRate, retencion
           <p className="text-xs text-navy/40 mt-0.5">detectado {row.period} · {row.occurrences} pagos</p>
         </div>
 
-        <label className="flex items-start gap-2.5 cursor-pointer">
-          <Checkbox checked={variable} onChange={(e) => onVariableChange(e.target.checked)} tone="primary" className="mt-0.5" />
-          <span className="flex-1 min-w-0">
+        <label className="flex flex-col gap-1 cursor-pointer">
+          <span className="flex items-center gap-2.5">
+            <Checkbox checked={variable} onChange={(e) => onVariableChange(e.target.checked)} tone="primary" />
             <span className="text-sm font-medium text-navy">Importe variable</span>
-            <span className="block text-xs text-navy/45 mt-0.5">El pago se repite períodicamente pero el importe varía.</span>
           </span>
+          <span className="text-xs text-navy/45 pl-[26px]">El pago se repite períodicamente pero el importe varía.</span>
         </label>
 
         <Field label="Nombre de la recurrencia">
@@ -544,15 +544,16 @@ function NewManualRecurringDrawer({ categories, contacts, pick, onOpenContactPic
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder="0,00"
+              numberAlign="left"
               bare
             />
           </Field>
-          <label className="flex items-start gap-2.5 cursor-pointer mt-3">
-            <Checkbox checked={variable} onChange={(e) => setVariable(e.target.checked)} tone="primary" className="mt-0.5" />
-            <span className="flex-1 min-w-0">
+          <label className="flex flex-col gap-1 cursor-pointer mt-3">
+            <span className="flex items-center gap-2.5">
+              <Checkbox checked={variable} onChange={(e) => setVariable(e.target.checked)} tone="primary" />
               <span className="text-sm font-medium text-navy">Importe variable</span>
-              <span className="block text-xs text-navy/45 mt-0.5">El pago se repite períodicamente pero el importe varía.</span>
             </span>
+            <span className="text-xs text-navy/45 pl-[26px]">El pago se repite períodicamente pero el importe varía.</span>
           </label>
         </div>
 
@@ -735,6 +736,7 @@ function RecurringExpenseDrawer({ row, categories, contacts, onClose, onOpenCont
               onChange={(ev) => setAmountDraft(ev.target.value)}
               onBlur={changeAmount}
               className="font-semibold"
+              numberAlign="left"
               bare
             />
           </Field>
@@ -745,12 +747,12 @@ function RecurringExpenseDrawer({ row, categories, contacts, onClose, onOpenCont
           ) : (
             e.manual && <p className="text-xs text-navy/40 mt-2">Sin transacciones todavía - pendiente de que llegue el primer pago real.</p>
           )}
-          <label className="flex items-start gap-2.5 cursor-pointer mt-3">
-            <Checkbox checked={e.variable} disabled={saving} onChange={(ev) => toggleVariable(ev.target.checked)} tone="primary" className="mt-0.5 disabled:opacity-50" />
-            <span className="flex-1 min-w-0">
+          <label className="flex flex-col gap-1 cursor-pointer mt-3">
+            <span className="flex items-center gap-2.5">
+              <Checkbox checked={e.variable} disabled={saving} onChange={(ev) => toggleVariable(ev.target.checked)} tone="primary" className="disabled:opacity-50" />
               <span className="text-sm font-medium text-navy">Importe variable</span>
-              <span className="block text-xs text-navy/45 mt-0.5">El pago se repite períodicamente pero el importe varía.</span>
             </span>
+            <span className="text-xs text-navy/45 pl-[26px]">El pago se repite períodicamente pero el importe varía.</span>
           </label>
         </div>
 
