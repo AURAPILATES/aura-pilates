@@ -13,9 +13,11 @@ import { ackPaymentErrorAction, unackPaymentErrorAction } from "@/app/actions/ac
 
 type DrawerKey = "convert" | "churn" | "error" | null;
 
+const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 function fmtDate(d: string | null) {
   if (!d) return "-";
-  return d.split("-").reverse().join("/");
+  const [y, m, day] = d.split("-");
+  return `${Number(day)} ${MESES[Number(m) - 1]} ${y}`;
 }
 
 const extIcon = (

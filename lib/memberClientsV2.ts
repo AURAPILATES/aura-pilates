@@ -94,6 +94,9 @@ export type MemberClient = {
   isFamily: boolean;
   status: MemberStatus;
   planUsage: PlanUsage | null;
+  // Urban Sports Club no pasa por Stripe: gasto estimado = clases asistidas × tarifa Urban vigente
+  // en la fecha de cada clase (ver lib/clientActivityV2.ts). null si no es cliente Urban.
+  urbanEstimated: number | null;
 };
 
 type SnapRow = {
@@ -390,6 +393,7 @@ export async function getMemberClientsV2(
       isFamily: familyMemberIds.has(m.id),
       status: computeStatus(plan, stripe, lastActivity),
       planUsage: computePlanUsage(m.id, realPlan, planStartByMember.get(m.id) ?? null),
+      urbanEstimated: null, // se enriquece en ClientesLoader.tsx cruzando con getUrbanClientsMatrix
     });
   }
 
@@ -421,6 +425,7 @@ export async function getMemberClientsV2(
       isFamily: !!c.isFamily,
       status: computeStatus(null, stripe, stripe.lastPaymentDate),
       planUsage: null,
+      urbanEstimated: null,
     });
   }
 

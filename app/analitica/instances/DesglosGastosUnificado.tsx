@@ -31,8 +31,10 @@ type Selected =
   | { kind: "category"; group: EconomicGroup; seg: TopExpenseSeg }
   | { kind: "subcategory"; group: EconomicGroup; parent: TopExpenseSeg; leaf: LeafExpenseSeg };
 
+const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 function fmtDate(d: string) {
-  return d.split("-").reverse().join("/");
+  const [y, m, day] = d.split("-");
+  return `${Number(day)} ${MESES[Number(m) - 1]} ${y}`;
 }
 
 /** Suma por período (mes/trimestre/año) de un conjunto de transacciones, alineado a las

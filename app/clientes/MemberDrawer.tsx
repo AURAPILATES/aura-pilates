@@ -13,7 +13,7 @@ import { momenceCustomerUrl } from "@/lib/momenceLinks";
 import type { StripePayment } from "@/lib/stripePayments";
 import type { MemberClient, StatusTone } from "@/lib/memberClientsV2";
 import type { MomenceV2MemberNote } from "@/lib/momenceV2";
-import { fmtDate, timeAgo, initials, paymentExpiry } from "./ClientesTable";
+import { fmtDateLong as fmtDate, timeAgo, initials, paymentExpiry } from "./ClientesTable";
 
 // El campo `note` puede traer HTML (schema oficial de Momence); lo pasamos a texto plano para
 // mostrarlo simple y sin riesgo de inyectar markup, ya que aquí solo enseñamos texto corto.
@@ -192,14 +192,15 @@ export default function MemberDrawer({ client, payments, onClose, onPrev, onNext
         <p className="text-[11px] font-semibold text-navy/40 uppercase tracking-wider mb-2">Actividad de clases</p>
         {client.attended > 0 ? (
           <div className="space-y-1 text-sm text-navy/70">
-            <p>Clases asistidas: <span className="font-medium text-navy">{client.attended}</span>{client.noShows > 0 && <span className="text-navy/45"> · {client.noShows} no-shows</span>}{client.cancellations > 0 && (
-              <span className="text-navy/45">
-                {" "}· {client.cancellations} cancelaciones
-                {(client.lateCancellations > 0 || client.earlyCancellations > 0) && (
-                  <> ({client.lateCancellations} perdidas &lt;12h · {client.earlyCancellations} devueltas)</>
-                )}
-              </span>
-            )}</p>
+            {client.noShows > 0 && (
+              <p>No-shows: <span className="font-medium text-navy">{client.noShows}</span></p>
+            )}
+            {client.lateCancellations > 0 && (
+              <p>Cancelaciones &lt;12h (perdidas): <span className="font-medium text-danger">{client.lateCancellations}</span></p>
+            )}
+            {client.earlyCancellations > 0 && (
+              <p>Cancelaciones ≥12h (devueltas): <span className="font-medium text-navy">{client.earlyCancellations}</span></p>
+            )}
             {client.coverage === "none" && (
               <p className="text-[#b45309] dark:text-[#e8a572]">Sin pago detectado (asistió sin rastro de pago)</p>
             )}

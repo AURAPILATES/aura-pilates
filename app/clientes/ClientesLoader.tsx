@@ -30,10 +30,18 @@ export default async function ClientesLoader({ curMonth }: Props) {
   // AnaliticaLoader, para que Clientes y Analítica coincidan.
   const customersWithChurn = enrichCustomers(customers, payments, { familyIds, paymentErrorAcks });
 
-  const [memberClients, urbanClients] = await Promise.all([
+  const [memberClientsRaw, urbanClients] = await Promise.all([
     getMemberClientsV2(customersWithChurn, familyMemberIds).catch(() => []),
     getUrbanClientsMatrix(urbanRates).catch(() => []),
   ]);
+  // Urban Sports Club no pasa por Stripe: el "gasto" es estimado (clases asistidas × tarifa
+  // Urban vigente en la fecha de cada clase), ya calculado por miembro en getUrbanClientsMatrix.
+  const urbanEstimatedByMember = new Map(urbanClients.map((u) => [u.memberId, u.totalEstimated]));
+  const memberClients = memberClientsRaw.map((c) =>
+    c.memberId != null && urbanEstimatedByMember.has(c.memberId)
+      ? { ...c, urbanEstimated: urbanEstimatedByMember.get(c.memberId)! }
+      : c,
+  );
 
   return (
     <ClientesShell

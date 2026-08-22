@@ -56,10 +56,10 @@ export function knownDomain(label: string): string | null {
   return null;
 }
 
-const MONTHS_SHORT = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+const MONTHS = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
 export function fmtDate(d: string) {
   const [y, m, day] = d.split("-");
-  return `${parseInt(day)} ${MONTHS_SHORT[parseInt(m) - 1]} ${y}`;
+  return `${parseInt(day)} ${MONTHS[parseInt(m) - 1]} ${y}`;
 }
 export function fmtAmt(n: number) {
   return Math.abs(n).toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";

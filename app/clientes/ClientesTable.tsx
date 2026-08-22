@@ -14,6 +14,15 @@ export function fmtDate(d: string) {
   return d.split("-").reverse().join("/");
 }
 
+const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+
+// Fecha larga ("3 marzo 2026") para vistas de detalle con espacio de sobra (fichas, drawers).
+// No usar en columnas de tabla estrechas: usar fmtDate ahí.
+export function fmtDateLong(d: string) {
+  const [y, m, day] = d.split("-");
+  return `${Number(day)} ${MESES[Number(m) - 1]} ${y}`;
+}
+
 export function timeAgo(dateStr: string): string {
   const days = Math.floor((Date.now() - new Date(dateStr + "T00:00:00").getTime()) / 86400000);
   if (days < 7)   return `Hace ${days} día${days !== 1 ? "s" : ""}`;

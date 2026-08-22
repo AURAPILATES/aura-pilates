@@ -30,8 +30,10 @@ const FALLBACK_COLOR = "#64748B";
 
 const MONTHS_ES = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
 
+const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 function fmtDate(d: string) {
-  return d.split("-").reverse().join("/");
+  const [y, m, day] = d.split("-");
+  return `${Number(day)} ${MESES[Number(m) - 1]} ${y}`;
 }
 
 function monthLabel(ym: string): string {

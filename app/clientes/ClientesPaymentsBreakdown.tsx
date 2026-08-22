@@ -33,9 +33,11 @@ const CY   = 90;
 const CIRC = 2 * Math.PI * R;
 const SW   = 18;
 
+const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 function fmtDate(d: string | null) {
   if (!d) return "-";
-  return d.split("-").reverse().join("/");
+  const [y, m, day] = d.split("-");
+  return `${Number(day)} ${MESES[Number(m) - 1]} ${y}`;
 }
 
 function fmtCompact(n: number): string {

@@ -56,7 +56,7 @@ const PAGE_SIZE = 100;
 type Filter =
   | "all" | "duplicadas" | "pago_pendiente" | "renueva_pronto" | "familiares"
   | "congelada" | "infrautiliza" | "al_limite" | "pocas_clases";
-type Procedencia = "all" | "momence" | "urban";
+type Procedencia = "momence" | "urban";
 type PlanFilter = "all" | "basic" | "plus" | "pro" | "pack" | "sin_plan";
 // "Clientes" (el KPI) sigue siendo el censo completo de Momence tal cual - esto es solo una
 // forma de aislar a quien nunca ha pisado el estudio (reservó y canceló, o nunca reservó) sin
@@ -253,7 +253,7 @@ function MoreFiltersMenu({ filter, onChange, counts }: {
 export default function ClientesEstado({ clients, payments }: { clients: MemberClient[]; payments: StripePayment[] }) {
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
-  const [procedencia, setProcedencia] = useState<Procedencia>("all");
+  const [procedencia, setProcedencia] = useState<Procedencia>("momence");
   const [planFilter, setPlanFilter] = useState<PlanFilter>("all");
   const [asistencia, setAsistencia] = useState<Asistencia>("all");
   const [cancelTardia, setCancelTardia] = useState<CancelTardia>("all");
@@ -296,7 +296,7 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
   const maxLastClassDaysNum = maxLastClassDays < LAST_CLASS_MAX ? maxLastClassDays : null;
 
   const hasActiveFilters =
-    filter !== "all" || procedencia !== "all" || planFilter !== "all" || asistencia !== "all" ||
+    filter !== "all" || planFilter !== "all" || asistencia !== "all" ||
     cancelTardia !== "all" || minLastClassDaysNum != null || maxLastClassDaysNum != null;
 
   const filtered = useMemo(() => {
@@ -334,7 +334,7 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
       })
       .sort((a, b) => {
         let diff = 0;
-        if (sortKey === "totalSpent") diff = (a.stripe?.totalSpent ?? 0) - (b.stripe?.totalSpent ?? 0);
+        if (sortKey === "totalSpent") diff = (a.stripe?.totalSpent ?? a.urbanEstimated ?? 0) - (b.stripe?.totalSpent ?? b.urbanEstimated ?? 0);
         else if (sortKey === "attended") diff = a.attended - b.attended;
         else if (sortKey === "cancellations") diff = a.cancellations - b.cancellations;
         else if (sortKey === "renew") diff = (daysToRenew(a) ?? Infinity) - (daysToRenew(b) ?? Infinity);
@@ -354,14 +354,18 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
   function changeFilter(f: Filter) { setFilter(f); setPage(0); }
   function changeSearch(v: string) { setSearch(v); setPage(0); }
   function toggleBox(f: Filter) { setFilter((cur) => (cur === f ? "all" : f)); setPage(0); }
-  function changeProcedencia(v: Procedencia) { setProcedencia(v); setPage(0); }
+  function changeProcedencia(v: Procedencia) {
+    setProcedencia(v);
+    if (v === "urban") setPlanFilter("all"); // el filtro de Plan de Momence no aplica a Urban
+    setPage(0);
+  }
   function changePlanFilter(v: PlanFilter) { setPlanFilter(v); setPage(0); }
   function changeAsistencia(v: Asistencia) { setAsistencia(v); setPage(0); }
   function changeCancelTardia(v: CancelTardia) { setCancelTardia(v); setPage(0); }
   function changeMinLastClassDays(v: number) { setMinLastClassDays(v); setPage(0); }
   function changeMaxLastClassDays(v: number) { setMaxLastClassDays(v); setPage(0); }
   function clearFilters() {
-    setFilter("all"); setProcedencia("all"); setPlanFilter("all"); setAsistencia("all"); setCancelTardia("all");
+    setFilter("all"); setPlanFilter("all"); setAsistencia("all"); setCancelTardia("all");
     setMinLastClassDays(0); setMaxLastClassDays(LAST_CLASS_MAX);
     setPage(0);
   }
@@ -373,7 +377,8 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
       r.plan?.name ?? "Sin plan", r.plan?.endDate ? r.plan.endDate.slice(0, 10) : "",
       r.status.label, r.status.detail ?? "",
       String(r.attended), String(r.cancellations), String(r.noShows),
-      r.firstClassDate ?? "", r.lastClassDate ?? "", r.stripe ? String(Math.round(r.stripe.totalSpent)) : "",
+      r.firstClassDate ?? "", r.lastClassDate ?? "",
+      r.stripe ? String(Math.round(r.stripe.totalSpent)) : r.urbanEstimated != null ? `~${Math.round(r.urbanEstimated)}` : "",
       r.planUsage ? `${r.planUsage.attended}/${r.planUsage.limit} (${r.planUsage.level})` : "",
     ]);
     const csv = [head, ...rows].map((row) => row.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
@@ -424,82 +429,80 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
             <path d="M12 4v10M8 11l4 4 4-4M5 19h14" />
           </svg>
         </IconButtonV2>
+        <FilterPillGroupV2
+          variant="segmented"
+          active={procedencia}
+          onChange={changeProcedencia}
+          options={[
+            { key: "momence", label: "Momence" },
+            { key: "urban", label: "Urban" },
+          ]}
+        />
       </div>
 
-      <div className="mt-3 flex flex-col gap-3">
-        <div className="flex flex-wrap items-end gap-x-6 gap-y-3">
-          <div>
-            <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1.5">Procedencia</p>
-            <FilterPillGroupV2
-              variant="segmented"
-              active={procedencia}
-              onChange={changeProcedencia}
-              options={[
-                { key: "all", label: "Todos" },
-                { key: "momence", label: "Momence" },
-                { key: "urban", label: "Urban", count: counts.urban || undefined },
-              ]}
-            />
-          </div>
-          <div>
-            <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1.5">Plan actual</p>
-            <FilterPillGroupV2
-              variant="segmented"
-              active={planFilter}
-              onChange={changePlanFilter}
-              options={[
-                { key: "all", label: "Todos" },
-                { key: "basic", label: "Bàsic", count: counts.basic || undefined },
-                { key: "plus", label: "Plus", count: counts.plus || undefined },
-                { key: "pro", label: "Pro", count: counts.pro || undefined },
-                { key: "pack", label: "Pack", count: counts.pack || undefined },
-                { key: "sin_plan", label: "Sin plan", count: counts.sinPlan || undefined, countTone: "warning" },
-              ]}
-            />
-          </div>
-          <div>
-            <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1.5">Asistencia</p>
-            <FilterPillGroupV2
-              variant="segmented"
-              active={asistencia}
-              onChange={changeAsistencia}
-              options={[
-                { key: "all", label: "Todos" },
-                { key: "con_clases", label: "Ha venido" },
-                { key: "sin_clases", label: "Nunca vino", count: counts.sinClases || undefined, countTone: "warning" },
-              ]}
-            />
-          </div>
-          <div>
-            <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1.5">Cancelaciones tardías</p>
-            <FilterPillGroupV2
-              variant="segmented"
-              active={cancelTardia}
-              onChange={changeCancelTardia}
-              options={[
-                { key: "all", label: "Todos" },
-                { key: "con_tardias", label: "Con tardías", count: counts.conTardias || undefined, countTone: "warning" },
-                { key: "sin_tardias", label: "Sin tardías" },
-              ]}
-            />
-          </div>
+      <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2">
+        {procedencia === "momence" && (
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] text-navy/40 uppercase tracking-wider shrink-0">Plan</span>
+          <FilterPillGroupV2
+            variant="segmented"
+            active={planFilter}
+            onChange={changePlanFilter}
+            options={[
+              { key: "all", label: "Todos" },
+              { key: "basic", label: "Bàsic", count: counts.basic || undefined },
+              { key: "plus", label: "Plus", count: counts.plus || undefined },
+              { key: "pro", label: "Pro", count: counts.pro || undefined },
+              { key: "pack", label: "Pack", count: counts.pack || undefined },
+              { key: "sin_plan", label: "Sin plan", count: counts.sinPlan || undefined, countTone: "warning" },
+            ]}
+          />
         </div>
-        <div className="max-w-[300px]">
-          <p className="text-[10px] text-navy/40 uppercase tracking-wider mb-1.5">Última clase</p>
-          <div className="flex items-center gap-3 bg-navy/5 rounded-[10px] px-3 py-[10px]">
-            <span className="text-[12.5px] font-medium text-navy tabular-nums shrink-0 w-6 text-right">
+        )}
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] text-navy/40 uppercase tracking-wider shrink-0">Asistencia</span>
+          <FilterPillGroupV2
+            variant="segmented"
+            active={asistencia}
+            onChange={changeAsistencia}
+            options={[
+              { key: "all", label: "Todos" },
+              { key: "con_clases", label: "Ha venido" },
+              { key: "sin_clases", label: "Nunca vino", count: counts.sinClases || undefined, countTone: "warning" },
+            ]}
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] text-navy/40 uppercase tracking-wider shrink-0">Cancel. tardías</span>
+          <FilterPillGroupV2
+            variant="segmented"
+            active={cancelTardia}
+            onChange={changeCancelTardia}
+            options={[
+              { key: "all", label: "Todos" },
+              { key: "con_tardias", label: "Con tardías", count: counts.conTardias || undefined, countTone: "warning" },
+              { key: "sin_tardias", label: "Sin tardías" },
+            ]}
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] text-navy/40 uppercase tracking-wider shrink-0">Última clase</span>
+          <div className="flex items-center gap-2 bg-navy/5 rounded-[10px] px-2.5 py-1.5">
+            <span className="text-[12px] font-medium text-navy tabular-nums shrink-0 w-5 text-right">
               {minLastClassDays}
             </span>
-            <DualRangeSlider
-              min={0}
-              max={LAST_CLASS_MAX}
-              step={5}
-              valueMin={minLastClassDays}
-              valueMax={maxLastClassDays}
-              onChangeMin={changeMinLastClassDays}
-              onChangeMax={changeMaxLastClassDays}
-            />
-            <span className="text-[12.5px] font-medium text-navy tabular-nums shrink-0 w-8">
+            <div className="w-[110px]">
+              <DualRangeSlider
+                min={0}
+                max={LAST_CLASS_MAX}
+                step={5}
+                valueMin={minLastClassDays}
+                valueMax={maxLastClassDays}
+                onChangeMin={changeMinLastClassDays}
+                onChangeMax={changeMaxLastClassDays}
+              />
+            </div>
+            <span className="text-[12px] font-medium text-navy tabular-nums shrink-0 w-7">
               {maxLastClassDays >= LAST_CLASS_MAX ? `${LAST_CLASS_MAX}+` : maxLastClassDays}
             </span>
           </div>
@@ -566,7 +569,13 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
                     <div className={`text-[13px] tabular-nums ${r.cancellations > r.attended && r.cancellations > 2 ? "text-danger font-medium" : "text-muted"}`}>{r.cancellations}</div>
                     <div className="text-[13px] text-muted tabular-nums">{r.firstClassDate ? fmtDate(r.firstClassDate) : "-"}</div>
                     <div className="text-[13px] text-muted">{r.lastClassDate ? timeAgo(r.lastClassDate).replace("Hace ", "") : "-"}</div>
-                    <div className="text-[13px] font-semibold text-navy tabular-nums">{r.stripe ? fmt(r.stripe.totalSpent) : "-"}</div>
+                    <div className="text-[13px] font-semibold text-navy tabular-nums">
+                      {r.stripe
+                        ? fmt(r.stripe.totalSpent)
+                        : r.urbanEstimated != null
+                          ? <span title="Estimado: clases asistidas × tarifa Urban vigente en la fecha de cada clase. Urban Sports Club no pasa por Stripe, así que no es un cobro real registrado.">~{fmt(r.urbanEstimated)}</span>
+                          : "-"}
+                    </div>
                   </div>
                 );
               })

@@ -73,8 +73,10 @@ type Props = {
 
 const PAGE_SIZE = 100;
 
+const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 export function fmtDate(d: string): string {
-  return d.split("-").reverse().join("/");
+  const [y, m, day] = d.split("-");
+  return `${Number(day)} ${MESES[Number(m) - 1]} ${y}`;
 }
 
 export function fmtEUR(n: number): string {
