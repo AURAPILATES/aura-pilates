@@ -75,6 +75,7 @@ export default function ClientesMatrizCompras({ customers, payments, urbanClient
   const [purchaseCountFilter, setPurchaseCountFilter] = useState<string>("");
   const [onlyInactive, setOnlyInactive] = useState(false);
   const [onlyUpsell, setOnlyUpsell] = useState(false);
+  const [onlyFamily, setOnlyFamily] = useState(false);
   const [selected, setSelected] = useState<CustomerRow | null>(null);
   const [page, setPage] = useState(0);
 
@@ -132,6 +133,7 @@ export default function ClientesMatrizCompras({ customers, payments, urbanClient
       }
       if (onlyInactive && byMonth[lastMonth]?.length) return false;
       if (onlyUpsell && !isUpsellCandidate) return false;
+      if (onlyFamily && !customer.isFamily) return false;
       return true;
     });
 
@@ -156,11 +158,11 @@ export default function ClientesMatrizCompras({ customers, payments, urbanClient
     });
 
     return rows;
-  }, [matrix, search, sortKey, sortDir, productFilter, firstPurchaseFilter, purchaseCountFilter, onlyInactive, onlyUpsell, lastMonth]);
+  }, [matrix, search, sortKey, sortDir, productFilter, firstPurchaseFilter, purchaseCountFilter, onlyInactive, onlyUpsell, onlyFamily, lastMonth]);
 
   useEffect(() => {
     setPage(0);
-  }, [search, sortKey, sortDir, productFilter, firstPurchaseFilter, purchaseCountFilter, onlyInactive, onlyUpsell]);
+  }, [search, sortKey, sortDir, productFilter, firstPurchaseFilter, purchaseCountFilter, onlyInactive, onlyUpsell, onlyFamily]);
 
   const totalPages = Math.max(1, Math.ceil(visibleMatrix.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages - 1);
@@ -224,6 +226,8 @@ export default function ClientesMatrizCompras({ customers, payments, urbanClient
         onToggleOnlyInactive={() => setOnlyInactive((v) => !v)}
         onlyUpsell={onlyUpsell}
         onToggleOnlyUpsell={() => setOnlyUpsell((v) => !v)}
+        onlyFamily={onlyFamily}
+        onToggleOnlyFamily={() => setOnlyFamily((v) => !v)}
         lastMonth={lastMonth}
         months={months}
         rows={pageRows}

@@ -24,6 +24,8 @@ type Props = {
   onToggleOnlyInactive: () => void;
   onlyUpsell: boolean;
   onToggleOnlyUpsell: () => void;
+  onlyFamily: boolean;
+  onToggleOnlyFamily: () => void;
   lastMonth: string | undefined;
   months: string[];
   rows: MatrixRow[];
@@ -51,7 +53,7 @@ function sortArrow(active: boolean, dir: "asc" | "desc") {
 export default function ClientesMatrizComprasV2({
   search, onSearchChange, productFilter, onProductFilterChange, firstPurchaseFilter, onFirstPurchaseFilterChange,
   purchaseCountFilter, onPurchaseCountFilterChange,
-  onlyInactive, onToggleOnlyInactive, onlyUpsell, onToggleOnlyUpsell, lastMonth, months, rows,
+  onlyInactive, onToggleOnlyInactive, onlyUpsell, onToggleOnlyUpsell, onlyFamily, onToggleOnlyFamily, lastMonth, months, rows,
   sortKey, sortDir, onToggleSort, monthTotals, grandTotal, totalCount, page, pageSize, onPageChange, onRowClick, onExportCsv,
   extraControls,
 }: Props) {
@@ -75,16 +77,17 @@ export default function ClientesMatrizComprasV2({
   // escritorio, y si no caben con ese mínimo (más probable en móvil expandido) el contenedor
   // hace scroll horizontal en vez de encoger las columnas hasta ser ilegibles.
   const cols = `minmax(140px,2fr) ${showFirstPurchase ? "minmax(90px,1.1fr) " : ""}repeat(${visibleMonths.length}, minmax(64px, 1fr)) minmax(90px,1.1fr)`;
-  const filtersActive = !!productFilter || !!firstPurchaseFilter || !!purchaseCountFilter || onlyInactive || onlyUpsell;
+  const filtersActive = !!productFilter || !!firstPurchaseFilter || !!purchaseCountFilter || onlyInactive || onlyUpsell || onlyFamily;
   const activeFilterCount =
     (productFilter ? 1 : 0) + (firstPurchaseFilter ? 1 : 0) + (purchaseCountFilter ? 1 : 0) +
-    (onlyInactive ? 1 : 0) + (onlyUpsell ? 1 : 0) + (search.trim() ? 1 : 0);
+    (onlyInactive ? 1 : 0) + (onlyUpsell ? 1 : 0) + (onlyFamily ? 1 : 0) + (search.trim() ? 1 : 0);
   function clearFilters() {
     onProductFilterChange("");
     onFirstPurchaseFilterChange("");
     onPurchaseCountFilterChange("");
     if (onlyInactive) onToggleOnlyInactive();
     if (onlyUpsell) onToggleOnlyUpsell();
+    if (onlyFamily) onToggleOnlyFamily();
     onSearchChange("");
   }
 
@@ -139,6 +142,15 @@ export default function ClientesMatrizComprasV2({
             }`}
           >
             Candidatos a upsell
+          </button>
+          <button
+            type="button"
+            onClick={onToggleOnlyFamily}
+            className={`text-[13px] px-[13px] py-2 rounded-[10px] border whitespace-nowrap transition-colors ${
+              onlyFamily ? "border-navy bg-navy text-app-bg font-medium" : "border-border bg-card text-strong hover:bg-navy/[0.02]"
+            }`}
+          >
+            Familiar
           </button>
           {activeFilterCount >= 1 && <ClearFiltersButtonV2 onClick={clearFilters} />}
         </div>
