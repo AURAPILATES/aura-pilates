@@ -43,12 +43,12 @@ export type ProductRevenueRow = {
 export function revenueByProductFromStripe(
   payments: StripePayment[],
   catalog: CatalogItem[],
-  familyEmails: Set<string> = new Set(),
+  familyStripeIds: Set<string> = new Set(),
 ): ProductRevenueRow[] {
   const map = new Map<string, ProductRevenueRow>();
   for (const p of payments) {
     const match = catalog.find((c) => Math.abs(p.amount - c.price) <= PRICE_TOLERANCE);
-    const item = match ? match.name : otroOrFamiliar(p.customerEmail, familyEmails);
+    const item = match ? match.name : otroOrFamiliar(p.customerId, familyStripeIds);
     const category = match ? (match.type === "subscription" ? "Suscripción" : "Paquete") : item;
     const prev = map.get(item) ?? { item, category, revenue: 0, count: 0 };
     prev.revenue += p.amount;
@@ -69,13 +69,13 @@ export type MonthlyProductRevenue = {
 export function revenueByProductByMonth(
   payments: StripePayment[],
   catalog: CatalogItem[],
-  familyEmails: Set<string> = new Set(),
+  familyStripeIds: Set<string> = new Set(),
 ): MonthlyProductRevenue[] {
   const byMonth = new Map<string, Map<string, number>>();
   for (const p of payments) {
     const month = p.date.slice(0, 7);
     const match = catalog.find((c) => Math.abs(p.amount - c.price) <= PRICE_TOLERANCE);
-    const item = match ? match.name : otroOrFamiliar(p.customerEmail, familyEmails);
+    const item = match ? match.name : otroOrFamiliar(p.customerId, familyStripeIds);
     const monthMap = byMonth.get(month) ?? new Map<string, number>();
     monthMap.set(item, (monthMap.get(item) ?? 0) + p.amount);
     byMonth.set(month, monthMap);

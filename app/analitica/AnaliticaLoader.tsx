@@ -18,7 +18,8 @@ import {
 } from "@/lib/stripePayments";
 import { loadStripeCustomers } from "@/lib/stripeCustomers";
 import { buildPrimaryIdMap, enrichCustomers, hasActiveSub } from "@/lib/customerEnrichment";
-import { loadFamilyClientIds, familyEmailSet } from "@/lib/clientFamily";
+import { loadFamilyClientIds, loadFamilyMemberIds, familyMemberEmails, familyStripeIdSet } from "@/lib/clientFamily";
+import { getMembersV2 } from "@/lib/momenceV2";
 import { estimatedMRR } from "@/lib/stripeRecurrence";
 
 import { loadTransactionsCached, expensesByCategoryAll, financingExpensesByCategory, getLatestImportDate, findCategory, isUrbanIncome, urbanRevenueByMonth, urbanRevenueByActivityMonth, isCashflowTransaction, UNCATEGORIZED_EXPENSE, UNCATEGORIZED_EXPENSE_LABEL, type EconomicGroup, type Transaction, type PaymentMethod } from "@/lib/transactions";
@@ -172,7 +173,7 @@ export default async function AnaliticaLoader({
     txnsAll, dbCategories, budgets, businessEvents, recurringExpenses, breakdown, breakdownComp,
     bancoLastImport, paymentErrorAcks, syncRuns, liveEventsResult,
     teacherStatsV2, sessionOccupancyRowsV2, sessionOccupancyRowsV2Comp,
-    urbanRates, atRiskV2, activeSubEmailsV2, channelActivityByMonth, familyIds,
+    urbanRates, atRiskV2, activeSubEmailsV2, channelActivityByMonth, familyIds, familyMemberIds, momenceMembersAll,
   ] = await Promise.all([
     loadStripePaymentsCached(),
     resolveProductMap().catch(() => []),
@@ -210,6 +211,8 @@ export default async function AnaliticaLoader({
     getActiveSubscriberEmailsV2().catch(() => new Set<string>()),
     attendanceByChannelMonth().catch(() => new Map()),
     loadFamilyClientIds().catch(() => new Set<string>()),
+    loadFamilyMemberIds().catch(() => new Set<number>()),
+    getMembersV2().catch(() => []),
   ]);
 
   const liveEventsError = liveEventsResult.ok ? null : liveEventsResult.error;
@@ -330,11 +333,15 @@ export default async function AnaliticaLoader({
     urbanActivityByMonth(urbanRates).catch(() => new Map<string, { classes: number; estimated: number }>()),
   ]);
   const primaryIdMap = buildPrimaryIdMap(stripeCustomersAll);
-  const familyEmails = familyEmailSet(
-    stripeCustomersAll.map((c) => ({ email: c.email, isFamily: familyIds.has(c.id) })),
+  // "Familiar" vive en dos tablas por flujo (Stripe/Momence, ver lib/clientFamily.ts) - se unen
+  // por email para que a alguien marcado solo desde la ficha de Momence tampoco se le pierda el
+  // cruce "Otro"×Familiar de Ventas por producto.
+  const familyStripeIds = familyStripeIdSet(
+    stripeCustomersAll.map((c) => ({ email: c.email, stripeIds: c.stripeIds, isFamily: familyIds.has(c.id) })),
+    familyMemberEmails(momenceMembersAll, familyMemberIds),
   );
   // ── Evolución de ingresos + altas/bajas/reactivaciones (histórico completo, solo Stripe) ──
-  const monthlyStripeRevenue = revenueByProductByMonth(paymentsAll, productCatalog, familyEmails);
+  const monthlyStripeRevenue = revenueByProductByMonth(paymentsAll, productCatalog, familyStripeIds);
 
   // Ingresos por fuente: bruto, comisión y neto de Stripe por mes + Urban neto. Stripe sale de
   // su API (histórico completo) y Urban del banco (transferencias con contacto "Urban Sports",

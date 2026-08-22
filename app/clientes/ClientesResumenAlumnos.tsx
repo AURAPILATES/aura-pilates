@@ -6,7 +6,7 @@ import type { UrbanClientRow } from "@/lib/clientActivityV2";
 import type { CustomerRow } from "./ClientesTable";
 import { PRODUCT_FILTERS } from "./ClientesMatrizCompras";
 import { periodKey, periodLabel, type Period } from "@/app/analitica/instances/evolucionIngresosUtils";
-import { familyEmailSet, otroOrFamiliar } from "@/lib/clientFamily";
+import { familyStripeIdSet, otroOrFamiliar } from "@/lib/clientFamily";
 import ClientesResumenAlumnosV2 from "./ClientesResumenAlumnosV2";
 
 // Igual set de filas que tenía "Por producto": los 7 productos con cobro por Stripe + "Familiar"
@@ -56,7 +56,7 @@ function aggregate(
 
 export default function ClientesResumenAlumnos({ payments, urbanClients, customers }: Props) {
   const [period, setPeriod] = useState<Period>("mes");
-  const familyEmails = useMemo(() => familyEmailSet(customers), [customers]);
+  const familyStripeIds = useMemo(() => familyStripeIdSet(customers), [customers]);
 
   const months = useMemo(() => {
     const now = new Date();
@@ -81,7 +81,7 @@ export default function ClientesResumenAlumnos({ payments, urbanClients, custome
     for (const p of payments) {
       const product = PRODUCT_FILTERS.includes(p.inferredProduct)
         ? p.inferredProduct
-        : otroOrFamiliar(p.customerEmail, familyEmails);
+        : otroOrFamiliar(p.customerId, familyStripeIds);
       const cell = bucket(product, p.date.slice(0, 7));
       cell.amount += p.amount;
       if (p.customerId) cell.customers.add(p.customerId);
@@ -95,7 +95,7 @@ export default function ClientesResumenAlumnos({ payments, urbanClients, custome
       }
     }
     return map;
-  }, [payments, urbanClients, familyEmails]);
+  }, [payments, urbanClients, familyStripeIds]);
 
   const { periods, rows, totalRow } = useMemo(() => {
     const monthsByPeriod = new Map<string, string[]>();

@@ -43,9 +43,24 @@ export default async function ClientesLoader({ curMonth }: Props) {
       : c,
   );
 
+  // getMemberClientsV2 ya une "Familiar" de sus dos tablas (Stripe + Momence) por email para cada
+  // MemberClient - se vuelca esa unión aquí sobre customersWithChurn (que solo conoce el lado
+  // Stripe) para que Matriz de compras/Resumen alumnos/Analítica tampoco dejen a alguien marcado
+  // Familiar solo desde MemberDrawer sin verlo como tal.
+  const familyEmailsFromMembers = new Set(
+    memberClients.filter((c) => c.isFamily && c.email).map((c) => c.email!.toLowerCase()),
+  );
+  const customersFinal = familyEmailsFromMembers.size === 0
+    ? customersWithChurn
+    : customersWithChurn.map((c) =>
+        !c.isFamily && c.email && familyEmailsFromMembers.has(c.email.toLowerCase())
+          ? { ...c, isFamily: true }
+          : c,
+      );
+
   return (
     <ClientesShell
-      customers={customersWithChurn}
+      customers={customersFinal}
       payments={payments}
       clients={memberClients}
       urbanClients={urbanClients}

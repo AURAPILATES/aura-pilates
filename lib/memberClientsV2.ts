@@ -390,7 +390,11 @@ export async function getMemberClientsV2(
       firstTeacher: act?.firstTeacher ?? null,
       lastClassDate: act?.lastDate ?? null,
       stripe,
-      isFamily: familyMemberIds.has(m.id),
+      // "Familiar" vive en dos tablas por flujo (client_family por customer_id de Stripe,
+      // client_family_v2 por member_id de Momence, ver lib/clientFamily.ts) - se marca desde
+      // CustomerDrawer o MemberDrawer indistintamente, así que aquí se unen ambas: si alguien ya
+      // está marcado por su lado Stripe (sc.isFamily) también debe verse Familiar en Momence.
+      isFamily: familyMemberIds.has(m.id) || !!sc?.isFamily,
       status: computeStatus(plan, stripe, lastActivity),
       planUsage: computePlanUsage(m.id, realPlan, planStartByMember.get(m.id) ?? null),
       urbanEstimated: null, // se enriquece en ClientesLoader.tsx cruzando con getUrbanClientsMatrix
