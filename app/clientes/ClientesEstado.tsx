@@ -9,7 +9,7 @@ import TablePaginationV2 from "@/app/components/v2/TablePaginationV2";
 import FilterPillGroupV2 from "@/app/components/v2/FilterPillGroupV2";
 import ClearFiltersButtonV2 from "@/app/components/v2/ClearFiltersButtonV2";
 import { IconButtonV2 } from "@/app/components/v2/ButtonsV2";
-import { InfoDot } from "@/components/charts";
+import { ChartCard, InfoDot } from "@/components/charts";
 import { tableHeadClassV2, tableRowClassV2, tableCardClassV2, gridColsV2 } from "@/app/components/v2/tableStylesV2";
 import { normalizeText } from "@/lib/normalizeText";
 import { drawerNav } from "@/lib/drawerNav";
@@ -48,6 +48,97 @@ function StatBox({ icon, label, value, valueClassName, dotClassName, tooltip, on
 
 const COLS = "2.1fr 1.05fr .85fr 1.3fr .55fr .95fr .9fr .9fr .8fr";
 const PAGE_SIZE = 100;
+
+type BookingSegmentKey = "attended" | "lateCancellations" | "earlyCancellations" | "noShows";
+const BOOKING_ITEMS: { key: BookingSegmentKey; label: string; bg: string; text: string }[] = [
+  { key: "attended", label: "Asistencia", bg: "bg-[#635bff]", text: "text-[#635bff]" },
+  { key: "lateCancellations", label: "Cancelación <12h", bg: "bg-[#dc2626] dark:bg-[#dd7e7e]", text: "text-[#dc2626] dark:text-[#dd7e7e]" },
+  { key: "earlyCancellations", label: "Cancelación ≥12h", bg: "bg-[#0ea5e9] dark:bg-[#27b3f2]", text: "text-[#0ea5e9] dark:text-[#27b3f2]" },
+  { key: "noShows", label: "No show", bg: "bg-[#f97316] dark:bg-[#f9791f]", text: "text-[#f97316] dark:text-[#f9791f]" },
+];
+const BOOKING_R = 70, BOOKING_CX = 90, BOOKING_CY = 90, BOOKING_CIRC = 2 * Math.PI * BOOKING_R, BOOKING_SW = 18;
+
+function bookingPct(n: number) {
+  return `${Math.round(n * 100)}%`;
+}
+
+/** Donut de clases reservadas por resultado - mismo patrón de dibujo que ClientesPaymentsBreakdown. */
+function BookingBreakdownDonut({ attended, lateCancellations, earlyCancellations, noShows }: {
+  attended: number; lateCancellations: number; earlyCancellations: number; noShows: number;
+}) {
+  const values: Record<BookingSegmentKey, number> = { attended, lateCancellations, earlyCancellations, noShows };
+  const visible = BOOKING_ITEMS.filter((it) => values[it.key] > 0);
+  const total = visible.reduce((s, it) => s + values[it.key], 0);
+
+  let acc = 0;
+  const segments = visible.map((it) => {
+    const share = total > 0 ? values[it.key] / total : 0;
+    const dash = share * BOOKING_CIRC;
+    const gap = visible.length > 1 ? 2 : 0;
+    const offset = -(acc + gap / 2);
+    acc += dash + gap;
+    return { ...it, share, dash: Math.max(dash - gap, 0), offset };
+  });
+
+  return (
+    <ChartCard
+      title="Clases reservadas"
+      subtitle="Resultado de todas las reservas del censo de clientes"
+      dataSource="Momence · asistencia, cancelaciones y no-shows por reserva"
+      sources={["momence"]}
+      radiusClassName="rounded-[14px]"
+      className="mb-5"
+    >
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
+        <div className="relative w-[140px] h-[140px] shrink-0 mx-auto sm:mx-0">
+          <svg viewBox="0 0 180 180" width="140" height="140">
+            <circle cx={BOOKING_CX} cy={BOOKING_CY} r={BOOKING_R} fill="none" stroke="var(--color-border)" strokeWidth={BOOKING_SW} />
+            <g transform={`rotate(-90, ${BOOKING_CX}, ${BOOKING_CY})`}>
+              {total === 0 ? null : segments.map((seg) => (
+                <circle
+                  key={seg.key}
+                  cx={BOOKING_CX} cy={BOOKING_CY} r={BOOKING_R}
+                  fill="none"
+                  strokeWidth={BOOKING_SW}
+                  strokeDasharray={`${seg.dash} ${BOOKING_CIRC}`}
+                  strokeDashoffset={seg.offset}
+                  strokeLinecap="round"
+                  className={seg.text}
+                  stroke="currentColor"
+                />
+              ))}
+            </g>
+            <foreignObject x="10" y="45" width="160" height="90">
+              <div className="h-full flex flex-col items-center justify-center text-center">
+                <p className="text-lg font-bold text-navy tabular-nums leading-tight">{total}</p>
+                <p className="text-[10px] text-navy/45 font-medium mt-0.5">Reservas</p>
+              </div>
+            </foreignObject>
+          </svg>
+        </div>
+
+        <div className="flex-1 min-w-0 divide-y divide-navy/[0.05] w-full">
+          {visible.map((it) => (
+            <div key={it.key} className="flex items-center justify-between gap-3 py-2.5">
+              <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                <span className={`w-2 h-2 rounded-full ${it.bg} shrink-0`} />
+                <span className="text-[13px] text-navy/65 truncate">{it.label}</span>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className={`text-[13px] font-semibold tabular-nums ${it.key === "attended" ? "text-navy" : "text-navy/60"}`}>
+                  {values[it.key]}
+                </span>
+                <span className="text-xs text-navy/40 tabular-nums w-9 text-right">
+                  {total > 0 ? bookingPct(values[it.key] / total) : "-"}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </ChartCard>
+  );
+}
 
 // Filtros "especiales" restantes (KPIs + Más filtros): de un solo valor a la vez, porque son
 // alertas puntuales o etiquetas, no ejes de navegación habituales. El resto de ejes (procedencia,
@@ -292,6 +383,17 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
     return c;
   }, [clients]);
 
+  const bookingBreakdown = useMemo(() => {
+    let attended = 0, lateCancellations = 0, earlyCancellations = 0, noShows = 0;
+    for (const r of clients) {
+      attended += r.attended;
+      lateCancellations += r.lateCancellations;
+      earlyCancellations += r.earlyCancellations;
+      noShows += r.noShows;
+    }
+    return { attended, lateCancellations, earlyCancellations, noShows };
+  }, [clients]);
+
   const minLastClassDaysNum = minLastClassDays > 0 ? minLastClassDays : null;
   const maxLastClassDaysNum = maxLastClassDays < LAST_CLASS_MAX ? maxLastClassDays : null;
 
@@ -420,6 +522,13 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
         />
       </div>
 
+      <BookingBreakdownDonut
+        attended={bookingBreakdown.attended}
+        lateCancellations={bookingBreakdown.lateCancellations}
+        earlyCancellations={bookingBreakdown.earlyCancellations}
+        noShows={bookingBreakdown.noShows}
+      />
+
       <div className="flex items-center gap-[9px] flex-wrap">
         <SearchInputV2 value={search} onChange={changeSearch} placeholder="Buscar por nombre, email o plan…" className="min-w-[160px] flex-1" />
         <MoreFiltersMenu filter={filter} onChange={changeFilter} counts={counts} />
@@ -473,15 +582,15 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
           />
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[11px] text-navy/40 uppercase tracking-wider shrink-0">Cancel. tardías</span>
+          <span className="text-[11px] text-navy/40 uppercase tracking-wider shrink-0">Cancelaciones</span>
           <FilterPillGroupV2
             variant="segmented"
             active={cancelTardia}
             onChange={changeCancelTardia}
             options={[
               { key: "all", label: "Todos" },
-              { key: "con_tardias", label: "Con tardías", count: counts.conTardias || undefined, countTone: "warning" },
-              { key: "sin_tardias", label: "Sin tardías" },
+              { key: "con_tardias", label: "Tardías", count: counts.conTardias || undefined, countTone: "warning" },
+              { key: "sin_tardias", label: "A tiempo" },
             ]}
           />
         </div>
@@ -522,7 +631,7 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
               <span className="flex items-center cursor-pointer select-none" onClick={() => toggleSort("cancellations")}>Cancelac.<SortArrow active={sortKey === "cancellations"} dir={sortDir} /></span>
               <span className="flex items-center cursor-pointer select-none" onClick={() => toggleSort("firstClass")}>1ª clase<SortArrow active={sortKey === "firstClass"} dir={sortDir} /></span>
               <span className="flex items-center cursor-pointer select-none" onClick={() => toggleSort("lastClass")}>Última clase<SortArrow active={sortKey === "lastClass"} dir={sortDir} /></span>
-              <span className="flex items-center cursor-pointer select-none" onClick={() => toggleSort("totalSpent")}>Total<SortArrow active={sortKey === "totalSpent"} dir={sortDir} /></span>
+              <span className="flex items-center justify-end cursor-pointer select-none" onClick={() => toggleSort("totalSpent")}>Total<SortArrow active={sortKey === "totalSpent"} dir={sortDir} /></span>
             </div>
 
             {pageRows.length === 0 ? (
@@ -569,7 +678,7 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
                     <div className={`text-[13px] tabular-nums ${r.cancellations > r.attended && r.cancellations > 2 ? "text-danger font-medium" : "text-muted"}`}>{r.cancellations}</div>
                     <div className="text-[13px] text-muted tabular-nums">{r.firstClassDate ? fmtDate(r.firstClassDate) : "-"}</div>
                     <div className="text-[13px] text-muted">{r.lastClassDate ? timeAgo(r.lastClassDate).replace("Hace ", "") : "-"}</div>
-                    <div className="text-[13px] font-semibold text-navy tabular-nums">
+                    <div className="text-[13px] font-semibold text-navy tabular-nums text-right">
                       {r.stripe
                         ? fmt(r.stripe.totalSpent)
                         : r.urbanEstimated != null
