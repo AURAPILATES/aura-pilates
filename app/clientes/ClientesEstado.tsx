@@ -46,7 +46,7 @@ function StatBox({ icon, label, value, valueClassName, dotClassName, tooltip, on
   );
 }
 
-const COLS = "2.1fr 1.05fr .85fr 1.3fr .55fr .95fr .9fr .9fr .8fr";
+const COLS = "2.1fr 134px .85fr 1.3fr .55fr .95fr .9fr .9fr .8fr";
 const PAGE_SIZE = 100;
 
 type BookingSegmentKey = "attended" | "lateCancellations" | "earlyCancellations" | "noShows";
@@ -306,7 +306,7 @@ function MoreFiltersMenu({ filter, onChange, counts }: {
         type="button"
         onClick={handleToggle}
         title="Más filtros"
-        className={`shrink-0 flex items-center gap-2 px-3 py-2 text-[13.5px] font-medium border rounded-[10px] transition-colors whitespace-nowrap ${
+        className={`shrink-0 flex items-center gap-2 h-[37.5px] px-3 text-[13.5px] font-medium border rounded-[10px] transition-colors whitespace-nowrap ${
           hasActive ? "border-primary/40 text-primary bg-primary/5" : "text-navy/70 border-border bg-card hover:bg-navy/[0.02]"
         }`}
       >

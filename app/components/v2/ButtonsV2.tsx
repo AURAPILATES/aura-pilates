@@ -44,7 +44,7 @@ export const IconButtonV2 = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<H
       <button
         ref={ref}
         type={type}
-        className={`shrink-0 flex items-center justify-center w-[38px] h-[38px] text-muted border border-border rounded-[10px] bg-card shadow-card hover:bg-navy/[0.02] transition-colors ${className}`}
+        className={`shrink-0 flex items-center justify-center w-[37.5px] h-[37.5px] text-muted border border-border rounded-[10px] bg-card shadow-card hover:bg-navy/[0.02] transition-colors ${className}`}
         {...props}
       />
     );

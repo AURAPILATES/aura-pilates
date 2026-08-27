@@ -18,7 +18,7 @@ export default function FilterPillGroupV2<T extends string>({ options, active, o
   const segmented = variant === "segmented";
   return (
     <div className={`overflow-x-auto scrollbar-none ${className}`}>
-      <div className={`inline-flex items-center gap-0.5 rounded-[10px] p-[5px] w-max min-w-full sm:min-w-0 ${segmented ? "bg-navy/5" : "bg-subtle"}`}>
+      <div className={`inline-flex items-stretch gap-0.5 rounded-[10px] p-[4px] h-[37.5px] w-max min-w-full sm:min-w-0 ${segmented ? "bg-navy/5" : "bg-subtle"}`}>
         {options.map(({ key, label, count, countTone, dot }) => {
           const isActive = active === key;
           return (
@@ -26,7 +26,7 @@ export default function FilterPillGroupV2<T extends string>({ options, active, o
               key={key}
               type="button"
               onClick={() => onChange(key)}
-              className={`shrink-0 flex items-center gap-1.5 whitespace-nowrap transition-colors p-[6px] font-medium ${
+              className={`shrink-0 h-full flex items-center gap-1.5 whitespace-nowrap transition-colors px-[6px] font-medium ${
                 segmented ? "text-[13px] rounded-[7px] border" : "rounded-[8px] text-[13px]"
               } ${
                 isActive
