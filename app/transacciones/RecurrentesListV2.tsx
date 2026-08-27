@@ -169,6 +169,19 @@ function SignedAmount({ amount, className = "" }: { amount: number; className?: 
   );
 }
 
+/** Indica que el importe no es fijo (varía de un cobro/pago a otro) - ver checkbox
+ * "Importe variable" en el drawer de confirmación/edición. */
+function VariableBadge() {
+  return (
+    <span
+      title="Importe variable"
+      className="shrink-0 bg-subtle text-muted rounded-full px-[5px] py-[1px] text-[9px] font-semibold uppercase tracking-wide leading-[1.4]"
+    >
+      Variable
+    </span>
+  );
+}
+
 
 function iconFor(categories: Category[], categoryValue: string | null) {
   const cat = categoryValue ? categories.find((c) => c.value === categoryValue) : undefined;
@@ -223,6 +236,7 @@ function ArchivedRowV2({ row }: { row: RecurringExpense }) {
         <p className="text-sm font-semibold text-navy truncate">{row.label}</p>
         <p className="text-xs text-navy/45 mt-0.5">
           {row.status === "ignored" ? "Ignorado" : "Dado de baja"} · {fmtEUR(Math.abs(row.amount))} · {row.period}
+          {row.variable && " · Variable"}
         </p>
       </div>
       <div className="flex items-center gap-2 shrink-0">
@@ -506,7 +520,10 @@ export default function RecurrentesListV2({
                     <TaxBadgeV2 value={ivaRate} isError={bothMissing} zeroIsExplicit={contact?.noTax} />
                     <TaxBadgeV2 value={retRate} isError={bothMissing} zeroIsExplicit={contact?.noTax} />
                   </div>
-                  <p className="text-right text-[13.5px] font-semibold"><SignedAmount amount={e.amount} /></p>
+                  <div className="flex items-center justify-end gap-1.5">
+                    {e.variable && <VariableBadge />}
+                    <p className="text-right text-[13.5px] font-semibold"><SignedAmount amount={e.amount} /></p>
+                  </div>
                 </div>
               </div>
 
@@ -534,7 +551,10 @@ export default function RecurrentesListV2({
                   </div>
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="text-[14px] font-semibold"><SignedAmount amount={e.amount} /></p>
+                  <div className="flex items-center justify-end gap-1">
+                    {e.variable && <VariableBadge />}
+                    <p className="text-[14px] font-semibold"><SignedAmount amount={e.amount} /></p>
+                  </div>
                   <p className="text-[11.5px] text-muted capitalize mt-0.5">{e.period}{dayDetail ? ` · ${dayDetail}` : ""}</p>
                 </div>
               </div>
