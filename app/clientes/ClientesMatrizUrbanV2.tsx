@@ -73,6 +73,7 @@ export default function ClientesMatrizUrbanV2({
   return (
     <div>
       <div className="flex items-center gap-[9px] flex-wrap">
+        {extraControls}
         <SearchInputV2 value={search} onChange={onSearchChange} placeholder="Buscar cliente…" className="min-w-[160px] flex-1" />
         <button
           type="button"
@@ -89,7 +90,6 @@ export default function ClientesMatrizUrbanV2({
             <path d="M12 4v10M8 11l4 4 4-4M5 19h14" />
           </svg>
         </IconButtonV2>
-        {extraControls}
       </div>
 
       {activeFilterCount >= 1 && (

@@ -257,12 +257,36 @@ function SortArrow({ active, dir }: { active: boolean; dir: "asc" | "desc" }) {
   );
 }
 
-/** Filtros secundarios (menos urgentes que los KPI o el tipo de plan): oportunidades de venta
- * y una etiqueta manual, agrupados aparte para no competir por espacio con lo prioritario. */
-function MoreFiltersMenu({ filter, onChange, counts }: {
+/** Filtros secundarios: oportunidades de venta/etiqueta manual (de un solo valor) arriba, y
+ * debajo los ejes combinables (Plan, Asistencia, Cancelaciones, Última clase) que antes iban
+ * siempre visibles en una segunda fila - demasiados toggles a la vez en la pestaña Estado, se
+ * agrupan aquí para no competir por espacio con lo prioritario (KPIs, Procedencia). */
+function MoreFiltersMenu({
+  filter, onChange, counts,
+  procedencia, planFilter, onChangePlanFilter,
+  asistencia, onChangeAsistencia,
+  cancelTardia, onChangeCancelTardia,
+  minLastClassDays, maxLastClassDays, onChangeMinLastClassDays, onChangeMaxLastClassDays,
+  hasSecondaryActive,
+}: {
   filter: Filter;
   onChange: (f: Filter) => void;
-  counts: { al_limite: number; infrautiliza: number; congelada: number; duplicadas: number; familiares: number };
+  counts: {
+    al_limite: number; infrautiliza: number; congelada: number; duplicadas: number; familiares: number;
+    basic: number; plus: number; pro: number; pack: number; sinPlan: number; sinClases: number; conTardias: number;
+  };
+  procedencia: Procedencia;
+  planFilter: PlanFilter;
+  onChangePlanFilter: (v: PlanFilter) => void;
+  asistencia: Asistencia;
+  onChangeAsistencia: (v: Asistencia) => void;
+  cancelTardia: CancelTardia;
+  onChangeCancelTardia: (v: CancelTardia) => void;
+  minLastClassDays: number;
+  maxLastClassDays: number;
+  onChangeMinLastClassDays: (v: number) => void;
+  onChangeMaxLastClassDays: (v: number) => void;
+  hasSecondaryActive: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [dropPos, setDropPos] = useState<{ top: number; left: number } | null>(null);
@@ -279,7 +303,7 @@ function MoreFiltersMenu({ filter, onChange, counts }: {
     return () => document.removeEventListener("mousedown", handle);
   }, [open]);
 
-  const DROP_W = 220;
+  const DROP_W = 260;
   function handleToggle() {
     if (!open && btnRef.current) {
       const rect = btnRef.current.getBoundingClientRect();
@@ -297,7 +321,7 @@ function MoreFiltersMenu({ filter, onChange, counts }: {
     { key: "familiares", label: "Familiares", count: counts.familiares },
     { key: "duplicadas", label: "2+ suscripciones", count: counts.duplicadas },
   ];
-  const hasActive = items.some((i) => i.key === filter);
+  const hasActive = items.some((i) => i.key === filter) || hasSecondaryActive;
 
   return (
     <div ref={wrapRef} className="relative">
@@ -334,6 +358,80 @@ function MoreFiltersMenu({ filter, onChange, counts }: {
               {count > 0 && <span className="text-[11px] font-semibold text-[#b45309] dark:text-[#e8a572]">{count}</span>}
             </button>
           ))}
+
+          <div className="my-1 border-t border-navy/10" />
+
+          <div className="px-3 py-2 space-y-3">
+            {procedencia === "momence" && (
+              <div>
+                <span className="text-[11px] text-navy/40 uppercase tracking-wider">Plan</span>
+                <FilterPillGroupV2
+                  variant="segmented"
+                  active={planFilter}
+                  onChange={onChangePlanFilter}
+                  className="mt-1.5"
+                  options={[
+                    { key: "all", label: "Todos" },
+                    { key: "basic", label: "Bàsic", count: counts.basic || undefined },
+                    { key: "plus", label: "Plus", count: counts.plus || undefined },
+                    { key: "pro", label: "Pro", count: counts.pro || undefined },
+                    { key: "pack", label: "Pack", count: counts.pack || undefined },
+                    { key: "sin_plan", label: "Sin plan", count: counts.sinPlan || undefined, countTone: "warning" },
+                  ]}
+                />
+              </div>
+            )}
+            <div>
+              <span className="text-[11px] text-navy/40 uppercase tracking-wider">Asistencia</span>
+              <FilterPillGroupV2
+                variant="segmented"
+                active={asistencia}
+                onChange={onChangeAsistencia}
+                className="mt-1.5"
+                options={[
+                  { key: "all", label: "Todos" },
+                  { key: "con_clases", label: "Ha venido" },
+                  { key: "sin_clases", label: "Nunca vino", count: counts.sinClases || undefined, countTone: "warning" },
+                ]}
+              />
+            </div>
+            <div>
+              <span className="text-[11px] text-navy/40 uppercase tracking-wider">Cancelaciones</span>
+              <FilterPillGroupV2
+                variant="segmented"
+                active={cancelTardia}
+                onChange={onChangeCancelTardia}
+                className="mt-1.5"
+                options={[
+                  { key: "all", label: "Todos" },
+                  { key: "con_tardias", label: "Tardías", count: counts.conTardias || undefined, countTone: "warning" },
+                  { key: "sin_tardias", label: "A tiempo" },
+                ]}
+              />
+            </div>
+            <div>
+              <span className="text-[11px] text-navy/40 uppercase tracking-wider">Última clase</span>
+              <div className="flex items-center gap-2 bg-navy/5 rounded-[10px] px-2.5 py-1.5 mt-1.5">
+                <span className="text-[12px] font-medium text-navy tabular-nums shrink-0 w-5 text-right">
+                  {minLastClassDays}
+                </span>
+                <div className="w-[110px]">
+                  <DualRangeSlider
+                    min={0}
+                    max={LAST_CLASS_MAX}
+                    step={5}
+                    valueMin={minLastClassDays}
+                    valueMax={maxLastClassDays}
+                    onChangeMin={onChangeMinLastClassDays}
+                    onChangeMax={onChangeMaxLastClassDays}
+                  />
+                </div>
+                <span className="text-[12px] font-medium text-navy tabular-nums shrink-0 w-7">
+                  {maxLastClassDays >= LAST_CLASS_MAX ? `${LAST_CLASS_MAX}+` : maxLastClassDays}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>,
         document.body
       )}
@@ -355,13 +453,21 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
   const [page, setPage] = useState(0);
   const [selected, setSelected] = useState<MemberClient | null>(null);
 
+  // Renueva/pago pendiente/pocas clases/plan son conceptos de Momence (Urban no tiene plan) - los
+  // KPIs y el desglose por plan se calculan solo sobre el segmento de Procedencia elegido, para
+  // que no mezclen con el total del censo cuando se está mirando Urban (o viceversa).
+  const scopedClients = useMemo(
+    () => clients.filter((r) => (procedencia === "urban" ? r.status.key === "urban" : r.status.key !== "urban")),
+    [clients, procedencia],
+  );
+
   const counts = useMemo(() => {
     const c = {
       congelada: 0, pago_pendiente: 0, duplicadas: 0, familiares: 0, urban: 0, momence: 0,
       renueva_pronto: 0, infrautiliza: 0, al_limite: 0, pocas_clases: 0,
       basic: 0, plus: 0, pro: 0, pack: 0, sinPlan: 0, sinClases: 0, conTardias: 0,
     };
-    for (const r of clients) {
+    for (const r of scopedClients) {
       if (r.activeSubCount >= 2) c.duplicadas++;
       if (r.isFamily) c.familiares++;
       if (hasPagoPendiente(r)) c.pago_pendiente++;
@@ -381,7 +487,7 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
       else if (tier === "sin_plan") c.sinPlan++;
     }
     return c;
-  }, [clients]);
+  }, [scopedClients]);
 
   const bookingBreakdown = useMemo(() => {
     let attended = 0, lateCancellations = 0, earlyCancellations = 0, noShows = 0;
@@ -492,11 +598,44 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
 
   return (
     <div>
-      {/* KPIs en caja (clic → filtra la tabla) */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+      <div className="flex items-center gap-[9px] flex-wrap">
+        <FilterPillGroupV2
+          variant="segmented"
+          active={procedencia}
+          onChange={changeProcedencia}
+          options={[
+            { key: "momence", label: "Momence" },
+            { key: "urban", label: "Urban" },
+          ]}
+        />
+        <SearchInputV2 value={search} onChange={changeSearch} placeholder="Buscar por nombre, email o plan…" className="min-w-[160px] flex-1" />
+        <MoreFiltersMenu
+          filter={filter} onChange={changeFilter} counts={counts}
+          procedencia={procedencia}
+          planFilter={planFilter} onChangePlanFilter={changePlanFilter}
+          asistencia={asistencia} onChangeAsistencia={changeAsistencia}
+          cancelTardia={cancelTardia} onChangeCancelTardia={changeCancelTardia}
+          minLastClassDays={minLastClassDays} maxLastClassDays={maxLastClassDays}
+          onChangeMinLastClassDays={changeMinLastClassDays} onChangeMaxLastClassDays={changeMaxLastClassDays}
+          hasSecondaryActive={
+            planFilter !== "all" || asistencia !== "all" || cancelTardia !== "all" ||
+            minLastClassDaysNum != null || maxLastClassDaysNum != null
+          }
+        />
+        {hasActiveFilters && <ClearFiltersButtonV2 onClick={clearFilters} />}
+        <IconButtonV2 onClick={downloadCsv} title="Exportar a CSV">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 4v10M8 11l4 4 4-4M5 19h14" />
+          </svg>
+        </IconButtonV2>
+      </div>
+
+      {/* KPIs en caja (clic → filtra la tabla) - escopados a la Procedencia elegida arriba:
+          renueva/pago pendiente/pocas clases/plan son conceptos de Momence, no aplican a Urban. */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5 mb-5">
         <StatBox
-          icon={<Users size={14} />} label="Clientes" value={clients.length}
-          tooltip="Total de clientes del censo de Momence (incluye efectivo y Urban)."
+          icon={<Users size={14} />} label="Clientes" value={scopedClients.length}
+          tooltip={procedencia === "urban" ? "Clientes de Urban Sports Club." : "Clientes de Momence (incluye efectivo)."}
           onClick={clearFilters} active={!hasActiveFilters}
         />
         <StatBox
@@ -528,95 +667,6 @@ export default function ClientesEstado({ clients, payments }: { clients: MemberC
         earlyCancellations={bookingBreakdown.earlyCancellations}
         noShows={bookingBreakdown.noShows}
       />
-
-      <div className="flex items-center gap-[9px] flex-wrap">
-        <SearchInputV2 value={search} onChange={changeSearch} placeholder="Buscar por nombre, email o plan…" className="min-w-[160px] flex-1" />
-        <MoreFiltersMenu filter={filter} onChange={changeFilter} counts={counts} />
-        {hasActiveFilters && <ClearFiltersButtonV2 onClick={clearFilters} />}
-        <IconButtonV2 onClick={downloadCsv} title="Exportar a CSV">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 4v10M8 11l4 4 4-4M5 19h14" />
-          </svg>
-        </IconButtonV2>
-        <FilterPillGroupV2
-          variant="segmented"
-          active={procedencia}
-          onChange={changeProcedencia}
-          options={[
-            { key: "momence", label: "Momence" },
-            { key: "urban", label: "Urban" },
-          ]}
-        />
-      </div>
-
-      <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2">
-        {procedencia === "momence" && (
-        <div className="flex items-center gap-2">
-          <span className="text-[11px] text-navy/40 uppercase tracking-wider shrink-0">Plan</span>
-          <FilterPillGroupV2
-            variant="segmented"
-            active={planFilter}
-            onChange={changePlanFilter}
-            options={[
-              { key: "all", label: "Todos" },
-              { key: "basic", label: "Bàsic", count: counts.basic || undefined },
-              { key: "plus", label: "Plus", count: counts.plus || undefined },
-              { key: "pro", label: "Pro", count: counts.pro || undefined },
-              { key: "pack", label: "Pack", count: counts.pack || undefined },
-              { key: "sin_plan", label: "Sin plan", count: counts.sinPlan || undefined, countTone: "warning" },
-            ]}
-          />
-        </div>
-        )}
-        <div className="flex items-center gap-2">
-          <span className="text-[11px] text-navy/40 uppercase tracking-wider shrink-0">Asistencia</span>
-          <FilterPillGroupV2
-            variant="segmented"
-            active={asistencia}
-            onChange={changeAsistencia}
-            options={[
-              { key: "all", label: "Todos" },
-              { key: "con_clases", label: "Ha venido" },
-              { key: "sin_clases", label: "Nunca vino", count: counts.sinClases || undefined, countTone: "warning" },
-            ]}
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-[11px] text-navy/40 uppercase tracking-wider shrink-0">Cancelaciones</span>
-          <FilterPillGroupV2
-            variant="segmented"
-            active={cancelTardia}
-            onChange={changeCancelTardia}
-            options={[
-              { key: "all", label: "Todos" },
-              { key: "con_tardias", label: "Tardías", count: counts.conTardias || undefined, countTone: "warning" },
-              { key: "sin_tardias", label: "A tiempo" },
-            ]}
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-[11px] text-navy/40 uppercase tracking-wider shrink-0">Última clase</span>
-          <div className="flex items-center gap-2 bg-navy/5 rounded-[10px] px-2.5 py-1.5">
-            <span className="text-[12px] font-medium text-navy tabular-nums shrink-0 w-5 text-right">
-              {minLastClassDays}
-            </span>
-            <div className="w-[110px]">
-              <DualRangeSlider
-                min={0}
-                max={LAST_CLASS_MAX}
-                step={5}
-                valueMin={minLastClassDays}
-                valueMax={maxLastClassDays}
-                onChangeMin={changeMinLastClassDays}
-                onChangeMax={changeMaxLastClassDays}
-              />
-            </div>
-            <span className="text-[12px] font-medium text-navy tabular-nums shrink-0 w-7">
-              {maxLastClassDays >= LAST_CLASS_MAX ? `${LAST_CLASS_MAX}+` : maxLastClassDays}
-            </span>
-          </div>
-        </div>
-      </div>
 
       <div className={`mt-[20px] -mx-4 sm:-mx-6 ${tableCardClassV2} overflow-hidden`}>
         {/* Escritorio (scroll horizontal si no caben las columnas) */}
